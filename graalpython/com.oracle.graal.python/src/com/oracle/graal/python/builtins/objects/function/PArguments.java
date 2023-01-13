@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -105,15 +105,6 @@ public final class PArguments {
         return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_KEYWORD_ARGUMENTS] instanceof PKeyword[];
     }
 
-    public static boolean isGeneratorFrame(Frame frame) {
-        return frame != null && isGeneratorFrame(frame.getArguments());
-    }
-
-    public static boolean isGeneratorFrame(Object[] frameArgs) {
-        // a generator frame never has a frame info
-        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CALLER_FRAME_INFO] instanceof PDict;
-    }
-
     public static Object[] withGlobals(PythonObject globals) {
         Object[] arguments = create();
         setGlobals(arguments, globals);
@@ -215,18 +206,6 @@ public final class PArguments {
 
     public static void setCallerFrameInfo(Object[] arguments, PFrame.Reference info) {
         arguments[INDEX_CALLER_FRAME_INFO] = info;
-    }
-
-    /**
-     * This is only safe before the frame has started executing.
-     */
-    public static Object getCustomLocals(Frame frame) {
-        return frame.getArguments()[INDEX_CURRENT_FRAME_INFO];
-    }
-
-    public static void setCustomLocals(Object[] args, Object locals) {
-        assert args[INDEX_CURRENT_FRAME_INFO] == null : "cannot set custom locals if the frame is already available";
-        args[INDEX_CURRENT_FRAME_INFO] = locals;
     }
 
     public static PFrame.Reference getCurrentFrameInfo(Frame frame) {
@@ -381,7 +360,6 @@ public final class PArguments {
 
         // copy only some carefully picked internal arguments
         setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
-        setGeneratorFrame(copiedArgs, getGeneratorFrameSafe(arguments));
         setGlobals(copiedArgs, getGlobals(arguments));
         setClosure(copiedArgs, getClosure(arguments));
 

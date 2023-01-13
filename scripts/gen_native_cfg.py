@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -100,7 +100,19 @@ type_defs = {
     'b': ('Boolean', None)
 }
 
-# Asterisks mark optional constants
+# Explanation of the format:
+# Names in square brackets specify an option group name for all following entries.
+# Normal entries:
+# Column #1 - fallback specifier:
+#   empty - mandatory constant
+#   `*` - optional constant
+#   `0` - if not defined, it will default to 0
+#   `u` - if not defined, it will use the constant prefixed with an underscore
+# Column #2 - type specifier:
+#   `i` - int
+#   `x` - int, appearing in hexadecimal in the generated source
+#   `b` - boolean, will be true if the plaform is Linux (WTF?)
+# Column #3 - the name of the constant
 constant_defs = '''
   b HAVE_FUTIMENS
   b HAVE_UTIMENSAT
@@ -125,6 +137,8 @@ constant_defs = '''
 * i SEEK_HOLE
 
   i SOMAXCONN
+
+* i PIPE_BUF
 
 [openFlags]
 0 x O_ACCMODE
@@ -578,11 +592,11 @@ def generate_common(filename):
     for c in constants:
         add_constant(c.optional, c.type, c.name)
 
-    for struct_name, members in layouts.items():
-        add_constant(False, 'Int', sizeof_name(struct_name))
-        for member in members:
-            add_constant(False, 'Int', offsetof_name(struct_name, member))
-            add_constant(False, 'Int', sizeof_name(struct_name, member))
+    for struct in layouts:
+        add_constant(False, 'Int', sizeof_name(struct.name))
+        for member in struct.members:
+            add_constant(False, 'Int', offsetof_name(struct.name, member))
+            add_constant(False, 'Int', sizeof_name(struct.name, member))
 
     decls.append('\n')
     defs.append('\n')

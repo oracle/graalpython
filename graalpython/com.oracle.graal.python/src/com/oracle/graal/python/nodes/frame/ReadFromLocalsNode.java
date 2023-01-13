@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,68 +38,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
+package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.lib.PyDictCheckExactNode;
-import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
-/**
- * Helper node to be used when it's known that a name must be read from a custom locals dict instead
- * of the frame
- */
-public abstract class GetNameFromLocalsNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object locals, TruffleString name, boolean cellvar);
+public abstract class ReadFromLocalsNode extends PNodeWithContext implements AccessNameNode {
+    public abstract Object execute(VirtualFrame frame, Object locals, TruffleString name);
 
-    @Specialization
-    Object getValue(VirtualFrame frame, Object locals, TruffleString name, boolean isCellVar,
-                    @Cached PyDictCheckExactNode checkDictNode,
-                    @Cached PyDictGetItem getDictItemNode,
-                    @Cached PyObjectGetItem getItemNode,
-                    @Cached IsBuiltinClassProfile classProfile,
-                    @Cached PRaiseNode raiseNode) {
-        if (checkDictNode.execute(locals)) {
-            return getDictItemNode.execute(frame, (PDict) locals, name);
+    @Specialization(guards = "locals == null")
+    @SuppressWarnings("unused")
+    static Object noLocals(VirtualFrame frame, Object locals, TruffleString name) {
+        return PNone.NO_VALUE;
+    }
+
+    @Specialization(guards = "isBuiltinDict(locals)")
+    static Object readFromLocalsDict(PDict locals, TruffleString name,
+                    @Cached HashingStorageNodes.HashingStorageGetItem getItem) {
+        Object result = getItem.execute(locals.getDictStorage(), name);
+        if (result == null) {
+            return PNone.NO_VALUE;
         } else {
-            try {
-                return getItemNode.execute(frame, locals, name);
-            } catch (PException pe) {
-                if (!classProfile.profileClass(pe, KeyError)) {
-                    if (isCellVar) {
-                        throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, name);
-                    } else {
-                        return null;
-                    }
-                }
-            }
+            return result;
         }
-        return null;
     }
 
-    public static GetNameFromLocalsNode create() {
-        return GetNameFromLocalsNodeGen.create();
+    @Fallback
+    static Object readFromLocals(VirtualFrame frame, Object locals, TruffleString name,
+                    @Cached PyObjectGetItem getItem,
+                    @Cached IsBuiltinClassProfile errorProfile) {
+        try {
+            return getItem.execute(frame, locals, name);
+        } catch (PException e) {
+            e.expect(PythonBuiltinClassType.KeyError, errorProfile);
+            return PNone.NO_VALUE;
+        }
     }
 
-    public static GetNameFromLocalsNode getUncached() {
-        return GetNameFromLocalsNodeGen.getUncached();
+    public static ReadFromLocalsNode create() {
+        return ReadFromLocalsNodeGen.create();
+    }
+
+    public static ReadFromLocalsNode getUncached() {
+        return ReadFromLocalsNodeGen.getUncached();
     }
 }

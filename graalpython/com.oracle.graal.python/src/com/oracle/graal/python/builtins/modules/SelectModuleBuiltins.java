@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -99,6 +101,14 @@ public class SelectModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SelectModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        if (PosixConstants.PIPE_BUF.defined) {
+            addBuiltinConstant("PIPE_BUF", PosixConstants.PIPE_BUF.getValueIfDefined());
+        }
     }
 
     @Builtin(name = "select", minNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist", "timeout"})

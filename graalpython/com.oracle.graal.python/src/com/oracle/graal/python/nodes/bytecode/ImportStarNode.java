@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,14 +28,12 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ALL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
-import static com.oracle.graal.python.nodes.frame.ReadLocalsNode.fastGetCustomLocalsOrGlobals;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -80,15 +78,16 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @Cached PyObjectSizeNode sizeNode,
                     @Cached PyObjectGetItem getItemNode,
                     @Cached ConditionProfile javaImport,
-                    @Cached ConditionProfile havePyFrame,
-                    @Cached ConditionProfile haveCustomLocals,
                     @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                     @Cached IsBuiltinClassProfile isAttributeErrorProfile,
                     @Cached IsBuiltinClassProfile isStopIterationProfile) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level, importNameNode);
-        PythonObject locals = fastGetCustomLocalsOrGlobals(frame, havePyFrame, haveCustomLocals);
+        Object locals = PArguments.getSpecialArgument(frame);
+        if (locals == null) {
+            locals = PArguments.getGlobals(frame);
+        }
 
         if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
             try {
@@ -134,7 +133,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
     }
 
     // TODO: remove once we removed PythonModule globals
-    private void writeAttribute(VirtualFrame frame, PythonObject globals, TruffleString name, Object value, PyObjectSetItem setItemNode, PyObjectSetAttr setAttrNode) {
+    private void writeAttribute(VirtualFrame frame, Object globals, TruffleString name, Object value, PyObjectSetItem setItemNode, PyObjectSetAttr setAttrNode) {
         if (globals instanceof PDict || globals instanceof PMappingproxy) {
             setItemNode.execute(frame, globals, name, value);
         } else {
@@ -142,7 +141,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
         }
     }
 
-    private void writeAttributeToLocals(VirtualFrame frame, TruffleString moduleName, PythonModule importedModule, PythonObject locals, Object attrName, boolean fromAll,
+    private void writeAttributeToLocals(VirtualFrame frame, TruffleString moduleName, PythonModule importedModule, Object locals, Object attrName, boolean fromAll,
                     CastToTruffleStringNode castToTruffleStringNode, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode, PyObjectGetAttr getAttr,
                     PyObjectSetItem dictWriteNode, PyObjectSetAttr setAttrNode) {
         try {

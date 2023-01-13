@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -468,7 +467,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.markAsFinished();
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
-                PFrame pFrame = ensureMaterializeFrameNode().execute(null, location, false, false, generatorFrame);
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory());
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getRootNode().getFirstLineno());
                 PTraceback existingTraceback = null;
@@ -575,15 +574,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } else {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
-                PDict locals = PArguments.getGeneratorFrameLocals(generatorFrame);
-                Object[] arguments = PArguments.create();
-                Node location;
-                location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
-                PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals);
-                PArguments.setGlobals(arguments, PArguments.getGlobals(self.getArguments()));
-                PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
-                PArguments.setGeneratorFrame(arguments, generatorFrame);
-                frame.setArguments(arguments);
+                Node location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
+                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 int bci = self.getBci();
                 frame.setLasti(bci);

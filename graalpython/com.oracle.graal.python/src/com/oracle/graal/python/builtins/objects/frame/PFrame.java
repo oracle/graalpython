@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,14 +48,11 @@ import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNod
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -101,7 +98,7 @@ public final class PFrame extends PythonBuiltinObject {
     public static final class Reference {
         public static final Reference EMPTY = new Reference(null);
 
-        // The Python-level frame. Can be incomplete.
+        // The Python-level frame
         private PFrame pyFrame = null;
 
         // The location of the last call
@@ -116,29 +113,6 @@ public final class PFrame extends PythonBuiltinObject {
 
         public Reference(Reference callerInfo) {
             this.callerInfo = callerInfo;
-        }
-
-        public void materialize(PythonLanguage lang, Frame targetFrame, PRootNode location) {
-            Reference curFrameInfo = PArguments.getCurrentFrameInfo(targetFrame);
-            CompilerAsserts.partialEvaluationConstant(location);
-            if (location.getFrameEscapedWithoutAllocationProfile().profile(this.pyFrame == null || this.pyFrame.virtualFrameInfo == null)) {
-                if (this.pyFrame == null) {
-                    // TODO: frames: this doesn't go through the factory
-                    this.pyFrame = new PFrame(lang, curFrameInfo, location);
-                } else {
-                    assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
-                    // this is the case when we had custom locals
-                    this.pyFrame = new PFrame(lang, curFrameInfo, location, this.pyFrame.localsDict);
-                }
-            }
-            // TODO: frames: update location
-        }
-
-        public void setCustomLocals(PythonLanguage lang, Object customLocals) {
-            assert customLocals != null : "cannot set null custom locals";
-            assert pyFrame == null : "cannot set customLocals when there's already a PFrame";
-            // TODO: frames: this doesn't go through the factory
-            this.pyFrame = new PFrame(lang, customLocals);
         }
 
         public void setBackref(PFrame.Reference backref) {
@@ -159,7 +133,7 @@ public final class PFrame extends PythonBuiltinObject {
         }
 
         public void setPyFrame(PFrame escapedFrame) {
-            assert this.pyFrame == null || this.pyFrame.isIncomplete() || this.pyFrame == escapedFrame : "cannot change the escaped frame";
+            assert this.pyFrame == null || this.pyFrame == escapedFrame : "cannot change the escaped frame";
             this.pyFrame = escapedFrame;
         }
 
@@ -185,13 +159,6 @@ public final class PFrame extends PythonBuiltinObject {
         this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
-    }
-
-    private PFrame(PythonLanguage lang, Object locals) {
-        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
-        this.virtualFrameInfo = null;
-        this.location = null;
-        this.localsDict = locals;
     }
 
     public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
@@ -222,11 +189,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public PFrame.Reference getRef() {
-        if (virtualFrameInfo != null) {
-            return virtualFrameInfo;
-        } else {
-            return null;
-        }
+        return virtualFrameInfo;
     }
 
     public PFrame.Reference getBackref() {
@@ -275,14 +238,11 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     /**
-     * Prefer to use the {@link GetLocalsNode}.<br/>
-     * <br/>
-     *
-     * Returns a dictionary with the locals, possibly creating it from the frame. Note that the
-     * dictionary may have been modified and should then be updated with the current frame locals.
-     * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
+     * Returns a dictionary with the locals. Note that the dictionary may have been modified and
+     * should then be updated with the current frame locals. To that end, use the
+     * {@link MaterializeFrameNode}.
      */
-    public Object getLocals(@SuppressWarnings("unused") PythonObjectFactory factory) {
+    public Object getLocals() {
         assert localsDict != null;
         return localsDict;
     }
@@ -298,24 +258,6 @@ public final class PFrame extends PythonBuiltinObject {
      */
     public PythonObject getGlobals() {
         return PArguments.getGlobals(arguments);
-    }
-
-    /**
-     * Checks if this frame is complete in the sense that all frame accessors would work, e.g.
-     * locals, backref etc. We optimize locals access to create a lightweight PFrame that has no
-     * stack attached to it, which is where we check this.
-     */
-    public boolean isIncomplete() {
-        return location == null && virtualFrameInfo == null;
-    }
-
-    /**
-     * {@code true} if this {@code PFrame} is associated with a {@code Frame}, i.e., it has a frame
-     * info. On the other hand, {@code false} means that this {@code PFrame} has been created
-     * artificially which is most commonly done to carry custom locals.
-     **/
-    public boolean isAssociated() {
-        return virtualFrameInfo != null;
     }
 
     public RootCallTarget getTarget() {

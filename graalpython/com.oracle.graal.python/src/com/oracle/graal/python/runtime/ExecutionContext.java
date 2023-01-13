@@ -205,8 +205,6 @@ public abstract class ExecutionContext {
         @Child private MaterializeFrameNode materializeNode;
         @CompilationFinal private boolean everEscaped = false;
 
-        @CompilationFinal private ConditionProfile customLocalsProfile;
-
         @Override
         public Node copy() {
             return new CalleeContext();
@@ -221,17 +219,7 @@ public abstract class ExecutionContext {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
-            Object customLocals = PArguments.getCustomLocals(frame);
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
-            // tfel: If there are custom locals, write them into an (incomplete)
-            // PFrame here
-            if (customLocalsProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                customLocalsProfile = ConditionProfile.create();
-            }
-            if (customLocalsProfile.profile(customLocals != null && !(customLocals instanceof PFrame.Reference))) {
-                thisFrameRef.setCustomLocals(PythonLanguage.get(this), customLocals);
-            }
         }
 
         public void exit(VirtualFrame frame, PRootNode node) {
@@ -271,7 +259,6 @@ public abstract class ExecutionContext {
 
                 // force the frame so that it can be accessed later
                 ensureMaterializeNode().execute(frame, node, false, true, true);
-                info.materialize(PythonLanguage.get(this), frame, node);
                 // if this frame escaped we must ensure that also f_back does
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);

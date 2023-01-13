@@ -173,6 +173,8 @@ import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
+import com.oracle.graal.python.nodes.frame.ReadFromLocalsNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
@@ -343,8 +345,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeFunction<TruffleString, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
     private static final PrintExprNode UNCACHED_PRINT_EXPR = PrintExprNode.getUncached();
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
-    private static final GetNameFromLocalsNode UNCACHED_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode.getUncached();
-    private static final NodeSupplier<GetNameFromLocalsNode> NODE_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode::create;
+    private static final ReadFromLocalsNode UNCACHED_READ_FROM_LOCALS = ReadFromLocalsNode.getUncached();
+    private static final NodeSupplier<ReadFromLocalsNode> NODE_READ_FROM_LOCALS = ReadFromLocalsNode::create;
     private static final SetupAnnotationsNode UNCACHED_SETUP_ANNOTATIONS = SetupAnnotationsNode.getUncached();
     private static final NodeSupplier<SetupAnnotationsNode> NODE_SETUP_ANNOTATIONS = SetupAnnotationsNode::create;
     private static final GetSendValueNode UNCACHED_GET_SEND_VALUE = GetSendValueNode.getUncached();
@@ -4436,18 +4438,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
-        TruffleString varName;
-        boolean isCellVar;
-        if (oparg < cellvars.length) {
-            varName = cellvars[oparg];
-            isCellVar = true;
-        } else {
-            varName = freevars[oparg - cellvars.length];
-            isCellVar = false;
-        }
-        GetNameFromLocalsNode getNameFromLocals = insertChildNode(localNodes, bci, UNCACHED_GET_NAME_FROM_LOCALS, GetNameFromLocalsNodeGen.class, NODE_GET_NAME_FROM_LOCALS, useCachedNodes);
-        Object value = getNameFromLocals.execute(virtualFrame, locals, varName, isCellVar);
-        if (value != null) {
+        TruffleString varName = freevars[oparg - cellvars.length];
+        ReadFromLocalsNode readFromLocals = insertChildNode(localNodes, bci, UNCACHED_READ_FROM_LOCALS, ReadFromLocalsNodeGen.class, NODE_READ_FROM_LOCALS, useCachedNodes);
+        Object value = readFromLocals.execute(virtualFrame, locals, varName);
+        if (value != PNone.NO_VALUE) {
             virtualFrame.setObject(++stackTop, value);
             return stackTop;
         } else {

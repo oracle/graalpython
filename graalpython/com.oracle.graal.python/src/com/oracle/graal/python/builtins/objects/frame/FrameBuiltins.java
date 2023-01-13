@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
-import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -96,19 +95,16 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(VirtualFrame curFrame, PFrame self) {
-            if (self.isAssociated()) {
-                PythonObject globals = self.getGlobals();
-                if (globals instanceof PythonModule) {
-                    if (getDictNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getDictNode = insert(ObjectBuiltinsFactory.DictNodeGen.create());
-                    }
-                    return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
-                } else {
-                    return globals != null ? globals : factory().createDict();
+            PythonObject globals = self.getGlobals();
+            if (globals instanceof PythonModule) {
+                if (getDictNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getDictNode = insert(ObjectBuiltinsFactory.DictNodeGen.create());
                 }
+                return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
+            } else {
+                return globals != null ? globals : factory().createDict();
             }
-            return factory().createDict();
         }
     }
 
@@ -221,10 +217,8 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
-                        @Cached ReadLocalsNode readLocals,
                         @Cached ConditionProfile profile,
                         @Cached MaterializeFrameNode materializeNode) {
-            assert self.isAssociated() : "It's impossible to call f_locals on a frame without that frame having escaped";
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the values of the frame if and only if 'self' represents the current
             // frame. If 'self' represents another frame on the stack, the values are already
@@ -233,7 +227,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 PFrame pyFrame = materializeNode.execute(frame, false, true, frame);
                 assert pyFrame == self;
             }
-            return readLocals.execute(self);
+            return self.getLocals();
         }
     }
 
