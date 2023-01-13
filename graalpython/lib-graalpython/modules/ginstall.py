@@ -503,7 +503,7 @@ library_dirs = {lapack_lib}"""
         joblib(**kwargs)
         threadpoolctl(**kwargs)
 
-        install_from_pypi("scikit-learn==1.0.2", env=scikit_learn_build_env, **kwargs)
+        install_from_pypi("scikit-learn==1.1.3", env=scikit_learn_build_env, **kwargs)
 
     @pip_package()
     def cycler(**kwargs):
