@@ -318,6 +318,24 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long[] statvfs(Object path,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            return PosixSupportLibrary.getUncached().statvfs(emulatedPosixSupport, path);
+        }
+        return nativeLib.statvfs(nativePosixSupport, path);
+    }
+
+    @ExportMessage
+    final long[] fstatvfs(int fd,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            return PosixSupportLibrary.getUncached().fstatvfs(emulatedPosixSupport, fd);
+        }
+        return nativeLib.fstatvfs(nativePosixSupport, fd);
+    }
+
+    @ExportMessage
     final Object[] uname(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.uname(nativePosixSupport);

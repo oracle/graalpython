@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
@@ -172,6 +172,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                                     "time of last access in nanoseconds", "time of last modification in nanoseconds", "time of last change in nanoseconds"
                     });
 
+    static final StructSequence.BuiltinTypeDescriptor STATVFS_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PStatvfsResult,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "statvfs_result: Result from statvfs or fstatvfs.\n\n" +
+                    "This object may be accessed either as a tuple of\n" +
+                    "  (bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax),\n" +
+                    "or via the attributes f_bsize, f_frsize, f_blocks, f_bfree, and so on.\n" +
+                    "\n" +
+                    "See os.statvfs for more information.",
+                    // @formatter:on
+                    10,
+                    new String[]{
+                                    "f_bsize", "f_frsize", "f_blocks", "f_bfree", "f_bavail", "f_files",
+                                    "f_ffree", "f_favail", "f_flag", "f_namemax", "f_fsid"
+                    },
+                    null);
+
     private static final StructSequence.BuiltinTypeDescriptor TERMINAL_SIZE_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PTerminalSize,
                     "A tuple of (columns, lines) for holding terminal window size",
@@ -250,10 +267,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("environ", core.factory().createDict());
 
         StructSequence.initType(core, STAT_RESULT_DESC);
+        StructSequence.initType(core, STATVFS_RESULT_DESC);
         StructSequence.initType(core, TERMINAL_SIZE_DESC);
         StructSequence.initType(core, UNAME_RESULT_DESC);
 
-        // The stat_result and terminal_size classes are formally part of the 'os' module, although
+        // Some classes (e.g. stat_result, see below) are formally part of the 'os' module, although
         // they are exposed by the 'posix' module. In CPython, they are defined in posixmodule.c,
         // with their __module__ being set to 'os', and later they are imported by os.py.
         // Our infrastructure in PythonBuiltinClassType currently does not allow us to
@@ -267,6 +285,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             posix = core.lookupBuiltinModule(T_POSIX);
         }
         posix.setAttribute(PythonBuiltinClassType.PStatResult.getName(), core.lookupType(PythonBuiltinClassType.PStatResult));
+        posix.setAttribute(PythonBuiltinClassType.PStatvfsResult.getName(), core.lookupType(PythonBuiltinClassType.PStatvfsResult));
         posix.setAttribute(PythonBuiltinClassType.PTerminalSize.getName(), core.lookupType(PythonBuiltinClassType.PTerminalSize));
 
         posix.setAttribute(tsLiteral("error"), core.lookupType(PythonBuiltinClassType.OSError));
@@ -275,6 +294,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
+
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        Object posixSupport = core.getContext().getPosixSupport();
 
         // fill the environ dictionary with the current environment
         // TODO we should probably use PosixSupportLibrary to get environ
@@ -293,10 +315,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 // executable. It will be honored by packages like "site". So, if it is set, we
                 // overwrite it with our executable to ensure that subprocesses will use us.
                 TruffleString value = core.getContext().getOption(PythonOptions.Executable);
-
                 try {
-                    PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
-                    Object posixSupport = core.getContext().getPosixSupport();
                     Object k = posixLib.createPathFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
                     Object v = posixLib.createPathFromString(posixSupport, value);
                     posixLib.setenv(posixSupport, k, v, true);
@@ -324,6 +343,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
         Object environAttr = posix.getAttribute(tsLiteral("environ"));
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
+
+        if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
+            posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
+        }
     }
 
     @Builtin(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
@@ -342,6 +365,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
             return p;
+        }
+    }
+
+    @Builtin(name = "statvfs_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatvfsResult)
+    @ImportStatic(PosixModuleBuiltins.class)
+    @GenerateNodeFactory
+    public abstract static class StatvfsResultNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        public static Object generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
+                        @Cached("create(STATVFS_RESULT_DESC)") StructSequence.NewNode newNode) {
+            return newNode.execute(frame, cls, sequence, dict);
         }
     }
 
@@ -1124,6 +1159,49 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     }
                 }
             }
+        }
+    }
+
+    @Builtin(name = "statvfs", minNumOfPositionalArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @GenerateNodeFactory
+    abstract static class StatvfsNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.StatvfsNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PTuple doStatvfsPath(VirtualFrame frame, PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+            try {
+                long[] out = posixLib.statvfs(getPosixSupport(), path.value);
+                return createStatvfsResult(factory(), positiveLongProfile, out);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Specialization()
+        PTuple doStatvfsFd(VirtualFrame frame, PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+            try {
+                long[] out = posixLib.fstatvfs(getPosixSupport(), fd.fd);
+                return createStatvfsResult(factory(), positiveLongProfile, out);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+            }
+        }
+
+        private static PTuple createStatvfsResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+            Object[] res = new Object[out.length];
+            for (int i = 0; i < out.length; i++) {
+                res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
+            }
+            return factory.createStructSeq(STATVFS_RESULT_DESC, res);
         }
     }
 

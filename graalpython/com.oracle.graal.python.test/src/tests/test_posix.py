@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -364,6 +364,12 @@ class WithTempFilesTests(unittest.TestCase):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
+
+    @unittest.skipIf(__graalpython__.posix_module_backend() == 'java', 'statvfs emulation is not supported')
+    def test_statvfs(self):
+        res = os.statvfs(TEST_FULL_PATH1)
+        with open(TEST_FULL_PATH1, 0) as fd:
+            self.assertEqual(res.f_bsize, os.statvfs(fd).f_bsize)
 
     def test_utimes(self):
         os.utime(TEST_FULL_PATH2, (-952468575.678901234, 1579569825.123456789))         # follows symlink

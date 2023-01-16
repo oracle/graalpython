@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -292,6 +293,39 @@ int32_t call_fstat(int32_t fd, int64_t *out) {
     int result = fstat(fd, &st);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
+    }
+    return result;
+}
+
+static void statvfs_struct_to_longs(struct statvfs *st, int64_t *out) {
+    // TODO some of these use implementation-defined behaviour of unsigned -> signed conversion
+    out[0] = st->f_bsize;
+    out[1] = st->f_frsize;
+    out[2] = st->f_blocks;
+    out[3] = st->f_bfree;
+    out[4] = st->f_bavail;
+    out[5] = st->f_files;
+    out[6] = st->f_ffree;
+    out[7] = st->f_favail;
+    out[8] = st->f_flag;
+    out[9] = st->f_namemax;
+    out[10] = st->f_fsid;
+}
+
+int32_t call_statvfs(const char *path, int64_t *out) {
+    struct statvfs st;
+    int result = statvfs(path, &st);
+    if (result == 0) {
+        statvfs_struct_to_longs(&st, out);
+    }
+    return result;
+}
+
+int32_t call_fstatvfs(int32_t fd, int64_t *out) {
+    struct statvfs st;
+    int result = fstatvfs(fd, &st);
+    if (result == 0) {
+        statvfs_struct_to_longs(&st, out);
     }
     return result;
 }

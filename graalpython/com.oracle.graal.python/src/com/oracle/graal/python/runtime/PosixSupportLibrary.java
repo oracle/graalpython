@@ -135,6 +135,10 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract long[] fstat(Object receiver, int fd) throws PosixException;
 
+    public abstract long[] statvfs(Object receiver, Object path) throws PosixException;
+
+    public abstract long[] fstatvfs(Object receiver, int fd) throws PosixException;
+
     public abstract Object[] uname(Object receiver) throws PosixException;
 
     public abstract void unlinkat(Object receiver, int dirFd, Object pathname, boolean rmdir) throws PosixException;
