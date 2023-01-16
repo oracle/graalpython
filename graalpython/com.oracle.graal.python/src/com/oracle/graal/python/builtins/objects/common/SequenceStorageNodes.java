@@ -178,6 +178,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -3625,7 +3626,7 @@ public abstract class SequenceStorageNodes {
         private static final int START_SIZE = 4;
 
         protected SequenceStorage createStorage(VirtualFrame frame, Object iterator, int len, ListStorageType type, GetNextNode nextNode, IsBuiltinClassProfile errorProfile,
-                        ConditionProfile growArrayProfile) {
+                        Node inliningTarget, InlinedCountingConditionProfile growArrayProfile) {
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
                 return createStorageUninitialized(frame, iterator, nextNode, errorProfile, size);
@@ -3640,7 +3641,7 @@ public abstract class SequenceStorageNodes {
                             try {
                                 while (true) {
                                     boolean value = nextNode.executeBoolean(frame, iterator);
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
@@ -3660,7 +3661,7 @@ public abstract class SequenceStorageNodes {
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(value);
-                                        if (growArrayProfile.profile(i >= elements.length)) {
+                                        if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                             array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         }
                                         elements[i++] = bvalue;
@@ -3680,7 +3681,7 @@ public abstract class SequenceStorageNodes {
                             try {
                                 while (true) {
                                     int value = nextNode.executeInt(frame, iterator);
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
@@ -3697,7 +3698,7 @@ public abstract class SequenceStorageNodes {
                             try {
                                 while (true) {
                                     long value = nextNode.executeLong(frame, iterator);
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
@@ -3714,7 +3715,7 @@ public abstract class SequenceStorageNodes {
                             try {
                                 while (true) {
                                     double value = nextNode.executeDouble(frame, iterator);
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
@@ -3730,7 +3731,7 @@ public abstract class SequenceStorageNodes {
                             try {
                                 while (true) {
                                     Object value = nextNode.execute(frame, iterator);
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
@@ -3746,7 +3747,7 @@ public abstract class SequenceStorageNodes {
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {
-                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, errorProfile, growArrayProfile);
+                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, errorProfile, inliningTarget, growArrayProfile);
                 }
             }
         }
@@ -3773,7 +3774,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private SequenceStorage genericFallback(VirtualFrame frame, Object iterator, Object array, int count, Object result, GetNextNode nextNode, IsBuiltinClassProfile errorProfile,
-                        ConditionProfile growArrayProfile) {
+                        Node inliningTarget, InlinedCountingConditionProfile growArrayProfile) {
             Object[] elements = new Object[Array.getLength(array) * 2];
             int i = 0;
             for (; i < count; i++) {
@@ -3783,7 +3784,7 @@ public abstract class SequenceStorageNodes {
             while (true) {
                 try {
                     Object value = nextNode.execute(frame, iterator);
-                    if (growArrayProfile.profile(i >= elements.length)) {
+                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                     }
                     elements[i++] = value;
@@ -3801,7 +3802,7 @@ public abstract class SequenceStorageNodes {
          * StopIteration.
          */
         protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, ListStorageType type, NextNode nextNode, IsBuiltinClassProfile errorProfile,
-                        ConditionProfile growArrayProfile, LoopConditionProfile loopProfile) {
+                        Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, LoopConditionProfile loopProfile) {
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
                 Object[] elements = new Object[size];
@@ -3809,7 +3810,7 @@ public abstract class SequenceStorageNodes {
                 try {
                     Object value;
                     for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
-                        if (growArrayProfile.profile(i >= elements.length)) {
+                        if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                             elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                         }
                         elements[i] = value;
@@ -3829,7 +3830,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         array = elements;
                                     }
@@ -3848,7 +3849,7 @@ public abstract class SequenceStorageNodes {
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(PGuards.expectInteger(value));
-                                        if (growArrayProfile.profile(i >= elements.length)) {
+                                        if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                             array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         }
                                         elements[i] = bvalue;
@@ -3866,7 +3867,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i] = PGuards.expectInteger(value);
@@ -3881,7 +3882,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i] = PGuards.expectLong(value);
@@ -3896,7 +3897,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i] = PGuards.expectDouble(value);
@@ -3910,7 +3911,7 @@ public abstract class SequenceStorageNodes {
                             Object[] elements = new Object[size];
                             try {
                                 for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
-                                    if (growArrayProfile.profile(i >= elements.length)) {
+                                    if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
                                     elements[i] = value;
@@ -3980,44 +3981,48 @@ public abstract class SequenceStorageNodes {
 
             @Specialization(replaces = "createBuiltinFastPath", guards = {"isBuiltinIterator(iterator)", "len < 0"})
             public SequenceStorage createBuiltinUnknownLen(VirtualFrame frame, PBuiltinIterator iterator, @SuppressWarnings("unused") int len,
+                            @Bind("this") Node inliningTarget,
                             @Cached BuiltinIteratorLengthHint lengthHint,
                             @Shared("loopProfile") @Cached LoopConditionProfile loopProfile,
                             @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
-                            @Shared("arrayGrowProfile") @Cached("createCountingProfile()") ConditionProfile arrayGrowProfile,
+                            @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached NextNode nextNode) {
                 int expectedLen = lengthHint.execute(iterator);
                 if (expectedLen < 0) {
                     expectedLen = startSizeProfiled;
                 }
-                SequenceStorage s = createStorageFromBuiltin(frame, iterator, expectedLen, expectedElementType, nextNode, errorProfile, arrayGrowProfile, loopProfile);
+                SequenceStorage s = createStorageFromBuiltin(frame, iterator, expectedLen, expectedElementType, nextNode, errorProfile, inliningTarget, arrayGrowProfile, loopProfile);
                 return profileResult(s, true);
             }
 
             @Specialization(replaces = "createBuiltinFastPath", guards = {"isBuiltinIterator(iterator)", "len >= 0"})
             public SequenceStorage createBuiltinKnownLen(VirtualFrame frame, PBuiltinIterator iterator, int len,
+                            @Bind("this") Node inliningTarget,
                             @Shared("loopProfile") @Cached LoopConditionProfile loopProfile,
                             @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
-                            @Shared("arrayGrowProfile") @Cached("createCountingProfile()") ConditionProfile arrayGrowProfile,
+                            @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached NextNode nextNode) {
-                SequenceStorage s = createStorageFromBuiltin(frame, iterator, len, expectedElementType, nextNode, errorProfile, arrayGrowProfile, loopProfile);
+                SequenceStorage s = createStorageFromBuiltin(frame, iterator, len, expectedElementType, nextNode, errorProfile, inliningTarget, arrayGrowProfile, loopProfile);
                 return profileResult(s, false);
             }
 
             @Specialization(guards = {"!isBuiltinIterator(iterator)", "len < 0"})
             public SequenceStorage createGenericUnknownLen(VirtualFrame frame, Object iterator, @SuppressWarnings("unused") int len,
+                            @Bind("this") Node inliningTarget,
                             @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
-                            @Shared("arrayGrowProfile") @Cached("createCountingProfile()") ConditionProfile arrayGrowProfile,
+                            @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached GetNextNode getNextNode) {
-                SequenceStorage s = createStorage(frame, iterator, startSizeProfiled, expectedElementType, getNextNode, errorProfile, arrayGrowProfile);
+                SequenceStorage s = createStorage(frame, iterator, startSizeProfiled, expectedElementType, getNextNode, errorProfile, inliningTarget, arrayGrowProfile);
                 return profileResult(s, true);
             }
 
             @Specialization(guards = {"!isBuiltinIterator(iterator)", "len >= 0"})
             public SequenceStorage createGenericKnownLen(VirtualFrame frame, Object iterator, int len,
+                            @Bind("this") Node inliningTarget,
                             @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
-                            @Shared("arrayGrowProfile") @Cached("createCountingProfile()") ConditionProfile arrayGrowProfile,
+                            @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached GetNextNode getNextNode) {
-                SequenceStorage s = createStorage(frame, iterator, len, expectedElementType, getNextNode, errorProfile, arrayGrowProfile);
+                SequenceStorage s = createStorage(frame, iterator, len, expectedElementType, getNextNode, errorProfile, inliningTarget, arrayGrowProfile);
                 return profileResult(s, false);
             }
 

@@ -226,6 +226,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
@@ -241,20 +242,22 @@ public abstract class TypeNodes {
 
         @Specialization
         long doBuiltinClassType(PythonBuiltinClassType clazz,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
-                        @Shared("profile") @Cached("createCountingProfile()") ConditionProfile profile) {
-            return doManaged(PythonContext.get(this).getCore().lookupType(clazz), readHiddenFlagsNode, writeHiddenFlagsNode, profile);
+                        @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
+            return doManaged(PythonContext.get(this).getCore().lookupType(clazz), inliningTarget, readHiddenFlagsNode, writeHiddenFlagsNode, profile);
         }
 
         @Specialization
         long doManaged(PythonManagedClass clazz,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
-                        @Shared("profile") @Cached("createCountingProfile()") ConditionProfile profile) {
+                        @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
 
             Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
-            if (profile.profile(flagsObject != PNone.NO_VALUE)) {
+            if (profile.profile(inliningTarget, flagsObject != PNone.NO_VALUE)) {
                 // we have it under control; it must be a long
                 return (long) flagsObject;
             }
@@ -300,7 +303,8 @@ public abstract class TypeNodes {
                 if (mroEntry instanceof PythonAbstractNativeObject) {
                     result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
                 } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
-                    long flags = doManaged((PythonManagedClass) mroEntry, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(), ConditionProfile.getUncached());
+                    long flags = doManaged((PythonManagedClass) mroEntry, null, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(),
+                                    InlinedCountingConditionProfile.getUncached());
                     result = setFlags(result, flags);
                 }
             }
