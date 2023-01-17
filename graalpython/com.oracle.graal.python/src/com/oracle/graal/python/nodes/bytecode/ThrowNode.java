@@ -45,7 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
-import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -70,8 +70,8 @@ public abstract class ThrowNode extends PNodeWithContext {
 
     @Specialization
     boolean doGenerator(VirtualFrame frame, int stackTop, PGenerator generator, PException exception,
-                    @Cached GeneratorBuiltins.ThrowNode throwNode,
-                    @Cached GeneratorBuiltins.CloseNode closeNode,
+                    @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
+                    @Cached CommonGeneratorBuiltins.CloseNode closeNode,
                     @Shared("exitProfile") @Cached IsBuiltinClassProfile profileExit,
                     @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {

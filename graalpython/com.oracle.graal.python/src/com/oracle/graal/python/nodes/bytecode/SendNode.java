@@ -44,7 +44,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
-import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -68,7 +68,7 @@ public abstract class SendNode extends PNodeWithContext {
 
     @Specialization
     boolean doGenerator(VirtualFrame virtualFrame, int stackTop, PGenerator generator, Object arg,
-                    @Cached GeneratorBuiltins.SendNode sendNode,
+                    @Cached CommonGeneratorBuiltins.SendNode sendNode,
                     @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {

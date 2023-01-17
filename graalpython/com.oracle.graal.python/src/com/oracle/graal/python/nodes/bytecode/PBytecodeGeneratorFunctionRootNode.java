@@ -85,7 +85,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
             return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
         } else if (rootNode.getCodeUnit().isCoroutine()) {
             // TODO populate
-            return factory.createCoroutine();
+            return factory.createCoroutine(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
         } else if (rootNode.getCodeUnit().isAsyncGenerator()) {
             // TODO populate
             return factory.createAsyncGenerator();

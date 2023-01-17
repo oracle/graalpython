@@ -63,12 +63,18 @@ public final class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
+    public final boolean isCoroutine;
+
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        rootNode.createGeneratorFrame(arguments);
-        return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments);
+        return create(lang, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine);
     }
 
-    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+    public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
+                    PythonBuiltinClassType cls) {
+        rootNode.createGeneratorFrame(arguments);
+        return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments, cls);
+    }
+    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
@@ -78,6 +84,7 @@ public final class PGenerator extends PythonBuiltinObject {
         this.finished = false;
         this.bytecodeRootNode = rootNode;
         this.frameInfo = (FrameInfo) rootNode.getFrameDescriptor().getInfo();
+        this.isCoroutine = cls == PythonBuiltinClassType.PCoroutine;
     }
 
     public void handleResult(PythonLanguage language, GeneratorYieldResult result) {

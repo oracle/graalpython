@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PCoroutineWrapper;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
@@ -872,12 +873,15 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public final PGenerator createGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
-    public final Object createCoroutine() {
-        // TODO implement this properly, this is just a placeholder so that typing stuff works
-        return createPythonObject(PythonBuiltinClassType.PCoroutine);
+    public final PGenerator createCoroutine(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
+    }
+
+    public final PCoroutineWrapper createCoroutineWrapper(PGenerator generator) {
+        return trace(new PCoroutineWrapper(getLanguage(), generator));
     }
 
     public final Object createAsyncGenerator() {
