@@ -64,6 +64,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -131,6 +132,11 @@ public class AsyncioModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(AsyncioModuleBuiltins.class)
     public abstract static class GetEventLoop extends PythonBuiltinNode {
+
+        public static GetEventLoop create() {
+            return AsyncioModuleBuiltinsFactory.GetEventLoopFactory.create(new ReadArgumentNode[]{});
+        }
+
         @Specialization
         public Object getCurrentLoop(VirtualFrame frame,
                         @Cached CallNode callGetPolicy,
@@ -147,6 +153,17 @@ public class AsyncioModuleBuiltins extends PythonBuiltins {
             } else {
                 return eventLoop;
             }
+        }
+    }
+
+    @Builtin(name = "_get_event_loop", parameterNames = "stacklevel")
+    @GenerateNodeFactory
+    public abstract static class DeprGetEventLoop extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        public Object getCurrentLoop(VirtualFrame frame, Object stacklevel,
+                        @Cached("create()") GetEventLoop getLoop) {
+            return getLoop.execute(frame);
         }
     }
 
