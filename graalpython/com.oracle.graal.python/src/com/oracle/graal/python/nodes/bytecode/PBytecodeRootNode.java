@@ -2146,20 +2146,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.SETUP_AWITH: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        SetupAwithNode setupAwithNode = insertChildNode(localNodes, beginBci, UNCACHED_SETUP_AWITH_NODE, SetupAwithNodeGen.class, NODE_SETUP_AWITH, useCachedNodes);
-                        stackTop = setupAwithNode.execute(virtualFrame, stackTop);
+                        stackTop = bytecodeSetupAWith(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
                     }
                     case OpCodesConstants.GET_AEXIT_CORO: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        GetAExitCoroNode getAExitCoroNode = insertChildNode(localNodes, beginBci, UNCACHED_GET_AEXIT_CORO_NODE, GetAExitCoroNodeGen.class, NODE_GET_AEXIT_CORO, useCachedNodes);
-                        stackTop = getAExitCoroNode.execute(virtualFrame, stackTop);
+                        stackTop = bytecodeGetAExitCoro(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
                     }
                     case OpCodesConstants.EXIT_AWITH: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        ExitAWithNode exitAWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_AWITH_NODE, ExitAWithNodeGen.class, NODE_EXIT_AWITH, useCachedNodes);
-                        stackTop = exitAWithNode.execute(virtualFrame, stackTop);
+                        stackTop = bytecodeExitAWith(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
                     }
                     case OpCodesConstants.PUSH_EXC_INFO: {
@@ -2458,6 +2455,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int bytecodeExitWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         ExitWithNode exitWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_WITH_NODE, ExitWithNodeGen.class, NODE_EXIT_WITH, useCachedNodes);
         return exitWithNode.execute(virtualFrame, stackTop, frameIsVisibleToPython());
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeSetupAWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        SetupAwithNode setupAwithNode = insertChildNode(localNodes, beginBci, UNCACHED_SETUP_AWITH_NODE, SetupAwithNodeGen.class, NODE_SETUP_AWITH, useCachedNodes);
+        return setupAwithNode.execute(virtualFrame, stackTop);
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeGetAExitCoro(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        GetAExitCoroNode getAExitCoroNode = insertChildNode(localNodes, beginBci, UNCACHED_GET_AEXIT_CORO_NODE, GetAExitCoroNodeGen.class, NODE_GET_AEXIT_CORO, useCachedNodes);
+        return getAExitCoroNode.execute(virtualFrame, stackTop);
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeExitAWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        ExitAWithNode exitAWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_AWITH_NODE, ExitAWithNodeGen.class, NODE_EXIT_AWITH, useCachedNodes);
+        return exitAWithNode.execute(virtualFrame, stackTop, frameIsVisibleToPython());
     }
 
     @BytecodeInterpreterSwitch

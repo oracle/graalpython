@@ -59,10 +59,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateUncached
 public abstract class ExitAWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop);
+    public abstract int execute(Frame frame, int stackTop, boolean rootNodeVisible);
 
     @Specialization
-    int exit(VirtualFrame virtualFrame, int stackTopIn,
+    int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
                     @Cached PyObjectIsTrueNode isTrueNode,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
@@ -74,7 +74,7 @@ public abstract class ExitAWithNode extends PNodeWithContext {
         try {
             if (!isTrueNode.execute(virtualFrame, result) && exception != PNone.NONE) {
                 if (exception instanceof PException) {
-                    throw ((PException) exception).getExceptionForReraise();
+                    throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
                 } else if (exception instanceof AbstractTruffleException) {
                     throw (AbstractTruffleException) exception;
                 } else {

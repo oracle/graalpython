@@ -75,6 +75,7 @@ public final class PGenerator extends PythonBuiltinObject {
         rootNode.createGeneratorFrame(arguments);
         return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments, cls);
     }
+
     private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
