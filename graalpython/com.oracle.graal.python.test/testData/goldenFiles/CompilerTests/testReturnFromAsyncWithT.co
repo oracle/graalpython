@@ -1,19 +1,78 @@
 Disassembly of <module>:
-  1:0   -   3:11        0 MAKE_FUNCTION                     0    (f)
-  1:0   -   3:11        3 STORE_NAME                        0    (f)
-  1:0   -   3:11        5 LOAD_NONE
-  1:0   -   3:11        6 RETURN_VALUE
+  1:0   -   4:12        0 MAKE_FUNCTION                     0    (f)
+  1:0   -   4:12        3 STORE_NAME                        0    (f)
+  1:0   -   4:12        5 LOAD_NONE
+  1:0   -   4:12        6 RETURN_VALUE
 
 Disassembly of f:
 Flags: CO_COROUTINE
-  2:7   -   2:8         0 LOAD_GLOBAL                       0    (a)
-  2:2   -   3:11        2 SETUP_WITH
-  2:2   -   3:11        3 POP_TOP
-  2:2   -   3:11        4 LOAD_NONE
-  2:2   -   3:11        5 EXIT_WITH
-  2:2   -   3:11        6 LOAD_NONE
-  2:2   -   3:11        7 RETURN_VALUE
-  2:2   -   3:11        8 LOAD_NONE
-  2:2   -   3:11        9 EXIT_WITH                                                               (exc handler 3 - 4; stack: 2)
-  2:2   -   3:11       10 LOAD_NONE
-  2:2   -   3:11       11 RETURN_VALUE
+  2:13  -   2:14        0 LOAD_GLOBAL                       0    (a)
+  2:2   -   4:12        2 SETUP_AWITH
+  2:2   -   4:12        3 GET_AWAITABLE
+  2:2   -   4:12        4 LOAD_NONE
+  2:2   -   4:12  >>    5 SEND                              10   (to 15)
+  2:2   -   4:12  >>    7 YIELD_VALUE
+  2:2   -   4:12        8 RESUME_YIELD
+  2:2   -   4:12        9 JUMP_BACKWARD                     4    (to 5)
+  2:2   -   4:12       11 THROW                             4                                     (exc handler 8 - 11; stack: 3)
+  2:2   -   4:12       13 JUMP_BACKWARD                     6    (to 7)
+  2:2   -   4:12  >>   15 POP_TOP
+  3:15  -   3:16       16 LOAD_GLOBAL                       1    (b)
+  3:4   -   4:12       18 SETUP_AWITH
+  3:4   -   4:12       19 GET_AWAITABLE
+  3:4   -   4:12       20 LOAD_NONE
+  3:4   -   4:12  >>   21 SEND                              10   (to 31)
+  3:4   -   4:12  >>   23 YIELD_VALUE
+  3:4   -   4:12       24 RESUME_YIELD
+  3:4   -   4:12       25 JUMP_BACKWARD                     4    (to 21)
+  3:4   -   4:12       27 THROW                             4                                     (exc handler 24 - 27; stack: 5)
+  3:4   -   4:12       29 JUMP_BACKWARD                     6    (to 23)
+  3:4   -   4:12  >>   31 POP_TOP
+  3:4   -   4:12       32 LOAD_NONE
+  3:4   -   4:12       33 GET_AEXIT_CORO
+  3:4   -   4:12       34 GET_AWAITABLE
+  3:4   -   4:12       35 LOAD_NONE
+  3:4   -   4:12  >>   36 SEND                              10   (to 46)
+  3:4   -   4:12  >>   38 YIELD_VALUE
+  3:4   -   4:12       39 RESUME_YIELD
+  3:4   -   4:12       40 JUMP_BACKWARD                     4    (to 36)
+  3:4   -   4:12       42 THROW                             4                                     (exc handler 39 - 42; stack: 4)
+  3:4   -   4:12       44 JUMP_BACKWARD                     6    (to 38)
+  3:4   -   4:12  >>   46 EXIT_AWITH
+  2:2   -   4:12       47 LOAD_NONE
+  2:2   -   4:12       48 GET_AEXIT_CORO
+  2:2   -   4:12       49 GET_AWAITABLE
+  2:2   -   4:12       50 LOAD_NONE
+  2:2   -   4:12  >>   51 SEND                              10   (to 61)
+  2:2   -   4:12  >>   53 YIELD_VALUE
+  2:2   -   4:12       54 RESUME_YIELD
+  2:2   -   4:12       55 JUMP_BACKWARD                     4    (to 51)
+  2:2   -   4:12       57 THROW                             4                                     (exc handler 54 - 57; stack: 2)
+  2:2   -   4:12       59 JUMP_BACKWARD                     6    (to 53)
+  2:2   -   4:12  >>   61 EXIT_AWITH
+  2:2   -   4:12       62 LOAD_NONE
+  2:2   -   4:12       63 RETURN_VALUE
+  2:2   -   4:12       64 LOAD_NONE
+  3:4   -   4:12       65 GET_AEXIT_CORO                                                          (exc handler 19 - 24; stack: 4 | exc handler 27 - 32; stack: 4)
+  3:4   -   4:12       66 GET_AWAITABLE
+  3:4   -   4:12       67 LOAD_NONE
+  3:4   -   4:12  >>   68 SEND                              10   (to 78)
+  3:4   -   4:12  >>   70 YIELD_VALUE
+  3:4   -   4:12       71 RESUME_YIELD
+  3:4   -   4:12       72 JUMP_BACKWARD                     4    (to 68)
+  3:4   -   4:12       74 THROW                             4                                     (exc handler 71 - 74; stack: 4)
+  3:4   -   4:12       76 JUMP_BACKWARD                     6    (to 70)
+  3:4   -   4:12  >>   78 EXIT_AWITH
+  3:4   -   4:12       79 LOAD_NONE
+  2:2   -   4:12       80 GET_AEXIT_CORO                                                          (exc handler 3 - 8; stack: 2 | exc handler 11 - 19; stack: 2 | exc handler 32 - 39; stack: 2 | exc handler 42 - 47; stack: 2 | exc handler 65 - 71; stack: 2 | exc handler 74 - 80; stack: 2)
+  2:2   -   4:12       81 GET_AWAITABLE
+  2:2   -   4:12       82 LOAD_NONE
+  2:2   -   4:12  >>   83 SEND                              10   (to 93)
+  2:2   -   4:12  >>   85 YIELD_VALUE
+  2:2   -   4:12       86 RESUME_YIELD
+  2:2   -   4:12       87 JUMP_BACKWARD                     4    (to 83)
+  2:2   -   4:12       89 THROW                             4                                     (exc handler 86 - 89; stack: 2)
+  2:2   -   4:12       91 JUMP_BACKWARD                     6    (to 85)
+  2:2   -   4:12  >>   93 EXIT_AWITH
+  2:2   -   4:12       94 LOAD_NONE
+  2:2   -   4:12       95 RETURN_VALUE

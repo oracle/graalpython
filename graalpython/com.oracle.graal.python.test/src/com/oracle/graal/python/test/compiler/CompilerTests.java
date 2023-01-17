@@ -1066,9 +1066,8 @@ public class CompilerTests extends PythonTests {
     @Test
     public void testReturnFromAsyncWithT() {
         String source = "async def f():\n" +
-                        "  yield from []\n" +
-                        "  with a:\n" +
-                        "    with b:\n" +
+                        "  async with a:\n" +
+                        "    async with b:\n" +
                         "      return";
         doTest(source);
 
