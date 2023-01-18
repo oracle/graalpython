@@ -427,6 +427,42 @@ if sys.implementation.name == "graalpy":
             else:
                 assert False
 
+    def test_java_exceptions_reraise():
+        if __graalpython__.jython_emulation_enabled:
+            from java.lang import Integer, NumberFormatException
+            try:
+                try:
+                    Integer.parseInt("99", 8)
+                except NumberFormatException:
+                    raise
+            except NumberFormatException:
+                pass
+            else:
+                assert False
+
+    def test_java_exceptions_reraise_explicit():
+        if __graalpython__.jython_emulation_enabled:
+            from java.lang import Integer, NumberFormatException
+            try:
+                try:
+                    Integer.parseInt("99", 8)
+                except NumberFormatException as e:
+                    raise e
+            except NumberFormatException:
+                pass
+            else:
+                assert False
+
+    def test_java_exception_state():
+        if __graalpython__.jython_emulation_enabled:
+            from java.lang import Integer, NumberFormatException
+            try:
+                Integer.parseInt("99", 8)
+            except NumberFormatException as e:
+                assert sys.exc_info() == (type(e), e, None)
+            else:
+                assert False
+
     @skipIf(is_native, "not supported in native mode")
     def test_foreign_object_does_not_leak_Javas_toString():
         try:

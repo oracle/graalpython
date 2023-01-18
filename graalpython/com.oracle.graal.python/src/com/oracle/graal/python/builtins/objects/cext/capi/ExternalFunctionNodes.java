@@ -124,7 +124,6 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -151,6 +150,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -2436,7 +2436,7 @@ public abstract class ExternalFunctionNodes {
                         @Cached ClearCurrentExceptionNode clearCurrentExceptionNode,
                         @Cached PRaiseNode raiseNode) {
             if (lib.isNull(result)) {
-                PException currentException = state.getCurrentException();
+                AbstractTruffleException currentException = state.getCurrentException();
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == null) {
                     throw raiseNode.raiseStopIteration();

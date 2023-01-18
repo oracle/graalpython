@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -114,6 +115,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -556,7 +558,7 @@ public abstract class CExtCommonNodes {
                         @Cached InlinedConditionProfile errOccurredProfile,
                         @Cached InlinedConditionProfile indicatesErrorProfile,
                         @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
-            PException currentException = threadState.getCurrentException();
+            AbstractTruffleException currentException = threadState.getCurrentException();
             boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != null);
             boolean indicatesErrorProfiled = indicatesErrorProfile.profile(inliningTarget, indicatesError);
             if (indicatesErrorProfiled || errOccurred) {
@@ -568,7 +570,7 @@ public abstract class CExtCommonNodes {
 
         @InliningCutoff
         private static void checkFunctionResultSlowpath(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, PException currentException,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, AbstractTruffleException currentException,
                         ClearCurrentExceptionNode clearCurrentExceptionNode) {
             if (indicatesError) {
                 if (errOccurred) {
@@ -592,9 +594,9 @@ public abstract class CExtCommonNodes {
         }
 
         @TruffleBoundary
-        private static PException raiseResultWithError(Node node, TruffleString name, PException currentException, TruffleString resultWithErrorMessage) {
+        private static PException raiseResultWithError(Node node, TruffleString name, AbstractTruffleException currentException, TruffleString resultWithErrorMessage) {
             PBaseException sysExc = PythonObjectFactory.getUncached().createBaseException(SystemError, resultWithErrorMessage, new Object[]{name});
-            sysExc.setCause(currentException.getEscapedException());
+            sysExc.setCause(GetEscapedExceptionNode.executeUncached(currentException));
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
         }
     }
@@ -1271,8 +1273,8 @@ public abstract class CExtCommonNodes {
 
         public abstract void execute(Node inliningTarget, PythonThreadState threadState);
 
-        public final PException getCurrentExceptionForReraise(Node inliningTarget, PythonThreadState threadState) {
-            PException exceptionForReraise = threadState.getCurrentExceptionForReraise();
+        public final AbstractTruffleException getCurrentExceptionForReraise(Node inliningTarget, PythonThreadState threadState) {
+            AbstractTruffleException exceptionForReraise = threadState.getCurrentExceptionForReraise();
             execute(inliningTarget, threadState);
             return exceptionForReraise;
         }

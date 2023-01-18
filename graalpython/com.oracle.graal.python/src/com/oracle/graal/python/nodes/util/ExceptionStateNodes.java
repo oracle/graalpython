@@ -52,10 +52,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
-import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -75,11 +74,11 @@ public abstract class ExceptionStateNodes {
         private final ConditionProfile hasExceptionProfile = ConditionProfile.create();
         private final ConditionProfile needsStackWalkProfile = ConditionProfile.create();
 
-        public PException execute(VirtualFrame frame) {
+        public AbstractTruffleException execute(VirtualFrame frame) {
             if (nullFrameProfile.profile(frame == null)) {
                 return getFromContext();
             }
-            PException e = PArguments.getException(frame);
+            AbstractTruffleException e = PArguments.getException(frame);
             if (needsStackWalkProfile.profile(e == null)) {
                 e = fromStackWalk();
                 if (e == null) {
@@ -91,18 +90,18 @@ public abstract class ExceptionStateNodes {
             return ensure(e);
         }
 
-        public PException executeFromNative() {
+        public AbstractTruffleException executeFromNative() {
             return getFromContext();
         }
 
-        private PException getFromContext() {
+        private AbstractTruffleException getFromContext() {
             // contextRef acts as a branch profile
             if (getThreadStateNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getThreadStateNode = insert(GetThreadStateNodeGen.create());
             }
             PythonThreadState threadState = getThreadStateNode.executeCached();
-            PException fromContext = threadState.getCaughtException();
+            AbstractTruffleException fromContext = threadState.getCaughtException();
             if (needsStackWalkProfile.profile(fromContext == null)) {
                 fromContext = fromStackWalk();
 
@@ -112,7 +111,7 @@ public abstract class ExceptionStateNodes {
             return ensure(fromContext);
         }
 
-        private static PException fromStackWalk() {
+        private static AbstractTruffleException fromStackWalk() {
             // The very-slow path: This is the first time we want to fetch the exception state
             // from the context. The caller didn't know that it is necessary to provide the
             // exception in the context. So, we do a full stack walk until the first frame
@@ -125,27 +124,24 @@ public abstract class ExceptionStateNodes {
         }
 
         @TruffleBoundary
-        public static PException fullStackWalk() {
+        public static AbstractTruffleException fullStackWalk() {
 
-            return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<PException>() {
-                public PException visitFrame(FrameInstance frameInstance) {
-                    RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
-                    RootNode rootNode = target.getRootNode();
-                    Node callNode = frameInstance.getCallNode();
-                    IndirectCallData.setEncapsulatingNeedsToPassExceptionState(callNode);
-                    if (rootNode instanceof PRootNode) {
-                        PRootNode pRootNode = (PRootNode) rootNode;
-                        pRootNode.setNeedsExceptionState();
-                        Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
-                        return PArguments.getException(frame);
-                    }
-                    return null;
+            return Truffle.getRuntime().iterateFrames(frameInstance -> {
+                RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+                RootNode rootNode = target.getRootNode();
+                Node callNode = frameInstance.getCallNode();
+                IndirectCallData.setEncapsulatingNeedsToPassExceptionState(callNode);
+                if (rootNode instanceof PRootNode pRootNode) {
+                    pRootNode.setNeedsExceptionState();
+                    Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
+                    return PArguments.getException(frame);
                 }
+                return null;
             });
 
         }
 
-        private PException ensure(PException e) {
+        private AbstractTruffleException ensure(AbstractTruffleException e) {
             if (hasExceptionProfile.profile(e == PException.NO_EXCEPTION)) {
                 return null;
             } else {

@@ -166,6 +166,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -840,7 +841,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         if (self.getFD() >= 0 && self.isCloseFD()) {
             try {
                 warn.resourceWarning(frame, self, 1, UNCLOSED_FILE, self);
-            } catch (PException e) {
+            } catch (AbstractTruffleException e) {
                 /* Spurious errors can appear at shutdown */
                 /* (mq) we aren't doing WriteUnraisable as WarnNode will take care of it */
             }

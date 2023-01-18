@@ -61,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -142,12 +143,12 @@ public abstract class ExecutionContext {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     neededExceptionState = true;
                 }
-                PException curExc;
+                AbstractTruffleException curExc;
                 if (isPythonFrame(frame, callNode)) {
                     curExc = PArguments.getException(frame);
                     if (curExc == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                        AbstractTruffleException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
                         curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
                         // now, set in our args, such that we won't do this again
                         PArguments.setException(frame, curExc);
@@ -290,9 +291,9 @@ public abstract class ExecutionContext {
     @ValueType
     private static final class IndirectCallState {
         private final PFrame.Reference info;
-        private final PException curExc;
+        private final AbstractTruffleException curExc;
 
-        private IndirectCallState(PFrame.Reference info, PException curExc) {
+        private IndirectCallState(PFrame.Reference info, AbstractTruffleException curExc) {
             this.info = info;
             this.curExc = curExc;
         }
@@ -384,8 +385,8 @@ public abstract class ExecutionContext {
                 info.setCallNode(callNode);
                 pythonThreadState.setTopFrameInfo(info);
             }
-            PException curExc = pythonThreadState.getCaughtException();
-            PException exceptionState = PArguments.getException(frame);
+            AbstractTruffleException curExc = pythonThreadState.getCaughtException();
+            AbstractTruffleException exceptionState = PArguments.getException(frame);
             if (needsExceptionState) {
                 pythonThreadState.setCaughtException(exceptionState);
             } else if (exceptionState != curExc) {
@@ -480,7 +481,7 @@ public abstract class ExecutionContext {
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
             if (needsExceptionState) {
-                PException curExc = threadState.getCaughtException();
+                AbstractTruffleException curExc = threadState.getCaughtException();
                 if (curExc != null) {
                     threadState.setCaughtException(null);
                 }

@@ -170,6 +170,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -248,6 +249,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -840,17 +842,18 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static PTuple run(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached PythonObjectFactory factory) {
-            PException currentException = getCaughtExceptionNode.execute(frame);
+            AbstractTruffleException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory.createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
-                Object exception = currentException.getEscapedException();
-                Object traceback = getTracebackNode.execute(inliningTarget, exception);
-                return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
+                Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, currentException);
+                Object traceback = getTracebackNode.execute(inliningTarget, exceptionObject);
+                return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exceptionObject), exceptionObject, traceback});
             }
         }
 

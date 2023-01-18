@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -133,6 +134,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -173,6 +175,7 @@ public final class PythonCextErrBuiltins {
                         @Cached PrepareExceptionNode prepareExceptionNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
                         @Cached ExceptionNodes.SetContextNode setContextNode,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             if (typ != PNone.NO_VALUE) {
                 PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
@@ -182,8 +185,9 @@ public final class PythonCextErrBuiltins {
                     if (tb != PNone.NO_VALUE) {
                         setTracebackNode.execute(inliningTarget, exception, tb);
                     }
-                    Object currentException = threadState.getCurrentException().getEscapedException();
-                    setContextNode.execute(inliningTarget, currentException, exception);
+                    AbstractTruffleException currentException = threadState.getCurrentException();
+                    Object currentExceptionObject = getEscapedExceptionNode.execute(inliningTarget, currentException);
+                    setContextNode.execute(inliningTarget, currentExceptionObject, exception);
                 } else {
                     PException e = PException.fromExceptionInfo(exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget)));
                     transformExceptionToNativeNode.execute(inliningTarget, e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
@@ -399,14 +403,15 @@ public final class PythonCextErrBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached InlinedBranchProfile noExceptionProfile,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached PythonObjectFactory factory) {
-            PException currentException = getCaughtExceptionNode.executeFromNative();
+            AbstractTruffleException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
                 noExceptionProfile.enter(inliningTarget);
                 return getNativeNull();
             }
             assert currentException != PException.NO_EXCEPTION;
-            Object exception = currentException.getEscapedException();
+            Object exception = getEscapedExceptionNode.execute(inliningTarget, currentException);
             Object traceback = noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exception));
             return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
         }
@@ -419,6 +424,7 @@ public final class PythonCextErrBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
             PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
             if (threadState.getCurrentException() == null) {
@@ -426,12 +432,13 @@ public final class PythonCextErrBuiltins {
                 return PNone.NONE;
             }
             threadState.syncTracebackToException();
-            Object exc = threadState.getCurrentException().getEscapedException();
+            AbstractTruffleException exception = threadState.getCurrentException();
+            Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, exception);
             TruffleString m = null;
             if (msg instanceof TruffleString) {
                 m = (TruffleString) msg;
             }
-            writeUnraisableNode.execute(exc, m, (obj == PNone.NO_VALUE) ? PNone.NONE : obj);
+            writeUnraisableNode.execute(exceptionObject, m, (obj == PNone.NO_VALUE) ? PNone.NONE : obj);
             clearCurrentExceptionNode.execute(inliningTarget, threadState);
             return PNone.NONE;
         }

@@ -121,6 +121,8 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
+import com.oracle.graal.python.builtins.objects.exception.GetUnreifiedExceptionNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -195,6 +197,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -1034,11 +1037,12 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doGeneric(Node inliningTarget, PythonThreadState threadState,
-                        @Cached GetClassNode getClassNode) {
-            PException currentException = threadState.getCurrentException();
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetUnreifiedExceptionNode getUnreifiedExceptionNode) {
+            AbstractTruffleException currentException = threadState.getCurrentException();
             if (currentException != null) {
                 // getClassNode acts as a branch profile
-                return getClassNode.execute(inliningTarget, currentException.getUnreifiedException());
+                return getClassNode.execute(inliningTarget, getUnreifiedExceptionNode.execute(inliningTarget, currentException));
             }
             return null;
         }
@@ -1062,8 +1066,9 @@ public abstract class CExtNodes {
         static ExceptionState doGeneric(Node inliningTarget, PythonThreadState threadState,
                         @Cached GetClassNode getClassNode,
                         @Cached MaterializeLazyTracebackNode materializeTraceback,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
-            PException currentException = threadState.getCurrentException();
+            AbstractTruffleException currentException = threadState.getCurrentException();
             if (currentException == null) {
                 /*
                  * This should be caught in native by checking 'PyErr_Occurred' and avoiding the
@@ -1071,7 +1076,7 @@ public abstract class CExtNodes {
                  */
                 return null;
             }
-            Object exception = currentException.getEscapedException();
+            Object exception = getEscapedExceptionNode.execute(inliningTarget, currentException);
             Object traceback = null;
             if (threadState.getCurrentTraceback() != null) {
                 traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
