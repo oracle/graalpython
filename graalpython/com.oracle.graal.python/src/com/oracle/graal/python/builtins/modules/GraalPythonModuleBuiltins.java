@@ -532,6 +532,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         Tool.forVariable("LD", tsLiteral("ld.lld"), tsLiteral("ld"), tsLiteral("lld")),
                         Tool.forVariable("CC", tsLiteral("clang"), tsLiteral("cc")),
                         Tool.forVariable("CXX", tsLiteral("clang++"), tsLiteral("c++")),
+                        Tool.forVariable("FC", tsLiteral("graalvm-flang"), tsLiteral("flang-new"), tsLiteral("flang")),
                         Tool.forBinary("llvm-as", tsLiteral("as")),
                         Tool.forBinary("clang-cl", tsLiteral("cl")),
                         Tool.forBinary("clang-cpp", tsLiteral("cpp")),

@@ -406,7 +406,9 @@ library_dirs = {lapack_lib}"""
             append_env_var(numpy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
             info(f"have lapack or blas ... CLFAGS={numpy_build_env['CFLAGS']}")
 
-        install_from_pypi("numpy==1.23.5", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
+        numpy_build_env["FC"] = "flang-new"
+        install_from_pypi("numpy==1.23.5", build_cmd=["build_ext", "--disable-optimization",
+                                                      "config", "--fcompiler=flang-new"], env=numpy_build_env,
                           pre_install_hook=make_site_cfg, **kwargs)
 
         # print numpy configuration
@@ -476,7 +478,7 @@ library_dirs = {lapack_lib}"""
                 xit("SciPy can only be installed within a venv.")
             from distutils.sysconfig import get_config_var
             scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
-            scipy_build_env["SCIPY_USE_PYTHRAN"] = "0"
+            scipy_build_env["FC"] = "flang-new"
 
         if have_lapack() or have_openblas():
             append_env_var(scipy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
@@ -487,7 +489,8 @@ library_dirs = {lapack_lib}"""
         pybind11(**kwargs)
         pythran(**kwargs)
 
-        install_from_pypi("scipy==1.8.1", env=scipy_build_env, **kwargs)
+        install_from_pypi("scipy==1.8.1", build_cmd=["config", "--fcompiler=flang-new"],
+                          env=scipy_build_env, **kwargs)
 
     @pip_package()
     def scikit_learn(**kwargs):
