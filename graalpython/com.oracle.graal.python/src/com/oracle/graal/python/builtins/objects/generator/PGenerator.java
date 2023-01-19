@@ -64,20 +64,24 @@ public final class PGenerator extends PythonBuiltinObject {
     private boolean running;
 
     private final boolean isCoroutine;
-    public boolean isIterableCoroutine = false;
 
-    public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return create(lang, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine);
+    // An explicit isIterableCoroutine argument is needed for iterable coroutines (generally created
+    // via
+    // types.coroutine)
+    public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
+                    PythonBuiltinClassType cls, boolean isIterableCoroutine) {
+        rootNode.createGeneratorFrame(arguments);
+        return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments, cls, isIterableCoroutine);
     }
 
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
                     PythonBuiltinClassType cls) {
-        rootNode.createGeneratorFrame(arguments);
-        return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments, cls);
+        return create(lang, name, qualname, rootNode, callTargets, arguments, cls, false);
     }
 
-    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls) {
-        super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
+    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls,
+                    boolean isIterableCoroutine) {
+        super(cls, cls.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
         this.callTargets = callTargets;
@@ -86,7 +90,7 @@ public final class PGenerator extends PythonBuiltinObject {
         this.finished = false;
         this.bytecodeRootNode = rootNode;
         this.frameInfo = (FrameInfo) rootNode.getFrameDescriptor().getInfo();
-        this.isCoroutine = cls == PythonBuiltinClassType.PCoroutine;
+        this.isCoroutine = isIterableCoroutine || cls == PythonBuiltinClassType.PCoroutine;
     }
 
     public void handleResult(PythonLanguage language, GeneratorYieldResult result) {
@@ -184,6 +188,6 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public boolean isCoroutine() {
-        return isCoroutine || isIterableCoroutine;
+        return isCoroutine;
     }
 }
