@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ public final class FrozenModules {
     private static final class Map {
         private static final PythonFrozenModule IMPORTLIB__BOOTSTRAP = new PythonFrozenModule("IMPORTLIB__BOOTSTRAP", "importlib._bootstrap", false);
         private static final PythonFrozenModule IMPORTLIB__BOOTSTRAP_EXTERNAL = new PythonFrozenModule("IMPORTLIB__BOOTSTRAP_EXTERNAL", "importlib._bootstrap_external", false);
+        private static final PythonFrozenModule ZIPIMPORT = new PythonFrozenModule("ZIPIMPORT", "zipimport", false);
         private static final PythonFrozenModule ABC = new PythonFrozenModule("ABC", "abc", false);
         private static final PythonFrozenModule CODECS = new PythonFrozenModule("CODECS", "codecs", false);
         private static final PythonFrozenModule ENCODINGS = new PythonFrozenModule("ENCODINGS", "encodings", true);
@@ -213,7 +214,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", "graalpy.java", false);
         private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", "graalpy.pip_hook", false);
         private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", "graalpy.unicodedata", false);
-        private static final PythonFrozenModule GRAALPY_ZIPIMPORT = new PythonFrozenModule("GRAALPY_ZIPIMPORT", "graalpy.zipimport", false);
     }
 
     public static final PythonFrozenModule lookup(String name) {
@@ -222,6 +222,8 @@ public final class FrozenModules {
                 return Map.IMPORTLIB__BOOTSTRAP;
             case "_frozen_importlib_external":
                 return Map.IMPORTLIB__BOOTSTRAP_EXTERNAL;
+            case "zipimport":
+                return Map.ZIPIMPORT;
             case "abc":
                 return Map.ABC;
             case "codecs":
@@ -570,8 +572,6 @@ public final class FrozenModules {
                 return Map.GRAALPY_PIP_HOOK;
             case "graalpy.unicodedata":
                 return Map.GRAALPY_UNICODEDATA;
-            case "graalpy.zipimport":
-                return Map.GRAALPY_ZIPIMPORT;
             default:
                 return null;
         }

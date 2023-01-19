@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -32,8 +32,7 @@ FROZEN = [
             # system.
             "importlib._bootstrap : _frozen_importlib",
             "importlib._bootstrap_external : _frozen_importlib_external",
-            # CPython freezes zipimport, but we have it entirely intrinsified
-            # 'zipimport',
+            'zipimport',
         ],
     ),
     (
@@ -120,7 +119,6 @@ def add_graalpython_core():
         "java",
         "pip_hook",
         "unicodedata",
-        "zipimport",
     ]:
         modname = f"graalpy.{os.path.basename(name)}"
         modpath = os.path.join(lib_graalpython, f"{name}.py")
@@ -486,7 +484,7 @@ def lower_camel_case(str):
 # write frozen files
 
 FROZEN_MODULES_HEADER = """/*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0

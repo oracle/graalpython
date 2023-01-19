@@ -513,8 +513,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/type/PythonClass.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/type/PythonManagedClass.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/type/TypeBuiltins.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/zipimporter/PZipImporter.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/zipimporter/ZipImporterBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadIndexedArgumentNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadVarArgsNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadVarKeywordsNode.java,zippy.copyright
@@ -604,7 +602,6 @@ graalpython/lib-graalpython/modules/hpy/test/test_slots.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_slots_legacy.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_support.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_tracker.py,hpy.copyright
-graalpython/lib-graalpython/zipimport.py,python.copyright
 mx.graalpython/mx_graalpython.py,zippy.copyright
 mx.graalpython/mx_graalpython_bench_param.py,zippy.copyright
 mx.graalpython/mx_graalpython_benchmark.py,zippy.copyright
