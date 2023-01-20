@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -225,21 +225,27 @@ public class PythonProvider implements LanguageProvider {
         List<Snippet> snippets = new ArrayList<>();
 
         // @formatter:off
-        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, NUMBER, array(ANY)), AddVerifier.INSTANCE, union(STRING, BOOLEAN, NUMBER, array(ANY)), union(STRING, BOOLEAN, NUMBER, array(ANY)));
-        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(STRING, NUMBER, array(ANY)), MulVerifier.INSTANCE, union(STRING, BOOLEAN, NUMBER, array(ANY)), union(STRING, BOOLEAN, NUMBER, array(ANY)));
+        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", NUMBER, new NonPrimitiveNumberParameterThrows(AddVerifier.INSTANCE), union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, array(ANY)), AddVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(STRING, array(ANY)));
+        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, array(ANY)), AddVerifier.INSTANCE, union(STRING, array(ANY)), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, array(ANY)), AddVerifier.INSTANCE, union(STRING, array(ANY)), union(STRING, array(ANY)));
+        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", NUMBER, new NonPrimitiveNumberParameterThrows(MulVerifier.INSTANCE), union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(STRING, array(ANY)), MulVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(STRING, array(ANY)));
+        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(STRING, array(ANY)), MulVerifier.INSTANCE, union(STRING, array(ANY)), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(STRING, array(ANY)), MulVerifier.INSTANCE, union(STRING, array(ANY)), union(STRING, array(ANY)));
 
-        addExpressionSnippet(context, snippets, "-", "lambda x, y: x - y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "-", "lambda x, y: x - y", NUMBER, NonPrimitiveNumberParameterThrows.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, PDivByZeroVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, new NonPrimitiveNumberParameterThrows(PDivByZeroVerifier.INSTANCE), union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
         addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY), hash(ANY, ANY)));
 
         addExpressionSnippet(context, snippets, "==", "lambda x, y: x == y", BOOLEAN, ANY, ANY);
         addExpressionSnippet(context, snippets, "!=", "lambda x, y: x != y", BOOLEAN, ANY, ANY);
-        addExpressionSnippet(context, snippets, ">", "lambda x, y: x > y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, ">=", "lambda x, y: x >= y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, "<", "lambda x, y: x < y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, "<=", "lambda x, y: x <= y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, ">", "lambda x, y: x > y", BOOLEAN, NonPrimitiveNumberParameterThrows.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, ">=", "lambda x, y: x >= y", BOOLEAN, NonPrimitiveNumberParameterThrows.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "<", "lambda x, y: x < y", BOOLEAN, NonPrimitiveNumberParameterThrows.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "<=", "lambda x, y: x <= y", BOOLEAN, NonPrimitiveNumberParameterThrows.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
         addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
@@ -523,5 +529,36 @@ public class PythonProvider implements LanguageProvider {
         }
 
         private static final PDivByZeroVerifier INSTANCE = new PDivByZeroVerifier();
+    }
+
+    private static class NonPrimitiveNumberParameterThrows extends PResultVerifier {
+
+        private final ResultVerifier next;
+
+        public NonPrimitiveNumberParameterThrows(PResultVerifier next) {
+            this.next = next != null ? next : ResultVerifier.getDefaultResultVerifier();
+        }
+
+        public void accept(SnippetRun snippetRun) throws PolyglotException {
+            boolean nonPrimitiveNumberParameter = false;
+            boolean numberOrBooleanParameters = true;
+            for (Value actualParameter : snippetRun.getParameters()) {
+                if (!actualParameter.isBoolean() && !actualParameter.isNumber()) {
+                    numberOrBooleanParameters = false;
+                }
+                if (actualParameter.isNumber() && !actualParameter.fitsInLong() && !actualParameter.fitsInDouble()) {
+                    nonPrimitiveNumberParameter = true;
+                }
+            }
+            if (numberOrBooleanParameters && nonPrimitiveNumberParameter) {
+                if (snippetRun.getException() == null) {
+                    throw new AssertionError("TypeError expected but no error has been thrown.");
+                } // else exception expected => ignore
+            } else {
+                next.accept(snippetRun); // no exception expected
+            }
+        }
+
+        private static final NonPrimitiveNumberParameterThrows INSTANCE = new NonPrimitiveNumberParameterThrows(null);
     }
 }
