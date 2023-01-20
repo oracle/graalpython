@@ -218,7 +218,7 @@ public final class DictBuiltins extends PythonBuiltins {
             if (retVal != null) {
                 return retVal;
             }
-            throw raise(PythonBuiltinClassType.KeyError, ErrorMessages.S, key);
+            throw raise(KeyError, new Object[]{key});
         }
     }
 
@@ -322,7 +322,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(TruffleString key) {
-            throw raise(KeyError, ErrorMessages.S, key);
+            throw raise(KeyError, new Object[]{key});
         }
 
         @Fallback
@@ -352,7 +352,7 @@ public final class DictBuiltins extends PythonBuiltins {
             if (found != null) {
                 return PNone.NONE;
             }
-            throw raise(KeyError, ErrorMessages.S, key);
+            throw raise(KeyError, new Object[]{key});
         }
     }
 
