@@ -226,6 +226,12 @@ suite = {
             "path": "graalpython/com.oracle.graal.python.pegparser.generator",
             "source": [],
         },
+
+        "graalpy-virtualenv": {
+            "type": "python",
+            "path": "graalpy_virtualenv",
+            "source": [],
+        }
     },
 
     "projects": {
@@ -720,6 +726,9 @@ suite = {
                                     "path": "*",
                                 },
                             ],
+                            "./lib-graalpython/modules/graalpy_virtualenv": [
+                                "file:graalpy_virtualenv/graalpy_virtualenv",
+                            ],
                             "./Include/": [
                                 "file:graalpython/com.oracle.graal.python.cext/include/*",
                             ],
@@ -745,6 +754,9 @@ suite = {
                                     "exclude": ["CEXT-WINDOWS-README.md"],
                                 },
                             ],
+                            "./lib/graalpy<graal_ver:major_minor_nodot>/modules/graalpy_virtualenv": [
+                                "file:graalpy_virtualenv/graalpy_virtualenv",
+                            ],
                             "./include/python<py_ver:major_minor_nodot>/": [
                                 "file:graalpython/com.oracle.graal.python.cext/include/*",
                             ],
@@ -753,6 +765,15 @@ suite = {
                 },
             },
             "maven": False,
+        },
+
+        "GRAALPY_VIRTUALENV": {
+            "native": True,
+            "maven": False,
+            "description": "graalpy-virtualenv plugin sources usable to be installed into other interpreters",
+            "layout": {
+                "graalpy_virtualenv": "file:graalpy_virtualenv",
+            },
         },
 
         "GRAALPYTHON_GRAALVM_DOCS": {
