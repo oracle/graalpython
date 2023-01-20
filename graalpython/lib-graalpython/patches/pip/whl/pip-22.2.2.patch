@@ -50,7 +50,7 @@ new file mode 100644
 index 000000000..d8d97eb4b
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,144 @@
+@@ -0,0 +1,145 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -84,6 +84,7 @@ index 000000000..d8d97eb4b
 +    if not name_ver_match:
 +        print("GraalPy warning: could not parse package name, version, or format from '{}'.\n"
 +              "Could not determine if any GraalPy specific patches need to be applied.".format(archive_name))
++        return
 +
 +    suffix = name_ver_match.group(5)
 +    package_name = name_ver_match.group(1)
