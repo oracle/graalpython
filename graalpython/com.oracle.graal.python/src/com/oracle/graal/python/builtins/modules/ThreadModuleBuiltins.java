@@ -149,7 +149,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public static long getId() {
-            return Thread.currentThread().getId();
+            return PThread.getThreadId(Thread.currentThread());
         }
     }
 
@@ -159,7 +159,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public static long getId() {
-            return Thread.currentThread().getId();
+            return PThread.getThreadId(Thread.currentThread());
         }
     }
 

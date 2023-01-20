@@ -79,11 +79,11 @@ public final class PException extends AbstractTruffleException {
     public static final PException NO_EXCEPTION = new PException(null, null);
 
     private String message = null;
-    protected final PBaseException pythonException;
-    private PFrame.Reference frameInfo;
-    private PBytecodeRootNode catchRootNode;
+    protected final transient PBaseException pythonException;
+    private transient PFrame.Reference frameInfo;
+    private transient PBytecodeRootNode catchRootNode;
     private int catchBci;
-    private LazyTraceback traceback;
+    private transient LazyTraceback traceback;
     private boolean reified = false;
     private boolean skipFirstTracebackFrame;
     private int tracebackFrameCount;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,6 +88,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     static final int CHAR_MAX = 127;
 
     @TruffleBoundary
+    @SuppressWarnings("deprecation") // remove once we move to Java 21
     public static Locale fromPosix(TruffleString tposixLocaleId) {
         // format: [language[_territory][.variant][@modifier]]
         // 2 lower _ 2 UPPER .

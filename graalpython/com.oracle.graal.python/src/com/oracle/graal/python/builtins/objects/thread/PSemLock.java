@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,7 @@ public final class PSemLock extends AbstractPythonLock {
     protected boolean acquireNonBlocking() {
         boolean ret = semaphore.tryAcquire();
         if (ret) {
-            lastThreadID = Thread.currentThread().getId();
+            lastThreadID = PThread.getThreadId(Thread.currentThread());
             count++;
         }
         return ret;
@@ -87,7 +87,7 @@ public final class PSemLock extends AbstractPythonLock {
             b[0] = true;
         }, semaphore);
         if (b[0]) {
-            lastThreadID = Thread.currentThread().getId();
+            lastThreadID = PThread.getThreadId(Thread.currentThread());
             count++;
         }
         return b[0];
@@ -99,7 +99,7 @@ public final class PSemLock extends AbstractPythonLock {
         boolean[] b = new boolean[1];
         TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> b[0] = s.tryAcquire(timeout, TimeUnit.MILLISECONDS), semaphore);
         if (b[0]) {
-            lastThreadID = Thread.currentThread().getId();
+            lastThreadID = PThread.getThreadId(Thread.currentThread());
             count++;
         }
         return b[0];
@@ -129,7 +129,7 @@ public final class PSemLock extends AbstractPythonLock {
 
     public void increaseCount() {
         count++;
-        lastThreadID = Thread.currentThread().getId();
+        lastThreadID = PThread.getThreadId(Thread.currentThread());
     }
 
     public void decreaseCount() {
@@ -138,7 +138,7 @@ public final class PSemLock extends AbstractPythonLock {
 
     @TruffleBoundary
     public boolean isMine() {
-        return count > 0 && lastThreadID == Thread.currentThread().getId();
+        return count > 0 && lastThreadID == PThread.getThreadId(Thread.currentThread());
     }
 
     public boolean isZero() {

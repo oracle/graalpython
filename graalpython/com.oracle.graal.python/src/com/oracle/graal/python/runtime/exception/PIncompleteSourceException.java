@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,7 @@ public class PIncompleteSourceException extends AbstractTruffleException {
 
     private static final long serialVersionUID = 4393080397807767467L;
 
-    private Source source;
+    private transient Source source;
     private final int line;
 
     public PIncompleteSourceException(String message, Throwable cause, int line, Source source) {

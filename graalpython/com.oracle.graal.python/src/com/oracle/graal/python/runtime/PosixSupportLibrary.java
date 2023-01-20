@@ -833,7 +833,7 @@ public abstract class PosixSupportLibrary extends Library {
         private static final long serialVersionUID = 3013253817849329391L;
 
         private final int errorCode;
-        private final TruffleString msg;
+        private final transient TruffleString msg;
 
         public GetAddrInfoException(int errorCode, TruffleString message) {
             super(message.toJavaStringUncached());
@@ -926,7 +926,7 @@ public abstract class PosixSupportLibrary extends Library {
         private static final long serialVersionUID = -115762483478883093L;
 
         private final int errorCode;
-        private final TruffleString msg;
+        private final transient TruffleString msg;
 
         public PosixException(int errorCode, TruffleString message) {
             this.errorCode = errorCode;

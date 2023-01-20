@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
 public final class GeneratorReturnException extends PythonControlFlowException {
     private static final long serialVersionUID = -7509673125893533425L;
 
-    public final Object value;
+    public final transient Object value;
 
     public GeneratorReturnException(Object value) {
         this.value = value;

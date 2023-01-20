@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,7 +34,7 @@ public final class SequenceStoreException extends ControlFlowException {
 
     private static final long serialVersionUID = -2938582159978230604L;
 
-    private final Object indicationValue;
+    private final transient Object indicationValue;
 
     public SequenceStoreException(Object indicationValue) {
         this.indicationValue = indicationValue;

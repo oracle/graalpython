@@ -1939,7 +1939,7 @@ public abstract class TypeNodes {
 
     @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
     protected abstract static class AllocateTypeWithMetaclassNode extends Node implements IndirectCallNode {
-        private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
+        private static final int SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
         @Child private GetAnyAttributeNode getAttrNode;
         @Child private ReadAttributeFromObjectNode readAttr;

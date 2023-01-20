@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -167,7 +167,7 @@ public final class NumericSupport {
             }
         }
 
-        bits |= (e << 10) | (sign << 15);
+        bits |= (short) ((e << 10) | (sign << 15));
         return bits;
     }
 
@@ -195,7 +195,7 @@ public final class NumericSupport {
         if (e == 0) {
             e = -14;
         } else {
-            value += 1.0;
+            value += (float) 1.0;
             e -= 15;
         }
         value = Math.scalb(value, e);
