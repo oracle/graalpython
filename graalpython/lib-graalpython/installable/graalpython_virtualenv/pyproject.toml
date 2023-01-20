@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "graalpy-virtualenv"
+version = "0.0.1"
+license = "UPL-1.0"
+authors = [
+    { name = "GraalPy Developers", email = "graalvm-users@oss.oracle.com" },
+]
+keywords = [
+    "environments",
+    "isolated",
+    "virtual",
+]
+dependencies = [
+    "virtualenv",
+]
+
+[project.entry-points."virtualenv.create"]
+graalpy-posix = "graalpy_virtualenv.graalpy:GraalPyCreatorPosix"
+
+[project.entry-points."virtualenv.seed"]
+graalpy = "graalpy_virtualenv:graalpy.GraalPySeeder"
+
+[project.urls]
+Homepage = "https://graalvm.org/python"
