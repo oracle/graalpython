@@ -36,41 +36,50 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from sys import meta_path
+import sys
+
 WARNED = False
+
+
+def print_version_warning():
+    global WARNED
+    if not WARNED:
+        from warnings import warn
+        warn("You are using an untested version of pip. GraalPy " +
+             "provides patches and workarounds for a number of packages when used with " +
+             "compatible pip versions. We recommend to stick with the pip version that " +
+             "ships with this version of GraalPy.", RuntimeWarning)
+        WARNED = True
+
+
+class PipLoader:
+    def __init__(self, real_loader):
+        self.real_loader = real_loader
+
+    def create_module(self, spec):
+        return self.real_loader.create_module(spec)
+
+    def exec_module(self, module):
+        self.real_loader.exec_module(module)
+        if not getattr(module, '__GRAALPY_PATCHED', False):
+            print_version_warning()
 
 
 class PipImportHook:
     @staticmethod
-    def print_version_warning():
-        global WARNED
-        if not WARNED:
-            from warnings import warn
-            warn("You are using an untested version of pip. GraalPy " +
-                 "provides patches and workarounds for a number of packages when used with " +
-                 "compatible pip versions. We recommend to stick with the pip version that " +
-                 "ships with this version of GraalPy.", RuntimeWarning)
-            WARNED = True
-
-    @staticmethod
-    def _check_patched_pip(fullname, path, target):
-        from os.path import join, exists
-        for finder in meta_path:
+    def _wrap_real_spec(fullname, path, target):
+        for finder in sys.meta_path:
             if finder is PipImportHook:
                 continue
             real_spec = finder.find_spec(fullname, path, target)
             if real_spec:
-                search_locations = getattr(real_spec, 'submodule_search_locations', [])
-                for location in search_locations:
-                    path_to_check = join(location, '_internal', 'utils', 'graalpy.py')
-                    if exists(path_to_check):
-                        return
-                PipImportHook.print_version_warning()
+                real_spec.loader = PipLoader(real_spec.loader)
+                return real_spec
 
     @staticmethod
     def find_spec(fullname, path, target=None):
         if fullname == "pip":
-            PipImportHook._check_patched_pip(fullname, path, target)
+            return PipImportHook._wrap_real_spec(fullname, path, target)
 
 
-meta_path.insert(0, PipImportHook)
+sys.meta_path.insert(0, PipImportHook)
