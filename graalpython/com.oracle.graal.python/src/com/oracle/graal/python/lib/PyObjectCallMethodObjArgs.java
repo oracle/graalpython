@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
@@ -120,6 +121,7 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
         }
     }
 
+    @NeverDefault
     public static PyObjectCallMethodObjArgs create() {
         return PyObjectCallMethodObjArgsNodeGen.create();
     }

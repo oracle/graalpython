@@ -44,8 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -136,6 +136,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -613,14 +614,17 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @NeverDefault
         protected PBytes createCertFileKey() {
             return factory().createBytes("SSL_CERT_FILE".getBytes());
         }
 
+        @NeverDefault
         protected PBytes createCertDirKey() {
             return factory().createBytes("SSL_CERT_DIR".getBytes());
         }
 
+        @NeverDefault
         protected static GetAttributeNode createEnvironLookup() {
             return GetAttributeNode.create(T_ENVIRON);
         }

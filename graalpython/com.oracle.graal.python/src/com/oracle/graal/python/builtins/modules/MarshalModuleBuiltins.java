@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO;
@@ -145,6 +147,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return DumpNodeClinicProviderGen.INSTANCE;
         }
 
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallWriteNode() {
             return LookupAndCallBinaryNode.create(T_WRITE);
         }
@@ -192,6 +195,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "load", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadNode extends PythonBuiltinNode {
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallReadNode() {
             return LookupAndCallBinaryNode.create(T_READ);
         }

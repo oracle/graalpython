@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -80,6 +81,7 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
         return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, j, Encoding.US_ASCII, true), TS_ENCODING);
     }
 
+    @NeverDefault
     public static PyObjectAsciiNode create() {
         return PyObjectAsciiNodeGen.create();
     }

@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
@@ -225,6 +226,7 @@ public abstract class PRaiseNode extends Node {
         return toTruffleStringUncached(msg != null ? msg : e.getClass().getSimpleName());
     }
 
+    @NeverDefault
     public static PRaiseNode create() {
         return PRaiseNodeGen.create();
     }

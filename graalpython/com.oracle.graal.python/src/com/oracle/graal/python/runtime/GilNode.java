@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -239,6 +240,7 @@ public abstract class GilNode extends Node {
      */
     public abstract boolean tryRelease();
 
+    @NeverDefault
     public static GilNode create() {
         return new Cached();
     }

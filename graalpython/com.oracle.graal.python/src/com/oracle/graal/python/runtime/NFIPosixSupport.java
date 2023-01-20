@@ -41,6 +41,8 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -275,6 +277,7 @@ public final class NFIPosixSupport extends PosixSupport {
             this.resultInterop = resultInterop;
         }
 
+        @NeverDefault
         public static InvokeNativeFunction create() {
             return new InvokeNativeFunction(InteropLibrary.getFactory().createDispatched(2), null);
         }

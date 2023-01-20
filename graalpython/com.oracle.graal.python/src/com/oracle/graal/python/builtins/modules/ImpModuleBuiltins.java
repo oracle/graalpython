@@ -48,8 +48,8 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_OKAY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SU;
 import static com.oracle.graal.python.nodes.StringLiterals.T_HPY_SUFFIX;
@@ -131,6 +131,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -274,6 +275,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(getMagicNumberBytes(frame));
         }
 
+        @NeverDefault
         protected byte[] getMagicNumberBytes(VirtualFrame frame) {
             PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, T_LITTLE, false);
             byte[] magicBytes = bufferLib.getInternalOrCopiedByteArray(magic);

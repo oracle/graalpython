@@ -67,6 +67,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -204,6 +205,7 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         return checkLen(raiseNode, len);
     }
 
+    @NeverDefault
     public static PyObjectSizeNode create() {
         return PyObjectSizeNodeGen.create();
     }

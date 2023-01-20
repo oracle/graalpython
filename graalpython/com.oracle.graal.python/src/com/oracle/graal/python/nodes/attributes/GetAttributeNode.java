@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -79,6 +80,7 @@ public final class GetAttributeNode extends PNodeWithContext {
         getFixedAttributeNode = GetFixedAttributeNode.create(key);
     }
 
+    @NeverDefault
     public static GetAttributeNode create(TruffleString key) {
         return new GetAttributeNode(key);
     }
@@ -256,6 +258,7 @@ public final class GetAttributeNode extends PNodeWithContext {
             }
         }
 
+        @NeverDefault
         public static GetFixedAttributeNode create(TruffleString key) {
             return GetFixedAttributeNodeGen.create(key);
         }
@@ -272,6 +275,7 @@ public final class GetAttributeNode extends PNodeWithContext {
             }
         }
 
+        @NeverDefault
         public static GetAnyAttributeNode create() {
             return new GetAnyAttributeNode();
         }

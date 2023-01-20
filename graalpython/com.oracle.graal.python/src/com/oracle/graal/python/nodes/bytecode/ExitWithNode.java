@@ -57,6 +57,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
@@ -111,6 +112,7 @@ public abstract class ExitWithNode extends PNodeWithContext {
         return stackTop;
     }
 
+    @NeverDefault
     public static ExitWithNode create() {
         return ExitWithNodeGen.create();
     }

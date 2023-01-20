@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -56,7 +57,7 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     public abstract PDict execute(Frame frame, Object subject, Object[] keys);
 
     @Specialization(guards = "keysArg.length <= 32")
-    static PDict copy(VirtualFrame frame, Object subject, @SuppressWarnings("unused") Object[] keysArg,
+    static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keysArg,
                     @Cached(value = "keysArg", dimensions = 1) Object[] keys,
                     @Cached PythonObjectFactory factory,
                     @Cached DictNodes.UpdateNode updateNode,

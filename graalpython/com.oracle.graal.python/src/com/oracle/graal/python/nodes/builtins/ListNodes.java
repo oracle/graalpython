@@ -80,6 +80,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -153,6 +154,7 @@ public abstract class ListNodes {
             throw CompilerDirectives.shouldNotReachHere("list does not support iterable object " + value);
         }
 
+        @NeverDefault
         public static ConstructListNode create() {
             return ConstructListNodeGen.create();
         }
@@ -293,6 +295,7 @@ public abstract class ListNodes {
 
         public abstract void execute(PList list, Object value);
 
+        @NeverDefault
         static BranchProfile[] getUpdateStoreProfile() {
             return new BranchProfile[1];
         }
@@ -328,6 +331,7 @@ public abstract class ListNodes {
             }
         }
 
+        @NeverDefault
         public static AppendNode create() {
             return AppendNodeGen.create();
         }

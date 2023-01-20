@@ -55,6 +55,7 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -135,6 +136,7 @@ public enum UnaryArithmetic {
             };
         }
 
+        @NeverDefault
         static LookupAndCallUnaryNode createCallNode(TruffleString name, Supplier<NoAttributeHandler> handler) {
             return LookupAndCallUnaryNode.create(name, handler);
         }

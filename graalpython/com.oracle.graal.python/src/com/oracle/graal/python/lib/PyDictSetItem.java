@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -50,7 +51,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -69,33 +70,36 @@ public abstract class PyDictSetItem extends Node {
     // We never need a frame for setting string keys
     @Specialization
     static void setItemWithStringKey(PDict dict, TruffleString key, Object item,
+                    @Bind("this") Node inliningTarget,
                     @Shared("setItem") @Cached HashingStorageSetItem setItem,
-                    @Shared("updateStorage") @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
+                    @Shared("updateStorage") @Cached InlinedCountingConditionProfile updateStorageProfile) {
         HashingStorage dictStorage = dict.getDictStorage();
         HashingStorage updatedStorage = setItem.execute(dictStorage, key, item);
-        if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
+        if (updateStorageProfile.profile(inliningTarget, updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
     }
 
     @Specialization(replaces = "setItemWithStringKey")
     static void setItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key, Object item,
+                    @Bind("this") Node inliningTarget,
                     @Shared("setItem") @Cached HashingStorageSetItem setItem,
-                    @Shared("updateStorage") @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
+                    @Shared("updateStorage") @Cached InlinedCountingConditionProfile updateStorageProfile) {
         HashingStorage dictStorage = dict.getDictStorage();
         HashingStorage updatedStorage = setItem.execute(frame, dictStorage, key, item);
-        if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
+        if (updateStorageProfile.profile(inliningTarget, updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
     }
 
     @Specialization(replaces = "setItemCached")
     static void setItem(PDict dict, Object key, Object item,
+                    @Bind("this") Node inliningTarget,
                     @Shared("setItem") @Cached HashingStorageSetItem setItem,
-                    @Shared("updateStorage") @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
+                    @Shared("updateStorage") @Cached InlinedCountingConditionProfile updateStorageProfile) {
         HashingStorage dictStorage = dict.getDictStorage();
         HashingStorage updatedStorage = setItem.execute(null, dictStorage, key, item);
-        if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
+        if (updateStorageProfile.profile(inliningTarget, updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
     }

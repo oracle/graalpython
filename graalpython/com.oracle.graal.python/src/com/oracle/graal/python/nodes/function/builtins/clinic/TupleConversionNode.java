@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.A
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
@@ -71,6 +72,7 @@ public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
     }
 
     @ClinicConverterFactory
+    @NeverDefault
     public static TupleConversionNode create() {
         return TupleConversionNodeGen.create();
     }

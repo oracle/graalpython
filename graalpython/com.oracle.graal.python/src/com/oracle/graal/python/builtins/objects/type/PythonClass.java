@@ -193,7 +193,7 @@ public final class PythonClass extends PythonManagedClass {
     protected SourceSection getSourceLocation(
                     @Exclusive @Cached GilNode gil,
                     @Bind("gil.acquire()") boolean mustRelease,
-                    @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) throws UnsupportedMessageException {
+                    @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true, neverDefault = false) SourceSection section) throws UnsupportedMessageException {
         try {
             if (section != null) {
                 return section;
@@ -210,7 +210,7 @@ public final class PythonClass extends PythonManagedClass {
     protected boolean hasSourceLocation(
                     @Exclusive @Cached GilNode gil,
                     @Bind("gil.acquire()") boolean mustRelease,
-                    @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) {
+                    @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true, neverDefault = false) SourceSection section) {
         try {
             return section != null;
         } finally {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,8 +52,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongExactNodeGen;
-import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongLossyNodeGen;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -73,22 +71,6 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
     protected long toLongInternal(@SuppressWarnings("unused") PInt x) {
         CompilerAsserts.neverPartOfCompilation();
         throw new IllegalStateException("should not be reached");
-    }
-
-    public static CoerceToJavaLongNode create() {
-        return CoerceToJavaLongExactNodeGen.create();
-    }
-
-    public static CoerceToJavaLongNode createLossy() {
-        return CoerceToJavaLongLossyNodeGen.create();
-    }
-
-    public static CoerceToJavaLongNode getUncached() {
-        return CoerceToJavaLongExactNodeGen.getUncached();
-    }
-
-    public static CoerceToJavaLongNode createLossyUncached() {
-        return CoerceToJavaLongLossyNodeGen.getUncached();
     }
 
     @Specialization

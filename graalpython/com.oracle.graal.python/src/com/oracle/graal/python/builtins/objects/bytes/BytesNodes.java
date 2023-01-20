@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -204,6 +205,7 @@ public abstract class BytesNodes {
             return joinedBytes;
         }
 
+        @NeverDefault
         public static BytesJoinNode create() {
             return BytesJoinNodeGen.create();
         }
@@ -243,6 +245,7 @@ public abstract class BytesNodes {
             }
         }
 
+        @NeverDefault
         public static ToBytesNode create() {
             return ToBytesNodeGen.create(TypeError, EXPECTED_BYTESLIKE_GOT_P);
         }
@@ -379,6 +382,7 @@ public abstract class BytesNodes {
             return -1;
         }
 
+        @NeverDefault
         public static FindNode create() {
             return FindNodeGen.create();
         }
@@ -414,6 +418,7 @@ public abstract class BytesNodes {
             return -1;
         }
 
+        @NeverDefault
         public static RFindNode create() {
             return BytesNodesFactory.RFindNodeGen.create();
         }
@@ -504,9 +509,6 @@ public abstract class BytesNodes {
             }
         }
 
-        public static FromIteratorNode create() {
-            return BytesNodesFactory.FromIteratorNodeGen.create();
-        }
     }
 
     public abstract static class CmpNode extends PNodeWithContext {
@@ -569,6 +571,7 @@ public abstract class BytesNodes {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static ExpectStringNode create(@ArgumentIndex int argNum, String className) {
             return BytesNodesFactory.ExpectStringNodeGen.create(argNum, className);
         }
@@ -891,14 +894,6 @@ public abstract class BytesNodes {
                 result = 31 * result + bufferLib.readByte(buffer, i);
             }
             return result;
-        }
-
-        public static HashBufferNode create() {
-            return BytesNodesFactory.HashBufferNodeGen.create();
-        }
-
-        public static HashBufferNode getUncached() {
-            return BytesNodesFactory.HashBufferNodeGen.getUncached();
         }
     }
 

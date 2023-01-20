@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -59,12 +61,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 
 /**
  * Equivalent of CPython's {@code PyMapping_Check}.
@@ -148,6 +149,7 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
         return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
+    @NeverDefault
     public static PyMappingCheckNode create() {
         return PyMappingCheckNodeGen.create();
     }

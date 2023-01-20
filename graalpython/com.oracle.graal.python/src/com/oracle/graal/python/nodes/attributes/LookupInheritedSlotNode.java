@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.NodeCost;
 
 /**
@@ -61,6 +62,7 @@ public final class LookupInheritedSlotNode extends PNodeWithContext {
         lookupInMRONode = LookupCallableSlotInMRONode.create(slot);
     }
 
+    @NeverDefault
     public static LookupInheritedSlotNode create(SpecialMethodSlot slot) {
         return new LookupInheritedSlotNode(slot);
     }

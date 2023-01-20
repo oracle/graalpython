@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -277,6 +279,7 @@ public abstract class IsNode extends Node implements BinaryOp {
         return false;
     }
 
+    @NeverDefault
     public static IsNode create() {
         return IsNodeGen.create();
     }

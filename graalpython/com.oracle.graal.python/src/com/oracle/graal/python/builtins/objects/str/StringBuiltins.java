@@ -172,6 +172,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -448,6 +449,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return eqResult;
         }
 
+        @NeverDefault
         public static EqNode create() {
             return EqNodeFactory.create();
         }
@@ -470,6 +472,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return cmpResult < 0;
         }
 
+        @NeverDefault
         public static LtNode create() {
             return LtNodeFactory.create();
         }
@@ -687,6 +690,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return T_STARTSWITH;
         }
 
+        @NeverDefault
         public static StartsWithNode create() {
             return StartsWithNodeFactory.create();
         }
@@ -721,6 +725,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return T_ENDSWITH;
         }
 
+        @NeverDefault
         public static EndsWithNode create() {
             return EndsWithNodeFactory.create();
         }
@@ -2487,7 +2492,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"step == slice.step", "!isSimpleSlice(slice)", "!isEmptySlice(slice)"}, limit = "1")
         static TruffleString doGenericCachedStep(TruffleString value, SliceInfo slice,
-                        @Cached("slice.step") int step,
+                        @Cached(value = "slice.step", neverDefault = false) int step,
                         @Shared("loop") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Shared("len") @Cached LenOfRangeNode sliceLen,
                         @Shared("appendCP") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,

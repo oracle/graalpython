@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T__CHUNK_SIZE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
@@ -203,6 +205,7 @@ public class DescriptorBuiltins extends PythonBuiltins {
             return getClassNode.execute(object);
         }
 
+        @NeverDefault
         public static DescriptorCheckNode create() {
             return new DescriptorCheckNode();
         }

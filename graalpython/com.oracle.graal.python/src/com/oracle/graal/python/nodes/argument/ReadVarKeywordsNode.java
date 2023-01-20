@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -42,8 +44,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 @NodeInfo(shortName = "**kwargs")
 public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
@@ -96,14 +96,14 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
 
     @Specialization(guards = {"getKwargLen(frame) == cachedLen", "cachedLen == 0"}, limit = "1")
     Object noKeywordArgs(@SuppressWarnings("unused") VirtualFrame frame,
-                    @SuppressWarnings("unused") @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
+                    @SuppressWarnings("unused") @Cached(value = "getAndCheckKwargLen(frame)", neverDefault = false) int cachedLen) {
         return returnValue(PKeyword.EMPTY_KEYWORDS);
     }
 
     @Specialization(guards = {"getKwargLen(frame) == cachedLen"}, limit = "getLimit()")
     @ExplodeLoop
     Object extractKwargs(VirtualFrame frame,
-                    @Cached("getAndCheckKwargLen(frame)") int cachedLen,
+                    @Cached(value = "getAndCheckKwargLen(frame)") int cachedLen,
                     @Cached TruffleString.EqualNode equalNode) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
         PKeyword[] remArguments = PKeyword.create(cachedLen);

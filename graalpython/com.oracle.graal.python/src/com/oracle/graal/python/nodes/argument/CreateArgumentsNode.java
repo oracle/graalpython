@@ -85,6 +85,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
@@ -97,6 +98,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @ImportStatic({PythonOptions.class, PGuards.class})
 @GenerateUncached
 public abstract class CreateArgumentsNode extends PNodeWithContext {
+    @NeverDefault
     public static CreateArgumentsNode create() {
         return CreateArgumentsNodeGen.create();
     }
@@ -233,9 +235,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
                         @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
                         @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
-                        @Cached("userArguments.length") int cachedLength,
-                        @Cached("signature.getMaxNumOfPositionalArgs()") int cachedMaxPos,
-                        @Cached("signature.getNumOfRequiredKeywords()") int cachedNumKwds,
+                        @Cached(value = "userArguments.length", neverDefault = false) int cachedLength,
+                        @Cached(value = "signature.getMaxNumOfPositionalArgs()", neverDefault = false) int cachedMaxPos,
+                        @Cached(value = "signature.getNumOfRequiredKeywords()", neverDefault = false) int cachedNumKwds,
                         @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
             return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, classObject, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds,
@@ -251,7 +253,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
                         @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
                         @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
-                        @Cached("userArguments.length") int cachedLength,
+                        @Cached(value = "userArguments.length", neverDefault = false) int cachedLength,
                         @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
             return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, classObject, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),

@@ -97,6 +97,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -265,6 +266,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static ExpectIntNode create(@ClinicConverterFactory.DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
             assert useDefaultForNone; // the other way around is not supported yet by this convertor
             return ZLibModuleBuiltinsFactory.ExpectIntNodeGen.create(defaultValue);
@@ -304,6 +306,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static ExpectByteLikeNode create(@ClinicConverterFactory.DefaultValue byte[] defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
             assert useDefaultForNone; // the other way around is not supported yet by this convertor
             return ZLibModuleBuiltinsFactory.ExpectByteLikeNodeGen.create(defaultValue);

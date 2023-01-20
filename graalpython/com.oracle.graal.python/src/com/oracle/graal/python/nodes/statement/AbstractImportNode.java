@@ -86,6 +86,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -432,6 +433,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             return new byte[]{Byte.MIN_VALUE};
         }
 
+        @NeverDefault
         protected static byte[] singleByte() {
             return new byte[1];
         }

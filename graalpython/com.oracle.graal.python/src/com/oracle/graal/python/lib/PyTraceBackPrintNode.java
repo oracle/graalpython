@@ -80,6 +80,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -405,6 +406,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         throw raiseNode.raiseBadInternalCall();
     }
 
+    @NeverDefault
     public static PyTraceBackPrintNode create() {
         return PyTraceBackPrintNodeGen.create();
     }

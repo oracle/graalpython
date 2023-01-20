@@ -86,6 +86,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -142,6 +143,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         static ProcessArgsConversionNode create() {
             return ProcessArgsConversionNodeGen.create();
         }
@@ -175,6 +177,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         static EnvConversionNode create() {
             return EnvConversionNodeGen.create();
         }

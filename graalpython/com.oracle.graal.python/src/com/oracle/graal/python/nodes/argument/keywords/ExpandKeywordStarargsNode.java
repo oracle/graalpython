@@ -77,4 +77,8 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_ISNT_MAPPING, starargs);
         }
     }
+
+    public static ExpandKeywordStarargsNode getUncached() {
+        return ExpandKeywordStarargsNodeGen.getUncached();
+    }
 }

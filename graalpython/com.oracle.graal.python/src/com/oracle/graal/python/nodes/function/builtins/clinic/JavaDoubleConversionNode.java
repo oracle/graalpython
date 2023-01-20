@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -88,11 +89,13 @@ public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Double)
+    @NeverDefault
     public static JavaDoubleConversionNode create(@DefaultValue double defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return JavaDoubleConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Double)
+    @NeverDefault
     public static JavaDoubleConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
         assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
         return JavaDoubleConversionNodeGen.create(0.0, false);

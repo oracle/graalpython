@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -72,6 +73,7 @@ abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContex
         return setStorage;
     }
 
+    @NeverDefault
     static HashingStorageFromListSequenceStorageNode create() {
         return HashingStorageFromListSequenceStorageNodeGen.create();
     }

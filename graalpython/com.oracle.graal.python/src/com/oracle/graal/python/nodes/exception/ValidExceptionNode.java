@@ -110,8 +110,4 @@ public abstract class ValidExceptionNode extends Node {
     static boolean isAnException(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object type) {
         return false;
     }
-
-    static ValidExceptionNode create() {
-        return ValidExceptionNodeGen.create();
-    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,10 +68,6 @@ public abstract class CoerceToComplexNode extends PNodeWithRaise {
     @Child private PyFloatAsDoubleNode asDoubleNode;
 
     public abstract PComplex execute(VirtualFrame frame, Object x);
-
-    static CoerceToComplexNode create() {
-        return CoerceToComplexNodeGen.create();
-    }
 
     @Specialization
     PComplex toComplex(long x,

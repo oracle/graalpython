@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -79,6 +80,7 @@ public abstract class PyDictGetItem extends Node {
         return getItem.execute(null, dict.getDictStorage(), item);
     }
 
+    @NeverDefault
     public static PyDictGetItem create() {
         return PyDictGetItemNodeGen.create();
     }

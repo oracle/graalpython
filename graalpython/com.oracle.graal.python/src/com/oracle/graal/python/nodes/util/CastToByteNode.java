@@ -56,6 +56,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -190,6 +191,7 @@ public abstract class CastToByteNode extends Node {
         }
     }
 
+    @NeverDefault
     public static CastToByteNode create() {
         return CastToByteNodeGen.create(null, null, false);
     }
@@ -198,14 +200,17 @@ public abstract class CastToByteNode extends Node {
         return UNCACHED_INSTANCE;
     }
 
+    @NeverDefault
     public static CastToByteNode create(boolean coerce) {
         return CastToByteNodeGen.create(null, null, coerce);
     }
 
+    @NeverDefault
     public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler) {
         return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, false);
     }
 
+    @NeverDefault
     public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler, boolean coerce) {
         return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, coerce);
     }

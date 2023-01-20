@@ -104,6 +104,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -121,9 +122,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         abstract Object execute(SuperObject self);
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
-        static Object cached(@SuppressWarnings("unused") SuperObject self,
+        static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached("self.getType()") Object type) {
+                        @Cached(value = "self.getType()", neverDefault = false) Object type) {
             return type;
         }
 
@@ -138,9 +139,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         abstract Object execute(SuperObject self);
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
-        static Object cached(@SuppressWarnings("unused") SuperObject self,
+        static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached("self.getObjectType()") Object type) {
+                        @Cached(value = "self.getObjectType()", neverDefault = false) Object type) {
             return type;
         }
 
@@ -155,9 +156,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         abstract Object execute(SuperObject self);
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
-        static Object cached(@SuppressWarnings("unused") SuperObject self,
+        static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached("self.getObject()") Object object) {
+                        @Cached(value = "self.getObject()", neverDefault = false) Object object) {
             return object;
         }
 

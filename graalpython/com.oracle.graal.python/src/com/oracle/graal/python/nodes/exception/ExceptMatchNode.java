@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.exception;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -131,6 +133,7 @@ public abstract class ExceptMatchNode extends Node {
         return false;
     }
 
+    @NeverDefault
     public static ExceptMatchNode create() {
         return ExceptMatchNodeGen.create();
     }

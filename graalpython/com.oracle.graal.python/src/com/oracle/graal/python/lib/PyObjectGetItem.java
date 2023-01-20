@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -139,6 +140,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         }
     }
 
+    @NeverDefault
     public static PyObjectGetItem create() {
         return PyObjectGetItemNodeGen.create();
     }

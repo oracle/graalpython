@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -78,6 +79,7 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
         this.attributeId = attributeId;
     }
 
+    @NeverDefault
     public static WriteGlobalNode create(TruffleString attributeId) {
         return WriteGlobalNodeGen.create(attributeId);
     }

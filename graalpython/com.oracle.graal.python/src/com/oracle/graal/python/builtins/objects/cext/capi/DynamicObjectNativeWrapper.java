@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.WrapVoidPtrNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -753,9 +752,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(factory.createTuple(getMroStorageNode.execute(object)));
         }
 
-        public static ReadTypeNativeMemberNode create() {
-            return ReadTypeNativeMemberNodeGen.create();
-        }
     }
 
     @GenerateUncached

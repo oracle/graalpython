@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.range;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -677,6 +679,7 @@ public class RangeBuiltins extends PythonBuiltins {
             return false;
         }
 
+        @NeverDefault
         public static ContainsNode create() {
             return RangeBuiltinsFactory.ContainsNodeFactory.create();
         }

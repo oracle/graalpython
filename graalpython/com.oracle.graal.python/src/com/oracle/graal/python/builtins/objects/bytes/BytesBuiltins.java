@@ -157,6 +157,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -272,6 +273,7 @@ public class BytesBuiltins extends PythonBuiltins {
             return raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "byte", key);
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.GetItemNode createGetItem() {
             return SequenceStorageNodes.GetItemNode.create(IndexNodes.NormalizeIndexNode.create(), (s, f) -> f.createBytes(s));
         }
@@ -727,6 +729,7 @@ public class BytesBuiltins extends PythonBuiltins {
             return findNode.execute(bytes, len1, cast.execute(frame, other), 0, len1) != -1;
         }
 
+        @NeverDefault
         protected CastToByteNode createCast() {
             return CastToByteNode.create(null, val -> {
                 throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, val);
@@ -803,10 +806,12 @@ public class BytesBuiltins extends PythonBuiltins {
             return false;
         }
 
+        @NeverDefault
         static BytesNodes.ToBytesNode createToBytes() {
             return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P);
         }
 
+        @NeverDefault
         static BytesNodes.ToBytesNode createToBytesFromTuple() {
             return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P);
         }
@@ -1245,6 +1250,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static SepExpectByteNode create(@ClinicConverterFactory.DefaultValue Object defaultValue) {
             return BytesBuiltinsFactory.SepExpectByteNodeGen.create(defaultValue);
         }
@@ -1814,6 +1820,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+        @NeverDefault
         public static ExpectIntNode create(@ClinicConverterFactory.DefaultValue int defaultValue) {
             return BytesBuiltinsFactory.ExpectIntNodeGen.create(defaultValue);
         }
@@ -1850,11 +1857,13 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static ExpectByteLikeNode create(@ClinicConverterFactory.DefaultValue byte[] defaultValue) {
             return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(defaultValue);
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static ExpectByteLikeNode create() {
             return null;
         }
@@ -2301,6 +2310,7 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LStripNode extends AStripNode {
 
+        @NeverDefault
         static LStripNode create() {
             return LStripNodeFactory.create();
         }
@@ -2338,6 +2348,7 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RStripNode extends AStripNode {
 
+        @NeverDefault
         static RStripNode create() {
             return RStripNodeFactory.create();
         }

@@ -56,6 +56,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
@@ -110,6 +111,7 @@ public abstract class PyObjectGetIter extends Node {
         return !(lookupIternext.execute(type) instanceof PNone);
     }
 
+    @NeverDefault
     public static PyObjectGetIter create() {
         return PyObjectGetIterNodeGen.create();
     }

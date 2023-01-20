@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -162,6 +163,7 @@ public abstract class DictNodes {
             return lookupKeys.execute(frame, other, SpecialMethodNames.T_KEYS) != PNone.NO_VALUE;
         }
 
+        @NeverDefault
         public static UpdateNode create() {
             return DictNodesFactory.UpdateNodeGen.create();
         }

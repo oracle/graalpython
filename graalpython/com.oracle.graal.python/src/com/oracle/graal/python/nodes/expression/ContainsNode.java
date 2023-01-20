@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
@@ -62,6 +64,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     @Child private GetNextNode next;
     @Child private IsBuiltinClassProfile errorProfile;
 
+    @NeverDefault
     public static ContainsNode create() {
         return ContainsNodeGen.create();
     }

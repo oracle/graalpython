@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -60,6 +61,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class})
 @GenerateUncached
 public abstract class IsForeignObjectNode extends PNodeWithContext {
+    @NeverDefault
     public static IsForeignObjectNode create() {
         return IsForeignObjectNodeGen.create();
     }

@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -63,6 +64,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
 
     public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
 
+    @NeverDefault
     public static LookupAndCallTernaryNode create(TruffleString name) {
         // Use SpecialMethodSlot overload for special slots, if there is a need to create
         // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
@@ -71,14 +73,17 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return LookupAndCallNonReversibleTernaryNodeGen.create(name);
     }
 
+    @NeverDefault
     public static LookupAndCallTernaryNode create(SpecialMethodSlot slot) {
         return LookupAndCallNonReversibleTernaryNodeGen.create(slot);
     }
 
+    @NeverDefault
     public static LookupAndCallTernaryNode createReversible(TruffleString name, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallReversibleTernaryNodeGen.create(name, handlerFactory);
     }
 
+    @NeverDefault
     public static LookupAndCallTernaryNode createReversible(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallReversibleTernaryNodeGen.create(slot, handlerFactory);
     }
@@ -93,6 +98,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
         this.name = slot.getName();
     }
 
+    @NeverDefault
     protected final LookupSpecialBaseNode createLookup() {
         if (slot != null) {
             return LookupSpecialMethodSlotNode.create(slot);

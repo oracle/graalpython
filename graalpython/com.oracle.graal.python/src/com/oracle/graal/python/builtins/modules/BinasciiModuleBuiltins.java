@@ -80,6 +80,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -166,6 +167,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static AsciiBufferConverter create() {
             return BinasciiModuleBuiltinsFactory.AsciiBufferConverterNodeGen.create();
         }

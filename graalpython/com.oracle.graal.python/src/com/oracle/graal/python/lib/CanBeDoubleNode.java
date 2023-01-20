@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -117,6 +118,7 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
         return lookupFloat.execute(type) != PNone.NO_VALUE || lookupIndex.execute(type) != PNone.NO_VALUE;
     }
 
+    @NeverDefault
     public static CanBeDoubleNode create() {
         return CanBeDoubleNodeGen.create();
     }

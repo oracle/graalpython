@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -158,6 +159,7 @@ abstract class LookupAndCallNonReversibleBinaryNode extends LookupAndCallBinaryN
         return ensureDispatch().executeObject(frame, leftCallable, left, right);
     }
 
+    @NeverDefault
     protected final LookupSpecialBaseNode createLookup() {
         if (slot != null) {
             return LookupSpecialMethodSlotNode.create(slot);

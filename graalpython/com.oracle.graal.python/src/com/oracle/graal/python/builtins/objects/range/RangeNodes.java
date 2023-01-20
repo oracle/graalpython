@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -220,9 +220,6 @@ public abstract class RangeNodes {
             return range;
         }
 
-        public static CoerceToBigRange create() {
-            return RangeNodesFactory.CoerceToBigRangeFactory.create();
-        }
     }
 
     @GenerateNodeFactory
@@ -241,9 +238,6 @@ public abstract class RangeNodes {
             return range.getStart();
         }
 
-        public static PRangeStartNode create() {
-            return RangeNodesFactory.PRangeStartNodeFactory.create();
-        }
     }
 
     @GenerateNodeFactory
@@ -262,9 +256,6 @@ public abstract class RangeNodes {
             return range.getStop();
         }
 
-        public static PRangeStopNode create() {
-            return RangeNodesFactory.PRangeStopNodeFactory.create();
-        }
     }
 
     @GenerateNodeFactory
@@ -283,9 +274,6 @@ public abstract class RangeNodes {
             return range.getStep();
         }
 
-        public static PRangeStepNode create() {
-            return RangeNodesFactory.PRangeStepNodeFactory.create();
-        }
     }
 
     @GenerateNodeFactory
@@ -304,8 +292,5 @@ public abstract class RangeNodes {
             return range.getLength();
         }
 
-        public static PRangeLengthNode create() {
-            return RangeNodesFactory.PRangeLengthNodeFactory.create();
-        }
     }
 }

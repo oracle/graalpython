@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -57,6 +58,7 @@ public abstract class SetAttributeNode extends PNodeWithContext {
             call.execute(frame, object, key, value);
         }
 
+        @NeverDefault
         public static Dynamic create() {
             return new Dynamic();
         }
@@ -68,6 +70,7 @@ public abstract class SetAttributeNode extends PNodeWithContext {
         this.key = key;
     }
 
+    @NeverDefault
     public static SetAttributeNode create(TruffleString key) {
         return SetAttributeNodeGen.create(key);
     }

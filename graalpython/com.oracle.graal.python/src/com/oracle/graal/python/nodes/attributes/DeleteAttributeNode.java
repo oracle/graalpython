@@ -43,10 +43,12 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class DeleteAttributeNode extends PNodeWithContext {
+    @NeverDefault
     public static DeleteAttributeNode create() {
         return DeleteAttributeNodeGen.create();
     }

@@ -53,6 +53,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -64,6 +65,7 @@ public abstract class CallVarargsMethodNode extends AbstractCallMethodNode {
 
     public abstract Object execute(Frame frame, Object callable, Object[] arguments, PKeyword[] keywords);
 
+    @NeverDefault
     public static CallVarargsMethodNode create() {
         return CallVarargsMethodNodeGen.create();
     }

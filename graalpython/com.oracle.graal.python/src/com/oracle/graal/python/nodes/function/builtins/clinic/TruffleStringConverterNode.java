@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.A
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -79,6 +80,7 @@ public abstract class TruffleStringConverterNode extends ArgumentCastNodeWithRai
     }
 
     @ClinicConverterFactory
+    @NeverDefault
     public static TruffleStringConverterNode create(@BuiltinName String builtinName) {
         return TruffleStringConverterNodeGen.create(builtinName);
     }

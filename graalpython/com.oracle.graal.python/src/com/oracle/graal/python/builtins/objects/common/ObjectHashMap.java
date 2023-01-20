@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,14 +48,15 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
 /**
  * Generic dictionary/set backing storage implementation.
@@ -342,29 +343,31 @@ public final class ObjectHashMap {
         // "public" for testing...
         @Specialization
         public static Object doGetWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
-                        @Cached BranchProfile lookupRestart,
-                        @Cached("createCountingProfile()") ConditionProfile foundNullKey,
-                        @Cached("createCountingProfile()") ConditionProfile foundSameHashKey,
-                        @Cached("createCountingProfile()") ConditionProfile foundEqKey,
-                        @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
-                        @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile lookupRestart,
+                        @Cached InlinedCountingConditionProfile foundNullKey,
+                        @Cached InlinedCountingConditionProfile foundSameHashKey,
+                        @Cached InlinedCountingConditionProfile foundEqKey,
+                        @Cached InlinedCountingConditionProfile collisionFoundNoValue,
+                        @Cached InlinedCountingConditionProfile collisionFoundEqKey,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             while (true) {
                 try {
-                    return doGet(frame, map, key, keyHash, foundNullKey, foundSameHashKey,
+                    return doGet(frame, map, key, keyHash, inliningTarget, foundNullKey, foundSameHashKey,
                                     foundEqKey, collisionFoundNoValue, collisionFoundEqKey, eqNode);
                 } catch (RestartLookupException ignore) {
-                    lookupRestart.enter();
+                    lookupRestart.enter(inliningTarget);
                 }
             }
         }
 
         static Object doGet(Frame frame, ObjectHashMap map, Object key, long keyHash,
-                        ConditionProfile foundNullKey,
-                        ConditionProfile foundSameHashKey,
-                        ConditionProfile foundEqKey,
-                        ConditionProfile collisionFoundNoValue,
-                        ConditionProfile collisionFoundEqKey,
+                        Node inliningTarget,
+                        InlinedCountingConditionProfile foundNullKey,
+                        InlinedCountingConditionProfile foundSameHashKey,
+                        InlinedCountingConditionProfile foundEqKey,
+                        InlinedCountingConditionProfile collisionFoundNoValue,
+                        InlinedCountingConditionProfile collisionFoundEqKey,
                         PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             int[] indices = map.indices;
@@ -372,12 +375,12 @@ public final class ObjectHashMap {
 
             int compactIndex = getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
-            if (foundNullKey.profile(index == EMPTY_INDEX)) {
+            if (foundNullKey.profile(inliningTarget, index == EMPTY_INDEX)) {
                 return null;
             }
-            if (foundSameHashKey.profile(index != DUMMY_INDEX)) {
+            if (foundSameHashKey.profile(inliningTarget, index != DUMMY_INDEX)) {
                 int unwrappedIndex = unwrapIndex(index);
-                if (foundEqKey.profile(map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                if (foundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                     return map.getValue(unwrappedIndex);
                 } else if (!isCollision(indices[compactIndex])) {
                     // ^ note: we need to re-read indices[compactIndex],
@@ -399,12 +402,12 @@ public final class ObjectHashMap {
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
                     index = map.indices[compactIndex];
-                    if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
+                    if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
                         return null;
                     }
                     if (index != DUMMY_INDEX) {
                         int unwrappedIndex = unwrapIndex(index);
-                        if (collisionFoundEqKey.profile(map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                        if (collisionFoundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                             return map.getValue(unwrappedIndex);
                         } else if (!isCollision(indices[compactIndex])) {
                             // ^ note: we need to re-read indices[compactIndex],
@@ -438,33 +441,35 @@ public final class ObjectHashMap {
         // "public" for testing...
         @Specialization
         public static void doPutWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value,
-                        @Cached BranchProfile lookupRestart,
-                        @Cached("createCountingProfile()") ConditionProfile foundNullKey,
-                        @Cached("createCountingProfile()") ConditionProfile foundEqKey,
-                        @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
-                        @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
-                        @Cached BranchProfile rehash1Profile,
-                        @Cached BranchProfile rehash2Profile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile lookupRestart,
+                        @Cached InlinedCountingConditionProfile foundNullKey,
+                        @Cached InlinedCountingConditionProfile foundEqKey,
+                        @Cached InlinedCountingConditionProfile collisionFoundNoValue,
+                        @Cached InlinedCountingConditionProfile collisionFoundEqKey,
+                        @Cached InlinedBranchProfile rehash1Profile,
+                        @Cached InlinedBranchProfile rehash2Profile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             while (true) {
                 try {
-                    doPut(frame, map, key, keyHash, value, foundNullKey, foundEqKey,
+                    doPut(frame, map, key, keyHash, value, inliningTarget, foundNullKey, foundEqKey,
                                     collisionFoundNoValue, collisionFoundEqKey, rehash1Profile, rehash2Profile,
                                     eqNode);
                     return;
                 } catch (RestartLookupException ignore) {
-                    lookupRestart.enter();
+                    lookupRestart.enter(inliningTarget);
                 }
             }
         }
 
         static void doPut(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value,
-                        ConditionProfile foundNullKey,
-                        ConditionProfile foundEqKey,
-                        ConditionProfile collisionFoundNoValue,
-                        ConditionProfile collisionFoundEqKey,
-                        BranchProfile rehash1Profile,
-                        BranchProfile rehash2Profile,
+                        Node inliningTarget,
+                        InlinedCountingConditionProfile foundNullKey,
+                        InlinedCountingConditionProfile foundEqKey,
+                        InlinedCountingConditionProfile collisionFoundNoValue,
+                        InlinedCountingConditionProfile collisionFoundEqKey,
+                        InlinedBranchProfile rehash1Profile,
+                        InlinedBranchProfile rehash2Profile,
                         PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             int[] indices = map.indices;
@@ -472,12 +477,12 @@ public final class ObjectHashMap {
 
             int compactIndex = getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
-            if (foundNullKey.profile(index == EMPTY_INDEX)) {
-                map.putInNewSlot(indices, rehash1Profile, key, keyHash, value, compactIndex);
+            if (foundNullKey.profile(inliningTarget, index == EMPTY_INDEX)) {
+                map.putInNewSlot(indices, inliningTarget, rehash1Profile, key, keyHash, value, compactIndex);
                 return;
             }
 
-            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
+            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
                 // we found the key, override the value, Python does not override the key though
                 map.setValue(unwrapIndex(index), value);
                 return;
@@ -497,11 +502,11 @@ public final class ObjectHashMap {
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
                     index = indices[compactIndex];
-                    if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
-                        map.putInNewSlot(indices, rehash2Profile, key, keyHash, value, compactIndex);
+                    if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
+                        map.putInNewSlot(indices, inliningTarget, rehash2Profile, key, keyHash, value, compactIndex);
                         return;
                     }
-                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
+                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
                         // we found the key, override the value, Python does not override the key
                         // though
                         map.setValue(unwrapIndex(index), value);
@@ -551,10 +556,10 @@ public final class ObjectHashMap {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    private void putInNewSlot(int[] localIndices, BranchProfile rehashProfile, Object key, long keyHash, Object value, int compactIndex) {
+    private void putInNewSlot(int[] localIndices, Node inliningTarget, InlinedBranchProfile rehashProfile, Object key, long keyHash, Object value, int compactIndex) {
         assert indices == localIndices;
         if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, needsResize(localIndices))) {
-            rehashProfile.enter();
+            rehashProfile.enter(inliningTarget);
             rehashAndPut(key, keyHash, value);
             return;
         }
@@ -593,37 +598,37 @@ public final class ObjectHashMap {
         // "public" for testing...
         @Specialization
         public static Object doRemoveWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
-                        @Cached BranchProfile lookupRestart,
-                        @Cached("createCountingProfile()") ConditionProfile foundNullKey,
-                        @Cached("createCountingProfile()") ConditionProfile foundEqKey,
-                        @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
-                        @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
-                        @Cached BranchProfile compactProfile,
-                        @Cached ConditionProfile hasState,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile lookupRestart,
+                        @Cached InlinedCountingConditionProfile foundNullKey,
+                        @Cached InlinedCountingConditionProfile foundEqKey,
+                        @Cached InlinedCountingConditionProfile collisionFoundNoValue,
+                        @Cached InlinedCountingConditionProfile collisionFoundEqKey,
+                        @Cached InlinedBranchProfile compactProfile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             while (true) {
                 try {
-                    return doRemove(frame, map, key, keyHash, foundNullKey, foundEqKey,
+                    return doRemove(frame, map, key, keyHash, inliningTarget, foundNullKey, foundEqKey,
                                     collisionFoundNoValue, collisionFoundEqKey, compactProfile,
-                                    hasState, eqNode);
+                                    eqNode);
                 } catch (RestartLookupException ignore) {
-                    lookupRestart.enter();
+                    lookupRestart.enter(inliningTarget);
                 }
             }
         }
 
         static Object doRemove(Frame frame, ObjectHashMap map, Object key, long keyHash,
-                        ConditionProfile foundNullKey,
-                        ConditionProfile foundEqKey,
-                        ConditionProfile collisionFoundNoValue,
-                        ConditionProfile collisionFoundEqKey,
-                        BranchProfile compactProfile,
-                        ConditionProfile hasState,
+                        Node inliningTarget,
+                        InlinedCountingConditionProfile foundNullKey,
+                        InlinedCountingConditionProfile foundEqKey,
+                        InlinedCountingConditionProfile collisionFoundNoValue,
+                        InlinedCountingConditionProfile collisionFoundEqKey,
+                        InlinedBranchProfile compactProfile,
                         PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             // TODO: move this to the point after we find the value to remove?
             if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, map.needsCompaction())) {
-                compactProfile.enter();
+                compactProfile.enter(inliningTarget);
                 map.compact();
             }
             int[] indices = map.indices;
@@ -633,12 +638,12 @@ public final class ObjectHashMap {
             // same
             int compactIndex = getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
-            if (foundNullKey.profile(index == EMPTY_INDEX)) {
+            if (foundNullKey.profile(inliningTarget, index == EMPTY_INDEX)) {
                 return null; // not found
             }
 
             int unwrappedIndex = unwrapIndex(index);
-            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                 Object result = map.getValue(unwrappedIndex);
                 indices[compactIndex] = DUMMY_INDEX;
                 map.setValue(unwrappedIndex, null);
@@ -660,11 +665,11 @@ public final class ObjectHashMap {
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
                     index = indices[compactIndex];
-                    if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
+                    if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
                         return null; // not found
                     }
                     unwrappedIndex = unwrapIndex(index);
-                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                         Object result = map.getValue(unwrappedIndex);
                         indices[compactIndex] = DUMMY_INDEX;
                         map.setValue(unwrappedIndex, null);

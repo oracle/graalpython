@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPyt
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.BinaryFirstToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CharPtrToJavaNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
@@ -194,6 +193,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -313,6 +313,7 @@ public abstract class CExtNodes {
             return execute(object, toSulongNode.execute(arg));
         }
 
+        @NeverDefault
         public static TupleSubtypeNew create() {
             return CExtNodesFactory.TupleSubtypeNewNodeGen.create();
         }
@@ -349,7 +350,7 @@ public abstract class CExtNodes {
 
         @Specialization
         @SuppressWarnings("unchecked")
-        public Double execute(VirtualFrame frame, PythonNativeObject object,
+        public Double doDouble(VirtualFrame frame, PythonNativeObject object,
                         @Exclusive @Cached GetClassNode getClass,
                         @Exclusive @Cached IsSubtypeNode isSubtype,
                         @Exclusive @Cached ToSulongNode toSulongNode,
@@ -370,6 +371,7 @@ public abstract class CExtNodes {
             return isSubtype.execute(frame, getClass.execute(object), PythonContext.get(this).lookupType(PythonBuiltinClassType.PFloat));
         }
 
+        @NeverDefault
         public static FromNativeSubclassNode create() {
             return CExtNodesFactory.FromNativeSubclassNodeGen.create();
         }
@@ -571,6 +573,7 @@ public abstract class CExtNodes {
             return PythonContext.get(node).getNativeNull().getPtr();
         }
 
+        @NeverDefault
         public static ToSulongNode create() {
             return CExtNodesFactory.ToSulongNodeGen.create();
         }
@@ -1427,6 +1430,7 @@ public abstract class CExtNodes {
             return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
         }
 
+        @NeverDefault
         public static ToJavaNode create() {
             return ToJavaNodeGen.create();
         }
@@ -1537,6 +1541,7 @@ public abstract class CExtNodes {
         }
 
         // TODO(fa): Workaround for DSL bug: did not import factory at users
+        @NeverDefault
         public static AsCharPointerNode create() {
             return CExtNodesFactory.AsCharPointerNodeGen.create();
         }
@@ -1717,7 +1722,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
+        static boolean doPythonNativeObject(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
@@ -1727,7 +1732,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
+        static boolean doPythonNativeObjectLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
@@ -1737,7 +1742,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
+        static boolean doNativeVoidPtrLong(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
                         @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
                         @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
@@ -1826,9 +1831,6 @@ public abstract class CExtNodes {
             return nodes;
         }
 
-        public static AllToPythonNode create() {
-            return CExtNodesFactory.AllToPythonNodeGen.create();
-        }
     }
 
     @GenerateUncached
@@ -1881,9 +1883,6 @@ public abstract class CExtNodes {
             return nodes;
         }
 
-        public static AllToJavaNode create() {
-            return CExtNodesFactory.AllToJavaNodeGen.create();
-        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -2001,9 +2000,6 @@ public abstract class CExtNodes {
             return callNode.execute(frame, args[0], converted, PKeyword.EMPTY_KEYWORDS);
         }
 
-        public static DirectUpcallNode create() {
-            return DirectUpcallNodeGen.create();
-        }
     }
 
     /**
@@ -2210,6 +2206,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     public abstract static class CextUpcallNode extends PNodeWithContext {
+        @NeverDefault
         public static CextUpcallNode create() {
             return CextUpcallNodeGen.create();
         }
@@ -2277,6 +2274,7 @@ public abstract class CExtNodes {
      * the receiver (e.g. the module) and {@code args[1]} is the member to call.
      */
     public abstract static class ObjectUpcallNode extends PNodeWithContext {
+        @NeverDefault
         public static ObjectUpcallNode create() {
             return ObjectUpcallNodeGen.create();
         }
@@ -2629,6 +2627,7 @@ public abstract class CExtNodes {
             }
         }
 
+        @NeverDefault
         public static PCallCapiFunction create() {
             return CExtNodesFactory.PCallCapiFunctionNodeGen.create();
         }
@@ -2675,10 +2674,6 @@ public abstract class CExtNodes {
 
         protected Assumption nativeObjectsAllManagedAssumption() {
             return getContext().getNativeObjectsAllManagedAssumption();
-        }
-
-        public static IsPointerNode create() {
-            return IsPointerNodeGen.create();
         }
 
         public static IsPointerNode getUncached() {
@@ -2780,6 +2775,7 @@ public abstract class CExtNodes {
             return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(memberName.getGetterFunctionName(), ToSulongNode.getUncached().execute(obj)));
         }
 
+        @NeverDefault
         static ToJavaBaseNode createForMember(NativeMember member) {
             switch (member.getType()) {
                 case OBJECT:
@@ -2810,6 +2806,7 @@ public abstract class CExtNodes {
             return getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
         }
 
+        @NeverDefault
         public static GetTypeMemberNode create() {
             return GetTypeMemberNodeGen.create();
         }

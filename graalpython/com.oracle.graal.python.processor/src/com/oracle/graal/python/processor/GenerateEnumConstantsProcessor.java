@@ -60,7 +60,7 @@ import com.oracle.graal.python.annotations.GenerateEnumConstants;
 import com.oracle.graal.python.processor.CodeWriter.Block;
 
 @SupportedAnnotationTypes("com.oracle.graal.python.annotations.GenerateEnumConstants")
-@SupportedSourceVersion(SourceVersion.RELEASE_16)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class GenerateEnumConstantsProcessor extends AbstractProcessor {
     @Override
     @SuppressWarnings({"try", "unused"})

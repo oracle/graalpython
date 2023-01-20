@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -140,6 +140,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -403,14 +404,13 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         protected static int tsLen(TruffleString ts) {
             CompilerAsserts.neverPartOfCompilation();
-            return TruffleString.CodePointLengthNode.getUncached().execute(ts, TS_ENCODING);
+            return TruffleString.CodePointLengthNode.getUncached().execute(ts, TS_ENCODING) + 1;
         }
 
         // Shortcut, only useful for interpreter performance, but doesn't hurt peak
-        @Specialization(guards = {"keyObj == cachedKey", "cachedKeyLen < 32"}, limit = "1")
+        @Specialization(guards = {"keyObj == cachedKey", "tsLen(cachedKey) < 32"}, limit = "1")
         protected Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
                         @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
-                        @SuppressWarnings("unused") @Cached("tsLen(cachedKey)") int cachedKeyLen,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
             Object type = getClassNode.execute(object);
@@ -542,6 +542,8 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupSetNode.execute(dataDescClass);
         }
 
+        // Note: we need this factory method as a workaround of a Truffle DSL bug
+        @NeverDefault
         public static GetAttributeNode create() {
             return GetAttributeNodeFactory.create();
         }
@@ -561,6 +563,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return writeNode.execute(object, key, value);
         }
 
+        @NeverDefault
         public static SetattrNode create() {
             return ObjectBuiltinsFactory.SetattrNodeFactory.create();
         }

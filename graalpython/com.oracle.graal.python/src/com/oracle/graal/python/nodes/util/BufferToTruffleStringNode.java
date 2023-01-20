@@ -53,6 +53,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -136,10 +137,12 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
         return store.getClass() == NativeSequenceStorage.class;
     }
 
+    @NeverDefault
     public static BufferToTruffleStringNode create() {
         return create(true);
     }
 
+    @NeverDefault
     public static BufferToTruffleStringNode create(boolean allowMemoryView) {
         return BufferToTruffleStringNodeGen.create(allowMemoryView);
     }

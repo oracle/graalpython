@@ -49,6 +49,13 @@ check_file() {
     fi
 }
 
+missing_python_import() {
+    echo "Error when getting the vanilla wheel from the python-import branch"
+    echo "Do you have local branch named 'python-import'?"
+    echo "If not, you can use: git fetch origin python-import:python-import"
+    exit 1
+}
+
 patch_wheel() {
     cd "$GIT_DIR"
     local name="$1"
@@ -59,7 +66,7 @@ patch_wheel() {
     local tmpdir="$(basename -s '.whl' "$wheel")"
     rm -rf "$tmpdir"
     mkdir "$tmpdir"
-    git show "python-import:$wheel" > tmp.whl
+    git show "python-import:$wheel" > tmp.whl || missing_python_import
     cd "$tmpdir"
     unzip ../tmp.whl
     rm ../tmp.whl

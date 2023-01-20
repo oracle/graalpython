@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -88,10 +89,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, HiddenKey key, Object value);
 
+    @NeverDefault
     public static WriteAttributeToObjectNode create() {
         return WriteAttributeToObjectNotTypeNodeGen.create();
     }
 
+    @NeverDefault
     public static WriteAttributeToObjectNode create(boolean forceType) {
         if (forceType) {
             return WriteAttributeToObjectTpDictNodeGen.create();
@@ -99,6 +102,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return WriteAttributeToObjectNotTypeNodeGen.create();
     }
 
+    @NeverDefault
     public static WriteAttributeToObjectNode createForceType() {
         return WriteAttributeToObjectTpDictNodeGen.create();
     }

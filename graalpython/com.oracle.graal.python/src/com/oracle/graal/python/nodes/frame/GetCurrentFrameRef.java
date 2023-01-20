@@ -49,6 +49,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -103,6 +104,7 @@ public abstract class GetCurrentFrameRef extends Node {
         return PArguments.getCurrentFrameInfo(frame);
     }
 
+    @NeverDefault
     static ConditionProfile[] getFlag() {
         return new ConditionProfile[1];
     }

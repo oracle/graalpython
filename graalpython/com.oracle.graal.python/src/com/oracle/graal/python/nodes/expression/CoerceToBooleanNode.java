@@ -29,6 +29,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.YesNodeGen;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -36,10 +37,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CoerceToBooleanNode extends UnaryOpNode {
 
+    @NeverDefault
     public static CoerceToBooleanNode createIfTrueNode() {
         return YesNodeGen.create();
     }
 
+    @NeverDefault
     public static CoerceToBooleanNode createIfFalseNode() {
         return NotNodeGen.create();
     }

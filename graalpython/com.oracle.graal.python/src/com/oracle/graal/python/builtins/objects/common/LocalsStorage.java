@@ -109,7 +109,7 @@ public final class LocalsStorage extends HashingStorage {
         @Specialization(guards = "desc == self.frame.getFrameDescriptor()", limit = "1")
         @ExplodeLoop
         static int getLengthCached(LocalsStorage self,
-                        @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
+                        @Cached(value = "self.frame.getFrameDescriptor()", neverDefault = true) FrameDescriptor desc) {
             int size = desc.getNumberOfSlots();
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
                 Object identifier = desc.getSlotName(slot);

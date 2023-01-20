@@ -71,6 +71,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -144,6 +145,7 @@ public class HashingStorageNodes {
             return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key) != null;
         }
 
+        @NeverDefault
         public static HashingStorageGetItem create() {
             return HashingStorageGetItemNodeGen.create();
         }
@@ -264,6 +266,7 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageSetItemWithHash extends Node {
         static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
+        @NeverDefault
         public static HashingStorageSetItemWithHash create() {
             return HashingStorageSetItemWithHashNodeGen.create();
         }
@@ -364,6 +367,7 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageSetItem extends Node {
         static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
+        @NeverDefault
         public static HashingStorageSetItem create() {
             return HashingStorageSetItemNodeGen.create();
         }
@@ -587,6 +591,7 @@ public class HashingStorageNodes {
             return HashingStorageLenNodeGen.getUncached().execute(dictStorage);
         }
 
+        @NeverDefault
         public static HashingStorageLen create() {
             return HashingStorageLenNodeGen.create();
         }
@@ -651,6 +656,7 @@ public class HashingStorageNodes {
             return HashingStorageCopyNodeGen.getUncached();
         }
 
+        @NeverDefault
         public static HashingStorageCopy create() {
             return HashingStorageCopyNodeGen.create();
         }
@@ -730,6 +736,7 @@ public class HashingStorageNodes {
             return HashingStorageGetIteratorNodeGen.getUncached().execute(storage);
         }
 
+        @NeverDefault
         public static HashingStorageGetIterator create() {
             return HashingStorageGetIteratorNodeGen.create();
         }
@@ -832,6 +839,7 @@ public class HashingStorageNodes {
             return HashingStorageIteratorNextNodeGen.getUncached().execute(storage, it);
         }
 
+        @NeverDefault
         public static HashingStorageIteratorNext create() {
             return HashingStorageIteratorNextNodeGen.create();
         }
@@ -964,6 +972,7 @@ public class HashingStorageNodes {
             return HashingStorageIteratorValueNodeGen.getUncached().execute(storage, it);
         }
 
+        @NeverDefault
         public static HashingStorageIteratorValue create() {
             return HashingStorageIteratorValueNodeGen.create();
         }
@@ -1004,6 +1013,7 @@ public class HashingStorageNodes {
             return HashingStorageIteratorKeyNodeGen.getUncached().execute(storage, it);
         }
 
+        @NeverDefault
         public static HashingStorageIteratorKey create() {
             return HashingStorageIteratorKeyNodeGen.create();
         }
@@ -1472,6 +1482,7 @@ public class HashingStorageNodes {
             return HashingStorageAddAllToOtherNodeGen.getUncached();
         }
 
+        @NeverDefault
         public static HashingStorageAddAllToOther create() {
             return HashingStorageAddAllToOtherNodeGen.create();
         }

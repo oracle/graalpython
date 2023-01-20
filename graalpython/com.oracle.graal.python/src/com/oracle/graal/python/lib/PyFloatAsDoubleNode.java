@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -138,6 +139,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
         throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
     }
 
+    @NeverDefault
     public static PyFloatAsDoubleNode create() {
         return PyFloatAsDoubleNodeGen.create();
     }

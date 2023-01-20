@@ -54,6 +54,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -298,6 +299,7 @@ public class NativeLibrary {
             this.resultInterop = resultInterop;
         }
 
+        @NeverDefault
         public static InvokeNativeFunction create() {
             return InvokeNativeFunctionNodeGen.create(null);
         }

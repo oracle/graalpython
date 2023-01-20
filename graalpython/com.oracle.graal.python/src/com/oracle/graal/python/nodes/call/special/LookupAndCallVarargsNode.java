@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -55,6 +56,7 @@ public abstract class LookupAndCallVarargsNode extends Node {
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
+    @NeverDefault
     public static LookupAndCallVarargsNode create(TruffleString name) {
         return LookupAndCallVarargsNodeGen.create(name);
     }

@@ -56,6 +56,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -89,6 +90,7 @@ public abstract class PyObjectSetItem extends Node {
         callSetitem.execute(frame, setitem, primary, index, value);
     }
 
+    @NeverDefault
     public static PyObjectSetItem create() {
         return PyObjectSetItemNodeGen.create();
     }

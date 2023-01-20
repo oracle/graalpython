@@ -65,6 +65,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -128,6 +129,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @NeverDefault
     public BinaryOpNode create() {
         return create.create();
     }
@@ -162,6 +164,7 @@ public enum BinaryArithmetic {
             };
         }
 
+        @NeverDefault
         static LookupAndCallBinaryNode createCallNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
             assert slot.getReverse() != null;
             return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
@@ -219,6 +222,7 @@ public enum BinaryArithmetic {
             return callNode.executeObject(frame, left, right);
         }
 
+        @NeverDefault
         public static AddNode create() {
             return BinaryArithmeticFactory.AddNodeGen.create();
         }

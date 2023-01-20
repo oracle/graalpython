@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -149,7 +149,6 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetItemsizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
@@ -213,6 +212,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -226,6 +226,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
@@ -241,20 +242,22 @@ public abstract class TypeNodes {
 
         @Specialization
         long doBuiltinClassType(PythonBuiltinClassType clazz,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
-                        @Shared("profile") @Cached("createCountingProfile()") ConditionProfile profile) {
-            return doManaged(PythonContext.get(this).getCore().lookupType(clazz), readHiddenFlagsNode, writeHiddenFlagsNode, profile);
+                        @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
+            return doManaged(PythonContext.get(this).getCore().lookupType(clazz), inliningTarget, readHiddenFlagsNode, writeHiddenFlagsNode, profile);
         }
 
         @Specialization
         long doManaged(PythonManagedClass clazz,
+                        @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
-                        @Shared("profile") @Cached("createCountingProfile()") ConditionProfile profile) {
+                        @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
 
             Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
-            if (profile.profile(flagsObject != PNone.NO_VALUE)) {
+            if (profile.profile(inliningTarget, flagsObject != PNone.NO_VALUE)) {
                 // we have it under control; it must be a long
                 return (long) flagsObject;
             }
@@ -300,7 +303,8 @@ public abstract class TypeNodes {
                 if (mroEntry instanceof PythonAbstractNativeObject) {
                     result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
                 } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
-                    long flags = doManaged((PythonManagedClass) mroEntry, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(), ConditionProfile.getUncached());
+                    long flags = doManaged((PythonManagedClass) mroEntry, null, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(),
+                                    InlinedCountingConditionProfile.getUncached());
                     result = setFlags(result, flags);
                 }
             }
@@ -493,6 +497,7 @@ public abstract class TypeNodes {
             return getMroStorageNode.execute(obj).getInternalClassArray();
         }
 
+        @NeverDefault
         public static GetMroNode create() {
             return TypeNodesFactory.GetMroNodeGen.create();
         }
@@ -597,6 +602,7 @@ public abstract class TypeNodes {
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
+        @NeverDefault
         public static GetMroStorageNode create() {
             return GetMroStorageNodeGen.create();
         }
@@ -641,6 +647,7 @@ public abstract class TypeNodes {
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
+        @NeverDefault
         public static GetNameNode create() {
             return GetNameNodeGen.create();
         }
@@ -839,6 +846,7 @@ public abstract class TypeNodes {
             };
         }
 
+        @NeverDefault
         public static GetSubclassesNode create() {
             return GetSubclassesNodeGen.create();
         }
@@ -946,6 +954,7 @@ public abstract class TypeNodes {
     @GenerateUncached
     public abstract static class GetBestBaseClassNode extends PNodeWithContext {
 
+        @NeverDefault
         static GetBestBaseClassNode create() {
             return TypeNodesFactory.GetBestBaseClassNodeGen.create();
         }
@@ -1408,6 +1417,7 @@ public abstract class TypeNodes {
             return false;
         }
 
+        @NeverDefault
         public static IsSameTypeNode create() {
             return IsSameTypeNodeGen.create();
         }
@@ -1649,6 +1659,7 @@ public abstract class TypeNodes {
             return false;
         }
 
+        @NeverDefault
         public static IsTypeNode create() {
             return IsTypeNodeGen.create();
         }
@@ -1770,9 +1781,6 @@ public abstract class TypeNodes {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }
 
-        public static GetInstanceShape create() {
-            return GetInstanceShapeNodeGen.create();
-        }
     }
 
     @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -198,10 +198,6 @@ public abstract class SliceNodes {
                         @Cached PRaiseNode raise) {
             throw raise.raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
-
-        public static ComputeIndices create() {
-            return SliceNodesFactory.ComputeIndicesNodeGen.create();
-        }
     }
 
     /**
@@ -239,9 +235,6 @@ public abstract class SliceNodes {
             return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
         }
 
-        public static CoerceToObjectSlice create() {
-            return SliceNodesFactory.CoerceToObjectSliceNodeGen.create();
-        }
     }
 
     /**
@@ -264,10 +257,6 @@ public abstract class SliceNodes {
                         @Cached SliceLossyCastToInt step,
                         @Cached PythonObjectFactory factory) {
             return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
-        }
-
-        public static CoerceToIntSlice create() {
-            return SliceNodesFactory.CoerceToIntSliceNodeGen.create();
         }
     }
 

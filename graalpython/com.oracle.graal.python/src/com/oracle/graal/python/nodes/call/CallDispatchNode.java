@@ -38,6 +38,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -47,22 +48,27 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @GenerateUncached
 public abstract class CallDispatchNode extends PNodeWithContext {
 
+    @NeverDefault
     protected static FunctionInvokeNode createInvokeNode(PFunction callee) {
         return FunctionInvokeNode.create(callee);
     }
 
+    @NeverDefault
     protected static FunctionInvokeNode createInvokeNode(PBuiltinFunction callee) {
         return FunctionInvokeNode.create(callee);
     }
 
+    @NeverDefault
     protected static CallTargetInvokeNode createCtInvokeNode(PFunction callee) {
         return CallTargetInvokeNode.create(callee);
     }
 
+    @NeverDefault
     protected static CallTargetInvokeNode createCtInvokeNode(PBuiltinFunction callee) {
         return CallTargetInvokeNode.create(callee);
     }
 
+    @NeverDefault
     public static CallDispatchNode create() {
         return CallDispatchNodeGen.create();
     }

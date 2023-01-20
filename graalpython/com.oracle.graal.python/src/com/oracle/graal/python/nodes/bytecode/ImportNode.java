@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -53,7 +54,7 @@ public abstract class ImportNode extends AbstractImportNode {
     public abstract Object execute(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
     @Specialization
-    Object doImport(VirtualFrame frame, TruffleString name, Object globals, @SuppressWarnings("unused") TruffleString[] fromList, int level,
+    Object doImport(VirtualFrame frame, TruffleString name, Object globals, @NeverDefault @SuppressWarnings("unused") TruffleString[] fromList, int level,
                     @Cached(value = "fromList", dimensions = 1, allowUncached = true) TruffleString[] cachedFromList,
                     @Cached ImportName importName) {
         assert fromList == cachedFromList;

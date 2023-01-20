@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.argument.positional;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -134,6 +136,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
     }
 
+    @NeverDefault
     public static ExecutePositionalStarargsNode create() {
         return ExecutePositionalStarargsNodeGen.create();
     }

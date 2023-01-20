@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -102,11 +103,13 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
     }
 
     @ClinicConverterFactory
+    @NeverDefault
     public static CodePointConversionNode create(@BuiltinName String builtinName, @DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return CodePointConversionNodeGen.create(builtinName, defaultValue, useDefaultForNone);
     }
 
     @ClinicConverterFactory
+    @NeverDefault
     public static CodePointConversionNode create(@BuiltinName String builtinName, @UseDefaultForNone boolean useDefaultForNone) {
         assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
         return CodePointConversionNodeGen.create(builtinName, -1, false);

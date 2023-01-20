@@ -78,6 +78,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -206,6 +207,7 @@ public abstract class HashingStorage {
                             errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
+        @NeverDefault
         public static InitNode create() {
             return InitNodeGen.create();
         }

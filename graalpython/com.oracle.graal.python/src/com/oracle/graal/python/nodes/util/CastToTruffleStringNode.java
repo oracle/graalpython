@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -102,6 +103,7 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
         throw CannotCastException.INSTANCE;
     }
 
+    @NeverDefault
     public static CastToTruffleStringNode create() {
         return CastToTruffleStringNodeGen.create();
     }

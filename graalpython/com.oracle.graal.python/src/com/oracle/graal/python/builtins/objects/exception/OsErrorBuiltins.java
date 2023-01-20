@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -322,6 +323,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @NeverDefault
         public static OSErrorInitNode create() {
             return OsErrorBuiltinsFactory.OSErrorInitNodeFactory.create(null);
         }

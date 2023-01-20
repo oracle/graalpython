@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -68,6 +69,7 @@ public abstract class PyObjectReprAsTruffleStringNode extends PNodeWithContext {
         return cast.execute(reprNode.execute(frame, obj));
     }
 
+    @NeverDefault
     public static PyObjectReprAsTruffleStringNode create() {
         return PyObjectReprAsTruffleStringNodeGen.create();
     }

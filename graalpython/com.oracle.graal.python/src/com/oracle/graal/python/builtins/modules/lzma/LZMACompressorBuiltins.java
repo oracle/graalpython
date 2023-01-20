@@ -80,6 +80,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -233,6 +234,7 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static ExpectUINT32Node create(@ClinicConverterFactory.DefaultValue Object defaultValue) {
             return LZMACompressorBuiltinsFactory.ExpectUINT32NodeGen.create(defaultValue);
         }

@@ -105,6 +105,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -493,10 +494,12 @@ public abstract class SocketNodes {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static IdnaFromStringOrBytesConverterNode create(@ClinicConverterFactory.BuiltinName String builtinName, @ClinicConverterFactory.ArgumentIndex int argumentIndex) {
             return SocketNodesFactory.IdnaFromStringOrBytesConverterNodeGen.create(builtinName, argumentIndex);
         }
 
+        @NeverDefault
         public static IdnaFromStringOrBytesConverterNode create() {
             return SocketNodesFactory.IdnaFromStringOrBytesConverterNodeGen.create(null, 0);
         }

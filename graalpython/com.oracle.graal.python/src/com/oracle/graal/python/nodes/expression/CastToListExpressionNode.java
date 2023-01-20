@@ -72,6 +72,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -177,6 +178,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             return getItemNode;
         }
 
+        @NeverDefault
         public static CastToListNode create() {
             return CastToListNodeGen.create();
         }
@@ -187,6 +189,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         public abstract PList executeWithGlobalState(Object list);
 
+        @NeverDefault
         public static CastToListInteropNode create() {
             return new CastToListCachedNode();
         }

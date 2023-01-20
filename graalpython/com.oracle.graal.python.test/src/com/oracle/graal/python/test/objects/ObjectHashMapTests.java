@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,8 +70,8 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
 public class ObjectHashMapTests {
     public static final class DictKey implements TruffleObject {
@@ -335,23 +335,25 @@ public class ObjectHashMapTests {
     }
 
     private static Object get(ObjectHashMap map, Object key, long hash) {
+        InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
         return ObjectHashMap.GetNode.doGetWithRestart(null, map, key, hash,
-                        BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
-                        ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        null, InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
+                        uncachedCounting, uncachedCounting,
                         new EqNodeStub());
     }
 
     private static void remove(ObjectHashMap map, Object key, long hash) {
+        InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
         ObjectHashMap.RemoveNode.doRemoveWithRestart(null, map, key, hash,
-                        BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
-                        ConditionProfile.getUncached(), BranchProfile.getUncached(), ConditionProfile.getUncached(),
-                        new EqNodeStub());
+                        null, InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
+                        uncachedCounting, InlinedBranchProfile.getUncached(), new EqNodeStub());
     }
 
     private static void put(ObjectHashMap map, Object key, long hash, Object value) {
+        InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
         ObjectHashMap.PutNode.doPutWithRestart(null, map, key, hash, value,
-                        BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
-                        ConditionProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
+                        null, InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
+                        uncachedCounting, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(),
                         new EqNodeStub());
     }
 }

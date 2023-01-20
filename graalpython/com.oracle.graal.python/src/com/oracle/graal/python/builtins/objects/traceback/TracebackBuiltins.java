@@ -58,6 +58,7 @@ import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -155,6 +156,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         public abstract PFrame execute(VirtualFrame frame, Object traceback);
 
+        @NeverDefault
         public static GetTracebackFrameNode create() {
             return TracebackBuiltinsFactory.GetTracebackFrameNodeFactory.create(null);
         }

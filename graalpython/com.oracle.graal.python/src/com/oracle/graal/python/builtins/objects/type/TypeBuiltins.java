@@ -177,6 +177,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -365,6 +366,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
 
+        @NeverDefault
         public static CallNode create() {
             return CallNodeFactory.create();
         }
@@ -872,10 +874,6 @@ public class TypeBuiltins extends PythonBuiltins {
         private final ConditionProfile typeErrorProfile = ConditionProfile.create();
 
         public abstract boolean executeWith(VirtualFrame frame, Object cls, Object instance);
-
-        public static InstanceCheckNode create() {
-            return TypeBuiltinsFactory.InstanceCheckNodeFactory.create();
-        }
 
         private PythonObject getInstanceClassAttr(VirtualFrame frame, Object instance) {
             Object classAttr = getAttributeNode.executeObject(frame, instance, T___CLASS__);
@@ -1444,6 +1442,7 @@ public class TypeBuiltins extends PythonBuiltins {
             return names;
         }
 
+        @NeverDefault
         protected GetFixedAttributeNode createGetAttrNode() {
             return GetFixedAttributeNode.create(T___BASES__);
         }

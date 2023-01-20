@@ -105,6 +105,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -338,10 +339,12 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return ok;
         }
 
+        @NeverDefault
         static ContainedInNode create() {
             return new ContainedInNode(true);
         }
 
+        @NeverDefault
         static ContainedInNode create(boolean all) {
             return new ContainedInNode(all);
         }
