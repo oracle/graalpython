@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__ASYNCIO;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
-import java.util.Objects;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -64,7 +63,6 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -72,6 +70,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -109,7 +108,7 @@ public class AsyncioModuleBuiltins extends PythonBuiltins {
         public Object getCurrentLoop() {
             Object eventLoop = getContext().getThreadState(getLanguage()).getRunningEventLoop();
 
-            return Objects.requireNonNullElse(eventLoop, PNone.NONE);
+            return eventLoop == null ? PNone.NONE : eventLoop;
         }
     }
 
@@ -128,28 +127,25 @@ public class AsyncioModuleBuiltins extends PythonBuiltins {
     public static final TruffleString T_GET_EVENT_LOOP_POLICY = tsLiteral("get_event_loop_policy");
     public static final TruffleString T_GET_EVENT_LOOP = tsLiteral("get_event_loop");
 
-    @Builtin(name = "get_event_loop")
+    @Builtin(name = "get_event_loop", declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(AsyncioModuleBuiltins.class)
-    public abstract static class GetEventLoop extends PythonBuiltinNode {
-
-        public static GetEventLoop create() {
-            return AsyncioModuleBuiltinsFactory.GetEventLoopFactory.create(new ReadArgumentNode[]{});
-        }
+    public abstract static class GetEventLoop extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object getCurrentLoop(VirtualFrame frame,
+        public Object getCurrentLoop(VirtualFrame frame, Object ignored,
                         @Cached CallNode callGetPolicy,
                         @Cached CallNode callGetLoop,
+                        @Cached AbstractImportNode.ImportName importName,
                         @Cached(parameters = "T_GET_EVENT_LOOP") GetAttributeNode.GetFixedAttributeNode getGetLoop,
                         @Cached(parameters = "T_GET_EVENT_LOOP_POLICY") GetAttributeNode.GetFixedAttributeNode getGetLoopPolicy) {
             Object eventLoop = getContext().getThreadState(getLanguage()).getRunningEventLoop();
             if (eventLoop == null) {
-                Object asyncio = AbstractImportNode.importModule(T_ASYNCIO_EVENTS);
+                Object asyncio = importName.execute(frame, getContext(), getContext().getBuiltins(), T_ASYNCIO_EVENTS, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
                 Object asyncioGetPolicy = getGetLoopPolicy.execute(frame, asyncio);
-                Object policy = callGetPolicy.execute(asyncioGetPolicy);
+                Object policy = callGetPolicy.execute(frame, asyncioGetPolicy);
                 Object getLoop = getGetLoop.execute(frame, policy);
-                return callGetLoop.execute(getLoop);
+                return callGetLoop.execute(frame, getLoop);
             } else {
                 return eventLoop;
             }
@@ -162,8 +158,8 @@ public class AsyncioModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object getCurrentLoop(VirtualFrame frame, Object stacklevel,
-                        @Cached("create()") GetEventLoop getLoop) {
-            return getLoop.execute(frame);
+                        @Cached GetEventLoop getLoop) {
+            return getLoop.execute(frame, null);
         }
     }
 
