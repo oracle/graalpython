@@ -195,7 +195,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
-import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
@@ -1131,10 +1130,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), createCode, flags, firstlineno, lnotab, filename));
-    }
-
-    public final PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, TruffleString separator) {
-        return trace(new PZipImporter(cls, getShape(cls), zipDirectoryCache, separator));
     }
 
     /*

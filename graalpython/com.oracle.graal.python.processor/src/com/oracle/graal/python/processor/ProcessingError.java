@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import javax.lang.model.element.Element;
 
 final class ProcessingError extends Exception {
     private static final long serialVersionUID = -7741682404828028813L;
-    private final Element element;
+    private final transient Element element;
 
     ProcessingError(Element element, String fmt, Object... args) {
         super(String.format(fmt, args));

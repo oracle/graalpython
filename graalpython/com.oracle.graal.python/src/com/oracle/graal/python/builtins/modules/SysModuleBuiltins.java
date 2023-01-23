@@ -178,6 +178,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -853,7 +854,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
             PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0);
             PDict result = factory().createDict();
-            result.setDictStorage(setHashingStorageItem.execute(frame, result.getDictStorage(), Thread.currentThread().getId(), currentFrame));
+            result.setDictStorage(setHashingStorageItem.execute(frame, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
             return result;
         }
     }

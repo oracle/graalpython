@@ -159,7 +159,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PGenericAlias("GenericAlias", J_TYPES, Flags.PUBLIC_BASE_WODICT),
     PUnionType("UnionType", J_TYPES, Flags.PUBLIC_DERIVED_WODICT),
     PZip("zip", J_BUILTINS),
-    PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     PThread("start_new_thread", J__THREAD),
     PThreadLocal("_local", J__THREAD),
@@ -349,7 +348,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PermissionError("PermissionError", J_BUILTINS, Flags.EXCEPTION),
     ProcessLookupError("ProcessLookupError", J_BUILTINS, Flags.EXCEPTION),
     TimeoutError("TimeoutError", J_BUILTINS, Flags.EXCEPTION),
-    ZipImportError("ZipImportError", "zipimport", Flags.EXCEPTION),
     ZLibError("error", "zlib", Flags.EXCEPTION),
     CSVError("Error", "_csv", Flags.EXCEPTION),
     LZMAError("LZMAError", "_lzma", Flags.EXCEPTION),
@@ -655,7 +653,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PermissionError.base = OSError;
         ProcessLookupError.base = OSError;
         TimeoutError.base = OSError;
-        ZipImportError.base = ImportError;
         ZLibError.base = Exception;
         CSVError.base = Exception;
         LZMAError.base = Exception;

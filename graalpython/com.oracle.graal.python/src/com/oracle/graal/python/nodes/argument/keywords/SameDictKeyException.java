@@ -47,7 +47,7 @@ public final class SameDictKeyException extends StacktracelessCheckedException {
 
     private static final long serialVersionUID = 301451134733299948L;
 
-    private final TruffleString key;
+    private final transient TruffleString key;
 
     public SameDictKeyException(TruffleString key) {
         this.key = key;

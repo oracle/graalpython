@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,9 +76,9 @@ public final class WrapTpNew extends SlotWrapper {
     // we cache two node classes here, otherwise we use a truffle boundary lookup
     @CompilationFinal(dimensions = 1) private final Pair<?, ?>[] cachedFactoriesNodeClasses = new Pair<?, ?>[2];
 
-    private static final short NOT_SUBTP_STATE = 0b10000000;
-    private static final short NOT_CLASS_STATE = 0b01000000;
-    private static final short IS_UNSAFE_STATE = 0b00100000;
+    private static final byte NOT_SUBTP_STATE = 0b100;
+    private static final byte NOT_CLASS_STATE = 0b010;
+    private static final byte IS_UNSAFE_STATE = 0b001;
 
     public WrapTpNew(BuiltinCallNode func, PythonBuiltinClassType owner) {
         super(func);

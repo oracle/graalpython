@@ -795,9 +795,6 @@ public abstract class ErrorMessages {
     public static final TruffleString X_NOT_IN_TUPLE = tsLiteral("tuple.index(x): x not in tuple");
     public static final TruffleString S_IS_AN_INVALID_ARG_FOR_S = tsLiteral("'%s' is an invalid keyword argument for %s");
     public static final TruffleString YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH = tsLiteral("%s: you may specify either '%s' or '%s' but not both");
-    public static final TruffleString ZIPIMPORT_CANNOT_REWAD_ARCH_MEMBERS = tsLiteral("zipimport: cannot read archive members large than 2GB");
-    public static final TruffleString ZIPIMPORT_CANT_READ_DATA = tsLiteral("zipimport: can't read data");
-    public static final TruffleString ZIPIMPORT_WRONG_CACHED_FILE_POS = tsLiteral("zipimport: wrong cached file position");
     public static final TruffleString ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED = tsLiteral("access to internal language %s is not permitted");
     public static final TruffleString POW_BASE_NOT_INVERTIBLE = tsLiteral("base is not invertible for the given modulus");
     public static final TruffleString POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = tsLiteral("0.0 cannot be raised to a negative power");
@@ -844,7 +841,6 @@ public abstract class ErrorMessages {
     public static final TruffleString MAXIMUM_RECURSION_DEPTH_EXCEEDED = tsLiteral("maximum recursion depth exceeded");
     public static final TruffleString UID_IS_LESS_THAN_MINIMUM = tsLiteral("uid is less than minimum");
     public static final TruffleString UID_SHOULD_BE_INTEGER_NOT_P = tsLiteral("uid should be integer, not %p");
-    public static final TruffleString INIT_WAS_NOT_CALLED = tsLiteral("zipimporter.__init__() wasn't called");
     public static final TruffleString RANGE_OBJ_IDX_OUT_OF_RANGE = tsLiteral("range object index out of range");
     public static final TruffleString NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE = tsLiteral("number of bits must be non-negative");
     public static final TruffleString TIMEOUT_MUST_BE_NON_NEG_NUM = tsLiteral("'timeout' must be a non-negative number");

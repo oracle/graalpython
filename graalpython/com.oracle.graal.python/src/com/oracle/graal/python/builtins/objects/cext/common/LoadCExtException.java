@@ -50,9 +50,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class LoadCExtException extends Exception {
     private static final long serialVersionUID = 3517291912314595890L;
     protected final PException cause;
-    protected final Object name;
-    protected final TruffleString formatString;
-    protected final Object[] formatArgs;
+    protected final transient Object name;
+    protected final transient TruffleString formatString;
+    protected final transient Object[] formatArgs;
 
     protected LoadCExtException(PException cause, TruffleString name, TruffleString formatString, Object[] formatArgs) {
         /*
@@ -94,7 +94,7 @@ public abstract class LoadCExtException extends Exception {
 
     public static final class ImportException extends LoadCExtException {
         private static final long serialVersionUID = 7862376523476548L;
-        private final Object path;
+        private final transient Object path;
 
         public ImportException(PException cause, TruffleString name, TruffleString path, TruffleString formatString, Object... formatArgs) {
             super(cause, name, formatString, formatArgs);

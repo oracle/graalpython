@@ -126,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -1112,7 +1113,7 @@ public final class PythonContext extends Python3Core {
                         // option("python.PosixModuleBackend", "java").//
                         config(PythonContext.CHILD_CONTEXT_DATA, data);
         Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
-        long tid = thread.getId();
+        long tid = PThread.getThreadId(thread);
         getSharedMultiprocessingData().putChildContextThread(tid, thread);
         getSharedMultiprocessingData().putChildContextData(tid, data);
         for (int fdToKeep : fdsToKeep) {
@@ -2341,7 +2342,7 @@ public final class PythonContext extends Python3Core {
         threadStateMapping.remove(thread);
         ts.dispose();
         releaseSentinelLock(ts.sentinelLock);
-        getSharedMultiprocessingData().removeChildContextThread(thread.getId());
+        getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }
 
     private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {

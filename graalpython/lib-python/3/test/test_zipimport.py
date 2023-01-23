@@ -731,7 +731,6 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         files = {TESTMOD + ".py": (NOW, raise_src)}
         self.doTest(None, files, TESTMOD, call=self.doTraceback)
 
-    @support.impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
     @unittest.skipIf(os_helper.TESTFN_UNENCODABLE is None,
                      "need an unencodable filename")
     def testUnencodable(self):

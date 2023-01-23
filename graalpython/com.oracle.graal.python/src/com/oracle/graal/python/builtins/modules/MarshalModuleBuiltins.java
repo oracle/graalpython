@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -312,8 +312,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             static final long serialVersionUID = 5323687983726237118L;
 
             final PythonBuiltinClassType type;
-            final TruffleString message;
-            final Object[] arguments;
+            final transient TruffleString message;
+            final transient Object[] arguments;
 
             MarshalError(PythonBuiltinClassType type, TruffleString message, Object... arguments) {
                 super(null, null);

@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
@@ -112,7 +113,6 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
@@ -221,12 +221,14 @@ import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
@@ -296,6 +298,7 @@ import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
 import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
@@ -348,7 +351,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
-import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -362,6 +364,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -401,7 +404,6 @@ public abstract class Python3Core {
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("function"),
                         toTruffleStringUncached("_sysconfig"),
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : toTruffleStringUncached("zipimport"),
                         toTruffleStringUncached("java"),
                         toTruffleStringUncached("pip_hook"),
                         toTruffleStringUncached("_struct")));
@@ -652,8 +654,6 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new PosixSubprocessModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
                         new OperatorModuleBuiltins(),
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImporterBuiltins(),
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImportModuleBuiltins(),
 
                         // hashlib
                         PythonOptions.WITHOUT_DIGEST ? null : new Md5ModuleBuiltins(),
@@ -903,6 +903,8 @@ public abstract class Python3Core {
             loadFile(toTruffleStringUncached("importlib/_bootstrap"), getContext().getStdlibHome(), bootstrap);
         } else {
             bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB_EXTERNAL, true);
+            setItem.execute(null, sysModules, T_IMPORTLIB_BOOTSTRAP, bootstrap);
+            setItem.execute(null, sysModules, T_IMPORTLIB_BOOTSTRAP_EXTERNAL, bootstrapExternal);
             LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB + "' # <frozen>");
             LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB_EXTERNAL + "' # <frozen>");
         }
@@ -915,7 +917,51 @@ public abstract class Python3Core {
 
         callNode.execute(null, bootstrap, toTruffleStringUncached("_install"), getSysModule(), lookupBuiltinModule(T__IMP));
         writeNode.execute(getBuiltins(), T___IMPORT__, readNode.execute(bootstrap, T___IMPORT__));
+        // see CPython's init_importlib_external
         callNode.execute(null, bootstrap, toTruffleStringUncached("_install_external_importers"));
+        if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
+            // see CPython's _PyImportZip_Init
+            Object pathHooks = readNode.execute(sysModule, toTruffleStringUncached("path_hooks"));
+            if (!(pathHooks instanceof PList pathHooksList)) {
+                LOGGER.log(Level.FINE, () -> "unable to get sys.path_hooks");
+                LOGGER.log(Level.FINE, () -> "initializing zipimport failed");
+            } else {
+                LOGGER.log(Level.FINE, () -> "# installing zipimport hook");
+                TruffleString t_zipimport = toTruffleStringUncached("zipimport");
+                PythonModule zipimport = null;
+                if (!ImageInfo.inImageBuildtimeCode()) {
+                    zipimport = ImpModuleBuiltins.importFrozenModuleObject(this, t_zipimport, false);
+                }
+                if (zipimport == null) {
+                    // true when the frozen module is not available
+                    zipimport = createModule(t_zipimport);
+                    try {
+                        loadFile(t_zipimport, getContext().getStdlibHome(), zipimport);
+                    } catch (PException e) {
+                        zipimport = null;
+                        removeBuiltinModule(t_zipimport);
+                    }
+                } else {
+                    setItem.execute(null, sysModules, t_zipimport, zipimport);
+                    LOGGER.log(Level.FINE, () -> "import 'zipimport' # <frozen>");
+                }
+                if (zipimport == null) {
+                    LOGGER.log(Level.FINE, () -> "# can't import zipimport");
+                } else {
+                    writeNode.execute(zipimport, T___BUILTINS__, getBuiltins());
+                    Object zipimporter = readNode.execute(zipimport, toTruffleStringUncached("zipimporter"));
+                    if (zipimporter == PNone.NO_VALUE) {
+                        LOGGER.log(Level.FINE, () -> "# can't import zipimport.zipimporter");
+                    } else {
+                        SequenceStorageNodes.InsertItemNode insertItem = SequenceStorageNodes.InsertItemNode.getUncached();
+                        SequenceStorage store = pathHooksList.getSequenceStorage();
+                        pathHooksList.setSequenceStorage(insertItem.execute(store, 0, zipimporter));
+                        LOGGER.log(Level.FINE, () -> "# installed zipimport hook");
+                    }
+                }
+            }
+        }
+
         importFunc = (PFunction) readNode.execute(bootstrap, T___IMPORT__);
         importlib = bootstrap;
 

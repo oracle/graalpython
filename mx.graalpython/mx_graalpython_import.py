@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -171,7 +171,6 @@ CPYTHON_SOURCES_MAPPING = {
     # Test files don't need to be updated, they inline some unittest code only
     "graalpython/com.oracle.graal.python.test/src/tests": Ignore(),
     # The following files are not copies, they just contain parts
-    "graalpython/lib-graalpython/zipimport.py": Ignore(),
     "graalpython/com.oracle.graal.python.frozen/freeze_modules.py": Ignore(),
 }
 

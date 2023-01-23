@@ -46,7 +46,7 @@ public final class NonMappingException extends StacktracelessCheckedException {
 
     private static final long serialVersionUID = -5215981713505181732L;
 
-    private final Object object;
+    private final transient Object object;
 
     public NonMappingException(Object object) {
         this.object = object;

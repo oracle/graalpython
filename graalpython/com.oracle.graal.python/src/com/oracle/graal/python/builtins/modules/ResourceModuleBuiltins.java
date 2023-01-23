@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -122,7 +123,7 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"who == RUSAGE_THREAD"})
         @TruffleBoundary
         PTuple getruusageThread(@SuppressWarnings("unused") int who) {
-            long id = Thread.currentThread().getId();
+            long id = PThread.getThreadId(Thread.currentThread());
             Runtime runtime = Runtime.getRuntime();
 
             double ru_utime = 0; // time in user mode (float)
