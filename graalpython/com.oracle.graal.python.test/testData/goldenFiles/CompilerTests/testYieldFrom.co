@@ -7,7 +7,7 @@ Disassembly of <module>:
 Disassembly of gen:
 Flags: CO_GENERATOR
   2:15  -   2:16        0 LOAD_FAST                         0    (a)
-  2:4   -   2:16        2 GET_ITER
+  2:4   -   2:16        2 GET_YIELD_FROM_ITER
   2:4   -   2:16        3 LOAD_NONE
   2:4   -   2:16  >>    4 SEND                              10   (to 14)
   2:4   -   2:16  >>    6 YIELD_VALUE

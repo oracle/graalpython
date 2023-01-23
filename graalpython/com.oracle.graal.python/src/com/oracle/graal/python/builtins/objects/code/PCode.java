@@ -370,14 +370,6 @@ public final class PCode extends PythonBuiltinObject {
         return null;
     }
 
-    private static int getFlags(int flags, CodeUnit codeUnit) {
-        flags |= codeUnit.isCoroutine() ? CO_COROUTINE : 0;
-        flags |= codeUnit.isGenerator() ? CO_GENERATOR : 0;
-        flags |= codeUnit.takesVarArgs() ? CO_VARARGS : 0;
-        flags |= codeUnit.takesVarKeywordArgs() ? CO_VARKEYWORDS : 0;
-        return flags;
-    }
-
     RootNode getRootNode() {
         return getRootCallTarget().getRootNode();
     }

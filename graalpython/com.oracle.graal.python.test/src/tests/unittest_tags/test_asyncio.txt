@@ -82,7 +82,6 @@
 *test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_server_stream_bittype
 *test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_server_wrong_sock
 *test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_getnameinfo
-*test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_log_slow_callbacks
 *test.test_asyncio.test_base_events.BaseEventTests.test_ipaddr_info
 *test.test_asyncio.test_base_events.BaseEventTests.test_ipaddr_info_no_inet_pton
 *test.test_asyncio.test_base_events.BaseEventTests.test_port_parameter_types
@@ -329,7 +328,6 @@
 *test.test_asyncio.test_pep492.CoroutineTests.test_function_returning_awaitable
 *test.test_asyncio.test_pep492.CoroutineTests.test_iscoroutine
 *test.test_asyncio.test_pep492.CoroutineTests.test_iscoroutinefunction
-*test.test_asyncio.test_pep492.CoroutineTests.test_task_print_stack
 *test.test_asyncio.test_pep492.LockTests.test_context_manager_async_with
 *test.test_asyncio.test_pep492.LockTests.test_context_manager_with_await
 *test.test_asyncio.test_proactor_events.BaseProactorEventLoopTests.test_close
@@ -1458,7 +1456,6 @@
 *test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_gather_shield
 *test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_generic_alias
 *test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_get_coro
-*test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_get_stack
 *test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_iscoroutinefunction
 *test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_log_traceback
 *test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_other_loop_future
@@ -1548,7 +1545,6 @@
 *test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_gather_shield
 *test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_generic_alias
 *test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_get_coro
-*test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_get_stack
 *test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_iscoroutinefunction
 *test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_log_traceback
 *test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_other_loop_future

@@ -113,6 +113,14 @@ public enum OpCodes {
      */
     GET_ITER(0, 1, 1),
     /**
+     * Gets an iterator of an object, does nothing for a generator iterator or a coroutine
+     *
+     * Pops: object
+     *
+     * Pushes: iterator
+     */
+    GET_YIELD_FROM_ITER(0, 1, 1),
+    /**
      * Gets an awaitable of an object
      *
      * Pops: object

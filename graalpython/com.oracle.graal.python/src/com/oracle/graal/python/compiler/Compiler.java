@@ -73,6 +73,7 @@ import static com.oracle.graal.python.compiler.OpCodes.GET_AEXIT_CORO;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
 import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.GET_LEN;
+import static com.oracle.graal.python.compiler.OpCodes.GET_YIELD_FROM_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_FROM;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_STAR;
@@ -1000,21 +1001,23 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Await node) {
-        ensureIsAsync();
+        // TODO if !IS_TOP_LEVEL_AWAIT
+        if (!unit.scope.isFunction()) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside function");
+        }
+        if (unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside async function");
+        }
         SourceRange savedLocation = setLocation(node);
         try {
             node.value.accept(this);
-            awaitStackTop();
+            addOp(GET_AWAITABLE);
+            addOp(LOAD_NONE);
+            addYieldFrom();
             return null;
         } finally {
             setLocation(savedLocation);
         }
-    }
-
-    private void awaitStackTop() {
-        addOp(GET_AWAITABLE);
-        addOp(LOAD_NONE);
-        addYieldFrom();
     }
 
     @Override
@@ -1865,7 +1868,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             node.value.accept(this);
             // TODO GET_YIELD_FROM_ITER
-            addOp(GET_ITER);
+            addOp(GET_YIELD_FROM_ITER);
             addOp(LOAD_NONE);
             addYieldFrom();
             return null;
@@ -2089,20 +2092,16 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AsyncWith node) {
         setLocation(node);
-        ensureIsAsync();
+        // TODO if !IS_TOP_LEVEL_AWAIT
+        if (!unit.scope.isFunction()) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async with' outside function");
+        }
+        if (unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async with' outside async function");
+        }
         visitAsyncWith(node, 0);
         unit.useNextBlock(new Block());
         return null;
-    }
-
-    private void ensureIsAsync() {
-        // TODO if !IS_TOP_LEVEL_AWAIT
-        if (!unit.scope.isFunction()) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside function");
-        }
-        if (unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside async function");
-        }
     }
 
     private void visitAsyncWith(StmtTy.AsyncWith node, int itemIndex) {
@@ -2115,7 +2114,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.pushBlock(new BlockInfo.AsyncWith(body, handler, node));
 
         unit.useNextBlock(body);
-        awaitStackTop(); // SETUP_AWITH leaves 2 awaitables rather than a function and a result
+        // SETUP_AWITH leaves 2 awaitables rather than a function and a result
+        addOp(GET_AWAITABLE);
+        addOp(LOAD_NONE);
+        addYieldFrom();
         /*
          * Unwind one more stack item than it normally would to get rid of the context manager that
          * is not needed in the finally block
@@ -2137,7 +2139,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.useNextBlock(handler);
         setLocation(node);
         addOp(GET_AEXIT_CORO);
-        awaitStackTop();
+        addOp(GET_AWAITABLE);
+        addOp(LOAD_NONE);
+        addYieldFrom();
         addOp(EXIT_AWITH);
     }
 
@@ -3627,7 +3631,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                     addOp(LOAD_NONE);
                     addOp(GET_AEXIT_CORO);
-                    awaitStackTop();
+                    addOp(GET_AWAITABLE);
+                    addOp(LOAD_NONE);
+                    addYieldFrom();
                     addOp(EXIT_AWITH);
 
                 } else if (info instanceof BlockInfo.TryFinally) {

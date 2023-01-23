@@ -62,6 +62,8 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.FormatNodeFactory.FormatNodeGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
+import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNodeGen;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -82,8 +84,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
-import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -280,6 +280,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ForIterINode> NODE_FOR_ITER_I = ForIterINode::create;
     private static final NodeSupplier<PyObjectGetIter> NODE_OBJECT_GET_ITER = PyObjectGetIter::create;
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
+    private static final NodeSupplier<GetYieldFromIterNode> NODE_OBJECT_GET_YIELD_FROM_ITER = GetYieldFromIterNode::create;
+    private static final GetYieldFromIterNode UNCACHED_OBJECT_GET_YIELD_FROM_ITER = GetYieldFromIterNode.getUncached();
 
     private static final NodeSupplier<GetAwaitableNode> NODE_OBJECT_GET_AWAITABLE = GetAwaitableNode::create;
     private static final GetAwaitableNode UNCACHED_OBJECT_GET_AWAITABLE = GetAwaitableNode.getUncached();
@@ -2030,6 +2032,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bytecodeGetIter(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
                     }
+                    case OpCodesConstants.GET_YIELD_FROM_ITER: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        bytecodeGetYieldFromIter(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
                     case OpCodesConstants.FOR_ITER: {
                         bytecodeForIterAdaptive(bci);
                         continue;
@@ -2402,6 +2409,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     private void bytecodeGetIter(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         PyObjectGetIter getIter = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_ITER, PyObjectGetIterNodeGen.class, NODE_OBJECT_GET_ITER, useCachedNodes);
+        virtualFrame.setObject(stackTop, getIter.execute(virtualFrame, virtualFrame.getObject(stackTop)));
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeGetYieldFromIter(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        GetYieldFromIterNode getIter = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_YIELD_FROM_ITER, GetYieldFromIterNodeGen.class, NODE_OBJECT_GET_YIELD_FROM_ITER, useCachedNodes);
         virtualFrame.setObject(stackTop, getIter.execute(virtualFrame, virtualFrame.getObject(stackTop)));
     }
 
