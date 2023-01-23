@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import multiprocessing
+import sys
 import time
 from multiprocessing.connection import wait
 
@@ -71,3 +72,15 @@ def test_wait():
     assert set(res) == set([b, x])
     assert b.recv() == 1
     assert x.recv() == 2
+
+
+def test_array_read():
+    # TODO multiprocessing.Array doesn't work on emulated backend
+    if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
+        return
+    # This used to be buggy due to wrong usage of memoryview offsets when two objects were allocated in the same block
+    # Don't remove the unused value on the next line
+    # noinspection PyUnusedLocal
+    num = multiprocessing.Value('d', 0.0)
+    arr = multiprocessing.Array('i', range(10))
+    assert arr[1] == 1
