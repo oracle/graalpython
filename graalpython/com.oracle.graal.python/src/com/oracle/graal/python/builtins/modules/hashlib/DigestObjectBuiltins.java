@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -122,6 +123,9 @@ public class DigestObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         PNone update(VirtualFrame frame, DigestObject self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            if (self.wasReset()) {
+                raise(PythonBuiltinClassType.ValueError, ErrorMessages.UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED);
+            }
             try {
                 self.update(bufferLib.getInternalOrCopiedByteArray(buffer));
             } finally {

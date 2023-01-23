@@ -63,7 +63,6 @@ import com.oracle.truffle.api.object.Shape;
  */
 public abstract class DigestObject extends PythonBuiltinObject {
     private final String name;
-    private byte[] finalDigest = null;
 
     DigestObject(Object cls, Shape instanceShape, String name) {
         super(cls, instanceShape);
@@ -178,18 +177,28 @@ public abstract class DigestObject extends PythonBuiltinObject {
         }
     }
 
-    byte[] digest() {
-        if (finalDigest == null) {
-            finalDigest = finalizeDigest();
-        }
-        return finalDigest;
-    }
+    /**
+     * CPython supports updating after retrieving the digest but the JDK does not. We have to
+     * calculate the digest on a clone, but that does not need to be supported. If it is not, then
+     * we calculate the digest normally, but we must prevent any further updates.
+     *
+     * @see #wasReset(), {@link #update(byte[])}
+     */
+    abstract byte[] digest();
+
+    /**
+     * @return true if the digest has already been calculated and the underlying implementation does
+     *         not support cloning, in which case this object can no longer be
+     *         {@linkplain #update(byte[]) updated}
+     */
+    abstract boolean wasReset();
+
+    /**
+     * Must not be called if {@link #wasReset()} returns true.
+     */
+    abstract void update(byte[] data);
 
     abstract DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException;
-
-    abstract byte[] finalizeDigest();
-
-    abstract void update(byte[] data);
 
     abstract int getDigestLength();
 
@@ -197,7 +206,53 @@ public abstract class DigestObject extends PythonBuiltinObject {
         return name;
     }
 
-    private static final class MessageDigestObject extends DigestObject {
+    /**
+     * Ensures that {@link #update(byte[])} is not called after {@link #digest()} if cloning is not
+     * supported. Also caches the digest and ensures that the cache is cleared on update.
+     */
+    private static abstract class DigestObjectBase extends DigestObject {
+        private byte[] cachedDigest = null;
+        private boolean wasReset;
+
+        DigestObjectBase(Object cls, Shape instanceShape, String name) {
+            super(cls, instanceShape, name);
+        }
+
+        @Override
+        final boolean wasReset() {
+            return wasReset;
+        }
+
+        @Override
+        final byte[] digest() {
+            if (cachedDigest == null) {
+                try {
+                    cachedDigest = calculateDigestOnClone();
+                } catch (CloneNotSupportedException e) {
+                    wasReset = true;
+                    cachedDigest = calculateDigest();
+                }
+            }
+            return cachedDigest;
+        }
+
+        @Override
+        final void update(byte[] data) {
+            if (wasReset) {
+                throw CompilerDirectives.shouldNotReachHere("update() called after digest() on an implementation the does not support clone()");
+            }
+            cachedDigest = null;
+            doUpdate(data);
+        }
+
+        abstract byte[] calculateDigestOnClone() throws CloneNotSupportedException;
+
+        abstract byte[] calculateDigest();
+
+        abstract void doUpdate(byte[] data);
+    }
+
+    private static final class MessageDigestObject extends DigestObjectBase {
         private final MessageDigest digest;
 
         MessageDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, String name, MessageDigest digest) {
@@ -213,19 +268,19 @@ public abstract class DigestObject extends PythonBuiltinObject {
 
         @Override
         @TruffleBoundary
-        byte[] finalizeDigest() {
-            try {
-                // Try to finalize a clone, because CPython supports updating
-                // after retrieving the digest and the JDK does not.
-                return ((MessageDigest) digest.clone()).digest();
-            } catch (CloneNotSupportedException e) {
-                return digest.digest();
-            }
+        byte[] calculateDigestOnClone() throws CloneNotSupportedException {
+            return ((MessageDigest) digest.clone()).digest();
         }
 
         @Override
         @TruffleBoundary
-        void update(byte[] data) {
+        byte[] calculateDigest() {
+            return digest.digest();
+        }
+
+        @Override
+        @TruffleBoundary
+        void doUpdate(byte[] data) {
             digest.update(data);
         }
 
@@ -236,7 +291,7 @@ public abstract class DigestObject extends PythonBuiltinObject {
         }
     }
 
-    private static final class MacDigestObject extends DigestObject {
+    private static final class MacDigestObject extends DigestObjectBase {
         private final Mac mac;
 
         MacDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, String name, Mac mac) {
@@ -252,13 +307,19 @@ public abstract class DigestObject extends PythonBuiltinObject {
 
         @Override
         @TruffleBoundary
-        byte[] finalizeDigest() {
+        byte[] calculateDigestOnClone() throws CloneNotSupportedException {
+            return ((Mac) mac.clone()).doFinal();
+        }
+
+        @Override
+        @TruffleBoundary
+        byte[] calculateDigest() {
             return mac.doFinal();
         }
 
         @Override
         @TruffleBoundary
-        void update(byte[] data) {
+        void doUpdate(byte[] data) {
             mac.update(data);
         }
 
