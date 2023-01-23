@@ -1463,8 +1463,8 @@ public abstract class ErrorMessages {
     public static final TruffleString PY_CAPSULE_IMPORT_S_IS_NOT_VALID = tsLiteral("PyCapsule_Import \"%s\" is not valid");
     public static final TruffleString CANNOT_BE_USED_AWAIT = tsLiteral("object %s can't be used in 'await' expression");
 
+    // asyncio
     public static final TruffleString AWAIT_RETURN_COROUTINE = tsLiteral("__await__() returned a coroutine");
-
     public static final TruffleString AWAIT_RETURN_NON_ITER = tsLiteral("__await__() returned non-iterator of type '%s'");
     public static final TruffleString NO_RUNNING_EVENT_LOOP = tsLiteral("no running event loop");
     public static final TruffleString CANT_ENTER_TASK_ALREADY_RUNNING = tsLiteral("Cannot enter into task %s while another task %s is being executed.");
