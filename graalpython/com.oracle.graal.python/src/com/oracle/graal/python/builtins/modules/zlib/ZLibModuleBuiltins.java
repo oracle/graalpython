@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -601,9 +601,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        byte[] javaDecompress(byte[] array, @SuppressWarnings("unused") int wbits, int bufsize) throws DataFormatException {
-            // We don't use wbits currently. There is no easy way how to map to java Inflater.
-            Inflater decompresser = new Inflater();
+        byte[] javaDecompress(byte[] array, int wbits, int bufsize) throws DataFormatException {
+            // zlib can decompress all those formats:
+            // to (de-)compress deflate format, use wbits = -zlib.MAX_WBITS
+            // to (de-)compress zlib format, use wbits = zlib.MAX_WBITS
+            // to (de-)compress gzip format, use wbits = zlib.MAX_WBITS | 16
+            Inflater decompresser = new Inflater(wbits < 0 || (wbits & 16) == 16);
             decompresser.setInput(array);
             byte[] resultArray = new byte[bufsize];
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
