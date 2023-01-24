@@ -1519,7 +1519,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private static boolean jniBackendLoaded = false;
 
-    private static String getJNILibrary() {
+    public static String getJNILibrary() {
         CompilerAsserts.neverPartOfCompilation();
         return Paths.get(PythonContext.get(null).getJNIHome().toJavaStringUncached(), PythonContext.J_PYTHON_JNI_LIBRARY_NAME).toString();
     }

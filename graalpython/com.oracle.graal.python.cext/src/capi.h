@@ -58,6 +58,12 @@
 #include "pycore_pymem.h"
 #include "bytesobject.h"
 
+#ifndef EXCLUDE_POLYGLOT_API
+#include <graalvm/llvm/polyglot.h>
+#include <truffle.h>
+#include <graalvm/llvm/handles.h>
+#endif
+
 #define SRC_CS "utf-8"
 
 /* Flags definitions representing global (debug) options. */
@@ -787,13 +793,6 @@ CAPI_BUILTINS
 
 #define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
-#ifndef EXCLUDE_POLYGLOT_API
-
-#include <graalvm/llvm/polyglot.h>
-#include <truffle.h>
-#include <graalvm/llvm/handles.h>
-
-
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
 
 /* Flags definitions representing global (debug) options. */
@@ -822,10 +821,16 @@ static MUST_INLINE void PyTruffle_Log(int level, const char* format, ... ) {
 		va_list args;
 		va_start(args, format);
 		vsprintf(buffer,format, args);
+#ifndef EXCLUDE_POLYGLOT_API
 		GraalPyTruffle_LogString(level, polyglot_from_string(buffer, SRC_CS));
+#else
+		GraalPyTruffle_LogString(level, buffer);
+#endif
 		va_end(args);
 	}
 }
+
+#ifndef EXCLUDE_POLYGLOT_API
 
 typedef int (*cache_query_t)(uint64_t);
 typedef PyObject* (*ptr_cache_t)(PyObject*);

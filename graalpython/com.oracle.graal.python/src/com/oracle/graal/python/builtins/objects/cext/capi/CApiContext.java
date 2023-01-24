@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Creat
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -126,9 +125,12 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -142,8 +144,6 @@ public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
-
-    private static final boolean TRACE = Boolean.getBoolean("CAPITrace");
 
     /**
      * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
@@ -204,8 +204,6 @@ public final class CApiContext extends CExtContext {
      * Next key that will be allocated byt PyThread_tss_create
      */
     private final AtomicLong nextTssKey = new AtomicLong();
-
-    private final PExternalFunctionWrapper w = PExternalFunctionWrapper.DELITEM;
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -575,13 +573,6 @@ public final class CApiContext extends CExtContext {
 
     public NativeObjectReference lookupNativeObjectReference(int idx) {
         return nativeObjectWrapperList.get(idx);
-    }
-
-    /**
-     * Checks if the given {@link NativeObjectReference} objects point to the same native object.
-     */
-    private static boolean isReferenceToSameNativeObject(NativeObjectReference old, NativeObjectReference ref) {
-        return InteropLibrary.getUncached().isIdentical(old.ptrObject, ref.ptrObject, InteropLibrary.getUncached());
     }
 
     static long idToRefCnt(int id) {
@@ -1017,44 +1008,185 @@ public final class CApiContext extends CExtContext {
 
     private final HashMap<String, Long> typeStorePointers = new HashMap<>();
 
-    public static void setTypeStore(String typename, long ptr) {
-        if (!"unimplemented".equals(typename)) {
-            CApiContext context = PythonContext.get(null).getCApiContext();
-            assert !context.typeStorePointers.containsKey(typename) : typename;
-            context.typeStorePointers.put(typename, ptr);
-        }
-    }
-
     public Long getTypeStore(String typename) {
         return typeStorePointers.get(typename);
     }
 
-    public static void initJNI() {
-        GraalHPyContext.loadJNIBackend();
-        initJNIForward();
+    @ExportLibrary(InteropLibrary.class)
+    static final class GetAPI implements TruffleObject {
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        Object execute(Object[] arguments) {
+            assert arguments.length == 1;
+            String name = (String) arguments[0];
+            try {
+                Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+                CApiBuiltinExecutable builtin = PythonCextBuiltins.capiBuiltins.get(name);
+                Object result;
+                if (builtin != null) {
+                    result = builtin;
+                    assert builtin.getAnnotation().call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, name) : "name clash in builtin vs. CAPI library: " +
+                                    name;
+                } else {
+                    result = InteropLibrary.getUncached().readMember(llvmLibrary, name);
+                }
+                InteropLibrary.getUncached().toNative(result);
+                long pointer = InteropLibrary.getUncached().asPointer(result);
+                LOGGER.finer((builtin != null ? "getAPI(builtin) " : "getAPI(library) ") + name + " -> " + java.lang.Long.toHexString(pointer));
+                return pointer;
+            } catch (Throwable e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
     }
 
-    @TruffleBoundary
-    private static native int initJNIForward();
+    @ExportLibrary(InteropLibrary.class)
+    static final class GetType implements TruffleObject {
 
-    public static long getAPI(String name) {
-        try {
-            Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
-            CApiBuiltinExecutable builtin = PythonCextBuiltins.capiBuiltins.get(name);
-            Object result;
-            if (builtin != null) {
-                result = builtin;
-                assert builtin.getAnnotation().call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, name) : "name clash in builtin vs. CAPI library: " + name;
-            } else {
-                result = InteropLibrary.getUncached().readMember(llvmLibrary, name);
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        Object execute(Object[] arguments) {
+            assert arguments.length == 1;
+            String typename = (String) arguments[0];
+
+            Object result = null;
+            try {
+                Python3Core core = PythonContext.get(null).getCore();
+                Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+                switch (typename) {
+                    case "Py_False":
+                        result = false;
+                        break;
+                    case "Py_True":
+                        result = true;
+                        break;
+                    case "PyLong_One":
+                    case "_PyTruffle_One":
+                        result = 1;
+                        break;
+                    case "PyLong_Zero":
+                    case "_PyTruffle_Zero":
+                        result = 0;
+                        break;
+                    case "Py_NotImplemented":
+                        result = PNotImplemented.NOT_IMPLEMENTED;
+                        break;
+                    case "Py_Ellipsis":
+                        result = PEllipsis.INSTANCE;
+                        break;
+                    case "Py_None":
+                        result = PNone.NONE;
+                        break;
+                    case "capsule":
+                        result = InteropLibrary.getUncached().readMember(llvmLibrary, "getPyCapsuleTypeReference");
+                        result = InteropLibrary.getUncached().execute(result);
+                        result = ToJavaNodeGen.getUncached().execute(result);
+                        break;
+                }
+                if (result == null) {
+                    for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
+                        if (type.getName().toJavaStringUncached().equals(typename)) {
+                            result = core.lookupType(type);
+                            break;
+                        }
+                    }
+                }
+                if (result == null) {
+                    TruffleString tsTypename = PythonUtils.toTruffleStringUncached(typename);
+                    for (TruffleString module : LOOKUP_MODULES) {
+                        Object attribute = core.lookupBuiltinModule(module).getAttribute(tsTypename);
+                        if (attribute instanceof PBuiltinMethod) {
+                            attribute = CallNode.getUncached().execute(attribute);
+                        }
+                        if (attribute != PNone.NO_VALUE) {
+                            result = attribute;
+                            break;
+                        }
+                    }
+                }
+                if (result == null && resolveConstant(typename) != -1) {
+                    // get symbols allocated in bitcode
+                    result = InteropLibrary.getUncached().invokeMember(llvmLibrary, "truffle_get_constant", resolveConstant(typename));
+                    InteropLibrary.getUncached().toNative(result);
+                    return InteropLibrary.getUncached().asPointer(result);
+                }
+                if (result != null) {
+                    result = ToNewRefNodeGen.getUncached().execute(result);
+                    long l;
+                    if (result instanceof Long) {
+                        l = (long) result;
+                    } else {
+                        InteropLibrary.getUncached().toNative(result);
+                        l = InteropLibrary.getUncached().asPointer(result);
+                    }
+                    LOGGER.finer("getType " + typename + " -> " + java.lang.Long.toHexString(l));
+                    return l;
+                }
+                throw new RuntimeException("type " + typename + " not found");
+            } catch (Throwable e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
             }
-            InteropLibrary.getUncached().toNative(result);
-            long pointer = InteropLibrary.getUncached().asPointer(result);
-            LOGGER.finer((builtin != null ? "getAPI(builtin) " : "getAPI(library) ") + name + " -> " + java.lang.Long.toHexString(pointer));
-            return pointer;
-        } catch (Throwable e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class SetTypeStore implements TruffleObject {
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        Object execute(Object[] arguments) {
+            assert arguments.length == 2;
+            String typename = (String) arguments[0];
+            long ptr = (long) arguments[1];
+
+            if (!"unimplemented".equals(typename)) {
+                CApiContext context = PythonContext.get(null).getCApiContext();
+                assert !context.typeStorePointers.containsKey(typename) : typename;
+                context.typeStorePointers.put(typename, ptr);
+            }
+            return 0;
+        }
+    }
+
+    private Object jniLibrary;
+
+    public void initJNI() {
+        GraalHPyContext.loadJNIBackend();
+        Env env = PythonContext.get(null).getEnv();
+
+        SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
+        try {
+            jniLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
+            Object initFunction = InteropLibrary.getUncached().readMember(jniLibrary, "initNativeForward");
+
+            // PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void*
+            // (*getType)(const char*), void (*setTypeStore)(const char*, void*))
+            Object signature = env.parseInternal(Source.newBuilder("nfi", "((STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):VOID", "exec").build()).call();
+            Object bound = SignatureLibrary.getUncached().bind(signature, initFunction);
+            InteropLibrary.getUncached().execute(bound, new GetAPI(), new GetType(), new SetTypeStore());
+        } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
@@ -1063,87 +1195,6 @@ public final class CApiContext extends CExtContext {
                     "_weakref",
                     "builtins"
     });
-
-    public static long getType(String typename) {
-        Object result = null;
-        try {
-            Python3Core core = PythonContext.get(null).getCore();
-            Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
-            switch (typename) {
-                case "Py_False":
-                    result = false;
-                    break;
-                case "Py_True":
-                    result = true;
-                    break;
-                case "PyLong_One":
-                case "_PyTruffle_One":
-                    result = 1;
-                    break;
-                case "PyLong_Zero":
-                case "_PyTruffle_Zero":
-                    result = 0;
-                    break;
-                case "Py_NotImplemented":
-                    result = PNotImplemented.NOT_IMPLEMENTED;
-                    break;
-                case "Py_Ellipsis":
-                    result = PEllipsis.INSTANCE;
-                    break;
-                case "Py_None":
-                    result = PNone.NONE;
-                    break;
-                case "capsule":
-                    result = InteropLibrary.getUncached().readMember(llvmLibrary, "getPyCapsuleTypeReference");
-                    result = InteropLibrary.getUncached().execute(result);
-                    result = ToJavaNodeGen.getUncached().execute(result);
-                    break;
-            }
-            if (result == null) {
-                for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
-                    if (type.getName().toJavaStringUncached().equals(typename)) {
-                        result = core.lookupType(type);
-                        break;
-                    }
-                }
-            }
-            if (result == null) {
-                TruffleString tsTypename = PythonUtils.toTruffleStringUncached(typename);
-                for (TruffleString module : LOOKUP_MODULES) {
-                    Object attribute = core.lookupBuiltinModule(module).getAttribute(tsTypename);
-                    if (attribute instanceof PBuiltinMethod) {
-                        attribute = CallNode.getUncached().execute(attribute);
-                    }
-                    if (attribute != PNone.NO_VALUE) {
-                        result = attribute;
-                        break;
-                    }
-                }
-            }
-            if (result == null && resolveConstant(typename) != -1) {
-                // get symbols allocated in bitcode
-                result = InteropLibrary.getUncached().invokeMember(llvmLibrary, "truffle_get_constant", resolveConstant(typename));
-                InteropLibrary.getUncached().toNative(result);
-                return InteropLibrary.getUncached().asPointer(result);
-            }
-            if (result != null) {
-                result = ToNewRefNodeGen.getUncached().execute(result);
-                long l;
-                if (result instanceof Long) {
-                    l = (long) result;
-                } else {
-                    InteropLibrary.getUncached().toNative(result);
-                    l = InteropLibrary.getUncached().asPointer(result);
-                }
-                LOGGER.finer("getType " + typename + " -> " + java.lang.Long.toHexString(l));
-                return l;
-            }
-            throw new RuntimeException("type " + typename + " not found");
-        } catch (Throwable e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
 
     private static int resolveConstant(String typename) {
         // this needs to correspond to truffle_get_constant in capi.c

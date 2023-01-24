@@ -2383,7 +2383,7 @@ public final class PythonContext extends Python3Core {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         this.cApiContext = capiContext;
 
-        CApiContext.initJNI();
+        capiContext.initJNI();
 
         PyDateTimeCAPIWrapper.initWrapper(capiContext);
 

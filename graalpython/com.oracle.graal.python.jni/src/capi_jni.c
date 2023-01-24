@@ -52,7 +52,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-#include <jni.h>
 
 #define MUST_INLINE __attribute__((always_inline)) inline
 
@@ -346,73 +345,35 @@ EXCEPTIONS
 CAPI_BUILTINS
 #undef BUILTIN
 
-JNIEnv* jniEnvForward;
-jclass jniForwardClass;
-jmethodID jniMethodGetAPI;
-jmethodID jniMethodGetType;
-jmethodID jniMethodSetTypeStore;
 
-jmethodID resolveMethod(const char* name, const char* signature) {
-    jmethodID result = (*jniEnvForward)->GetStaticMethodID(jniEnvForward, jniForwardClass, name, signature);
-    if (result == NULL) {
-        printf("ERROR: jni method %s %s not found found !\n", name, signature);
-        exit(-1);
-    }
-    return result;
-}
+uint32_t Py_Truffle_Options;
 
-void* resolveAPI(const char* function) {
-    jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, function);
-    return (void*) (*jniEnvForward)->CallStaticLongMethod(jniEnvForward, jniForwardClass, jniMethodGetAPI, name);
-}
+void initializeCAPIForwards(void* (*getAPI)(const char*));
 
-JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_capi_CApiContext_initJNIForward(JNIEnv *env, jclass clazz) {
-
+PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
     LOG("%s", "capi_jni.c:initJNIForward\n");
-    jniEnvForward = env;
-    jniForwardClass = (jclass) (*env)->NewGlobalRef(env, clazz);
-    jniMethodGetAPI = resolveMethod("getAPI", "(Ljava/lang/String;)J");
-    jniMethodGetType = resolveMethod("getType", "(Ljava/lang/String;)J");
-    jniMethodSetTypeStore = resolveMethod("setTypeStore", "(Ljava/lang/String;J)V");
+    clock_t t;
+    t = clock();
 
-#define SET_TYPE_OBJECT_STORE(NAME, TYPENAME) { \
-    jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, #TYPENAME); \
-    LOG("%s %s %lx", #NAME, #TYPENAME, (unsigned long) (void*) &NAME); \
-    (*jniEnvForward)->CallStaticVoidMethod(jniEnvForward, jniForwardClass, jniMethodSetTypeStore, name, (jlong) (void*) &NAME); \
-}
+#define SET_TYPE_OBJECT_STORE(NAME, TYPENAME) setTypeStore(#TYPENAME, (void*) &NAME);
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
 #undef SET_TYPE_OBJECT_STORE
 
-#define TYPE_OBJECT(CTYPE, NAME, TYPENAME, STRUCT_TYPE) { \
-    jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, #TYPENAME); \
-    NAME##Reference = (CTYPE) (*jniEnvForward)->CallStaticLongMethod(jniEnvForward, jniForwardClass, jniMethodGetType, name); \
-}
+#define TYPE_OBJECT(CTYPE, NAME, TYPENAME, STRUCT_TYPE) NAME##Reference = (CTYPE) getType(#TYPENAME);
     TYPE_OBJECTS
 #undef TYPE_OBJECT
 
-#define CONSTANT(TYPE, NAME, INTERNAL_NAME) { \
-    jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, #INTERNAL_NAME); \
-    NAME = (TYPE) (*jniEnvForward)->CallStaticLongMethod(jniEnvForward, jniForwardClass, jniMethodGetType, name); \
-}
+#define CONSTANT(TYPE, NAME, INTERNAL_NAME) NAME = (TYPE) getType(#INTERNAL_NAME);
     CONSTANTS
 #undef CONSTANT
     
-#define CONSTANT(TYPE, NAME) { \
-    jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, #NAME); \
-    memcpy((void*) &NAME, (void*) (*jniEnvForward)->CallStaticLongMethod(jniEnvForward, jniForwardClass, jniMethodGetType, name), sizeof(NAME)); \
-}
-#define CONSTANT_ARRAY(TYPE, NAME, SIZE) { \
-    jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, #NAME); \
-    memcpy((void*) NAME, (void*) (*jniEnvForward)->CallStaticLongMethod(jniEnvForward, jniForwardClass, jniMethodGetType, name), sizeof(NAME)); \
-}
+#define CONSTANT(TYPE, NAME) memcpy((void*) &NAME, getType(#NAME), sizeof(NAME));
+#define CONSTANT_ARRAY(TYPE, NAME, SIZE) memcpy((void*) NAME, getType(#NAME), sizeof(NAME));
     CONSTANT_COPIES
 #undef CONSTANT
 #undef CONSTANT_ARRAY
 
-#define EXCEPTION(NAME) { \
-    jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, #NAME); \
-    PyExc_##NAME = (PyObject*) (*jniEnvForward)->CallStaticLongMethod(jniEnvForward, jniForwardClass, jniMethodGetType, name); \
-}
+#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) getType(#NAME);
     EXCEPTIONS
 #undef EXCEPTION
 
@@ -420,16 +381,16 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_capi_C
 #define SET_TYPE_OBJECT_STORE(NAME, TYPENAME) \
     if (strcmp(#TYPENAME, "unimplemented") != 0) { \
         LOG("initializing toNative: %s %s %lx", #NAME, #TYPENAME, (unsigned long) (void*) &NAME); \
-        jstring name = (*jniEnvForward)->NewStringUTF(jniEnvForward, #TYPENAME); \
-        (*jniEnvForward)->CallStaticLongMethod(jniEnvForward, jniForwardClass, jniMethodGetType, name); \
+        getType(#TYPENAME); \
     }
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
 #undef SET_TYPE_OBJECT_STORE
     
-#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) resolveAPI(#NAME);
+#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getAPI(#NAME);
 CAPI_BUILTINS
 #undef BUILTIN
-
+    Py_Truffle_Options = GraalPyTruffle_Native_Options();
+    initializeCAPIForwards(getAPI);
 
 #ifdef TIMING
     long total = 0;
@@ -440,8 +401,7 @@ CAPI_BUILTINS
     }
     printf("TIME: ns per query = %li\n", total / 1000);
 #endif // TIMING
-
-    return 0;
+    PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
 /* Private types are defined here because we need to declare the type cast. */
@@ -678,7 +638,9 @@ PyThreadState * PyThreadState_Get() {
 
 char _PyByteArray_empty_string[] = "";
 
-
+/*
+ * The following source files contain code that can be compiled directly and does not need to be called via stubs in Sulong:
+ */
 
 #include "_warnings.c"
 #include "boolobject.c"

@@ -1471,7 +1471,65 @@ public final class CApiFunction {
 
     private static PrintStream output;
 
+    public static Path resolvePath(Path source) {
+        Path result = Path.of("graalpython").resolve(source);
+        if (result.toFile().exists()) {
+            return result;
+        }
+        result = Path.of("..").resolve(source);
+        if (result.toFile().exists()) {
+            return result;
+        }
+        throw new RuntimeException("not found: " + source);
+    }
+
+    public static void generateCForwards() throws IOException {
+        Path path = resolvePath(Path.of("com.oracle.graal.python.jni", "src", "capi_forwards.h"));
+        System.out.println("generating C API forwards in " + path);
+        output = new PrintStream(path.toFile());
+
+        output.println("// generated from " + CApiFunction.class);
+        output.println();
+        TreeSet<String> missingVarargForwards = new TreeSet<>();
+        LinkedHashMap<CApiFunction, String> forwards = new LinkedHashMap<>();
+        generateCPrologue();
+        ArrayList<CApiFunction> toBeResolved = new ArrayList<>();
+        for (CApiFunction function : values) {
+            if (function.call == Ignored || function.call == CImpl) {
+                // nothing to be done
+            } else if (function.call == CApiCallPath.NotImplemented) {
+                function.generateUnimplemented();
+            } else if (function.hasVarargs()) {
+                String name = function.forwardsTo;
+                Optional<CApiFunction> existing = values.stream().filter(n -> n.name.equals(name)).findFirst();
+                if (existing.isPresent()) {
+                    CApiFunction va = existing.get();
+                    ArgDescriptor[] argMod = function.arguments.clone();
+                    argMod[argMod.length - 1] = ArgDescriptor.VA_LIST;
+                    compareFunction(name, function.returnType, va.returnType, argMod, va.arguments);
+                    forwards.put(function, name);
+                } else {
+                    if (function.call != NotImplemented) {
+                        missingVarargForwards.add(function.name);
+                    }
+                }
+            } else {
+                function.generateC();
+                toBeResolved.add(function);
+            }
+        }
+        // insert all forwards at the end (in case the targets aren't defined in header files)
+        forwards.forEach(CApiFunction::generateVarargForward);
+        if (!missingVarargForwards.isEmpty()) {
+            System.out.println("missing forward for VARARG functions ('...' cannot cross NFI boundary):\n  " + missingVarargForwards.stream().collect(Collectors.joining(", ")));
+        }
+        generateCEpilogue(toBeResolved);
+        output.close();
+        checkImports();
+    }
+
     static void generateCPrologue() {
+        output.println("void unimplemented(const char* name) { printf(\"Function not implemented in GraalPy: %s\\n\", name); }");
         output.println("#ifdef STATS");
         output.println("long totalTime;");
         output.println("long totalCount;");
@@ -1495,63 +1553,15 @@ public final class CApiFunction {
         }
     }
 
-    static void generateCEpilogue() {
+    static void generateCEpilogue(ArrayList<CApiFunction> toBeResolved) {
         output.println("#ifdef STATS");
         output.println("CAPIStats* getStatsList() { return &__stats__" + lastStatsName + "; }");
         output.println("#endif");
-    }
-
-    public static Path resolvePath(Path source) {
-        Path result = Path.of("graalpython").resolve(source);
-        if (result.toFile().exists()) {
-            return result;
+        output.println("void initializeCAPIForwards(void* (*getAPI)(const char*)) {");
+        for (CApiFunction function : toBeResolved) {
+            output.println("    " + function.targetName() + " = getAPI(\"" + function.name + "\");");
         }
-        result = Path.of("..").resolve(source);
-        if (result.toFile().exists()) {
-            return result;
-        }
-        throw new RuntimeException("not found: " + source);
-    }
-
-    public static void generateCForwards() throws IOException {
-        Path path = resolvePath(Path.of("com.oracle.graal.python.jni", "src", "capi_forwards.h"));
-        System.out.println("generating C API forwards in " + path);
-        output = new PrintStream(path.toFile());
-
-        output.println("// generated from " + CApiFunction.class);
-        output.println();
-        TreeSet<String> missingVarargForwards = new TreeSet<>();
-        LinkedHashMap<CApiFunction, String> forwards = new LinkedHashMap<>();
-        generateCPrologue();
-        for (CApiFunction function : values) {
-            if (function.call != Ignored && function.call != CImpl) {
-                if (function.hasVarargs()) {
-                    String name = function.forwardsTo;
-                    Optional<CApiFunction> existing = values.stream().filter(n -> n.name.equals(name)).findFirst();
-                    if (existing.isPresent()) {
-                        CApiFunction va = existing.get();
-                        ArgDescriptor[] argMod = function.arguments.clone();
-                        argMod[argMod.length - 1] = ArgDescriptor.VA_LIST;
-                        compareFunction(name, function.returnType, va.returnType, argMod, va.arguments);
-                        forwards.put(function, name);
-                    } else {
-                        if (function.call != NotImplemented) {
-                            missingVarargForwards.add(function.name);
-                        }
-                    }
-                } else {
-                    function.generateC();
-                }
-            }
-        }
-        // insert all forwards at the end (in case the targets aren't defined in header files)
-        forwards.forEach(CApiFunction::generateVarargForward);
-        if (!missingVarargForwards.isEmpty()) {
-            System.out.println("missing forward for VARARG functions ('...' cannot cross NFI boundary):\n  " + missingVarargForwards.stream().collect(Collectors.joining(", ")));
-        }
-        generateCEpilogue();
-        output.close();
-        checkImports();
+        output.println("}");
     }
 
     boolean hasVarargs() {
@@ -1613,6 +1623,13 @@ public final class CApiFunction {
         return "CallStatic" + mixedCase + "Method";
     }
 
+    void generateUnimplemented() {
+        output.println((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
+                        "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+        output.println("    unimplemented(\"" + name + "\"); exit(-1);");
+        output.println("}");
+    }
+
     void generateC() {
         if (lastStatsName == null) {
             output.println("FIRST_STATS_CONTAINER(" + name + ")");
@@ -1630,9 +1647,6 @@ public final class CApiFunction {
                             mapArgs(i -> (isStringArg(i) ? argName(i) + "?" + argName(i) + ":\"<null>\", " : "") + "(unsigned long) " + argName(i), ", ") +
                             ");");
         }
-        output.println("    if (" + targetName() + " == NULL) {");
-        output.println("        " + targetName() + " = resolveAPI(\"" + name + "\");");
-        output.println("    }");
         output.println("    STATS_BEFORE(" + name + ")");
         output.print("    ");
         if (!returnType.isVoid()) {
