@@ -70,7 +70,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PZipLongest})
@@ -106,7 +105,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noItProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
-                        /* @Shared */ @Cached InlinedLoopConditionProfile loopProfile) {
+                        /* @Shared */ @Cached LoopConditionProfile loopProfile) {
             return next(frame, inliningTarget, self, PNone.NONE, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
         }
 
@@ -117,16 +116,15 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noItProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
-                        /* @Shared */ @Cached InlinedLoopConditionProfile loopProfile) {
+                        /* @Shared */ @Cached LoopConditionProfile loopProfile) {
             return next(frame, inliningTarget, self, self.getFillValue(), nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
         }
 
         private Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
-                        InlinedLoopConditionProfile loopProfile,
-                        InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile) {
+                        LoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile) {
             Object[] result = new Object[self.getItTuple().length];
-            loopProfile.profileCounted(inliningTarget, result.length);
-            for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
+            loopProfile.profileCounted(result.length);
+            for (int i = 0; loopProfile.inject(i < result.length); i++) {
                 Object it = self.getItTuple()[i];
                 Object item;
                 if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
