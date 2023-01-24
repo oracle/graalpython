@@ -158,7 +158,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -266,7 +266,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
-            if (IsBuiltinObjectProfile.profileObjectUncached(self, PythonBuiltinClassType.PythonClass)) {
+            if (InlineIsBuiltinClassProfile.profileClassSlowPath(self, PythonBuiltinClassType.PythonClass)) {
                 return self.getAttribute(TYPE_DOC);
             } else {
                 return self.getAttribute(T___DOC__);

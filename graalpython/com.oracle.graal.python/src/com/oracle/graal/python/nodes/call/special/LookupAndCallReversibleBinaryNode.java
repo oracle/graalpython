@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,23 +55,25 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallReversibleBinaryNodeGen.AreSameCallablesNodeGen;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 // cpython://Objects/abstract.c#binary_op1
@@ -126,51 +128,53 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
 
     @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
     Object callObjectGenericR(VirtualFrame frame, Object left, Object right,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Cached("create(slot)") LookupSpecialMethodSlotNode getattr,
                     @Cached("create(rslot)") LookupSpecialMethodSlotNode getattrR,
-                    @Cached GetClassNode getLeftClassNode,
-                    @Cached GetClassNode getRightClassNode,
-                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached InlinedGetClassNode getLeftClassNode,
+                    @Cached InlinedGetClassNode getRightClassNode,
+                    @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
                     @Cached IsSubtypeNode isSubtype,
-                    @Cached ConditionProfile hasLeftCallable,
-                    @Cached ConditionProfile hasRightCallable,
-                    @Cached ConditionProfile notImplementedProfile,
-                    @Cached BranchProfile noLeftBuiltinClassType,
-                    @Cached BranchProfile noRightBuiltinClassType,
-                    @Cached BranchProfile gotResultBranch,
-                    @Cached("createAreSameCallables()") AreSameCallables areSameCallables,
+                    @Cached InlinedConditionProfile hasLeftCallable,
+                    @Cached InlinedConditionProfile hasRightCallable,
+                    @Cached InlinedConditionProfile notImplementedProfile,
+                    @Cached InlinedBranchProfile noLeftBuiltinClassType,
+                    @Cached InlinedBranchProfile noRightBuiltinClassType,
+                    @Cached InlinedBranchProfile gotResultBranch,
+                    @Cached AreSameCallables areSameCallables,
                     @Cached GetEnclosingType getEnclosingType) {
-        return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
-                        noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
+        return doCallObjectR(frame, inliningTarget, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable,
+                        notImplementedProfile, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
     }
 
     @Specialization(replaces = "callObjectGenericR")
     @Megamorphic
     Object callObjectRMegamorphic(VirtualFrame frame, Object left, Object right,
+                    @Bind("this") Node inliningTarget,
                     @Cached("create(slot)") LookupSpecialMethodSlotNode getattr,
                     @Cached("create(rslot)") LookupSpecialMethodSlotNode getattrR,
-                    @Cached GetClassNode getLeftClassNode,
-                    @Cached GetClassNode getRightClassNode,
-                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached InlinedGetClassNode getLeftClassNode,
+                    @Cached InlinedGetClassNode getRightClassNode,
+                    @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
                     @Cached IsSubtypeNode isSubtype,
-                    @Cached ConditionProfile hasLeftCallable,
-                    @Cached ConditionProfile hasRightCallable,
-                    @Cached ConditionProfile notImplementedProfile,
-                    @Cached BranchProfile noLeftBuiltinClassType,
-                    @Cached BranchProfile noRightBuiltinClassType,
-                    @Cached BranchProfile gotResultBranch,
-                    @Cached("createAreSameCallables()") AreSameCallables areSameCallables,
+                    @Cached InlinedConditionProfile hasLeftCallable,
+                    @Cached InlinedConditionProfile hasRightCallable,
+                    @Cached InlinedConditionProfile notImplementedProfile,
+                    @Cached InlinedBranchProfile noLeftBuiltinClassType,
+                    @Cached InlinedBranchProfile noRightBuiltinClassType,
+                    @Cached InlinedBranchProfile gotResultBranch,
+                    @Cached AreSameCallables areSameCallables,
                     @Cached GetEnclosingType getEnclosingType) {
-        return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
-                        noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
+        return doCallObjectR(frame, inliningTarget, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable,
+                        notImplementedProfile, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
     }
 
-    private Object doCallObjectR(VirtualFrame frame, Object left, Object right, LookupSpecialMethodSlotNode getattr, LookupSpecialMethodSlotNode getattrR, GetClassNode getLeftClassNode,
-                    GetClassNode getRightClassNode, TypeNodes.IsSameTypeNode isSameTypeNode, IsSubtypeNode isSubtype, ConditionProfile hasLeftCallable, ConditionProfile hasRightCallable,
-                    ConditionProfile notImplementedProfile, BranchProfile noLeftBuiltinClassType, BranchProfile noRightBuiltinClassType,
-                    BranchProfile gotResultBranch, AreSameCallables areSameCallables, GetEnclosingType getEnclosingType) {
+    private Object doCallObjectR(VirtualFrame frame, Node inliningTarget, Object left, Object right, LookupSpecialMethodSlotNode getattr, LookupSpecialMethodSlotNode getattrR,
+                    InlinedGetClassNode getLeftClassNode, InlinedGetClassNode getRightClassNode, TypeNodes.InlinedIsSameTypeNode isSameTypeNode, IsSubtypeNode isSubtype,
+                    InlinedConditionProfile hasLeftCallable, InlinedConditionProfile hasRightCallable, InlinedConditionProfile notImplementedProfile, InlinedBranchProfile noLeftBuiltinClassType,
+                    InlinedBranchProfile noRightBuiltinClassType, InlinedBranchProfile gotResultBranch, AreSameCallables areSameCallables, GetEnclosingType getEnclosingType) {
         // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
         // (the structure is modelled closely on it), as well as the additional logic in
         // cpython://Objects/typeobject.c#SLOT1BINFULL. The latter has the addition that it swaps
@@ -182,7 +186,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         // types' methods and instead have our swapping for the builtin types.
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object leftClass = getLeftClassNode.execute(left);
+        Object leftClass = getLeftClassNode.execute(inliningTarget, left);
         Object leftCallable;
         try {
             leftCallable = getattr.execute(frame, leftClass, left);
@@ -193,7 +197,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
                 throw e;
             }
         }
-        Object rightClass = getRightClassNode.execute(right);
+        Object rightClass = getRightClassNode.execute(inliningTarget, right);
         Object rightCallable;
         try {
             rightCallable = getattrR.execute(frame, rightClass, right);
@@ -205,29 +209,29 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
             }
         }
 
-        if (!alwaysCheckReverse && areSameCallables.execute(leftCallable, rightCallable)) {
+        if (!alwaysCheckReverse && areSameCallables.execute(inliningTarget, leftCallable, rightCallable)) {
             rightCallable = PNone.NO_VALUE;
         }
 
-        if (hasLeftCallable.profile(leftCallable != PNone.NO_VALUE)) {
-            if (hasRightCallable.profile(rightCallable != PNone.NO_VALUE) &&
-                            (!isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass) ||
-                                            isFlagSequenceCompat(leftClass, rightClass, slot, noLeftBuiltinClassType, noRightBuiltinClassType))) {
-                result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rslot, isSubtype, getEnclosingType);
+        if (hasLeftCallable.profile(inliningTarget, leftCallable != PNone.NO_VALUE)) {
+            if (hasRightCallable.profile(inliningTarget, rightCallable != PNone.NO_VALUE) &&
+                            (!isSameTypeNode.execute(inliningTarget, leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass) ||
+                                            isFlagSequenceCompat(inliningTarget, leftClass, rightClass, slot, noLeftBuiltinClassType, noRightBuiltinClassType))) {
+                result = dispatch(frame, inliningTarget, ensureReverseDispatch(), rightCallable, right, left, rightClass, rslot, isSubtype, getEnclosingType);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
-                gotResultBranch.enter();
+                gotResultBranch.enter(inliningTarget);
                 rightCallable = PNone.NO_VALUE;
             }
-            result = dispatch(frame, ensureDispatch(), leftCallable, left, right, leftClass, slot, isSubtype, getEnclosingType);
+            result = dispatch(frame, inliningTarget, ensureDispatch(), leftCallable, left, right, leftClass, slot, isSubtype, getEnclosingType);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
-            gotResultBranch.enter();
+            gotResultBranch.enter(inliningTarget);
         }
-        if (notImplementedProfile.profile(rightCallable != PNone.NO_VALUE)) {
-            result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rslot, isSubtype, getEnclosingType);
+        if (notImplementedProfile.profile(inliningTarget, rightCallable != PNone.NO_VALUE)) {
+            result = dispatch(frame, inliningTarget, ensureReverseDispatch(), rightCallable, right, left, rightClass, rslot, isSubtype, getEnclosingType);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
             return runErrorHandler(frame, left, right);
@@ -235,13 +239,11 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         return result;
     }
 
-    protected AreSameCallables createAreSameCallables() {
-        return !alwaysCheckReverse ? AreSameCallablesNodeGen.create() : null;
-    }
-
     @ImportStatic(PGuards.class)
+    @GenerateInline
+    @GenerateCached(false)
     protected abstract static class AreSameCallables extends Node {
-        public abstract boolean execute(Object left, Object right);
+        public abstract boolean execute(Node inliningTarget, Object left, Object right);
 
         @Specialization(guards = "a == b")
         static boolean areIdenticalFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
@@ -285,8 +287,10 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateInline
+    @GenerateCached(false)
     protected abstract static class GetEnclosingType extends Node {
-        public abstract Object execute(Object callable);
+        public abstract Object execute(Node inliningTarget, Object callable);
 
         @Specialization
         static Object doDescrs(BuiltinMethodDescriptor descriptor) {
@@ -309,26 +313,27 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         }
     }
 
-    private Object dispatch(VirtualFrame frame, CallBinaryMethodNode dispatch, Object callable, Object leftValue, Object rightValue, Object leftClass, SpecialMethodSlot op, IsSubtypeNode isSubtype,
-                    GetEnclosingType getEnclosingType) {
+    private Object dispatch(VirtualFrame frame, Node inliningTarget, CallBinaryMethodNode dispatch, Object callable, Object leftValue,
+                    Object rightValue, Object leftClass, SpecialMethodSlot op, IsSubtypeNode isSubtype, GetEnclosingType getEnclosingType) {
         // see descrobject.c/wrapperdescr_call()
-        Object enclosing = getEnclosingType.execute(callable);
+        Object enclosing = getEnclosingType.execute(inliningTarget, callable);
         if (enclosing != null && !isSubtype.execute(leftClass, enclosing)) {
             throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, op.getName(), ensureGetNameNode().execute(leftClass), leftValue);
         }
         return dispatch.executeObject(frame, callable, leftValue, rightValue);
     }
 
-    private static boolean isFlagSequenceCompat(Object leftClass, Object rightClass, SpecialMethodSlot slot, BranchProfile gotLeftBuiltinClassType, BranchProfile gotRightBuiltinClassType) {
+    private static boolean isFlagSequenceCompat(Node inliningTarget, Object leftClass, Object rightClass, SpecialMethodSlot slot, InlinedBranchProfile gotLeftBuiltinClassType,
+                    InlinedBranchProfile gotRightBuiltinClassType) {
         if (PGuards.isNativeClass(leftClass) || PGuards.isNativeClass(rightClass)) {
             return false;
         }
         // see pypy descroperation.py#_make_binop_impl()
         boolean isSeqBugCompatOperation = (slot == SpecialMethodSlot.Add || slot == SpecialMethodSlot.Mul);
-        return isSeqBugCompatOperation && isFlagSequenceBugCompat(leftClass, gotLeftBuiltinClassType) && !isFlagSequenceBugCompat(rightClass, gotRightBuiltinClassType);
+        return isSeqBugCompatOperation && isFlagSequenceBugCompat(inliningTarget, leftClass, gotLeftBuiltinClassType) && !isFlagSequenceBugCompat(inliningTarget, rightClass, gotRightBuiltinClassType);
     }
 
-    private static boolean isFlagSequenceBugCompat(Object clazz, BranchProfile gotBuiltinClassType) {
+    private static boolean isFlagSequenceBugCompat(Node inliningTarget, Object clazz, InlinedBranchProfile gotBuiltinClassType) {
         PythonBuiltinClassType type = null;
         if (clazz instanceof PythonBuiltinClassType) {
             type = (PythonBuiltinClassType) clazz;
@@ -337,7 +342,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         } else {
             return false;
         }
-        gotBuiltinClassType.enter();
+        gotBuiltinClassType.enter(inliningTarget);
         return type == PythonBuiltinClassType.PString ||
                         type == PythonBuiltinClassType.PByteArray ||
                         type == PythonBuiltinClassType.PBytes ||
