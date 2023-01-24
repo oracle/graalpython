@@ -1813,7 +1813,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Alloc.class);
 
         @Specialization
-        Object execute(Object allocatedObject, long objectSize,
+        Object alloc(Object allocatedObject, long objectSize,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached(value = "getAllocationReporter(getContext())", allowUncached = true) AllocationReporter reporter) {

@@ -23,16 +23,17 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")
 @ImportStatic({PGuards.class, CApiGuards.class})
 public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
@@ -41,13 +42,13 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     @Specialization
     static PythonNativeWrapper doString(TruffleString str,
                     @Cached PythonObjectFactory factory,
-                    @Cached ConditionProfile noWrapperProfile) {
+                    @Exclusive @Cached ConditionProfile noWrapperProfile) {
         return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
     }
 
     @Specialization
     PythonNativeWrapper doBoolean(boolean b,
-                    @Cached ConditionProfile profile) {
+                    @Exclusive @Cached ConditionProfile profile) {
         Python3Core core = PythonContext.get(this);
         PInt boxed = b ? core.getTrue() : core.getFalse();
         DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
@@ -130,39 +131,31 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
     @Specialization
     static PythonNativeWrapper doPythonClassUncached(PythonManagedClass object,
-                    @Cached TypeNodes.GetNameNode getNameNode) {
+                    @Exclusive @Cached TypeNodes.GetNameNode getNameNode) {
         return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
     }
 
     @Specialization
     static PythonNativeWrapper doPythonTypeUncached(PythonBuiltinClassType object,
-                    @Cached TypeNodes.GetNameNode getNameNode) {
+                    @Exclusive @Cached TypeNodes.GetNameNode getNameNode) {
         return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
     }
 
     @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
     static PythonNativeWrapper runAbstractObject(PythonAbstractObject object,
-                    @Cached ConditionProfile noWrapperProfile,
+                    @Exclusive @Cached ConditionProfile noWrapperProfile,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
         assert object != PNone.NO_VALUE;
         return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
     }
 
-    @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+    @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "3")
     static PythonNativeWrapper doForeignObject(Object object,
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
         assert !CApiTransitions.isBackendPointerObject(object);
         assert !(object instanceof String);
         return TruffleObjectNativeWrapper.wrap(object);
     }
-//
-// @Specialization(guards = "isFallback(object, isForeignObjectNode)")
-// static PythonNativeWrapper run(Object object,
-// @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
-// assert object != null : "Java 'null' cannot be a Sulong value";
-// assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
-// return object;
-// }
 
     protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
         return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
@@ -171,21 +164,8 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     protected static PythonClassNativeWrapper wrapNativeClassFast(PythonBuiltinClassType object, PythonContext context) {
         return PythonClassNativeWrapper.wrap(context.lookupType(object), GetNameNode.doSlowPath(object));
     }
-//
-// static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
-// return !(object instanceof TruffleString || object instanceof Boolean || object instanceof
-// Integer || object instanceof Long || object instanceof Double ||
-// object instanceof PythonBuiltinClassType || object instanceof PythonNativeNull || object ==
-// DescriptorDeleteMarker.INSTANCE ||
-// object instanceof PythonAbstractObject) && !(isForeignObjectNode.execute(object) &&
-// !CApiGuards.isNativeWrapper(object));
-// }
 
     protected static boolean isNaN(double d) {
         return Double.isNaN(d);
-    }
-
-    static Object getNativeNullPtr(Node node) {
-        return PythonContext.get(node).getNativeNull().getPtr();
     }
 }
