@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -686,6 +686,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             if (snaptshotStartup) {
                 evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
             }
+
+            // Set LD_LIBRARY_PATH so that binaries built with sulong toolchain can find libc++.so
+            evalInternal(context, """
+                            import os
+                            path = os.environ.get('LD_LIBRARY_PATH', '')
+                            sulong_path = os.pathsep.join(__graalpython__.get_toolchain_paths('LD_LIBRARY_PATH'))
+                            os.environ['LD_LIBRARY_PATH'] = path + os.pathsep + sulong_path if path else sulong_path
+                            """);
 
             if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && stdinIsInteractive))) {
                 print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());
