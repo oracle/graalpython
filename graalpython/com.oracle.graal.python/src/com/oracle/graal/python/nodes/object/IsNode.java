@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,11 +60,13 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -130,8 +132,9 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     @Specialization
     static boolean doIP(int left, PInt right,
-                    @Cached.Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-        if (isBuiltin.profileIsAnyBuiltinObject(right)) {
+                    @Bind("this") Node inliningTarget,
+                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+        if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
             try {
                 return right.intValueExact() == left;
             } catch (OverflowException e) {
@@ -154,8 +157,9 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     @Specialization
     static boolean doLP(long left, PInt right,
-                    @Cached.Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-        if (isBuiltin.profileIsAnyBuiltinObject(right)) {
+                    @Bind("this") Node inliningTarget,
+                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+        if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, right)) {
             try {
                 return left == right.longValueExact();
             } catch (OverflowException e) {
@@ -180,14 +184,16 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     @Specialization
     static boolean doPI(PInt left, int right,
-                    @Cached.Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-        return doIP(right, left, isBuiltin);
+                    @Bind("this") Node inliningTarget,
+                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+        return doIP(right, left, inliningTarget, isBuiltin);
     }
 
     @Specialization
     static boolean doPL(PInt left, long right,
-                    @Cached.Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-        return doLP(right, left, isBuiltin);
+                    @Bind("this") Node inliningTarget,
+                    @Cached.Shared("isBuiltin") @Cached IsAnyBuiltinObjectProfile isBuiltin) {
+        return doLP(right, left, inliningTarget, isBuiltin);
     }
 
     // types

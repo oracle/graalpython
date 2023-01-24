@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -61,8 +61,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * binary operations are implemented in {@link BaseSetBuiltins}
@@ -87,15 +89,17 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinObject(arg)")
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)")
         public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet arg,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltin") @SuppressWarnings("unused") @Cached IsAnyBuiltinObjectProfile isBuiltinClass) {
             return arg;
         }
 
-        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinObject(arg)")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)")
         public PFrozenSet subFrozensetIdentity(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet arg,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltin") @SuppressWarnings("unused") @Cached IsAnyBuiltinObjectProfile isBuiltinClass) {
             return factory().createFrozenSet(arg.getDictStorage());
         }
     }

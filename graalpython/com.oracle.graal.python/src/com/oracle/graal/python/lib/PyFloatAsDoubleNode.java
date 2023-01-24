@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,9 +55,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -65,6 +66,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyFloat_AsDouble}. Converts the argument to a Java {@code double}
@@ -106,11 +108,12 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     // calling their __float__
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)"})
     static double doObject(VirtualFrame frame, Object object,
+                    @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Float") LookupSpecialMethodSlotNode lookup,
                     @Cached CallUnaryMethodNode call,
                     @Cached GetClassNode resultClassNode,
-                    @Cached IsBuiltinClassProfile resultProfile,
+                    @Cached InlineIsBuiltinClassProfile resultProfile,
                     @Cached IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
@@ -122,7 +125,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
         if (floatDescr != PNone.NO_VALUE) {
             Object result = call.executeObject(frame, floatDescr, object);
             Object resultType = resultClassNode.execute(result);
-            if (!resultProfile.profileClass(resultType, PythonBuiltinClassType.PFloat)) {
+            if (!resultProfile.profileClass(inliningTarget, resultType, PythonBuiltinClassType.PFloat)) {
                 if (!resultSubtypeNode.execute(resultType, PythonBuiltinClassType.PFloat)) {
                     throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
                 } else {

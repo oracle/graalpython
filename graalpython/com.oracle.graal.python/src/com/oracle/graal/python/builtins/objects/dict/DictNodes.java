@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,7 +65,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class DictNodes {
@@ -117,6 +119,7 @@ public abstract class DictNodes {
 
         @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")
         static void updateMapping(VirtualFrame frame, PDict self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
@@ -124,14 +127,15 @@ public abstract class DictNodes {
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached PyObjectGetItem getItem,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage storage = HashingStorage.copyToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
+                        @Cached IsBuiltinObjectProfile errorProfile) {
+            HashingStorage storage = HashingStorage.copyToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
                             callKeysNode, getItem, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
 
         @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")
         static void updateSequence(VirtualFrame frame, PDict self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
@@ -142,10 +146,10 @@ public abstract class DictNodes {
                         @Cached PyObjectGetItem getItem,
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached ConditionProfile lengthTwoProfile,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached IsBuiltinClassProfile isTypeErrorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
             HashingStorage.StorageSupplier storageSupplier = (int length) -> self.getDictStorage();
-            HashingStorage storage = HashingStorage.addSequenceToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,
+            HashingStorage storage = HashingStorage.addSequenceToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,
                             getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile,
                             errorProfile, setHasihngStorageItem, addAllToOther);
             self.setDictStorage(storage);

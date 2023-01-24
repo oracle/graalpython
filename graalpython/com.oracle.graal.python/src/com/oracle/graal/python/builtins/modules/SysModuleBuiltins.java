@@ -212,6 +212,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -229,6 +230,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -1657,11 +1659,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHook(VirtualFrame frame, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyImportImport importNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
-                        @Cached IsBuiltinClassProfile attrErrorProfile,
+                        @Cached IsBuiltinObjectProfile attrErrorProfile,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
@@ -1710,7 +1713,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             try {
                 hook = getAttr.execute(frame, module, attrName);
             } catch (PException pe) {
-                if (attrErrorProfile.profileException(pe, AttributeError)) {
+                if (attrErrorProfile.profileException(inliningTarget, pe, AttributeError)) {
                     warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
                 }
                 return PNone.NONE;

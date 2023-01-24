@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -63,7 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -71,17 +74,16 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "pwd")
 public class PwdModuleBuiltins extends PythonBuiltins {
@@ -139,8 +141,9 @@ public class PwdModuleBuiltins extends PythonBuiltins {
     public abstract static class GetpwuidNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doGetpwuid(VirtualFrame frame, Object uidObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached UidConversionNode uidConversionNode,
-                        @Cached IsBuiltinClassProfile classProfile,
+                        @Cached IsBuiltinObjectProfile classProfile,
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ConditionProfile unsignedConversionProfile) {
@@ -148,7 +151,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
             try {
                 uid = uidConversionNode.executeLong(frame, uidObj);
             } catch (PException ex) {
-                if (classProfile.profileException(ex, PythonBuiltinClassType.OverflowError)) {
+                if (classProfile.profileException(inliningTarget, ex, PythonBuiltinClassType.OverflowError)) {
                     throw raiseUidNotFound();
                 }
                 throw ex;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,16 +58,18 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyObject_GetItem}.
@@ -121,9 +123,10 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object type, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupClassGetItem,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
                         @Cached PythonObjectFactory factory,
                         @Cached CallNode callClassGetItem) {
             if (isTypeNode.execute(type)) {
@@ -131,7 +134,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                 if (classGetitem != PNone.NO_VALUE) {
                     return callClassGetItem.execute(frame, classGetitem, key);
                 }
-                if (isBuiltinClassProfile.profileClass(type, PythonBuiltinClassType.PythonClass)) {
+                if (isBuiltinClassProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                     // Special case type[int], but disallow other types so str[int] fails
                     return factory.createGenericAlias(type, key);
                 }

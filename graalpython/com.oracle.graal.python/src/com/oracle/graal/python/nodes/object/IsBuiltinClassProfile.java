@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -74,101 +73,28 @@ public final class IsBuiltinClassProfile extends Node {
     }
 
     @NeverDefault
+    @Deprecated // TODO: DSL inlining
     public static IsBuiltinClassProfile create() {
         return new IsBuiltinClassProfile(true);
     }
 
+    @Deprecated // TODO: DSL inlining
     public static IsBuiltinClassProfile getUncached() {
         return UNCACHED;
     }
 
-    public boolean profileIsAnyBuiltinObject(PythonObject object) {
-        return profileIsAnyBuiltinClass(getClassNode.execute(object));
-    }
-
-    public boolean profileIsOtherBuiltinObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileIsOtherBuiltinClass(getClassNode.execute(object), type);
-    }
-
+    @Deprecated // TODO: DSL inlining
     public boolean profileException(PException object, PythonBuiltinClassType type) {
         return profileClass(getClassNode.execute(object.getUnreifiedException()), type);
     }
 
+    @Deprecated // TODO: DSL inlining
     public boolean profileObject(Object object, PythonBuiltinClassType type) {
         return profileClass(getClassNode.execute(object), type);
 
     }
 
-    public boolean profileIsAnyBuiltinClass(Object clazz) {
-        if (clazz instanceof PythonBuiltinClassType) {
-            if (!isBuiltinType) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isBuiltinType = true;
-            }
-            return true;
-        } else {
-            if (clazz instanceof PythonBuiltinClass) {
-                if (!isBuiltinClass) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    isBuiltinClass = true;
-                }
-                return true;
-            }
-            if (!isOtherClass) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isOtherClass = true;
-            }
-            return false;
-        }
-    }
-
-    public boolean profileIsOtherBuiltinClass(Object clazz, PythonBuiltinClassType type) {
-        if (clazz instanceof PythonBuiltinClassType) {
-            if (!isBuiltinType) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isBuiltinType = true;
-            }
-            if (clazz == type) {
-                if (!match) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    match = true;
-                }
-                return false;
-            } else {
-                if (!noMatch) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    noMatch = true;
-                }
-                return true;
-            }
-        } else {
-            if (clazz instanceof PythonBuiltinClass) {
-                if (!isBuiltinClass) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    isBuiltinClass = true;
-                }
-                if (((PythonBuiltinClass) clazz).getType() == type) {
-                    if (!match) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        match = true;
-                    }
-                    return false;
-                } else {
-                    if (!noMatch) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        noMatch = true;
-                    }
-                    return true;
-                }
-            }
-            if (!isOtherClass) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isOtherClass = true;
-            }
-            return false;
-        }
-    }
-
+    @Deprecated // TODO: DSL inlining
     public boolean profileClass(Object clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClassType) {
             if (!isBuiltinType) {
@@ -211,17 +137,6 @@ public final class IsBuiltinClassProfile extends Node {
             if (!isOtherClass) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isOtherClass = true;
-            }
-            return false;
-        }
-    }
-
-    public static boolean profileClassSlowPath(Object clazz, PythonBuiltinClassType type) {
-        if (clazz instanceof PythonBuiltinClassType) {
-            return clazz == type;
-        } else {
-            if (clazz instanceof PythonBuiltinClass) {
-                return ((PythonBuiltinClass) clazz).getType() == type;
             }
             return false;
         }

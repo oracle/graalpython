@@ -121,6 +121,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsOtherBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.DeleteDictNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -135,6 +137,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -179,13 +182,15 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
-                        @Cached IsBuiltinClassProfile classProfile1,
-                        @Cached IsBuiltinClassProfile classProfile2,
+                        @Cached IsOtherBuiltinClassProfile classProfile1,
+                        @Cached IsOtherBuiltinClassProfile classProfile2,
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigmentNode,
                         @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(self);
-            if (isBuiltinClassNotModule(value, classProfile1) || PGuards.isNativeClass(value) || isBuiltinClassNotModule(type, classProfile2) || PGuards.isNativeClass(type)) {
+            if (isBuiltinClassNotModule(inliningTarget, value, classProfile1) || PGuards.isNativeClass(value) || isBuiltinClassNotModule(inliningTarget, type, classProfile2) ||
+                            PGuards.isNativeClass(type)) {
                 throw raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
@@ -194,8 +199,8 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private static boolean isBuiltinClassNotModule(Object type, IsBuiltinClassProfile classProfile) {
-            return classProfile.profileIsAnyBuiltinClass(type) && !classProfile.profileClass(type, PythonBuiltinClassType.PythonModule);
+        private static boolean isBuiltinClassNotModule(Node inliningTarget, Object type, IsOtherBuiltinClassProfile classProfile) {
+            return classProfile.profileIsOtherBuiltinClass(inliningTarget, type, PythonBuiltinClassType.PythonModule);
         }
 
         @Specialization(guards = {"isPythonClass(value) || isPythonBuiltinClassType(value)", "!isPythonObject(self)"})
@@ -625,20 +630,24 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Child private IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
-        @Child private IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
-        protected boolean isExactObjectInstance(PythonObject self) {
-            return exactObjInstanceProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
+        protected boolean isExactObject(Node inliningTarget, InlineIsBuiltinClassProfile profile, Object clazz) {
+            return profile.profileIsBuiltinClass(inliningTarget, clazz, PythonBuiltinClassType.PythonObject);
         }
 
-        protected boolean isBuiltinObjectExact(PythonObject self) {
+        protected static boolean isAnyBuiltinButModule(Node inliningTarget, IsOtherBuiltinClassProfile profile, Object clazz) {
             // any builtin class except Modules
-            return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
+            return profile.profileIsOtherBuiltinClass(inliningTarget, clazz, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
+        @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
+                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "isNoValue(none)"}, limit = "1")
         Object dict(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") PNone none,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
+                        @Shared("isBuiltinClassProfile") @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Bind("getClassNode.execute(self)") Object selfClass,
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrGetNode getNode,
@@ -646,7 +655,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_getdict()
-            Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
+            Object func = getDescrFromBuiltinBase(selfClass, getBaseNode, getDescrNode);
             if (func != null) {
                 branchProfile.enter();
                 return getNode.execute(frame, func, self);
@@ -655,9 +664,14 @@ public class ObjectBuiltins extends PythonBuiltins {
             return getDict.execute(self);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "!isPythonModule(self)"})
+        @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
+                        "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "!isPythonModule(self)"}, limit = "1")
         static Object dict(VirtualFrame frame, PythonObject self, PDict dict,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
+                        @Shared("isBuiltinClassProfile") @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Bind("getClassNode.execute(self)") Object selfClass,
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrSetNode setNode,
@@ -687,7 +701,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object dict(VirtualFrame frame, @SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
-                        @Cached GetClassNode getClassNode,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(T___DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrDeleteNode deleteNode,

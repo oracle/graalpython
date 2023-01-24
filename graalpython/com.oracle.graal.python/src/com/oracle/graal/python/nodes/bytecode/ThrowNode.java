@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,13 +51,15 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ThrowNode extends PNodeWithContext {
@@ -70,12 +72,13 @@ public abstract class ThrowNode extends PNodeWithContext {
 
     @Specialization
     boolean doGenerator(VirtualFrame frame, int stackTop, PGenerator generator, PException exception,
+                    @Bind("this") Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                     @Cached CommonGeneratorBuiltins.CloseNode closeNode,
-                    @Shared("exitProfile") @Cached IsBuiltinClassProfile profileExit,
-                    @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
+                    @Shared("exitProfile") @Cached IsBuiltinObjectProfile profileExit,
+                    @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
-        if (profileExit.profileException(exception, GeneratorExit)) {
+        if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
             closeNode.execute(frame, generator);
             throw exception;
         } else {
@@ -84,7 +87,7 @@ public abstract class ThrowNode extends PNodeWithContext {
                 frame.setObject(stackTop, value);
                 return false;
             } catch (PException e) {
-                handleException(frame, e, stopIterationProfile, getValue, stackTop);
+                handleException(frame, inliningTarget, e, stopIterationProfile, getValue, stackTop);
                 return true;
             }
         }
@@ -92,15 +95,16 @@ public abstract class ThrowNode extends PNodeWithContext {
 
     @Fallback
     boolean doOther(VirtualFrame frame, int stackTop, Object obj, PException exception,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupThrow,
                     @Cached PyObjectLookupAttr lookupClose,
                     @Cached CallNode callThrow,
                     @Cached CallNode callClose,
                     @Cached WriteUnraisableNode writeUnraisableNode,
-                    @Shared("exitProfile") @Cached IsBuiltinClassProfile profileExit,
-                    @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
+                    @Shared("exitProfile") @Cached IsBuiltinObjectProfile profileExit,
+                    @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
-        if (profileExit.profileException(exception, GeneratorExit)) {
+        if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
             Object close = PNone.NO_VALUE;
             try {
                 close = lookupClose.execute(frame, obj, T_CLOSE);
@@ -121,14 +125,16 @@ public abstract class ThrowNode extends PNodeWithContext {
                 frame.setObject(stackTop, value);
                 return false;
             } catch (PException e) {
-                handleException(frame, e, stopIterationProfile, getValue, stackTop);
+                handleException(frame, inliningTarget, e, stopIterationProfile, getValue, stackTop);
                 return true;
             }
         }
     }
 
-    private static void handleException(VirtualFrame frame, PException e, IsBuiltinClassProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue, int stackTop) {
-        e.expectStopIteration(stopIterationProfile);
+    private static void handleException(VirtualFrame frame, Node inliningTarget, PException e,
+                    IsBuiltinObjectProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue,
+                    int stackTop) {
+        e.expectStopIteration(inliningTarget, stopIterationProfile);
         Object value = getValue.execute(e.getUnreifiedException());
         frame.setObject(stackTop, null);
         frame.setObject(stackTop - 1, value);

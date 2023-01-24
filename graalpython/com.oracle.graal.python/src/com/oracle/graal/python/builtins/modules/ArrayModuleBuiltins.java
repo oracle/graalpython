@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -70,6 +70,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -81,7 +82,9 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -116,19 +119,21 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "args.length == 1")
         Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
-                        @Cached IsBuiltinClassProfile isNotSubtypeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached InlineIsBuiltinClassProfile isNotSubtypeProfile,
                         @Cached CastToTruffleStringCheckedNode cast,
                         @Cached ArrayNodeInternal arrayNodeInternal) {
-            checkKwargs(cls, kwargs, isNotSubtypeProfile);
+            checkKwargs(cls, kwargs, inliningTarget, isNotSubtypeProfile);
             return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), PNone.NO_VALUE);
         }
 
         @Specialization(guards = "args.length == 2")
         Object array3(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
-                        @Cached IsBuiltinClassProfile isNotSubtypeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached InlineIsBuiltinClassProfile isNotSubtypeProfile,
                         @Cached CastToTruffleStringCheckedNode cast,
                         @Cached ArrayNodeInternal arrayNodeInternal) {
-            checkKwargs(cls, kwargs, isNotSubtypeProfile);
+            checkKwargs(cls, kwargs, inliningTarget, isNotSubtypeProfile);
             return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), args[1]);
         }
 
@@ -142,8 +147,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void checkKwargs(Object cls, PKeyword[] kwargs, IsBuiltinClassProfile isNotSubtypeProfile) {
-            if (isNotSubtypeProfile.profileClass(cls, PythonBuiltinClassType.PArray)) {
+        private void checkKwargs(Object cls, PKeyword[] kwargs, Node inliningTarget, InlineIsBuiltinClassProfile isNotSubtypeProfile) {
+            if (isNotSubtypeProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PArray)) {
                 if (kwargs.length != 0) {
                     throw raise(TypeError, S_TAKES_NO_KEYWORD_ARGS, "array.array()");
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -112,11 +112,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -124,6 +125,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -756,13 +758,14 @@ public final class StringIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
 
-        protected static boolean isStringIO(PStringIO self, IsBuiltinClassProfile profile) {
-            return profile.profileObject(self, PythonBuiltinClassType.PStringIO);
+        protected static boolean isStringIO(Node inliningTarget, PStringIO self, IsBuiltinObjectProfile profile) {
+            return profile.profileObject(inliningTarget, self, PythonBuiltinClassType.PStringIO);
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(self, profile)"}, limit = "1")
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"}, limit = "1")
         Object builtin(PStringIO self,
-                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
                         @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode) {
@@ -777,9 +780,10 @@ public final class StringIOBuiltins extends PythonBuiltins {
         /*
          * This path is rarely executed.
          */
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(self, profile)"}, limit = "1")
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"}, limit = "1")
         Object slowpath(VirtualFrame frame, PStringIO self,
-                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
                         @Cached PyObjectCallMethodObjArgs callMethodReadline,
                         @Cached CastToTruffleStringNode toString,
                         @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode) {

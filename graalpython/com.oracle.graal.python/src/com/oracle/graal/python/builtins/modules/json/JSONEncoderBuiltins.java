@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -112,7 +113,6 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callGetListIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
         @Child private GetNextNode callListNext = GetNextNode.create();
         @Child private IsBuiltinClassProfile stopListIterationProfile = IsBuiltinClassProfile.create();
-        @Child private IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
         @Child private ConstructListNode constructList = ConstructListNode.create();
         @Child private StringNodes.StringMaterializeNode stringMaterializeNode = StringNodes.StringMaterializeNode.create();
         @Child private TruffleString.FromJavaStringNode fromJavaStringNode = TruffleString.FromJavaStringNode.create();
@@ -262,7 +262,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, dict);
                 appendStringNode.execute(builder, T_LBRACE);
 
-                if (!encoder.sortKeys && isClassProfile.profileObject(dict, PDict)) {
+                if (!encoder.sortKeys && IsBuiltinObjectProfile.profileObjectUncached(dict, PDict)) {
                     HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
                     boolean first = true;
                     while (HashingStorageIteratorNext.executeUncached(storage, it)) {
@@ -331,7 +331,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, list);
                 appendStringNode.execute(builder, T_LBRACKET);
 
-                if (isClassProfile.profileObject(list, PTuple) || isClassProfile.profileObject(list, PList)) {
+                if (IsBuiltinObjectProfile.profileObjectUncached(list, PTuple) || IsBuiltinObjectProfile.profileObjectUncached(list, PList)) {
                     for (int i = 0; i < storage.length(); i++) {
                         if (i > 0) {
                             appendStringNode.execute(builder, encoder.itemSeparator);
@@ -346,7 +346,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                         try {
                             item = callListNext.execute(null, iter);
                         } catch (PException e) {
-                            e.expectStopIteration(stopListIterationProfile);
+                            e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
                             break;
                         }
                         if (!first) {

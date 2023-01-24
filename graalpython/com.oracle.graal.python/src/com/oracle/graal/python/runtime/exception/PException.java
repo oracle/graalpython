@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -196,24 +197,28 @@ public final class PException extends AbstractTruffleException {
         return pythonException;
     }
 
+    @Deprecated // TODO: DSL inlining
     public void expectIndexError(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.IndexError)) {
             throw this;
         }
     }
 
+    @Deprecated // TODO: DSL inlining
     public void expectStopIteration(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.StopIteration)) {
             throw this;
         }
     }
 
+    @Deprecated // TODO: DSL inlining
     public void expectAttributeError(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
             throw this;
         }
     }
 
+    @Deprecated // TODO: DSL inlining
     public boolean expectTypeOrOverflowError(IsBuiltinClassProfile profile) {
         boolean ofError = !profile.profileException(this, PythonBuiltinClassType.TypeError);
         if (ofError && !profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
@@ -222,20 +227,67 @@ public final class PException extends AbstractTruffleException {
         return ofError;
     }
 
+    @Deprecated // TODO: DSL inlining
     public void expectOverflowError(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
             throw this;
         }
     }
 
+    @Deprecated // TODO: DSL inlining
     public void expectTypeError(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.TypeError)) {
             throw this;
         }
     }
 
+    @Deprecated // TODO: DSL inlining
     public void expect(PythonBuiltinClassType error, IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, error)) {
+            throw this;
+        }
+    }
+
+    public void expectIndexError(Node inliningTarget, IsBuiltinObjectProfile profile) {
+        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.IndexError)) {
+            throw this;
+        }
+    }
+
+    public void expectStopIteration(Node inliningTarget, IsBuiltinObjectProfile profile) {
+        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.StopIteration)) {
+            throw this;
+        }
+    }
+
+    public void expectAttributeError(Node inliningTarget, IsBuiltinObjectProfile profile) {
+        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.AttributeError)) {
+            throw this;
+        }
+    }
+
+    public boolean expectTypeOrOverflowError(Node inliningTarget, IsBuiltinObjectProfile profile) {
+        boolean ofError = !profile.profileException(inliningTarget, this, PythonBuiltinClassType.TypeError);
+        if (ofError && !profile.profileException(inliningTarget, this, PythonBuiltinClassType.OverflowError)) {
+            throw this;
+        }
+        return ofError;
+    }
+
+    public void expectOverflowError(Node inliningTarget, IsBuiltinObjectProfile profile) {
+        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.OverflowError)) {
+            throw this;
+        }
+    }
+
+    public void expectTypeError(Node inliningTarget, IsBuiltinObjectProfile profile) {
+        if (!profile.profileException(inliningTarget, this, PythonBuiltinClassType.TypeError)) {
+            throw this;
+        }
+    }
+
+    public void expect(Node inliningTarget, PythonBuiltinClassType error, IsBuiltinObjectProfile profile) {
+        if (!profile.profileException(inliningTarget, this, error)) {
             throw this;
         }
     }

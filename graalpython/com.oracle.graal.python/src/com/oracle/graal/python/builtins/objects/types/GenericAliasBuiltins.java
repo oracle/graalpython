@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,13 +95,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -109,6 +110,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -217,15 +219,16 @@ public class GenericAliasBuiltins extends PythonBuiltins {
     abstract static class CallMethodNode extends PythonVarargsBuiltinNode {
         @Specialization
         Object call(VirtualFrame frame, PGenericAlias self, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectSetAttr setAttr,
-                        @Cached IsBuiltinClassProfile typeErrorProfile,
-                        @Cached IsBuiltinClassProfile attributeErrorProfile) {
+                        @Cached IsBuiltinObjectProfile typeErrorProfile,
+                        @Cached IsBuiltinObjectProfile attributeErrorProfile) {
             Object result = callNode.execute(frame, self.getOrigin(), args, kwargs);
             try {
                 setAttr.execute(frame, result, T___ORIG_CLASS__, self);
             } catch (PException e) {
-                if (!typeErrorProfile.profileException(e, TypeError) && !attributeErrorProfile.profileException(e, PythonBuiltinClassType.AttributeError)) {
+                if (!typeErrorProfile.profileException(inliningTarget, e, TypeError) && !attributeErrorProfile.profileException(inliningTarget, e, PythonBuiltinClassType.AttributeError)) {
                     throw e;
                 }
             }
