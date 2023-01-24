@@ -1,5 +1,16 @@
+diff --git a/pip/__init__.py b/pip/__init__.py
+index 3d4b45a..3aa11e8 100644
+--- a/pip/__init__.py
++++ b/pip/__init__.py
+@@ -11,3 +11,6 @@ def main(args: Optional[List[str]] = None) -> int:
+     from pip._internal.utils.entrypoints import _wrapper
+ 
+     return _wrapper(args)
++
++
++__GRAALPY_PATCHED = True
 diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
-index 47ed92779..1d182ded3 100644
+index 47ed927..1d182de 100644
 --- a/pip/_internal/cli/cmdoptions.py
 +++ b/pip/_internal/cli/cmdoptions.py
 @@ -891,7 +891,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
@@ -12,7 +23,7 @@ index 47ed92779..1d182ded3 100644
      "of pip is available for download. Implied with --no-index.",
  )
 diff --git a/pip/_internal/index/package_finder.py b/pip/_internal/index/package_finder.py
-index 9bf247f02..816734859 100644
+index 9bf247f..8167348 100644
 --- a/pip/_internal/index/package_finder.py
 +++ b/pip/_internal/index/package_finder.py
 @@ -38,6 +38,7 @@ from pip._internal.utils.logging import indent_log
@@ -32,7 +43,7 @@ index 9bf247f02..816734859 100644
          """
          Function to pass as the `key` argument to a call to sorted() to sort
 diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
-index 1af8978d4..15fee7f35 100644
+index 1af8978..15fee7f 100644
 --- a/pip/_internal/operations/install/wheel.py
 +++ b/pip/_internal/operations/install/wheel.py
 @@ -587,6 +587,9 @@ def _install_wheel(
@@ -47,7 +58,7 @@ index 1af8978d4..15fee7f35 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 000000000..d8d97eb4b
+index 0000000..d8d97eb
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
 @@ -0,0 +1,145 @@
@@ -197,7 +208,7 @@ index 000000000..d8d97eb4b
 +                        patchfiles.append(tuple(version))
 +    return patchfiles
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
-index 78b5c13ce..18a184c4f 100644
+index 78b5c13..18a184c 100644
 --- a/pip/_internal/utils/unpacking.py
 +++ b/pip/_internal/utils/unpacking.py
 @@ -255,3 +255,5 @@ def unpack_file(

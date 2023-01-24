@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,16 +36,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
 from contextlib import contextmanager
+from functools import lru_cache
 from pathlib import Path
-from sys import executable as sys_executable
 from subprocess import check_output as subprocess_check_output
-
 
 from virtualenv.create.creator import Creator
 from virtualenv.create.describe import PosixSupports
 from virtualenv.seed.embed.pip_invoke import PipInvoke
-from virtualenv.seed.wheels import get_wheel, Version
+from virtualenv.seed.wheels import get_wheel
 from virtualenv.seed.wheels.bundle import from_dir
 
 
@@ -90,11 +90,13 @@ class GraalPyCreatorPosix(Creator, PosixSupports):
         try:
             from virtualenv.run import SeederSelector
             _get_default_orig = SeederSelector._get_default
+
             def _seeder_selector_get_default_override(self):
                 if self.interpreter.implementation == "GraalVM":
                     return "graalpy"
                 else:
                     return _get_default_orig(self)
+
             SeederSelector._get_default = _seeder_selector_get_default_override
         except ImportError:
             pass
@@ -111,6 +113,42 @@ class GraalPyCreatorPosix(Creator, PosixSupports):
                            "It should be the default and can be explicitly requested "
                            "with command line option `--creator venv`, "
                            "or environment variable VIRTUALENV_CREATOR=venv")
+
+
+@lru_cache()
+def get_ensurepip_path(exe):
+    if exe.samefile(sys.executable):
+        import ensurepip
+        ensurepip_path = ensurepip.__path__[0]
+    else:
+        cmd = [exe, "-u", "-c", 'import ensurepip; print(ensurepip.__path__[0])']
+        ensurepip_path = subprocess_check_output(cmd, universal_newlines=True).strip()
+    return Path(ensurepip_path) / '_bundled'
+
+
+def pip_wheel_env_run(search_dirs, app_data, env, exe):
+    env = env.copy()
+    env.update({"PIP_USE_WHEEL": "1", "PIP_USER": "0", "PIP_NO_INPUT": "1"})
+    ensurepip_path = get_ensurepip_path(exe)
+    if ensurepip_path:
+        wheel_paths = list(ensurepip_path.glob('pip-*.whl'))
+        if wheel_paths:
+            env["PYTHONPATH"] = str(wheel_paths[0])
+            return env
+    wheel = get_wheel(
+        distribution="pip",
+        version=None,
+        for_py_version=f"{sys.version_info.major}.{sys.version_info.minor}",
+        search_dirs=search_dirs,
+        download=False,
+        app_data=app_data,
+        do_periodic_update=False,
+        env=env,
+    )
+    if wheel is None:
+        raise RuntimeError("could not find the embedded pip")
+    env["PYTHONPATH"] = str(wheel.path)
+    return env
 
 
 class GraalPySeeder(PipInvoke):
@@ -130,13 +168,21 @@ class GraalPySeeder(PipInvoke):
     regardless whether the seeder may support that flag or not (the latter case
     casing an error).
     """
+
+    def run(self, creator):
+        if not self.enabled:
+            return
+        for_py_version = creator.interpreter.version_release_str
+        with self.get_pip_install_cmd(creator.exe, for_py_version) as cmd:
+            env = pip_wheel_env_run(self.extra_search_dir, self.app_data, self.env, creator.exe)
+            self._execute(cmd, env)
+
     @contextmanager
     def get_pip_install_cmd(self, exe, for_py_version):
         cmd = [str(exe), "-m", "pip", "-q", "install", "--only-binary", ":all:", "--disable-pip-version-check"]
         if not self.download:
             cmd.append("--no-index")
-        folders = set()
-        ensurepip_path = self.get_ensurepip_path(exe)
+        ensurepip_path = get_ensurepip_path(exe)
         for dist, version in self.distribution_to_versions().items():
             if ensurepip_path and version == 'bundle' and dist in ('pip', 'setuptools'):
                 wheel = from_dir(dist, None, for_py_version, [ensurepip_path])
@@ -153,19 +199,5 @@ class GraalPySeeder(PipInvoke):
                 )
             if wheel is None:
                 raise RuntimeError("could not get wheel for distribution {}".format(dist))
-            folders.add(str(wheel.path.parent))
-            cmd.append(Version.as_pip_req(dist, wheel.version))
-        for folder in sorted(folders):
-            cmd.extend(["--find-links", str(folder)])
-        print(f"{cmd=}")
+            cmd.append(str(wheel.path))
         yield cmd
-
-    @staticmethod
-    def get_ensurepip_path(exe):
-        if exe.samefile(sys_executable):
-            import ensurepip
-            ensurepip_path = ensurepip.__path__[0]
-        else:
-            ensurepip_path = subprocess_check_output(
-                (exe, "-u", "-c", 'import ensurepip; print(ensurepip.__path__[0])'), universal_newlines=True)
-        return Path(ensurepip_path.strip()) / '_bundled'

@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,51 +36,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import multiprocessing
-import sys
-import time
-from multiprocessing.connection import wait
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-def test_wait_timeout():
-    timeout = 3
-    a, b = multiprocessing.Pipe()
-    x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe
-    for fds in [[a, b], [x, y], [a, b, x, y]]:
-        start = time.monotonic()
-        res = wait(fds, timeout)
-        delta = time.monotonic() - start
-        assert not res
-        assert delta < timeout * 2
-        assert delta > timeout / 2
+[project]
+name = "graalpy-virtualenv"
+version = "0.0.1"
+license = "UPL-1.0"
+authors = [
+    { name = "GraalPy Developers", email = "graalvm-users@oss.oracle.com" },
+]
+keywords = [
+    "environments",
+    "isolated",
+    "virtual",
+]
+dependencies = [
+    "virtualenv",
+]
 
+[project.entry-points."virtualenv.create"]
+graalpy-posix = "graalpy_virtualenv.graalpy:GraalPyCreatorPosix"
 
-def test_wait():
-    a, b = multiprocessing.Pipe()
-    x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe
-    a.send(42)
-    res = wait([b, y], 3)
-    assert res == [b], "res1"
-    assert b.recv() == 42, "res2"
-    y.send(33)
-    res = wait([b, x], 3)
-    assert res == [x], "res3"
-    assert x.recv() == 33, "res4"
-    a.send(1)
-    y.send(2)
-    res = wait([b, x], 3)
-    assert set(res) == set([b, x])
-    assert b.recv() == 1
-    assert x.recv() == 2
+[project.entry-points."virtualenv.seed"]
+graalpy = "graalpy_virtualenv:graalpy.GraalPySeeder"
 
-
-def test_array_read():
-    # TODO multiprocessing.Array doesn't work on emulated backend
-    if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
-        return
-    # This used to be buggy due to wrong usage of memoryview offsets when two objects were allocated in the same block
-    # Don't remove the unused value on the next line
-    # noinspection PyUnusedLocal
-    num = multiprocessing.Value('d', 0.0)
-    arr = multiprocessing.Array('i', range(10))
-    assert arr[1] == 1
+[project.urls]
+Homepage = "https://graalvm.org/python"
