@@ -114,10 +114,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -125,8 +126,10 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PIOBase)
@@ -382,9 +385,10 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class WriteLinesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object writeLines(VirtualFrame frame, PythonObject self, Object lines,
+                        @Bind("this") Node inliningTarget,
                         @Cached CheckClosedNode checkClosedNode,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter) {
             checkClosedNode.execute(frame, self);
@@ -394,7 +398,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 try {
                     line = getNextNode.execute(frame, iter);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 }
                 callMethod.execute(frame, self, T_WRITE, line);
@@ -478,21 +482,15 @@ public final class IOBaseBuiltins extends PythonBuiltins {
             return IOBaseBuiltinsClinicProviders.ReadlinesNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "hint <= 0")
-        Object doall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int hint,
+        @Specialization
+        Object withHint(VirtualFrame frame, Object self, int hintIn,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextNode next,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached InlinedConditionProfile isNegativeHintProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectSizeNode sizeNode) {
-            return withHint(frame, self, Integer.MAX_VALUE, next, errorProfile, getIter, sizeNode);
-        }
-
-        @Specialization(guards = "hint > 0")
-        Object withHint(VirtualFrame frame, Object self, int hint,
-                        @Cached GetNextNode next,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached PyObjectSizeNode sizeNode) {
+            int hint = isNegativeHintProfile.profile(inliningTarget, hintIn <= 0) ? Integer.MAX_VALUE : hintIn;
             int length = 0;
             Object iterator = getIter.execute(frame, self);
             ArrayBuilder<Object> list = new ArrayBuilder<>();
@@ -506,7 +504,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     }
                     length += lineLength;
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 }
             }
