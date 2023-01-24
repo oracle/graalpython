@@ -210,7 +210,7 @@ public abstract class DigestObject extends PythonBuiltinObject {
      * Ensures that {@link #update(byte[])} is not called after {@link #digest()} if cloning is not
      * supported. Also caches the digest and ensures that the cache is cleared on update.
      */
-    private static abstract class DigestObjectBase extends DigestObject {
+    private abstract static class DigestObjectBase extends DigestObject {
         private byte[] cachedDigest = null;
         private boolean wasReset;
 
