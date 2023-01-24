@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -815,7 +815,7 @@ static MUST_INLINE int PyTruffle_Log_Finest() {
 	return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
 }
 
-static MUST_INLINE void PyTruffle_Log(int level, const char* format, ... ) {
+static void PyTruffle_Log(int level, const char* format, ... ) {
 	if (Py_Truffle_Options & level) {
 		char buffer[1024];
 		va_list args;

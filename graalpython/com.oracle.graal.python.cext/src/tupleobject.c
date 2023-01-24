@@ -61,14 +61,6 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     return result;
 }
 
-MUST_INLINE
-static PyObject * tuple_create(PyObject *iterable) {
-    if (iterable == NULL) {
-        return PyTuple_New(0);
-    }
-    return PySequence_Tuple(iterable);
-}
-
 POLYGLOT_DECLARE_TYPE(PyTupleObject);
 PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
 	PyTupleObject* newobj;
@@ -76,7 +68,7 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     Py_ssize_t i, n;
 
     assert(PyType_IsSubtype(type, &PyTuple_Type));
-    tmp = tuple_create(iterable);
+    tmp = iterable == NULL ? PyTuple_New(0) : PySequence_Tuple(iterable);
     if (tmp == NULL) {
         return NULL;
     }

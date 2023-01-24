@@ -186,7 +186,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static java.util.stream.Collectors.joining;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -230,6 +229,16 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_c_prod", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_c_quot", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_c_sum", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
+    @CApiBuiltin(name = "_Py_BuildValue_SizeT", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "_Py_VaBuildStack_SizeT", ret = PyObjectPtr, args = {PyObjectPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VA_LIST, PY_SSIZE_T_PTR}, call = CImpl)
+    @CApiBuiltin(name = "_Py_VaBuildStack", ret = PyObjectPtr, args = {PyObjectPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VA_LIST, PY_SSIZE_T_PTR}, call = CImpl)
+    @CApiBuiltin(name = "_Py_VaBuildValue_SizeT", ret = PyObject, args = {ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_CheckPositional", ret = Int, args = {ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, Py_ssize_t}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_BadArgument", ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_NoKeywords", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_NoPositional", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_UnpackKeywords", ret = PyObjectConstPtr, args = {PyObjectConstPtr, Py_ssize_t, PyObject, PyObject, _PYARG_PARSER_PTR, Int, Int, Int, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_UnpackStack", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemId", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemIdWithError", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemStringWithError", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
@@ -239,6 +248,9 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyDict_Next", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_GetDictPtr", ret = PyObjectPtr, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItem_KnownHash", ret = PyObject, args = {PyObject, PyObject, Py_hash_t}, call = CImpl)
+    @CApiBuiltin(name = "Py_BuildValue", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "Py_VaBuildValue", ret = PyObject, args = {ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
+    @CApiBuiltin(name = "PyArg_UnpackTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyBool_FromLong", ret = PyObject, args = {Long}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_AsCComplex", ret = PY_COMPLEX, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_FromCComplex", ret = PyObject, args = {PY_COMPLEX}, call = CImpl)
@@ -249,6 +261,9 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_ResourceWarning", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnEx", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnFormat", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_AddObject", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_AddStringConstant", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_AddType", ret = Int, args = {PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GenericGetDict", ret = PyObject, args = {PyObject, Pointer}, call = CImpl)
 
     /*
@@ -259,7 +274,6 @@ public final class CApiFunction {
                     VARARGS}, forwardsTo = "_PyArg_VaParseTupleAndKeywordsFast_SizeT", call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_VaParseTupleAndKeywordsFast_SizeT", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VA_LIST}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_VaParse_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VA_LIST}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_Py_BuildValue_SizeT", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "_Py_VaBuildValue_SizeT", call = PolyglotImpl)
     @CApiBuiltin(name = "_Py_Dealloc", ret = Void, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_Py_DecRef", ret = Void, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_Py_FatalErrorFunc", ret = VoidNoReturn, args = {ConstCharPtr, ConstCharPtr}, call = PolyglotImpl)
@@ -282,20 +296,11 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_strhex", ret = PyObject, args = {ConstCharPtrAsTruffleString, CONST_PY_SSIZE_T}, call = PolyglotImpl)
     @CApiBuiltin(name = "_Py_string_to_number_with_underscores", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr, PyObject, Pointer, func_objcharsizevoidptr}, call = PolyglotImpl)
     @CApiBuiltin(name = "_Py_TYPE", ret = PyTypeObject, args = {ConstPyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_Py_VaBuildStack_SizeT", ret = PyObjectPtr, args = {PyObjectPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VA_LIST, PY_SSIZE_T_PTR}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_Py_VaBuildStack", ret = PyObjectPtr, args = {PyObjectPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VA_LIST, PY_SSIZE_T_PTR}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_Py_VaBuildValue_SizeT", ret = PyObject, args = {ConstCharPtrAsTruffleString, VA_LIST}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyArg_BadArgument", ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyArg_CheckPositional", ret = Int, args = {ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, Py_ssize_t}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyArg_NoKeywords", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyArg_NoPositional", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_Parse_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_ParseTuple_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywords_SizeT", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST,
                     VARARGS}, forwardsTo = "PyArg_VaParseTupleAndKeywords", call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywordsFast", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VARARGS}, forwardsTo = "_PyArg_VaParseTupleAndKeywordsFast", call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyArg_UnpackKeywords", ret = PyObjectConstPtr, args = {PyObjectConstPtr, Py_ssize_t, PyObject, PyObject, _PYARG_PARSER_PTR, Int, Int, Int, PyObjectPtr}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyArg_UnpackStack", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, VARARGS}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_VaParseTupleAndKeywords_SizeT", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VA_LIST}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_VaParseTupleAndKeywordsFast", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VA_LIST}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyASCIIObject_LENGTH", ret = Py_ssize_t, args = {PyASCIIObject}, call = PolyglotImpl)
@@ -386,7 +391,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyUnicode_ToUppercase", ret = PY_UCS4, args = {PY_UCS4}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyUnicode_ToUpperFull", ret = Int, args = {PY_UCS4, PY_UCS4_PTR}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyUnicodeObject_DATA", ret = Pointer, args = {PyUnicodeObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "Py_BuildValue", ret = PyObject, args = {ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "Py_VaBuildValue", call = PolyglotImpl)
     @CApiBuiltin(name = "Py_DecRef", ret = Void, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "Py_EnterRecursiveCall", ret = Int, args = {ConstCharPtr}, call = PolyglotImpl)
     @CApiBuiltin(name = "Py_GetBuildInfo", ret = ConstCharPtrAsTruffleString, args = {}, call = PolyglotImpl)
@@ -399,13 +403,11 @@ public final class CApiFunction {
     @CApiBuiltin(name = "Py_IsTrue", ret = Int, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "Py_LeaveRecursiveCall", ret = Void, args = {}, call = PolyglotImpl)
     @CApiBuiltin(name = "Py_NewRef", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "Py_VaBuildValue", ret = PyObject, args = {ConstCharPtrAsTruffleString, VA_LIST}, call = PolyglotImpl)
     @CApiBuiltin(name = "Py_XNewRef", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
     @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
     @CApiBuiltin(name = "PyArg_ParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST,
                     VARARGS}, forwardsTo = "PyArg_VaParseTupleAndKeywords", call = PolyglotImpl)
-    @CApiBuiltin(name = "PyArg_UnpackTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, VARARGS}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyArg_VaParse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VA_LIST}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyArg_VaParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VA_LIST}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyBuffer_FillInfo", ret = Int, args = {PY_BUFFER, PyObject, Pointer, Py_ssize_t, Int, Int}, call = PolyglotImpl)
@@ -499,9 +501,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyMethod_Self", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyMethodDescrObject_GetMethod", ret = PyMethodDef, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyModule_AddFunctions", ret = Int, args = {PyObject, PyMethodDef}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyModule_AddObject", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyModule_AddStringConstant", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyModule_AddType", ret = Int, args = {PyObject, PyTypeObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyModule_Create2", ret = PyObject, args = {PYMODULEDEF_PTR, Int}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyModule_GetDef", ret = PyModuleDef, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyModule_GetDict", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
@@ -1469,7 +1468,7 @@ public final class CApiFunction {
         return "" + (char) ('a' + i);
     }
 
-    private static PrintStream output;
+    private static ArrayList<String> output;
 
     public static Path resolvePath(Path source) {
         Path result = Path.of("graalpython").resolve(source);
@@ -1484,12 +1483,12 @@ public final class CApiFunction {
     }
 
     public static void generateCForwards() throws IOException {
-        Path path = resolvePath(Path.of("com.oracle.graal.python.jni", "src", "capi_forwards.h"));
+        Path path = Path.of("com.oracle.graal.python.jni", "src", "capi_forwards.h");
         System.out.println("generating C API forwards in " + path);
-        output = new PrintStream(path.toFile());
+        output = new ArrayList<>();
 
-        output.println("// generated from " + CApiFunction.class);
-        output.println();
+        output.add("// generated from " + CApiFunction.class);
+        output.add("");
         TreeSet<String> missingVarargForwards = new TreeSet<>();
         LinkedHashMap<CApiFunction, String> forwards = new LinkedHashMap<>();
         generateCPrologue();
@@ -1524,44 +1523,44 @@ public final class CApiFunction {
             System.out.println("missing forward for VARARG functions ('...' cannot cross NFI boundary):\n  " + missingVarargForwards.stream().collect(Collectors.joining(", ")));
         }
         generateCEpilogue(toBeResolved);
-        output.close();
+        writeGenerated(path, output);
         checkImports();
     }
 
     static void generateCPrologue() {
-        output.println("void unimplemented(const char* name) { printf(\"Function not implemented in GraalPy: %s\\n\", name); }");
-        output.println("#ifdef STATS");
-        output.println("long totalTime;");
-        output.println("long totalCount;");
-        output.println("#define FIRST_STATS_CONTAINER(NAME) CAPIStats __stats__##NAME = { NULL, #NAME, 0, 0};");
-        output.println("#define STATS_CONTAINER(NAME, LAST) CAPIStats __stats__##NAME = { &__stats__##LAST, #NAME, 0, 0};");
-        output.println("#define STATS_BEFORE(NAME) \\\n    totalCount++; \\\n    __stats__##NAME.count++;\\\n" +
+        output.add("void unimplemented(const char* name) { printf(\"Function not implemented in GraalPy: %s\\n\", name); }");
+        output.add("#ifdef STATS");
+        output.add("long totalTime;");
+        output.add("long totalCount;");
+        output.add("#define FIRST_STATS_CONTAINER(NAME) CAPIStats __stats__##NAME = { NULL, #NAME, 0, 0};");
+        output.add("#define STATS_CONTAINER(NAME, LAST) CAPIStats __stats__##NAME = { &__stats__##LAST, #NAME, 0, 0};");
+        output.add("#define STATS_BEFORE(NAME) \\\n    totalCount++; \\\n    __stats__##NAME.count++;\\\n" +
                         "    if ((totalCount) % 100000 == 0)\\\n        printAllStats();\\\n    long t1 = t();");
-        output.println("#define STATS_AFTER(NAME) \\\n    long delta = t() - t1;\\\n    __stats__##NAME.time += delta;\\\n    totalTime += delta;");
-        output.println("#else");
-        output.println("#define FIRST_STATS_CONTAINER(NAME)");
-        output.println("#define STATS_CONTAINER(NAME, LAST)");
-        output.println("#define STATS_BEFORE(NAME)");
-        output.println("#define STATS_AFTER(NAME)");
-        output.println("#endif");
-        output.println("#define LOG_AFTER LOG(\"-> 0x%lx\", (unsigned long) result);");
-        output.println("#define LOG_AFTER_VOID LOGS(\"finished\");");
-        output.println();
-        output.println("// explicit undef, some existing functions are redefined by macros:");
+        output.add("#define STATS_AFTER(NAME) \\\n    long delta = t() - t1;\\\n    __stats__##NAME.time += delta;\\\n    totalTime += delta;");
+        output.add("#else");
+        output.add("#define FIRST_STATS_CONTAINER(NAME)");
+        output.add("#define STATS_CONTAINER(NAME, LAST)");
+        output.add("#define STATS_BEFORE(NAME)");
+        output.add("#define STATS_AFTER(NAME)");
+        output.add("#endif");
+        output.add("#define LOG_AFTER LOG(\"-> 0x%lx\", (unsigned long) result);");
+        output.add("#define LOG_AFTER_VOID LOGS(\"finished\");");
+        output.add("");
+        output.add("// explicit undef, some existing functions are redefined by macros:");
         for (CApiFunction function : values) {
-            output.println("#undef " + function.name);
+            output.add("#undef " + function.name);
         }
     }
 
     static void generateCEpilogue(ArrayList<CApiFunction> toBeResolved) {
-        output.println("#ifdef STATS");
-        output.println("CAPIStats* getStatsList() { return &__stats__" + lastStatsName + "; }");
-        output.println("#endif");
-        output.println("void initializeCAPIForwards(void* (*getAPI)(const char*)) {");
+        output.add("#ifdef STATS");
+        output.add("CAPIStats* getStatsList() { return &__stats__" + lastStatsName + "; }");
+        output.add("#endif");
+        output.add("void initializeCAPIForwards(void* (*getAPI)(const char*)) {");
         for (CApiFunction function : toBeResolved) {
-            output.println("    " + function.targetName() + " = getAPI(\"" + function.name + "\");");
+            output.add("    " + function.targetName() + " = getAPI(\"" + function.name + "\");");
         }
-        output.println("}");
+        output.add("}");
     }
 
     boolean hasVarargs() {
@@ -1624,67 +1623,67 @@ public final class CApiFunction {
     }
 
     void generateUnimplemented() {
-        output.println((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
+        output.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
                         "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
-        output.println("    unimplemented(\"" + name + "\"); exit(-1);");
-        output.println("}");
+        output.add("    unimplemented(\"" + name + "\"); exit(-1);");
+        output.add("}");
     }
 
     void generateC() {
         if (lastStatsName == null) {
-            output.println("FIRST_STATS_CONTAINER(" + name + ")");
+            output.add("FIRST_STATS_CONTAINER(" + name + ")");
         } else {
-            output.println("STATS_CONTAINER(" + name + ", " + lastStatsName + ")");
+            output.add("STATS_CONTAINER(" + name + ", " + lastStatsName + ")");
         }
         lastStatsName = name;
-        output.println(returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;");
-        output.println((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
+        output.add(returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;");
+        output.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
                         "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
         if (arguments.length == 0) {
-            output.println("    LOGS(\"\");");
+            output.add("    LOGS(\"\");");
         } else {
-            output.println("    LOG(\"" + mapArgs(i -> isStringArg(i) ? "'%s'(0x%lx)" : "0x%lx", " ") + "\", " +
+            output.add("    LOG(\"" + mapArgs(i -> isStringArg(i) ? "'%s'(0x%lx)" : "0x%lx", " ") + "\", " +
                             mapArgs(i -> (isStringArg(i) ? argName(i) + "?" + argName(i) + ":\"<null>\", " : "") + "(unsigned long) " + argName(i), ", ") +
                             ");");
         }
-        output.println("    STATS_BEFORE(" + name + ")");
-        output.print("    ");
+        output.add("    STATS_BEFORE(" + name + ")");
+        String line = "    ";
         if (!returnType.isVoid()) {
-            output.print(returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ");
+            line += returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ";
         }
-        output.println(targetName() + "(" + mapArgs(i -> argName(i), ", ") + ");");
-        output.println("    STATS_AFTER(" + name + ")");
+        output.add(line + targetName() + "(" + mapArgs(i -> argName(i), ", ") + ");");
+        output.add("    STATS_AFTER(" + name + ")");
 
         if (returnType.isVoid()) {
-            output.println("    LOG_AFTER_VOID");
+            output.add("    LOG_AFTER_VOID");
             if (returnType == VoidNoReturn) {
-                output.println("    abort();");
+                output.add("    abort();");
             }
         } else {
-            output.println("    LOG_AFTER");
-            output.println("    return result;");
+            output.add("    LOG_AFTER");
+            output.add("    return result;");
         }
-        output.println("}");
+        output.add("}");
     }
 
     private void generateVarargForward(String forwardFunction) {
-        output.println("PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
-        output.println("    va_list args;");
-        output.println("    va_start(args, " + argName(arguments.length - 2) + ");");
-        output.print("    ");
+        output.add("PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+        output.add("    va_list args;");
+        output.add("    va_start(args, " + argName(arguments.length - 2) + ");");
+        String line = "    ";
         if (!returnType.isVoid()) {
-            output.print(returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ");
+            line += returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ";
         }
-        output.println(forwardFunction + "(" + mapArgs(i -> i == arguments.length - 1 ? "args" : argName(i), ", ") + ");");
-        output.println("    va_end(args);");
+        output.add(line + forwardFunction + "(" + mapArgs(i -> i == arguments.length - 1 ? "args" : argName(i), ", ") + ");");
+        output.add("    va_end(args);");
         if (returnType.isVoid()) {
             if (returnType == VoidNoReturn) {
-                output.println("    abort();");
+                output.add("    abort();");
             }
         } else {
-            output.println("    return result;");
+            output.add("    return result;");
         }
-        output.println("}");
+        output.add("}");
     }
 
     public static String getArgSignatureWithName(ArgDescriptor arg, int i) {
@@ -1713,6 +1712,30 @@ public final class CApiFunction {
 
     private String targetName() {
         return "__target__" + name;
+    }
+
+    public static void writeGenerated(Path path, List<String> contents) throws IOException {
+        Path capi = CApiFunction.resolvePath(path);
+        System.out.println("replacing CAPI_BUILTINS in " + capi);
+        List<String> lines = Files.readAllLines(capi);
+        int start = -1;
+        int end = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).contains("{{start CAPI_BUILTINS}}")) {
+                assert start == -1;
+                start = i + 1;
+            } else if (lines.get(i).contains("{{end CAPI_BUILTINS}}")) {
+                assert end == -1;
+                end = i;
+            }
+        }
+        assert start != -1 && end != -1;
+        List<String> result = new ArrayList<>();
+        result.addAll(lines.subList(0, start));
+        result.add("// GENERATED CODE - see PythonCextBuiltins");
+        result.addAll(contents);
+        result.addAll(lines.subList(end, lines.size()));
+        Files.write(capi, result);
     }
 
     /**

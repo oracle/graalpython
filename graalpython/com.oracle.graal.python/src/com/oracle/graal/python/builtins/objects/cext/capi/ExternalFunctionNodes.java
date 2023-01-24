@@ -175,7 +175,7 @@ public abstract class ExternalFunctionNodes {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    public static abstract class FinishArgNode extends PNodeWithContext {
+    public abstract static class FinishArgNode extends PNodeWithContext {
 
         public abstract void execute(Object value);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,8 +76,7 @@ enum ArgBehavior {
     Int64("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, null, null),
     Float64("DOUBLE", "D", "jdouble", "double", null, null, null),
     Void("VOID", "V", "void", "void", null, null, null),
-    Unknown("SINT64", "J", "jlong", "long", null, null, null),
-    ;
+    Unknown("SINT64", "J", "jlong", "long", null, null, null);
 
     public final String nfiSignature;
     public final String jniSignature;
@@ -320,8 +319,7 @@ public enum ArgDescriptor {
     InquiryResult(ArgBehavior.Int32, "int", CheckInquiryResultNodeGen::create),
     InitResult(ArgBehavior.Int32, "int", InitCheckFunctionResultNodeGen::create),
     PrimitiveResult32(ArgBehavior.Int32, "int", CheckPrimitiveFunctionResultNodeGen::create),
-    PrimitiveResult64(ArgBehavior.Int64, "long", CheckPrimitiveFunctionResultNodeGen::create),
-    ;
+    PrimitiveResult64(ArgBehavior.Int64, "long", CheckPrimitiveFunctionResultNodeGen::create);
 
     public final String cSignature;
     public final ArgBehavior behavior;

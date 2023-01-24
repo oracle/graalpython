@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -104,7 +104,7 @@ void* PyModule_GetState(PyObject *m) {
     return PyModuleObject_md_state(m);
 }
 
-// partially taken from CPython "Objects/moduleobject.c"
+// partially taken from CPython "Objects/moduleobject.h"
 const char * PyModule_GetName(PyObject *m) {
     PyObject *name = PyModule_GetNameObject(m);
     if (name == NULL) {

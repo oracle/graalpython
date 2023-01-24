@@ -122,16 +122,16 @@ class TestGC1():
         gc.enable()
         GCTestClass.resetCounters()
         a = GCTestClass.getCounters()
-        print(a)
+        assert a == (0,0,0,0)
         o = GCTestClass()
         b = GCTestClass.getCounters()
-        print(b)
+        assert b == (1,1,0,0)
         o = None
         gc.collect()
         time.sleep(1)
         gc.collect()
         c = GCTestClass.getCounters()
-        print(c)
+        assert c == (1,1,1,1)
         print("end")
         pass   
     

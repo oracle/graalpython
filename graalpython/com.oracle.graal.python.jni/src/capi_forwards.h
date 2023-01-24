@@ -1,3 +1,46 @@
+/*
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+// {{start CAPI_BUILTINS}}
+// GENERATED CODE - see PythonCextBuiltins
 // generated from class com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction
 
 void unimplemented(const char* name) { printf("Function not implemented in GraalPy: %s\n", name); }
@@ -4027,17 +4070,7 @@ PyAPI_FUNC(int) PyModule_AddIntConstant(PyObject* a, const char* b, long c) {
     LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_AddObject, PyModule_AddIntConstant)
-int (*__target__PyModule_AddObject)(PyObject*, const char*, PyObject*) = NULL;
-PyAPI_FUNC(int) PyModule_AddObject(PyObject* a, const char* b, PyObject* c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyModule_AddObject)
-    int result = (int) __target__PyModule_AddObject(a, b, c);
-    STATS_AFTER(PyModule_AddObject)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(PyModule_AddObjectRef, PyModule_AddObject)
+STATS_CONTAINER(PyModule_AddObjectRef, PyModule_AddIntConstant)
 int (*__target__PyModule_AddObjectRef)(PyObject*, const char*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyModule_AddObjectRef(PyObject* a, const char* b, PyObject* c) {
     LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
@@ -4047,27 +4080,7 @@ PyAPI_FUNC(int) PyModule_AddObjectRef(PyObject* a, const char* b, PyObject* c) {
     LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_AddStringConstant, PyModule_AddObjectRef)
-int (*__target__PyModule_AddStringConstant)(PyObject*, const char*, const char*) = NULL;
-PyAPI_FUNC(int) PyModule_AddStringConstant(PyObject* a, const char* b, const char* c) {
-    LOG("0x%lx '%s'(0x%lx) '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b, c?c:"<null>", (unsigned long) c);
-    STATS_BEFORE(PyModule_AddStringConstant)
-    int result = (int) __target__PyModule_AddStringConstant(a, b, c);
-    STATS_AFTER(PyModule_AddStringConstant)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(PyModule_AddType, PyModule_AddStringConstant)
-int (*__target__PyModule_AddType)(PyObject*, PyTypeObject*) = NULL;
-PyAPI_FUNC(int) PyModule_AddType(PyObject* a, PyTypeObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyModule_AddType)
-    int result = (int) __target__PyModule_AddType(a, b);
-    STATS_AFTER(PyModule_AddType)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(PyModule_Create2, PyModule_AddType)
+STATS_CONTAINER(PyModule_Create2, PyModule_AddObjectRef)
 PyObject* (*__target__PyModule_Create2)(struct PyModuleDef*, int) = NULL;
 PyAPI_FUNC(PyObject*) PyModule_Create2(struct PyModuleDef* a, int b) {
     LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
@@ -7250,17 +7263,7 @@ PyAPI_FUNC(Py_UNICODE*) Py_UNICODE_strrchr(const Py_UNICODE* a, Py_UNICODE b) {
 PyAPI_FUNC(char*) Py_UniversalNewlineFgets(char* a, int b, FILE* c, PyObject* d) {
     unimplemented("Py_UniversalNewlineFgets"); exit(-1);
 }
-STATS_CONTAINER(Py_VaBuildValue, Py_NewRef)
-PyObject* (*__target__Py_VaBuildValue)(const char*, va_list) = NULL;
-PyAPI_FUNC(PyObject*) Py_VaBuildValue(const char* a, va_list b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(Py_VaBuildValue)
-    PyObject* result = (PyObject*) __target__Py_VaBuildValue(a, b);
-    STATS_AFTER(Py_VaBuildValue)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(Py_XNewRef, Py_VaBuildValue)
+STATS_CONTAINER(Py_XNewRef, Py_NewRef)
 PyObject* (*__target__Py_XNewRef)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) Py_XNewRef(PyObject* a) {
     LOG("0x%lx", (unsigned long) a);
@@ -7330,50 +7333,11 @@ PyAPI_FUNC(wchar_t*) _PyASCIIObject_WSTR(PyASCIIObject* a) {
     LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyArg_BadArgument, _PyASCIIObject_WSTR)
-void (*__target___PyArg_BadArgument)(const char*, const char*, const char*, PyObject*) = NULL;
-PyAPI_FUNC(void) _PyArg_BadArgument(const char* a, const char* b, const char* c, PyObject* d) {
-    LOG("'%s'(0x%lx) '%s'(0x%lx) '%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, b?b:"<null>", (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyArg_BadArgument)
-    __target___PyArg_BadArgument(a, b, c, d);
-    STATS_AFTER(_PyArg_BadArgument)
-    LOG_AFTER_VOID
-}
-STATS_CONTAINER(_PyArg_CheckPositional, _PyArg_BadArgument)
-int (*__target___PyArg_CheckPositional)(const char*, Py_ssize_t, Py_ssize_t, Py_ssize_t) = NULL;
-PyAPI_FUNC(int) _PyArg_CheckPositional(const char* a, Py_ssize_t b, Py_ssize_t c, Py_ssize_t d) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyArg_CheckPositional)
-    int result = (int) __target___PyArg_CheckPositional(a, b, c, d);
-    STATS_AFTER(_PyArg_CheckPositional)
-    LOG_AFTER
-    return result;
-}
 PyAPI_FUNC(void) _PyArg_Fini() {
     unimplemented("_PyArg_Fini"); exit(-1);
 }
-STATS_CONTAINER(_PyArg_NoKeywords, _PyArg_CheckPositional)
-int (*__target___PyArg_NoKeywords)(const char*, PyObject*) = NULL;
-PyAPI_FUNC(int) _PyArg_NoKeywords(const char* a, PyObject* b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyArg_NoKeywords)
-    int result = (int) __target___PyArg_NoKeywords(a, b);
-    STATS_AFTER(_PyArg_NoKeywords)
-    LOG_AFTER
-    return result;
-}
 PyAPI_FUNC(int) _PyArg_NoKwnames(const char* a, PyObject* b) {
     unimplemented("_PyArg_NoKwnames"); exit(-1);
-}
-STATS_CONTAINER(_PyArg_NoPositional, _PyArg_NoKeywords)
-int (*__target___PyArg_NoPositional)(const char*, PyObject*) = NULL;
-PyAPI_FUNC(int) _PyArg_NoPositional(const char* a, PyObject* b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyArg_NoPositional)
-    int result = (int) __target___PyArg_NoPositional(a, b);
-    STATS_AFTER(_PyArg_NoPositional)
-    LOG_AFTER
-    return result;
 }
 PyAPI_FUNC(int) _PyArg_ParseStack(PyObject*const* a, Py_ssize_t b, const char* c, ...) {
     unimplemented("_PyArg_ParseStack"); exit(-1);
@@ -7384,17 +7348,7 @@ PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords(PyObject*const* a, Py_ssize_t b, Py
 PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords_SizeT(PyObject*const* a, Py_ssize_t b, PyObject* c, struct _PyArg_Parser* d, ...) {
     unimplemented("_PyArg_ParseStackAndKeywords_SizeT"); exit(-1);
 }
-STATS_CONTAINER(_PyArg_UnpackKeywords, _PyArg_NoPositional)
-PyObject*const* (*__target___PyArg_UnpackKeywords)(PyObject*const*, Py_ssize_t, PyObject*, PyObject*, struct _PyArg_Parser*, int, int, int, PyObject**) = NULL;
-PyAPI_FUNC(PyObject*const*) _PyArg_UnpackKeywords(PyObject*const* a, Py_ssize_t b, PyObject* c, PyObject* d, struct _PyArg_Parser* e, int f, int g, int h, PyObject** i) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e, (unsigned long) f, (unsigned long) g, (unsigned long) h, (unsigned long) i);
-    STATS_BEFORE(_PyArg_UnpackKeywords)
-    PyObject*const* result = (PyObject*const*) __target___PyArg_UnpackKeywords(a, b, c, d, e, f, g, h, i);
-    STATS_AFTER(_PyArg_UnpackKeywords)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(_PyArg_VaParseTupleAndKeywordsFast, _PyArg_UnpackKeywords)
+STATS_CONTAINER(_PyArg_VaParseTupleAndKeywordsFast, _PyASCIIObject_WSTR)
 int (*__target___PyArg_VaParseTupleAndKeywordsFast)(PyObject*, PyObject*, struct _PyArg_Parser*, va_list) = NULL;
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywordsFast(PyObject* a, PyObject* b, struct _PyArg_Parser* c, va_list d) {
     LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
@@ -9399,36 +9353,6 @@ PyAPI_FUNC(PyTypeObject*) _Py_TYPE(const PyObject* a) {
     LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_VaBuildStack, _Py_TYPE)
-PyObject** (*__target___Py_VaBuildStack)(PyObject**, Py_ssize_t, const char*, va_list, Py_ssize_t*) = NULL;
-PyAPI_FUNC(PyObject**) _Py_VaBuildStack(PyObject** a, Py_ssize_t b, const char* c, va_list d, Py_ssize_t* e) {
-    LOG("0x%lx 0x%lx '%s'(0x%lx) 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(_Py_VaBuildStack)
-    PyObject** result = (PyObject**) __target___Py_VaBuildStack(a, b, c, d, e);
-    STATS_AFTER(_Py_VaBuildStack)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(_Py_VaBuildStack_SizeT, _Py_VaBuildStack)
-PyObject** (*__target___Py_VaBuildStack_SizeT)(PyObject**, Py_ssize_t, const char*, va_list, Py_ssize_t*) = NULL;
-PyAPI_FUNC(PyObject**) _Py_VaBuildStack_SizeT(PyObject** a, Py_ssize_t b, const char* c, va_list d, Py_ssize_t* e) {
-    LOG("0x%lx 0x%lx '%s'(0x%lx) 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(_Py_VaBuildStack_SizeT)
-    PyObject** result = (PyObject**) __target___Py_VaBuildStack_SizeT(a, b, c, d, e);
-    STATS_AFTER(_Py_VaBuildStack_SizeT)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(_Py_VaBuildValue_SizeT, _Py_VaBuildStack_SizeT)
-PyObject* (*__target___Py_VaBuildValue_SizeT)(const char*, va_list) = NULL;
-PyAPI_FUNC(PyObject*) _Py_VaBuildValue_SizeT(const char* a, va_list b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_VaBuildValue_SizeT)
-    PyObject* result = (PyObject*) __target___Py_VaBuildValue_SizeT(a, b);
-    STATS_AFTER(_Py_VaBuildValue_SizeT)
-    LOG_AFTER
-    return result;
-}
 PyAPI_FUNC(int) _Py_abspath(const wchar_t* a, wchar_t** b) {
     unimplemented("_Py_abspath"); exit(-1);
 }
@@ -9480,7 +9404,7 @@ PyAPI_FUNC(int) _Py_get_blocking(int a) {
 PyAPI_FUNC(int) _Py_get_inheritable(int a) {
     unimplemented("_Py_get_inheritable"); exit(-1);
 }
-STATS_CONTAINER(_Py_gitidentifier, _Py_VaBuildValue_SizeT)
+STATS_CONTAINER(_Py_gitidentifier, _Py_TYPE)
 const char* (*__target___Py_gitidentifier)() = NULL;
 PyAPI_FUNC(const char*) _Py_gitidentifier() {
     LOGS("");
@@ -9651,13 +9575,6 @@ PyAPI_FUNC(PyObject*) PyUnicode_FromFormat(const char* a, ...) {
     va_end(args);
     return result;
 }
-PyAPI_FUNC(PyObject*) Py_BuildValue(const char* a, ...) {
-    va_list args;
-    va_start(args, a);
-    PyObject* result = (PyObject*) Py_VaBuildValue(a, args);
-    va_end(args);
-    return result;
-}
 PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywordsFast(PyObject* a, PyObject* b, struct _PyArg_Parser* c, ...) {
     va_list args;
     va_start(args, c);
@@ -9690,13 +9607,6 @@ PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject* a, const char* b, ...) {
     va_list args;
     va_start(args, b);
     int result = (int) PyArg_VaParse(a, b, args);
-    va_end(args);
-    return result;
-}
-PyAPI_FUNC(PyObject*) _Py_BuildValue_SizeT(const char* a, ...) {
-    va_list args;
-    va_start(args, a);
-    PyObject* result = (PyObject*) _Py_VaBuildValue_SizeT(a, args);
     va_end(args);
     return result;
 }
@@ -9893,10 +9803,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyModuleDef_Init = getAPI("PyModuleDef_Init");
     __target__PyModule_AddFunctions = getAPI("PyModule_AddFunctions");
     __target__PyModule_AddIntConstant = getAPI("PyModule_AddIntConstant");
-    __target__PyModule_AddObject = getAPI("PyModule_AddObject");
     __target__PyModule_AddObjectRef = getAPI("PyModule_AddObjectRef");
-    __target__PyModule_AddStringConstant = getAPI("PyModule_AddStringConstant");
-    __target__PyModule_AddType = getAPI("PyModule_AddType");
     __target__PyModule_Create2 = getAPI("PyModule_Create2");
     __target__PyModule_GetDef = getAPI("PyModule_GetDef");
     __target__PyModule_GetDict = getAPI("PyModule_GetDict");
@@ -10141,7 +10048,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__Py_IsTrue = getAPI("Py_IsTrue");
     __target__Py_LeaveRecursiveCall = getAPI("Py_LeaveRecursiveCall");
     __target__Py_NewRef = getAPI("Py_NewRef");
-    __target__Py_VaBuildValue = getAPI("Py_VaBuildValue");
     __target__Py_XNewRef = getAPI("Py_XNewRef");
     __target___PyASCIIObject_LENGTH = getAPI("_PyASCIIObject_LENGTH");
     __target___PyASCIIObject_STATE_ASCII = getAPI("_PyASCIIObject_STATE_ASCII");
@@ -10149,11 +10055,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyASCIIObject_STATE_KIND = getAPI("_PyASCIIObject_STATE_KIND");
     __target___PyASCIIObject_STATE_READY = getAPI("_PyASCIIObject_STATE_READY");
     __target___PyASCIIObject_WSTR = getAPI("_PyASCIIObject_WSTR");
-    __target___PyArg_BadArgument = getAPI("_PyArg_BadArgument");
-    __target___PyArg_CheckPositional = getAPI("_PyArg_CheckPositional");
-    __target___PyArg_NoKeywords = getAPI("_PyArg_NoKeywords");
-    __target___PyArg_NoPositional = getAPI("_PyArg_NoPositional");
-    __target___PyArg_UnpackKeywords = getAPI("_PyArg_UnpackKeywords");
     __target___PyArg_VaParseTupleAndKeywordsFast = getAPI("_PyArg_VaParseTupleAndKeywordsFast");
     __target___PyArg_VaParseTupleAndKeywordsFast_SizeT = getAPI("_PyArg_VaParseTupleAndKeywordsFast_SizeT");
     __target___PyArg_VaParseTupleAndKeywords_SizeT = getAPI("_PyArg_VaParseTupleAndKeywords_SizeT");
@@ -10272,9 +10173,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___Py_SET_TYPE = getAPI("_Py_SET_TYPE");
     __target___Py_SIZE = getAPI("_Py_SIZE");
     __target___Py_TYPE = getAPI("_Py_TYPE");
-    __target___Py_VaBuildStack = getAPI("_Py_VaBuildStack");
-    __target___Py_VaBuildStack_SizeT = getAPI("_Py_VaBuildStack_SizeT");
-    __target___Py_VaBuildValue_SizeT = getAPI("_Py_VaBuildValue_SizeT");
     __target___Py_gitidentifier = getAPI("_Py_gitidentifier");
     __target___Py_gitversion = getAPI("_Py_gitversion");
     __target___Py_parse_inf_or_nan = getAPI("_Py_parse_inf_or_nan");
@@ -10284,3 +10182,4 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___Py_strhex_with_sep = getAPI("_Py_strhex_with_sep");
     __target___Py_string_to_number_with_underscores = getAPI("_Py_string_to_number_with_underscores");
 }
+// {{end CAPI_BUILTINS}}

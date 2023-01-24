@@ -474,61 +474,6 @@ void Py_IncRef(PyObject *a) {
 }
 */
 
-int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, ...) {
-    Py_ssize_t i, l;
-    PyObject **o;
-
-    assert(min >= 0);
-    assert(min <= max);
-
-    if ((_Py_TYPE(args)->tp_flags & Py_TPFLAGS_TUPLE_SUBCLASS) == 0) {
-        PyErr_SetString(PyExc_SystemError,
-            "PyArg_UnpackTuple() argument list is not a tuple");
-        return 0;
-    }
-    l = PyTuple_Size(args);
-    if (l < min) {
-        if (name != NULL) {
-            PyErr_Format(
-                PyExc_TypeError,
-                "%s expected %s%zd arguments, got %zd",
-                name, (min == max ? "" : "at least "), min, l);
-        }
-        else{
-            PyErr_Format(
-                PyExc_TypeError,
-                "unpacked tuple should have %s%zd elements,"
-                " but has %zd",
-                (min == max ? "" : "at least "), min, l);
-        }
-        return 0;
-    }
-    if (l == 0)
-        return 1;
-    if (l > max) {
-        if (name != NULL)
-            PyErr_Format(
-                PyExc_TypeError,
-                "%s expected %s%zd arguments, got %zd",
-                name, (min == max ? "" : "at most "), max, l);
-        else
-            PyErr_Format(
-                PyExc_TypeError,
-                "unpacked tuple should have %s%zd elements,"
-                " but has %zd",
-                (min == max ? "" : "at most "), max, l);
-        return 0;
-    }
-
-    va_list vargs;
-    va_start(vargs, max);
-    for (i = 0; i < l; i++) {
-        o = va_arg(vargs, PyObject **);
-        *o = PyTuple_GetItem(args, i);
-    }
-    va_end(vargs);
-    return 1;
-}
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     va_list vargs;
@@ -646,3 +591,4 @@ char _PyByteArray_empty_string[] = "";
 #include "boolobject.c"
 #include "complexobject.c"
 #include "dictobject.c"
+#include "modsupport_shared.c"

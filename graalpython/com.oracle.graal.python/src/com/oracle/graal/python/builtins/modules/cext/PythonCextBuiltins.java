@@ -2765,7 +2765,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         result.add("");
         result.addAll(defines);
 
-        writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.h"), result);
+        CApiFunction.writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.h"), result);
 
         ArrayList<String> stubs = new ArrayList<>();
         for (var entry : new TreeMap<>(capiBuiltins).entrySet()) {
@@ -2794,33 +2794,9 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.c"), stubs);
+        CApiFunction.writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.c"), stubs);
 
         CApiFunction.generateCForwards();
-    }
-
-    private static void writeGenerated(Path path, List<String> contents) throws IOException {
-        Path capi = CApiFunction.resolvePath(path);
-        System.out.println("replacing CAPI_BUILTINS in " + capi);
-        List<String> lines = Files.readAllLines(capi);
-        int start = -1;
-        int end = -1;
-        for (int i = 0; i < lines.size(); i++) {
-            if (lines.get(i).contains("{{start CAPI_BUILTINS}}")) {
-                assert start == -1;
-                start = i + 1;
-            } else if (lines.get(i).contains("{{end CAPI_BUILTINS}}")) {
-                assert end == -1;
-                end = i;
-            }
-        }
-        assert start != -1 && end != -1;
-        List<String> result = new ArrayList<>();
-        result.addAll(lines.subList(0, start));
-        result.add("// GENERATED CODE - see PythonCextBuiltins");
-        result.addAll(contents);
-        result.addAll(lines.subList(end, lines.size()));
-        Files.write(capi, result);
     }
 
     @SuppressWarnings("unchecked")
