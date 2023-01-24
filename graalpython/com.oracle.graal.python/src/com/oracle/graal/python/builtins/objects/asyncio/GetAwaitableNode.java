@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,14 +51,12 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -67,7 +65,7 @@ public abstract class GetAwaitableNode extends Node {
 
     @Specialization
     public Object doGenerator(PGenerator generator,
-                    @Cached PRaiseNode raise) {
+                    @Cached.Shared("notInAwait") @Cached PRaiseNode raise) {
         if (generator.isCoroutine()) {
             return generator;
         } else {
@@ -77,8 +75,8 @@ public abstract class GetAwaitableNode extends Node {
 
     @Specialization
     public Object doGeneric(Frame frame, Object awaitable,
-                    @Cached PRaiseNode raiseNoAwait,
-                    @Cached PRaiseNode raiseNotIter,
+                    @Cached.Shared("notInAwait") @Cached PRaiseNode raiseNoAwait,
+                    @Cached.Exclusive @Cached PRaiseNode raiseNotIter,
                     @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
                     @Cached TypeNodes.GetNameNode getName,
                     @Cached GetClassNode getAwaitableType,
