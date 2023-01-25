@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
-import java.util.concurrent.ConcurrentLinkedDeque;
-
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -73,12 +71,6 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
  */
 public abstract class ManagedMethodWrappers {
 
-    /*
-     * TODO: hack to keep the closures alive - we need to store the closures in a place that keep
-     * them alive with the underlying delegate.
-     */
-    private static final ConcurrentLinkedDeque<Object> closures = new ConcurrentLinkedDeque<>();
-
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public abstract static class MethodWrapper extends PythonNativeWrapper {
@@ -105,12 +97,13 @@ public abstract class ManagedMethodWrappers {
         public void toNative() {
             Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", getSignature(), "exec").build()).call();
             Object result = SignatureLibrary.getUncached().createClosure(signature, this);
-            closures.add(result);
             try {
                 setNativePointer(InteropLibrary.getUncached(result).asPointer(result));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
+            // the closure needs to stay alive indefinitely
+            PythonContext.get(null).getCApiContext().retainClosure(result);
         }
 
         protected abstract CharSequence getSignature();

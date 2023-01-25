@@ -740,7 +740,7 @@ public abstract class ExternalFunctionNodes {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         signatureLib = insert(SignatureLibrary.getFactory().create(signature));
                     }
-                    result = lib.execute(signatureLib.bind(signature, callable), cArguments);
+                    result = signatureLib.call(signature, callable, cArguments);
                 } else {
                     result = lib.execute(callable, cArguments);
                 }

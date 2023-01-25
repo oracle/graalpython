@@ -84,7 +84,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -158,7 +157,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -186,7 +184,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
@@ -212,7 +209,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -348,11 +344,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
 
-    @FunctionalInterface
-    public interface TernaryFunction<T1, T2, T3, R> {
-        R apply(T1 arg0, T2 arg1, T3 arg2);
-    }
-
     @CApiBuiltin(ret = PyThreadState, args = {}, acquiresGIL = false, call = Direct)
     @GenerateNodeFactory
     public abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
@@ -465,7 +456,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Child private PythonObjectFactory objectFactory;
-        @Child private PConstructAndRaiseNode constructAndRaiseNode;
 
         @CompilationFinal private ArgDescriptor ret;
 
@@ -481,24 +471,8 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             return objectFactory;
         }
 
-        public final PConstructAndRaiseNode getConstructAndRaiseNode() {
-            if (constructAndRaiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
-            }
-            return constructAndRaiseNode;
-        }
-
         public final Python3Core getCore() {
             return getContext();
-        }
-
-        public final Object getPythonClass(Object lazyClass, ConditionProfile profile) {
-            if (profile.profile(lazyClass instanceof PythonBuiltinClassType)) {
-                return getCore().lookupType((PythonBuiltinClassType) lazyClass);
-            } else {
-                return lazyClass;
-            }
         }
 
         protected final PException badInternalCall(String argName) {
@@ -553,34 +527,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         public final Object getPosixSupport() {
             return getContext().getPosixSupport();
-        }
-
-        public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
-            return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
-        }
-
-        public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
-            return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, null);
-        }
-
-        public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
-            return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, filename2);
-        }
-
-        public final PException raiseOSError(VirtualFrame frame, int code, TruffleString message) {
-            return getConstructAndRaiseNode().raiseOSError(frame, code, message, null, null);
-        }
-
-        public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {
-            return getConstructAndRaiseNode().raiseOSError(frame, num);
-        }
-
-        public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
-            return getConstructAndRaiseNode().raiseOSError(frame, oserror, e);
-        }
-
-        public final PException raiseOSError(VirtualFrame frame, Exception e, TruffleString.EqualNode eqNode) {
-            return getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
         }
 
         protected void checkNonNullArg(Object obj) {
@@ -724,11 +670,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class CApiVarBuiltinNode extends CApiBuiltinNode {
-        @Override
-        public abstract Object execute(Object[] arg0);
-    }
-
     @ExportLibrary(InteropLibrary.class)
     public static final class CApiBuiltinExecutable implements TruffleObject {
 
@@ -737,9 +678,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         final NodeFactory<? extends CApiBuiltinNode> factory;
         @CompilationFinal private CallTarget callTarget;
         private final CApiBuiltin annotation;
-
-        private long pointer = -1;
-        private Object callable;
 
         public CApiBuiltinExecutable(CApiBuiltin annotation, ArgDescriptor ret, ArgDescriptor[] args, NodeFactory<? extends CApiBuiltinNode> factory) {
             this.annotation = annotation;
@@ -808,19 +746,19 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @ExportMessage
         @TruffleBoundary
         boolean isPointer() {
+            long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
             return pointer != -1;
         }
 
         @ExportMessage
         @TruffleBoundary
         long asPointer() throws UnsupportedMessageException {
+            long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
             if (pointer == -1) {
                 throw UnsupportedMessageException.create();
             }
             return pointer;
         }
-
-        private static RootCallTarget signatureContainer;
 
         private static final class SignatureContainerRootNode extends RootNode {
 
@@ -847,28 +785,29 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @ExportMessage
         @TruffleBoundary
         void toNative() {
+            CApiContext context = PythonContext.get(null).getCApiContext();
+            long pointer = context.getClosurePointer(this);
             if (pointer == -1) {
-                if (callable == null) {
-                    if (signatureContainer == null) {
-                        signatureContainer = new SignatureContainerRootNode().getCallTarget();
-                    }
-                    SignatureContainerRootNode container = (SignatureContainerRootNode) signatureContainer.getRootNode();
-                    // create NFI closure and get its address
-                    StringBuilder signature = new StringBuilder("(");
-                    for (int i = 0; i < args.length; i++) {
-                        signature.append(i == 0 ? "" : ",");
-                        signature.append(args[i].getNFISignature());
-                    }
-                    signature.append("):").append(ret.getNFISignature());
-                    Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", signature.toString(), "exec").build()).call();
-                    callable = container.getLibrary(factory.getNodeClass()).createClosure(nfiSignature, this);
+                if (context.signatureContainer == null) {
+                    context.signatureContainer = new SignatureContainerRootNode().getCallTarget();
                 }
-                InteropLibrary.getUncached().toNative(callable);
+                SignatureContainerRootNode container = (SignatureContainerRootNode) context.signatureContainer.getRootNode();
+                // create NFI closure and get its address
+                StringBuilder signature = new StringBuilder("(");
+                for (int i = 0; i < args.length; i++) {
+                    signature.append(i == 0 ? "" : ",");
+                    signature.append(args[i].getNFISignature());
+                }
+                signature.append("):").append(ret.getNFISignature());
+                Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", signature.toString(), "exec").build()).call();
+                Object closure = container.getLibrary(factory.getNodeClass()).createClosure(nfiSignature, this);
+                InteropLibrary.getUncached().toNative(closure);
                 try {
-                    pointer = InteropLibrary.getUncached().asPointer(callable);
+                    pointer = InteropLibrary.getUncached().asPointer(closure);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
+                context.setClosurePointer(this, closure, pointer);
             }
         }
 
@@ -1285,16 +1224,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             }
             return l.toArray();
         }
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    protected static ByteBuffer wrap(byte[] data) {
-        return ByteBuffer.wrap(data);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    protected static ByteBuffer wrap(byte[] data, int offset, int length) {
-        return ByteBuffer.wrap(data, offset, length);
     }
 
     @TruffleBoundary
@@ -2450,25 +2379,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    static PDict castPDict(Object tpDictObj) {
-        if (tpDictObj instanceof PDict) {
-            return (PDict) tpDictObj;
-        }
-        throw CompilerDirectives.shouldNotReachHere("tp_dict object must be a Python dict");
-    }
-
-    static int castInt(Object object) {
-        if (object instanceof Integer) {
-            return (int) object;
-        } else if (object instanceof Long) {
-            long lval = (long) object;
-            if (PInt.isIntRange(lval)) {
-                return (int) lval;
-            }
-        }
-        throw CompilerDirectives.shouldNotReachHere("expected Java int");
-    }
-
     abstract static class CreateGetSetNode extends Node {
 
         abstract GetSetDescriptor execute(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
@@ -2656,10 +2566,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         addCApiBuiltins(PythonCextUnicodeBuiltinsFactory.getFactories());
         addCApiBuiltins(PythonCextWarnBuiltinsFactory.getFactories());
         addCApiBuiltins(PythonCextWeakrefBuiltinsFactory.getFactories());
-    }
-
-    public static List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> filterFactories(List<?> factories) {
-        return filterFactories(factories, PythonBuiltinBaseNode.class);
     }
 
     private static void addCApiBuiltins(List<?> list) {

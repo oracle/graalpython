@@ -56,6 +56,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -204,6 +205,11 @@ public final class CApiContext extends CExtContext {
      * Next key that will be allocated byt PyThread_tss_create
      */
     private final AtomicLong nextTssKey = new AtomicLong();
+
+    private final HashMap<Object, Long> callableClosurePointers = new HashMap<>();
+    private final HashSet<Object> callableClosures = new HashSet<>();
+    private Object nativeLibrary;
+    public RootCallTarget signatureContainer;
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -1169,16 +1175,13 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    private Object jniLibrary;
-
-    public void initJNI() {
-        GraalHPyContext.loadJNIBackend();
+    public void initNative() {
         Env env = PythonContext.get(null).getEnv();
 
         SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
         try {
-            jniLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
-            Object initFunction = InteropLibrary.getUncached().readMember(jniLibrary, "initNativeForward");
+            nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
+            Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
 
             // PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void*
             // (*getType)(const char*), void (*setTypeStore)(const char*, void*))
@@ -1243,5 +1246,20 @@ public final class CApiContext extends CExtContext {
                 return 20;
         }
         return -1;
+    }
+
+    @TruffleBoundary
+    public long getClosurePointer(Object callable) {
+        return callableClosurePointers.getOrDefault(callable, -1l);
+    }
+
+    public void setClosurePointer(Object callable, Object closure, long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        callableClosurePointers.put(callable, pointer);
+        callableClosures.add(closure);
+    }
+
+    public void retainClosure(Object closure) {
+        callableClosures.add(closure);
     }
 }

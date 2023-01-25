@@ -74,7 +74,7 @@ public final class PythonCextContextBuiltins {
         }
 
         @Specialization
-        static Object doGeneric(PNone name, Object def) {
+        static Object doGeneric(PNone name, @SuppressWarnings("unused") Object def) {
             assert name == PNone.NO_VALUE;
             return PNone.NO_VALUE;
         }

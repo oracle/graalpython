@@ -366,7 +366,7 @@ public abstract class CExtContext {
     }
 
     private static boolean isForcedLLVM(String name) {
-        return "_mmap".equals(name);
+        return "_mmap".equals(name) || "_cpython_struct".equals(name);
     }
 
     protected static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {

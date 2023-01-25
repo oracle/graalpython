@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
-import java.util.concurrent.ConcurrentLinkedDeque;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
@@ -84,12 +82,6 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
-
-    /*
-     * TODO: this is a hack to keep the closures from being freed. Store them in a proper place
-     * inside the class instead.
-     */
-    private static final ConcurrentLinkedDeque<Object> closures = new ConcurrentLinkedDeque<>();
 
     public PyProcsWrapper(Object delegate) {
         super(delegate);
@@ -138,7 +130,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     protected void toNative() {
         Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", getSignature(), "exec").build()).call();
         Object result = SignatureLibrary.getUncached().createClosure(signature, this);
-        closures.add(result);
+        PythonContext.get(null).getCApiContext().retainClosure(result);
         setNativePointer(coerceToLong(result, InteropLibrary.getUncached()));
     }
 
