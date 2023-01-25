@@ -152,7 +152,8 @@ PyTypeObject PyType_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("type", &PyType_Ty
 PyTypeObject PyUnicode_Type = 				PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyUnicodeObject));
 /* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
 PyTypeObject PyWrapperDescr_Type = 			PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
-
+// dummy definitions:
+PyTypeObject _PyBytesIOBuffer_Type =		PY_TRUFFLE_TYPE("_io._BytesIOBuffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, 0);
 
 #define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS

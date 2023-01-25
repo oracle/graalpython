@@ -210,6 +210,7 @@ OBJECT(_PyNotImplemented_Type, NotImplementedType) \
 OBJECT(_PyWeakref_CallableProxyType, unimplemented) \
 OBJECT(_PyWeakref_ProxyType, unimplemented) \
 OBJECT(_PyWeakref_RefType, ReferenceType) \
+OBJECT(_PyBytesIOBuffer_Type, _BytesIOBuffer) \
 
 #define TYPE_OBJECTS \
 TYPE_OBJECT(PyTypeObject*, PyCapsule_Type, capsule, _object) \
