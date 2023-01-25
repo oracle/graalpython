@@ -1250,7 +1250,7 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public long getClosurePointer(Object callable) {
-        return callableClosurePointers.getOrDefault(callable, -1l);
+        return callableClosurePointers.getOrDefault(callable, -1L);
     }
 
     public void setClosurePointer(Object callable, Object closure, long pointer) {
