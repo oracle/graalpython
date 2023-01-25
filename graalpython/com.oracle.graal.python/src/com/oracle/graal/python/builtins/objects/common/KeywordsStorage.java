@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -112,7 +112,7 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
-                        @SuppressWarnings("unused") @Exclusive @Cached(value = "self.length()", neverDefault = false) int cachedLen,
+                        @SuppressWarnings("unused") @Exclusive @Cached(value = "self.length()") int cachedLen,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findCachedStringKey(key, cachedLen, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;

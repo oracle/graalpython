@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -209,7 +209,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object notString(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
-                        @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1, neverDefault = true) Object[] keyList,
+                        @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
@@ -338,7 +338,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @SuppressWarnings("unused") @Bind("receiver.store") DynamicObject store,
                         @SuppressWarnings("unused") @CachedLibrary("store") DynamicObjectLibrary dylib,
                         @Bind("dylib.getKeyArray(store)") Object[] keys,
-                        @Cached(value = "keys.length", neverDefault = false) int cachedLength,
+                        @Cached(value = "keys.length") int cachedLength,
                         @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] readLib,
                         @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] writeLib) {
             DynamicObject copy = new Store(PythonLanguage.get(dylib).getEmptyShape());

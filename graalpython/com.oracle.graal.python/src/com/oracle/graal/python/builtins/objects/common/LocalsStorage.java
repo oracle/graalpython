@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,7 +109,7 @@ public final class LocalsStorage extends HashingStorage {
         @Specialization(guards = "desc == self.frame.getFrameDescriptor()", limit = "1")
         @ExplodeLoop
         static int getLengthCached(LocalsStorage self,
-                        @Cached(value = "self.frame.getFrameDescriptor()", neverDefault = true) FrameDescriptor desc) {
+                        @Cached(value = "self.frame.getFrameDescriptor()") FrameDescriptor desc) {
             int size = desc.getNumberOfSlots();
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
                 Object identifier = desc.getSlotName(slot);

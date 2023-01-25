@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -124,7 +124,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached(value = "self.getType()", neverDefault = false) Object type) {
+                        @Cached(value = "self.getType()") Object type) {
             return type;
         }
 
@@ -141,7 +141,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached(value = "self.getObjectType()", neverDefault = false) Object type) {
+                        @Cached(value = "self.getObjectType()") Object type) {
             return type;
         }
 
@@ -158,7 +158,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached(value = "self.getObject()", neverDefault = false) Object object) {
+                        @Cached(value = "self.getObject()") Object object) {
             return object;
         }
 

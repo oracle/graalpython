@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -96,7 +96,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
 
     @Specialization(guards = {"getKwargLen(frame) == cachedLen", "cachedLen == 0"}, limit = "1")
     Object noKeywordArgs(@SuppressWarnings("unused") VirtualFrame frame,
-                    @SuppressWarnings("unused") @Cached(value = "getAndCheckKwargLen(frame)", neverDefault = false) int cachedLen) {
+                    @SuppressWarnings("unused") @Cached(value = "getAndCheckKwargLen(frame)") int cachedLen) {
         return returnValue(PKeyword.EMPTY_KEYWORDS);
     }
 
