@@ -118,7 +118,6 @@ GCTestClass = CPyExtType("GCTestClass",
 class TestGC1():
     
     def test_native_class(self):
-        print("start")
         gc.enable()
         GCTestClass.resetCounters()
         a = GCTestClass.getCounters()
@@ -132,7 +131,6 @@ class TestGC1():
         gc.collect()
         c = GCTestClass.getCounters()
         assert c == (1,1,1,1)
-        print("end")
         pass   
     
 #
