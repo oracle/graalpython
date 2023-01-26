@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,12 @@ _PyThreadState_UncheckedGet(void)
 
 PyThreadState * PyThreadState_Get() {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
+}
+
+void PyThreadState_Clear(PyThreadState *tstate) {
+}
+
+void PyThreadState_DeleteCurrent(void) {
 }
 
 int64_t
