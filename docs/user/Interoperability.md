@@ -14,77 +14,86 @@ In fact, GraalVM uses this API internally to execute Python C extensions using t
 
 You can import the `polyglot` module to interact with other languages:
 ```python
-import polyglot
+>>> import polyglot
 ```
-
-You can import a global value from the entire polyglot scope:
-```python
-imported_polyglot_global = polyglot.import_value("global_name")
-```
-
-This global value should then work as expected:
-* Accessing attributes assumes it reads from the `members` namespace.
-* Accessing items is supported both with strings and numbers.
-* Calling methods on the result tries to do a straight invoke and falls
-back to reading the member and trying to execute it.
 
 You can evaluate some inlined code from another language:
 ```python
-polyglot.eval(string="1 + 1", language="ruby")
+>>> polyglot.eval(string="1 + 1", language="ruby")
+2
 ```
 
 You can evaluate some code from a file, by passing the path to it:
 ```python
-polyglot.eval(path="./my_ruby_file.rb", language="ruby")
+>>> with open("./my_ruby_file.rb", "w") as f:
+...    f.write("Polyglot.export('RubyPolyglot', Polyglot)")
+41
+>>> polyglot.eval(path="./my_ruby_file.rb", language="ruby")
+<foreign object at ...>
 ```
 
-If you pass a file, you can also rely on the file-based language detection:
+You can import a global value from the entire polyglot scope:
 ```python
-polyglot.eval(path="./my_ruby_file.rb")
+>>> ruby_polyglot = polyglot.import_value("RubyPolyglot")
 ```
 
-You can export some oblect from Python to other supported languages so they can import
+This global value should then work as expected:
+* Accessing attributes assumes it reads from the `members` namespace.
+```python
+>>> ruby_polyglot.to_s
+<foreign object at ...>
+```
+
+* Calling methods on the result tries to do a straight invoke and falls
+back to reading the member and trying to execute it.
+```python
+>>> ruby_polyglot.to_s()
+Polyglot
+```
+
+* Accessing items is supported both with strings and numbers.
+```python
+>>> ruby_polyglot.methods()[10] is not None
+True
+```
+
+You can export some object from Python to other supported languages so they can import
 it:
 ```python
-foo = object()
-polyglot.export_value(foo, name="python_foo")
+>>> foo = object()
+>>> polyglot.export_value(value=foo, name="python_foo")
+<object object at ...>
+>>> jsfoo = polyglot.eval(language="js", string="Polyglot.import('python_foo')")
+>>> jsfoo is foo
+True
 ```
 
 The export function can be used as a decorator.
 In this case the function name is used as the globally exported name:
 ```python
-@polyglot.export_value
-def python_method():
-    return "Hello from Python!"
+>>> @polyglot.export_value
+... def python_method():
+...     return "Hello from Python!"
 ```
 
 Here is an example of how to use the JavaScript regular expression engine to
-match Python strings. Save this code to the `polyglot_example.py` file:
+match Python strings.
 ```python
-import polyglot
+>>> js_re = polyglot.eval(string="RegExp()", language="js")
 
-re = polyglot.eval(string="RegExp()", language="js")
+>>> pattern = js_re.compile(".*(?:we have (?:a )?matching strings?(?:[!\\?] )?)(.*)")
 
-pattern = re.compile(".*(?:we have (?:a )?matching strings?(?:[!\\?] )?)(.*)")
+>>> if pattern.exec("This string does not match"):
+...    raise SystemError("that shouldn't happen")
 
-if pattern.exec("This string does not match"):
-    raise SystemError("that shouldn't happen")
+>>> md = pattern.exec("Look, we have matching strings! This string was matched by Graal.js")
 
-md = pattern.exec("Look, we have matching strings! This string was matched by Graal.js")
-if not md:
-    raise SystemError("this should have matched")
-
-print("Here is what we found: '%s'" % md[1])
-```
-
-To run it, pass the `--jvm --polyglot` option to the `graalpy` launcher:
-```shell
-graalpy --jvm --polyglot polyglot_example.py
+>>> "Here is what we found: '%s'" % md[1]
+"Here is what we found: 'This string was matched by Graal.js'"
 ```
 
 This program matches Python strings using the JavaScript regular expression object.
-Python reads the captured group from the JavaScript result and prints:
-*Here is what we found: 'This string was matched by Graal.js'*.
+Python reads the captured group from the JavaScript result and prints it.
 
 As a more complex example, see how you can read a file using R, process the data in Python, and use R again to display the resulting data image, using both the R and Python libraries in conjunction.
 To run this example, first install the required R library:
@@ -135,31 +144,36 @@ time.sleep(10)
 
 Finally, to interoperate with Java (only when running on the JVM), you can use the `java` module:
 ```python
-import java
-BigInteger = java.type("java.math.BigInteger")
-myBigInt = BigInteger.valueOf(42)
-# public Java methods can just be called
-myBigInt.shiftLeft(128)
-# Java method names that are keywords in Python can be accessed using `getattr`
-getattr(myBigInt, "not")()
-byteArray = myBigInt.toByteArray()
-# Java arrays can act like Python lists
-print(list(byteArray))
+>>> import java
+>>> BigInteger = java.type("java.math.BigInteger")
+>>> myBigInt = BigInteger.valueOf(42)
+>>> # public Java methods can just be called
+>>> myBigInt.shiftLeft(128)
+<JavaObject[java.math.BigInteger] at ...>
+>>> # Java method names that are keywords in Python can be accessed using `getattr`
+>>> getattr(myBigInt, "not")()
+<JavaObject[java.math.BigInteger] at ...>
+>>> byteArray = myBigInt.toByteArray()
+>>> # Java arrays can act like Python lists
+>>> list(byteArray)
+[42]
 ```
 
 For packages under the `java` package, you can also use the normal Python import
 syntax:
 ```python
-import java.util.ArrayList
-from java.util import ArrayList
-
-java.util.ArrayList == ArrayList
-
-al = ArrayList()
-al.add(1)
-al.add(12)
-print(al)
-# prints [1, 12]
+>>> import java.util.ArrayList
+>>> from java.util import ArrayList
+>>>
+>>> java.util.ArrayList == ArrayList
+True
+>>> al = ArrayList()
+>>> al.add(1)
+True
+>>> al.add(12)
+True
+>>> al
+[1, 12]
 ```
 
 In addition to the `type` builtin method, the `java` module exposes the following
@@ -173,19 +187,18 @@ Builtin                  | Specification
 `is_symbol(obj)`         | returns `True` if `obj` if the argument is a Java host symbol, representing the constructor and static members of a Java class, as obtained by `java.type`
 
 ```python
-import java
-ArrayList = java.type('java.util.ArrayList')
-my_list = ArrayList()
-print(java.is_symbol(ArrayList))
-# prints True
-print(java.is_symbol(my_list))
-# prints False, my_list is not a Java host symbol
-print(java.is_object(ArrayList))
-# prints True, symbols are also host objects
-print(java.is_function(my_list.add))
-# prints True, the add method of ArrayList
-print(java.instanceof(my_list, ArrayList))
-# prints True
+>>> ArrayList = java.type('java.util.ArrayList')
+>>> my_list = ArrayList()
+>>> java.is_symbol(ArrayList)
+True
+>>> java.is_symbol(my_list)
+False
+>>> java.is_object(ArrayList)
+True
+>>> java.is_function(my_list.add)
+True
+>>> java.instanceof(my_list, ArrayList)
+True
 ```
 
 See [Polyglot Programming](https://github.com/oracle/graal/blob/master/docs/reference-manual/polyglot-programming.md) and [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) for more information about interoperability with other programming languages.

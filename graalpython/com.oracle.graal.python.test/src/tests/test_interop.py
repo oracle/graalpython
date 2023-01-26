@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,13 +38,22 @@
 # SOFTWARE.
 
 import os
-from unittest import skipIf
+import unittest
+from unittest import skipIf, skipUnless
 
 import sys
 
 if sys.implementation.name == "graalpy":
     import polyglot
     from __graalpython__ import is_native
+
+    try:
+        polyglot.eval(language="ruby", string="1")
+        polyglot.eval(language="js", string="1")
+    except:
+        test_polyglot_languages = False
+    else:
+        test_polyglot_languages = True
 
     def test_import():
         def some_function():
@@ -640,3 +649,19 @@ if sys.implementation.name == "graalpy":
             g = {}
             exec('from java.lang.Byte import *', g)
             assert type(g['MAX_VALUE']) is int
+
+    @skipUnless(test_polyglot_languages, "tests other language access")
+    def test_doctest():
+        import doctest
+
+        class Example(doctest.Example):
+            """
+            Subclass of doctest.Example that accepts the end of
+            markdown code blocks as end of examples.
+            """
+            def __init__(self, source, want, *args, **kwargs):
+                want = want.rstrip("```\n")
+                super(Example, self).__init__(source, want, *args, **kwargs)
+        doctest.Example = Example
+
+        assert doctest.testmod(m=polyglot, verbose=getattr(unittest, "verbose"), optionflags=doctest.ELLIPSIS).failed == 0

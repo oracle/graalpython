@@ -303,6 +303,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Force to automatically import site.py module.") //
     public static final OptionKey<Boolean> ForceImportSite = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set-up library search paths to include GraalPy's LLVM toolchain library directories.") //
+    public static final OptionKey<Boolean> SetupLLVMLibraryPaths = new OptionKey<>(false);
+
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 

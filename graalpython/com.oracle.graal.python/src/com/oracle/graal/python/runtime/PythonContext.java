@@ -94,6 +94,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -1429,6 +1430,9 @@ public final class PythonContext extends Python3Core {
         if (getOption(PythonOptions.InputFilePath).isEmpty()) {
             // When InputFilePath is set, this is handled by __graalpython__.run_path
             addSysPath0();
+        }
+        if (getOption(PythonOptions.SetupLLVMLibraryPaths)) {
+            ImpModuleBuiltins.importFrozenModuleObject(this, toTruffleStringUncached("graalpy.sulong_support"), false);
         }
     }
 

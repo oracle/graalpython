@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -132,7 +132,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             TruffleFile coreDir = env.getInternalTruffleFile(coreHome.toJavaStringUncached());
             TruffleFile docDir = coreDir.resolveSibling("docs");
             if (docDir.exists() || docDir.getParent() != null && (docDir = coreDir.getParent().resolveSibling("docs")).exists()) {
-                addBuiltinConstant(SpecialAttributeNames.T___DOC__, new String(docDir.resolve("user").resolve("POLYGLOT.md").readAllBytes()));
+                addBuiltinConstant(SpecialAttributeNames.T___DOC__, new String(docDir.resolve("user").resolve("Interoperability.md").readAllBytes()));
             }
         } catch (SecurityException | IOException e) {
         }
