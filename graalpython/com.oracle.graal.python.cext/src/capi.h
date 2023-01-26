@@ -794,6 +794,8 @@ CAPI_BUILTINS
 #define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
+PyAPI_DATA(PyObject*) _PyTruffle_Zero;
+PyAPI_DATA(PyObject*) _PyTruffle_One;
 
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int PyTruffle_Trace_Memory() {
