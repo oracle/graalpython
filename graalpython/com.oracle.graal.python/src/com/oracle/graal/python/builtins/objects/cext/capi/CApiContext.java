@@ -1029,6 +1029,7 @@ public final class CApiContext extends CExtContext {
 
         @SuppressWarnings("static-method")
         @ExportMessage
+        @TruffleBoundary
         Object execute(Object[] arguments) {
             assert arguments.length == 1;
             String name = (String) arguments[0];
@@ -1065,6 +1066,7 @@ public final class CApiContext extends CExtContext {
 
         @SuppressWarnings("static-method")
         @ExportMessage
+        @TruffleBoundary
         Object execute(Object[] arguments) {
             assert arguments.length == 1;
             String typename = (String) arguments[0];
@@ -1161,6 +1163,7 @@ public final class CApiContext extends CExtContext {
 
         @SuppressWarnings("static-method")
         @ExportMessage
+        @TruffleBoundary
         Object execute(Object[] arguments) {
             assert arguments.length == 2;
             String typename = (String) arguments[0];
