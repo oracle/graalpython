@@ -1880,7 +1880,7 @@ public abstract class SequenceStorageNodes {
         static byte[] doGenericLenCached(SequenceStorage s,
                         @Shared("getItemNode") @Cached GetItemScalarNode getItemNode,
                         @Cached CastToJavaByteNode castToByteNode,
-                        @Cached(value = "s.length()", neverDefault = false) int cachedLen) {
+                        @Cached(value = "s.length()") int cachedLen) {
             byte[] barr = new byte[cachedLen];
             for (int i = 0; i < cachedLen; i++) {
                 barr[i] = castToByteNode.execute(getItemNode.execute(s, i));

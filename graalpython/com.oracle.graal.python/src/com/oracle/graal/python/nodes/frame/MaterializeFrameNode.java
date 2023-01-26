@@ -124,7 +124,7 @@ public abstract class MaterializeFrameNode extends Node {
                     "!hasCustomLocals(frameToMaterialize)"}, limit = "1")
     static PFrame freshPFrameCachedFD(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync,
                     @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
-                    @Cached(value = "frameToMaterialize.getFrameDescriptor()", neverDefault = true) FrameDescriptor cachedFD,
+                    @Cached(value = "frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(cachedFD);
@@ -251,7 +251,7 @@ public abstract class MaterializeFrameNode extends Node {
         @ExplodeLoop
         static void doLocalsStorageCachedExploded(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
-                        @Cached(value = "frameToSync.getFrameDescriptor()", neverDefault = true) FrameDescriptor cachedFd) {
+                        @Cached(value = "frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
@@ -265,7 +265,7 @@ public abstract class MaterializeFrameNode extends Node {
                         "frameToSync.getFrameDescriptor() == cachedFd"}, replaces = "doLocalsStorageCachedExploded", limit = "1")
         static void doLocalsStorageCachedLoop(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
-                        @Cached(value = "frameToSync.getFrameDescriptor()", neverDefault = true) FrameDescriptor cachedFd) {
+                        @Cached(value = "frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();

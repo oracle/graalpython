@@ -235,9 +235,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
                         @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
                         @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
-                        @Cached(value = "userArguments.length", neverDefault = false) int cachedLength,
-                        @Cached(value = "signature.getMaxNumOfPositionalArgs()", neverDefault = false) int cachedMaxPos,
-                        @Cached(value = "signature.getNumOfRequiredKeywords()", neverDefault = false) int cachedNumKwds,
+                        @Cached(value = "userArguments.length") int cachedLength,
+                        @Cached(value = "signature.getMaxNumOfPositionalArgs()") int cachedMaxPos,
+                        @Cached(value = "signature.getNumOfRequiredKeywords()") int cachedNumKwds,
                         @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
             return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, classObject, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds,
@@ -253,7 +253,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
                         @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
                         @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
-                        @Cached(value = "userArguments.length", neverDefault = false) int cachedLength,
+                        @Cached(value = "userArguments.length") int cachedLength,
                         @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
             return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, classObject, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),

@@ -2492,7 +2492,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"step == slice.step", "!isSimpleSlice(slice)", "!isEmptySlice(slice)"}, limit = "1")
         static TruffleString doGenericCachedStep(TruffleString value, SliceInfo slice,
-                        @Cached(value = "slice.step", neverDefault = false) int step,
+                        @Cached(value = "slice.step") int step,
                         @Shared("loop") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Shared("len") @Cached LenOfRangeNode sliceLen,
                         @Shared("appendCP") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
