@@ -214,6 +214,7 @@ public final class FrozenModules {
         private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", "graalpy.java", false);
         private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", "graalpy.pip_hook", false);
         private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", "graalpy.unicodedata", false);
+        private static final PythonFrozenModule GRAALPY_SULONG_SUPPORT = new PythonFrozenModule("GRAALPY_SULONG_SUPPORT", "graalpy.sulong_support", false);
     }
 
     public static final PythonFrozenModule lookup(String name) {
@@ -572,6 +573,8 @@ public final class FrozenModules {
                 return Map.GRAALPY_PIP_HOOK;
             case "graalpy.unicodedata":
                 return Map.GRAALPY_UNICODEDATA;
+            case "graalpy.sulong_support":
+                return Map.GRAALPY_SULONG_SUPPORT;
             default:
                 return null;
         }
