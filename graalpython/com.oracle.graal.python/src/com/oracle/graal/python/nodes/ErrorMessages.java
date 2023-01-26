@@ -784,6 +784,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNSUPPORTED_STR_TYPE = tsLiteral("unsupported string type: %s");
     public static final TruffleString UNSUPPORTED_TARGET_SIZE = tsLiteral("Unsupported target size: %d");
     public static final TruffleString UNSUPPORTED_USE_OF_SYS_EXECUTABLE = tsLiteral("internal error: unsupported use of sys.executable");
+    public static final TruffleString UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED = tsLiteral("internal error: updating a finalized digest is not supported");
     public static final TruffleString UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS = tsLiteral("utime: cannot use dir_fd and follow_symlinks together on this platform");
     public static final TruffleString VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = tsLiteral("value too large to fit into index-sized integer");
     public static final TruffleString VARS_ARGUMENT_MUST_HAVE_DICT = tsLiteral("vars() argument must have __dict__ attribute");
