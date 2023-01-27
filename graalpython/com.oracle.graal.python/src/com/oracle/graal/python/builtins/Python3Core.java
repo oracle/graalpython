@@ -55,6 +55,7 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -575,7 +576,7 @@ public abstract class Python3Core {
                         new PythonCextWarnBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
-                        new WarningsModuleBuiltins(),
+                        new TracemallocModuleBuiltins(),
                         new ContextVarBuiltins(),
                         new ContextBuiltins(),
                         new TokenBuiltins(),

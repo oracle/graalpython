@@ -368,6 +368,21 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @Specialization(guards = "isNoValue(name)")
+        public int doit(PyCapsule o, @SuppressWarnings("unused") PNone name,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                if (o.getPointer() == null) {
+                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
+                }
+                o.setName(null);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
         @Fallback
         public Object doit(VirtualFrame ignoredFrame, Object ignoredo, Object ignored) {
             try {
