@@ -141,21 +141,21 @@ public abstract class BuiltinClassProfiles {
             return execute(inliningTarget, type, pythonClass);
         }
 
-        abstract boolean execute(Node inliningTarget, Object clazz, PythonBuiltinClassType forbiddenType);
+        abstract boolean execute(Node inliningTarget, Object clazz, PythonBuiltinClassType pythonClass);
 
         @Specialization
-        static boolean doType(Node inliningTarget, PythonBuiltinClassType clazz, PythonBuiltinClassType forbiddenType) {
-            return clazz == forbiddenType;
+        static boolean doType(Node inliningTarget, PythonBuiltinClassType clazz, PythonBuiltinClassType pythonClass) {
+            return clazz == pythonClass;
         }
 
         @Specialization
-        static boolean doClass(Node inliningTarget, PythonBuiltinClass clazz, PythonBuiltinClassType forbiddenType) {
-            return clazz.getType() == forbiddenType;
+        static boolean doClass(Node inliningTarget, PythonBuiltinClass clazz, PythonBuiltinClassType pythonClass) {
+            return clazz.getType() == pythonClass;
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static boolean doOthers(Node inliningTarget, Object clazz, PythonBuiltinClassType forbiddenType) {
+        static boolean doOthers(Node inliningTarget, Object clazz, PythonBuiltinClassType pythonClass) {
             return false;
         }
     }

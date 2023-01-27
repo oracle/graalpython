@@ -218,7 +218,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -253,6 +255,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -339,25 +343,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ComplexNode extends PythonTernaryBuiltinNode {
 
-        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-        @Child private IsBuiltinClassProfile isComplexTypeProfile;
-        @Child private IsBuiltinClassProfile isResultComplexTypeProfile;
         @Child private CanBeDoubleNode canBeDoubleNode;
         @Child private PyFloatAsDoubleNode asDoubleNode;
         @Child private LookupAndCallUnaryNode callReprNode;
         @Child private LookupAndCallUnaryNode callComplexNode;
         @Child private WarnNode warnNode;
 
-        private PComplex createComplex(Object cls, double real, double imaginary) {
-            if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
+        private PComplex createComplex(Object cls, double real, double imaginary, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
                 return factory().createComplex(real, imaginary);
             }
             return factory().createComplex(cls, real, imaginary);
         }
 
-        private PComplex createComplex(Object cls, PComplex value) {
-            if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
-                if (isPrimitiveProfile.profileObject(value, PythonBuiltinClassType.PComplex)) {
+        private PComplex createComplex(Object cls, PComplex value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile, IsBuiltinObjectProfile isBuiltinObjectProfile) {
+            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
+                if (isBuiltinObjectProfile.profileObject(inliningTarget, value, PythonBuiltinClassType.PComplex)) {
                     return value;
                 }
                 return factory().createComplex(value.getReal(), value.getImag());
@@ -367,148 +368,206 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(real)", "isNoValue(imag)"})
         @SuppressWarnings("unused")
-        PComplex complexFromNone(Object cls, PNone real, PNone imag) {
-            return createComplex(cls, 0, 0);
+        PComplex complexFromNone(Object cls, PNone real, PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, 0, 0, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization
-        PComplex complexFromIntInt(Object cls, int real, int imaginary) {
-            return createComplex(cls, real, imaginary);
+        PComplex complexFromIntInt(Object cls, int real, int imaginary,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization
-        PComplex complexFromLongLong(Object cls, long real, long imaginary) {
-            return createComplex(cls, real, imaginary);
+        PComplex complexFromLongLong(Object cls, long real, long imaginary,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization
-        PComplex complexFromLongLong(Object cls, PInt real, PInt imaginary) {
-            return createComplex(cls, real.doubleValueWithOverflow(getRaiseNode()), imaginary.doubleValueWithOverflow(getRaiseNode()));
+        PComplex complexFromLongLong(Object cls, PInt real, PInt imaginary,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, real.doubleValueWithOverflow(getRaiseNode()),
+                            imaginary.doubleValueWithOverflow(getRaiseNode()), inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization
-        PComplex complexFromDoubleDouble(Object cls, double real, double imaginary) {
-            return createComplex(cls, real, imaginary);
+        PComplex complexFromDoubleDouble(Object cls, double real, double imaginary,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        PComplex complexFromDouble(Object cls, double real, @SuppressWarnings("unused") PNone imag) {
-            return createComplex(cls, real, 0);
+        PComplex complexFromDouble(Object cls, double real, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        PComplex complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag) {
-            return complexFromObject(frame, cls, real, imag);
+        PComplex complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile) {
+            return complexFromObject(frame, cls, real, imag, inliningTarget, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        PComplex complexFromInt(Object cls, int real, @SuppressWarnings("unused") PNone imag) {
-            return createComplex(cls, real, 0);
+        PComplex complexFromInt(Object cls, int real, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        PComplex complexFromLong(Object cls, long real, @SuppressWarnings("unused") PNone imag) {
-            return createComplex(cls, real, 0);
+        PComplex complexFromLong(Object cls, long real, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        PComplex complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag) {
-            return complexFromObject(frame, cls, real, imag);
+        PComplex complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile) {
+            return complexFromObject(frame, cls, real, imag, inliningTarget, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile);
         }
 
         @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
-        PComplex complexFromObject(VirtualFrame frame, Object cls, Object number, @SuppressWarnings("unused") PNone imag) {
-            PComplex value = getComplexNumberFromObject(frame, number);
+        PComplex complexFromObject(VirtualFrame frame, Object cls, Object number, @SuppressWarnings("unused") PNone imag,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
+                        @Shared("isBuiltinObj") @Cached IsBuiltinObjectProfile isBuiltinObjectProfile) {
+            PComplex value = getComplexNumberFromObject(frame, number, inliningTarget, isComplexType, isResultComplexType);
             if (value == null) {
                 if (canBeDouble(number)) {
-                    return createComplex(cls, asDouble(frame, number), 0.0);
+                    return createComplex(cls, asDouble(frame, number), 0.0, inliningTarget, isPrimitiveProfile);
                 } else {
                     throw raiseFirstArgError(number);
                 }
             }
-            return createComplex(cls, value);
+            return createComplex(cls, value, inliningTarget, isPrimitiveProfile, isBuiltinObjectProfile);
         }
 
         @Specialization
-        PComplex complexFromLongComplex(Object cls, long one, PComplex two) {
-            return createComplex(cls, one - two.getImag(), two.getReal());
+        PComplex complexFromLongComplex(Object cls, long one, PComplex two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, one - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization
-        PComplex complexFromPIntComplex(Object cls, PInt one, PComplex two) {
-            return createComplex(cls, one.doubleValueWithOverflow(getRaiseNode()) - two.getImag(), two.getReal());
+        PComplex complexFromPIntComplex(Object cls, PInt one, PComplex two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, one.doubleValueWithOverflow(getRaiseNode()) - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization
-        PComplex complexFromDoubleComplex(Object cls, double one, PComplex two) {
-            return createComplex(cls, one - two.getImag(), two.getReal());
+        PComplex complexFromDoubleComplex(Object cls, double one, PComplex two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return createComplex(cls, one - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexLong(VirtualFrame frame, Object cls, Object one, long two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+        PComplex complexFromComplexLong(VirtualFrame frame, Object cls, Object one, long two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
             if (value == null) {
                 if (canBeDouble(one)) {
-                    return createComplex(cls, asDouble(frame, one), two);
+                    return createComplex(cls, asDouble(frame, one), two, inliningTarget, isPrimitiveProfile);
                 } else {
                     throw raiseFirstArgError(one);
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two);
+            return createComplex(cls, value.getReal(), value.getImag() + two, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+        PComplex complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
             if (value == null) {
                 if (canBeDouble(one)) {
-                    return createComplex(cls, asDouble(frame, one), two);
+                    return createComplex(cls, asDouble(frame, one), two, inliningTarget, isPrimitiveProfile);
                 } else {
                     throw raiseFirstArgError(one);
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two);
+            return createComplex(cls, value.getReal(), value.getImag() + two, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+        PComplex complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
             if (value == null) {
                 if (canBeDouble(one)) {
-                    return createComplex(cls, asDouble(frame, one), two.doubleValueWithOverflow(getRaiseNode()));
+                    return createComplex(cls, asDouble(frame, one), two.doubleValueWithOverflow(getRaiseNode()), inliningTarget, isPrimitiveProfile);
                 } else {
                     throw raiseFirstArgError(one);
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(getRaiseNode()));
+            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(getRaiseNode()), inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
+        PComplex complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
             if (value == null) {
                 if (canBeDouble(one)) {
-                    return createComplex(cls, asDouble(frame, one) - two.getImag(), two.getReal());
+                    return createComplex(cls, asDouble(frame, one) - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile);
                 } else {
                     throw raiseFirstArgError(one);
                 }
             }
-            return createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal());
+            return createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal(), inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
-        PComplex complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two) {
-            PComplex oneValue = getComplexNumberFromObject(frame, one);
+        PComplex complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isComplex") @Cached IsBuiltinObjectProfile isComplexType,
+                        @Shared("isComplexResult") @Cached IsBuiltinObjectProfile isResultComplexType,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            PComplex oneValue = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType);
             if (canBeDouble(two)) {
                 double twoValue = asDouble(frame, two);
                 if (oneValue == null) {
                     if (canBeDouble(one)) {
-                        return createComplex(cls, asDouble(frame, one), twoValue);
+                        return createComplex(cls, asDouble(frame, one), twoValue, inliningTarget, isPrimitiveProfile);
                     } else {
                         throw raiseFirstArgError(one);
                     }
                 }
-                return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue);
+                return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue, inliningTarget, isPrimitiveProfile);
             } else {
                 throw raiseSecondArgError(two);
             }
@@ -530,22 +589,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
             }
             return convertStringToComplex(frame, castToStringNode.execute(real), cls, real);
-        }
-
-        private IsBuiltinClassProfile getIsComplexTypeProfile() {
-            if (isComplexTypeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isComplexTypeProfile = insert(IsBuiltinClassProfile.create());
-            }
-            return isComplexTypeProfile;
-        }
-
-        private IsBuiltinClassProfile getIsResultComplexTypeProfile() {
-            if (isResultComplexTypeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isResultComplexTypeProfile = insert(IsBuiltinClassProfile.create());
-            }
-            return isResultComplexTypeProfile;
         }
 
         private boolean canBeDouble(Object object) {
@@ -588,13 +631,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_NUMBER, "complex() second", x);
         }
 
-        private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
-            if (getIsComplexTypeProfile().profileObject(object, PythonBuiltinClassType.PComplex)) {
+        private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object, Node inliningTarget,
+                        IsBuiltinObjectProfile isComplexType, IsBuiltinObjectProfile isResultComplexType) {
+            if (isComplexType.profileObject(inliningTarget, object, PythonBuiltinClassType.PComplex)) {
                 return (PComplex) object;
             } else {
                 Object result = callComplex(frame, object);
                 if (result instanceof PComplex) {
-                    if (!getIsResultComplexTypeProfile().profileObject(result, PythonBuiltinClassType.PComplex)) {
+                    if (!isResultComplexType.profileObject(inliningTarget, result, PythonBuiltinClassType.PComplex)) {
                         getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                         ErrorMessages.WARN_P_RETURNED_NON_P,
                                         object, "__complex__", "complex", result, "complex");
@@ -733,7 +777,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (i != len) {
                 return null;
             }
-            return createComplex(cls, x, y);
+            return createComplex(cls, x, y, null, InlineIsBuiltinClassProfile.getUncached());
         }
     }
 
@@ -882,59 +926,75 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     abstract static class FloatNode extends PythonBinaryBuiltinNode {
-        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-
         // Used for the recursive call
         protected abstract double executeDouble(VirtualFrame frame, PythonBuiltinClassType cls, Object arg) throws UnexpectedResultException;
 
-        protected final boolean isPrimitiveFloat(Object cls) {
-            return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PFloat);
+        protected final boolean isPrimitiveFloat(Node inliningTarget, Object cls, InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PFloat);
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
-        double floatFromDouble(@SuppressWarnings("unused") Object cls, double arg) {
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        double floatFromDouble(@SuppressWarnings("unused") Object cls, double arg,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
-        double floatFromInt(@SuppressWarnings("unused") Object cls, int arg) {
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        double floatFromInt(@SuppressWarnings("unused") Object cls, int arg,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
-        double floatFromLong(@SuppressWarnings("unused") Object cls, long arg) {
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        double floatFromLong(@SuppressWarnings("unused") Object cls, long arg,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
-        double floatFromBoolean(@SuppressWarnings("unused") Object cls, boolean arg) {
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
+        double floatFromBoolean(@SuppressWarnings("unused") Object cls, boolean arg,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg ? 1d : 0d;
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
+        @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
         double floatFromString(VirtualFrame frame, @SuppressWarnings("unused") Object cls, TruffleString obj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
                         @Shared("fromString") @Cached PyFloatFromString fromString) {
             return fromString.execute(frame, obj);
         }
 
-        @Specialization(guards = {"isPrimitiveFloat(cls)", "isNoValue(obj)"})
-        double floatFromNoValue(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone obj) {
+        @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "isNoValue(obj)"}, limit = "1")
+        double floatFromNoValue(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone obj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return 0.0;
         }
 
-        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isNoValue(obj)"}, replaces = "floatFromString")
+        @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "!isNoValue(obj)"}, //
+                        replaces = "floatFromString", limit = "1")
         double floatFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
-                        @Cached IsBuiltinClassProfile stringProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
+                        @Cached IsBuiltinObjectProfile stringProfile,
                         @Shared("fromString") @Cached PyFloatFromString fromString,
                         @Cached PyNumberFloatNode pyNumberFloat) {
-            if (stringProfile.profileObject(obj, PythonBuiltinClassType.PString)) {
+            if (stringProfile.profileObject(inliningTarget, obj, PythonBuiltinClassType.PString)) {
                 return fromString.execute(frame, obj);
             }
             return pyNumberFloat.execute(frame, obj);
         }
 
-        @Specialization(guards = {"!isNativeClass(cls)", "!isPrimitiveFloat(cls)"})
+        @Specialization(guards = {"!isNativeClass(cls)", "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)"}, //
+                        limit = "1")
         Object floatFromObjectManagedSubclass(VirtualFrame frame, Object cls, Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
                         @Cached FloatNode recursiveCallNode) {
             try {
                 return factory().createFloat(cls, recursiveCallNode.executeDouble(frame, PythonBuiltinClassType.PFloat, obj));
@@ -1041,11 +1101,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj) {
+        private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
             if (base == 0 || base == 10) {
                 Object value = parseSimpleDecimalLiteral(number, 0, number.length());
                 if (value != null) {
-                    return createInt(cls, value);
+                    return createInt(cls, value, inliningTarget, isPrimitiveIntProfile);
                 }
             }
             notSimpleDecimalLiteralProfile.enter();
@@ -1067,14 +1127,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(ValueError);
                 }
             }
-            return createInt(cls, value);
+            return createInt(cls, value, inliningTarget, isPrimitiveIntProfile);
         }
 
-        private Object createInt(Object cls, Object value) {
+        private Object createInt(Object cls, Object value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
             if (value instanceof BigInteger) {
                 bigIntegerProfile.enter();
                 return factory().createInt(cls, (BigInteger) value);
-            } else if (isPrimitiveInt(cls)) {
+            } else if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 primitiveIntProfile.enter();
                 return value;
             } else {
@@ -1252,15 +1312,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return value;
         }
 
-        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-
-        protected boolean isPrimitiveInt(Object cls) {
-            return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PInt);
+        protected boolean isPrimitiveInt(Node inliningTarget, Object cls, InlineIsBuiltinClassProfile profile) {
+            return profile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PInt);
         }
 
         @Specialization
-        Object parseInt(Object cls, boolean arg, @SuppressWarnings("unused") PNone base) {
-            if (isPrimitiveInt(cls)) {
+        Object parseInt(Object cls, boolean arg, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 return arg ? 1 : 0;
             } else {
                 return factory().createInt(cls, arg ? 1 : 0);
@@ -1268,8 +1328,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object createInt(Object cls, int arg, @SuppressWarnings("unused") PNone base) {
-            if (isPrimitiveInt(cls)) {
+        Object createInt(Object cls, int arg, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 return arg;
             }
             return factory().createInt(cls, arg);
@@ -1277,10 +1339,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(base)")
         Object createInt(Object cls, long arg, @SuppressWarnings("unused") PNone base,
-                        @Cached ConditionProfile isIntProfile) {
-            if (isPrimitiveInt(cls)) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Cached InlinedConditionProfile isIntProfile) {
+            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 int intValue = (int) arg;
-                if (isIntProfile.profile(intValue == arg)) {
+                if (isIntProfile.profile(inliningTarget, intValue == arg)) {
                     return intValue;
                 } else {
                     return arg;
@@ -1291,9 +1355,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(base)")
         Object createInt(Object cls, double arg, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Cached("createFloatInt()") FloatBuiltins.IntNode floatToIntNode) {
             Object result = floatToIntNode.executeWithDouble(arg);
-            return createInt(cls, result);
+            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile);
         }
 
         // String
@@ -1301,71 +1367,87 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(base)")
         @Megamorphic
         Object createInt(VirtualFrame frame, Object cls, TruffleString arg, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return stringToInt(frame, cls, toJavaStringNode.execute(arg), 10, arg);
+            return stringToInt(frame, cls, toJavaStringNode.execute(arg), 10, arg, inliningTarget, isPrimitiveIntProfile);
         }
 
         @Specialization
         @Megamorphic
         Object parsePIntError(VirtualFrame frame, Object cls, TruffleString number, int base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             checkBase(base);
-            return stringToInt(frame, cls, toJavaStringNode.execute(number), base, number);
+            return stringToInt(frame, cls, toJavaStringNode.execute(number), base, number, inliningTarget, isPrimitiveIntProfile);
         }
 
         @Specialization(guards = "!isNoValue(base)")
         @Megamorphic
         Object createIntError(VirtualFrame frame, Object cls, TruffleString number, Object base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             int intBase = asSizeNode.executeLossy(frame, base);
             checkBase(intBase);
-            return stringToInt(frame, cls, toJavaStringNode.execute(number), intBase, number);
+            return stringToInt(frame, cls, toJavaStringNode.execute(number), intBase, number, inliningTarget, isPrimitiveIntProfile);
         }
 
         // PIBytesLike
         @Specialization
         @Megamorphic
-        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, int base) {
+        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, int base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
             checkBase(base);
-            return stringToInt(frame, cls, toString(arg), base, arg);
+            return stringToInt(frame, cls, toString(arg), base, arg, inliningTarget, isPrimitiveIntProfile);
         }
 
         @Specialization(guards = "isNoValue(base)")
         @Megamorphic
-        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, @SuppressWarnings("unused") PNone base) {
-            return parseBytesError(frame, cls, arg, 10);
+        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+            return parseBytesError(frame, cls, arg, 10, inliningTarget, isPrimitiveIntProfile);
         }
 
         // PString
         @Specialization(guards = "isNoValue(base)")
         @Megamorphic
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Cached CastToJavaStringNode castToStringNode) {
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            return stringToInt(frame, cls, castToStringNode.execute(arg), 10, arg);
+            return stringToInt(frame, cls, castToStringNode.execute(arg), 10, arg, inliningTarget, isPrimitiveIntProfile);
         }
 
         @Specialization
         @Megamorphic
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, int base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Cached CastToJavaStringNode castToStringNode) {
             checkBase(base);
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            return stringToInt(frame, cls, castToStringNode.execute(arg), base, arg);
+            return stringToInt(frame, cls, castToStringNode.execute(arg), base, arg, inliningTarget, isPrimitiveIntProfile);
         }
 
         // other
 
         @Specialization(guards = "isNoValue(base)")
-        Object createInt(Object cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone base) {
-            if (isPrimitiveInt(cls)) {
+        Object createInt(Object cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 return arg;
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1374,8 +1456,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        Object createInt(Object cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone base) {
-            if (isPrimitiveInt(cls)) {
+        Object createInt(Object cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 return 0;
             }
             return factory().createInt(cls, 0);
@@ -1390,6 +1474,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
         @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile isPrimitiveIntObjectProfile,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             /*
@@ -1417,7 +1504,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         }
                         try {
                             String number = newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
-                            return stringToInt(frame, cls, number, 10, obj);
+                            return stringToInt(frame, cls, number, 10, obj, inliningTarget, isPrimitiveIntProfile);
                         } finally {
                             bufferLib.release(buffer, frame, this);
                         }
@@ -1438,7 +1525,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             // If a subclass of int is returned by __int__ or __index__, a conversion to int is
             // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
-            if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
+            if (!isPrimitiveIntObjectProfile.profileObject(inliningTarget, result, PythonBuiltinClassType.PInt)) {
                 getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                 ErrorMessages.WARN_P_RETURNED_NON_P,
                                 obj, "__int__/__index__", "int", result, "int");
@@ -1448,7 +1535,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     result = (boolean) result ? 1 : 0;
                 }
             }
-            return createInt(cls, result);
+            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile);
         }
 
         protected static boolean isIntegerType(Object obj) {
@@ -1745,7 +1832,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isStop(start, stop, step)")
         Object doIntStop(Object cls, int stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
-                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
             return doInt(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
@@ -1761,7 +1848,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isStop(start, stop, step)")
         Object doGenericStop(VirtualFrame frame, Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
-                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
@@ -1774,7 +1861,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isStartStop(start, stop, step)")
         Object doIntStartStop(Object cls, int start, int stop, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
-                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
             return doInt(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
@@ -1790,7 +1877,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isStartStop(start, stop, step)")
         Object doGenericStartStop(VirtualFrame frame, Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
-                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
@@ -1803,7 +1890,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doInt(@SuppressWarnings("unused") Object cls, int start, int stop, int step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
-                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNode,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
             if (stepZeroProfile.profile(step == 0)) {
@@ -1813,7 +1900,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 int len = lenOfRangeNode.executeInt(start, stop, step);
                 return factory().createIntRange(start, stop, step, len);
             } catch (OverflowException e) {
-                exceptionProfile.enter();
+                exceptionProfile.enter(this);
                 return createBigRangeNode.execute(start, stop, step, factory());
             }
         }
@@ -1832,7 +1919,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isStartStopStep(start, stop, step)")
         Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
-                        @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
+                        @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
@@ -1885,8 +1972,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class StrNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode callDecodeNode;
 
-        @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;
         @Child private CastToTruffleStringNode castToTruffleStringNode;
@@ -1899,28 +1984,32 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNativeClass(strClass)", "isNoValue(arg)"})
         @SuppressWarnings("unused")
-        Object strNoArgs(Object strClass, PNone arg, Object encoding, Object errors) {
-            return asPString(strClass, T_EMPTY_STRING);
+        Object strNoArgs(Object strClass, PNone arg, Object encoding, Object errors,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return asPString(strClass, T_EMPTY_STRING, inliningTarget, isPrimitiveProfile);
         }
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
         Object strOneArg(VirtualFrame frame, Object strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @Cached PyObjectStrAsObjectNode strNode) {
             Object result = strNode.execute(frame, obj);
 
             // try to return a primitive if possible
             result = assertNoJavaString(result);
             if (getIsStringProfile().profile(result instanceof TruffleString)) {
-                return asPString(strClass, (TruffleString) result);
+                return asPString(strClass, (TruffleString) result, inliningTarget, isPrimitiveProfile);
             }
 
-            if (isPrimitiveProfile.profileClass(strClass, PythonBuiltinClassType.PString)) {
+            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, strClass, PythonBuiltinClassType.PString)) {
                 // PyObjectStrAsObjectNode guarantees that the returned object is an instanceof of
                 // 'str'
                 return result;
             } else {
                 try {
-                    return asPString(strClass, getCastToTruffleStringNode().execute(result));
+                    return asPString(strClass, getCastToTruffleStringNode().execute(result), inliningTarget, isPrimitiveProfile);
                 } catch (CannotCastException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("asPstring result not castable to String");
@@ -1930,6 +2019,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         Object doBuffer(VirtualFrame frame, Object strClass, Object obj, Object encoding, Object errors,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             Object buffer;
@@ -1943,17 +2034,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // TODO don't copy, CPython creates a memoryview
                 PBytes bytesObj = factory().createBytes(bufferLib.getCopiedByteArray(buffer));
                 Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
-                return decodeBytes(frame, strClass, bytesObj, en, errors);
+                return decodeBytes(frame, strClass, bytesObj, en, errors, inliningTarget, isPrimitiveProfile);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
-        private Object decodeBytes(VirtualFrame frame, Object strClass, PBytes obj, Object encoding, Object errors) {
+        private Object decodeBytes(VirtualFrame frame, Object strClass, PBytes obj, Object encoding, Object errors, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile) {
             Object result = getCallDecodeNode().execute(frame, obj, encoding, errors);
             result = assertNoJavaString(result);
             if (getIsStringProfile().profile(result instanceof TruffleString)) {
-                return asPString(strClass, (TruffleString) result);
+                return asPString(strClass, (TruffleString) result, inliningTarget, isPrimitiveProfile);
             } else if (getIsPStringProfile().profile(result instanceof PString)) {
                 return result;
             }
@@ -1980,8 +2071,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PString);
         }
 
-        private Object asPString(Object cls, TruffleString str) {
-            if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PString)) {
+        private Object asPString(Object cls, TruffleString str, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            if (isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
                 return str;
             } else {
                 return factory().createString(cls, str);
