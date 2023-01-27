@@ -47,13 +47,5 @@
     {"name":"hpyGlobalsTable"},
     {"name":"nextHandle"}
   ]
-},
-{
-  "name":"com.oracle.graal.python.builtins.objects.cext.capi.CApiContext",
-  "methods":[
-    {"name":"getAPI","parameterTypes":["java.lang.String"] },
-    {"name":"getType","parameterTypes":["java.lang.String"] },
-    {"name":"setTypeStore","parameterTypes":["java.lang.String","long"] }
-  ]
 }
 ]
