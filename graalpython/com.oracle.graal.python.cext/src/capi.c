@@ -181,7 +181,7 @@ CAPI_BUILTINS
 #undef BUILTIN
 
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
-	PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "initialize_upcall_functions: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_upcall_functions: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {

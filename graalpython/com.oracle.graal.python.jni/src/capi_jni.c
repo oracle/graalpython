@@ -227,10 +227,10 @@ CONSTANT(PyObject*, _PyLong_Zero, PyLong_Zero) \
 CONSTANT(PyObject*, _PyLong_One, PyLong_One) \
 
 #define CONSTANT_COPIES \
-CONSTANT_ARRAY(const unsigned char, _Py_ascii_whitespace, [256]) \
-CONSTANT_ARRAY(const unsigned int, _Py_ctype_table, [256]) \
-CONSTANT_ARRAY(const unsigned char, _Py_ctype_tolower, [256]) \
-CONSTANT_ARRAY(const unsigned char, _Py_ctype_toupper, [256]) \
+CONSTANT_ARRAY(const unsigned char, _Py_ascii_whitespace, 256) \
+CONSTANT_ARRAY(const unsigned int, _Py_ctype_table, 256) \
+CONSTANT_ARRAY(const unsigned char, _Py_ctype_tolower, 256) \
+CONSTANT_ARRAY(const unsigned char, _Py_ctype_toupper, 256) \
 CONSTANT(struct _PyTraceMalloc_Config, _Py_tracemalloc_config) \
 CONSTANT(_Py_HashSecret_t, _Py_HashSecret) \
 CONSTANT(int, Py_DebugFlag) \
@@ -332,7 +332,7 @@ CONSTANTS
 #undef CONSTANT
 
 #define CONSTANT(TYPE, NAME) TYPE NAME;
-#define CONSTANT_ARRAY(TYPE, NAME, SIZE) TYPE NAME SIZE;
+#define CONSTANT_ARRAY(TYPE, NAME, SIZE) TYPE NAME [SIZE];
 CONSTANT_COPIES
 #undef CONSTANT
 #undef CONSTANT_ARRAY
@@ -402,7 +402,7 @@ CAPI_BUILTINS
     }
     printf("TIME: ns per query = %li\n", total / 1000);
 #endif // TIMING
-    PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
 /* Private types are defined here because we need to declare the type cast. */

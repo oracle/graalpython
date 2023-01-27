@@ -1990,8 +1990,8 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     }
 
     private static final int TRACE_MEM = 0x1;
-    private static final int LOG_CONFIG = 0x2;
-    private static final int LOG_INFO = 0x4;
+    private static final int LOG_INFO = 0x2;
+    private static final int LOG_CONFIG = 0x4;
     private static final int LOG_FINE = 0x8;
     private static final int LOG_FINER = 0x10;
     private static final int LOG_FINEST = 0x20;
@@ -2006,11 +2006,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             if (getContext().getOption(PythonOptions.TraceNativeMemory)) {
                 options |= TRACE_MEM;
             }
-            if (LOGGER.isLoggable(Level.CONFIG)) {
-                options |= LOG_CONFIG;
-            }
             if (LOGGER.isLoggable(Level.INFO)) {
                 options |= LOG_INFO;
+            }
+            if (LOGGER.isLoggable(Level.CONFIG)) {
+                options |= LOG_CONFIG;
             }
             if (LOGGER.isLoggable(Level.FINE)) {
                 options |= LOG_FINE;
@@ -2034,11 +2034,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         static Object log(int level, TruffleString message) {
             String msg = message.toJavaStringUncached();
             switch (level) {
-                case LOG_CONFIG:
-                    LOGGER.config(msg);
-                    break;
                 case LOG_INFO:
                     LOGGER.info(msg);
+                    break;
+                case LOG_CONFIG:
+                    LOGGER.config(msg);
                     break;
                 case LOG_FINE:
                     LOGGER.fine(msg);

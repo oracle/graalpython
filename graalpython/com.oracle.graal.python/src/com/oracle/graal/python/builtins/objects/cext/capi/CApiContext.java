@@ -1015,6 +1015,7 @@ public final class CApiContext extends CExtContext {
     private final HashMap<String, Long> typeStorePointers = new HashMap<>();
 
     public Long getTypeStore(String typename) {
+        ensureNative();
         return typeStorePointers.get(typename);
     }
 
@@ -1178,21 +1179,25 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    public void initNative() {
-        Env env = PythonContext.get(null).getEnv();
+    public void ensureNative() {
+        if (nativeLibrary == null) {
+            Env env = PythonContext.get(null).getEnv();
 
-        SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
-        try {
-            nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
-            Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
+            String lib = GraalHPyContext.getJNILibrary();
+            SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
+            LOGGER.config("loading native C API support library " + lib);
+            try {
+                nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
+                Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
 
-            // PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void*
-            // (*getType)(const char*), void (*setTypeStore)(const char*, void*))
-            Object signature = env.parseInternal(Source.newBuilder("nfi", "((STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):VOID", "exec").build()).call();
-            Object bound = SignatureLibrary.getUncached().bind(signature, initFunction);
-            InteropLibrary.getUncached().execute(bound, new GetAPI(), new GetType(), new SetTypeStore());
-        } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
+                // PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void*
+                // (*getType)(const char*), void (*setTypeStore)(const char*, void*))
+                Object signature = env.parseInternal(Source.newBuilder("nfi", "((STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):VOID", "exec").build()).call();
+                Object bound = SignatureLibrary.getUncached().bind(signature, initFunction);
+                InteropLibrary.getUncached().execute(bound, new GetAPI(), new GetType(), new SetTypeStore());
+            } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 

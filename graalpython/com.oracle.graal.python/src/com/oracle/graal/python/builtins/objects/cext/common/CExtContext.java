@@ -323,17 +323,18 @@ public abstract class CExtContext {
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
         GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
         GraalHPyContext.loadJNIBackend();
-        Object llvmLibrary;
+        Object library;
 
         String nativeModuleOption = context.getOption(PythonOptions.NativeModules);
         String name = spec.name.toJavaStringUncached();
         if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
             LOGGER.config("loading " + spec.path + " as native");
-            llvmLibrary = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+            cApiContext.ensureNative();
+            library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
         } else {
-            llvmLibrary = loadLLVMLibrary(location, context, spec.name, spec.path);
+            library = loadLLVMLibrary(location, context, spec.name, spec.path);
             try {
-                if (InteropLibrary.getUncached(llvmLibrary).getLanguage(llvmLibrary).toString().startsWith("class com.oracle.truffle.nfi")) {
+                if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
                     LOGGER.config("loading " + spec.path + " as native (no bitcode found)");
                 } else {
                     LOGGER.config("loading " + spec.path + " as llvm bitcode");
@@ -342,24 +343,24 @@ public abstract class CExtContext {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
+        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(library);
 
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
         TruffleString hpyInitFuncName = spec.getInitFunctionName(true);
         try {
-            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
+            if (llvmInteropLib.isMemberExisting(library, hpyInitFuncName.toJavaStringUncached())) {
                 try {
                     // try reading - NFI says "yes" to all isMemberExisting
-                    llvmInteropLib.readMember(llvmLibrary, hpyInitFuncName.toJavaStringUncached());
+                    llvmInteropLib.readMember(library, hpyInitFuncName.toJavaStringUncached());
 
                     GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
-                    return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, llvmInteropLib, checkHPyResultNode);
+                    return hpyContext.initHPyModule(context, library, hpyInitFuncName, spec.name, spec.path, llvmInteropLib, checkHPyResultNode);
                 } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
                     // not hpy...
                 }
             }
-            return cApiContext.initCApiModule(location, llvmLibrary, spec.getInitFunctionName(false), spec, llvmInteropLib, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(false), spec, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }

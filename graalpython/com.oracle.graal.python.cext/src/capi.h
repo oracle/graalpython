@@ -68,8 +68,8 @@
 
 /* Flags definitions representing global (debug) options. */
 #define PY_TRUFFLE_TRACE_MEM 0x1
-#define PY_TRUFFLE_LOG_CONFIG 0x2
-#define PY_TRUFFLE_LOG_INFO 0x4
+#define PY_TRUFFLE_LOG_INFO 0x2
+#define PY_TRUFFLE_LOG_CONFIG 0x4
 #define PY_TRUFFLE_LOG_FINE 0x8
 #define PY_TRUFFLE_LOG_FINER 0x10
 #define PY_TRUFFLE_LOG_FINEST 0x20
@@ -801,11 +801,11 @@ PyAPI_DATA(PyObject*) _PyTruffle_One;
 static MUST_INLINE int PyTruffle_Trace_Memory() {
 	return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
 }
-static MUST_INLINE int PyTruffle_Log_Config() {
-	return Py_Truffle_Options & PY_TRUFFLE_LOG_CONFIG;
-}
 static MUST_INLINE int PyTruffle_Log_Info() {
 	return Py_Truffle_Options & PY_TRUFFLE_LOG_INFO;
+}
+static MUST_INLINE int PyTruffle_Log_Config() {
+	return Py_Truffle_Options & PY_TRUFFLE_LOG_CONFIG;
 }
 static MUST_INLINE int PyTruffle_Log_Fine() {
 	return Py_Truffle_Options & PY_TRUFFLE_LOG_FINE;
