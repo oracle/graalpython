@@ -372,7 +372,15 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                 // argument names consistent.
                 for (Entry<? extends ExecutableElement, ? extends AnnotationValue> item : annot.getElementValues().entrySet()) {
                     if (item.getKey().getSimpleName().toString().equals("value")) {
-                        annot = (AnnotationMirror) ((List<AnnotationValue>) item.getValue().getValue()).get(0);
+                        try {
+                            Object value = ((List<AnnotationValue>) item.getValue().getValue()).get(0);
+                            if (value instanceof AnnotationValue) {
+                                value = ((AnnotationValue) value).getValue();
+                            }
+                            annot = (AnnotationMirror) value;
+                        } catch (ClassCastException e) {
+                            throw new RuntimeException("class " + type, e);
+                        }
                         break;
                     }
                 }
