@@ -5780,16 +5780,28 @@ PyAPI_FUNC(void) PySys_WriteStderr(const char* a, ...) {
 PyAPI_FUNC(void) PySys_WriteStdout(const char* a, ...) {
     unimplemented("PySys_WriteStdout"); exit(-1);
 }
+STATS_CONTAINER(PyThreadState_Clear, PySys_GetObject)
+void (*__target__PyThreadState_Clear)(PyThreadState*) = NULL;
 PyAPI_FUNC(void) PyThreadState_Clear(PyThreadState* a) {
-    unimplemented("PyThreadState_Clear"); exit(-1);
+    LOG("0x%lx", (unsigned long) a);
+    STATS_BEFORE(PyThreadState_Clear)
+    __target__PyThreadState_Clear(a);
+    STATS_AFTER(PyThreadState_Clear)
+    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void) PyThreadState_Delete(PyThreadState* a) {
     unimplemented("PyThreadState_Delete"); exit(-1);
 }
+STATS_CONTAINER(PyThreadState_DeleteCurrent, PyThreadState_Clear)
+void (*__target__PyThreadState_DeleteCurrent)() = NULL;
 PyAPI_FUNC(void) PyThreadState_DeleteCurrent() {
-    unimplemented("PyThreadState_DeleteCurrent"); exit(-1);
+    LOGS("");
+    STATS_BEFORE(PyThreadState_DeleteCurrent)
+    __target__PyThreadState_DeleteCurrent();
+    STATS_AFTER(PyThreadState_DeleteCurrent)
+    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyThreadState_Get, PySys_GetObject)
+STATS_CONTAINER(PyThreadState_Get, PyThreadState_DeleteCurrent)
 PyThreadState* (*__target__PyThreadState_Get)() = NULL;
 MUST_INLINE PyAPI_FUNC(PyThreadState*) PyThreadState_Get_Inlined() {
     LOGS("");
@@ -9948,6 +9960,8 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyStructSequence_NewType = getAPI("PyStructSequence_NewType");
     __target__PyStructSequence_SetItem = getAPI("PyStructSequence_SetItem");
     __target__PySys_GetObject = getAPI("PySys_GetObject");
+    __target__PyThreadState_Clear = getAPI("PyThreadState_Clear");
+    __target__PyThreadState_DeleteCurrent = getAPI("PyThreadState_DeleteCurrent");
     __target__PyThreadState_Get = getAPI("PyThreadState_Get");
     __target__PyThreadState_GetDict = getAPI("PyThreadState_GetDict");
     __target__PyThread_acquire_lock = getAPI("PyThread_acquire_lock");

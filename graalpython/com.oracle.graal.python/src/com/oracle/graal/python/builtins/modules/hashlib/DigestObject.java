@@ -182,7 +182,8 @@ public abstract class DigestObject extends PythonBuiltinObject {
      * calculate the digest on a clone, but that does not need to be supported. If it is not, then
      * we calculate the digest normally, but we must prevent any further updates.
      *
-     * @see #wasReset(), {@link #update(byte[], int)}
+     * @see #wasReset()
+     * @see #update(byte[])
      */
     abstract byte[] digest();
 

@@ -266,29 +266,22 @@ public final class PythonCextCapsuleBuiltins {
     @GenerateNodeFactory
     public abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
         @Specialization
-        public int doit(PyCapsule o, TruffleString name,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+        public int doit(PyCapsule o, TruffleString name) {
             if (o.getPointer() == null) {
                 throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
             }
-            Object n = lib.isNull(name) ? null : name;
+            Object n = name;
             o.setName(n);
             return 0;
         }
 
         @Specialization(guards = "isNoValue(name)")
-        public int doit(PyCapsule o, @SuppressWarnings("unused") PNone name,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
-                }
-                o.setName(null);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
+        public int doit(PyCapsule o, @SuppressWarnings("unused") PNone name) {
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
             }
+            o.setName(null);
+            return 0;
         }
 
         @Fallback

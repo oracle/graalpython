@@ -50,10 +50,6 @@ _PyThreadState_UncheckedGet(void) {
     return GraalPyThreadState_Get();
 }
 
-PyThreadState * PyThreadState_Get() {
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
-}
-
 void PyThreadState_Clear(PyThreadState *tstate) {
 }
 
