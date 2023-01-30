@@ -1,0 +1,120 @@
+diff --git a/meson.build b/meson.build
+index 5b4a1d52..c29ec297 100644
+--- a/meson.build
++++ b/meson.build
+@@ -11,7 +11,7 @@ project(
+     'buildtype=debugoptimized',
+     'c_std=c99',
+     'cpp_std=c++14',
+-    'fortran_std=legacy',
++    'fortran_std=none',
+     'blas=openblas',
+     'lapack=openblas'
+   ],
+diff --git a/scipy/sparse/linalg/meson.build b/scipy/sparse/linalg/meson.build
+index db2f199d..763e1ef6 100644
+--- a/scipy/sparse/linalg/meson.build
++++ b/scipy/sparse/linalg/meson.build
+@@ -16,7 +16,7 @@ py3.install_sources([
+   subdir: 'scipy/sparse/linalg'
+ )
+ 
+-subdir('_propack')
++# subdir('_propack')
+ subdir('_isolve')
+ subdir('_dsolve')
+ subdir('_eigen')
+diff --git a/scipy/special/meson.build b/scipy/special/meson.build
+index 8fe534be..133be12b 100644
+--- a/scipy/special/meson.build
++++ b/scipy/special/meson.build
+@@ -459,24 +459,24 @@ py3.extension_module('_test_round',
+ # Must use `custom_target`, because `py3.install_sources` does not work with
+ # generated sources - see https://github.com/mesonbuild/meson/issues/7372
+ npz_files = [
+-  [
+-    '_data_boost',
+-    'tests/data/boost/acosh_data_ipp/acosh_data.txt',
+-    'boost',
+-    'boost.npz'
+-  ],
+-  [
+-    '_data_gsl',
+-    'tests/data/gsl/mathieu_ab.txt',
+-    'gsl',
+-    'gsl.npz'
+-  ],
+-  [
+-    '_data_local',
+-    'tests/data/local/ellipkm1.txt',
+-    'local',
+-    'local.npz'
+-  ],
++  # [
++  #   '_data_boost',
++  #   'tests/data/boost/acosh_data_ipp/acosh_data.txt',
++  #   'boost',
++  #   'boost.npz'
++  # ],
++  # [
++  #   '_data_gsl',
++  #   'tests/data/gsl/mathieu_ab.txt',
++  #   'gsl',
++  #   'gsl.npz'
++  # ],
++  # [
++  #   '_data_local',
++  #   'tests/data/local/ellipkm1.txt',
++  #   'local',
++  #   'local.npz'
++  # ],
+ ]
+ 
+ foreach npz_file: npz_files
+diff --git a/tools/cythonize.py b/tools/cythonize.py
+index 402824cb..b6aba959 100755
+--- a/tools/cythonize.py
++++ b/tools/cythonize.py
+@@ -95,21 +95,19 @@ def process_pyx(fromfile, tofile, cwd):
+     if tofile.endswith('.cxx'):
+         flags += ['--cplus']
+ 
+-    try:
++    try:    
++        from Cython.Compiler.Main import setuptools_main
++        prev_argv = sys.argv[1:]
+         try:
+-            r = subprocess.call(['cython'] + flags + ["-o", tofile, fromfile], cwd=cwd)
+-            if r != 0:
+-                raise Exception('Cython failed')
+-        except OSError as e:
+-            # There are ways of installing Cython that don't result in a cython
+-            # executable on the path, see gh-2397.
+-            r = subprocess.call([sys.executable, '-c',
+-                                 'import sys; from Cython.Compiler.Main import '
+-                                 'setuptools_main as main; sys.exit(main())'] + flags +
+-                                 ["-o", tofile, fromfile],
+-                                cwd=cwd)
+-            if r != 0:
+-                raise Exception("Cython either isn't installed or it failed.") from e
++            oldcwd = os.getcwd()
++            os.chdir(cwd)
++            sys.argv[1:] = flags + ["-o", tofile, fromfile]
++            retcode = setuptools_main()
++            if retcode:
++                sys.exit(retcode)
++        finally:
++            sys.argv[1:] = prev_argv
++            os.chdir(oldcwd)
+     except OSError as e:
+         raise OSError('Cython needs to be installed') from e
+ 
+@@ -253,7 +251,7 @@ def find_process_files(root_dir):
+     lock = Lock()
+ 
+     try:
+-        num_proc = int(os.environ.get('SCIPY_NUM_CYTHONIZE_JOBS', cpu_count()))
++        num_proc = int(os.environ.get('SCIPY_NUM_CYTHONIZE_JOBS', 1))
+         pool = Pool(processes=num_proc)
+     except ImportError as e:
+         # Allow building (single-threaded) on GNU/Hurd, which does not
