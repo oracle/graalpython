@@ -218,7 +218,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Cached PInteropSetAttributeNode setAttributeNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinObjectProfile attrErrorProfile,
+                    /* @Shared("attributeErrorProfile") */ @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
@@ -498,7 +498,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached ConditionProfile profileGetattribute,
                     @Exclusive @Cached ConditionProfile profileMember,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinObjectProfile attributeErrorProfile,
+                    /* @Shared("attributeErrorProfile") */ @Cached IsBuiltinObjectProfile attributeErrorProfile,
                     @Exclusive @Cached GilNode gil)
                     throws UnknownIdentifierException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -605,7 +605,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public void removeMember(String member,
                     @Bind("$node") Node inliningTarget,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinObjectProfile attrErrorProfile,
+                    /* @Shared("attributeErrorProfile") */ @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
