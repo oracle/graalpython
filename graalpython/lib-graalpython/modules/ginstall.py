@@ -453,6 +453,10 @@ library_dirs = {lapack_lib}"""
         install_from_pypi("lightfm==1.15", **kwargs)
 
     @pip_package()
+    def meson(**kwargs):
+        install_from_pypi("meson==1.0.0", **kwargs)
+
+    @pip_package()
     def pytz(**kwargs):
         install_from_pypi("pytz==2022.2.1", **kwargs)
 
