@@ -1780,7 +1780,7 @@ def _python_checkpatchfiles():
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
             "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache", "Apache License", "new BSD",
-            "(Apache-2.0 OR BSD-3-Clause) AND PSF-2.0", "Apache 2.0",
+            "(Apache-2.0 OR BSD-3-Clause) AND PSF-2.0", "Apache 2.0", "MPL-2.0",
         ]
         for line in content.split("\n"):
             if not line or os.stat(line).st_size == 0:
