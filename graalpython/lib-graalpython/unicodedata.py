@@ -40,6 +40,6 @@
 __graalpython__.import_current_as_named_module_with_delegate(
     module_name="unicodedata",
     delegate_name="_cpython_unicodedata",
-    delegate_attributes=['ucd_3_2_0', 'lookup', 'east_asian_width'],
+    delegate_attributes=['ucd_3_2_0', 'lookup', 'east_asian_width', 'combining'],
     wrap_methods=False,
     owner_globals=globals())
