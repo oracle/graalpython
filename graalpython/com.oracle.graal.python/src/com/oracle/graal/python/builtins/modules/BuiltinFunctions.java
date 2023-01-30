@@ -228,7 +228,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
@@ -1303,15 +1303,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConditionProfile stringProfile,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached("name") TruffleString cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 return getAttributeNode.executeObject(frame, primary);
             } catch (PException e) {
-                e.expectAttributeError(errorProfile);
+                e.expectAttributeError(inliningTarget, errorProfile);
                 return defaultValue;
             }
         }
@@ -1324,12 +1325,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
         Object getAttrFromObject(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetAnyAttributeNode getAttributeNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 return getAttributeNode.executeObject(frame, primary, name);
             } catch (PException e) {
-                e.expectAttributeError(errorProfile);
+                e.expectAttributeError(inliningTarget, errorProfile);
                 return defaultValue;
             }
         }
@@ -2457,18 +2459,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached CalculateMetaclassNode calculateMetaClass,
                         @Cached("create(T___PREPARE__)") GetAttributeNode getPrepare,
                         @Cached(parameters = "GetItem") LookupCallableSlotInMRONode getGetItem,
-                        @Cached GetClassNode getGetItemClass,
+                        @Cached InlinedGetClassNode getGetItemClass,
                         @Cached CallVarargsMethodNode callPrep,
                         @Cached CallVarargsMethodNode callType,
                         @Cached CallDispatchNode callBody,
                         @Cached UpdateBasesNode update,
                         @Cached PyObjectSetItem setOrigBases,
-                        @Cached GetClassNode getClass,
-                        @Cached IsBuiltinClassProfile noAttributeProfile) {
+                        @Cached InlinedGetClassNode getClass,
+                        @Cached IsBuiltinObjectProfile noAttributeProfile) {
 
             if (arguments.length < 1) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.BUILD_CLS_NOT_ENOUGH_ARGS);
@@ -2528,7 +2531,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             meta = PythonContext.get(update).lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
-                            meta = getClass.execute(bases.getSequenceStorage().getItemNormalized(0));
+                            meta = getClass.execute(inliningTarget, bases.getSequenceStorage().getItemNormalized(0));
                         }
                         isClass = true;  // meta is really a class
                     }
@@ -2555,10 +2558,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 Object prep = getPrepare.executeObject(frame, init.meta);
                 ns = callPrep.execute(frame, prep, new Object[]{name, init.bases}, init.mkw);
             } catch (PException p) {
-                p.expectAttributeError(noAttributeProfile);
+                p.expectAttributeError(inliningTarget, noAttributeProfile);
                 ns = factory().createDict(new DynamicObjectStorage(PythonLanguage.get(this)));
             }
-            if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(ns)))) {
+            if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(inliningTarget, ns)))) {
                 if (init.isClass) {
                     throw raise(PythonErrorType.TypeError, ErrorMessages.N_PREPARE_MUST_RETURN_MAPPING, init.meta, ns);
                 } else {

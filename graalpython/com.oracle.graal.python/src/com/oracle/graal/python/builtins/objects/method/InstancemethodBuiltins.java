@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,10 +72,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -83,6 +84,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PInstancemethod})
@@ -125,13 +127,14 @@ public class InstancemethodBuiltins extends PythonBuiltins {
     public abstract static class GetattributeNode extends PythonBuiltinNode {
         @Specialization
         protected static Object doIt(VirtualFrame frame, PDecoratedMethod self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached PyObjectGetAttr getAttrNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
-                e.expectAttributeError(errorProfile);
+                e.expectAttributeError(inliningTarget, errorProfile);
                 return getAttrNode.execute(frame, self.getCallable(), key);
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 
@@ -51,15 +49,18 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_get_bases")
@@ -79,24 +80,26 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
 
     @Specialization(guards = "!isUncached()")
     static PTuple getBasesCached(VirtualFrame frame, Object cls,
+                    @Bind("this") Node inliningTarget,
                     @Cached("create(GetAttribute)") LookupAndCallBinaryNode getAttributeNode,
-                    @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
+                    @Shared("exceptionMaskProfile") @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
         try {
             Object bases = getAttributeNode.executeObject(frame, cls, T___BASES__);
             if (bases instanceof PTuple) {
                 return (PTuple) bases;
             }
         } catch (PException pe) {
-            pe.expectAttributeError(exceptionMaskProfile);
+            pe.expectAttributeError(inliningTarget, exceptionMaskProfile);
         }
         return null;
     }
 
     @Specialization(replaces = "getBasesCached")
     static PTuple getBasesUncached(VirtualFrame frame, Object cls,
+                    @Bind("this") Node inliningTarget,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Cached CallNode callGetattributeNode,
-                    @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
+                    @Shared("exceptionMaskProfile") @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
         Object getattr = lookupGetattributeNode.execute(cls, T___GETATTRIBUTE__);
         try {
             Object bases = callGetattributeNode.execute(frame, getattr, cls, T___BASES__);
@@ -104,7 +107,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
                 return (PTuple) bases;
             }
         } catch (PException pe) {
-            pe.expectAttributeError(exceptionMaskProfile);
+            pe.expectAttributeError(inliningTarget, exceptionMaskProfile);
         }
         return null;
     }

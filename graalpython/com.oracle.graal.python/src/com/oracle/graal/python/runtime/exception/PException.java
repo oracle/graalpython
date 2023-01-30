@@ -198,13 +198,6 @@ public final class PException extends AbstractTruffleException {
     }
 
     @Deprecated // TODO: DSL inlining
-    public void expectAttributeError(IsBuiltinClassProfile profile) {
-        if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
-            throw this;
-        }
-    }
-
-    @Deprecated // TODO: DSL inlining
     public boolean expectTypeOrOverflowError(IsBuiltinClassProfile profile) {
         boolean ofError = !profile.profileException(this, PythonBuiltinClassType.TypeError);
         if (ofError && !profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
