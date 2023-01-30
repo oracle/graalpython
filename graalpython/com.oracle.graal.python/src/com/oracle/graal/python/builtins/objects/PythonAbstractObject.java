@@ -124,7 +124,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -1301,6 +1300,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(limit = "2")
         static Object doIt(Object object, Object attrName,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary("attrName") InteropLibrary libAttrName,
                         @Cached PRaiseNode raiseNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
@@ -1308,8 +1308,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattrNode,
                         @Cached CallBinaryMethodNode callGetattrNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Cached ConditionProfile hasGetattrProfile) {
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached InlinedConditionProfile hasGetattrProfile) {
             if (!libAttrName.isString(attrName)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrName);
             }
@@ -1326,9 +1326,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 Object attrGetattribute = lookupGetattributeNode.execute(object, T___GETATTRIBUTE__);
                 return callGetattributeNode.executeObject(attrGetattribute, object, attrNameStr);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(inliningTarget, AttributeError, isBuiltinClassProfile);
                 Object attrGetattr = lookupGetattrNode.execute(object, T___GETATTR__);
-                if (hasGetattrProfile.profile(attrGetattr != PNone.NO_VALUE)) {
+                if (hasGetattrProfile.profile(inliningTarget, attrGetattr != PNone.NO_VALUE)) {
                     return callGetattrNode.executeObject(attrGetattr, object, attrNameStr);
                 }
                 throw pe;
@@ -1649,10 +1649,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasIteratorNextElement(
+                    @Bind("$node") Node inliningTarget,
                     @CachedLibrary("this") InteropLibrary ilib,
                     @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
                     @Cached GetNextNode getNextNode,
-                    @Exclusive @Cached IsBuiltinClassProfile exceptionProfile,
+                    @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         if (ilib.isIterator(this)) {
             Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
@@ -1665,7 +1666,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 dylib.put(this, NEXT_ELEMENT, nextElement);
                 return true;
             } catch (PException e) {
-                e.expect(PythonBuiltinClassType.StopIteration, exceptionProfile);
+                e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, exceptionProfile);
                 return false;
             } finally {
                 gil.release(mustRelease);

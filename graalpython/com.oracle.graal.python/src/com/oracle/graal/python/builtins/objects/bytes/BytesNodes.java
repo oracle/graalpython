@@ -89,7 +89,6 @@ import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -599,10 +598,11 @@ public abstract class BytesNodes {
 
         @Specialization
         byte[] doGeneric(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             if (bufferAcquireLib.hasBuffer(object)) {
                 // TODO PyBUF_FULL_RO
                 Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, this);
@@ -616,7 +616,7 @@ public abstract class BytesNodes {
                 try {
                     return iterableToByteNode.execute(frame, object);
                 } catch (PException e) {
-                    e.expect(TypeError, errorProfile);
+                    e.expect(inliningTarget, TypeError, errorProfile);
                 }
             }
             throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
@@ -644,8 +644,9 @@ public abstract class BytesNodes {
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
         byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached BytesFromObject bytesFromObject) {
             if (indexCheckNode.execute(source)) {
@@ -661,7 +662,7 @@ public abstract class BytesNodes {
                         throw raise(MemoryError);
                     }
                 } catch (PException e) {
-                    e.expect(TypeError, errorProfile);
+                    e.expect(inliningTarget, TypeError, errorProfile);
                     // fallthrough
                 }
             }

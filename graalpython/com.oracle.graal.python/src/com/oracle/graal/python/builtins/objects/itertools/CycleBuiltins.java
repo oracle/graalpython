@@ -74,7 +74,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -217,9 +216,10 @@ public final class CycleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setState(VirtualFrame frame, PCycle self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
-                        @Cached IsBuiltinClassProfile isTypeErrorProfile,
+                        @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Cached ToArrayNode toArrayNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
@@ -235,7 +235,7 @@ public final class CycleBuiltins extends PythonBuiltins {
             try {
                 firstPass = asSizeNode.executeLossy(frame, getItemNode.execute(frame, state, 1)) != 0;
             } catch (PException e) {
-                e.expectTypeError(isTypeErrorProfile);
+                e.expectTypeError(inliningTarget, isTypeErrorProfile);
                 throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
             }
 

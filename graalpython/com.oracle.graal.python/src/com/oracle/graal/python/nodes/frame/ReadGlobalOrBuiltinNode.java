@@ -41,7 +41,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -185,13 +186,14 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     @InliningCutoff
     @Specialization
     protected Object readGlobalDictGeneric(VirtualFrame frame, PDict globals,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetItem getItemNode,
-                    @Cached IsBuiltinClassProfile errorProfile) {
+                    @Cached IsBuiltinObjectProfile errorProfile) {
         try {
             Object result = getItemNode.execute(frame, globals, attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
-            e.expect(KeyError, errorProfile);
+            e.expect(inliningTarget, KeyError, errorProfile);
             return returnGlobalOrBuiltin(PNone.NO_VALUE);
         }
     }

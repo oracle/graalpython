@@ -90,7 +90,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -291,13 +290,14 @@ public class ModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
-                            @Cached IsBuiltinClassProfile isAttrError,
+                            @Bind("this") Node inliningTarget,
+                            @Cached IsBuiltinObjectProfile isAttrError,
                             @Cached ReadAttributeFromObjectNode readGetattr,
                             @Cached ConditionProfile customGetAttr,
                             @Cached CallNode callNode,
                             @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                             @Cached CastToTruffleStringNode castNameToStringNode) {
-                e.expect(PythonBuiltinClassType.AttributeError, isAttrError);
+                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, T___GETATTR__);
                 if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {
                     return callNode.execute(frame, getAttr, key);

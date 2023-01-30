@@ -80,7 +80,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
@@ -393,8 +392,9 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!canBeIndex(slice, indexCheckNode)")
         Object doPRangeSliceSlowPath(VirtualFrame frame, PIntRange self, PSlice slice,
+                        @Bind("this") Node inliningTarget,
                         @Cached ComputeIndices compute,
-                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached IsBuiltinObjectProfile profileError,
                         @Cached CoerceToBigRange toBigIntRange,
                         @Cached CoerceToObjectSlice toBigIntSlice,
                         @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
@@ -406,7 +406,7 @@ public class RangeBuiltins extends PythonBuiltins {
                 SliceInfo info = compute.execute(frame, slice, self.getIntLength());
                 return createRange(info, rStart, rStep, lenOfRangeNodeExact);
             } catch (PException pe) {
-                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
+                pe.expect(inliningTarget, PythonBuiltinClassType.OverflowError, profileError);
                 // pass
             } catch (CannotCastException | OverflowException e) {
                 // pass
@@ -421,8 +421,9 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!canBeIndex(slice, indexCheckNode)")
         Object doPRangeSliceSlowPath(VirtualFrame frame, PBigRange self, PSlice slice,
+                        @Bind("this") Node inliningTarget,
                         @Cached ComputeIndices compute,
-                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached IsBuiltinObjectProfile profileError,
                         @Cached CoerceToBigRange toBigIntRange,
                         @Cached CoerceToObjectSlice toBigIntSlice,
                         @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
@@ -435,7 +436,7 @@ public class RangeBuiltins extends PythonBuiltins {
                 SliceInfo info = compute.execute(frame, slice, asSizeNode.executeExact(frame, self.getLength()));
                 return createRange(info, rStart, rStep, lenOfRangeNodeExact);
             } catch (PException pe) {
-                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
+                pe.expect(inliningTarget, PythonBuiltinClassType.OverflowError, profileError);
                 // pass
             } catch (CannotCastException | OverflowException e) {
                 // pass
@@ -450,10 +451,11 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, PRange self, Object idx,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConditionProfile isNumIndexProfile,
                         @Cached ConditionProfile isSliceIndexProfile,
                         @Cached ComputeIndices compute,
-                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached IsBuiltinObjectProfile profileError,
                         @Cached CoerceToBigRange toBigIntRange,
                         @Cached CoerceToObjectSlice toBigIntSlice,
                         @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
@@ -470,9 +472,11 @@ public class RangeBuiltins extends PythonBuiltins {
             if (isSliceIndexProfile.profile(idx instanceof PSlice)) {
                 PSlice slice = (PSlice) idx;
                 if (self instanceof PIntRange) {
-                    return doPRangeSliceSlowPath(frame, (PIntRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode);
+                    return doPRangeSliceSlowPath(frame, (PIntRange) self, slice, inliningTarget, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode,
+                                    indexCheckNode);
                 }
-                return doPRangeSliceSlowPath(frame, (PBigRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode, asSizeNode);
+                return doPRangeSliceSlowPath(frame, (PBigRange) self, slice, inliningTarget, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode,
+                                asSizeNode);
             }
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
         }

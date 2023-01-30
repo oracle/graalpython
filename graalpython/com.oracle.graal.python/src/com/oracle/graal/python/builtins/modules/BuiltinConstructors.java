@@ -222,7 +222,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltin
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -1831,69 +1830,76 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // stop
         @Specialization(guards = "isStop(start, stop, step)")
         Object doIntStop(Object cls, int stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
-            return doInt(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
+            return doInt(cls, 0, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
         }
 
         @Specialization(guards = "isStop(start, stop, step)")
         Object doPintStop(Object cls, PInt stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
-            return doPint(cls, factory().createInt(0), stop, factory().createInt(1), stepZeroProfile, lenOfRangeNode);
+            return doPint(cls, factory().createInt(0), stop, factory().createInt(1), inliningTarget, stepZeroProfile, lenOfRangeNode);
         }
 
         @Specialization(guards = "isStop(start, stop, step)")
         Object doGenericStop(VirtualFrame frame, Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
-                        @Shared("overflowProfile") @Cached IsBuiltinClassProfile overflowProfile,
+                        @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
                         @Shared("indexNode") @Cached PyNumberIndexNode indexNode) {
-            return doGeneric(frame, cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode);
+            return doGeneric(frame, cls, 0, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode);
         }
 
         // start stop
         @Specialization(guards = "isStartStop(start, stop, step)")
         Object doIntStartStop(Object cls, int start, int stop, @SuppressWarnings("unused") PNone step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
-            return doInt(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
+            return doInt(cls, start, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
         }
 
         @Specialization(guards = "isStartStop(start, stop, step)")
         Object doPintStartStop(Object cls, PInt start, PInt stop, @SuppressWarnings("unused") PNone step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
-            return doPint(cls, start, stop, factory().createInt(1), stepZeroProfile, lenOfRangeNode);
+            return doPint(cls, start, stop, factory().createInt(1), inliningTarget, stepZeroProfile, lenOfRangeNode);
         }
 
         @Specialization(guards = "isStartStop(start, stop, step)")
         Object doGenericStartStop(VirtualFrame frame, Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
-                        @Shared("overflowProfile") @Cached IsBuiltinClassProfile overflowProfile,
+                        @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
                         @Shared("indexNode") @Cached PyNumberIndexNode indexNode) {
-            return doGeneric(frame, cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode);
+            return doGeneric(frame, cls, start, stop, 1, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode);
         }
 
         // start stop step
         @Specialization
         Object doInt(@SuppressWarnings("unused") Object cls, int start, int stop, int step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNode,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
-            if (stepZeroProfile.profile(step == 0)) {
+            if (stepZeroProfile.profile(inliningTarget, step == 0)) {
                 throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
             try {
@@ -1907,9 +1913,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object doPint(@SuppressWarnings("unused") Object cls, PInt start, PInt stop, PInt step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
-            if (stepZeroProfile.profile(step.isZero())) {
+            if (stepZeroProfile.profile(inliningTarget, step.isZero())) {
                 throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
             BigInteger len = lenOfRangeNode.execute(start.getValue(), stop.getValue(), step.getValue());
@@ -1918,12 +1925,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isStartStopStep(start, stop, step)")
         Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
-                        @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("stepZeroProfile") @Cached InlinedConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached InlinedBranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("cast") @Cached CastToJavaIntExactNode cast,
-                        @Shared("overflowProfile") @Cached IsBuiltinClassProfile overflowProfile,
+                        @Shared("overflowProfile") @Cached IsBuiltinObjectProfile overflowProfile,
                         @Shared("indexNode") @Cached PyNumberIndexNode indexNode) {
             Object lstart = indexNode.execute(frame, start);
             Object lstop = indexNode.execute(frame, stop);
@@ -1933,9 +1941,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 int istart = cast.execute(lstart);
                 int istop = cast.execute(lstop);
                 int istep = cast.execute(lstep);
-                return doInt(cls, istart, istop, istep, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
+                return doInt(cls, istart, istop, istep, inliningTarget, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
             } catch (PException e) {
-                e.expect(OverflowError, overflowProfile);
+                e.expect(inliningTarget, OverflowError, overflowProfile);
                 return createBigRangeNode.execute(lstart, lstop, lstep, factory());
             }
         }

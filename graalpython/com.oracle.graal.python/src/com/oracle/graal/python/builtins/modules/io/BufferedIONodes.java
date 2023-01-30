@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
@@ -77,16 +75,18 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -226,15 +226,16 @@ public class BufferedIONodes {
 
         @Specialization
         static long toLong(VirtualFrame frame, Object number, PythonBuiltinClassType err,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongExactNode cast,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             Object index = indexNode.execute(frame, number);
             try {
                 return cast.execute(index);
             } catch (PException e) {
-                e.expect(OverflowError, errorProfile);
+                e.expect(inliningTarget, OverflowError, errorProfile);
                 throw raiseNode.raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();

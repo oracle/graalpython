@@ -156,11 +156,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -169,6 +170,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -1165,11 +1167,12 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PTextIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached("create(Repr)") LookupAndCallUnaryNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
                         @Cached IONodes.ToTruffleStringNode toString,
-                        @Cached IsBuiltinClassProfile isValueError) {
+                        @Cached IsBuiltinObjectProfile isValueError) {
             if (!getContext().reprEnter(self)) {
                 throw raise(RuntimeError, REENTRANT_CALL_INSIDE_P_REPR, self);
             }
@@ -1178,7 +1181,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 try {
                     nameobj = lookup.execute(frame, self, T_NAME);
                 } catch (PException e) {
-                    e.expect(ValueError, isValueError);
+                    e.expect(inliningTarget, ValueError, isValueError);
                     /* Ignore ValueError raised if the underlying stream was detached */
                 }
                 Object modeobj = lookup.execute(frame, self, T_MODE);

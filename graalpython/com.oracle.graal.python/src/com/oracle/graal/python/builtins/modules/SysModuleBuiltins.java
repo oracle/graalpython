@@ -214,7 +214,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -1570,8 +1569,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHook(VirtualFrame frame, PythonModule sys, Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetAttr setAttr,
-                        @Cached IsBuiltinClassProfile unicodeEncodeErrorProfile,
+                        @Cached IsBuiltinObjectProfile unicodeEncodeErrorProfile,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PyObjectGetAttr getAttr,
@@ -1609,7 +1609,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     fileWriteString(frame, stdOut, castToString(reprVal, castToStringNode), getAttr, callNode);
                 }
             } catch (PException pe) {
-                pe.expect(UnicodeEncodeError, unicodeEncodeErrorProfile);
+                pe.expect(inliningTarget, UnicodeEncodeError, unicodeEncodeErrorProfile);
                 // repr(o) is not encodable to sys.stdout.encoding with sys.stdout.errors error
                 // handler (which is probably 'strict')
                 unicodeEncodeError = true;

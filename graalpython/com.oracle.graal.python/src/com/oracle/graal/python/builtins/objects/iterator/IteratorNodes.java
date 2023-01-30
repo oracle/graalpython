@@ -75,7 +75,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -126,6 +125,7 @@ public abstract class IteratorNodes {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "4")
         int length(VirtualFrame frame, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("iterable") InteropLibrary iLib,
                         @Cached GetClassNode getClassNode,
                         @Cached PyIndexCheckNode indexCheckNode,
@@ -133,7 +133,7 @@ public abstract class IteratorNodes {
                         @Cached("create(Len)") LookupCallableSlotInMRONode lenNode,
                         @Cached("create(LengthHint)") LookupSpecialMethodSlotNode lenHintNode,
                         @Cached CallUnaryMethodNode dispatchLenOrLenHint,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached ConditionProfile hasLenProfile,
                         @Cached ConditionProfile hasLengthHintProfile,
                         @Cached PRaiseNode raiseNode,
@@ -157,7 +157,7 @@ public abstract class IteratorNodes {
                 try {
                     len = dispatchLenOrLenHint.executeObject(frame, attrLenObj, iterable);
                 } catch (PException e) {
-                    e.expect(TypeError, errorProfile);
+                    e.expect(inliningTarget, TypeError, errorProfile);
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
                     if (indexCheckNode.execute(len)) {
@@ -177,7 +177,7 @@ public abstract class IteratorNodes {
                 try {
                     len = dispatchLenOrLenHint.executeObject(frame, attrLenHintObj, iterable);
                 } catch (PException e) {
-                    e.expect(TypeError, errorProfile);
+                    e.expect(inliningTarget, TypeError, errorProfile);
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
                     if (indexCheckNode.execute(len)) {

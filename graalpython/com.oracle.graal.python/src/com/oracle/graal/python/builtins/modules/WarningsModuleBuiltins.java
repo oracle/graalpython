@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,10 +108,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -533,7 +533,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 try {
                     warningsModule = tryImport();
                 } catch (PException e) {
-                    e.expect(PythonBuiltinClassType.ImportError, IsBuiltinClassProfile.getUncached());
+                    e.expect(null, PythonBuiltinClassType.ImportError, IsBuiltinObjectProfile.getUncached());
                     return null;
                 }
             } else {

@@ -93,8 +93,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
@@ -106,11 +106,13 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -338,13 +340,14 @@ public class StructSequence {
 
         @Specialization(guards = "isNoValue(dict)")
         PTuple withoutDict(VirtualFrame frame, Object cls, Object sequence, @SuppressWarnings("unused") PNone dict,
+                        @Bind("this") Node inliningTarget,
                         @Cached FastConstructListNode fastConstructListNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached IsBuiltinClassProfile notASequenceProfile,
-                        @Cached BranchProfile wrongLenProfile,
-                        @Cached BranchProfile needsReallocProfile) {
-            Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
-            Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile);
+                        @Cached IsBuiltinObjectProfile notASequenceProfile,
+                        @Cached InlinedBranchProfile wrongLenProfile,
+                        @Cached InlinedBranchProfile needsReallocProfile) {
+            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
+            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
             for (int i = src.length; i < dst.length; ++i) {
                 dst[i] = PNone.NONE;
             }
@@ -353,14 +356,15 @@ public class StructSequence {
 
         @Specialization
         PTuple withDict(VirtualFrame frame, Object cls, Object sequence, PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @Cached FastConstructListNode fastConstructListNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached IsBuiltinClassProfile notASequenceProfile,
-                        @Cached BranchProfile wrongLenProfile,
-                        @Cached BranchProfile needsReallocProfile,
+                        @Cached IsBuiltinObjectProfile notASequenceProfile,
+                        @Cached InlinedBranchProfile wrongLenProfile,
+                        @Cached InlinedBranchProfile needsReallocProfile,
                         @Cached HashingStorageGetItem getItem) {
-            Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
-            Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile);
+            Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
+            Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
             for (int i = src.length; i < dst.length; ++i) {
                 Object o = getItem.execute(hs, fieldNames[i]);
@@ -375,24 +379,25 @@ public class StructSequence {
             throw raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
         }
 
-        private Object[] sequenceToArray(VirtualFrame frame, Object sequence, FastConstructListNode fastConstructListNode, ToArrayNode toArrayNode, IsBuiltinClassProfile notASequenceProfile) {
+        private Object[] sequenceToArray(VirtualFrame frame, Node inliningTarget, Object sequence, FastConstructListNode fastConstructListNode,
+                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile) {
             PSequence seq;
             try {
                 seq = fastConstructListNode.execute(frame, sequence);
             } catch (PException e) {
-                e.expect(TypeError, notASequenceProfile);
+                e.expect(inliningTarget, TypeError, notASequenceProfile);
                 throw raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
             }
             return toArrayNode.execute(seq.getSequenceStorage());
         }
 
-        private Object[] processSequence(Object cls, Object[] src, BranchProfile wrongLenProfile, BranchProfile needsReallocProfile) {
+        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile) {
             int len = src.length;
             int minLen = inSequence;
             int maxLen = fieldNames.length;
 
             if (len < minLen || len > maxLen) {
-                wrongLenProfile.enter();
+                wrongLenProfile.enter(inliningTarget);
                 if (minLen == maxLen) {
                     throw raise(TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 }
@@ -404,7 +409,7 @@ public class StructSequence {
             }
 
             if (len != maxLen) {
-                needsReallocProfile.enter();
+                needsReallocProfile.enter(inliningTarget);
                 Object[] dst = new Object[maxLen];
                 PythonUtils.arraycopy(src, 0, dst, 0, len);
                 return dst;

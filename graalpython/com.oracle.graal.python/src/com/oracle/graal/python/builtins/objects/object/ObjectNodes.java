@@ -127,8 +127,8 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -590,9 +590,10 @@ public abstract class ObjectNodes {
 
         @Fallback
         Object dispatchGeneric(VirtualFrame frame, Object cls, Object clsDict, Object copyReg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Cached PyObjectGetItem getItemNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile) {
             /*
              * CPython looks at tp_dict of the type and assumes that it must be a builtin
              * dictionary, otherwise it fails with type error. We do not have tp_dict for managed
@@ -606,7 +607,7 @@ public abstract class ObjectNodes {
                 try {
                     slotNames = getItemNode.execute(frame, clsDict, T___SLOTNAMES__);
                 } catch (PException ex) {
-                    ex.expect(PythonBuiltinClassType.KeyError, isBuiltinClassProfile);
+                    ex.expect(inliningTarget, PythonBuiltinClassType.KeyError, isBuiltinClassProfile);
                 }
             }
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);

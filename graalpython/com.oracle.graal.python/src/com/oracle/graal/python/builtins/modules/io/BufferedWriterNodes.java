@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,14 +57,16 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 public class BufferedWriterNodes {
 
@@ -84,9 +86,10 @@ public class BufferedWriterNodes {
          */
         @Specialization
         static int bufferedWriterWrite(VirtualFrame frame, PBuffered self, Object buffer,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached AbstractBufferedIOBuiltins.RaiseBlockingIOError raiseBlockingIOError,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached FlushUnlockedNode flushUnlockedNode) {
@@ -117,7 +120,7 @@ public class BufferedWriterNodes {
             try {
                 flushUnlockedNode.execute(frame, self);
             } catch (PException e) {
-                e.expect(BlockingIOError, isBuiltinClassProfile);
+                e.expect(inliningTarget, BlockingIOError, isBuiltinClassProfile);
                 if (self.isReadable()) {
                     self.resetRead();
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,7 +81,7 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -102,6 +102,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -109,6 +110,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -121,12 +123,13 @@ public abstract class SocketNodes {
 
         @Specialization(guards = "isInet(socket)")
         UniversalSockAddr doInet(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
                         @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
-                        @Cached @Shared("errorProfile") IsBuiltinClassProfile errorProfile,
+                        @Cached @Shared("errorProfile") IsBuiltinObjectProfile errorProfile,
                         @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode) {
             PythonContext context = PythonContext.get(this);
             if (!(address instanceof PTuple)) {
@@ -137,7 +140,7 @@ public abstract class SocketNodes {
                 throw raise(TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
             }
             TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
-            int port = parsePort(frame, caller, asIntNode, errorProfile, hostAndPort[1]);
+            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
             Object posixSupport = context.getPosixSupport();
             return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
@@ -145,12 +148,13 @@ public abstract class SocketNodes {
 
         @Specialization(guards = "isInet6(socket)")
         UniversalSockAddr doInet6(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
                         @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
-                        @Cached @Shared("errorProfile") IsBuiltinClassProfile errorProfile,
+                        @Cached @Shared("errorProfile") IsBuiltinObjectProfile errorProfile,
                         @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode) {
             PythonContext context = PythonContext.get(this);
             if (!(address instanceof PTuple)) {
@@ -161,7 +165,7 @@ public abstract class SocketNodes {
                 throw raise(TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
             }
             TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
-            int port = parsePort(frame, caller, asIntNode, errorProfile, hostAndPort[1]);
+            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1]);
             int flowinfo = 0;
             if (hostAndPort.length > 2) {
                 flowinfo = asIntNode.execute(frame, hostAndPort[2]);
@@ -234,12 +238,12 @@ public abstract class SocketNodes {
             return socket.getFamily() == AF_UNIX.value;
         }
 
-        private int parsePort(VirtualFrame frame, String caller, PyLongAsIntNode asIntNode, IsBuiltinClassProfile errorProfile, Object portObj) {
+        private int parsePort(VirtualFrame frame, String caller, PyLongAsIntNode asIntNode, Node inliningTarget, IsBuiltinObjectProfile errorProfile, Object portObj) {
             int port;
             try {
                 port = asIntNode.execute(frame, portObj);
             } catch (PException e) {
-                e.expect(OverflowError, errorProfile);
+                e.expect(inliningTarget, OverflowError, errorProfile);
                 port = -1;
             }
             if (port < 0 || port > 0xffff) {

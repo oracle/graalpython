@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -47,10 +47,11 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -60,6 +61,7 @@ import com.oracle.truffle.api.interop.UnknownKeyException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -198,8 +200,9 @@ public class PDict extends PHashingCollection {
 
     @ExportMessage
     static void writeHashEntry(PDict self, Object key, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Exclusive @Cached GilNode gil,
-                    @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached HashingStorageSetItem setItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNodeKey,
                     @Exclusive @Cached PForeignToPTypeNode convertNodeValue) throws UnsupportedTypeException {
@@ -209,7 +212,7 @@ public class PDict extends PHashingCollection {
             HashingStorage newStorage = setItem.execute(null, self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
             self.setDictStorage(newStorage);
         } catch (PException e) {
-            e.expect(PythonBuiltinClassType.TypeError, errorProfile);
+            e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
             throw UnsupportedTypeException.create(new Object[]{pKey}, "keys for Python arrays must be hashable");
         } finally {
             gil.release(mustRelease);

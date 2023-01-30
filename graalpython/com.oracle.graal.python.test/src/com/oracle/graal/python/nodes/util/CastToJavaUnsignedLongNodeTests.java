@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,23 +40,24 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.math.BigInteger;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.math.BigInteger;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public class CastToJavaUnsignedLongNodeTests {
     private static PythonObjectFactory factory = PythonObjectFactory.getUncached();
@@ -139,7 +140,7 @@ public class CastToJavaUnsignedLongNodeTests {
             test.run();
             Assert.fail("Expected " + errorType.getName());
         } catch (PException e) {
-            e.expect(errorType, IsBuiltinClassProfile.getUncached());
+            e.expect(null, errorType, IsBuiltinObjectProfile.getUncached());
         }
     }
 

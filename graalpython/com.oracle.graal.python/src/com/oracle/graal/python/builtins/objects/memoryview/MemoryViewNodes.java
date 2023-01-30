@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -75,6 +76,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -169,11 +171,13 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "format != OTHER")
         void pack(VirtualFrame frame, BufferFormat format, TruffleString formatStr, Object value, byte[] bytes, int offset,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached BufferStorageNodes.PackValueNode packValueNode) {
             try {
                 packValueNode.execute(frame, format, value, bytes, offset);
             } catch (PException e) {
-                throw processException(e, formatStr);
+                throw processException(e, formatStr, inliningTarget, errorProfile);
             }
         }
 
@@ -187,17 +191,9 @@ public class MemoryViewNodes {
             throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
         }
 
-        private PException processException(PException e, TruffleString formatStr) {
-            e.expect(OverflowError, getIsOverflowErrorProfile());
+        private PException processException(PException e, TruffleString formatStr, Node inliningTarget, IsBuiltinObjectProfile errorProfile) {
+            e.expect(inliningTarget, OverflowError, errorProfile);
             throw valueError(formatStr);
-        }
-
-        private IsBuiltinClassProfile getIsOverflowErrorProfile() {
-            if (isOverflowErrorProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isOverflowErrorProfile = insert(IsBuiltinClassProfile.create());
-            }
-            return isOverflowErrorProfile;
         }
     }
 
