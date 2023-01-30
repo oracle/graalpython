@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -363,8 +364,9 @@ public abstract class IteratorNodes {
 
         @Specialization(guards = {"!isPSequence(iterable)", "!isString(iterable)"})
         public static Object[] doIt(VirtualFrame frame, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile stopIterationProfile,
+                        @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Cached PyObjectGetIter getIter) {
             Object it = getIter.execute(frame, iterable);
             List<Object> result = createlist();
@@ -372,7 +374,7 @@ public abstract class IteratorNodes {
                 try {
                     result.add(getNextNode.execute(frame, it));
                 } catch (PException e) {
-                    e.expectStopIteration(stopIterationProfile);
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
                     return result.toArray(new Object[result.size()]);
                 }
             }

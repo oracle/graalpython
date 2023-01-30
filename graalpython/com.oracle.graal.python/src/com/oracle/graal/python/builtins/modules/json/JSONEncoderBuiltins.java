@@ -282,7 +282,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                         try {
                             item = callDictNext.execute(null, iter);
                         } catch (PException e) {
-                            e.expectStopIteration(stopDictIterationProfile);
+                            e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
                             break;
                         }
                         if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {

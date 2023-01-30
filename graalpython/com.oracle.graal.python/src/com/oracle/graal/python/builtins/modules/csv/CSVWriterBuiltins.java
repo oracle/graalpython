@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,14 +60,16 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -85,9 +87,10 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
     public abstract static class WriteRowNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetClassNode getClass,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached InlinedGetClassNode getClass,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
@@ -98,14 +101,14 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached PyObjectStrAsTruffleStringNode objectStrAsTruffleStringNode,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile) {
             Object iter;
 
             try {
                 iter = getIter.execute(frame, seq);
             } catch (PException e) {
-                e.expect(PythonBuiltinClassType.TypeError, errorProfile);
-                throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(seq));
+                e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
+                throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(inliningTarget, seq));
             }
 
             // Join all fields of passed in sequence in internal buffer.
@@ -124,7 +127,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                     joinField(sb, dialect, field, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode, objectStrAsTruffleStringNode,
                                     pyNumberCheckNode);
                 } catch (PException e) {
-                    e.expectStopIteration(isBuiltinClassProfile);
+                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
                     break;
                 }
             }
@@ -251,9 +254,10 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
     public abstract static class WriteRowsNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNext,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached WriteRowNode writeRow) {
             Object iter, row;
 
@@ -264,7 +268,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                     row = getNext.execute(frame, iter);
                     writeRow.execute(frame, self, row);
                 } catch (PException e) {
-                    e.expectStopIteration(isBuiltinClassProfile);
+                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
                     break;
                 }
             }

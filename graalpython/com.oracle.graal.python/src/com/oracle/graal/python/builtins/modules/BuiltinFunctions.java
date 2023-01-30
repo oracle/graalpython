@@ -225,6 +225,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -258,6 +259,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -275,10 +277,12 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -469,11 +473,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doObject(VirtualFrame frame,
-                        Object object,
+        boolean doObject(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             int nbrIter = 0;
@@ -486,7 +490,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         return false;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 } finally {
                     LoopNode.reportLoopCount(this, nbrIter);
@@ -526,11 +530,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doObject(VirtualFrame frame,
-                        Object object,
+        boolean doObject(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             int nbrIter = 0;
@@ -543,7 +547,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         return true;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 } finally {
                     LoopNode.reportLoopCount(this, nbrIter);
@@ -1597,33 +1601,35 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "args.length == 0")
         Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone key, Object defaultVal,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached IsBuiltinClassProfile errorProfile1,
-                        @Cached IsBuiltinClassProfile errorProfile2,
-                        @Cached ConditionProfile hasDefaultProfile) {
-            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, getIter, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
+                        /* @Shared */ @Cached InlinedConditionProfile hasDefaultProfile) {
+            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, inliningTarget, getIter, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
         }
 
         @Specialization(guards = {"args.length == 0", "!isPNone(keywordArg)"})
         Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg, Object defaultVal,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached CallNode keyCall,
-                        @Cached IsBuiltinClassProfile errorProfile1,
-                        @Cached IsBuiltinClassProfile errorProfile2,
-                        @Cached ConditionProfile hasDefaultProfile) {
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
+                        /* @Shared */ @Cached InlinedConditionProfile hasDefaultProfile) {
             Object iterator = getIter.execute(frame, arg1);
             Object currentValue;
             try {
                 currentValue = nextNode.execute(frame, iterator);
             } catch (PException e) {
-                e.expectStopIteration(errorProfile1);
-                if (hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
+                e.expectStopIteration(inliningTarget, errorProfile1);
+                if (hasDefaultProfile.profile(inliningTarget, PGuards.isNoValue(defaultVal))) {
                     throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, getName());
                 } else {
                     return defaultVal;
@@ -1635,7 +1641,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 try {
                     nextValue = nextNode.execute(frame, iterator);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile2);
+                    e.expectStopIteration(inliningTarget, errorProfile2);
                     break;
                 }
                 Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
@@ -1759,12 +1765,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(defaultObject)")
         public Object next(VirtualFrame frame, Object iterator, Object defaultObject,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 return callNode.executeObject(frame, iterator);
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
+                e.expectStopIteration(inliningTarget, errorProfile);
                 return defaultObject;
             }
         }
@@ -2146,23 +2153,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
         @Child private AddNode add = AddNode.create();
 
-        @Child private IsBuiltinClassProfile errorProfile1 = IsBuiltinClassProfile.create();
-        @Child private IsBuiltinClassProfile errorProfile2 = IsBuiltinClassProfile.create();
-        @Child private IsBuiltinClassProfile errorProfile3 = IsBuiltinClassProfile.create();
-
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntNone(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start,
+                        @Bind("this") Node inliningTarget,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, 0, getIter);
+            return sumIntInternal(frame, arg1, 0, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntInt(VirtualFrame frame, Object arg1, int start,
+                        @Bind("this") Node inliningTarget,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, start, getIter);
+            return sumIntInternal(frame, arg1, start, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
 
-        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, PyObjectGetIter getIter) throws UnexpectedResultException {
+        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, PyObjectGetIter getIter,
+                        Node inliningTarget, IsBuiltinObjectProfile errorProfile1,
+                        IsBuiltinObjectProfile errorProfile2, IsBuiltinObjectProfile errorProfile3) throws UnexpectedResultException {
             Object iterator = getIter.execute(frame, arg1);
             int value = start;
             while (true) {
@@ -2170,27 +2183,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 try {
                     nextValue = PGuards.expectInteger(next.executeObject(frame, iterator));
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile1);
+                    e.expectStopIteration(inliningTarget, errorProfile1);
                     return value;
                 } catch (UnexpectedResultException e) {
                     Object newValue = add.executeObject(frame, value, e.getResult());
-                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, errorProfile2));
+                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, inliningTarget, errorProfile2));
                 }
                 try {
                     value = add.executeInt(frame, value, nextValue);
                 } catch (UnexpectedResultException e) {
-                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, e.getResult(), errorProfile3));
+                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, e.getResult(), inliningTarget, errorProfile3));
                 }
             }
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
+                        @Bind("this") Node inliningTarget,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, start, getIter);
+            return sumDoubleInternal(frame, arg1, start, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
 
-        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, PyObjectGetIter getIter) throws UnexpectedResultException {
+        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, PyObjectGetIter getIter,
+                        Node inliningTarget, IsBuiltinObjectProfile errorProfile1,
+                        IsBuiltinObjectProfile errorProfile2, IsBuiltinObjectProfile errorProfile3) throws UnexpectedResultException {
             Object iterator = getIter.execute(frame, arg1);
             double value = start;
             while (true) {
@@ -2198,24 +2217,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 try {
                     nextValue = PGuards.expectDouble(next.executeObject(frame, iterator));
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile1);
+                    e.expectStopIteration(inliningTarget, errorProfile1);
                     return value;
                 } catch (UnexpectedResultException e) {
                     Object newValue = add.executeObject(frame, value, e.getResult());
-                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, errorProfile2));
+                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, inliningTarget, errorProfile2));
                 }
                 try {
                     value = add.executeDouble(frame, value, nextValue);
                 } catch (UnexpectedResultException e) {
-                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, e.getResult(), errorProfile3));
+                    throw new UnexpectedResultException(iterateGeneric(frame, iterator, e.getResult(), inliningTarget, errorProfile3));
                 }
             }
         }
 
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
+                        @Bind("this") Node inliningTarget,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Cached ConditionProfile hasStart) {
+                        @Cached InlinedConditionProfile hasStart) {
             if (PGuards.isString(start)) {
                 throw raise(TypeError, ErrorMessages.CANT_SUM_STRINGS);
             } else if (start instanceof PBytes) {
@@ -2224,17 +2245,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.CANT_SUM_BYTEARRAY);
             }
             Object iterator = getIter.execute(frame, arg1);
-            return iterateGeneric(frame, iterator, hasStart.profile(start != NO_VALUE) ? start : 0, errorProfile1);
+            return iterateGeneric(frame, iterator, hasStart.profile(inliningTarget, start != NO_VALUE) ? start : 0, inliningTarget, errorProfile1);
         }
 
-        private Object iterateGeneric(VirtualFrame frame, Object iterator, Object start, IsBuiltinClassProfile errorProfile) {
+        private Object iterateGeneric(VirtualFrame frame, Object iterator, Object start, Node inliningTarget, IsBuiltinObjectProfile errorProfile) {
             Object value = start;
             while (true) {
                 Object nextValue;
                 try {
                     nextValue = next.executeObject(frame, iterator);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return value;
                 }
                 value = add.executeObject(frame, value, nextValue);

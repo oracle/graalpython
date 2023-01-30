@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -52,13 +53,15 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PPairwise})
 public final class PairwiseBuiltins extends PythonBuiltins {
@@ -82,8 +85,9 @@ public final class PairwiseBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIterable() != null")
         Object next(VirtualFrame frame, PPairwise self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinClassProfile isStopIterationProfile) {
+                        @Cached IsBuiltinObjectProfile isStopIterationProfile) {
             Object item;
             Object old = self.getOld();
             if (self.getOld() == null) {
@@ -94,7 +98,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
                 item = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
                 self.setOld(item);
             } catch (PException e) {
-                e.expectStopIteration(isStopIterationProfile);
+                e.expectStopIteration(inliningTarget, isStopIterationProfile);
                 self.setIterable(null);
                 self.setOld(null);
                 throw e;

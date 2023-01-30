@@ -88,6 +88,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
@@ -101,6 +102,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -167,10 +169,11 @@ public abstract class BytesNodes {
 
         @Specialization
         static byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached ToBytesNode toBytesNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
             Object iterator = getIter.execute(frame, iterable);
@@ -178,7 +181,7 @@ public abstract class BytesNodes {
                 try {
                     partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
                 }
             }
@@ -500,14 +503,15 @@ public abstract class BytesNodes {
 
         @Specialization
         byte[] doIt(VirtualFrame frame, Object iterObject,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
                 try {
                     getAppendByteNode().execute(bss, getNextNode.execute(frame, iterObject), BytesLikeNoGeneralizationNode.SUPPLIER);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return bss.getInternalByteArray();
                 }
             }
@@ -806,9 +810,10 @@ public abstract class BytesNodes {
 
         @Specialization
         public static byte[] bytearray(VirtualFrame frame, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile stopIterationProfile,
+                        @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Cached CastToByteNode castToByteNode,
                         @Cached PyObjectGetIter getIter) {
             Object it = getIter.execute(frame, iterable);
@@ -823,7 +828,7 @@ public abstract class BytesNodes {
                     }
                     arr[i++] = item;
                 } catch (PException e) {
-                    e.expectStopIteration(stopIterationProfile);
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
                     return resize(arr, i);
                 }
             }

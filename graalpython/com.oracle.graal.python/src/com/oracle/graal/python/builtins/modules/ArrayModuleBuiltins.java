@@ -71,7 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -271,10 +271,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
             @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)", "!isPSequence(initializer)"})
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer,
+                            @Bind("this") Node inliningTarget,
                             @Cached PyObjectGetIter getIter,
                             @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached GetNextNode nextNode,
-                            @Cached IsBuiltinClassProfile errorProfile,
+                            @Cached IsBuiltinObjectProfile errorProfile,
                             @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
                 Object iter = getIter.execute(frame, initializer);
@@ -288,7 +289,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     try {
                         nextValue = nextNode.execute(frame, iter);
                     } catch (PException e) {
-                        e.expectStopIteration(errorProfile);
+                        e.expectStopIteration(inliningTarget, errorProfile);
                         break;
                     }
                     try {

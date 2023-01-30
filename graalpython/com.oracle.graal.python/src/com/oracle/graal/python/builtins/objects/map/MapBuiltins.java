@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,16 +63,18 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
 public final class MapBuiltins extends PythonBuiltins {
@@ -145,17 +147,18 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doit(VirtualFrame frame, PMap self, Object x,
-                        @Cached BranchProfile moreThanOne,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile moreThanOne,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode next,
-                        @Cached IsBuiltinClassProfile profile) {
+                        @Cached IsBuiltinObjectProfile profile) {
             PMap iterMap = factory().createMap(PythonBuiltinClassType.PMap);
             Object[] iterators = self.getIterators();
             Object iterator = iterators[0];
             Object[] args;
             if (iterators.length > 1) {
-                moreThanOne.enter();
+                moreThanOne.enter(inliningTarget);
                 args = new Object[iterators.length - 1];
                 PythonUtils.arraycopy(iterators, 1, args, 0, args.length);
             } else {
@@ -169,7 +172,7 @@ public final class MapBuiltins extends PythonBuiltins {
                         return true;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(profile);
+                    e.expectStopIteration(inliningTarget, profile);
                     break;
                 }
             }

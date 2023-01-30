@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -154,9 +156,10 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
                         @Cached BranchProfile returnProfile,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
@@ -167,7 +170,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             try {
                 result = (GeneratorYieldResult) call.execute(frame, null, null, null, arguments);
             } catch (PException e) {
-                throw handleException(self, errorProfile, raiseNode, e);
+                throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter();
                 throw handleReturn(self, e, raiseNode);
@@ -180,10 +183,11 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
         @Specialization(replaces = "cached")
         @Megamorphic
         Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached GenericInvokeNode call,
                         @Cached BranchProfile returnProfile,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
@@ -198,7 +202,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
                     result = (GeneratorYieldResult) call.execute(self.getCurrentCallTarget(), arguments);
                 }
             } catch (PException e) {
-                throw handleException(self, errorProfile, raiseNode, e);
+                throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter();
                 throw handleReturn(self, e, raiseNode);
@@ -208,11 +212,11 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             return handleResult(self, result);
         }
 
-        private PException handleException(PGenerator self, IsBuiltinClassProfile errorProfile, PRaiseNode raiseNode, PException e) {
+        private PException handleException(PGenerator self, Node inliningTarget, IsBuiltinObjectProfile errorProfile, PRaiseNode raiseNode, PException e) {
             self.markAsFinished();
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
-            e.expectStopIteration(errorProfile);
+            e.expectStopIteration(inliningTarget, errorProfile);
             throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
         }
 

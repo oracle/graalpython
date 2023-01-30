@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,13 +38,15 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSentinelIterator)
 public class SentinelIteratorBuiltins extends PythonBuiltins {
@@ -59,8 +61,9 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             if (iterator.sentinelReached()) {
                 throw raiseStopIteration();
@@ -69,7 +72,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
             try {
                 nextValue = callNode.execute(frame, iterator.getCallTarget());
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
+                e.expectStopIteration(inliningTarget, errorProfile);
                 iterator.markSentinelReached();
                 throw e;
             }

@@ -69,8 +69,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -350,12 +350,13 @@ public abstract class StringNodes {
 
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, TruffleString string, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile0,
-                        @Cached IsBuiltinClassProfile errorProfile1,
-                        @Cached IsBuiltinClassProfile errorProfile2,
+                        @Cached IsBuiltinObjectProfile errorProfile0,
+                        @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Cached IsBuiltinObjectProfile errorProfile2,
                         @Cached CastToTruffleStringNode castStrNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
@@ -363,7 +364,7 @@ public abstract class StringNodes {
             try {
                 iterator = getIter.execute(frame, iterable);
             } catch (PException e) {
-                e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
+                e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile0);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
@@ -371,7 +372,7 @@ public abstract class StringNodes {
                 try {
                     appendStringNode.execute(sb, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile1);
+                    e.expectStopIteration(inliningTarget, errorProfile1);
                     return T_EMPTY_STRING;
                 }
                 int i = 1;
@@ -380,7 +381,7 @@ public abstract class StringNodes {
                     try {
                         value = nextNode.execute(frame, iterator);
                     } catch (PException e) {
-                        e.expectStopIteration(errorProfile2);
+                        e.expectStopIteration(inliningTarget, errorProfile2);
                         return toStringNode.execute(sb);
                     }
                     appendStringNode.execute(sb, string);

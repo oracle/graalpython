@@ -47,8 +47,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Bind;
@@ -88,13 +88,14 @@ public abstract class ForIterONode extends PNodeWithContext {
 
     @Specialization
     boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
-                    @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
-                    @Cached IsBuiltinClassProfile stopIterationProfile,
+                    @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Cached PRaiseNode raiseNode) {
         assert iterator != null;
-        Object nextMethod = lookupNext.execute(frame, getClassNode.execute(iterator), iterator);
+        Object nextMethod = lookupNext.execute(frame, getClassNode.execute(inliningTarget, iterator), iterator);
         if (nextMethod == PNone.NO_VALUE) {
             throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
         }
@@ -102,7 +103,7 @@ public abstract class ForIterONode extends PNodeWithContext {
             frame.setObject(stackTop, callNext.executeObject(frame, nextMethod, iterator));
             return true;
         } catch (PException e) {
-            e.expectStopIteration(stopIterationProfile);
+            e.expectStopIteration(inliningTarget, stopIterationProfile);
             return false;
         }
     }

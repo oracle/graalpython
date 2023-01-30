@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.range;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -80,6 +78,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -88,15 +87,18 @@ import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -659,10 +661,11 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)", limit = "1")
         static boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
             Object iter = getIter.execute(frame, self);
             while (true) {
@@ -672,7 +675,7 @@ public class RangeBuiltins extends PythonBuiltins {
                         return true;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 }
             }
@@ -755,10 +758,11 @@ public class RangeBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = "!canBeInteger(elem)")
         Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextNode nextNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             int idx = 0;
             Object iter = getIter.execute(frame, self);
             while (true) {
@@ -768,7 +772,7 @@ public class RangeBuiltins extends PythonBuiltins {
                         return idx;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 }
                 if (idx == SysModuleBuiltins.MAXSIZE) {
@@ -858,10 +862,11 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isFallback(elem)")
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             int count = 0;
             Object iter = getIter.execute(frame, self);
             while (true) {
@@ -871,7 +876,7 @@ public class RangeBuiltins extends PythonBuiltins {
                         count = incCount(count);
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 }
             }
