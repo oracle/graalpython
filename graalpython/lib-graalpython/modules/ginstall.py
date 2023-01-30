@@ -457,6 +457,15 @@ library_dirs = {lapack_lib}"""
         install_from_pypi("meson==1.0.0", **kwargs)
 
     @pip_package()
+    def ninja(**kwargs):
+        install_with_pip("scikit-build==0.16.6")
+        ninja_build_env = {
+            'CC': 'gcc',
+            'CXX': 'g++',
+        }
+        install_from_pypi("ninja==1.11.1", env=ninja_build_env, **kwargs)
+
+    @pip_package()
     def pytz(**kwargs):
         install_from_pypi("pytz==2022.2.1", **kwargs)
 
