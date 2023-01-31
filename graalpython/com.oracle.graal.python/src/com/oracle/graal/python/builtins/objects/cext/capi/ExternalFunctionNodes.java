@@ -729,11 +729,6 @@ public abstract class ExternalFunctionNodes {
                 if (!lib.isExecutable(callable)) {
                     if (signature == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if (provider.signature.isEmpty()) {
-                            System.out.println("not executable with " + provider + " - " + provider.signature);
-                            System.out.println("  " + Arrays.toString(cArguments));
-                            printStack();
-                        }
                         signature = getContext().getEnv().parseInternal(Source.newBuilder("nfi", provider.signature, "exec").build()).call();
                     }
                     if (signatureLib == null) {

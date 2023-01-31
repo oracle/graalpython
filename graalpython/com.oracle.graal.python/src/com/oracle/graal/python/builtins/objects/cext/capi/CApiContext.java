@@ -570,7 +570,6 @@ public final class CApiContext extends CExtContext {
 
         @Override
         public void execute(PythonContext context) {
-            System.out.println("CApiReferenceCleanerAction");
             Object[] pArguments = PArguments.create(1);
             PArguments.setArgument(pArguments, 0, nativeObjectReferences);
             GenericInvokeNode.getUncached().execute(context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);

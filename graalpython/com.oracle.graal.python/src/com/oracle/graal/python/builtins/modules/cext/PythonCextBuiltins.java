@@ -826,7 +826,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 return new CachedExecuteCApiBuiltinNode(self);
             } catch (Throwable t) {
                 PNodeWithContext.printStack();
-                System.out.println("while creating CApiBuiltin " + self.factory.getNodeClass());
+                LOGGER.logp(Level.SEVERE, "ExecuteCApiBuiltinNode", "create", "while creating CApiBuiltin " + self.factory.getNodeClass(), t);
                 throw t;
             }
         }
@@ -855,7 +855,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         Object execute(CApiBuiltinExecutable self, Object[] arguments) {
             try {
                 try {
-                    // System.out.println("executing CApiBuiltin " + self.factory.getNodeClass());
                     assert cachedSelf == self;
                     assert arguments.length == argNodes.length;
 
@@ -2506,7 +2505,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 try {
                     getContext().getEnv().out().write(message.getBytes());
                 } catch (IOException e) {
-                    System.out.print(message);
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
                 return 1;
             }
@@ -2590,7 +2589,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     capiBuiltins.put(name, result);
                 }
             } catch (Throwable t) {
-                System.out.println("when processing " + factory.getNodeClass());
+                LOGGER.logp(Level.SEVERE, PythonCextBuiltins.class.getName(), "addCApiBuiltins", "while processing " + factory.getNodeClass(), t);
                 throw t;
             }
         }
