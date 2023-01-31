@@ -78,6 +78,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -323,15 +324,25 @@ public abstract class CExtContext {
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
         GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
         GraalHPyContext.loadJNIBackend();
-        Object library;
+        Object library = null;
 
         String nativeModuleOption = context.getOption(PythonOptions.NativeModules);
         String name = spec.name.toJavaStringUncached();
         if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-            LOGGER.config("loading " + spec.path + " as native");
-            cApiContext.ensureNative();
-            library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
-        } else {
+            boolean nativeBackend = true;
+            try {
+                cApiContext.ensureNative();
+            } catch (AbstractTruffleException e) {
+                LOGGER.info("Unable to load native C API backend");
+                nativeBackend = false;
+            }
+            if (nativeBackend) {
+                LOGGER.config("loading " + spec.path + " as native");
+                library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+            }
+        }
+
+        if (library == null) {
             library = loadLLVMLibrary(location, context, spec.name, spec.path);
             try {
                 if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
