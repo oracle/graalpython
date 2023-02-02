@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,8 +39,6 @@
  * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
-
-import com.oracle.truffle.api.dsl.NeverDefault;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PTR_ARRAY_TYPE_ID;
@@ -84,10 +82,10 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -102,14 +100,13 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-public final class PySequenceArrayWrapper implements TruffleObject {
+public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     /** Number of bytes that constitute a single element. */
-    private final Object delegate;
     private final int elementAccessSize;
 
     public PySequenceArrayWrapper(Object delegate, int elementAccessSize) {
-        this.delegate = delegate;
+        super(delegate);
         this.elementAccessSize = elementAccessSize;
     }
 
@@ -122,7 +119,7 @@ public final class PySequenceArrayWrapper implements TruffleObject {
         CompilerAsserts.neverPartOfCompilation();
         final int prime = 31;
         int result = 1;
-        result = prime * result + delegate.hashCode();
+        result = prime * result + getDelegate().hashCode();
         return result;
     }
 
@@ -140,13 +137,13 @@ public final class PySequenceArrayWrapper implements TruffleObject {
         // n.b.: (tfel) This is hopefully fine here, since if we get to this
         // code path, we don't speculate that either of those objects is
         // constant anymore, so any caching on them won't happen anyway
-        return delegate == ((PySequenceArrayWrapper) obj).delegate;
+        return getDelegate() == ((PySequenceArrayWrapper) obj).getDelegate();
     }
 
     @ExportMessage
     final long getArraySize(
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) {
-        return sizeNode.execute(null, delegate);
+        return sizeNode.execute(null, getDelegate());
     }
 
     @ExportMessage
@@ -161,7 +158,7 @@ public final class PySequenceArrayWrapper implements TruffleObject {
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return readArrayItemNode.execute(delegate, index);
+            return readArrayItemNode.execute(getDelegate(), index);
         } finally {
             gil.release(mustRelease);
         }
@@ -295,7 +292,7 @@ public final class PySequenceArrayWrapper implements TruffleObject {
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            writeArrayItemNode.execute(delegate, index, value);
+            writeArrayItemNode.execute(getDelegate(), index, value);
         } finally {
             gil.release(mustRelease);
         }
@@ -409,7 +406,7 @@ public final class PySequenceArrayWrapper implements TruffleObject {
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
                         @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
-            PSequence sequence = (PSequence) object.delegate;
+            PSequence sequence = (PSequence) object.getDelegate();
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence), sequence instanceof PBytesLike);
             if (nativeStorage == null) {
                 CompilerDirectives.transferToInterpreter();
@@ -479,8 +476,8 @@ public final class PySequenceArrayWrapper implements TruffleObject {
 
     @ExportMessage
     public boolean isPointer() {
-        if (delegate instanceof PSequence) {
-            PSequence sequence = (PSequence) delegate;
+        if (getDelegate() instanceof PSequence) {
+            PSequence sequence = (PSequence) getDelegate();
             if (sequence.getSequenceStorage() instanceof NativeSequenceStorage) {
                 return true;
             }
@@ -491,8 +488,8 @@ public final class PySequenceArrayWrapper implements TruffleObject {
     @ExportMessage
     public long asPointer(
                     @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
-        if (delegate instanceof PSequence) {
-            PSequence sequence = (PSequence) delegate;
+        if (getDelegate() instanceof PSequence) {
+            PSequence sequence = (PSequence) getDelegate();
             if (sequence.getSequenceStorage() instanceof NativeSequenceStorage) {
                 return PythonNativeWrapper.coerceToLong(((NativeSequenceStorage) sequence.getSequenceStorage()).getPtr(), lib);
             }
@@ -509,7 +506,7 @@ public final class PySequenceArrayWrapper implements TruffleObject {
     @ExportMessage
     Object getNativeType(
                     @Exclusive @Cached GetTypeIDNode getTypeIDNode) {
-        return getTypeIDNode.execute(delegate);
+        return getTypeIDNode.execute(getDelegate());
     }
 
     @GenerateUncached
@@ -557,9 +554,5 @@ public final class PySequenceArrayWrapper implements TruffleObject {
 
     protected static boolean hasByteArrayContent(Object object) {
         return object instanceof PBytesLike || object instanceof PMMap;
-    }
-
-    public Object getDelegate() {
-        return delegate;
     }
 }

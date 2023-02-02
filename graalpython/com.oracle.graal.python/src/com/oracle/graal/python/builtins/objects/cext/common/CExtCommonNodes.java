@@ -517,7 +517,7 @@ public abstract class CExtCommonNodes {
          * @return The Unicode codepoint.
          */
         private static int getCodepoint(byte[] bytes, int byteOffset, int sizeofWchar) {
-            // TODO maybe via TruffleSgring api? [GR-38108]
+            // TODO maybe via TruffleString api? [GR-38108]
             switch (sizeofWchar) {
                 case 1:
                     return bytes[byteOffset];
