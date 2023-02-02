@@ -129,6 +129,8 @@ public abstract class CExtContext {
     /** A cache for C symbols. */
     private DynamicObject symbolCache;
 
+    protected boolean loadNativeBackend = true;
+
     public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
         this.context = context;
         this.llvmLibrary = llvmLibrary;
@@ -323,22 +325,23 @@ public abstract class CExtContext {
         // we always need to load the CPython C API (even for HPy modules)
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
         GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
-        GraalHPyContext.loadJNIBackend();
         Object library = null;
 
-        String nativeModuleOption = context.getOption(PythonOptions.NativeModules);
-        String name = spec.name.toJavaStringUncached();
-        if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-            boolean nativeBackend = true;
-            try {
-                cApiContext.ensureNative();
-            } catch (AbstractTruffleException e) {
-                LOGGER.info("Unable to load native C API backend");
-                nativeBackend = false;
-            }
-            if (nativeBackend) {
-                LOGGER.config("loading " + spec.path + " as native");
-                library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+        if (cApiContext.loadNativeBackend) {
+            String nativeModuleOption = context.getOption(PythonOptions.NativeModules);
+            String name = spec.name.toJavaStringUncached();
+            if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
+                try {
+                    cApiContext.ensureNative();
+                    GraalHPyContext.loadJNIBackend();
+                } catch (AbstractTruffleException e) {
+                    LOGGER.info("Unable to load native C API backend");
+                    cApiContext.loadNativeBackend = false;
+                }
+                if (cApiContext.loadNativeBackend) {
+                    LOGGER.config("loading " + spec.path + " as native");
+                    library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+                }
             }
         }
 
