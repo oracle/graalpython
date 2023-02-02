@@ -430,6 +430,8 @@ library_dirs = {lapack_lib}"""
         build_cmd = ["build_ext", "--disable-optimization"]
         if with_flang:
             numpy_build_env["FC"] = "flang-new"
+            numpy_build_env["CC"] = "clang"
+            numpy_build_env["CXX"] = "clang++"
             build_cmd += ["config", "--fcompiler=flang-new"]
         install_from_pypi("numpy==1.23.5", build_cmd=build_cmd, env=numpy_build_env, pre_install_hook=make_site_cfg,
                           **kwargs)
