@@ -1,14 +1,14 @@
-From d4baac460f19ec58fc551ed1e7cf1ce0c4723fd9 Mon Sep 17 00:00:00 2001
+From b5f539f4f01ef61ad9b6bad716704ff6450d22f5 Mon Sep 17 00:00:00 2001
 From: Ondrej Tethal <ondrej.tethal@oracle.com>
-Date: Fri, 13 Jan 2023 11:04:00 +0100
-Subject: [PATCH] Patch import _datetime
+Date: Thu, 2 Feb 2023 14:57:32 +0100
+Subject: [PATCH] Patch pydriller
 
 ---
- pydriller/domain/commit.py | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ pydriller/domain/commit.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/pydriller/domain/commit.py b/pydriller/domain/commit.py
-index ba2c6e5..a2188af 100644
+index ba2c6e5..401d5a5 100644
 --- a/pydriller/domain/commit.py
 +++ b/pydriller/domain/commit.py
 @@ -18,7 +18,7 @@ Commit, Modification,
@@ -20,6 +20,14 @@ index ba2c6e5..a2188af 100644
  from enum import Enum
  from pathlib import Path
  from typing import List, Set, Dict, Tuple, Optional
--- 
-2.25.1
+@@ -101,7 +101,7 @@ class Method:
+                 "long_name",
+                 self.long_name,
+                 "params",
+-                (x for x in self.parameters),
++                tuple(x for x in self.parameters),
+             )
+         )
 
+--
+2.25.1
