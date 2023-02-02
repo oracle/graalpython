@@ -238,7 +238,7 @@ def known_packages():
 
     @pip_package()
     def joblib(**kwargs):
-        install_with_pip("joblib==1.1.0", **kwargs)
+        install_with_pip("joblib==1.2.0", **kwargs)
 
     @pip_package()
     def cppy(**kwargs):
@@ -526,8 +526,8 @@ library_dirs = {lapack_lib}"""
         pybind11(**kwargs)
         pythran(**kwargs)
 
-        scipy_version = "1.8.1"
-        # scipy_version = "1.9.3"
+        # scipy_version = "1.8.1"
+        scipy_version = "1.9.3"
         with_meson = False
         if scipy_version >= "1.9.1":
             meson(**kwargs)
