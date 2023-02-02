@@ -558,8 +558,9 @@ public class PythonCextObjectBuiltins {
             // 3) The pointer object is one of our native wrappers
 
             boolean isWrapper = CApiGuards.isNativeWrapper(ptrObject);
-            boolean pointsToHandleSpace = !isWrapper && (boolean) callNode.call(NativeCAPISymbol.FUN_POINTS_TO_HANDLE_SPACE, ptrObject);
-            boolean isValidHandle = pointsToHandleSpace && (boolean) callNode.call(NativeCAPISymbol.FUN_IS_HANDLE, ptrObject);
+
+            boolean pointsToHandleSpace = !isWrapper; // TODO: use CApiTransitions here
+            boolean isValidHandle = pointsToHandleSpace;
 
             /*
              * If the pointer points to the handle space but it's not a valid handle or if we do

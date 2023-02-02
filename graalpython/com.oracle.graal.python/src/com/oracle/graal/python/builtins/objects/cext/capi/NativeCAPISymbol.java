@@ -53,10 +53,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     /* Sulong intrinsics */
 
-    FUN_POINTS_TO_HANDLE_SPACE("_graalvm_llvm_points_to_handle_space"),
-    FUN_DEREF_HANDLE("_graalvm_llvm_create_deref_handle"),
-    FUN_RESOLVE_HANDLE("_graalvm_llvm_resolve_handle"),
-    FUN_IS_HANDLE("_graalvm_llvm_is_handle"),
     FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
     FUN_POLYGLOT_ARRAY_TYPEID("polyglot_array_typeid"),
     FUN_POLYGLOT_FROM_STRING("polyglot_from_string"),
