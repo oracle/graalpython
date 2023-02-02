@@ -291,11 +291,11 @@ class TestMisc(CPyExtTestCase):
     test_PyOS_double_to_string = CPyExtFunction(
         _reference_format_float,
         lambda: (
-            (1.2, b"f", 2),
+            (1.212, b"f", 2),
             (float('nan'), b"f", 2),
             (1.23456789, b"f", 2),
             (123.456789, b"f", 6),
-            (123.456789, b"e", 6),
+            (123.456721, b"e", 6),
             (123.456789, b"r", 0),
         ),
         code="""
