@@ -44,6 +44,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -84,6 +85,7 @@ public class CApiTransitions {
     public static final class HandleContext {
 
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
+        public final WeakHashMap<Object, WeakReference<PythonAbstractNativeObject>> managedNativeLookup = new WeakHashMap<>();
         public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>();
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
@@ -178,13 +180,13 @@ public class CApiTransitions {
                         assert context.nativeHandles.get(index) != null;
                         context.nativeHandles.set(index, null);
                     } else {
-                        assert context.nativeLookup.containsKey(reference.pointer) : Long.toHexString(reference.pointer);
-                        context.nativeLookup.remove(reference.pointer);
+                        assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
+                        nativeLookupRemove(context, reference.pointer);
                     }
                 } else {
                     NativeObjectReference reference = (NativeObjectReference) entry;
                     LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
-                    context.nativeLookup.remove(reference.pointer);
+                    nativeLookupRemove(context, reference.pointer);
                     Object object = reference.object;
                     if (LIB.isPointer(object)) {
                         try {
@@ -221,7 +223,7 @@ public class CApiTransitions {
                     return logResult(((PythonNativeWrapper) obj).getDelegate());
                 }
             } else {
-                IdReference<?> lookup = getContext().nativeLookup.get(pointer);
+                IdReference<?> lookup = nativeLookupGet(getContext(), pointer);
                 if (lookup != null) {
                     Object obj = lookup.get();
                     if (obj instanceof PythonAbstractNativeObject) {
@@ -239,10 +241,23 @@ public class CApiTransitions {
     @TruffleBoundary
     public static Object lookupNative(long pointer) {
         log(pointer);
-        if (getContext().nativeLookup.containsKey(pointer)) {
-            return logResult(getContext().nativeLookup.get(pointer).get());
+        IdReference<?> reference = nativeLookupGet(getContext(), pointer);
+        if (reference != null) {
+            return logResult(reference.get());
         }
         return logResult(null);
+    }
+
+    public static IdReference<?> nativeLookupGet(HandleContext context, long pointer) {
+        return context.nativeLookup.get(pointer);
+    }
+
+    public static IdReference<?> nativeLookupPut(HandleContext context, long pointer, IdReference<?> value) {
+        return context.nativeLookup.put(pointer, value);
+    }
+
+    public static IdReference<?> nativeLookupRemove(HandleContext context, long pointer) {
+        return context.nativeLookup.remove(pointer);
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -428,7 +443,7 @@ public class CApiTransitions {
     public static void firstToNative(PythonNativeWrapper obj, long ptr) {
         logVoid(obj, ptr);
         obj.setNativePointer(ptr);
-        CApiTransitions.getContext().nativeLookup.put(ptr, new PythonObjectReference(obj, ptr));
+        nativeLookupPut(getContext(), ptr, new PythonObjectReference(obj, ptr));
     }
 
     // logging
@@ -551,7 +566,13 @@ public class CApiTransitions {
             } else {
                 if (!LIB.isPointer(obj)) {
                     assert obj.toString().startsWith("ManagedMemoryBlock");
-                    return new PythonAbstractNativeObject(obj);
+                    WeakReference<PythonAbstractNativeObject> ref = getContext().managedNativeLookup.computeIfAbsent(obj, o -> new WeakReference<>(new PythonAbstractNativeObject(o)));
+                    PythonAbstractNativeObject result = ref.get();
+                    if (result == null) {
+                        // value is weak as well:
+                        getContext().managedNativeLookup.put(obj, new WeakReference<>(new PythonAbstractNativeObject(obj)));
+                    }
+                    return result;
                 }
                 try {
                     pointer = LIB.asPointer(obj);
@@ -572,7 +593,7 @@ public class CApiTransitions {
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
             } else {
-                IdReference<?> lookup = getContext().nativeLookup.get(pointer);
+                IdReference<?> lookup = nativeLookupGet(getContext(), pointer);
                 if (lookup != null) {
                     Object ref = lookup.get();
                     if (ref == null) {
@@ -622,7 +643,7 @@ public class CApiTransitions {
 
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(obj);
         NativeObjectReference ref = new NativeObjectReference(result, pointer);
-        getContext().nativeLookup.put(pointer, ref);
+        nativeLookupPut(getContext(), pointer, ref);
 
         long refCntDelta = PythonNativeWrapper.MANAGED_REFCNT - (transfer ? 1 : 0);
         PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_ADDREF, obj, refCntDelta);
@@ -665,7 +686,7 @@ public class CApiTransitions {
                 }
                 return wrapper;
             } else {
-                IdReference<?> lookup = getContext().nativeLookup.get(pointer);
+                IdReference<?> lookup = nativeLookupGet(getContext(), pointer);
                 if (lookup != null) {
                     Object ref = lookup.get();
                     if (ref == null) {
