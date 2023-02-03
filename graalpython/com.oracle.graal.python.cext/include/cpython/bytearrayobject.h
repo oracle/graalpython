@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,7 +16,7 @@ typedef struct {
     Py_ssize_t ob_exports; /* How many buffer exports */
 } PyByteArrayObject;
 
-char* _PyByteArray_Start(PyObject*);
+PyAPI_FUNC(char*) _PyByteArray_Start(PyObject*);
 
 /* Macros, trading safety for speed */
 #define PyByteArray_AS_STRING(self) \
