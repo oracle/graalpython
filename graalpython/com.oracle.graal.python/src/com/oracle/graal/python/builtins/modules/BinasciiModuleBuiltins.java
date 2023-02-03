@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -87,7 +88,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -150,11 +152,12 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object string(PString value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached ConditionProfile asciiProfile) {
+                        @Cached InlinedConditionProfile asciiProfile) {
             TruffleString ts = cast.execute(value);
-            if (asciiProfile.profile(isAscii(ts, getCodeRangeNode))) {
+            if (asciiProfile.profile(inliningTarget, isAscii(ts, getCodeRangeNode))) {
                 return asciiString(ts, getCodeRangeNode);
             } else {
                 return nonAsciiString(ts, getCodeRangeNode);

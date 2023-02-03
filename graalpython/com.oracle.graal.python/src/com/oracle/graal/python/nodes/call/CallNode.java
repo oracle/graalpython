@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -80,7 +81,8 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -175,21 +177,22 @@ public abstract class CallNode extends PNodeWithContext {
 
     @Specialization
     protected Object doForeignMethod(ForeignMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Bind("this") Node inliningTarget,
                     @Cached PRaiseNode raise,
                     @Cached PForeignToPTypeNode fromForeign,
-                    @Cached BranchProfile keywordsError,
-                    @Cached BranchProfile typeError,
+                    @Cached InlinedBranchProfile keywordsError,
+                    @Cached InlinedBranchProfile typeError,
                     @Cached GilNode gil,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
         if (keywords.length != 0) {
-            keywordsError.enter();
+            keywordsError.enter(inliningTarget);
             throw raise.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
         gil.release(true);
         try {
             return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, arguments));
         } catch (ArityException | UnsupportedTypeException e) {
-            typeError.enter();
+            typeError.enter(inliningTarget);
             throw raise.raise(TypeError, e);
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             // PyObjectGetMethod is supposed to have checked isMemberInvocable

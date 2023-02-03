@@ -44,14 +44,16 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 public abstract class SetDictNode extends PNodeWithContext {
@@ -59,9 +61,10 @@ public abstract class SetDictNode extends PNodeWithContext {
 
     @Specialization
     static void doPythonClass(PythonClass object, PDict dict,
+                    @Bind("this") Node inliningTarget,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
-                    @Cached BranchProfile hasMroShapeProfile) {
-        object.setDictHiddenProp(dylib, hasMroShapeProfile, dict);
+                    @Cached InlinedBranchProfile hasMroShapeProfile) {
+        object.setDictHiddenProp(inliningTarget, dylib, hasMroShapeProfile, dict);
     }
 
     @Fallback

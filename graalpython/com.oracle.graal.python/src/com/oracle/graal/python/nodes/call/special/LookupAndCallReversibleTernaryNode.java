@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,25 +43,26 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({SpecialMethodNames.class, PythonOptions.class})
 public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTernaryNode {
 
-    @Child private GetClassNode thirdGetClassNode;
     @Child private CallTernaryMethodNode reverseDispatchNode;
     @Child private CallTernaryMethodNode thirdDispatchNode;
     @Child protected LookupSpecialMethodNode getThirdAttrNode;
@@ -81,46 +82,51 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
 
     @Specialization(guards = "v.getClass() == cachedVClass", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObjectR(VirtualFrame frame, Object v, Object w, Object z,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("v.getClass()") Class<?> cachedVClass,
                     @Cached("createLookup()") LookupSpecialBaseNode getattr,
                     @Cached("createLookup()") LookupSpecialBaseNode getattrR,
-                    @Cached GetClassNode getClass,
-                    @Cached GetClassNode getClassR,
+                    @Cached InlinedGetClassNode getClass,
+                    @Cached InlinedGetClassNode getClassR,
+                    @Cached InlinedGetClassNode getThirdClass,
                     @Cached IsSubtypeNode isSubtype,
-                    @Cached IsSameTypeNode isSameTypeNode,
-                    @Cached BranchProfile notImplementedBranch) {
-        return doCallObjectR(frame, v, w, z, getattr, getattrR, getClass, getClassR, isSubtype, isSameTypeNode, notImplementedBranch);
+                    @Cached InlinedIsSameTypeNode isSameTypeNode,
+                    @Cached InlinedBranchProfile notImplementedBranch) {
+        return doCallObjectR(frame, inliningTarget, v, w, z, getattr, getattrR, getClass, getClassR, getThirdClass, isSubtype, isSameTypeNode, notImplementedBranch);
     }
 
     @Specialization(replaces = "callObjectR")
     @Megamorphic
     Object callObjectRMegamorphic(VirtualFrame frame, Object v, Object w, Object z,
+                    @Bind("this") Node inliningTarget,
                     @Cached("createLookup()") LookupSpecialBaseNode getattr,
                     @Cached("createLookup()") LookupSpecialBaseNode getattrR,
-                    @Cached GetClassNode getClass,
-                    @Cached GetClassNode getClassR,
+                    @Cached InlinedGetClassNode getClass,
+                    @Cached InlinedGetClassNode getClassR,
+                    @Cached InlinedGetClassNode getThirdClass,
                     @Cached IsSubtypeNode isSubtype,
-                    @Cached IsSameTypeNode isSameTypeNode,
-                    @Cached BranchProfile notImplementedBranch) {
-        return doCallObjectR(frame, v, w, z, getattr, getattrR, getClass, getClassR, isSubtype, isSameTypeNode, notImplementedBranch);
+                    @Cached InlinedIsSameTypeNode isSameTypeNode,
+                    @Cached InlinedBranchProfile notImplementedBranch) {
+        return doCallObjectR(frame, inliningTarget, v, w, z, getattr, getattrR, getClass, getClassR, getThirdClass, isSubtype, isSameTypeNode, notImplementedBranch);
     }
 
-    private Object doCallObjectR(VirtualFrame frame, Object v, Object w, Object z, LookupSpecialBaseNode getattr, LookupSpecialBaseNode getattrR, GetClassNode getClass, GetClassNode getClassR,
-                    IsSubtypeNode isSubtype, IsSameTypeNode isSameTypeNode, BranchProfile notImplementedBranch) {
+    private Object doCallObjectR(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z, LookupSpecialBaseNode getattr,
+                    LookupSpecialBaseNode getattrR, InlinedGetClassNode getClass, InlinedGetClassNode getClassR, InlinedGetClassNode getThirdClass,
+                    IsSubtypeNode isSubtype, InlinedIsSameTypeNode isSameTypeNode, InlinedBranchProfile notImplementedBranch) {
         // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
         // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
         // of this method is modeled after this. However, this method also merges the logic from
         // slot_nb_power/wrap_ternaryfunc_r in that it swaps arguments around. The reversal is
         // undone for builtin functions in BuiltinFunctionRootNode, just like it would be undone in
         // CPython using its slot wrappers
-        Object leftClass = getClass.execute(v);
-        Object rightClass = getClassR.execute(w);
+        Object leftClass = getClass.execute(inliningTarget, v);
+        Object rightClass = getClassR.execute(inliningTarget, w);
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftCallable = getattr.execute(frame, leftClass, v);
         Object rightCallable = PNone.NO_VALUE;
 
-        if (!isSameTypeNode.execute(leftClass, rightClass)) {
+        if (!isSameTypeNode.execute(inliningTarget, leftClass, rightClass)) {
             rightCallable = getattrR.execute(frame, rightClass, w);
             if (rightCallable == leftCallable) {
                 rightCallable = PNone.NO_VALUE;
@@ -146,7 +152,7 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
             }
         }
 
-        Object zCallable = ensureGetAttrZ().execute(frame, ensureThirdGetClass().execute(z), z);
+        Object zCallable = ensureGetAttrZ().execute(frame, getThirdClass.execute(inliningTarget, z), z);
         if (zCallable != PNone.NO_VALUE && zCallable != leftCallable && zCallable != rightCallable) {
             result = ensureThirdDispatch().execute(frame, zCallable, v, w, z);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
@@ -154,7 +160,7 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
             }
         }
 
-        notImplementedBranch.enter();
+        notImplementedBranch.enter(inliningTarget);
         if (handlerFactory != null) {
             if (handler == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -163,14 +169,6 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
             return handler.execute(v, w, z);
         }
         return result;
-    }
-
-    protected GetClassNode ensureThirdGetClass() {
-        if (thirdGetClassNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            thirdGetClassNode = insert(GetClassNode.create());
-        }
-        return thirdGetClassNode;
     }
 
     protected CallTernaryMethodNode ensureReverseDispatch() {

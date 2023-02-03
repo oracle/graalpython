@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -84,8 +85,9 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -183,9 +185,10 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call(VirtualFrame frame, Object pattern, Object flags, Object options,
-                        @Cached BranchProfile potentialSyntaxError,
-                        @Cached BranchProfile syntaxError,
-                        @Cached BranchProfile unsupportedRegexError,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile potentialSyntaxError,
+                        @Cached InlinedBranchProfile syntaxError,
+                        @Cached InlinedBranchProfile unsupportedRegexError,
                         @Cached CastToTruffleStringNode flagsToStringNode,
                         @Cached CastToTruffleStringNode optionsToStringNode,
                         @Cached ToRegexSourceNode toRegexSourceNode,
@@ -198,22 +201,23 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 Source regexSource = toRegexSourceNode.execute(frame, pattern, flagsStr, optionsStr);
                 Object compiledRegex = getContext().getEnv().parseInternal(regexSource).call();
                 if (compiledRegexLib.isNull(compiledRegex)) {
-                    unsupportedRegexError.enter();
+                    unsupportedRegexError.enter(inliningTarget);
                     return PNone.NONE;
                 } else {
                     return compiledRegex;
                 }
             } catch (RuntimeException e) {
-                return handleError(e, syntaxError, potentialSyntaxError, exceptionLib, switchEncodingNode);
+                return handleError(e, inliningTarget, syntaxError, potentialSyntaxError, exceptionLib, switchEncodingNode);
             }
         }
 
-        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError, InteropLibrary lib, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        private Object handleError(RuntimeException e, Node inliningTarget, InlinedBranchProfile syntaxError, InlinedBranchProfile potentialSyntaxError, InteropLibrary lib,
+                        TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
                 if (lib.isException(e)) {
-                    potentialSyntaxError.enter();
+                    potentialSyntaxError.enter(inliningTarget);
                     if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
-                        syntaxError.enter();
+                        syntaxError.enter(inliningTarget);
                         TruffleString reason = switchEncodingNode.execute(lib.asTruffleString(lib.getExceptionMessage(e)), TS_ENCODING);
                         SourceSection sourceSection = lib.getSourceLocation(e);
                         int position = sourceSection.getCharIndex();

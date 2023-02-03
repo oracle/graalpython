@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,10 +46,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Equivalent of CPython's {@code PyImport_GetModule}.
@@ -59,10 +61,11 @@ public abstract class PyImportGetModule extends PNodeWithState {
 
     @Specialization
     Object doGeneric(VirtualFrame frame, Object name,
-                    @Cached ConditionProfile noSysModulesProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile noSysModulesProfile,
                     @Cached DictBuiltins.GetItemNode getDictItemNode) {
         final PDict sysModules = getContext().getSysModules();
-        if (noSysModulesProfile.profile(sysModules == null)) {
+        if (noSysModulesProfile.profile(inliningTarget, sysModules == null)) {
             throw raise(PythonBuiltinClassType.RuntimeError, UNABLE_TO_GET_S, "sys.modules");
         }
         return getDictItemNode.execute(frame, sysModules, name);

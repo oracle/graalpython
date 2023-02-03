@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,11 +53,13 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -114,19 +116,20 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
 
     @Specialization(guards = {"isString(unicode)", "!isCommon(encoding, toJavaStringNode)"}, limit = "1")
     Object doRegistry(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
+                    @Bind("this") Node inliningTarget,
                     @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
-                    @Cached ConditionProfile isBytesProfile,
-                    @Cached ConditionProfile isByteArrayProfile,
+                    @Cached InlinedConditionProfile isBytesProfile,
+                    @Cached InlinedConditionProfile isByteArrayProfile,
                     @Cached SequenceStorageNodes.CopyNode copyNode,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         final Object v = encodeNode.execute(frame, unicode, encoding, errors);
         // the normal path
-        if (isBytesProfile.profile(v instanceof PBytes)) {
+        if (isBytesProfile.profile(inliningTarget, v instanceof PBytes)) {
             return v;
         }
         // If the codec returns a buffer, raise a warning and convert to bytes
-        if (isByteArrayProfile.profile(v instanceof PByteArray)) {
+        if (isByteArrayProfile.profile(inliningTarget, v instanceof PByteArray)) {
             warnNode.warnFormat(frame, RuntimeWarning, ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES, encoding, "bytearray");
             return getContext().factory().createBytes(copyNode.execute(((PByteArray) v).getSequenceStorage()));
         }

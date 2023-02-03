@@ -90,8 +90,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -542,6 +542,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"})
         @ExplodeLoop
         Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached("keywords.length") int kwLen,
                         @SuppressWarnings("unused") @Cached("calleeSignature") Signature cachedSignature,
@@ -549,7 +550,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) TruffleString[] parameters,
                         @Cached("parameters.length") int positionalParamNum,
                         @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) TruffleString[] kwNames,
-                        @Cached BranchProfile posArgOnlyPassedAsKeywordProfile,
+                        @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
+                        @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
             PKeyword[] unusedKeywords = takesVarKwds ? PKeyword.create(kwLen) : null;
@@ -566,6 +568,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 if (kwIdx == -1) {
                     int kwOnlyIdx = searchKwNode.execute(kwNames, name);
                     if (kwOnlyIdx != -1) {
+                        kwOnlyIdxFoundProfile.enter(inliningTarget);
                         kwIdx = kwOnlyIdx + positionalParamNum;
                     }
                 }
@@ -575,7 +578,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         if (unusedKeywords != null) {
                             unusedKeywords[k++] = kwArg;
                         } else {
-                            posArgOnlyPassedAsKeywordProfile.enter();
+                            posArgOnlyPassedAsKeywordProfile.enter(inliningTarget);
                             posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
                         }
                     } else {
@@ -591,14 +594,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, posArgOnlyPassedAsKeywordProfile, raise);
+            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, inliningTarget, posArgOnlyPassedAsKeywordProfile, raise);
             return arguments;
         }
 
         @Specialization(replaces = "applyCached")
         Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
-                        @Cached BranchProfile posArgOnlyPassedAsKeywordProfile,
+                        @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
+                        @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
             TruffleString[] parameters = calleeSignature.getParameterIds();
@@ -619,6 +624,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 if (kwIdx == -1) {
                     int kwOnlyIdx = searchKwNode.execute(kwNames, name);
                     if (kwOnlyIdx != -1) {
+                        kwOnlyIdxFoundProfile.enter(inliningTarget);
                         kwIdx = kwOnlyIdx + positionalParamNum;
                     }
                 }
@@ -628,7 +634,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         if (unusedKeywords != null) {
                             unusedKeywords[k++] = kwArg;
                         } else {
-                            posArgOnlyPassedAsKeywordProfile.enter();
+                            posArgOnlyPassedAsKeywordProfile.enter(inliningTarget);
                             posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
                         }
                     } else {
@@ -644,7 +650,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, posArgOnlyPassedAsKeywordProfile, raise);
+            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword,
+                            posArgOnlyPassedAsKeywordNames, inliningTarget, posArgOnlyPassedAsKeywordProfile, raise);
             return arguments;
         }
 
@@ -660,13 +667,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, TruffleString lastWrongKeyword,
-                        List<TruffleString> posArgOnlyPassedAsKeywordNames, BranchProfile posArgOnlyPassedAsKeywordProfile, PRaiseNode raise) {
+                        List<TruffleString> posArgOnlyPassedAsKeywordNames, Node inliningTarget, InlinedBranchProfile posArgOnlyPassedAsKeywordProfile, PRaiseNode raise) {
             if (tooManyKeywords == 1) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), tooManyKeywords);
             } else if (posArgOnlyPassedAsKeywordNames != null) {
-                posArgOnlyPassedAsKeywordProfile.enter();
+                posArgOnlyPassedAsKeywordProfile.enter(inliningTarget);
                 TruffleString names = joinUncached(T_COMMA_SPACE, posArgOnlyPassedAsKeywordNames);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), names);
             } else if (unusedKeywords != null) {

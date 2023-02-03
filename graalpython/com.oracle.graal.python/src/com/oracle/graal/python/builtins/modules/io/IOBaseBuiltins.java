@@ -127,8 +127,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -249,15 +249,16 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         PNone close(VirtualFrame frame, PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached("create(T___IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
-                        @Cached BranchProfile errorProfile) {
+                        @Cached InlinedBranchProfile errorProfile) {
             if (!isClosed(self, frame, lookup)) {
                 try {
                     callMethod.execute(frame, self, T_FLUSH);
                 } catch (PException e) {
-                    errorProfile.enter();
+                    errorProfile.enter(inliningTarget);
                     try {
                         setAttributeNode.execute(frame, self, true);
                     } catch (PException e1) {

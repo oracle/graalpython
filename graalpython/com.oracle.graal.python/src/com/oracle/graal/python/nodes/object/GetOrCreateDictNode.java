@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,13 +49,15 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 public abstract class GetOrCreateDictNode extends PNodeWithContext {
@@ -63,13 +65,14 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
 
     @Specialization
     static PDict doPythonObject(PythonObject object,
+                    @Bind("this") Node inliningTarget,
                     @Shared("getDict") @Cached GetDictIfExistsNode getDictIfExistsNode,
                     @Cached SetDictNode setDictNode,
-                    @Cached BranchProfile createDict,
+                    @Cached InlinedBranchProfile createDict,
                     @Cached PythonObjectFactory factory) {
         PDict dict = getDictIfExistsNode.execute(object);
         if (dict == null) {
-            createDict.enter();
+            createDict.enter(inliningTarget);
             dict = factory.createDictFixedStorage(object);
             setDictNode.execute(object, dict);
         }

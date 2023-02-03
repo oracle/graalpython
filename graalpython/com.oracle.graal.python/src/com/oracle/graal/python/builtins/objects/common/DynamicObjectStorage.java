@@ -74,8 +74,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.object.ShapeImpl;
 
@@ -268,20 +268,20 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    private static void invalidateAttributeInMROFinalAssumptions(MroSequenceStorage mro, TruffleString name, BranchProfile profile) {
+    private static void invalidateAttributeInMROFinalAssumptions(MroSequenceStorage mro, TruffleString name, Node inliningTarget, InlinedBranchProfile profile) {
         if (mro != null) {
-            profile.enter();
+            profile.enter(inliningTarget);
             mro.invalidateAttributeInMROFinalAssumptions(name);
         }
     }
 
-    void setStringKey(TruffleString key, Object value, DynamicObjectLibrary dylib, BranchProfile invalidateMroProfile) {
+    void setStringKey(TruffleString key, Object value, DynamicObjectLibrary dylib, Node inliningTarget, InlinedBranchProfile invalidateMroProfile) {
         dylib.put(store, key, assertNoJavaString(value));
-        invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
+        invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
     }
 
-    void invalidateAttributeInMROFinalAssumption(TruffleString key, BranchProfile invalidateMroProfile) {
-        invalidateAttributeInMROFinalAssumptions(mro, key, invalidateMroProfile);
+    void invalidateAttributeInMROFinalAssumption(TruffleString key, Node inliningTarget, InlinedBranchProfile invalidateMroProfile) {
+        invalidateAttributeInMROFinalAssumptions(mro, key, inliningTarget, invalidateMroProfile);
     }
 
     boolean shouldTransitionOnPut() {
@@ -367,9 +367,10 @@ public final class DynamicObjectStorage extends HashingStorage {
     public abstract static class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
         @Specialization
         static void doIt(HashingStorage self, TruffleString key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
-                        @Cached BranchProfile invalidateMro) {
-            ((DynamicObjectStorage) self).setStringKey(key, value, dylib, invalidateMro);
+                        @Cached InlinedBranchProfile invalidateMro) {
+            ((DynamicObjectStorage) self).setStringKey(key, value, dylib, inliningTarget, invalidateMro);
         }
     }
 }

@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO;
@@ -84,7 +82,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInterne
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.Compiler;
-import com.oracle.graal.python.lib.PyComplexCheckExactNodeGen;
+import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyFloatCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyFrozenSetCheckExactNodeGen;
@@ -114,6 +112,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -718,7 +717,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeByte(TYPE_FLOAT | flag);
                         writeDoubleString(((PFloat) v).getValue());
                     }
-                } else if (PyComplexCheckExactNodeGen.getUncached().execute(v)) {
+                } else if (PyComplexCheckExactNode.executeUncached(v)) {
                     if (version > 1) {
                         writeByte(TYPE_BINARY_COMPLEX | flag);
                         writeDouble(((PComplex) v).getReal());

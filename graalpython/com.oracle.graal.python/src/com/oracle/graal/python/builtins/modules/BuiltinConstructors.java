@@ -222,6 +222,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltin
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -294,17 +295,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(source)")
         PBytes doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
-                        @Cached GetClassNode getClassNode,
-                        @Cached ConditionProfile hasBytes,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached InlinedConditionProfile hasBytes,
                         @Cached("create(Bytes)") LookupSpecialMethodSlotNode lookupBytes,
                         @Cached CallUnaryMethodNode callBytes,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Cached ConditionProfile isBytes,
+                        @Cached InlinedConditionProfile isBytes,
                         @Cached BytesNodes.BytesInitNode bytesInitNode) {
-            Object bytesMethod = lookupBytes.execute(frame, getClassNode.execute(source), source);
-            if (hasBytes.profile(bytesMethod != PNone.NO_VALUE)) {
+            Object bytesMethod = lookupBytes.execute(frame, getClassNode.execute(inliningTarget, source), source);
+            if (hasBytes.profile(inliningTarget, bytesMethod != PNone.NO_VALUE)) {
                 Object bytes = callBytes.executeObject(frame, bytesMethod, source);
-                if (isBytes.profile(bytes instanceof PBytes)) {
+                if (isBytes.profile(inliningTarget, bytes instanceof PBytes)) {
                     if (cls == PythonBuiltinClassType.PBytes) {
                         return (PBytes) bytes;
                     } else {
@@ -840,7 +842,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PythonObject reversed(@SuppressWarnings("unused") Object cls, PIntRange range,
-                        @Cached BranchProfile overflowProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile overflowProfile) {
             int lstart = range.getIntStart();
             int lstep = range.getIntStep();
             int ulen = range.getIntLength();
@@ -849,7 +852,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 int new_start = addExact(new_stop, multiplyExact(ulen, lstep));
                 return factory().createIntRangeIterator(new_start, new_stop, negateExact(lstep), ulen);
             } catch (OverflowException e) {
-                overflowProfile.enter();
+                overflowProfile.enter(inliningTarget);
                 return handleOverflow(lstart, lstep, ulen);
             }
         }
@@ -891,18 +894,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
                         @Cached CallUnaryMethodNode callReversed,
                         @Cached("create(Len)") LookupAndCallUnaryNode lookupLen,
                         @Cached("create(GetItem)") LookupSpecialMethodSlotNode getItemNode,
-                        @Cached ConditionProfile noReversedProfile,
-                        @Cached ConditionProfile noGetItemProfile) {
-            Object sequenceKlass = getClassNode.execute(sequence);
+                        @Cached InlinedConditionProfile noReversedProfile,
+                        @Cached InlinedConditionProfile noGetItemProfile) {
+            Object sequenceKlass = getClassNode.execute(inliningTarget, sequence);
             Object reversed = lookupReversed.execute(frame, sequenceKlass, sequence);
-            if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
+            if (noReversedProfile.profile(inliningTarget, reversed == PNone.NO_VALUE)) {
                 Object getItem = getItemNode.execute(frame, sequenceKlass, sequence);
-                if (noGetItemProfile.profile(getItem == PNone.NO_VALUE)) {
+                if (noGetItemProfile.profile(inliningTarget, getItem == PNone.NO_VALUE)) {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
                     Object h = lookupLen.executeObject(frame, sequence);
@@ -2200,11 +2204,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "kw.length == 1")
         PZip zip(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kw,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(eqNode.execute(kw[0].getName(), T_STRICT, TS_ENCODING))) {
+                        @Cached InlinedConditionProfile profile) {
+            if (profile.profile(inliningTarget, eqNode.execute(kw[0].getName(), T_STRICT, TS_ENCODING))) {
                 return zip(frame, cls, args, isTrueNode.execute(frame, kw[0].getValue()), getIter);
             }
             throw raise(TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw[0].getName(), T_ZIP);

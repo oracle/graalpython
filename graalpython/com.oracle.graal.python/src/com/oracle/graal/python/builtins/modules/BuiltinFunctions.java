@@ -281,8 +281,8 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -600,11 +600,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         TruffleString doL(long x,
-                        @Cached ConditionProfile isMinLong,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isMinLong,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            if (isMinLong.profile(x == Long.MIN_VALUE)) {
+            if (isMinLong.profile(inliningTarget, x == Long.MIN_VALUE)) {
                 return buildString(true, fromJavaStringNode.execute(bigToString(bigAbs(PInt.longToBigInteger(x))), TS_ENCODING), appendStringNode, toStringNode);
             }
             return buildString(x < 0, fromJavaStringNode.execute(longToString(Math.abs(x)), TS_ENCODING), appendStringNode, toStringNode);
@@ -627,24 +628,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
         TruffleString doO(VirtualFrame frame, Object x,
-                        @Cached ConditionProfile isMinLong,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isMinLong,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached BranchProfile isInt,
-                        @Cached BranchProfile isLong,
-                        @Cached BranchProfile isPInt,
+                        @Cached InlinedBranchProfile isInt,
+                        @Cached InlinedBranchProfile isLong,
+                        @Cached InlinedBranchProfile isPInt,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object index = indexNode.execute(frame, x);
             if (index instanceof Boolean || index instanceof Integer) {
-                isInt.enter();
-                return doL(asSizeNode.executeExact(frame, index), isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
+                isInt.enter(inliningTarget);
+                return doL(asSizeNode.executeExact(frame, index), inliningTarget, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
             } else if (index instanceof Long) {
-                isLong.enter();
-                return doL((long) index, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
+                isLong.enter(inliningTarget);
+                return doL((long) index, inliningTarget, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
             } else if (index instanceof PInt) {
-                isPInt.enter();
+                isPInt.enter(inliningTarget);
                 return doPI((PInt) index, fromJavaStringNode, appendStringNode, toStringNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
@@ -1292,9 +1294,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract Object executeWithArgs(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue);
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, stringProfile)", "isNoValue(defaultValue)"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, TruffleString name, PNone defaultValue,
-                        @Cached ConditionProfile stringProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile stringProfile,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached("name") TruffleString cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
@@ -1302,10 +1305,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, stringProfile)", "!isNoValue(defaultValue)"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile stringProfile,
+                        @Cached InlinedConditionProfile stringProfile,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached("name") TruffleString cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode,

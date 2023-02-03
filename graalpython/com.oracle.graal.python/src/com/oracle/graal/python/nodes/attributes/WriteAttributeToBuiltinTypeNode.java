@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,8 +54,9 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -82,11 +83,12 @@ public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNod
 
     @Specialization(guards = "dict != null", limit = "1")
     static void writeToDictNoType(@SuppressWarnings("unused") PythonBuiltinClass klass, TruffleString key, Object value,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
-                    @Cached BranchProfile updateStorage,
+                    @Cached InlinedBranchProfile updateStorage,
                     @Cached HashingStorageSetItem setHashingStorageItem) {
-        WriteAttributeToObjectNode.writeToDict(dict, key, value, updateStorage, setHashingStorageItem);
+        WriteAttributeToObjectNode.writeToDict(dict, key, value, inliningTarget, updateStorage, setHashingStorageItem);
     }
 
     @Specialization

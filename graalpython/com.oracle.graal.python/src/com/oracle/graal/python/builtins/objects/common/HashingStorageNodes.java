@@ -77,7 +77,7 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -275,20 +275,21 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
         static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, @SuppressWarnings("unused") long keyHash, Object value,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("invalidateMro") @Cached InlinedBranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(key, value, dylib, invalidateMroProfile);
+            self.setStringKey(key, value, dylib, inliningTarget, invalidateMroProfile);
             return self;
         }
 
         @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
         static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castStr,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("invalidateMro") @Cached InlinedBranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(castStr.execute(key), value, dylib, invalidateMroProfile);
+            self.setStringKey(castStr.execute(key), value, dylib, inliningTarget, invalidateMroProfile);
             return self;
         }
 
@@ -372,20 +373,21 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
         static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, Object value,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("invalidateMro") @Cached InlinedBranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(key, value, dylib, invalidateMroProfile);
+            self.setStringKey(key, value, dylib, inliningTarget, invalidateMroProfile);
             return self;
         }
 
         @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
         static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castStr,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("invalidateMro") @Cached InlinedBranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(castStr.execute(key), value, dylib, invalidateMroProfile);
+            self.setStringKey(castStr.execute(key), value, dylib, inliningTarget, invalidateMroProfile);
             return self;
         }
 
@@ -459,7 +461,8 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object domStringKey(DynamicObjectStorage self, TruffleString key, boolean isPop, @SuppressWarnings("unused") PHashingCollection toUpdate,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("invalidateMro") @Cached InlinedBranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             DynamicObject store = self.store;
             if (isPop) {
@@ -468,12 +471,12 @@ public class HashingStorageNodes {
                     return null;
                 } else {
                     dylib.put(store, key, PNone.NO_VALUE);
-                    self.invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
+                    self.invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
                     return val;
                 }
             } else {
                 if (dylib.putIfPresent(store, key, PNone.NO_VALUE)) {
-                    self.invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
+                    self.invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
                 }
                 return null;
             }
@@ -481,12 +484,12 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
         static Object domPStringKey(DynamicObjectStorage self, Object key, boolean isPop, @SuppressWarnings("unused") PHashingCollection toUpdate,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castStr,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("invalidateMro") @Cached InlinedBranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            return domStringKey(self, castStr.execute(key), isPop, toUpdate, invalidateMroProfile, dylib);
+            return domStringKey(self, castStr.execute(key), isPop, toUpdate, inliningTarget, invalidateMroProfile, dylib);
         }
 
         @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")

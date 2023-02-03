@@ -128,6 +128,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -138,8 +139,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -668,24 +671,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes doRead(VirtualFrame frame, int fd, int length,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile errorProfile,
+                        @Cached InlinedBranchProfile errorProfile1,
+                        @Cached InlinedBranchProfile errorProfile2,
                         @Cached GilNode gil) {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
                 throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
             }
             try {
-                return read(fd, length, posixLib, errorProfile, gil);
+                return read(fd, length, inliningTarget, posixLib, errorProfile1, gil);
             } catch (PosixException e) {
-                errorProfile.enter();
+                errorProfile2.enter(inliningTarget);
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
 
         public PBytes read(int fd, int length,
+                        Node inliningTarget,
                         PosixSupportLibrary posixLib,
-                        BranchProfile errorProfile, GilNode gil) throws PosixException {
+                        InlinedBranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
@@ -698,7 +704,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         }
                         return factory().createBytes(result.data, 0, (int) result.length);
                     } catch (PosixException e) {
-                        errorProfile.enter();
+                        errorProfile.enter(inliningTarget);
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             PythonContext.triggerAsyncActions(this);
                         } else {
@@ -725,14 +731,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile errorProfile,
+                        @Cached InlinedBranchProfile errorProfile,
                         @Cached GilNode gil) {
             try {
-                return write(fd, bufferLib.getInternalOrCopiedByteArray(dataBuffer), bufferLib.getBufferLength(dataBuffer), posixLib, errorProfile, gil);
+                return write(fd, bufferLib.getInternalOrCopiedByteArray(dataBuffer), bufferLib.getBufferLength(dataBuffer), inliningTarget, posixLib, errorProfile, gil);
             } catch (PosixException e) {
-                errorProfile.enter();
+                errorProfile.enter(inliningTarget);
                 throw raiseOSErrorFromPosixException(frame, e);
             } finally {
                 bufferLib.release(dataBuffer, frame, this);
@@ -740,15 +747,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         public long write(int fd, byte[] dataBytes,
-                        int dataLen, PosixSupportLibrary posixLib,
-                        BranchProfile errorProfile, GilNode gil) throws PosixException {
+                        int dataLen, Node inliningTarget, PosixSupportLibrary posixLib,
+                        InlinedBranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
                     try {
                         return posixLib.write(getPosixSupport(), fd, new Buffer(dataBytes, dataLen));
                     } catch (PosixException e) {
-                        errorProfile.enter();
+                        errorProfile.enter(inliningTarget);
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             PythonContext.triggerAsyncActions(this);
                         } else {

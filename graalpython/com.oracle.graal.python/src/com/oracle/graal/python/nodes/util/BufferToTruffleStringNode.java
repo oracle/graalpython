@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -60,7 +61,8 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PGuards.class)
@@ -96,9 +98,9 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    TruffleString doMMap(PMMap mmap,
-                    int byteOffset,
-                    @Cached BranchProfile unsupportedPosix,
+    TruffleString doMMap(PMMap mmap, int byteOffset,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedBranchProfile unsupportedPosix,
                     @CachedLibrary(limit = "4") PosixSupportLibrary posixLib,
                     @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                     @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
@@ -108,7 +110,7 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
             Object ptr = new MMapPointer(posixLib.mmapGetPointer(PythonContext.get(this).getPosixSupport(), mmap.getPosixSupportHandle()));
             return fromNativePointerNode.execute(ptr, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
         } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
-            unsupportedPosix.enter();
+            unsupportedPosix.enter(inliningTarget);
             byte[] bytes = bufferLib.getInternalOrCopiedByteArray(mmap);
             return fromByteArrayNode.execute(bytes, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
         }

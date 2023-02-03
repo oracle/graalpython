@@ -105,8 +105,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDefaultDict})
@@ -170,19 +170,20 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doIt(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached HashingStorageGetItemWithHash getItem,
-                        @Cached BranchProfile hasValue,
-                        @Cached BranchProfile defaultValProfile) {
+                        @Cached InlinedBranchProfile hasValue,
+                        @Cached InlinedBranchProfile defaultValProfile) {
             long keyHash = hashNode.execute(frame, key);
             Object value = getItem.execute(frame, dict.getDictStorage(), key, keyHash);
             if (value != null) {
-                hasValue.enter();
+                hasValue.enter(inliningTarget);
                 return value;
             }
             Object newValue = defaultValue;
             if (defaultValue == PNone.NO_VALUE) {
-                defaultValProfile.enter();
+                defaultValProfile.enter(inliningTarget);
                 newValue = PNone.NONE;
             }
             if (setItemWithHash == null) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,19 +60,21 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCall {
@@ -104,10 +106,11 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
     PMemoryView fromManaged(VirtualFrame frame, Object object,
+                    @Bind("this") Node inliningTarget,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Cached ConditionProfile hasSlotProfile,
-                    @Cached GetClassNode getClassNode,
+                    @Cached InlinedConditionProfile hasSlotProfile,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readReleaseBufferNode,
                     @Cached CallNode callNode,
@@ -115,9 +118,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                     @Cached TruffleString.CodePointLengthNode lengthNode,
                     @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
-        if (hasSlotProfile.profile(getBufferAttr != PNone.NO_VALUE)) {
+        if (hasSlotProfile.profile(inliningTarget, getBufferAttr != PNone.NO_VALUE)) {
             // HPy object with buffer slot
             Object result = callNode.execute(getBufferAttr, object, BufferFlags.PyBUF_FULL_RO);
             if (!(result instanceof CExtPyBuffer)) {

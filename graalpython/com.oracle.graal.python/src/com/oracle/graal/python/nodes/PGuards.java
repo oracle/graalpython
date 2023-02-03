@@ -116,6 +116,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -131,8 +132,22 @@ public abstract class PGuards {
         return expected.equals(other);
     }
 
+    public static boolean stringEquals(String expected, String other, Node inliningTarget, InlinedConditionProfile profile) {
+        if (profile.profile(inliningTarget, expected == other)) {
+            return true;
+        }
+        return expected.equals(other);
+    }
+
     public static boolean stringEquals(TruffleString expected, TruffleString other, TruffleString.EqualNode equalNode, ConditionProfile profile) {
         if (profile.profile(expected == other)) {
+            return true;
+        }
+        return equalNode.execute(expected, other, TS_ENCODING);
+    }
+
+    public static boolean stringEquals(TruffleString expected, TruffleString other, TruffleString.EqualNode equalNode, Node inliningTarget, InlinedConditionProfile profile) {
+        if (profile.profile(inliningTarget, expected == other)) {
             return true;
         }
         return equalNode.execute(expected, other, TS_ENCODING);
