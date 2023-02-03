@@ -362,7 +362,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyType_GetModuleByDef", ret = PyObject, args = {PyTypeObject, PYMODULEDEF_PTR}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyType_Name", ret = ConstCharPtrAsTruffleString, args = {PyTypeObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyUnicode_EqualToASCIIId", ret = Int, args = {PyObject, PY_IDENTIFIER}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyUnicode_EqualToASCIIString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyUnicode_FromId", ret = PyObject, args = {PY_IDENTIFIER}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyUnicode_get_wstr_length", ret = Py_ssize_t, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyUnicode_IsAlpha", ret = Int, args = {PY_UCS4}, call = PolyglotImpl)

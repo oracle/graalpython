@@ -593,6 +593,7 @@ typedef struct {
     BUILTIN(_PyUnicode_AsASCIIString, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsUTF8String, PyObject*, PyObject*, const char*) \
+    BUILTIN(_PyUnicode_EqualToASCIIString, int, PyObject*, const char*) \
     BUILTIN(_Py_HashDouble, Py_hash_t, PyObject*, double) \
 
 #define PyASCIIObject_length(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_length((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->length )

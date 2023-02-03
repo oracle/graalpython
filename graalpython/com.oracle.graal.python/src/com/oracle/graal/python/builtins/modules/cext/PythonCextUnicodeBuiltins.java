@@ -404,6 +404,7 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @CApiBuiltin(name = "_PyUnicode_EqualToASCIIString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory

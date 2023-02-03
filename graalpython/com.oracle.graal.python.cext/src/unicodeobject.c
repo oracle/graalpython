@@ -357,10 +357,6 @@ PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar) {
     return NULL;
 }
 
-int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
-	return GraalPyUnicode_Compare(left, truffleString(right)) == 0;
-}
-
 PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
     if (size == -1) {
         size = wcslen(u);
