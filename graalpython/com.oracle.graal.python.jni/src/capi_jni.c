@@ -572,6 +572,23 @@ PyObject * PyObject_CallMethodObjArgs(PyObject *a, PyObject *b, ...)  {
     exit(-1);
 }
 
+PyAPI_FUNC(int) PyArg_Parse(PyObject* a, const char* b, ...) {
+    va_list args;
+    va_start(args, b);
+    int result = (int) PyArg_VaParse(PyTuple_Pack(1, a), b, args);
+    va_end(args);
+    return result;
+}
+
+PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject* a, const char* b, ...) {
+    va_list args;
+    va_start(args, b);
+    int result = (int) PyArg_VaParse(PyTuple_Pack(1, a), b, args);
+    va_end(args);
+    return result;
+}
+
+
 /*
  * This dummy implementation is needed until we can properly transition the PyThreadState data structure to native.
  */

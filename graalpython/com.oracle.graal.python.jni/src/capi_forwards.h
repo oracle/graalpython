@@ -9538,13 +9538,6 @@ PyAPI_FUNC(Py_ssize_t) _Py_write(int a, const void* b, size_t c) {
 PyAPI_FUNC(Py_ssize_t) _Py_write_noraise(int a, const void* b, size_t c) {
     unimplemented("_Py_write_noraise"); exit(-1);
 }
-PyAPI_FUNC(int) PyArg_Parse(PyObject* a, const char* b, ...) {
-    va_list args;
-    va_start(args, b);
-    int result = (int) PyArg_VaParse(a, b, args);
-    va_end(args);
-    return result;
-}
 PyAPI_FUNC(int) PyArg_ParseTuple(PyObject* a, const char* b, ...) {
     va_list args;
     va_start(args, b);
@@ -9609,13 +9602,6 @@ PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywords_SizeT(PyObject* a, PyObject* b, con
     return result;
 }
 PyAPI_FUNC(int) _PyArg_ParseTuple_SizeT(PyObject* a, const char* b, ...) {
-    va_list args;
-    va_start(args, b);
-    int result = (int) PyArg_VaParse(a, b, args);
-    va_end(args);
-    return result;
-}
-PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject* a, const char* b, ...) {
     va_list args;
     va_start(args, b);
     int result = (int) PyArg_VaParse(a, b, args);

@@ -296,7 +296,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_strhex", ret = PyObject, args = {ConstCharPtrAsTruffleString, CONST_PY_SSIZE_T}, call = PolyglotImpl)
     @CApiBuiltin(name = "_Py_string_to_number_with_underscores", ret = PyObject, args = {ConstCharPtr, Py_ssize_t, ConstCharPtr, PyObject, Pointer, func_objcharsizevoidptr}, call = PolyglotImpl)
     @CApiBuiltin(name = "_Py_TYPE", ret = PyTypeObject, args = {ConstPyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyArg_Parse_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
+    @CApiBuiltin(name = "_PyArg_Parse_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_ParseTuple_SizeT", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
     @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywords_SizeT", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST,
                     VARARGS}, forwardsTo = "PyArg_VaParseTupleAndKeywords", call = PolyglotImpl)
@@ -404,7 +404,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "Py_LeaveRecursiveCall", ret = Void, args = {}, call = PolyglotImpl)
     @CApiBuiltin(name = "Py_NewRef", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "Py_XNewRef", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
+    @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyArg_VaParse", call = PolyglotImpl)
     @CApiBuiltin(name = "PyArg_ParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST,
                     VARARGS}, forwardsTo = "PyArg_VaParseTupleAndKeywords", call = PolyglotImpl)
