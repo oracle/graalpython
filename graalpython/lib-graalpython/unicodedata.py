@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,6 @@
 __graalpython__.import_current_as_named_module_with_delegate(
     module_name="unicodedata",
     delegate_name="_cpython_unicodedata",
-    delegate_attributes=['ucd_3_2_0', 'lookup', 'east_asian_width'],
+    delegate_attributes=['ucd_3_2_0', 'lookup', 'east_asian_width', 'combining'],
     wrap_methods=False,
     owner_globals=globals())
