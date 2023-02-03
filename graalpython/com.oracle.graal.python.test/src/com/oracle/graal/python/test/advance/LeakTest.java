@@ -139,11 +139,13 @@ public class LeakTest extends AbstractLanguageLauncher {
             final String line = "=====================================\n";
             StringBuilder sb = new StringBuilder(line);
             for (ThreadInfo thread : threads) {
-                sb.append("-------\n");
-                sb.append(thread.getThreadName()).append('\n');
-                sb.append("Thread state:").append(thread.getThreadState()).append('\n');
-                for (StackTraceElement element : thread.getStackTrace()) {
-                    sb.append("    ").append(element).append('\n');
+                if (thread != null) {
+                    sb.append("-------\n");
+                    sb.append(thread.getThreadName()).append('\n');
+                    sb.append("Thread state:").append(thread.getThreadState()).append('\n');
+                    for (StackTraceElement element : thread.getStackTrace()) {
+                        sb.append("    ").append(element).append('\n');
+                    }
                 }
             }
             return sb.append(line).toString();
