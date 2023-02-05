@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.ibm.icu.charset.CharsetICU;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins;
 import com.oracle.graal.python.charset.PythonRawUnicodeEscapeCharset;
 import com.oracle.graal.python.charset.PythonUnicodeEscapeCharset;
 import com.oracle.graal.python.util.CharsetMappingFactory.NormalizeEncodingNameNodeGen;
@@ -168,7 +169,7 @@ public class CharsetMapping {
         return NormalizeEncodingNameNodeGen.getUncached().execute(encoding);
     }
 
-    private static Charset getJavaCharset(String name) {
+    public static Charset getJavaCharset(String name) {
         return JAVA_CHARSETS.computeIfAbsent(name, key -> {
             // Important: When adding additional ICU4J charset, the implementation class needs to be
             // added to reflect-config.json
@@ -192,6 +193,7 @@ public class CharsetMapping {
         TruffleString normalized = normalizeUncached(toTruffleStringUncached(pythonName));
         CHARSET_NAME_MAP.put(normalized, javaName);
         if (javaName != null) {
+            MultibytecodecModuleBuiltins.initCodecCharsets(pythonName, normalized, getJavaCharset(javaName));
             CHARSET_NAME_MAP_REVERSE.put(javaName.toLowerCase(), toTruffleStringUncached(pythonName.replace('_', '-')));
         }
     }

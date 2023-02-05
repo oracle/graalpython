@@ -35,7 +35,6 @@ This is just a snapshot as of 2021-07-29.
  * **ossaudiodev**:  Not needed, it's for Linux OSS audio
 
 #### These we should re-implement
- * **_codecs_cn, _codecs_hk, _codecs_iso2022, _codecs_jp, _codecs_kr, _codecs_tw, _multibytecodec**:  We can just use our own codecs
  * **_string**: Empty right now, but its only two methods that we can re-implement
  * **_tracemalloc**:  Memory allocation tracing, we should substitute with the Truffle instrument.
  * **_uuid**: Can be implemented ourselves, is just 1 function

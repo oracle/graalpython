@@ -120,6 +120,19 @@ import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.CodecCtxBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.CodecsCNModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.CodecsHKModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.CodecsISO2022ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.CodecsJPModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.CodecsKRModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.CodecsTWModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDecoderBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalEncoderBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamWriterBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
@@ -538,6 +551,21 @@ public abstract class Python3Core {
                         new BytesIOBuiltins(),
                         new StringIOBuiltins(),
                         new IOBaseDictBuiltins(),
+
+                        // _multibytecodec
+                        new MultibyteCodecBuiltins(),
+                        new MultibytecodecModuleBuiltins(),
+                        new MultibyteIncrementalDecoderBuiltins(),
+                        new MultibyteIncrementalEncoderBuiltins(),
+                        new MultibyteStreamReaderBuiltins(),
+                        new MultibyteStreamWriterBuiltins(),
+                        new CodecCtxBuiltins(),
+                        new CodecsCNModuleBuiltins(),
+                        new CodecsHKModuleBuiltins(),
+                        new CodecsISO2022ModuleBuiltins(),
+                        new CodecsJPModuleBuiltins(),
+                        new CodecsKRModuleBuiltins(),
+                        new CodecsTWModuleBuiltins(),
 
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),
