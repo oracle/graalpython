@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1053,6 +1053,24 @@ public class CompilerTests extends PythonTests {
         checkSyntaxErrorMessage("def g(a:(yield)): pass", "'yield' outside function");
         checkSyntaxErrorMessage("yield x", "'yield' outside function");
         checkSyntaxErrorMessage("class C: yield 1", "'yield' outside function");
+    }
+
+    @Test
+    public void testReturnFromAsyncWith() {
+        String source = "async def f():\n" +
+                        "  async with a:\n" +
+                        "     return";
+        doTest(source);
+    }
+
+    @Test
+    public void testReturnFromAsyncWithT() {
+        String source = "async def f():\n" +
+                        "  async with a:\n" +
+                        "    async with b:\n" +
+                        "      return";
+        doTest(source);
+
     }
 
     private void doTest(String src) {

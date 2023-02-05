@@ -128,6 +128,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PFunction("function", Flags.PRIVATE_DERIVED_WDICT),
     PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT),
     PCoroutine("coroutine", Flags.PRIVATE_DERIVED_WODICT),
+    PCoroutineWrapper("coroutine_wrapper", Flags.PRIVATE_DERIVED_WODICT),
     PAsyncGenerator("async_generator", Flags.PRIVATE_DERIVED_WODICT),
     PInt("int", J_BUILTINS),
     PList("list", J_BUILTINS),

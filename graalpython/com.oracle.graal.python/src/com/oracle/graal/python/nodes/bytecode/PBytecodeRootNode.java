@@ -62,6 +62,8 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.FormatNodeFactory.FormatNodeGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
+import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNodeGen;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -278,6 +280,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ForIterINode> NODE_FOR_ITER_I = ForIterINode::create;
     private static final NodeSupplier<PyObjectGetIter> NODE_OBJECT_GET_ITER = PyObjectGetIter::create;
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
+    private static final NodeSupplier<GetYieldFromIterNode> NODE_OBJECT_GET_YIELD_FROM_ITER = GetYieldFromIterNode::create;
+    private static final GetYieldFromIterNode UNCACHED_OBJECT_GET_YIELD_FROM_ITER = GetYieldFromIterNode.getUncached();
+
+    private static final NodeSupplier<GetAwaitableNode> NODE_OBJECT_GET_AWAITABLE = GetAwaitableNode::create;
+    private static final GetAwaitableNode UNCACHED_OBJECT_GET_AWAITABLE = GetAwaitableNode.getUncached();
     private static final NodeSupplier<PyObjectSetAttr> NODE_OBJECT_SET_ATTR = PyObjectSetAttr::create;
     private static final PyObjectSetAttr UNCACHED_OBJECT_SET_ATTR = PyObjectSetAttr.getUncached();
     private static final NodeSupplier<ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS = () -> ReadGlobalOrBuiltinNode.create(T___BUILD_CLASS__);
@@ -296,6 +303,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<SetupWithNode> NODE_SETUP_WITH = SetupWithNode::create;
     private static final ExitWithNode UNCACHED_EXIT_WITH_NODE = ExitWithNode.getUncached();
     private static final NodeSupplier<ExitWithNode> NODE_EXIT_WITH = ExitWithNode::create;
+    private static final SetupAwithNode UNCACHED_SETUP_AWITH_NODE = SetupAwithNode.getUncached();
+    private static final NodeSupplier<SetupAwithNode> NODE_SETUP_AWITH = SetupAwithNode::create;
+    private static final GetAExitCoroNode UNCACHED_GET_AEXIT_CORO_NODE = GetAExitCoroNode.getUncached();
+    private static final NodeSupplier<GetAExitCoroNode> NODE_GET_AEXIT_CORO = GetAExitCoroNode::create;
+    private static final ExitAWithNode UNCACHED_EXIT_AWITH_NODE = ExitAWithNode.getUncached();
+    private static final NodeSupplier<ExitAWithNode> NODE_EXIT_AWITH = ExitAWithNode::create;
     private static final ImportFromNode UNCACHED_IMPORT_FROM = ImportFromNode.getUncached();
     private static final NodeSupplier<ImportFromNode> NODE_IMPORT_FROM = ImportFromNode::create;
     private static final ExecutePositionalStarargsNode UNCACHED_EXECUTE_STARARGS = ExecutePositionalStarargsNode.getUncached();
@@ -2019,6 +2032,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bytecodeGetIter(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
                     }
+                    case OpCodesConstants.GET_YIELD_FROM_ITER: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        bytecodeGetYieldFromIter(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
                     case OpCodesConstants.FOR_ITER: {
                         bytecodeForIterAdaptive(bci);
                         continue;
@@ -2133,6 +2151,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeExitWith(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
                     }
+                    case OpCodesConstants.SETUP_AWITH: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        stackTop = bytecodeSetupAWith(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
+                    case OpCodesConstants.GET_AEXIT_CORO: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        stackTop = bytecodeGetAExitCoro(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
+                    case OpCodesConstants.EXIT_AWITH: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        stackTop = bytecodeExitAWith(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
                     case OpCodesConstants.PUSH_EXC_INFO: {
                         bytecodePushExcInfo(virtualFrame, arguments, mutableData, stackTop++);
                         break;
@@ -2182,6 +2215,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             notifyStatement(virtualFrame, instrumentation, mutableData, bci, beginBci);
                             continue;
                         }
+                    }
+                    case OpCodesConstants.GET_AWAITABLE: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        GetAwaitableNode getAwait = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_AWAITABLE, GetAwaitableNodeGen.class, NODE_OBJECT_GET_AWAITABLE, useCachedNodes);
+                        virtualFrame.setObject(stackTop, getAwait.execute(virtualFrame, virtualFrame.getObject(stackTop)));
+                        break;
                     }
                     case OpCodesConstants.PRINT_EXPR: {
                         stackTop = bytecodePrintExpr(virtualFrame, useCachedNodes, stackTop, bci, localNodes, bciSlot, beginBci);
@@ -2374,6 +2413,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
+    private void bytecodeGetYieldFromIter(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        GetYieldFromIterNode getIter = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_YIELD_FROM_ITER, GetYieldFromIterNodeGen.class, NODE_OBJECT_GET_YIELD_FROM_ITER, useCachedNodes);
+        virtualFrame.setObject(stackTop, getIter.execute(virtualFrame, virtualFrame.getObject(stackTop)));
+    }
+
+    @BytecodeInterpreterSwitch
     private boolean bytecodeForIterO(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         ForIterONode node = insertChildNode(localNodes, beginBci, UNCACHED_FOR_ITER_O, ForIterONodeGen.class, NODE_FOR_ITER_O, useCachedNodes);
         return node.execute(virtualFrame, virtualFrame.getObject(stackTop), stackTop + 1);
@@ -2423,6 +2468,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int bytecodeExitWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         ExitWithNode exitWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_WITH_NODE, ExitWithNodeGen.class, NODE_EXIT_WITH, useCachedNodes);
         return exitWithNode.execute(virtualFrame, stackTop, frameIsVisibleToPython());
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeSetupAWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        SetupAwithNode setupAwithNode = insertChildNode(localNodes, beginBci, UNCACHED_SETUP_AWITH_NODE, SetupAwithNodeGen.class, NODE_SETUP_AWITH, useCachedNodes);
+        return setupAwithNode.execute(virtualFrame, stackTop);
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeGetAExitCoro(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        GetAExitCoroNode getAExitCoroNode = insertChildNode(localNodes, beginBci, UNCACHED_GET_AEXIT_CORO_NODE, GetAExitCoroNodeGen.class, NODE_GET_AEXIT_CORO, useCachedNodes);
+        return getAExitCoroNode.execute(virtualFrame, stackTop);
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeExitAWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        ExitAWithNode exitAWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_AWITH_NODE, ExitAWithNodeGen.class, NODE_EXIT_AWITH, useCachedNodes);
+        return exitAWithNode.execute(virtualFrame, stackTop, frameIsVisibleToPython());
     }
 
     @BytecodeInterpreterSwitch

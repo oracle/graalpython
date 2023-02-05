@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.generator;
+package com.oracle.graal.python.builtins.objects.asyncio;
 
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PCoroutine)
-public class CoroutineBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CoroutineBuiltinsFactory.getFactories();
-    }
+public class PCoroutineWrapper extends PythonBuiltinObject {
+    public final PGenerator coroutine;
 
-    @Builtin(name = "__await__", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class AwaitNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object await(PGenerator self) {
-            return factory().createCoroutineWrapper(self);
-        }
+    public PCoroutineWrapper(PythonLanguage lang, PGenerator coroutine) {
+        super(PythonBuiltinClassType.PCoroutineWrapper, PythonBuiltinClassType.PCoroutineWrapper.getInstanceShape(lang));
+        assert coroutine.isCoroutine();
+        this.coroutine = coroutine;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,13 +64,16 @@ import static com.oracle.graal.python.compiler.OpCodes.DELETE_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.DUP_TOP;
 import static com.oracle.graal.python.compiler.OpCodes.END_EXC_HANDLER;
+import static com.oracle.graal.python.compiler.OpCodes.EXIT_AWITH;
 import static com.oracle.graal.python.compiler.OpCodes.EXIT_WITH;
 import static com.oracle.graal.python.compiler.OpCodes.FORMAT_VALUE;
 import static com.oracle.graal.python.compiler.OpCodes.FOR_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.FROZENSET_FROM_LIST;
+import static com.oracle.graal.python.compiler.OpCodes.GET_AEXIT_CORO;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
 import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.GET_LEN;
+import static com.oracle.graal.python.compiler.OpCodes.GET_YIELD_FROM_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_FROM;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_STAR;
@@ -125,6 +128,7 @@ import static com.oracle.graal.python.compiler.OpCodes.ROT_THREE;
 import static com.oracle.graal.python.compiler.OpCodes.ROT_TWO;
 import static com.oracle.graal.python.compiler.OpCodes.SEND;
 import static com.oracle.graal.python.compiler.OpCodes.SETUP_ANNOTATIONS;
+import static com.oracle.graal.python.compiler.OpCodes.SETUP_AWITH;
 import static com.oracle.graal.python.compiler.OpCodes.SETUP_WITH;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_ATTR;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_DEREF;
@@ -197,7 +201,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 26;
+    public static final int BYTECODE_VERSION = 27;
 
     private final ErrorCallback errorCallback;
 
@@ -997,7 +1001,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Await node) {
-        SourceRange savedLocation = setLocation(node);
         // TODO if !IS_TOP_LEVEL_AWAIT
         if (!unit.scope.isFunction()) {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside function");
@@ -1005,6 +1008,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'await' outside async function");
         }
+        SourceRange savedLocation = setLocation(node);
         try {
             node.value.accept(this);
             addOp(GET_AWAITABLE);
@@ -1864,7 +1868,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             node.value.accept(this);
             // TODO GET_YIELD_FROM_ITER
-            addOp(GET_ITER);
+            addOp(GET_YIELD_FROM_ITER);
             addOp(LOAD_NONE);
             addYieldFrom();
             return null;
@@ -2088,7 +2092,57 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AsyncWith node) {
         setLocation(node);
-        return emitNotImplemented("async with");
+        // TODO if !IS_TOP_LEVEL_AWAIT
+        if (!unit.scope.isFunction()) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async with' outside function");
+        }
+        if (unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async with' outside async function");
+        }
+        visitAsyncWith(node, 0);
+        unit.useNextBlock(new Block());
+        return null;
+    }
+
+    private void visitAsyncWith(StmtTy.AsyncWith node, int itemIndex) {
+        Block body = new Block();
+        Block handler = new Block();
+
+        WithItemTy item = node.items[itemIndex];
+        item.contextExpr.accept(this);
+        addOp(SETUP_AWITH);
+        unit.pushBlock(new BlockInfo.AsyncWith(body, handler, node));
+
+        unit.useNextBlock(body);
+        // SETUP_AWITH leaves 2 awaitables rather than a function and a result
+        addOp(GET_AWAITABLE);
+        addOp(LOAD_NONE);
+        addYieldFrom();
+        /*
+         * Unwind one more stack item than it normally would to get rid of the context manager that
+         * is not needed in the finally block
+         */
+        handler.unwindOffset = -1;
+        if (item.optionalVars != null) {
+            item.optionalVars.accept(this);
+        } else {
+            addOp(POP_TOP);
+        }
+        if (itemIndex < node.items.length - 1) {
+            visitAsyncWith(node, itemIndex + 1);
+        } else {
+            visitSequence(node.body);
+        }
+        addOp(LOAD_NONE);
+        unit.popBlock();
+
+        unit.useNextBlock(handler);
+        setLocation(node);
+        addOp(GET_AEXIT_CORO);
+        addOp(GET_AWAITABLE);
+        addOp(LOAD_NONE);
+        addYieldFrom();
+        addOp(EXIT_AWITH);
     }
 
     @Override
@@ -3568,6 +3622,20 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                     addOp(LOAD_NONE);
                     addOp(EXIT_WITH);
+                } else if (info instanceof BlockInfo.AsyncWith) {
+                    unit.useNextBlock(new Block());
+                    BlockInfo.AsyncWith with = (BlockInfo.AsyncWith) info;
+                    setLocation(with.node);
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_THREE);
+                    }
+                    addOp(LOAD_NONE);
+                    addOp(GET_AEXIT_CORO);
+                    addOp(GET_AWAITABLE);
+                    addOp(LOAD_NONE);
+                    addYieldFrom();
+                    addOp(EXIT_AWITH);
+
                 } else if (info instanceof BlockInfo.TryFinally) {
                     unit.useNextBlock(new Block());
                     if (type == UnwindType.RETURN_VALUE) {

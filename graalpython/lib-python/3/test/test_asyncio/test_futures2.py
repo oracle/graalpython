@@ -27,10 +27,11 @@ class FutureTests:
             else:
                 self.fail('TypeError was not raised')
 
-@unittest.skipUnless(hasattr(tasks, '_CTask'),
-                       'requires the C _asyncio module')
-class CFutureTests(FutureTests, unittest.IsolatedAsyncioTestCase):
-    cls = tasks._CTask
+# graalpy change: this test does not get skipped in some cases
+# @unittest.skipUnless(hasattr(tasks, '_CTask'),
+#                        'requires the C _asyncio module')
+# class CFutureTests(FutureTests, unittest.IsolatedAsyncioTestCase):
+#     cls = tasks._CTask
 
 class PyFutureTests(FutureTests, unittest.IsolatedAsyncioTestCase):
     cls = tasks._PyTask

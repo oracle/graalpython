@@ -422,5 +422,6 @@ try:
 except ImportError:
     pass
 else:
-    # _CFuture is needed for tests.
-    Future = _CFuture = _asyncio.Future
+    # graalpy change: C Futures are not implemented yet, so we keep the python Future
+    pass
+    # Future = _CFuture = _asyncio.Future

@@ -290,6 +290,11 @@ public final class PythonContext extends Python3Core {
         PContextVarsContext contextVarsContext;
 
         /*
+         * The current running event loop
+         */
+        Object runningEventLoop;
+
+        /*
          * The constructor needs to have this particular signature such that we can use it for
          * ContextThreadLocal.
          */
@@ -299,6 +304,14 @@ public final class PythonContext extends Python3Core {
 
         void shutdown() {
             shuttingDown = true;
+        }
+
+        public Object getRunningEventLoop() {
+            return runningEventLoop;
+        }
+
+        public void setRunningEventLoop(Object runningEventLoop) {
+            this.runningEventLoop = runningEventLoop;
         }
 
         public boolean isShuttingDown() {

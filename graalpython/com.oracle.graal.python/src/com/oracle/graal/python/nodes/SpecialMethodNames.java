@@ -192,6 +192,15 @@ public abstract class SpecialMethodNames {
     public static final String J___NEXT__ = "__next__";
     public static final TruffleString T___NEXT__ = tsLiteral(J___NEXT__);
 
+    public static final String J__AWAIT__ = "__await__";
+    public static final TruffleString T__AWAIT__ = tsLiteral(J__AWAIT__);
+
+    public static final String J__AENTER__ = "__aenter__";
+    public static final TruffleString T__AENTER__ = tsLiteral(J__AENTER__);
+
+    public static final String J__AEXIT__ = "__aexit__";
+    public static final TruffleString T__AEXIT__ = tsLiteral(J__AEXIT__);
+
     public static final String J___REVERSED__ = "__reversed__";
     public static final TruffleString T___REVERSED__ = tsLiteral(J___REVERSED__);
 

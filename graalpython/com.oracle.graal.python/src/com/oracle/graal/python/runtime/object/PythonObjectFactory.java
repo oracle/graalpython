@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.asyncio.PCoroutineWrapper;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
@@ -872,12 +873,19 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public final PGenerator createGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
-    public final Object createCoroutine() {
-        // TODO implement this properly, this is just a placeholder so that typing stuff works
-        return createPythonObject(PythonBuiltinClassType.PCoroutine);
+    public final PGenerator createIterableCoroutine(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true));
+    }
+
+    public final PGenerator createCoroutine(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
+    }
+
+    public final PCoroutineWrapper createCoroutineWrapper(PGenerator generator) {
+        return trace(new PCoroutineWrapper(getLanguage(), generator));
     }
 
     public final Object createAsyncGenerator() {

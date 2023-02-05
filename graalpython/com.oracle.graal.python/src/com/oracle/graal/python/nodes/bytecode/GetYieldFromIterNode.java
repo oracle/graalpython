@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.generator;
+package com.oracle.graal.python.nodes.bytecode;
 
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PCoroutine)
-public class CoroutineBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CoroutineBuiltinsFactory.getFactories();
+@GenerateUncached
+public abstract class GetYieldFromIterNode extends Node {
+    public abstract Object execute(Frame frame, Object receiver);
+
+    @Specialization
+    public Object getGeneratorOrCoroutine(PGenerator arg) {
+        // TODO check if the generator in which the yield from is an iterable or normal coroutine
+        return arg;
     }
 
-    @Builtin(name = "__await__", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class AwaitNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object await(PGenerator self) {
-            return factory().createCoroutineWrapper(self);
+    @Specialization
+    public Object getGeneric(Frame frame, Object arg,
+                    @Cached PyObjectGetIter getIter,
+                    @Cached IsBuiltinClassProfile isCoro) {
+        if (isCoro.profileObject(arg, PythonBuiltinClassType.PCoroutine)) {
+            return arg;
+        } else {
+            return getIter.execute(frame, arg);
         }
+    }
+
+    public static GetYieldFromIterNode create() {
+        return GetYieldFromIterNodeGen.create();
+    }
+
+    public static GetYieldFromIterNode getUncached() {
+        return GetYieldFromIterNodeGen.getUncached();
     }
 }

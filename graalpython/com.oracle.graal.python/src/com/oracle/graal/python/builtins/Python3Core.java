@@ -61,6 +61,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.AsyncioModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
@@ -266,7 +267,9 @@ import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltin
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.WrapperDescriptorBuiltins;
+import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CoroutineBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
@@ -498,6 +501,8 @@ public abstract class Python3Core {
                         new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),
                         new CoroutineBuiltins(),
+                        new CoroutineWrapperBuiltins(),
+                        new CommonGeneratorBuiltins(),
                         new AbstractFunctionBuiltins(),
                         new FunctionBuiltins(),
                         new BuiltinFunctionBuiltins(),
@@ -756,7 +761,11 @@ public abstract class Python3Core {
 
                         // _hpy_universal and _hpy_debug
                         new GraalHPyUniversalModuleBuiltins(),
-                        new GraalHPyDebugModuleBuiltins()));
+                        new GraalHPyDebugModuleBuiltins(),
+                        new GraalHPyDebugModuleBuiltins(),
+
+                        // _asyncio
+                        new AsyncioModuleBuiltins()));
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
