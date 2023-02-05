@@ -66,8 +66,7 @@ public final class PGenerator extends PythonBuiltinObject {
     private final boolean isCoroutine;
 
     // An explicit isIterableCoroutine argument is needed for iterable coroutines (generally created
-    // via
-    // types.coroutine)
+    // via types.coroutine)
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
                     PythonBuiltinClassType cls, boolean isIterableCoroutine) {
         rootNode.createGeneratorFrame(arguments);

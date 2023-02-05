@@ -292,7 +292,6 @@ public final class PythonContext extends Python3Core {
         /*
          * The current running event loop
          */
-
         Object runningEventLoop;
 
         /*
