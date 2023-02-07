@@ -1574,6 +1574,7 @@ def update_import_cmd(args):
     parser.add_argument('--graal-rev', default='')
     parser.add_argument('--graal-enterprise-rev', default='')
     parser.add_argument('--no-pull', action='store_true')
+    parser.add_argument('--no-push', action='store_true')
     parser.add_argument('--allow-dirty', action='store_true')
     args = parser.parse_args(args)
 
