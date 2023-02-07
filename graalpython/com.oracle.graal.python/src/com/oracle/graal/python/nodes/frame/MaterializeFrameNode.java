@@ -84,7 +84,7 @@ public abstract class MaterializeFrameNode extends Node {
         PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
         assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
         Node callNode = info.getCallNode();
-        return execute(callNode, markAsEscaped, forceSync, false, frameToMaterialize);
+        return execute(callNode, markAsEscaped, forceSync, frameToMaterialize);
     }
 
     public final PFrame execute(Frame frame, boolean markAsEscaped) {
@@ -92,27 +92,17 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     public final PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync) {
-        return execute(frame, location, markAsEscaped, forceSync, false);
+        return execute(location, markAsEscaped, forceSync, frame);
     }
 
-    public final PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing) {
-        return execute(location, markAsEscaped, forceSync, updateLocationIfMissing, frame);
-    }
-
-    public final PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-        return execute(location, markAsEscaped, forceSync, false, frameToMaterialize);
-    }
-
-    // TODO remove frame? remove location? remove updateLocationIfMissing?
-    public abstract PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing, Frame frameToMaterialize);
+    public abstract PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
 
     @Specialization(guards = {
                     "cachedFD == frameToMaterialize.getFrameDescriptor()", //
                     "getPFrame(frameToMaterialize) == null", //
                     "!hasGeneratorFrame(frameToMaterialize)", //
                     "!hasCustomLocals(frameToMaterialize)"}, limit = "1")
-    static PFrame freshPFrameCachedFD(Node location, boolean markAsEscaped, boolean forceSync,
-                    @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
+    static PFrame freshPFrameCachedFD(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Cached(value = "frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
@@ -122,7 +112,7 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!hasGeneratorFrame(frameToMaterialize)", "!hasCustomLocals(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
-    static PFrame freshPFrame(Node location, boolean markAsEscaped, boolean forceSync, @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
+    static PFrame freshPFrame(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         MaterializedFrame locals = createLocalsFrame(frameToMaterialize.getFrameDescriptor());
@@ -131,7 +121,7 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!hasGeneratorFrame(frameToMaterialize)", "hasCustomLocals(frameToMaterialize)"})
-    static PFrame freshPFrameCusstomLocals(Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, @SuppressWarnings("unused") boolean updateLocationIfMissing,
+    static PFrame freshPFrameCusstomLocals(Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
                     Frame frameToMaterialize,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, null);
@@ -140,8 +130,7 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "hasGeneratorFrame(frameToMaterialize)"})
-    static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
-                    @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
+    static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frameToMaterialize);
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
@@ -151,7 +140,7 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = "getPFrame(frameToMaterialize) != null")
-    static PFrame alreadyEscapedFrame(Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing, Frame frameToMaterialize,
+    static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
                     @Cached ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
@@ -160,10 +149,6 @@ public abstract class MaterializeFrameNode extends Node {
         }
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
-        }
-        if (!updateLocationIfMissing || pyFrame.getLocation() == null) {
-            // update the location so the line number is correct
-            pyFrame.setLocation(location);
         }
         processBytecodeFrame(frameToMaterialize, pyFrame);
         return pyFrame;

@@ -260,7 +260,7 @@ public abstract class ExecutionContext {
                 }
 
                 // force the frame so that it can be accessed later
-                ensureMaterializeNode().execute(frame, node, false, true, true);
+                ensureMaterializeNode().execute(frame, node, false, true);
                 // if this frame escaped we must ensure that also f_back does
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);
