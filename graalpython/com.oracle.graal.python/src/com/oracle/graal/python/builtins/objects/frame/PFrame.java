@@ -191,6 +191,10 @@ public final class PFrame extends PythonBuiltinObject {
         return localsDict;
     }
 
+    public boolean hasCustomLocals() {
+        return locals == null;
+    }
+
     public void setLocalsDict(Object dict) {
         localsDict = dict;
     }

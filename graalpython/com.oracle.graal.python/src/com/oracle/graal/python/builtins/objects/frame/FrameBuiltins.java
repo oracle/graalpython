@@ -232,7 +232,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 PFrame pyFrame = materializeNode.execute(false, true, frame);
                 assert pyFrame == self;
             }
-            return getFrameLocalsNode.execute(frame, self);
+            return getFrameLocalsNode.execute(self);
         }
     }
 

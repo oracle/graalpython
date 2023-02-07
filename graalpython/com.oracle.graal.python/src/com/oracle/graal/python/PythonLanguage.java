@@ -597,7 +597,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 Object[] arguments = PArguments.create();
                 // escape?
                 PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
-                Object locals = getFrameLocalsNode.execute(frame, pFrame);
+                Object locals = getFrameLocalsNode.execute(pFrame);
                 PArguments.setSpecialArgument(arguments, locals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();

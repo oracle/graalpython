@@ -56,6 +56,6 @@ public abstract class PyEvalGetLocals extends Node {
                     @Cached ReadCallerFrameNode readCallerFrameNode,
                     @Cached GetFrameLocalsNode getFrameLocalsNode) {
         PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-        return getFrameLocalsNode.execute(frame, callerFrame);
+        return getFrameLocalsNode.execute(callerFrame);
     }
 }

@@ -861,8 +861,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setGlobals(args, callerFrame.getGlobals());
         }
 
-        private static void inheritLocals(VirtualFrame frame, PFrame callerFrame, Object[] args, GetFrameLocalsNode getFrameLocalsNode) {
-            Object callerLocals = getFrameLocalsNode.execute(frame, callerFrame);
+        private static void inheritLocals(PFrame callerFrame, Object[] args, GetFrameLocalsNode getFrameLocalsNode) {
+            Object callerLocals = getFrameLocalsNode.execute(callerFrame);
             setCustomLocals(args, callerLocals);
         }
 
@@ -895,7 +895,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
-            inheritLocals(frame, callerFrame, args, getFrameLocalsNode);
+            inheritLocals(callerFrame, args, getFrameLocalsNode);
 
             return invokeNode.execute(frame, getCt.execute(code), args);
         }

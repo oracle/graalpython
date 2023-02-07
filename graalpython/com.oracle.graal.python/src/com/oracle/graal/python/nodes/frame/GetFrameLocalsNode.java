@@ -40,21 +40,22 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.lib.PyObjectDelItem;
-import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.lib.PyDictDelItem;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -65,51 +66,74 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @GenerateUncached
 public abstract class GetFrameLocalsNode extends Node {
-    public abstract Object execute(VirtualFrame frame, PFrame pyFrame);
+    public abstract Object execute(PFrame pyFrame);
 
-    // TODO cache fd, explode
-    @Specialization(guards = "hasLocals(pyFrame)")
-    static Object doLoop(VirtualFrame frame, PFrame pyFrame,
+    @Specialization(guards = "!pyFrame.hasCustomLocals()")
+    static Object doLoop(PFrame pyFrame,
                     @Cached PythonObjectFactory factory,
-                    @Cached PyObjectSetItem setItem,
-                    @Cached PyObjectDelItem delItem) {
-        // TODO do argcells need special handling?
+                    @Cached CopyLocalsToDict copyLocalsToDict) {
         MaterializedFrame locals = pyFrame.getLocals();
-        Object localsDict = pyFrame.getLocalsDict();
+        // It doesn't have custom locals, so it has to be a builtin dict or null
+        PDict localsDict = (PDict) pyFrame.getLocalsDict();
         if (localsDict == null) {
             localsDict = factory.createDict();
             pyFrame.setLocalsDict(localsDict);
         }
-        FrameInfo frameInfo = (FrameInfo) locals.getFrameDescriptor().getInfo();
-        for (int i = 0; i < frameInfo.getVariableCount(); i++) {
-            TruffleString name = frameInfo.getVariableName(i);
-            Object value = locals.getValue(i);
-            if (value instanceof PCell) {
-                value = ((PCell) value).getRef();
-            }
-            if (value == null) {
-                try {
-                    delItem.execute(frame, localsDict, name);
-                } catch (PException e) {
-                    // TODO
-                    e.expect(PythonBuiltinClassType.KeyError, IsBuiltinClassProfile.getUncached());
-                }
-            } else {
-                setItem.execute(frame, localsDict, name, value);
-            }
-        }
+        copyLocalsToDict.execute(locals, localsDict);
         return localsDict;
     }
 
-    @Specialization(guards = "!hasLocals(pyFrame)")
+    @Specialization(guards = "pyFrame.hasCustomLocals()")
     static Object doCustomLocals(PFrame pyFrame) {
         Object localsDict = pyFrame.getLocalsDict();
         assert localsDict != null;
         return localsDict;
     }
 
-    protected static boolean hasLocals(PFrame pyFrame) {
-        return pyFrame.getLocals() != null;
+    @GenerateUncached
+    abstract static class CopyLocalsToDict extends Node {
+        abstract void execute(MaterializedFrame locals, PDict dict);
+
+        @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "count < 32"}, limit = "1")
+        @ExplodeLoop
+        void doCachedFd(MaterializedFrame locals, PDict dict,
+                        @SuppressWarnings("unused") @Cached("locals.getFrameDescriptor()") FrameDescriptor cachedFd,
+                        @Bind("getInfo(cachedFd)") FrameInfo info,
+                        @Bind("info.getVariableCount()") int count,
+                        @Shared("setItem") @Cached PyDictSetItem setItem,
+                        @Shared("delItem") @Cached PyDictDelItem delItem) {
+            for (int i = 0; i < count; i++) {
+                copyItem(locals, info, dict, setItem, delItem, i);
+            }
+        }
+
+        @Specialization(replaces = "doCachedFd")
+        void doGeneric(MaterializedFrame locals, PDict dict,
+                        @Shared("setItem") @Cached PyDictSetItem setItem,
+                        @Shared("delItem") @Cached PyDictDelItem delItem) {
+            FrameInfo info = getInfo(locals.getFrameDescriptor());
+            int count = info.getVariableCount();
+            for (int i = 0; i < count; i++) {
+                copyItem(locals, info, dict, setItem, delItem, i);
+            }
+        }
+
+        private static void copyItem(MaterializedFrame locals, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i) {
+            TruffleString name = info.getVariableName(i);
+            Object value = locals.getValue(i);
+            if (value instanceof PCell) {
+                value = ((PCell) value).getRef();
+            }
+            if (value == null) {
+                delItem.execute(dict, name);
+            } else {
+                setItem.execute(dict, name, value);
+            }
+        }
+
+        protected static FrameInfo getInfo(FrameDescriptor fd) {
+            return (FrameInfo) fd.getInfo();
+        }
     }
 
     @NeverDefault
