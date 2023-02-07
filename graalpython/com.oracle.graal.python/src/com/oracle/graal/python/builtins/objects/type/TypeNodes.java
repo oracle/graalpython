@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_VECTORCALL;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IMMUTABLETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
@@ -365,7 +364,7 @@ public abstract class TypeNodes {
                     break;
                 case PFunction:
                 case PBuiltinFunction:
-                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR | HAVE_VECTORCALL;
+                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
                     break;
                 case WrapperDescriptor:
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
@@ -374,7 +373,7 @@ public abstract class TypeNodes {
                 case PBuiltinFunctionOrMethod:
                 case PBuiltinMethod:
                 case MethodWrapper:
-                    result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
+                    result = DEFAULT | HAVE_GC;
                     break;
                 case PInstancemethod:
                     result = DEFAULT | HAVE_GC;

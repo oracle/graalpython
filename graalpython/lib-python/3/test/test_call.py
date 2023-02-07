@@ -567,6 +567,7 @@ def testfunction_kw(self, *, kw):
     return self
 
 
+@cpython_only # this assumes builtin types support vectorcall
 class TestPEP590(unittest.TestCase):
 
     def test_method_descriptor_flag(self):

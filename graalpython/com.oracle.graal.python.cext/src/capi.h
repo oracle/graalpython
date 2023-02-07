@@ -973,7 +973,6 @@ static inline int get_method_flags_wrapper(int flags) {
     0,                                          /* tp_is_gc */\
 }
 
-#define PY_TRUFFLE_TYPE_WITH_VECTORCALL(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __VCALL_OFFSET__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, 0, 0, 0, __VCALL_OFFSET__)
 #define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, __ALLOC__, __DEALLOC__, __FREE__, 0)
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, 0, 0, 0, 0)
 #define PY_TRUFFLE_TYPE_WITH_ITEMSIZE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ITEMSIZE__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ITEMSIZE__, 0, 0, 0, 0)
