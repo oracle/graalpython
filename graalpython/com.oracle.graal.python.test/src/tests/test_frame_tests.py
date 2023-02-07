@@ -126,6 +126,19 @@ def test_builtins():
     assert print == sys._getframe().f_builtins["print"]
 
 
+def test_locals_sync():
+    a = 1
+    l = locals()
+    assert l == {'a': 1}
+    b = 2
+    # Forces caller frame materialization, this used to erroneously cause the locals dict to update
+    globals()
+    assert l == {'a': 1}
+    # Now this should really cause the locals dict to update
+    locals()
+    assert l == {'a': 1, 'b': 2, 'l': l}
+
+
 # GR-22089
 # def test_backref_from_traceback():
 #     def bar():
