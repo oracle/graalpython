@@ -235,7 +235,7 @@ public class PythonCextObjectBuiltins {
     }
 
     // directly called without landing function
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Pointer, Int, Pointer, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Pointer, Int, Pointer, Pointer}, call = Ignored)
     @GenerateNodeFactory
     abstract static class _PyTruffleObject_MakeTpCall extends CApi5BuiltinNode {
 
@@ -274,11 +274,11 @@ public class PythonCextObjectBuiltins {
                 }
                 return callNode.execute(null, callable, args, keywords);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere(e);
             } catch (CannotCastException e) {
                 // I think we can just assume that there won't be more than
                 // Integer.MAX_VALUE arguments.
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }
@@ -549,7 +549,6 @@ public class PythonCextObjectBuiltins {
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
             CApiContext cApiContext = context.getCApiContext();
             InteropLibrary lib = InteropLibrary.getUncached(ptrObject);
-            CExtNodes.PCallCapiFunction callNode = CExtNodes.PCallCapiFunction.getUncached();
 
             // There are three cases we need to distinguish:
             // 1) The pointer object is a native pointer and is NOT a handle
