@@ -270,7 +270,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 throw raise(RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
             }
             Object obj = rootNode.readSelf(localFrame);
-            if (obj == PNone.NONE || obj == PNone.NO_VALUE) {
+            if (obj == null) {
                 throw raise(RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
             return init(frame, self, cls, obj);
