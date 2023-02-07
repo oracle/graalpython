@@ -180,6 +180,28 @@ public abstract class ExternalFunctionNodes {
         public abstract void execute(Object value);
     }
 
+    /**
+     * On Windows, "long" is 32 bits, so that we might need to convert int to long for consistency.
+     */
+    public abstract static class FromLongNode extends CExtToJavaNode {
+
+        @Specialization
+        static long doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        static long doLong(long value) {
+            return value;
+        }
+
+        @Fallback
+        static Object doOther(Object value) {
+            assert CApiTransitions.isBackendPointerObject(value);
+            return value;
+        }
+    }
+
     public abstract static class ToInt64Node extends CExtToNativeNode {
 
         @Specialization

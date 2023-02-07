@@ -53,12 +53,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
@@ -74,6 +75,7 @@ enum ArgBehavior {
     Char16("SINT16", "C", "jchar", "char", null, null, null),
     Int32("SINT32", "I", "jint", "int", ToInt32NodeGen::create, null, null),
     Int64("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, null, null),
+    Long("SINT64", "J", "jlong", "long", ToInt64NodeGen::create, FromLongNodeGen::create, null),
     Float64("DOUBLE", "D", "jdouble", "double", null, null, null),
     Void("VOID", "V", "void", "void", null, null, null),
     Unknown("SINT64", "J", "jlong", "long", null, null, null);
@@ -128,7 +130,7 @@ public enum ArgDescriptor {
     Int(ArgBehavior.Int32, "int"),
     ConstInt(ArgBehavior.Int32, "const int"),
     Double(ArgBehavior.Float64, "double"),
-    Long(ArgBehavior.Int64, "long"),
+    Long(ArgBehavior.Long, "long"),
 
     _FRAME(ArgBehavior.PyObject, "struct _frame*"),
     _MOD_PTR("struct _mod*"),
@@ -264,7 +266,7 @@ public enum ArgDescriptor {
     UINT64_T(ArgBehavior.Int64, "uint64_t"),
     UNSIGNED_CHAR_PTR("unsigned char*"),
     UNSIGNED_INT(ArgBehavior.Int32, "unsigned int"),
-    UNSIGNED_LONG(ArgBehavior.Int64, "unsigned long"),
+    UNSIGNED_LONG(ArgBehavior.Long, "unsigned long"),
     UNSIGNED_LONG_LONG(ArgBehavior.Int64, "unsigned long long"),
     VA_LIST(ArgBehavior.Pointer, "va_list"),
     VA_LIST_PTR(ArgBehavior.Pointer, "va_list*"),
@@ -408,7 +410,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isIntType() {
-        return behavior == ArgBehavior.Int32 || behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Char16 || behavior == ArgBehavior.Unknown;
+        return behavior == ArgBehavior.Int32 || behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long || behavior == ArgBehavior.Char16 || behavior == ArgBehavior.Unknown;
     }
 
     public boolean isFloatType() {
