@@ -76,19 +76,19 @@ public abstract class MaterializeFrameNode extends Node {
         return MaterializeFrameNodeGen.getUncached();
     }
 
-    public final PFrame execute(Frame frame, boolean markAsEscaped, Frame frameToMaterialize) {
-        return execute(frame, markAsEscaped, false, frameToMaterialize);
+    public final PFrame execute(boolean markAsEscaped, Frame frameToMaterialize) {
+        return execute(markAsEscaped, false, frameToMaterialize);
     }
 
-    public final PFrame execute(Frame frame, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
+    public final PFrame execute(boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
         PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
         assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
         Node callNode = info.getCallNode();
-        return execute(frame, callNode, markAsEscaped, forceSync, false, frameToMaterialize);
+        return execute(callNode, markAsEscaped, forceSync, false, frameToMaterialize);
     }
 
     public final PFrame execute(Frame frame, boolean markAsEscaped) {
-        return execute(frame, markAsEscaped, frame);
+        return execute(markAsEscaped, frame);
     }
 
     public final PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync) {
@@ -96,15 +96,15 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     public final PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing) {
-        return execute(frame, location, markAsEscaped, forceSync, updateLocationIfMissing, frame);
+        return execute(location, markAsEscaped, forceSync, updateLocationIfMissing, frame);
     }
 
-    public final PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-        return execute(frame, location, markAsEscaped, forceSync, false, frameToMaterialize);
+    public final PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
+        return execute(location, markAsEscaped, forceSync, false, frameToMaterialize);
     }
 
     // TODO remove frame? remove location? remove updateLocationIfMissing?
-    public abstract PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing, Frame frameToMaterialize);
+    public abstract PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing, Frame frameToMaterialize);
 
     @Specialization(guards = {
                     "cachedFD == frameToMaterialize.getFrameDescriptor()", //

@@ -596,7 +596,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             public Object execute(VirtualFrame frame) {
                 Object[] arguments = PArguments.create();
                 // escape?
-                PFrame pFrame = materializeFrameNode.execute(frame, this, false, true, frame);
+                PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
                 Object locals = getFrameLocalsNode.execute(frame, pFrame);
                 PArguments.setSpecialArgument(arguments, locals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));

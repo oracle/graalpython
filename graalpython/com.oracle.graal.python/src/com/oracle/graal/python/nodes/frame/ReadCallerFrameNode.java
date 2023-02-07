@@ -110,31 +110,31 @@ public final class ReadCallerFrameNode extends Node {
         return new ReadCallerFrameNode();
     }
 
-    public final PFrame executeWith(VirtualFrame frame, int level) {
-        return executeWith(frame, PArguments.getCurrentFrameInfo(frame), FrameSelector.SKIP_PYTHON_INTERNAL, level);
+    public PFrame executeWith(VirtualFrame frame, int level) {
+        return executeWith(PArguments.getCurrentFrameInfo(frame), FrameSelector.SKIP_PYTHON_INTERNAL, level);
     }
 
-    public final PFrame executeWith(VirtualFrame frame, FrameSelector selector, int level) {
-        return executeWith(frame, PArguments.getCurrentFrameInfo(frame), selector, level);
+    public PFrame executeWith(VirtualFrame frame, FrameSelector selector, int level) {
+        return executeWith(PArguments.getCurrentFrameInfo(frame), selector, level);
     }
 
-    public final PFrame executeWith(VirtualFrame frame, Frame startFrame, int level) {
-        return executeWith(frame, PArguments.getCurrentFrameInfo(startFrame), FrameSelector.SKIP_PYTHON_INTERNAL, level);
+    public PFrame executeWith(Frame startFrame, int level) {
+        return executeWith(PArguments.getCurrentFrameInfo(startFrame), FrameSelector.SKIP_PYTHON_INTERNAL, level);
     }
 
-    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, int level) {
-        return executeWith(frame, startFrameInfo, FrameSelector.SKIP_PYTHON_INTERNAL, level);
+    public PFrame executeWith(PFrame.Reference startFrameInfo, int level) {
+        return executeWith(startFrameInfo, FrameSelector.SKIP_PYTHON_INTERNAL, level);
     }
 
-    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, int level) {
-        return executeWith(frame, startFrameInfo, frameAccess, FrameSelector.SKIP_PYTHON_INTERNAL, level);
+    public PFrame executeWith(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, int level) {
+        return executeWith(startFrameInfo, frameAccess, FrameSelector.SKIP_PYTHON_INTERNAL, level);
     }
 
-    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level) {
-        return executeWith(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level);
+    public PFrame executeWith(PFrame.Reference startFrameInfo, FrameSelector selector, int level) {
+        return executeWith(startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level);
     }
 
-    public PFrame executeWith(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+    public PFrame executeWith(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
         PFrame.Reference curFrameInfo = startFrameInfo;
         if (cachedCallerFrameProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -145,7 +145,7 @@ public final class ReadCallerFrameNode extends Node {
                 if (callerInfo == null) {
                     Frame callerFrame = getCallerFrame(startFrameInfo, frameAccess, selector, level);
                     if (callerFrame != null) {
-                        return ensureMaterializeNode().execute(frame, false, true, callerFrame);
+                        return ensureMaterializeNode().execute(false, true, callerFrame);
                     }
                     return null;
                 } else if (!selector.skip(callerInfo)) {
@@ -154,12 +154,12 @@ public final class ReadCallerFrameNode extends Node {
                 curFrameInfo = callerInfo;
             }
         } else {
-            curFrameInfo = walkLevels(frame, curFrameInfo, frameAccess, selector, level);
+            curFrameInfo = walkLevels(curFrameInfo, frameAccess, selector, level);
         }
         return curFrameInfo.getPyFrame();
     }
 
-    private PFrame.Reference walkLevels(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+    private PFrame.Reference walkLevels(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
         PFrame.Reference currentFrame = startFrameInfo;
         for (int i = 0; i <= level;) {
             PFrame.Reference callerInfo = currentFrame.getCallerInfo();
@@ -169,7 +169,7 @@ public final class ReadCallerFrameNode extends Node {
                     // At this point, we must 'materialize' the frame. Actually, the Truffle frame
                     // is never materialized but we ensure that a corresponding PFrame is created
                     // and that the locals and arguments are synced.
-                    ensureMaterializeNode().execute(frame, false, true, callerFrame);
+                    ensureMaterializeNode().execute(false, true, callerFrame);
                     return PArguments.getCurrentFrameInfo(callerFrame);
                 }
                 return PFrame.Reference.EMPTY;
