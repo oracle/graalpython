@@ -1530,7 +1530,7 @@ def delete_self_if_testdownstream(args):
         shutil.rmtree(SUITE.dir, ignore_errors=True)
 
 
-def update_import(name, suite_py, rev="origin/master"):
+def update_import(name, suite_py, args):
     parent = os.path.join(SUITE.dir, "..")
     dep_dir = None
     for dirpath, dirnames, _ in os.walk(parent):
@@ -1543,9 +1543,16 @@ def update_import(name, suite_py, rev="origin/master"):
         mx.warn("could not find suite %s to update" % name)
         return
     vc = mx.VC.get_vc(dep_dir)
-    if rev != "HEAD":
-        vc.pull(dep_dir, update=False)
-    vc.update(dep_dir, rev=rev)
+    repo_name = os.path.basename(dep_dir)
+    if repo_name == "graal" and args.graal_rev:
+        rev = args.graal_rev
+    elif repo_name == "graal-enterprise" and args.graal_enterprise_rev:
+        rev = args.graal_enterprise_rev
+    elif  idx or not args.no_pull:
+        rev = "HEAD"
+    else:
+        rev = "origin/master"
+    vc.update(dep_dir, rev=rev, mayPull=True)
     tip = str(vc.tip(dep_dir)).strip()
     contents = None
     with open(suite_py, 'r') as f:
@@ -1567,13 +1574,14 @@ def update_import_cmd(args):
     parser.add_argument('--graal-rev', default='')
     parser.add_argument('--graal-enterprise-rev', default='')
     parser.add_argument('--no-pull', action='store_true')
+    parser.add_argument('--allow-dirty', action='store_true')
     args = parser.parse_args(args)
 
     join = os.path.join
     vc = SUITE.vc
 
     current_branch = vc.active_branch(SUITE.dir)
-    if vc.isDirty(SUITE.dir):
+    if vc.isDirty(SUITE.dir) and not args.allow_dirty:
         mx.abort("updating imports should be done on a clean branch")
     if current_branch == "master":
         vc.git_command(SUITE.dir, ["checkout", "-b", f"update/GR-21590/{datetime.datetime.now().strftime('%d%m%y')}"])
@@ -1601,7 +1609,7 @@ def update_import_cmd(args):
 
     # make sure all other repos are clean and on the same branch
     for d in repos:
-        if vc.isDirty(d):
+        if vc.isDirty(d) and not args.allow_dirty:
             mx.abort("repo %s is not clean" % d)
         d_branch = vc.active_branch(d)
         if d_branch == current_branch:
@@ -1617,7 +1625,7 @@ def update_import_cmd(args):
     if not os.path.exists(overlaydir):
         mx.abort("Overlays repo must be next to graalpython repo")
         vc = mx.VC.get_vc(overlaydir)
-    if vc.isDirty(overlaydir):
+    if vc.isDirty(overlaydir) and not args.allow_dirty:
         mx.abort("overlays repo must be clean")
     overlaybranch = vc.active_branch(overlaydir)
     if overlaybranch == "master":
@@ -1645,16 +1653,7 @@ def update_import_cmd(args):
     # now update all imports
     for name in imports_to_update:
         for idx, suite_py in enumerate(suite_py_files):
-            repo_name = os.path.basename(mx.VC.get_vc_root(os.path.dirname(suite_py))[1])
-            if  idx or not args.no_pull:
-                rev = "HEAD"
-            elif repo_name == "graal" and args.graal_rev:
-                rev = args.graal_rev
-            elif repo_name == "graal-enterprise" and args.graal_enterprise_rev:
-                rev = args.graal_enterprise_rev
-            else:
-                rev = "origin/master"
-            revisions[name] = update_import(name, suite_py, rev=rev)
+            revisions[name] = update_import(name, suite_py, args)
 
     # copy files we inline from our imports
     shutil.copy(
