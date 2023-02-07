@@ -25,6 +25,7 @@
 from __future__ import print_function
 
 import contextlib
+import datetime
 import fnmatch
 import getpass
 import glob
@@ -349,8 +350,7 @@ def compare_unittests(args):
 
 def run_cpython_test(raw_args):
     test_args = ['-v']
-    import argparse
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--gvm', dest='vm', action='store_const', const='gvm')
     parser.add_argument('--svm', dest='vm', action='store_const', const='svm')
@@ -1562,14 +1562,22 @@ def update_import(name, suite_py, rev="origin/master"):
 
 def update_import_cmd(args):
     """Update our imports"""
+
+    parser = ArgumentParser()
+    parser.add_argument('--graal-rev', default='')
+    parser.add_argument('--graal-enterprise-rev', default='')
+    parser.add_argument('--no-pull', action='store_true')
+    args = parser.parse_args(args)
+
     join = os.path.join
     vc = SUITE.vc
 
     current_branch = vc.active_branch(SUITE.dir)
-    if current_branch == "master":
-        mx.abort("updating imports should be done on a branch")
     if vc.isDirty(SUITE.dir):
         mx.abort("updating imports should be done on a clean branch")
+    if current_branch == "master":
+        vc.git_command(SUITE.dir, ["checkout", "-b", f"update/GR-21590/{datetime.datetime.now().strftime('%d%m%y')}"])
+        current_branch = vc.active_branch(SUITE.dir)
 
     suite_py_files = []
     local_names = []
@@ -1613,7 +1621,7 @@ def update_import_cmd(args):
         mx.abort("overlays repo must be clean")
     overlaybranch = vc.active_branch(overlaydir)
     if overlaybranch == "master":
-        if "--no-pull" not in args:
+        if not args.no_pull:
             vc.pull(overlaydir)
         vc.set_branch(overlaydir, current_branch, with_remote=False)
         vc.git_command(overlaydir, ["checkout", current_branch], abortOnError=True)
@@ -1637,7 +1645,16 @@ def update_import_cmd(args):
     # now update all imports
     for name in imports_to_update:
         for idx, suite_py in enumerate(suite_py_files):
-            revisions[name] = update_import(name, suite_py, rev=("HEAD" if (idx or "--no-pull" in args) else "origin/master"))
+            repo_name = os.path.basename(mx.VC.get_vc_root(os.path.dirname(suite_py))[1])
+            if  idx or not args.no_pull:
+                rev = "HEAD"
+            elif repo_name == "graal" and args.graal_rev:
+                rev = args.graal_rev
+            elif repo_name == "graal-enterprise" and args.graal_enterprise_rev:
+                rev = args.graal_enterprise_rev
+            else:
+                rev = "origin/master"
+            revisions[name] = update_import(name, suite_py, rev=rev)
 
     # copy files we inline from our imports
     shutil.copy(
@@ -1680,7 +1697,7 @@ def update_import_cmd(args):
             repos_updated.append(repo)
 
     # push all repos
-    if "--no-push" not in args:
+    if not args.no_push:
         for repo in repos_updated:
             try:
                 mx._opts.very_verbose = True
