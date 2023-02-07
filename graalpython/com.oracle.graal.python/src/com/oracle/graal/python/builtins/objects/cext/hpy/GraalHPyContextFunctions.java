@@ -2080,9 +2080,9 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 4);
             Object receiver = asPythonObjectNode.execute(arguments[1]);
             Object arg1 = asPythonObjectNode.execute(arguments[2]);
-            Object arg2;
+            int arg2;
             try {
-                arg2 = SpecialMethodNames.getCompareOpString(castToJavaIntExactNode.execute(arguments[3]));
+                arg2 = castToJavaIntExactNode.execute(arguments[3]);
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnsupportedTypeException.create(arguments, "4th argument must fit into Java int");
