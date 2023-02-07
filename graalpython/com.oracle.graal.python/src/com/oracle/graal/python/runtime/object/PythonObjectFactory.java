@@ -918,16 +918,12 @@ public abstract class PythonObjectFactory extends Node {
      * Frames, traces and exceptions
      */
 
-    public final PFrame createPFrame(PFrame.Reference frameInfo, Node location) {
-        return trace(new PFrame(getLanguage(), frameInfo, location));
-    }
-
-    public final PFrame createPFrame(PFrame.Reference frameInfo, Node location, Object locals) {
+    public final PFrame createPFrame(PFrame.Reference frameInfo, Node location, MaterializedFrame locals) {
         return trace(new PFrame(getLanguage(), frameInfo, location, locals));
     }
 
-    public final PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
-        return trace(new PFrame(getLanguage(), threadState, code, globals, locals));
+    public final PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object localsDict) {
+        return trace(new PFrame(getLanguage(), threadState, code, globals, localsDict));
     }
 
     public final PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {

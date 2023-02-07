@@ -5563,28 +5563,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTopBeforeBlock;
     }
 
-    public PCell readClassCell(VirtualFrame virtualFrame) {
-        Frame localFrame = virtualFrame;
-        if (co.isGeneratorOrCoroutine()) {
-            localFrame = PArguments.getGeneratorFrame(virtualFrame);
-        }
+    public PCell readClassCell(Frame frame) {
         if (classcellIndex < 0) {
             return null;
         }
-        return (PCell) localFrame.getObject(classcellIndex);
+        return (PCell) frame.getObject(classcellIndex);
     }
 
-    public Object readSelf(VirtualFrame virtualFrame) {
-        Frame localFrame = virtualFrame;
-        if (co.isGeneratorOrCoroutine()) {
-            localFrame = PArguments.getGeneratorFrame(virtualFrame);
-        }
+    public Object readSelf(Frame frame) {
         if (selfIndex < 0) {
             return null;
         } else if (selfIndex == 0) {
-            return localFrame.getObject(0);
+            return frame.getObject(0);
         } else {
-            PCell selfCell = (PCell) localFrame.getObject(selfIndex);
+            PCell selfCell = (PCell) frame.getObject(selfIndex);
             return selfCell.getRef();
         }
     }

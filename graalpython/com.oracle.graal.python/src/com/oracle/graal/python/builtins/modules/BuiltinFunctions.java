@@ -113,7 +113,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
@@ -164,6 +163,7 @@ import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
+import com.oracle.graal.python.lib.PyEvalGetLocals;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -215,6 +215,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -765,12 +766,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         // logic like in 'Objects/object.c: _dir_locals'
         @Specialization(guards = "isNoValue(object)")
         Object locals(VirtualFrame frame, @SuppressWarnings("unused") Object object,
-                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached PyEvalGetLocals getLocals,
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
-
-            Object localsDict = LocalsNode.getLocalsDict(frame, readCallerFrameNode);
+            Object localsDict = getLocals.execute(frame);
             Object keysObj = callKeysNode.executeObject(frame, localsDict);
             PList list = constructListNode.execute(frame, keysObj);
             sortNode.execute(frame, list);
@@ -861,8 +861,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setGlobals(args, callerFrame.getGlobals());
         }
 
-        private static void inheritLocals(PFrame callerFrame, Object[] args) {
-            Object callerLocals = callerFrame.getLocals();
+        private static void inheritLocals(VirtualFrame frame, PFrame callerFrame, Object[] args, GetFrameLocalsNode getFrameLocalsNode) {
+            Object callerLocals = getFrameLocalsNode.execute(frame, callerFrame);
             setCustomLocals(args, callerLocals);
         }
 
@@ -889,12 +889,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
+                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
+                        @Cached GetFrameLocalsNode getFrameLocalsNode) {
             PCode code = createAndCheckCode(frame, source);
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
-            inheritLocals(callerFrame, args);
+            inheritLocals(frame, callerFrame, args, getFrameLocalsNode);
 
             return invokeNode.execute(frame, getCt.execute(code), args);
         }
@@ -2265,9 +2266,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "globals")
+    @Builtin(name = "globals", needsFrame = true, alwaysNeedsCallerFrame = true)
     @GenerateNodeFactory
-    public abstract static class GlobalsNode extends PythonBuiltinNode {
+    abstract static class GlobalsNode extends PythonBuiltinNode {
         private final ConditionProfile condProfile = ConditionProfile.create();
 
         @Specialization
@@ -2281,10 +2282,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return globals;
             }
         }
-
-        public static GlobalsNode create() {
-            return GlobalsNodeFactory.create(null);
-        }
     }
 
     @Builtin(name = "locals", needsFrame = true, alwaysNeedsCallerFrame = true)
@@ -2293,18 +2290,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object locals(VirtualFrame frame,
-                        @Cached ReadCallerFrameNode readCallerFrameNode) {
-            return getLocalsDict(frame, readCallerFrameNode);
-        }
-
-        static Object getLocalsDict(VirtualFrame frame, ReadCallerFrameNode readCallerFrameNode) {
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-            return callerFrame.getLocals();
-        }
-
-        @NeverDefault
-        public static LocalsNode create() {
-            return BuiltinFunctionsFactory.LocalsNodeFactory.create(null);
+                        @Cached PyEvalGetLocals getLocals) {
+            return getLocals.execute(frame);
         }
     }
 
@@ -2314,8 +2301,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         Object vars(VirtualFrame frame, @SuppressWarnings("unused") PNone none,
-                        @Cached LocalsNode localsNode) {
-            return localsNode.execute(frame);
+                        @Cached PyEvalGetLocals getLocals) {
+            return getLocals.execute(frame);
         }
 
         @Specialization(guards = "!isNoValue(obj)")
