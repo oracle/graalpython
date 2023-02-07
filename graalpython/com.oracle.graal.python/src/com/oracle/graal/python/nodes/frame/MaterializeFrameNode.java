@@ -215,7 +215,7 @@ public abstract class MaterializeFrameNode extends Node {
         @Specialization(guards = {"hasLocals(pyFrame)", "frameToSync.getFrameDescriptor() == cachedFd",
                         "variableSlotCount(cachedFd) < 32"}, limit = "1")
         @ExplodeLoop
-        static void doLocalsStorageCachedExploded(PFrame pyFrame, Frame frameToSync,
+        static void doSyncExploded(PFrame pyFrame, Frame frameToSync,
                         @Cached(value = "frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
             MaterializedFrame target = pyFrame.getLocals();
             assert cachedFd == target.getFrameDescriptor();
@@ -225,8 +225,8 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "hasLocals(pyFrame)", replaces = "doLocalsStorageCachedExploded")
-        static void doLocalsStorageLoop(PFrame pyFrame, Frame frameToSync) {
+        @Specialization(guards = "hasLocals(pyFrame)", replaces = "doSyncExploded")
+        static void doSyncLoop(PFrame pyFrame, Frame frameToSync) {
             MaterializedFrame target = pyFrame.getLocals();
             int slotCount = variableSlotCount(frameToSync.getFrameDescriptor());
             for (int slot = 0; slot < slotCount; slot++) {

@@ -570,7 +570,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (co.arg2cell != null && i < co.arg2cell.length && co.arg2cell[i] >= 0) {
                 /*
                  * If an argument is a cell, its slot gets superseded by the cell's slot below. We
-                 * need to hide it from LocalsStorage and other introspection.
+                 * need to hide it from introspection.
                  */
                 varname = null;
             }
@@ -1023,7 +1023,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // it, otherwise they stay at the initial value, which we must set to null here
         PArguments.setException(arguments, null);
         PArguments.setCallerFrameInfo(arguments, null);
-        PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         copyArgsAndCells(generatorFrame, arguments);
     }
 
