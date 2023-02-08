@@ -131,6 +131,7 @@ class DefaultExtensionTemplate(object):
                 textwrap.dedent('''
                 static HPyGlobal *module_globals[] = {
                     %s
+                    NULL
                 };''') % NL_INDENT.join(self.globals_table)
             globals_field = '.globals = module_globals'
 
