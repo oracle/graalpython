@@ -1191,9 +1191,11 @@ public final class CApiContext extends CExtContext {
 
                 // PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void*
                 // (*getType)(const char*), void (*setTypeStore)(const char*, void*))
-                Object signature = env.parseInternal(Source.newBuilder("nfi", "((STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):VOID", "exec").build()).call();
-                Object bound = SignatureLibrary.getUncached().bind(signature, initFunction);
-                InteropLibrary.getUncached().execute(bound, new GetAPI(), new GetType(), new SetTypeStore());
+                Object signature = env.parseInternal(Source.newBuilder("nfi", "((STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):SINT32", "exec").build()).call();
+                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetAPI(), new GetType(), new SetTypeStore());
+                if (InteropLibrary.getUncached().asInt(result) == 0) {
+                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_MULTICONTEXT);
+                }
             } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

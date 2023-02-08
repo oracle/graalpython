@@ -1343,6 +1343,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNHANDLED_ERROR = tsLiteral("Unhandled Error!");
 
     // cext
+    public static final TruffleString CANNOT_MULTICONTEXT = tsLiteral("cannot execute multi-context code with native extensions");
     public static final TruffleString CREATION_FAILD_WITHOUT_EXCEPTION = tsLiteral("creation of module %s failed without setting an exception");
     public static final TruffleString CREATION_RAISED_EXCEPTION = tsLiteral("creation of module %s raised unreported exception");
     public static final TruffleString NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE = tsLiteral("module %s is not a module object, but requests module state");

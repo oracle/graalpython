@@ -351,8 +351,17 @@ uint32_t Py_Truffle_Options;
 
 void initializeCAPIForwards(void* (*getAPI)(const char*));
 
-PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
+int initNativeForwardCalled = 0;
+
+/**
+ * Returns 1 on success, 0 on error (if it was already initialized).
+ */
+PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
     LOG("%s", "capi_jni.c:initJNIForward\n");
+    if (initNativeForwardCalled) {
+    	return 0;
+    }
+    initNativeForwardCalled = 1;
     clock_t t;
     t = clock();
 
@@ -403,6 +412,7 @@ CAPI_BUILTINS
     printf("TIME: ns per query = %li\n", total / 1000);
 #endif // TIMING
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    return 1;
 }
 
 /* Private types are defined here because we need to declare the type cast. */
