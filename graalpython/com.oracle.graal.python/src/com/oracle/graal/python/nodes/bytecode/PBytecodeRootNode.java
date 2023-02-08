@@ -174,6 +174,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNodeGen;
@@ -2962,7 +2963,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (line != -1) {
                 pyFrame.setLineLock(line);
             }
+            // Force locals dict sync, so that we can sync them back later
+            GetFrameLocalsNode.getUncached().execute(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
+            syncLocalsBack(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
@@ -2973,6 +2977,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 pyFrame.lineUnlock();
             }
             threadState.tracingStop();
+        }
+    }
+
+    // PyFrame_LocalsToFast
+    private void syncLocalsBack(VirtualFrame virtualFrame, PFrame pyFrame) {
+        Frame localFrame = virtualFrame;
+        if (co.isGeneratorOrCoroutine()) {
+            localFrame = PArguments.getGeneratorFrame(virtualFrame);
+        }
+        Object localsDict = pyFrame.getLocalsDict();
+        copyLocalsArray(localFrame, localsDict, varnames, 0, false);
+        copyLocalsArray(localFrame, localsDict, cellvars, celloffset, true);
+        copyLocalsArray(localFrame, localsDict, freevars, freeoffset, true);
+    }
+
+    private static void copyLocalsArray(Frame localFrame, Object localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        for (int i = 0; i < namesArray.length; i++) {
+            TruffleString varname = namesArray[i];
+            Object value = null;
+            try {
+                value = PyObjectGetItem.getUncached().execute(null, localsDict, varname);
+            } catch (AbstractTruffleException e) {
+                // CPython ignores all exceptions
+            }
+            if (deref) {
+                PCell cell = (PCell) localFrame.getObject(offset + i);
+                cell.setRef(value);
+            } else {
+                localFrame.setObject(offset + i, value);
+            }
         }
     }
 
@@ -3012,7 +3046,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         try {
+            // Force locals dict sync, so that we can sync them back later
+            GetFrameLocalsNode.getUncached().execute(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
+            syncLocalsBack(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {

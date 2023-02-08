@@ -140,4 +140,8 @@ public abstract class GetFrameLocalsNode extends Node {
     public static GetFrameLocalsNode create() {
         return GetFrameLocalsNodeGen.create();
     }
+
+    public static GetFrameLocalsNode getUncached() {
+        return GetFrameLocalsNodeGen.getUncached();
+    }
 }
