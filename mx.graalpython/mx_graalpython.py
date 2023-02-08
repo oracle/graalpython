@@ -1548,9 +1548,10 @@ def update_import(name, suite_py, args):
         rev = args.graal_rev
     elif repo_name == "graal-enterprise" and args.graal_enterprise_rev:
         rev = args.graal_enterprise_rev
-    elif  idx or not args.no_pull:
+    elif args.no_pull:
         rev = "HEAD"
     else:
+        vc.pull(dep_dir)
         rev = "origin/master"
     vc.update(dep_dir, rev=rev, mayPull=True)
     tip = str(vc.tip(dep_dir)).strip()
