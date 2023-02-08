@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,10 +46,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnBuiltinNode;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,9 +62,14 @@ public final class PythonCextWarnBuiltins {
     abstract static class _PyTruffleErr_Warn extends CApiQuaternaryBuiltinNode {
         @Specialization
         Object warn(Object message, Object category, long stackLevel, @SuppressWarnings("unused") Object source,
-                        @Cached WarnBuiltinNode warnNode) {
+                        @Cached CallNode callNode) {
             // TODO: pass source again once we update to newer lib-python
-            warnNode.execute(null, getCore().lookupBuiltinModule(T__WARNINGS), message, category, (int) stackLevel, PNone.NONE);
+            Object attribute = getCore().lookupBuiltinModule(T__WARNINGS).getAttribute(WarningsModuleBuiltins.T_WARN);
+            /*
+             * Note: we need to do a full call of '_warnings.warn' because it needs a frame in order
+             * to create a proper traceback
+             */
+            callNode.execute(attribute, message, category, (int) stackLevel, PNone.NONE);
             return PNone.NONE;
         }
     }
