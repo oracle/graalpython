@@ -1829,7 +1829,6 @@ public abstract class TypeNodes {
 
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private ReadCallerFrameNode readCallerFrameNode;
-        @Child private PyObjectSetAttr writeAttrNode;
         @Child private CastToTruffleStringNode castToStringNode;
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
@@ -1846,14 +1845,6 @@ public abstract class TypeNodes {
                 readCallerFrameNode = insert(ReadCallerFrameNode.create());
             }
             return readCallerFrameNode;
-        }
-
-        private PyObjectSetAttr ensureWriteAttrNode() {
-            if (writeAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeAttrNode = insert(PyObjectSetAttr.create());
-            }
-            return writeAttrNode;
         }
 
         private CastToTruffleStringNode ensureCastToStringNode() {
@@ -1922,7 +1913,7 @@ public abstract class TypeNodes {
                     if (globals != null) {
                         TruffleString moduleName = getModuleNameFromGlobals(globals, getItemGlobals);
                         if (moduleName != null) {
-                            ensureWriteAttrNode().execute(frame, newType, SpecialAttributeNames.T___MODULE__, moduleName);
+                            newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
                         }
                     }
                 }
