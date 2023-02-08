@@ -127,7 +127,7 @@ public class DigestObjectBuiltins extends PythonBuiltins {
                 raise(PythonBuiltinClassType.ValueError, ErrorMessages.UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED);
             }
             try {
-                self.update(bufferLib.getInternalOrCopiedByteArray(buffer));
+                self.update(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } finally {
                 bufferLib.release(buffer, frame, this);
             }

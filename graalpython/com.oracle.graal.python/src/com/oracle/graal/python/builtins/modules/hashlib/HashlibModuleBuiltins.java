@@ -314,7 +314,8 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                 }
                 try {
                     byte[] msgBytes = msg == null ? null : bufferLib.getInternalOrCopiedByteArray(msg);
-                    Mac mac = createMac(digestmod, bufferLib.getInternalOrCopiedByteArray(key), msgBytes);
+                    int msgLen = msg == null ? 0 : bufferLib.getBufferLength(msg);
+                    Mac mac = createMac(digestmod, bufferLib.getInternalOrCopiedByteArray(key), bufferLib.getBufferLength(key), msgBytes, msgLen);
                     return factory().createDigestObject(PythonBuiltinClassType.HashlibHmac, castJStr.execute(concatStr.execute(HMAC_PREFIX, digestmod, TS_ENCODING, true)), mac);
                 } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                     throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
@@ -330,14 +331,14 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    static Mac createMac(TruffleString digest, byte[] key, byte[] msg) throws NoSuchAlgorithmException, InvalidKeyException {
+    static Mac createMac(TruffleString digest, byte[] key, int keyLen, byte[] msg, int msgLen) throws NoSuchAlgorithmException, InvalidKeyException {
         String inputName = digest.toJavaStringUncached().toLowerCase();
         String algorithm = "hmac" + NAME_MAPPINGS.getOrDefault(inputName, inputName);
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key, algorithm);
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key, 0, keyLen, algorithm);
         Mac mac = Mac.getInstance(algorithm);
         mac.init(secretKeySpec);
         if (msg != null) {
-            mac.update(msg);
+            mac.update(msg, 0, msgLen);
         }
         return mac;
     }
@@ -361,9 +362,10 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
             }
             try {
                 byte[] bytes = buffer == null ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
+                int bytesLen = buffer == null ? 0 : bufferLib.getBufferLength(buffer);
                 MessageDigest digest;
                 try {
-                    digest = createDigest(javaName, bytes);
+                    digest = createDigest(javaName, bytes, bytesLen);
                 } catch (NoSuchAlgorithmException e) {
                     throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
@@ -376,10 +378,10 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static MessageDigest createDigest(String name, byte[] bytes) throws NoSuchAlgorithmException {
+        private static MessageDigest createDigest(String name, byte[] bytes, int bytesLen) throws NoSuchAlgorithmException {
             MessageDigest digest = MessageDigest.getInstance(name);
             if (bytes != null) {
-                digest.update(bytes);
+                digest.update(bytes, 0, bytesLen);
             }
             return digest;
         }
