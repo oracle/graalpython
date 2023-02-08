@@ -42,6 +42,7 @@ import os
 import subprocess
 import sys
 import test
+from itertools import zip_longest
 
 if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "__main__":
     TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
@@ -51,6 +52,12 @@ else:
 TIMEOUT = 90 * 60
 RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
 LINE = "=" * 80
+
+
+def grouper(iterable, n):
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=None)
+
 
 def working_selectors(tagfile):
     if os.path.exists(tagfile):
@@ -77,29 +84,30 @@ def collect_working_tests():
 def make_test_function(working_test):
     testmod = working_test[0].rpartition(".")[2]
 
-    def test_tagged():
-        cmd = [sys.executable]
-        if "--inspect" in sys.argv:
-            cmd.append("--inspect")
-        if "-debug-java" in sys.argv:
-            cmd.append("-debug-java")
-        cmd += [RUNNER]
-        if "-vv" in sys.argv:
-            cmd += ['-v']
-        for testpattern in working_test[1]:
-            cmd.extend(["-k", testpattern])
-        print("Running test:", working_test[0])
-        testfile = os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod)
-        if not os.path.isfile(testfile):
-            testfile = os.path.join(os.path.dirname(test.__file__), "%s/__init__.py" % testmod)
-        cmd.append(testfile)
-        if os.environ.get("ENABLE_THREADED_GRAALPYTEST") == "true":
-            run_serialize_out(cmd)
-        else:
-            rcode = run_with_timeout(cmd).returncode
-            if rcode:
-                raise CalledProcessError(rcode, cmd)
-            print(working_test[0], "was finished.")
+    def test_tagged(max_patterns=100):
+        for working_test_group in grouper(working_test[1], max_patterns):
+            cmd = [sys.executable]
+            if "--inspect" in sys.argv:
+                cmd.append("--inspect")
+            if "-debug-java" in sys.argv:
+                cmd.append("-debug-java")
+            cmd += [RUNNER]
+            if "-vv" in sys.argv:
+                cmd += ['-v']
+            for testpattern in working_test_group:
+                cmd.extend(["-k", testpattern])
+            print("Running test:", working_test[0])
+            testfile = os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod)
+            if not os.path.isfile(testfile):
+                testfile = os.path.join(os.path.dirname(test.__file__), "%s/__init__.py" % testmod)
+            cmd.append(testfile)
+            if os.environ.get("ENABLE_THREADED_GRAALPYTEST") == "true":
+                run_serialize_out(cmd)
+            else:
+                rcode = run_with_timeout(cmd).returncode
+                if rcode:
+                    raise CalledProcessError(rcode, cmd)
+                print(working_test[0], "was finished.")
 
     def run_serialize_out(cmd):
         result = run_with_timeout(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
