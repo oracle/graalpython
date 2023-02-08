@@ -125,26 +125,26 @@ public abstract class GraalHPyLegacyDef {
         Py_tp_doc(56),
         Py_tp_getattr(57, T___GETATTR__, PExternalFunctionWrapper.GETATTR),
         Py_tp_getattro(58, T___GETATTR__),
-        Py_tp_hash(59, T___HASH__),
-        Py_tp_init(60, T___INIT__, PExternalFunctionWrapper.KEYWORDS),
+        Py_tp_hash(59, T___HASH__, PExternalFunctionWrapper.HASHFUNC),
+        Py_tp_init(60, T___INIT__, PExternalFunctionWrapper.INITPROC),
         Py_tp_is_gc(61),
         Py_tp_iter(62, T___ITER__),
         Py_tp_iternext(63, T___NEXT__, PExternalFunctionWrapper.ITERNEXT),
         Py_tp_methods(64),
         Py_tp_new(65, T___NEW__, PExternalFunctionWrapper.KEYWORDS),
-        Py_tp_repr(66, T___REPR__),
+        Py_tp_repr(66, T___REPR__, PExternalFunctionWrapper.TP_REPR),
         Py_tp_richcompare(67, T_RICHCMP, PExternalFunctionWrapper.RICHCMP),
         Py_tp_setattr(68, T___SETATTR__, PExternalFunctionWrapper.SETATTR),
         Py_tp_setattro(69, T___SETATTR__),
-        Py_tp_str(70, T___STR__),
+        Py_tp_str(70, T___STR__, PExternalFunctionWrapper.TP_STR),
         Py_tp_traverse(71),
         Py_tp_members(72),
         Py_tp_getset(73),
         Py_tp_free(74, T___FREE__),
 
         // PyMappingMethods
-        Py_mp_ass_subscript(3, T___SETITEM__),
-        Py_mp_length(4, T___LEN__),
+        Py_mp_ass_subscript(3, T___SETITEM__, PExternalFunctionWrapper.OBJOBJARGPROC),
+        Py_mp_length(4, T___LEN__, PExternalFunctionWrapper.LENFUNC),
         Py_mp_subscript(5, T___GETITEM__),
 
         // PyNumberMethods
@@ -187,11 +187,11 @@ public abstract class GraalHPyLegacyDef {
         // PySequenceMethods
         Py_sq_ass_item(39, T___SETITEM__, PExternalFunctionWrapper.SETITEM),
         Py_sq_concat(40, T___ADD__),
-        Py_sq_contains(41, T___CONTAINS__),
+        Py_sq_contains(41, T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC),
         Py_sq_inplace_concat(42, T___IADD__),
         Py_sq_inplace_repeat(43, T___IMUL__, PExternalFunctionWrapper.ALLOC),
         Py_sq_item(44, T___GETITEM__, PExternalFunctionWrapper.GETITEM),
-        Py_sq_length(45, T___LEN__),
+        Py_sq_length(45, T___LEN__, PExternalFunctionWrapper.LENFUNC),
         Py_sq_repeat(46, T___MUL__, PExternalFunctionWrapper.ALLOC),
 
         // PyAsyncMethods
