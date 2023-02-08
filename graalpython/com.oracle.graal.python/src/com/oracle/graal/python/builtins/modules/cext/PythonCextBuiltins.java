@@ -868,6 +868,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         result = retNode.execute(result);
                     }
                     assert !(result instanceof PythonNativePointer);
+                    CApiTransitions.maybeGCALot();
                     return result;
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "CApiBuiltin", self.factory);

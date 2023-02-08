@@ -78,6 +78,13 @@ import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 
 public class CApiTransitions {
 
+    // if != 0: GC every X C API calls
+    private static final int GCALot = Integer.getInteger("python.GCALot", 0);
+    // wait X calls before first GC
+    private static final int GCALotWait = Integer.getInteger("python.GCALotWait", 0);
+    private static long GCALotTotalCounter = 0;
+    private static int GCALotCounter = 0;
+
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiTransitions.class);
 
     // transfer: steal or borrow reference
@@ -198,6 +205,25 @@ public class CApiTransitions {
                     PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_SUBREF, object, PythonNativeWrapper.MANAGED_REFCNT);
                 }
             }
+        }
+    }
+
+    public static void maybeGCALot() {
+        if (GCALot != 0) {
+            maybeGC();
+        }
+    }
+
+    @TruffleBoundary
+    private static void maybeGC() {
+        GCALotTotalCounter++;
+        if (GCALotTotalCounter < GCALotWait) {
+            // skip
+        } else if (++GCALotCounter >= GCALot) {
+            LOGGER.info("GC A Lot - calling System.gc (opportunities=" + GCALotTotalCounter + ")");
+            GCALotCounter = 0;
+            System.gc();
+            pollReferenceQueue();
         }
     }
 
@@ -680,8 +706,8 @@ public class CApiTransitions {
             }
             PythonNativeWrapper wrapper;
             if (HandleTester.pointsToPyHandleSpace(pointer)) {
-                wrapper = getContext().nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE)).get();
-                if (wrapper == null) {
+                PythonObjectReference reference = getContext().nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE));
+                if (reference == null || (wrapper = reference.get()) == null) {
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }
                 return wrapper;
