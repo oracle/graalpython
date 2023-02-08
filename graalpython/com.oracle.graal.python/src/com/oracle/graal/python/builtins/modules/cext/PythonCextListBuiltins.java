@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -81,6 +80,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PythonCextListBuiltins {
 
@@ -284,18 +284,18 @@ public final class PythonCextListBuiltins {
     abstract static class PyList_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PList list, Object position, Object element,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.execute(null, list.getSequenceStorage(), position, element);
+                        @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached ConditionProfile generalizedProfile) {
+            SequenceStorage newStorage = setItemNode.execute(null, list.getSequenceStorage(), position, element);
+            if (generalizedProfile.profile(list.getSequenceStorage() != newStorage)) {
+                list.setSequenceStorage(newStorage);
+            }
             return 0;
         }
 
         @Fallback
         int fallback(Object list, @SuppressWarnings("unused") Object i, @SuppressWarnings("unused") Object item) {
             throw raiseFallback(list, PythonBuiltinClassType.PList);
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), ErrorMessages.INVALID_ITEM_FOR_ASSIGMENT);
         }
     }
 

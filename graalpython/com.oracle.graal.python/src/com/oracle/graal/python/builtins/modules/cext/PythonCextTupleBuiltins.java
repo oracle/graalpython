@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -69,6 +68,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PythonCextTupleBuiltins {
 
@@ -87,13 +87,14 @@ public final class PythonCextTupleBuiltins {
     public abstract static class PyTuple_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static int doManaged(PTuple tuple, Object position, Object element,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+                        @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached ConditionProfile generalizedProfile) {
             setItemNode.execute(null, tuple.getSequenceStorage(), position, element);
+            SequenceStorage newStorage = setItemNode.execute(null, tuple.getSequenceStorage(), position, element);
+            if (generalizedProfile.profile(tuple.getSequenceStorage() != newStorage)) {
+                tuple.setSequenceStorage(newStorage);
+            }
             return 0;
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign(), ErrorMessages.INVALID_ITEM_FOR_ASSIGMENT);
         }
     }
 
