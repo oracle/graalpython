@@ -122,7 +122,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     @GenerateNodeFactory
     public abstract static class PyTruffleDict_Next extends CApiBinaryBuiltinNode {
 
@@ -134,7 +134,11 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
+                        @Cached PromoteBorrowedValue promoteKeyNode,
+                        @Cached PromoteBorrowedValue promoteValueNode,
+                        @Cached SetItemNode setItemNode,
                         @Cached LoopConditionProfile loopProfile) {
+
             HashingStorage storage = dict.getDictStorage();
             HashingStorageNodes.HashingStorageIterator it = getIterator.execute(storage);
             loopProfile.profileCounted(pos);
@@ -145,6 +149,15 @@ public final class PythonCextDictBuiltins {
             }
             Object key = itKey.execute(storage, it);
             Object value = itValue.execute(storage, it);
+            Object promotedKey = promoteKeyNode.execute(key);
+            Object promotedValue = promoteValueNode.execute(value);
+            if (promotedKey != null) {
+                key = promotedKey;
+                // TODO: replace key with promoted value
+            }
+            if (promotedValue != null) {
+                setItemNode.execute(null, dict, key, value = promotedValue);
+            }
             return factory().createTuple(new Object[]{key, value, itKeyHash.execute(storage, it)});
         }
 

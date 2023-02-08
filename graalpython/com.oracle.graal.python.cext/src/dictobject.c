@@ -93,6 +93,7 @@ int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pval
     if (phash != NULL) {
     	*phash = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 2));
     }
+    Py_DECREF(tresult);
     return 1;
 
 }

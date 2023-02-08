@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,6 +100,8 @@ public final class PythonCextTupleBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct)
     @GenerateNodeFactory
     public abstract static class PyTuple_GetItem extends CApiBinaryBuiltinNode {
+
+        public abstract Object execute(PTuple tuple, long key);
 
         @Specialization
         Object doPTuple(PTuple tuple, long key,
