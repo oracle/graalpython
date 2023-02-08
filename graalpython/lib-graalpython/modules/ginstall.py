@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -400,7 +400,7 @@ library_dirs = {lapack_lib}"""
             append_env_var(numpy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
             info(f"have lapack or blas ... CLFAGS={numpy_build_env['CFLAGS']}")
 
-        install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
+        install_from_pypi("numpy==1.23.5", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
                           pre_install_hook=make_site_cfg, **kwargs)
 
         # print numpy configuration
@@ -455,7 +455,7 @@ library_dirs = {lapack_lib}"""
         dateutil(**kwargs)
         numpy(**kwargs)
 
-        install_from_pypi("pandas==1.4.3", **kwargs)
+        install_from_pypi("pandas==1.5.2", **kwargs)
 
     @pip_package()
     def scipy(**kwargs):
@@ -503,7 +503,7 @@ library_dirs = {lapack_lib}"""
         joblib(**kwargs)
         threadpoolctl(**kwargs)
 
-        install_from_pypi("scikit-learn==1.0.2", env=scikit_learn_build_env, **kwargs)
+        install_from_pypi("scikit-learn==1.1.3", env=scikit_learn_build_env, **kwargs)
 
     @pip_package()
     def cycler(**kwargs):

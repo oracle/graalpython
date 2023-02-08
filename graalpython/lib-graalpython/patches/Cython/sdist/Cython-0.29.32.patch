@@ -1,3 +1,16 @@
+diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
+index 1ad27df..0965cb2 100644
+--- a/Cython/Utility/Coroutine.c
++++ b/Cython/Utility/Coroutine.c
+@@ -1299,7 +1299,7 @@ static void __Pyx_Coroutine_del(PyObject *self) {
+         _Py_NewReference(self);
+         __Pyx_SET_REFCNT(self, refcnt);
+     }
+-#if CYTHON_COMPILING_IN_CPYTHON
++#if CYTHON_COMPILING_IN_CPYTHON && !GRAALVM_PYTHON
+     assert(PyType_IS_GC(Py_TYPE(self)) &&
+            _Py_AS_GC(self)->gc.gc_refs != _PyGC_REFS_UNTRACKED);
+ 
 diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
 index f8bf885..9c2534d 100644
 --- a/Cython/Utility/ModuleSetupCode.c
