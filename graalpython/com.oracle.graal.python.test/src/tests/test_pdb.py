@@ -37,15 +37,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from test.test_doctest import _FakeInput
-
 import doctest
 import sys
 
 
-class PdbTestInput(object):
-    """Context manager that makes testing Pdb in doctests easier."""
+# Copied from test_doctest
+class _FakeInput:
+    def __init__(self, lines):
+        self.lines = lines
 
+    def readline(self):
+        line = self.lines.pop(0)
+        print(line)
+        return line + '\n'
+
+
+# Copied from test_pdb
+class PdbTestInput(object):
     def __init__(self, input):
         self.input = input
 
