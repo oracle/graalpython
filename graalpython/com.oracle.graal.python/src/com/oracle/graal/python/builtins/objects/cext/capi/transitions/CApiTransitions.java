@@ -523,7 +523,7 @@ public class CApiTransitions {
         assert value > 0;
         long refCount = nativeWrapper.getRefCount();
         nativeWrapper.setRefCount(refCount + value);
-        assert refCount >= PythonNativeWrapper.MANAGED_REFCNT;
+        assert refCount >= PythonNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(nativeWrapper.getNativePointer());
         if (refCount == PythonNativeWrapper.MANAGED_REFCNT && nativeWrapper.ref != null) {
             nativeWrapper.ref.strongReference = nativeWrapper;
         }
@@ -535,7 +535,7 @@ public class CApiTransitions {
         assert value > 0;
         long refCount = nativeWrapper.getRefCount() - value;
         nativeWrapper.setRefCount(refCount);
-        assert refCount >= PythonNativeWrapper.MANAGED_REFCNT;
+        assert refCount >= PythonNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + refCount + " during decRef in " + Long.toHexString(nativeWrapper.getNativePointer());
         if (refCount == PythonNativeWrapper.MANAGED_REFCNT && nativeWrapper.ref != null) {
             nativeWrapper.ref.strongReference = null;
         }
