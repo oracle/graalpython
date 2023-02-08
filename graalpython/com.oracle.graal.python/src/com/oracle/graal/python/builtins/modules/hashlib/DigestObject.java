@@ -182,21 +182,21 @@ public abstract class DigestObject extends PythonBuiltinObject {
      * calculate the digest on a clone, but that does not need to be supported. If it is not, then
      * we calculate the digest normally, but we must prevent any further updates.
      *
-     * @see #wasReset(), {@link #update(byte[])}
+     * @see #wasReset(), {@link #update(byte[], int)}
      */
     abstract byte[] digest();
 
     /**
      * @return true if the digest has already been calculated and the underlying implementation does
      *         not support cloning, in which case this object can no longer be
-     *         {@linkplain #update(byte[]) updated}
+     *         {@linkplain #update(byte[], int) updated}
      */
     abstract boolean wasReset();
 
     /**
      * Must not be called if {@link #wasReset()} returns true.
      */
-    abstract void update(byte[] data);
+    abstract void update(byte[] data, int length);
 
     abstract DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException;
 
@@ -207,8 +207,8 @@ public abstract class DigestObject extends PythonBuiltinObject {
     }
 
     /**
-     * Ensures that {@link #update(byte[])} is not called after {@link #digest()} if cloning is not
-     * supported. Also caches the digest and ensures that the cache is cleared on update.
+     * Ensures that {@link #update(byte[], int)} is not called after {@link #digest()} if cloning is
+     * not supported. Also caches the digest and ensures that the cache is cleared on update.
      */
     private abstract static class DigestObjectBase extends DigestObject {
         private byte[] cachedDigest = null;
@@ -237,19 +237,19 @@ public abstract class DigestObject extends PythonBuiltinObject {
         }
 
         @Override
-        final void update(byte[] data) {
+        final void update(byte[] data, int length) {
             if (wasReset) {
                 throw CompilerDirectives.shouldNotReachHere("update() called after digest() on an implementation the does not support clone()");
             }
             cachedDigest = null;
-            doUpdate(data);
+            doUpdate(data, length);
         }
 
         abstract byte[] calculateDigestOnClone() throws CloneNotSupportedException;
 
         abstract byte[] calculateDigest();
 
-        abstract void doUpdate(byte[] data);
+        abstract void doUpdate(byte[] data, int length);
     }
 
     private static final class MessageDigestObject extends DigestObjectBase {
@@ -280,8 +280,8 @@ public abstract class DigestObject extends PythonBuiltinObject {
 
         @Override
         @TruffleBoundary
-        void doUpdate(byte[] data) {
-            digest.update(data);
+        void doUpdate(byte[] data, int length) {
+            digest.update(data, 0, length);
         }
 
         @Override
@@ -319,8 +319,8 @@ public abstract class DigestObject extends PythonBuiltinObject {
 
         @Override
         @TruffleBoundary
-        void doUpdate(byte[] data) {
-            mac.update(data);
+        void doUpdate(byte[] data, int length) {
+            mac.update(data, 0, length);
         }
 
         @Override
