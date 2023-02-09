@@ -179,8 +179,10 @@ class TestPyList(CPyExtTestCase):
             Py_ssize_t i;
             for (i = 0; i < capacity; i++) {
                 if (i == idx) {
+                    Py_INCREF(new_item);
                     PyList_SetItem(newList, i, new_item);
                 } else {
+                    Py_INCREF(Py_None);
                     PyList_SetItem(newList, i, Py_None);
                 }
             }
@@ -201,6 +203,7 @@ class TestPyList(CPyExtTestCase):
             ([1,2,3,4], 3, 5),
         ),
         code='''PyObject* wrap_PyList_SET_ITEM(PyObject* op, Py_ssize_t idx, PyObject* newitem) {
+            Py_INCREF(newitem);
             PyList_SET_ITEM(op, idx, newitem);
             return op;
         }
