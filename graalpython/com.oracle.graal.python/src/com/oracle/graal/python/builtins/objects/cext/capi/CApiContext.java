@@ -209,6 +209,7 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Object, Long> callableClosurePointers = new HashMap<>();
     private final HashSet<Object> callableClosures = new HashSet<>();
     private Object nativeLibrary;
+    private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
 
     public static TruffleLogger getLogger(Class<?> clazz) {
@@ -899,7 +900,6 @@ public final class CApiContext extends CExtContext {
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             TruffleFile capiFile = homePath.resolve("libpython" + context.getSoAbi().toJavaStringUncached());
-            Object capiLibrary;
             try {
                 SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
@@ -909,8 +909,7 @@ public final class CApiContext extends CExtContext {
                 CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
                 // keep the call target of 'libpython' alive; workaround until GR-32297 is fixed
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
-                capiLibrary = capiLibraryCallTarget.call();
-
+                Object capiLibrary = capiLibraryCallTarget.call();
                 String libpython = System.getProperty("LibPythonNativeLibrary");
                 if (libpython != null) {
                     SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + libpython + "\"", "<libpython-native>");
@@ -920,6 +919,7 @@ public final class CApiContext extends CExtContext {
                 assert CApiFunction.assertBuiltins(capiLibrary);
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
+
                 return cApiContext;
             } catch (PException e) {
                 /*
@@ -1014,7 +1014,6 @@ public final class CApiContext extends CExtContext {
     private final HashMap<String, Long> typeStorePointers = new HashMap<>();
 
     public Long getTypeStore(String typename) {
-        ensureNative();
         return typeStorePointers.get(typename);
     }
 
@@ -1178,28 +1177,43 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    public void ensureNative() {
-        if (nativeLibrary == null) {
+    public boolean ensureNative() {
+        if (loadNativeLibrary) {
+            loadNativeLibrary = false;
             Env env = PythonContext.get(null).getEnv();
 
-            String lib = GraalHPyContext.getJNILibrary();
+            if (!env.isNativeAccessAllowed()) {
+                LOGGER.config("not loading native C API support library (native access not allowed)");
+                return false;
+            }
+
+            if (PythonOptions.NativeModules.getValue(env.getOptions()).isBlank()) {
+                LOGGER.config("not loading native C API support library (--python.NativeModules=)");
+                return false;
+            }
+
             SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
-            LOGGER.config("loading native C API support library " + lib);
             try {
                 nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
+                /*-
+                 * PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*))
+                 */
                 Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
 
-                // PyAPI_FUNC(void) initNativeForward(void* (*getAPI)(const char*), void*
-                // (*getType)(const char*), void (*setTypeStore)(const char*, void*))
                 Object signature = env.parseInternal(Source.newBuilder("nfi", "((STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):SINT32", "exec").build()).call();
                 Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetAPI(), new GetType(), new SetTypeStore());
                 if (InteropLibrary.getUncached().asInt(result) == 0) {
-                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_MULTICONTEXT);
+                    // this is not the first context - native C API backend not supported
+                    nativeLibrary = null;
+                    LOGGER.config("not loading native C API support library (only supported on initial context)");
+                } else {
+                    LOGGER.config("loading native C API support library " + GraalHPyContext.getJNILibrary());
                 }
             } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
+        return nativeLibrary != null;
     }
 
     private static final TruffleString[] LOOKUP_MODULES = tsArray(new String[]{

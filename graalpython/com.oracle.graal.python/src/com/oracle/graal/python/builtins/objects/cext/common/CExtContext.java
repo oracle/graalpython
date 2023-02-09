@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -78,7 +79,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -129,7 +129,7 @@ public abstract class CExtContext {
     /** A cache for C symbols. */
     private DynamicObject symbolCache;
 
-    protected boolean loadNativeBackend = true;
+    protected boolean supportsNativeBackend = true;
 
     public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
         this.context = context;
@@ -327,21 +327,20 @@ public abstract class CExtContext {
         GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
         Object library = null;
 
-        if (cApiContext.loadNativeBackend) {
+        if (cApiContext.supportsNativeBackend) {
             String nativeModuleOption = context.getOption(PythonOptions.NativeModules);
-            String name = spec.name.toJavaStringUncached();
-            if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-                try {
-                    cApiContext.ensureNative();
-                    GraalHPyContext.loadJNIBackend();
-                } catch (AbstractTruffleException e) {
-                    LOGGER.info("Unable to load native C API backend");
-                    cApiContext.loadNativeBackend = false;
+            boolean loaded = cApiContext.ensureNative();
+            if (loaded) {
+                String name = spec.name.toJavaStringUncached();
+                if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
+                    if (cApiContext.supportsNativeBackend) {
+                        GraalHPyContext.loadJNIBackend();
+                        LOGGER.config("loading module " + spec.path + " as native");
+                        library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+                    }
                 }
-                if (cApiContext.loadNativeBackend) {
-                    LOGGER.config("loading " + spec.path + " as native");
-                    library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
-                }
+            } else {
+                cApiContext.supportsNativeBackend = false;
             }
         }
 
@@ -349,9 +348,13 @@ public abstract class CExtContext {
             library = loadLLVMLibrary(location, context, spec.name, spec.path);
             try {
                 if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
-                    LOGGER.config("loading " + spec.path + " as native (no bitcode found)");
+                    if (cApiContext.supportsNativeBackend) {
+                        LOGGER.config("loading module " + spec.path + " as native (no bitcode found)");
+                    } else {
+                        throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.CANNOT_MULTICONTEXT);
+                    }
                 } else {
-                    LOGGER.config("loading " + spec.path + " as llvm bitcode");
+                    LOGGER.config("loading module " + spec.path + " as llvm bitcode");
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);

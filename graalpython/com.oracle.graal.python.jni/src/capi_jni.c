@@ -357,7 +357,7 @@ int initNativeForwardCalled = 0;
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
 PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
-    LOG("%s", "capi_jni.c:initJNIForward\n");
+    LOG("%s", "capi_jni.c:initNativeForward\n");
     if (initNativeForwardCalled) {
     	return 0;
     }

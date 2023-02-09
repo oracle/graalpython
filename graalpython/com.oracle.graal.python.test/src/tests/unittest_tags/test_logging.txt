@@ -97,6 +97,7 @@
 *graalpython.lib-python.3.test.test_logging.LastResortTest.test_last_resort
 *graalpython.lib-python.3.test.test_logging.LogRecordFactoryTest.test_logrecord_class
 *graalpython.lib-python.3.test.test_logging.LogRecordTest.test_dict_arg
+*graalpython.lib-python.3.test.test_logging.LogRecordTest.test_multiprocessing
 *graalpython.lib-python.3.test.test_logging.LogRecordTest.test_optional
 *graalpython.lib-python.3.test.test_logging.LogRecordTest.test_str_rep
 *graalpython.lib-python.3.test.test_logging.LoggerAdapterTest.test_critical

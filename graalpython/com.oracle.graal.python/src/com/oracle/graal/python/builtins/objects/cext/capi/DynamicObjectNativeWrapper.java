@@ -1799,7 +1799,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         PythonBuiltinClass builtinClass = (PythonBuiltinClass) clazz;
                         PythonBuiltinClassType type = builtinClass.getType();
                         ptr = PythonContext.get(this).getCApiContext().getTypeStore(type.getName().toJavaStringUncached());
-                        assert ptr != null || (type != PythonBuiltinClassType.PythonClass && type != PythonBuiltinClassType.PythonObject) : "sanity check: " + type;
                     }
                     if (ptr == null) {
                         ptr = coerceToLong(callNativeUnary.call(FUN_PYTRUFFLE_ALLOCATE_TYPE, obj, 1), lib);
