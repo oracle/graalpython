@@ -2285,7 +2285,9 @@ public abstract class CExtNodes {
 
         @Specialization
         long doPInt(PInt object) {
-            return ((PInt.bitLength(object.abs()) - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
+            int bw = getContext().getCApiContext().getPyLongBitsInDigit();
+            int len = (PInt.bitLength(object.abs()) + bw - 1) / bw;
+            return object.isNegative() ? -len : len;
         }
 
         @Specialization
@@ -2294,7 +2296,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        long doClass(@SuppressWarnings("unused") PythonManagedClass object) {
+        static long doClass(@SuppressWarnings("unused") PythonManagedClass object) {
             return 0; // dummy value
         }
 
