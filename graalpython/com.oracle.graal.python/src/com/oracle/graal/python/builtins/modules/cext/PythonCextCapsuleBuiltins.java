@@ -186,9 +186,6 @@ public final class PythonCextCapsuleBuiltins {
             if (o.getName() == null) {
                 return getNULL();
             }
-            if (o.getName() instanceof TruffleString) {
-                return new CArrayWrappers.CStringWrapper((TruffleString) o.getName());
-            }
             return o.getName();
         }
 
