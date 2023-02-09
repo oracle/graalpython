@@ -183,7 +183,7 @@ public abstract class DigestObject extends PythonBuiltinObject {
      * we calculate the digest normally, but we must prevent any further updates.
      *
      * @see #wasReset()
-     * @see #update(byte[])
+     * @see #update(byte[], int)
      */
     abstract byte[] digest();
 
