@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -240,7 +240,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
-            return factory().createMMap(clazz, mmapHandle, dupFd, length, access);
+            return factory().createMMap(getContext(), clazz, mmapHandle, dupFd, length, access);
         }
 
         @Specialization(guards = "isIllegal(fd)")

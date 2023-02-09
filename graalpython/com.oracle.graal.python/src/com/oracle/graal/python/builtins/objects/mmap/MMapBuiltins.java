@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_COPY;
 import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_READ;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_READLINE;
@@ -71,6 +69,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -112,21 +111,26 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -351,11 +355,7 @@ public class MMapBuiltins extends PythonBuiltins {
         @Specialization
         PNone close(PMMap self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib) {
-            try {
-                self.close(posixSupportLib, getPosixSupport());
-            } catch (PosixException e) {
-                throw raise(PythonErrorType.BufferError, ErrorMessages.CANNOT_CLOSE_EXPORTED_PTRS_EXIST);
-            }
+            self.close(posixSupportLib, getPosixSupport());
             return PNone.NONE;
         }
     }
@@ -718,4 +718,39 @@ public class MMapBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
+    static class ReleaseCallback implements AsyncHandler.AsyncAction {
+
+        private final PMMap.MMapRef ref;
+
+        ReleaseCallback(PMMap.MMapRef ref) {
+            this.ref = ref;
+        }
+
+        @Override
+        public void execute(PythonContext context) {
+            if (ref.isReleased()) {
+                return;
+            }
+            PythonLanguage language = context.getLanguage();
+            CallTarget callTarget = language.createCachedCallTarget(MMapBuiltins.ReleaseCallback.ReleaserRootNode::new, MMapBuiltins.ReleaseCallback.ReleaserRootNode.class);
+            callTarget.call(ref);
+        }
+
+        private static class ReleaserRootNode extends RootNode {
+            @Child private PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
+
+            ReleaserRootNode(TruffleLanguage<?> language) {
+                super(language);
+            }
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                PMMap.MMapRef ref = (PMMap.MMapRef) frame.getArguments()[0];
+                ref.close(posixSupportLibrary, PythonContext.get(this).getPosixSupport());
+                return null;
+            }
+        }
+    }
+
 }
