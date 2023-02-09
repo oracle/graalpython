@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -57,11 +57,13 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -146,13 +148,17 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static boolean eq(PMethod self, PMethod other) {
-            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
+        static boolean eq(VirtualFrame frame, PMethod self, PMethod other,
+                        @Cached BinaryComparisonNode.EqNode eqNode,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            return self.getFunction() == other.getFunction() && isTrueNode.execute(frame, eqNode.executeObject(frame, self.getSelf(), other.getSelf()));
         }
 
         @Specialization
-        static boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
-            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
+        static boolean eq(VirtualFrame frame, PBuiltinMethod self, PBuiltinMethod other,
+                        @Cached BinaryComparisonNode.EqNode eqNode,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            return self.getFunction() == other.getFunction() && isTrueNode.execute(frame, eqNode.executeObject(frame, self.getSelf(), other.getSelf()));
         }
 
         @Fallback
