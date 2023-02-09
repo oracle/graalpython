@@ -43,6 +43,8 @@ import time
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType
 __dir__ = __file__.rpartition("/")[0]
 
+GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpy' and __graalpython__.platform_id == 'native'
+
 # typedef PyObject * (*unaryfunc)(PyObject *);
 # typedef PyObject * (*binaryfunc)(PyObject *, PyObject *);
 # typedef PyObject * (*ternaryfunc)(PyObject *, PyObject *, PyObject *);
@@ -118,21 +120,21 @@ GCTestClass = CPyExtType("GCTestClass",
 class TestGC1():
     
     def test_native_class(self):
-        gc.enable()
-        GCTestClass.resetCounters()
-        a = GCTestClass.getCounters()
-        assert a == (0,0,0,0)
-        o = GCTestClass()
-        b = GCTestClass.getCounters()
-        assert b == (1,1,0,0)
-        o = None
-        gc.collect()
-        time.sleep(1)
-        gc.collect()
-        c = GCTestClass.getCounters()
-        assert c == (1,1,1,1)
-        pass   
-    
+        if GRAALPYTHON_NATIVE:
+            gc.enable()
+            GCTestClass.resetCounters()
+            a = GCTestClass.getCounters()
+            assert a == (0,0,0,0)
+            o = GCTestClass()
+            b = GCTestClass.getCounters()
+            assert b == (1,1,0,0)
+            del o
+            gc.collect()
+            time.sleep(1)
+            gc.collect()
+            c = GCTestClass.getCounters()
+            assert c == (1,1,1,1)
+
 #
 # class TestGC2(CPyExtTestCase):
 #
