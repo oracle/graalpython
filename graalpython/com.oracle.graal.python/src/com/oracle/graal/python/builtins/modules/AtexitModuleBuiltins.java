@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -56,8 +59,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
@@ -72,9 +75,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
-
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @CoreFunctions(defineModule = "atexit")
 public class AtexitModuleBuiltins extends PythonBuiltins {
@@ -120,7 +120,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             private static void handleException(PythonContext context, PException e) {
                 PBaseException pythonException = e.getEscapedException();
-                if (!IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
+                if (!InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
                     PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
                     callWrite.execute(null, context.getStderr(), T_WRITE, toTruffleStringUncached("Error in atexit._run_exitfuncs:\n"));
                     try {

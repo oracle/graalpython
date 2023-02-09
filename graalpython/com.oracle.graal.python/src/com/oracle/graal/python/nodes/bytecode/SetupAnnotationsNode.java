@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,7 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(PArguments.class)
@@ -113,14 +114,15 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
 
         @Fallback
         void doOther(VirtualFrame frame, Object locals,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItem,
                         @Cached PyObjectSetItem setItem,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             try {
                 getItem.execute(frame, locals, T___ANNOTATIONS__);
             } catch (PException e) {
-                e.expect(PythonBuiltinClassType.KeyError, errorProfile);
+                e.expect(inliningTarget, PythonBuiltinClassType.KeyError, errorProfile);
                 setItem.execute(frame, locals, T___ANNOTATIONS__, factory.createDict());
             }
         }

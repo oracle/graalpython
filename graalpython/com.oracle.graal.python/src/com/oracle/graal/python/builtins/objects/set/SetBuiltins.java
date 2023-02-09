@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -80,13 +80,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -295,10 +296,11 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"}, limit = "1")
         static void doIterable(VirtualFrame frame, PHashingCollection collection, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached HashingStorageSetItem setStorageItem) {
             HashingStorage curStorage = collection.getDictStorage();
             Object iterator = getIter.execute(frame, other);
@@ -307,7 +309,7 @@ public final class SetBuiltins extends PythonBuiltins {
                 try {
                     key = nextNode.execute(frame, iterator);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     collection.setDictStorage(curStorage);
                     return;
                 }

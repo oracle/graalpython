@@ -155,8 +155,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -183,9 +183,9 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -210,6 +210,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -1382,9 +1384,10 @@ public abstract class TypeNodes {
 
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
-    public abstract static class IsSameTypeNode extends PNodeWithContext {
-
-        public abstract boolean execute(Object left, Object right);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class InlinedIsSameTypeNode extends PNodeWithContext {
+        public abstract boolean execute(Node inliningTarget, Object left, Object right);
 
         @Specialization
         static boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
@@ -1415,6 +1418,22 @@ public abstract class TypeNodes {
         @Fallback
         static boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    @Deprecated // TODO: DSL inlining
+    public abstract static class IsSameTypeNode extends PNodeWithContext {
+
+        @Deprecated // TODO: DSL inlining
+        public abstract boolean execute(Object left, Object right);
+
+        @Specialization
+        boolean doIt(Object left, Object right,
+
+                        @Cached InlinedIsSameTypeNode isSameTypeNode) {
+            return isSameTypeNode.execute(this, left, right);
         }
 
         @NeverDefault
@@ -1641,11 +1660,12 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doNativeClass(PythonAbstractNativeObject obj,
-                        @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlineIsBuiltinClassProfile profile,
                         @Cached GetClassNode getClassNode,
                         @Cached CExtNodes.PCallCapiFunction nativeTypeCheck) {
             Object type = getClassNode.execute(obj);
-            if (profile.profileClass(type, PythonBuiltinClassType.PythonClass)) {
+            if (profile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                 return true;
             }
             if (PythonNativeClass.isInstance(type)) {

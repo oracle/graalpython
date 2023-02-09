@@ -151,6 +151,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -163,7 +164,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -350,7 +353,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(table)")
         PBytes translate(VirtualFrame frame, PBytes self, Object table, @SuppressWarnings("unused") PNone delete,
-                        @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
+                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
@@ -378,7 +381,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
         PBytes translateAndDelete(VirtualFrame frame, PBytes self, Object table, Object delete,
-                        @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
+                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
@@ -434,11 +437,12 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
         PBytesLike join(VirtualFrame frame, PBytesLike self, Object iterable,
+                        @Bind("this") Node node,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached BytesNodes.BytesJoinNode bytesJoinNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] res = bytesJoinNode.execute(frame, toByteArrayNode.execute(self.getSequenceStorage()), iterable);
-            return create.execute(factory(), self, res);
+            return create.execute(node, factory(), self, res);
         }
 
         @Fallback
@@ -454,14 +458,16 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytesLike add(PBytesLike self, PBytesLike other,
+                        @Bind("this") Node node,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
-            return create.execute(factory(), self, res);
+            return create.execute(node, factory(), self, res);
         }
 
         @Specialization(guards = "!isBytes(other)", limit = "3")
         PBytesLike add(VirtualFrame frame, PBytesLike self, Object other,
+                        @Bind("this") Node node,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
@@ -476,7 +482,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 // TODO avoid copying
                 byte[] bytes = bufferLib.getCopiedByteArray(buffer);
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), new ByteSequenceStorage(bytes));
-                return create.execute(factory(), self, res);
+                return create.execute(node, factory(), self, res);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
@@ -489,19 +495,21 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         public PBytesLike mul(VirtualFrame frame, PBytesLike self, int times,
+                        @Bind("this") Node node,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
-            return create.execute(factory(), self, res);
+            return create.execute(node, factory(), self, res);
         }
 
         @Specialization
         public PBytesLike mul(VirtualFrame frame, PBytesLike self, Object times,
+                        @Bind("this") Node node,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), asSizeNode.executeExact(frame, times));
-            return create.execute(factory(), self, res);
+            return create.execute(node, factory(), self, res);
         }
 
         @Fallback
@@ -670,6 +678,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         Object mod(VirtualFrame frame, PBytesLike self, Object right,
+                        @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached PyObjectGetItem getItemNode,
@@ -680,7 +689,7 @@ public class BytesBuiltins extends PythonBuiltins {
             Object savedState = IndirectCallContext.enter(frame, this);
             try {
                 byte[] data = formatter.format(right);
-                return create.execute(factory(), self, data);
+                return create.execute(node, factory(), self, data);
             } finally {
                 IndirectCallContext.exit(frame, this, savedState);
             }
@@ -946,6 +955,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isEmptySep(sep)")
         PTuple partition(VirtualFrame frame, PBytesLike self, PBytesLike sep,
+                        @Bind("this") Node node,
                         @Cached ConditionProfile notFound,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached BytesNodes.CreateBytesNode createBytesNode) {
@@ -955,25 +965,25 @@ public class BytesBuiltins extends PythonBuiltins {
             int idx = find(frame, self.getSequenceStorage(), sep, len);
             PBytesLike first, second, third;
             if (notFound.profile(idx == -1)) {
-                second = createBytesNode.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                second = createBytesNode.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
                 if (isRight()) {
-                    third = createBytesNode.execute(factory(), self, bytes);
-                    first = createBytesNode.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                    third = createBytesNode.execute(node, factory(), self, bytes);
+                    first = createBytesNode.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
                 } else {
-                    first = createBytesNode.execute(factory(), self, bytes);
-                    third = createBytesNode.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                    first = createBytesNode.execute(node, factory(), self, bytes);
+                    third = createBytesNode.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
                 }
             } else {
-                second = createBytesNode.execute(factory(), self, toBytesNode.execute(sep));
+                second = createBytesNode.execute(node, factory(), self, toBytesNode.execute(sep));
                 if (idx == 0) {
-                    first = createBytesNode.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
-                    third = createBytesNode.execute(factory(), self, Arrays.copyOfRange(bytes, lenSep, len));
+                    first = createBytesNode.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                    third = createBytesNode.execute(node, factory(), self, Arrays.copyOfRange(bytes, lenSep, len));
                 } else if (idx == len - 1) {
-                    first = createBytesNode.execute(factory(), self, Arrays.copyOfRange(bytes, 0, len - lenSep));
-                    third = createBytesNode.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                    first = createBytesNode.execute(node, factory(), self, Arrays.copyOfRange(bytes, 0, len - lenSep));
+                    third = createBytesNode.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
                 } else {
-                    first = createBytesNode.execute(factory(), self, Arrays.copyOfRange(bytes, 0, idx));
-                    third = createBytesNode.execute(factory(), self, Arrays.copyOfRange(bytes, idx + lenSep, len));
+                    first = createBytesNode.execute(node, factory(), self, Arrays.copyOfRange(bytes, 0, idx));
+                    third = createBytesNode.execute(node, factory(), self, Arrays.copyOfRange(bytes, idx + lenSep, len));
                 }
             }
             return factory().createTuple(new Object[]{first, second, third});
@@ -1512,18 +1522,20 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(fill)")
         PBytesLike none(PBytesLike self, int width, @SuppressWarnings("unused") PNone fill,
+                        @Bind("this") Node node,
                         @Cached.Shared("copy") @Cached SequenceStorageNodes.CopyNode copyNode,
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create,
                         @Cached.Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             int len = bufferLib.getBufferLength(self);
             if (checkSkip(len, width)) {
-                return create.execute(factory(), self, copyNode.execute(self.getSequenceStorage()));
+                return create.execute(node, factory(), self, copyNode.execute(self.getSequenceStorage()));
             }
-            return create.execute(factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, (byte) ' '));
+            return create.execute(node, factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, (byte) ' '));
         }
 
         @Specialization
         PBytesLike bytes(VirtualFrame frame, PBytesLike self, Object w, PBytesLike fill,
+                        @Bind("this") Node node,
                         @Cached.Shared("copy") @Cached SequenceStorageNodes.CopyNode copyNode,
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create,
                         @Cached.Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
@@ -1535,9 +1547,9 @@ public class BytesBuiltins extends PythonBuiltins {
             }
             int width = asSizeNode.executeExact(frame, w);
             if (checkSkip(len, width)) {
-                return create.execute(factory(), self, copyNode.execute(self.getSequenceStorage()));
+                return create.execute(node, factory(), self, copyNode.execute(self.getSequenceStorage()));
             }
-            return create.execute(factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, bufferLib.readByte(fill, 0)));
+            return create.execute(node, factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, bufferLib.readByte(fill, 0)));
         }
 
         protected String methodName() {
@@ -1645,6 +1657,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytesLike replace(PBytesLike self, PBytesLike substr, PBytesLike replacement, int count,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toInternalBytes,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.FindNode findNode,
@@ -1658,17 +1671,17 @@ public class BytesBuiltins extends PythonBuiltins {
             byte[] replacementBytes = toBytes.execute(replacement);
             int maxcount = count < 0 ? Integer.MAX_VALUE : count;
             if (selfSubAreEmpty.profile(len == 0 && subBytes.length == 0)) {
-                return create.execute(factory(), self, replacementBytes);
+                return create.execute(this, factory(), self, replacementBytes);
             }
             if (selfIsEmpty.profile(len == 0)) {
-                return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                return create.execute(inliningTarget, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }
             if (subIsEmpty.profile(subBytes.length == 0)) {
-                return create.execute(factory(), self, replaceWithEmptySub(bytes, len, replacementBytes, maxcount));
+                return create.execute(inliningTarget, factory(), self, replaceWithEmptySub(bytes, len, replacementBytes, maxcount));
             }
             // byte[] newBytes = doReplace(bytes, subBytes, replacementBytes);
             byte[] newBytes = replace(bytes, len, subBytes, replacementBytes, maxcount, findNode);
-            return create.execute(factory(), self, newBytes);
+            return create.execute(inliningTarget, factory(), self, newBytes);
         }
 
         @Fallback
@@ -1741,13 +1754,14 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytesLike replace(PBytesLike self,
+                        @Bind("this") Node node,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] bytes = toBytes.execute(self);
             for (int i = 0; i < bytes.length; ++i) {
                 bytes[i] = toLower(bytes[i]);
             }
-            return create.execute(factory(), self, bytes);
+            return create.execute(node, factory(), self, bytes);
         }
     }
 
@@ -1757,13 +1771,14 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytesLike replace(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.CreateBytesNode create) {
             byte[] bytes = toBytes.execute(self);
             for (int i = 0; i < bytes.length; ++i) {
                 bytes[i] = toUpper(bytes[i]);
             }
-            return create.execute(factory(), self, bytes);
+            return create.execute(inliningTarget, factory(), self, bytes);
         }
     }
 
@@ -1915,32 +1930,35 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isWhitespace(sep)")
         PList whitespace(PBytesLike self, @SuppressWarnings("unused") byte[] sep, int maxsplit,
+                        @Bind("this") Node node,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("create") @Cached BytesNodes.CreateBytesNode createBytesNode) {
             byte[] splitBs = selfToBytesNode.execute(self.getSequenceStorage());
             int len = self.getSequenceStorage().length();
-            return getBytesResult(splitWhitespace(splitBs, len, adjustMaxSplit(maxsplit)), appendNode, self, createBytesNode);
+            return getBytesResult(splitWhitespace(splitBs, len, adjustMaxSplit(maxsplit)), appendNode, self, node, createBytesNode);
         }
 
         @Specialization(guards = {"!isWhitespace(sep)", "isSingleSep(sep)"})
         PList single(PBytesLike self, byte[] sep, int maxsplit,
+                        @Bind("this") Node node,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("create") @Cached BytesNodes.CreateBytesNode createBytesNode) {
             byte[] splitBs = selfToBytesNode.execute(self.getSequenceStorage());
             int len = self.getSequenceStorage().length();
-            return getBytesResult(splitSingle(splitBs, len, sep[0], adjustMaxSplit(maxsplit)), appendNode, self, createBytesNode);
+            return getBytesResult(splitSingle(splitBs, len, sep[0], adjustMaxSplit(maxsplit)), appendNode, self, node, createBytesNode);
         }
 
         @Specialization(guards = {"!isWhitespace(sep)", "!isEmptySep(sep)", "!isSingleSep(sep)"})
         PList split(PBytesLike self, byte[] sep, int maxsplit,
+                        @Bind("this") Node node,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("create") @Cached BytesNodes.CreateBytesNode createBytesNode) {
             byte[] splitBs = selfToBytesNode.execute(self.getSequenceStorage());
             int len = self.getSequenceStorage().length();
-            return getBytesResult(splitDelimiter(splitBs, len, sep, adjustMaxSplit(maxsplit)), appendNode, self, createBytesNode);
+            return getBytesResult(splitDelimiter(splitBs, len, sep, adjustMaxSplit(maxsplit)), appendNode, self, node, createBytesNode);
         }
 
         @SuppressWarnings("unused")
@@ -1952,11 +1970,11 @@ public class BytesBuiltins extends PythonBuiltins {
         protected final PList getBytesResult(List<byte[]> bytes,
                         ListNodes.AppendNode appendNode,
                         PBytesLike self,
-                        BytesNodes.CreateBytesNode createBytesNode) {
+                        Node node, BytesNodes.CreateBytesNode createBytesNode) {
             PList result = factory().createList();
             Iterator<byte[]> it = iterator(bytes);
             while (hasNext(it)) {
-                appendNode.execute(result, createBytesNode.execute(factory(), self, next(it)));
+                appendNode.execute(result, createBytesNode.execute(node, factory(), self, next(it)));
             }
             return result;
         }
@@ -2172,23 +2190,26 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         PList doSplitlinesDefault(PBytesLike self, @SuppressWarnings("unused") PNone keepends,
+                        @Bind("this") Node inliningTarget,
                         @Cached.Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create) {
-            return doSplitlines(self, false, toBytesNode, appendNode, create);
+            return doSplitlines(self, false, inliningTarget, toBytesNode, appendNode, create);
         }
 
         @Specialization(guards = "!isPNone(keepends)")
         PList doSplitlinesDefault(PBytesLike self, Object keepends,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Cached.Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create) {
-            return doSplitlines(self, cast.execute(keepends) != 0, toBytesNode, appendNode, create);
+            return doSplitlines(self, cast.execute(keepends) != 0, inliningTarget, toBytesNode, appendNode, create);
         }
 
         @Specialization
         PList doSplitlines(PBytesLike self, boolean keepends,
+                        @Bind("this") Node inliningTarget,
                         @Cached.Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create) {
@@ -2205,14 +2226,14 @@ public class BytesBuiltins extends PythonBuiltins {
                         sliceEnd = i + 1;
                     }
                     byte[] slice = copySlice(bytes, sliceStart, sliceEnd);
-                    appendNode.execute(list, create.execute(factory(), self, slice));
+                    appendNode.execute(list, create.execute(inliningTarget, factory(), self, slice));
                     sliceStart = i + 1;
                 }
             }
             // Process the remaining part if any
             if (sliceStart != bytes.length) {
                 byte[] slice = copySlice(bytes, sliceStart, bytes.length);
-                appendNode.execute(list, create.execute(factory(), self, slice));
+                appendNode.execute(list, create.execute(this, factory(), self, slice));
             }
             return list;
         }
@@ -2228,14 +2249,16 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytesLike strip(PBytesLike self, @SuppressWarnings("unused") PNone bytes,
+                        @Bind("this") Node node,
                         @Cached.Shared("createByte") @Cached BytesNodes.CreateBytesNode create,
                         @Cached.Shared("toByteSelf") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bs = toBytesNode.execute(self);
-            return create.execute(factory(), self, getResultBytes(bs, findIndex(bs)));
+            return create.execute(node, factory(), self, getResultBytes(bs, findIndex(bs)));
         }
 
         @Specialization(guards = "!isPNone(object)")
         PBytesLike strip(VirtualFrame frame, PBytesLike self, Object object,
+                        @Bind("this") Node node,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached.Shared("createByte") @Cached BytesNodes.CreateBytesNode create,
@@ -2245,7 +2268,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 byte[] stripBs = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int stripBsLen = bufferLib.getBufferLength(buffer);
                 byte[] bs = selfToBytesNode.execute(self);
-                return create.execute(factory(), self, getResultBytes(bs, findIndex(bs, stripBs, stripBsLen)));
+                return create.execute(node, factory(), self, getResultBytes(bs, findIndex(bs, stripBs, stripBsLen)));
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
@@ -2414,8 +2437,8 @@ public class BytesBuiltins extends PythonBuiltins {
 
     public abstract static class BaseTranslateNode extends PythonBuiltinNode {
 
-        protected final void checkLengthOfTable(byte[] table, ConditionProfile isLenTable256Profile) {
-            if (isLenTable256Profile.profile(table.length != 256)) {
+        protected final void checkLengthOfTable(byte[] table, InlinedConditionProfile isLenTable256Profile) {
+            if (isLenTable256Profile.profile(this, table.length != 256)) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.TRANS_TABLE_MUST_BE_256);
             }
         }
@@ -2509,18 +2532,19 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         PBytesLike capitalize(PBytesLike self,
+                        @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create) {
             int len = self.getSequenceStorage().length();
             if (len == 0) {
-                return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                return create.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }
             byte[] b = bufferLib.getCopiedByteArray(self);
             b[0] = toUpper(b[0]);
             for (int i = 1; i < len; i++) {
                 b[i] = toLower(b[i]);
             }
-            return create.execute(factory(), self, b);
+            return create.execute(node, factory(), self, b);
         }
     }
 
@@ -2530,11 +2554,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         PBytesLike title(PBytesLike self,
+                        @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create) {
             int len = bufferLib.getBufferLength(self);
             if (len == 0) {
-                return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                return create.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }
             byte[] b = bufferLib.getCopiedByteArray(self);
             boolean previousIsCased = false;
@@ -2557,7 +2582,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 b[i] = c;
             }
 
-            return create.execute(factory(), self, b);
+            return create.execute(node, factory(), self, b);
         }
     }
 
@@ -2567,11 +2592,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         PBytesLike swapcase(PBytesLike self,
+                        @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create) {
             int len = bufferLib.getBufferLength(self);
             if (len == 0) {
-                return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                return create.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }
             byte[] b = bufferLib.getCopiedByteArray(self);
             for (int i = 0; i < len; i++) {
@@ -2581,7 +2607,7 @@ public class BytesBuiltins extends PythonBuiltins {
                     b[i] = toUpper(b[i]);
                 }
             }
-            return create.execute(factory(), self, b);
+            return create.execute(node, factory(), self, b);
         }
     }
 
@@ -2597,11 +2623,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         PBytesLike expandtabs(PBytesLike self, int tabsize,
+                        @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create) {
             int len = bufferLib.getBufferLength(self);
             if (len == 0) {
-                return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+                return create.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }
             int max = SysModuleBuiltins.MAXSIZE;
             byte[] b = bufferLib.getCopiedByteArray(self);
@@ -2654,7 +2681,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 }
 
             }
-            return create.execute(factory(), self, q);
+            return create.execute(node, factory(), self, q);
         }
 
         @Override
@@ -2670,9 +2697,10 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         PBytesLike zfill(PBytesLike self, int width,
+                        @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create) {
-            return create.execute(factory(), self, zfill(bufferLib.getCopiedByteArray(self), width));
+            return create.execute(node, factory(), self, zfill(bufferLib.getCopiedByteArray(self), width));
         }
 
         private byte[] zfill(byte[] self, int width) {
@@ -2798,6 +2826,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class RemovePrefixNode extends PythonBinaryBuiltinNode {
         @Specialization
         PBytesLike remove(VirtualFrame frame, PBytesLike self, PBytesLike prefix,
+                        @Bind("this") Node node,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
@@ -2817,15 +2846,15 @@ public class BytesBuiltins extends PythonBuiltins {
                     for (int i = 0; i < selfBsLen; i++) {
                         if (i < prefixBsLen) {
                             if (selfBs[i] != prefixBs[i]) {
-                                return create.execute(factory(), self, selfBs);
+                                return create.execute(node, factory(), self, selfBs);
                             }
                         } else {
                             result[j++] = selfBs[i];
                         }
                     }
-                    return create.execute(factory(), self, result);
+                    return create.execute(node, factory(), self, result);
                 }
-                return create.execute(factory(), self, selfBs);
+                return create.execute(node, factory(), self, selfBs);
             } finally {
                 bufferLib.release(selfBuffer, frame, this);
                 bufferLib.release(prefixBuffer, frame, this);
@@ -2843,6 +2872,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class RemoveSuffixNode extends PythonBinaryBuiltinNode {
         @Specialization
         PBytesLike remove(VirtualFrame frame, PBytesLike self, PBytesLike suffix,
+                        @Bind("this") Node node,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
@@ -2861,15 +2891,15 @@ public class BytesBuiltins extends PythonBuiltins {
                     for (int i = selfBsLen - 1, j = 1; i >= 0; i--, j++) {
                         if (i >= selfBsLen - suffixBsLen) {
                             if (selfBs[i] != suffixBs[suffixBsLen - j]) {
-                                return create.execute(factory(), self, selfBs);
+                                return create.execute(node, factory(), self, selfBs);
                             }
                         } else {
                             result[result.length - k++] = selfBs[i];
                         }
                     }
-                    return create.execute(factory(), self, result);
+                    return create.execute(node, factory(), self, result);
                 }
-                return create.execute(factory(), self, selfBs);
+                return create.execute(node, factory(), self, selfBs);
             } finally {
                 bufferLib.release(selfBuffer, frame, this);
                 bufferLib.release(suffixBuffer, frame, this);

@@ -59,9 +59,9 @@ import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -206,7 +206,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private static boolean isSystemExit(PBaseException pythonException) {
-        return IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), SystemExit);
+        return InlineIsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), SystemExit);
     }
 
     @TruffleBoundary

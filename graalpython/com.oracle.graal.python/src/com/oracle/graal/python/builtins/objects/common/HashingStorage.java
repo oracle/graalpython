@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,8 +66,8 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -76,11 +76,13 @@ import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HashingStorage {
@@ -157,6 +159,7 @@ public abstract class HashingStorage {
 
         @Specialization(guards = "hasIterAttrButNotBuiltin(col, getClassNode, lookupIter)", limit = "1")
         HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -165,9 +168,9 @@ public abstract class HashingStorage {
                         @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
-                        @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(0);
-            return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
+            return copyToStorage(frame, inliningTarget, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
         protected static boolean hasIterAttrButNotBuiltin(PHashingCollection col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
@@ -177,19 +180,21 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
-                        @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(0);
-            return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
+            return copyToStorage(frame, inliningTarget, mapping, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
         HashingStorage doSequence(VirtualFrame frame, Object iterable, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -199,10 +204,10 @@ public abstract class HashingStorage {
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached ConditionProfile lengthTwoProfile,
-                        @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached IsBuiltinClassProfile isTypeErrorProfile) {
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
 
-            return addSequenceToStorage(frame, iterable, kwargs, PDict::createNewStorage, getIter, nextNode, createListNode,
+            return addSequenceToStorage(frame, inliningTarget, iterable, kwargs, PDict::createNewStorage, getIter, nextNode, createListNode,
                             seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
                             errorProfile, setHasihngStorageItem, addAllToOther);
         }
@@ -222,10 +227,9 @@ public abstract class HashingStorage {
      * Adds all items from the given mapping object to storage. It is the caller responsibility to
      * ensure, that mapping has the 'keys' attribute.
      */
-    public static HashingStorage copyToStorage(VirtualFrame frame, Object mapping, PKeyword[] kwargs, HashingStorage storage,
-                    LookupAndCallUnaryNode callKeysNode, PyObjectGetItem callGetItemNode,
-                    PyObjectGetIter getIter, GetNextNode nextNode,
-                    IsBuiltinClassProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOtherNode) {
+    public static HashingStorage copyToStorage(VirtualFrame frame, Node inliningTarget, Object mapping, PKeyword[] kwargs, HashingStorage storage,
+                    LookupAndCallUnaryNode callKeysNode, PyObjectGetItem callGetItemNode, PyObjectGetIter getIter, GetNextNode nextNode,
+                    IsBuiltinObjectProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOtherNode) {
         Object keysIterable = callKeysNode.executeObject(frame, mapping);
         Object keysIt = getIter.execute(frame, keysIterable);
         HashingStorage curStorage = storage;
@@ -236,7 +240,7 @@ public abstract class HashingStorage {
 
                 curStorage = setHashingStorageItem.execute(frame, curStorage, keyObj, valueObj);
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
+                e.expectStopIteration(inliningTarget, errorProfile);
                 break;
             }
         }
@@ -251,10 +255,10 @@ public abstract class HashingStorage {
         HashingStorage get(int length);
     }
 
-    public static HashingStorage addSequenceToStorage(VirtualFrame frame, Object iterable, PKeyword[] kwargs, StorageSupplier storageSupplier,
+    public static HashingStorage addSequenceToStorage(VirtualFrame frame, Node inliningTarget, Object iterable, PKeyword[] kwargs, StorageSupplier storageSupplier,
                     PyObjectGetIter getIter, GetNextNode nextNode, FastConstructListNode createListNode, LenNode seqLenNode,
-                    ConditionProfile lengthTwoProfile, PRaiseNode raise, PyObjectGetItem getItemNode, IsBuiltinClassProfile isTypeErrorProfile,
-                    IsBuiltinClassProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOther) throws PException {
+                    ConditionProfile lengthTwoProfile, PRaiseNode raise, PyObjectGetItem getItemNode, IsBuiltinObjectProfile isTypeErrorProfile,
+                    IsBuiltinObjectProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOther) throws PException {
         Object it = getIter.execute(frame, iterable);
         ArrayBuilder<PSequence> elements = new ArrayBuilder<>();
         try {
@@ -273,10 +277,10 @@ public abstract class HashingStorage {
                 elements.add(element);
             }
         } catch (PException e) {
-            if (isTypeErrorProfile.profileException(e, TypeError)) {
+            if (isTypeErrorProfile.profileException(inliningTarget, e, TypeError)) {
                 throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
             } else {
-                e.expectStopIteration(errorProfile);
+                e.expectStopIteration(inliningTarget, errorProfile);
             }
         }
         HashingStorage storage = storageSupplier.get(elements.size() + kwargs.length);

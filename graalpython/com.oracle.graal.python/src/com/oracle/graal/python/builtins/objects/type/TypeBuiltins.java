@@ -158,6 +158,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -171,6 +173,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -185,6 +188,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -265,7 +269,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
-            if (IsBuiltinClassProfile.getUncached().profileClass(self, PythonBuiltinClassType.PythonClass)) {
+            if (InlineIsBuiltinClassProfile.profileClassSlowPath(self, PythonBuiltinClassType.PythonClass)) {
                 return self.getAttribute(TYPE_DOC);
             } else {
                 return self.getAttribute(T___DOC__);
@@ -915,8 +919,6 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private GetFixedAttributeNode getBasesAttrNode;
         @Child private ObjectNodes.FastIsTupleSubClassNode isTupleSubClassNode;
 
-        @Child private IsBuiltinClassProfile isAttrErrorProfile;
-
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
         boolean doManagedManaged(VirtualFrame frame, Object cls, Object derived) {
             return isSameType(cls, derived) || isSubtypeNode.execute(frame, derived, cls);
@@ -924,6 +926,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doObjectObject(VirtualFrame frame, Object cls, Object derived,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile isAttrErrorProfile,
                         @Cached TypeNodes.IsTypeNode isClsTypeNode,
                         @Cached TypeNodes.IsTypeNode isDerivedTypeNode) {
             if (isSameType(cls, derived)) {
@@ -934,10 +938,10 @@ public class TypeBuiltins extends PythonBuiltins {
             if (isClsTypeNode.execute(cls) && isDerivedTypeNode.execute(derived)) {
                 return isSubtypeNode.execute(frame, derived, cls);
             }
-            if (!checkClass(frame, derived)) {
+            if (!checkClass(frame, inliningTarget, derived, isAttrErrorProfile)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
             }
-            if (!checkClass(frame, cls)) {
+            if (!checkClass(frame, inliningTarget, cls, isAttrErrorProfile)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
             }
             return false;
@@ -945,18 +949,17 @@ public class TypeBuiltins extends PythonBuiltins {
 
         // checks if object has '__bases__' (see CPython 'abstract.c' function
         // 'recursive_issubclass')
-        private boolean checkClass(VirtualFrame frame, Object obj) {
-            if (getBasesAttrNode == null || isAttrErrorProfile == null || isTupleSubClassNode == null) {
+        private boolean checkClass(VirtualFrame frame, Node inliningTarget, Object obj, IsBuiltinObjectProfile isAttrErrorProfile) {
+            if (getBasesAttrNode == null || isTupleSubClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getBasesAttrNode = insert(GetFixedAttributeNode.create(T___BASES__));
-                isAttrErrorProfile = insert(IsBuiltinClassProfile.create());
                 isTupleSubClassNode = insert(ObjectNodes.FastIsTupleSubClassNode.create());
             }
             Object basesObj;
             try {
                 basesObj = getBasesAttrNode.executeObject(frame, obj);
             } catch (PException e) {
-                e.expectAttributeError(isAttrErrorProfile);
+                e.expectAttributeError(inliningTarget, isAttrErrorProfile);
                 return false;
             }
             return isTupleSubClassNode.execute(frame, basesObj);

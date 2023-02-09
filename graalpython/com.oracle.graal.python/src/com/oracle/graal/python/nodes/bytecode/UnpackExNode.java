@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,13 +52,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -67,6 +68,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 public abstract class UnpackExNode extends PNodeWithContext {
@@ -99,10 +101,11 @@ public abstract class UnpackExNode extends PNodeWithContext {
 
     @Fallback
     static int doUnpackIterable(VirtualFrame frame, int initialStackTop, Object collection, int countBefore, int countAfter,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode getNextNode,
-                    @Cached IsBuiltinClassProfile notIterableProfile,
-                    @Cached IsBuiltinClassProfile stopIterationProfile,
+                    @Cached IsBuiltinObjectProfile notIterableProfile,
+                    @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Cached ListNodes.ConstructListNode constructListNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
@@ -116,10 +119,10 @@ public abstract class UnpackExNode extends PNodeWithContext {
         try {
             iterator = getIter.execute(frame, collection);
         } catch (PException e) {
-            e.expectTypeError(notIterableProfile);
+            e.expectTypeError(inliningTarget, notIterableProfile);
             throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
-        stackTop = moveItemsToStack(frame, iterator, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
+        stackTop = moveItemsToStack(frame, inliningTarget, iterator, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
         PList starAndAfter = constructListNode.execute(frame, iterator);
         SequenceStorage storage = starAndAfter.getSequenceStorage();
         int lenAfter = storage.length();
@@ -138,8 +141,8 @@ public abstract class UnpackExNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static int moveItemsToStack(VirtualFrame frame, Object iterator, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
-                    IsBuiltinClassProfile stopIterationProfile, PRaiseNode raiseNode) {
+    private static int moveItemsToStack(VirtualFrame frame, Node inliningTarget, Object iterator, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
+                    IsBuiltinObjectProfile stopIterationProfile, PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
@@ -147,7 +150,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
                 Object item = getNextNode.execute(frame, iterator);
                 frame.setObject(stackTop--, item);
             } catch (PException e) {
-                e.expectStopIteration(stopIterationProfile);
+                e.expectStopIteration(inliningTarget, stopIterationProfile);
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
             }
         }

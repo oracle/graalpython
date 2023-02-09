@@ -46,14 +46,16 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
@@ -79,12 +81,13 @@ public abstract class ReadFromLocalsNode extends PNodeWithContext implements Acc
 
     @Fallback
     static Object readFromLocals(VirtualFrame frame, Object locals, TruffleString name,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetItem getItem,
-                    @Cached IsBuiltinClassProfile errorProfile) {
+                    @Cached IsBuiltinObjectProfile errorProfile) {
         try {
             return getItem.execute(frame, locals, name);
         } catch (PException e) {
-            e.expect(PythonBuiltinClassType.KeyError, errorProfile);
+            e.expect(inliningTarget, PythonBuiltinClassType.KeyError, errorProfile);
             return PNone.NO_VALUE;
         }
     }

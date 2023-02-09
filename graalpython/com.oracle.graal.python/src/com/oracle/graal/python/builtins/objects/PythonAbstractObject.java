@@ -121,9 +121,9 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -136,6 +136,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -161,6 +162,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.RegionEqualNode;
 import com.oracle.truffle.api.utilities.TriState;
@@ -212,15 +214,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void writeMember(String key, Object value,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Cached PInteropSetAttributeNode setAttributeNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile,
+                    /* @Shared("attributeErrorProfile") */ @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             setAttributeNode.execute(this, fromJavaStringNode.execute(key, TS_ENCODING), value);
         } catch (PException e) {
-            e.expectAttributeError(attrErrorProfile);
+            e.expectAttributeError(inliningTarget, attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
             throw UnknownIdentifierException.create(key);
         } finally {
@@ -487,13 +490,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached ConditionProfile profileGetattribute,
                     @Exclusive @Cached ConditionProfile profileMember,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attributeErrorProfile,
+                    /* @Shared("attributeErrorProfile") */ @Cached IsBuiltinObjectProfile attributeErrorProfile,
                     @Exclusive @Cached GilNode gil)
                     throws UnknownIdentifierException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -509,7 +513,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     throw UnknownIdentifierException.create(member);
                 }
             } catch (PException e) {
-                e.expect(AttributeError, attributeErrorProfile);
+                e.expect(inliningTarget, AttributeError, attributeErrorProfile);
                 throw UnknownIdentifierException.create(member);
             }
             return executeNode.execute(memberObj, arguments);
@@ -598,14 +602,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void removeMember(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile,
+                    /* @Shared("attributeErrorProfile") */ @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             deleteAttributeNode.execute(this, member);
         } catch (PException e) {
-            e.expectAttributeError(attrErrorProfile);
+            e.expectAttributeError(inliningTarget, attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
             throw UnknownIdentifierException.create(member);
         } finally {
@@ -1295,6 +1300,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(limit = "2")
         static Object doIt(Object object, Object attrName,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary("attrName") InteropLibrary libAttrName,
                         @Cached PRaiseNode raiseNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
@@ -1302,8 +1308,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattrNode,
                         @Cached CallBinaryMethodNode callGetattrNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Cached ConditionProfile hasGetattrProfile) {
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached InlinedConditionProfile hasGetattrProfile) {
             if (!libAttrName.isString(attrName)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrName);
             }
@@ -1320,9 +1326,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 Object attrGetattribute = lookupGetattributeNode.execute(object, T___GETATTRIBUTE__);
                 return callGetattributeNode.executeObject(attrGetattribute, object, attrNameStr);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(inliningTarget, AttributeError, isBuiltinClassProfile);
                 Object attrGetattr = lookupGetattrNode.execute(object, T___GETATTR__);
-                if (hasGetattrProfile.profile(attrGetattr != PNone.NO_VALUE)) {
+                if (hasGetattrProfile.profile(inliningTarget, attrGetattr != PNone.NO_VALUE)) {
                     return callGetattrNode.executeObject(attrGetattr, object, attrNameStr);
                 }
                 throw pe;
@@ -1366,17 +1372,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public static void doSpecialObject(PythonAbstractObject primary, TruffleString attrName, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PForeignToPTypeNode convert,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallTernaryMethodNode callSetAttrNode,
-                        @Cached ConditionProfile profile,
-                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                        @Cached InlinedConditionProfile profile,
+                        @Cached IsBuiltinObjectProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
             Object attrSetattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.T___SETATTR__);
-            if (profile.profile(attrSetattr != PNone.NO_VALUE)) {
+            if (profile.profile(inliningTarget, attrSetattr != PNone.NO_VALUE)) {
                 try {
                     callSetAttrNode.execute(null, attrSetattr, primary, attrName, convert.executeConvert(value));
                 } catch (PException e) {
-                    e.expectAttributeError(attrErrorProfile);
+                    e.expectAttributeError(inliningTarget, attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
                     throw UnknownIdentifierException.create(attrName.toJavaStringUncached());
                 }
@@ -1428,17 +1435,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public void doSpecialObject(PythonAbstractObject primary, String attrName,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallBinaryMethodNode callSetAttrNode,
-                        @Cached ConditionProfile profile,
-                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                        @Cached InlinedConditionProfile profile,
+                        @Cached IsBuiltinObjectProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
             Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.T___DELATTR__);
-            if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
+            if (profile.profile(inliningTarget, attrDelattr != PNone.NO_VALUE)) {
                 try {
                     callSetAttrNode.executeObject(attrDelattr, primary, fromJavaStringNode.execute(attrName, TS_ENCODING));
                 } catch (PException e) {
-                    e.expectAttributeError(attrErrorProfile);
+                    e.expectAttributeError(inliningTarget, attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
                     throw UnknownIdentifierException.create(attrName);
                 }
@@ -1641,10 +1649,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasIteratorNextElement(
+                    @Bind("$node") Node inliningTarget,
                     @CachedLibrary("this") InteropLibrary ilib,
                     @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
                     @Cached GetNextNode getNextNode,
-                    @Exclusive @Cached IsBuiltinClassProfile exceptionProfile,
+                    @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         if (ilib.isIterator(this)) {
             Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
@@ -1657,7 +1666,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 dylib.put(this, NEXT_ELEMENT, nextElement);
                 return true;
             } catch (PException e) {
-                e.expect(PythonBuiltinClassType.StopIteration, exceptionProfile);
+                e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, exceptionProfile);
                 return false;
             } finally {
                 gil.release(mustRelease);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,21 +65,26 @@ import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(defineModule = "_functools")
 public class FunctoolsModuleBuiltins extends PythonBuiltins {
@@ -99,28 +104,21 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                     "sequence is empty.")
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = "isNoValue(initial)")
-        Object doReduceNoInitial(VirtualFrame frame, Object function, Object sequence, @SuppressWarnings("unused") PNone initial,
+        @Specialization
+        Object doReduce(VirtualFrame frame, Object function, Object sequence, Object initialIn,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached CallNode callNode,
-                        @Cached IsBuiltinClassProfile stopIterProfile,
-                        @Cached IsBuiltinClassProfile typeError) {
-            return doReduce(frame, function, sequence, null, getIter, nextNode, callNode, stopIterProfile, typeError);
-        }
-
-        @Specialization(guards = "!isNoValue(initial)")
-        Object doReduce(VirtualFrame frame, Object function, Object sequence, Object initial,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached CallNode callNode,
-                        @Cached IsBuiltinClassProfile stopIterProfile,
-                        @Cached IsBuiltinClassProfile typeError) {
+                        @Cached InlinedConditionProfile initialNoValueProfile,
+                        @Cached IsBuiltinObjectProfile stopIterProfile,
+                        @Cached IsBuiltinObjectProfile typeError) {
+            Object initial = initialNoValueProfile.profile(inliningTarget, PGuards.isNoValue(initialIn)) ? null : initialIn;
             Object seqIterator, result = initial;
             try {
                 seqIterator = getIter.execute(frame, sequence);
             } catch (PException pe) {
-                pe.expectTypeError(typeError);
+                pe.expectTypeError(inliningTarget, typeError);
                 throw raise(PythonBuiltinClassType.TypeError, S_ARG_N_MUST_SUPPORT_ITERATION, "reduce()", 2);
             }
 
@@ -139,9 +137,11 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                         args[1] = op2;
                         result = callNode.execute(frame, function, args);
                     }
-                    count++;
+                    if (CompilerDirectives.hasNextTier()) {
+                        count++;
+                    }
                 } catch (PException e) {
-                    e.expectStopIteration(stopIterProfile);
+                    e.expectStopIteration(inliningTarget, stopIterProfile);
                     break;
                 }
             }

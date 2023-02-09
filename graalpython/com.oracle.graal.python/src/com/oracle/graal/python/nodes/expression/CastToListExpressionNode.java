@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,8 +60,8 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -151,15 +152,16 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization
         protected PList starredGeneric(VirtualFrame frame, Object v,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConstructListNode constructListNode,
-                        @Cached IsBuiltinClassProfile attrProfile,
+                        @Cached IsBuiltinObjectProfile attrProfile,
                         @Cached PRaiseNode raise) {
             PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, PythonContext.get(this), this);
             try {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
-                e.expectAttributeError(attrProfile);
+                e.expectAttributeError(inliningTarget, attrProfile);
                 throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
                 IndirectCallContext.exit(frame, language, PythonContext.get(this), state);

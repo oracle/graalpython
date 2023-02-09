@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,16 +55,18 @@ import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class MatchClassNode extends PNodeWithContext {
@@ -72,12 +74,13 @@ public abstract class MatchClassNode extends PNodeWithContext {
 
     @Specialization
     Object match(VirtualFrame frame, Object subject, Object type, int nargs, @NeverDefault @SuppressWarnings("unused") TruffleString[] kwArgsArg,
+                    @Bind("this") Node inliningTarget,
                     @Cached(value = "kwArgsArg", dimensions = 1) TruffleString[] kwArgs,
                     @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                     @Cached PyObjectGetAttr getAttr,
                     @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
-                    @Cached IsBuiltinClassProfile isClassProfile,
+                    @Cached IsBuiltinObjectProfile isClassProfile,
                     @Cached StringBuiltins.EqNode eqStrNode,
                     @Cached PyTupleCheckExactNode tupleCheckExactNode,
                     @Cached PythonObjectFactory factory,
@@ -112,7 +115,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                 // define __match_args__. This is natural behavior for subclasses:
                 // it's as if __match_args__ is some "magic" value that is lost as
                 // soon as they redefine it.
-                e.expectAttributeError(isClassProfile);
+                e.expectAttributeError(inliningTarget, isClassProfile);
                 matchArgs = factory.createEmptyTuple();
                 matchSelf = (getTypeFlagsNode.execute(type) & MATCH_SELF) != 0;
             }

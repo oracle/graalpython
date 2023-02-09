@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -84,6 +84,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -91,6 +92,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
@@ -114,16 +116,17 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object[] doSequence(VirtualFrame frame, Object processArgs,
+                        @Bind("this") Node inliningTarget,
                         @Cached FastConstructListNode fastConstructListNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode) {
             PSequence argsSequence;
             try {
                 argsSequence = fastConstructListNode.execute(frame, processArgs);
             } catch (PException e) {
-                e.expect(TypeError, isBuiltinClassProfile);
+                e.expect(inliningTarget, TypeError, isBuiltinClassProfile);
                 throw raise(TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
             }
 

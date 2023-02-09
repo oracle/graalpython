@@ -69,17 +69,19 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -112,6 +114,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
 
         @Specialization
         Object nextPos(VirtualFrame frame, CSVReader self,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
@@ -121,8 +124,8 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         @Cached AppendNode appendNode,
                         @Cached GetNextNode getNextNode,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile) {
             PList fields = factory().createList();
             CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) getContext().lookupBuiltinModule(T__CSV).getBuiltins();
             self.parseReset();
@@ -131,7 +134,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                 try {
                     lineObj = getNextNode.execute(frame, self.inputIter);
                 } catch (PException e) {
-                    e.expectStopIteration(isBuiltinClassProfile);
+                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
                     self.fieldLimit = csvModuleBuiltins.fieldLimit;
                     if (!self.field.isEmpty() || self.state == IN_QUOTED_FIELD) {
                         if (self.dialect.strict) {
@@ -153,7 +156,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                 try {
                     line = castToStringNode.execute(lineObj);
                 } catch (CannotCastException e) {
-                    throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(lineObj));
+                    throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(inliningTarget, lineObj));
                 }
 
                 // TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of

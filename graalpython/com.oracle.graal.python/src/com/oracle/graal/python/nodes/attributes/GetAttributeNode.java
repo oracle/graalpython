@@ -52,19 +52,23 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetAnyAttributeNodeGen;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetFixedAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -88,7 +92,6 @@ public final class GetAttributeNode extends PNodeWithContext {
     abstract static class GetAttributeBaseNode extends PNodeWithContext {
 
         @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute);
-        @Child private IsBuiltinClassProfile isBuiltinClassProfile;
 
         @Child private LookupSpecialMethodSlotNode lookupGetattrNode;
         @Child private CallBinaryMethodNode callBinaryMethodNode;
@@ -148,14 +151,6 @@ public final class GetAttributeNode extends PNodeWithContext {
             }
             return getClassNode.execute(object);
         }
-
-        protected IsBuiltinClassProfile getErrorProfile() {
-            if (isBuiltinClassProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
-            }
-            return isBuiltinClassProfile;
-        }
     }
 
     public abstract static class GetFixedAttributeNode extends GetAttributeBaseNode {
@@ -206,54 +201,64 @@ public final class GetAttributeNode extends PNodeWithContext {
          */
 
         @Specialization(guards = "isSingleContext()")
-        final Object doSingleContext(VirtualFrame frame, Object object) {
+        final Object doSingleContext(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, getErrorProfile());
+                pe.expect(inliningTarget, AttributeError, errorProfile);
                 return dispatchGetAttrOrRethrowObject(frame, object, getPythonClass(object), key, pe);
             }
         }
 
         @Specialization(guards = {"!isSingleContext()", "isObjectGetAttribute(getPythonClass(object))"})
         final Object doBuiltinObject(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached ObjectBuiltins.GetAttributeNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, getErrorProfile());
+                pe.expect(inliningTarget, AttributeError, errorProfile);
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
 
         @Specialization(guards = {"!isSingleContext()", "isTypeGetAttribute(getPythonClass(object))"})
         final Object doBuiltinType(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached TypeBuiltins.GetattributeNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, getErrorProfile());
+                pe.expect(inliningTarget, AttributeError, errorProfile);
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
 
         @Specialization(guards = {"!isSingleContext()", "isModuleGetAttribute(getPythonClass(object))"})
         final Object doBuiltinModule(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached ModuleBuiltins.ModuleGetattritbuteNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, getErrorProfile());
+                pe.expect(inliningTarget, AttributeError, errorProfile);
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
 
         @Specialization(guards = "!isSingleContext()", replaces = {"doBuiltinObject", "doBuiltinType", "doBuiltinModule"})
-        final Object doGeneric(VirtualFrame frame, Object object) {
+        final Object doGeneric(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, getErrorProfile());
+                pe.expect(inliningTarget, AttributeError, errorProfile);
                 return dispatchGetAttrOrRethrowObject(frame, object, getPythonClass(object), key, pe);
             }
         }
@@ -264,20 +269,25 @@ public final class GetAttributeNode extends PNodeWithContext {
         }
     }
 
-    public static final class GetAnyAttributeNode extends GetAttributeBaseNode {
+    public abstract static class GetAnyAttributeNode extends GetAttributeBaseNode {
 
-        public Object executeObject(VirtualFrame frame, Object object, Object key) {
+        public abstract Object executeObject(VirtualFrame frame, Object object, Object key);
+
+        @Specialization
+        Object doIt(VirtualFrame frame, Object object, Object key,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, getErrorProfile());
+                pe.expect(inliningTarget, AttributeError, errorProfile);
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
 
         @NeverDefault
         public static GetAnyAttributeNode create() {
-            return new GetAnyAttributeNode();
+            return GetAnyAttributeNodeGen.create();
         }
     }
 }

@@ -54,12 +54,13 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -434,15 +435,16 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "!isPNone(i)", replaces = {"doBoolean", "doInt", "doLong", "doPInt"})
         int doGeneric(VirtualFrame frame, Object i,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             if (indexCheckNode.execute(i)) {
                 try {
                     return asSizeNode.executeExact(frame, i);
                 } catch (PException e) {
-                    e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
+                    e.expect(inliningTarget, PythonBuiltinClassType.OverflowError, errorProfile);
                     return overflowValue;
                 }
             } else {

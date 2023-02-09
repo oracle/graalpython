@@ -57,18 +57,20 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -86,6 +88,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
 
     @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
     static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                     @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
@@ -96,7 +99,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
                     @Cached HashingStorageNodes.HashingStorageIteratorValue iterValue,
                     @Cached LoopConditionProfile loopProfile,
                     @Cached.Shared("cast") @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
-                    @Cached.Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) throws SameDictKeyException {
+                    @Cached.Shared("sameKeyProfile") @Cached InlinedBranchProfile sameKeyProfile) throws SameDictKeyException {
         HashingStorage result = dest;
         HashingStorage otherStorage = other.getDictStorage();
         HashingStorageNodes.HashingStorageIterator it = getIterator.execute(otherStorage);
@@ -104,7 +107,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
             Object key = iterKey.execute(otherStorage, it);
             Object value = iterValue.execute(otherStorage, it);
             if (resultGetItem.hasKey(frame, result, key)) {
-                sameKeyProfile.enter();
+                sameKeyProfile.enter(inliningTarget);
                 TruffleString keyName = castToStringNode.cast(key, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
                 throw new SameDictKeyException(keyName);
             }
@@ -115,10 +118,11 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
 
     @Fallback
     static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
-                    @Cached.Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Cached.Shared("sameKeyProfile") @Cached InlinedBranchProfile sameKeyProfile,
                     @Cached.Shared("cast") @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
                     @Cached PyObjectCallMethodObjArgs callKeys,
-                    @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached ListNodes.FastConstructListNode asList,
                     @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
                     @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
@@ -135,7 +139,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
             for (int i = 0; loopProfile.inject(i < keysLen); i++) {
                 Object key = sequenceGetItem.execute(keysStorage, i);
                 if (resultGetItem.hasKey(frame, result, key)) {
-                    sameKeyProfile.enter();
+                    sameKeyProfile.enter(inliningTarget);
                     TruffleString keyName = castToStringNode.cast(key, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
                     throw new SameDictKeyException(keyName);
                 }
@@ -144,7 +148,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
             }
             return result;
         } catch (PException e) {
-            e.expectAttributeError(errorProfile);
+            e.expectAttributeError(inliningTarget, errorProfile);
             throw new NonMappingException(other);
         }
     }

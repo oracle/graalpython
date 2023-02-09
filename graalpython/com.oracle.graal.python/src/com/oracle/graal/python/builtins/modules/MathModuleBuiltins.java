@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -59,6 +57,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -75,8 +74,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
@@ -86,16 +85,20 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(defineModule = "math")
@@ -838,12 +841,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         double doIt(VirtualFrame frame, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached("create(Next)") LookupAndCallUnaryNode callNextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached IsBuiltinClassProfile stopProfile) {
+                        @Cached IsBuiltinObjectProfile stopProfile) {
             Object iterator = getIter.execute(frame, iterable);
-            return fsum(frame, iterator, callNextNode, asDoubleNode, stopProfile);
+            return fsum(frame, iterator, callNextNode, asDoubleNode, inliningTarget, stopProfile);
         }
 
         /*
@@ -856,7 +860,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
          */
-        private double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next, PyFloatAsDoubleNode asDoubleNode, IsBuiltinClassProfile stopProfile) {
+        private double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next,
+                        PyFloatAsDoubleNode asDoubleNode, Node inliningTarget, IsBuiltinObjectProfile stopProfile) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
@@ -865,7 +870,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 try {
                     x = asDoubleNode.execute(frame, next.executeObject(frame, iterator));
                 } catch (PException e) {
-                    e.expectStopIteration(stopProfile);
+                    e.expectStopIteration(inliningTarget, stopProfile);
                     break;
                 }
                 xsave = x;
@@ -2313,18 +2318,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
         @Child private BinaryOpNode mul = BinaryArithmetic.Mul.create();
-        @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         @Specialization
-        @SuppressWarnings("unused")
-        public Object doGenericNoStart(VirtualFrame frame, Object iterable, PNone start,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
-            return doGeneric(frame, iterable, 1, getIter);
-        }
-
-        @Specialization(guards = "!isNoValue(start)")
-        public Object doGeneric(VirtualFrame frame, Object iterable, Object start,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
+        public Object doGeneric(VirtualFrame frame, Object iterable, Object startIn,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached InlinedConditionProfile startIsNoValueProfile,
+                        @Cached PyObjectGetIter getIter) {
+            Object start = startIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(startIn)) ? 1 : startIn;
             Object iterator = getIter.execute(frame, iterable);
             Object value = start;
             while (true) {
@@ -2332,7 +2333,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 try {
                     nextValue = callNextNode.executeObject(frame, iterator);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return value;
                 }
                 value = mul.executeObject(frame, value, nextValue);

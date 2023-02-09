@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -275,10 +275,11 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage economicMap(Frame frame, EconomicMapStorage self, Object key, long keyHash, Object value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
             putNode.execute(frame, self.map, key, keyHash, value);
-            if (!self.map.hasSideEffect() && !PGuards.isBuiltinString(key, profile)) {
+            if (!self.map.hasSideEffect() && !PGuards.isBuiltinString(inliningTarget, key, profile)) {
                 self.map.setSideEffectingKeysFlag();
             }
             return self;
@@ -286,13 +287,14 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage empty(Frame frame, @SuppressWarnings("unused") EmptyStorage self, Object key, long keyHash, Object value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode) {
             // The ObjectHashMap.PutNode is @Exclusive because profiles for a put into a freshly new
             // allocated map can be quite different to profiles in the other situations when we are
             // putting into a map that already has or will have some more items in it
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
-            return economicMap(frame, EconomicMapStorage.create(1), key, keyHash, value, profile, putNode);
+            return economicMap(frame, EconomicMapStorage.create(1), key, keyHash, value, inliningTarget, profile, putNode);
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
@@ -303,9 +305,10 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(key, profile)"}, limit = "1")
+        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
         static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, long keyHash, Object value,
-                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castStr,
                         @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
@@ -313,9 +316,10 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(key, profile)"}, limit = "1")
+        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
         static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, long keyHash, Object value,
-                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Cached PyObjectHashNode hashNode,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
@@ -336,24 +340,26 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "!isTruffleString(key) || lengthHint >= DOM_SIZE_THRESHOLD")
         static HashingStorage localsGenericKey(Frame frame, LocalsStorage self, Object key, long keyHash, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Bind("self.lengthHint()") int lengthHint,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
             EconomicMapStorage result = EconomicMapStorage.create(lengthHint);
             self.addAllTo(result, specializedPutNode);
-            return economicMap(frame, result, key, keyHash, value, profile, putNode);
+            return economicMap(frame, result, key, keyHash, value, inliningTarget, profile, putNode);
         }
 
         @Specialization
         static HashingStorage keywords(Frame frame, KeywordsStorage self, Object key, long keyHash, Object value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(result, specializedPutNode);
-            return economicMap(frame, result, key, keyHash, value, profile, putNode);
+            return economicMap(frame, result, key, keyHash, value, inliningTarget, profile, putNode);
         }
     }
 
@@ -387,11 +393,12 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage economicMap(Frame frame, EconomicMapStorage self, Object key, Object value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
             putNode.execute(frame, self.map, key, hashNode.execute(frame, key), value);
-            if (!self.map.hasSideEffect() && !PGuards.isBuiltinString(key, profile)) {
+            if (!self.map.hasSideEffect() && !PGuards.isBuiltinString(inliningTarget, key, profile)) {
                 self.map.setSideEffectingKeysFlag();
             }
             return self;
@@ -399,14 +406,15 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage empty(Frame frame, @SuppressWarnings("unused") EmptyStorage self, Object key, Object value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ObjectHashMap.PutNode putNode) {
             // The ObjectHashMap.PutNode is @Exclusive because profiles for a put into a freshly new
             // allocated map can be quite different to profiles in the other situations when we are
             // putting into a map that already has or will have some more items in it
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
-            return economicMap(frame, EconomicMapStorage.create(1), key, value, profile, hashNode, putNode);
+            return economicMap(frame, EconomicMapStorage.create(1), key, value, inliningTarget, profile, hashNode, putNode);
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
@@ -417,9 +425,10 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(key, profile)"}, limit = "1")
+        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
         static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, Object value,
-                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castStr,
                         @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
@@ -427,9 +436,10 @@ public class HashingStorageNodes {
             return self;
         }
 
-        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(key, profile)"}, limit = "1")
+        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
         static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, Object value,
-                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
@@ -450,26 +460,28 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "!isTruffleString(key) || lengthHint >= DOM_SIZE_THRESHOLD")
         static HashingStorage localsGenericKey(Frame frame, LocalsStorage self, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Bind("self.lengthHint()") int lengthHint,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
             EconomicMapStorage result = EconomicMapStorage.create(lengthHint);
             self.addAllTo(result, specializedPutNode);
-            return economicMap(frame, result, key, value, profile, hashNode, putNode);
+            return economicMap(frame, result, key, value, inliningTarget, profile, hashNode, putNode);
         }
 
         @Specialization
         static HashingStorage keywords(Frame frame, KeywordsStorage self, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(result, specializedPutNode);
-            return economicMap(frame, result, key, value, profile, hashNode, putNode);
+            return economicMap(frame, result, key, value, inliningTarget, profile, hashNode, putNode);
         }
     }
 
@@ -537,18 +549,20 @@ public class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
         static Object domPStringKey(DynamicObjectStorage self, Object key, boolean isPop, @SuppressWarnings("unused") PHashingCollection toUpdate,
-                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castStr,
                         @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             return domStringKey(self, castStr.execute(key), isPop, toUpdate, invalidateMroProfile, dylib);
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
+        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")
         static Object domOther(Frame frame, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") boolean isPop, @SuppressWarnings("unused") PHashingCollection toUpdate,
-                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("hash") @Cached PyObjectHashNode hashNode) {
             hashNode.execute(frame, key); // Just for the potential side effects
             return null;

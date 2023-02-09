@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -85,8 +85,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -94,6 +94,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -105,7 +106,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -555,15 +558,16 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBytes(source)", limit = "3")
         PNone doGeneric(VirtualFrame frame, PByteArray self, Object source,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("source") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile bufferProfile,
+                        @Cached InlinedConditionProfile bufferProfile,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
             self.checkCanResize(this);
             byte[] b;
-            if (bufferProfile.profile(bufferAcquireLib.hasBuffer(source))) {
+            if (bufferProfile.profile(inliningTarget, bufferAcquireLib.hasBuffer(source))) {
                 Object buffer = bufferAcquireLib.acquireReadonly(source, frame, this);
                 try {
                     // TODO avoid copying
@@ -575,7 +579,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 try {
                     b = iterableToByteNode.execute(frame, source);
                 } catch (PException e) {
-                    e.expect(TypeError, errorProfile);
+                    e.expect(inliningTarget, TypeError, errorProfile);
                     throw raise(TypeError, ErrorMessages.CANT_EXTEND_BYTEARRAY_WITH_P, source);
                 }
             }
@@ -681,7 +685,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(table)")
         PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
-                        @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
+                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
@@ -703,7 +707,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
         PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete,
-                        @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
+                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);

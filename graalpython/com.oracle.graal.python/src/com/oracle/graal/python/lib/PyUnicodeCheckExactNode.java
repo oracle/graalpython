@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,10 +42,12 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -62,8 +64,9 @@ public abstract class PyUnicodeCheckExactNode extends PNodeWithContext {
 
     @Specialization
     static boolean doGeneric(Object object,
-                    @Cached IsBuiltinClassProfile isBuiltin) {
-        return isBuiltin.profileObject(object, PythonBuiltinClassType.PString);
+                    @Bind("this") Node inliningTarget,
+                    @Cached IsBuiltinObjectProfile isBuiltin) {
+        return isBuiltin.profileObject(inliningTarget, object, PythonBuiltinClassType.PString);
     }
 
     public static PyUnicodeCheckExactNode getUncached() {

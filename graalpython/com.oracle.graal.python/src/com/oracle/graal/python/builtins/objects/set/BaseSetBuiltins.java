@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -93,11 +93,12 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -106,6 +107,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -315,20 +317,22 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self != other", "!cannotBeOverridden(other, getClassNode)"}, limit = "1")
         static boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
-            return isDisjointGeneric(frame, self, other, getHashingStorageItem, getIter, getNextNode, errorProfile);
+                        @Cached IsBuiltinObjectProfile errorProfile) {
+            return isDisjointGeneric(frame, self, other, inliningTarget, getHashingStorageItem, getIter, getNextNode, errorProfile);
         }
 
         @Specialization(guards = {"!isAnySet(other)"})
         static boolean isDisjointGeneric(VirtualFrame frame, PBaseSet self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage selfStorage = self.getDictStorage();
             Object iterator = getIter.execute(frame, other);
             while (true) {
@@ -338,7 +342,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         return false;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return true;
                 }
             }

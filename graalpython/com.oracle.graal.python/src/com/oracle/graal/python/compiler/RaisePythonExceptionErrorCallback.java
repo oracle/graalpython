@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -223,7 +223,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
                 PyObjectCallMethodObjArgs.getUncached().execute(null, warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //
                                 warning.message, warning.type, getFilename(source), warning.sourceRange.startLine);
             } catch (PException e) {
-                e.expect(warning.type, IsBuiltinClassProfile.getUncached());
+                e.expect(null, warning.type, IsBuiltinObjectProfile.getUncached());
                 /*
                  * Replace the DeprecationWarning exception with a SyntaxError to get a more
                  * accurate error report

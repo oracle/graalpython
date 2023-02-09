@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,7 +35,7 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
@@ -71,14 +71,14 @@ public class PRangeTests {
             Object iter = PyObjectGetIter.getUncached().execute(null, range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);
-            IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
+            IsBuiltinObjectProfile errorProfile = IsBuiltinObjectProfile.getUncached();
 
             while (true) {
                 try {
                     int item = next.executeInt(null, iter);
                     assertEquals(index, item);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(null, errorProfile);
                     break;
                 }
                 index++;
@@ -99,14 +99,14 @@ public class PRangeTests {
             Object iter = PyObjectGetIter.getUncached().execute(null, range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);
-            IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
+            IsBuiltinObjectProfile errorProfile = IsBuiltinObjectProfile.getUncached();
 
             while (true) {
                 try {
                     int item = next.executeInt(null, iter);
                     assertEquals(index, item);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(null, errorProfile);
                     break;
                 }
                 index += 2;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,15 +67,17 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -102,9 +104,10 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object next(VirtualFrame frame, PChain self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinClassProfile isStopIterationProfile,
+                        @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached BranchProfile nextExceptioProfile,
                         @Cached LoopConditionProfile loopProfile) {
             while (loopProfile.profile(self.getSource() != PNone.NONE)) {
@@ -122,7 +125,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                 try {
                     return nextNode.execute(frame, self.getActive(), PNone.NO_VALUE);
                 } catch (PException e) {
-                    e.expectStopIteration(isStopIterationProfile);
+                    e.expectStopIteration(inliningTarget, isStopIterationProfile);
                     self.setActive(PNone.NONE);
                 }
             }

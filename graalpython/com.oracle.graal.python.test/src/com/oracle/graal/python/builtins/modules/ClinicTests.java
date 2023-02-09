@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.CallTarget;
@@ -203,7 +203,7 @@ public class ClinicTests {
             } catch (PException ex) {
                 boolean expectTypeError = frame.getArguments().length >= 3 && (boolean) frame.getArguments()[2];
                 if (expectTypeError) {
-                    ex.expect(PythonBuiltinClassType.TypeError, IsBuiltinClassProfile.getUncached());
+                    ex.expect(null, PythonBuiltinClassType.TypeError, IsBuiltinObjectProfile.getUncached());
                     return T_TYPE_ERROR;
                 } else {
                     throw ex;

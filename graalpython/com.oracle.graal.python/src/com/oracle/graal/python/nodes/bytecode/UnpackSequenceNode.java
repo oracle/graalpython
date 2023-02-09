@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,12 +50,13 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -64,6 +65,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 public abstract class UnpackSequenceNode extends PNodeWithContext {
@@ -98,11 +100,12 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
     @Fallback
     @ExplodeLoop
     static int doUnpackIterable(Frame frame, int initialStackTop, Object collection, int count,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode getNextNode,
-                    @Cached IsBuiltinClassProfile notIterableProfile,
-                    @Cached IsBuiltinClassProfile stopIterationProfile1,
-                    @Cached IsBuiltinClassProfile stopIterationProfile2,
+                    @Cached IsBuiltinObjectProfile notIterableProfile,
+                    @Cached IsBuiltinObjectProfile stopIterationProfile1,
+                    @Cached IsBuiltinObjectProfile stopIterationProfile2,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(count);
         int resultStackTop = initialStackTop + count;
@@ -111,7 +114,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
         try {
             iterator = getIter.execute(frame, collection);
         } catch (PException e) {
-            e.expectTypeError(notIterableProfile);
+            e.expectTypeError(inliningTarget, notIterableProfile);
             throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
         for (int i = 0; i < count; i++) {
@@ -119,14 +122,14 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                 Object item = getNextNode.execute(frame, iterator);
                 frame.setObject(stackTop--, item);
             } catch (PException e) {
-                e.expectStopIteration(stopIterationProfile1);
+                e.expectStopIteration(inliningTarget, stopIterationProfile1);
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
             }
         }
         try {
             getNextNode.execute(frame, iterator);
         } catch (PException e) {
-            e.expectStopIteration(stopIterationProfile2);
+            e.expectStopIteration(inliningTarget, stopIterationProfile2);
             return resultStackTop;
         }
         throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);

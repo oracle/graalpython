@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -51,16 +51,18 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSlice)
@@ -187,15 +189,16 @@ public class SliceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(length)", replaces = {"doSliceObject"})
         protected PTuple doSliceObjectWithSlowPath(VirtualFrame frame, PSlice self, Object length,
+                        @Bind("this") Node inliningTarget,
                         @Cached SliceExactCastToInt toInt,
                         @Cached ComputeIndices compute,
-                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached IsBuiltinObjectProfile profileError,
                         @Cached SliceCastToToBigInt castLengthNode,
                         @Cached CoerceToObjectSlice castNode) {
             try {
                 return doPSlice(frame, self, (int) toInt.execute(frame, length), compute);
             } catch (PException pe) {
-                if (!profileError.profileException(pe, PythonBuiltinClassType.OverflowError)) {
+                if (!profileError.profileException(inliningTarget, pe, PythonBuiltinClassType.OverflowError)) {
                     throw pe;
                 }
                 // pass

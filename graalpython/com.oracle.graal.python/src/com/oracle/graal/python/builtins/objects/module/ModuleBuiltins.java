@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,14 +87,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -104,6 +105,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -157,13 +159,14 @@ public class ModuleBuiltins extends PythonBuiltins {
     public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dir(VirtualFrame frame, PythonModule self,
-                        @Cached IsBuiltinClassProfile isDictProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile isDictProfile,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached HashingStorageGetItem getItem) {
             Object dict = lookup.execute(frame, self, T___DICT__);
-            if (isDict(dict, isDictProfile)) {
+            if (isDictProfile.profileObject(inliningTarget, dict, PythonBuiltinClassType.PDict)) {
                 HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
                 Object dirFunc = getItem.execute(dictStorage, T___DIR__);
                 if (dirFunc != null) {
@@ -174,10 +177,6 @@ public class ModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, "<module>.__dict__");
             }
-        }
-
-        protected static boolean isDict(Object object, IsBuiltinClassProfile profile) {
-            return profile.profileObject(object, PythonBuiltinClassType.PDict);
         }
     }
 
@@ -291,13 +290,14 @@ public class ModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             Object getattribute(VirtualFrame frame, PythonModule self, TruffleString key, PException e,
-                            @Cached IsBuiltinClassProfile isAttrError,
+                            @Bind("this") Node inliningTarget,
+                            @Cached IsBuiltinObjectProfile isAttrError,
                             @Cached ReadAttributeFromObjectNode readGetattr,
                             @Cached ConditionProfile customGetAttr,
                             @Cached CallNode callNode,
                             @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                             @Cached CastToTruffleStringNode castNameToStringNode) {
-                e.expect(PythonBuiltinClassType.AttributeError, isAttrError);
+                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, T___GETATTR__);
                 if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {
                     return callNode.execute(frame, getAttr, key);

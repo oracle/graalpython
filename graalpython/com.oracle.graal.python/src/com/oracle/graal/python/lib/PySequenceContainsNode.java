@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,16 +50,19 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PySequence_Contains}.
@@ -75,26 +78,27 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
 
     @Specialization
     boolean contains(Frame frame, Object container, Object key,
-                    @Cached GetClassNode getReceiverClass,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getReceiverClass,
                     @Cached(parameters = "Contains") LookupSpecialMethodSlotNode lookupContains,
-                    @Cached IsBuiltinClassProfile noContainsProfile,
+                    @Cached IsBuiltinObjectProfile noContainsProfile,
                     @Cached CallBinaryMethodNode callContains,
                     @Cached PyObjectGetIter getIter,
-                    @Cached IsBuiltinClassProfile noIterProfile,
+                    @Cached IsBuiltinObjectProfile noIterProfile,
                     @Cached PRaiseNode raiseNode,
                     @Cached GetClassNode getIterClass,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupIternext,
-                    @Cached IsBuiltinClassProfile noNextProfile,
+                    @Cached IsBuiltinObjectProfile noNextProfile,
                     @Cached CallUnaryMethodNode callNext,
                     @Cached PyObjectRichCompareBool.EqNode eqNode,
-                    @Cached IsBuiltinClassProfile stopIterationProfile,
+                    @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Cached PyObjectIsTrueNode isTrue) {
-        Object type = getReceiverClass.execute(container);
+        Object type = getReceiverClass.execute(inliningTarget, container);
         Object contains = PNone.NO_VALUE;
         try {
             contains = lookupContains.execute(frame, type, container);
         } catch (PException e) {
-            e.expectAttributeError(noContainsProfile);
+            e.expectAttributeError(inliningTarget, noContainsProfile);
         }
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         if (!(contains instanceof PNone)) {
@@ -105,14 +109,14 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
             try {
                 iterator = getIter.execute(frame, container);
             } catch (PException e) {
-                e.expectTypeError(noIterProfile);
+                e.expectTypeError(inliningTarget, noIterProfile);
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_CONTAINER, container);
             }
             Object next = PNone.NO_VALUE;
             try {
                 next = lookupIternext.execute(frame, getIterClass.execute(iterator), iterator);
             } catch (PException e) {
-                e.expect(PythonBuiltinClassType.AttributeError, noNextProfile);
+                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, noNextProfile);
             }
             if (next instanceof PNone) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
@@ -130,7 +134,7 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
                         return true;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(stopIterationProfile);
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
                     if (CompilerDirectives.hasNextTier()) {
                         LoopNode.reportLoopCount(this, i);
                     }

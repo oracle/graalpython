@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.argument.positional;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -58,15 +56,17 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -117,10 +117,11 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
+                    @Bind("this") Node inliningTarget,
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode nextNode,
-                    @Cached IsBuiltinClassProfile errorProfile) {
+                    @Cached IsBuiltinObjectProfile errorProfile) {
         Object iterator = getIter.execute(frame, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayBuilder<Object> internalStorage = new ArrayBuilder<>();
@@ -128,7 +129,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                 try {
                     internalStorage.add(nextNode.execute(frame, iterator));
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return internalStorage.toArray(new Object[0]);
                 }
             }

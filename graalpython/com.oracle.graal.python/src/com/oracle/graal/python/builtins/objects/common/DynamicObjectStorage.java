@@ -54,7 +54,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -195,22 +195,24 @@ public final class DynamicObjectStorage extends HashingStorage {
             return noValueProfile.profile(result == PNone.NO_VALUE) ? null : result;
         }
 
-        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
         static Object pstring(DynamicObjectStorage self, PString key, @SuppressWarnings("unused") long keyHash,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
-                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinObjectProfile profile,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
             return string(self, castStr.execute(key), -1, readKey, noValueProfile);
         }
 
-        @Specialization(guards = {"cachedShape == self.store.getShape()", "keyList.length < EXPLODE_LOOP_SIZE_LIMIT", "!isBuiltinString(key, profile)"}, limit = "1")
+        @Specialization(guards = {"cachedShape == self.store.getShape()", "keyList.length < EXPLODE_LOOP_SIZE_LIMIT", "!isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         static Object notString(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
+                        @Bind("this") Node inliningTarget,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                         @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
-                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinObjectProfile profile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
@@ -227,10 +229,11 @@ public final class DynamicObjectStorage extends HashingStorage {
             return null;
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)", replaces = "notString", limit = "1")
+        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", replaces = "notString", limit = "1")
         static Object notStringLoop(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
+                        @Bind("this") Node inliningTarget,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
-                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinObjectProfile profile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,

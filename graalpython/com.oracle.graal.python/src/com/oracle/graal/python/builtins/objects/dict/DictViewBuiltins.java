@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltinsFactory.ContainedInNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -95,12 +96,12 @@ import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -109,6 +110,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictItemsView})
@@ -273,12 +275,11 @@ public final class DictViewBuiltins extends PythonBuiltins {
      * See CPython's dictobject.c all_contained_in and dictviews_isdisjoint. The semantics of dict
      * view comparisons dictates that we need to use iteration to compare them in the general case.
      */
-    protected static class ContainedInNode extends PNodeWithContext {
+    protected abstract static class ContainedInNode extends PNodeWithContext {
         @Child private PyObjectGetIter getIterNode;
         @Child private GetNextNode next;
         @Child private LookupAndCallBinaryNode contains;
         @Child private CoerceToBooleanNode cast;
-        @CompilationFinal private IsBuiltinClassProfile stopProfile;
         private final boolean checkAll;
 
         public ContainedInNode(boolean checkAll) {
@@ -309,14 +310,6 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return cast;
         }
 
-        private IsBuiltinClassProfile getStopProfile() {
-            if (stopProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                stopProfile = insert(IsBuiltinClassProfile.create());
-            }
-            return stopProfile;
-        }
-
         private PyObjectGetIter getGetIterNode() {
             if (getIterNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -325,7 +318,12 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return getIterNode;
         }
 
-        public boolean execute(VirtualFrame frame, Object self, Object other) {
+        public abstract boolean execute(VirtualFrame frame, Object self, Object other);
+
+        @Specialization
+        public boolean doIt(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile stopProfile) {
             Object iterator = getGetIterNode().execute(frame, self);
             boolean ok = checkAll;
             try {
@@ -334,19 +332,19 @@ public final class DictViewBuiltins extends PythonBuiltins {
                     ok = getCast().executeBoolean(frame, getContains().executeObject(frame, other, item));
                 }
             } catch (PException e) {
-                e.expectStopIteration(getStopProfile());
+                e.expectStopIteration(inliningTarget, stopProfile);
             }
             return ok;
         }
 
         @NeverDefault
         static ContainedInNode create() {
-            return new ContainedInNode(true);
+            return ContainedInNodeGen.create(true);
         }
 
         @NeverDefault
         static ContainedInNode create(boolean all) {
-            return new ContainedInNode(all);
+            return ContainedInNodeGen.create(all);
         }
     }
 

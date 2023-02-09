@@ -88,7 +88,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -101,9 +101,12 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -121,9 +124,11 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 public abstract class BytesNodes {
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class CreateBytesNode extends Node {
 
-        public abstract PBytesLike execute(PythonObjectFactory factory, PBytesLike basedOn, Object bytes);
+        public abstract PBytesLike execute(Node node, PythonObjectFactory factory, PBytesLike basedOn, Object bytes);
 
         @Specialization
         static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, byte[] bytes) {
@@ -163,10 +168,11 @@ public abstract class BytesNodes {
 
         @Specialization
         static byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached ToBytesNode toBytesNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
             Object iterator = getIter.execute(frame, iterable);
@@ -174,7 +180,7 @@ public abstract class BytesNodes {
                 try {
                     partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
                 }
             }
@@ -496,14 +502,15 @@ public abstract class BytesNodes {
 
         @Specialization
         byte[] doIt(VirtualFrame frame, Object iterObject,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
                 try {
                     getAppendByteNode().execute(bss, getNextNode.execute(frame, iterObject), BytesLikeNoGeneralizationNode.SUPPLIER);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return bss.getInternalByteArray();
                 }
             }
@@ -591,10 +598,11 @@ public abstract class BytesNodes {
 
         @Specialization
         byte[] doGeneric(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             if (bufferAcquireLib.hasBuffer(object)) {
                 // TODO PyBUF_FULL_RO
                 Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, this);
@@ -608,7 +616,7 @@ public abstract class BytesNodes {
                 try {
                     return iterableToByteNode.execute(frame, object);
                 } catch (PException e) {
-                    e.expect(TypeError, errorProfile);
+                    e.expect(inliningTarget, TypeError, errorProfile);
                 }
             }
             throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
@@ -636,8 +644,9 @@ public abstract class BytesNodes {
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
         byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached BytesFromObject bytesFromObject) {
             if (indexCheckNode.execute(source)) {
@@ -653,7 +662,7 @@ public abstract class BytesNodes {
                         throw raise(MemoryError);
                     }
                 } catch (PException e) {
-                    e.expect(TypeError, errorProfile);
+                    e.expect(inliningTarget, TypeError, errorProfile);
                     // fallthrough
                 }
             }
@@ -802,9 +811,10 @@ public abstract class BytesNodes {
 
         @Specialization
         public static byte[] bytearray(VirtualFrame frame, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile stopIterationProfile,
+                        @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Cached CastToByteNode castToByteNode,
                         @Cached PyObjectGetIter getIter) {
             Object it = getIter.execute(frame, iterable);
@@ -819,7 +829,7 @@ public abstract class BytesNodes {
                     }
                     arr[i++] = item;
                 } catch (PException e) {
-                    e.expectStopIteration(stopIterationProfile);
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
                     return resize(arr, i);
                 }
             }

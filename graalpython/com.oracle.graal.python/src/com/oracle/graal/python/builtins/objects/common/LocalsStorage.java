@@ -48,11 +48,12 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -177,16 +178,18 @@ public final class LocalsStorage extends HashingStorage {
             return self.getValue(slot);
         }
 
-        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
+        @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
         static Object pstring(LocalsStorage self, PString key, @SuppressWarnings("unused") long hash,
-                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castToStringNode) {
             return string(self, castToStringNode.execute(key), -1);
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
+        @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")
         static Object notString(Frame frame, LocalsStorage self, Object key, long hashIn,
-                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinObjectProfile profile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached PyObjectHashNode hashNode) {
             long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;

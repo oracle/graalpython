@@ -123,8 +123,8 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -2237,11 +2237,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, getClassNode)", limit = "1")
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached AppendNode appendNode) {
             SequenceStorage currentStore = left;
             int lenLeft = currentStore.length();
@@ -2255,7 +2256,7 @@ public abstract class SequenceStorageNodes {
                     value = getNextNode.execute(frame, it);
                     currentStore = appendNode.execute(currentStore, value, genNodeProvider);
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     return currentStore;
                 }
             }
@@ -3625,11 +3626,11 @@ public abstract class SequenceStorageNodes {
 
         private static final int START_SIZE = 4;
 
-        protected SequenceStorage createStorage(VirtualFrame frame, Object iterator, int len, ListStorageType type, GetNextNode nextNode, IsBuiltinClassProfile errorProfile,
+        protected SequenceStorage createStorage(VirtualFrame frame, Object iterator, int len, ListStorageType type, GetNextNode nextNode, IsBuiltinObjectProfile errorProfile,
                         Node inliningTarget, InlinedCountingConditionProfile growArrayProfile) {
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
-                return createStorageUninitialized(frame, iterator, nextNode, errorProfile, size);
+                return createStorageUninitialized(frame, inliningTarget, iterator, nextNode, errorProfile, size);
             } else {
                 int i = 0;
                 Object array = null;
@@ -3648,7 +3649,7 @@ public abstract class SequenceStorageNodes {
                                 }
                             } catch (PException e) {
                                 LoopNode.reportLoopCount(this, i);
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new BoolSequenceStorage(elements, i);
                         }
@@ -3671,7 +3672,7 @@ public abstract class SequenceStorageNodes {
                                 }
                             } catch (PException e) {
                                 LoopNode.reportLoopCount(this, i);
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ByteSequenceStorage(elements, i);
                         }
@@ -3688,7 +3689,7 @@ public abstract class SequenceStorageNodes {
                                 }
                             } catch (PException e) {
                                 LoopNode.reportLoopCount(this, i);
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new IntSequenceStorage(elements, i);
                         }
@@ -3705,7 +3706,7 @@ public abstract class SequenceStorageNodes {
                                 }
                             } catch (PException e) {
                                 LoopNode.reportLoopCount(this, i);
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new LongSequenceStorage(elements, i);
                         }
@@ -3722,7 +3723,7 @@ public abstract class SequenceStorageNodes {
                                 }
                             } catch (PException e) {
                                 LoopNode.reportLoopCount(this, i);
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new DoubleSequenceStorage(elements, i);
                         }
@@ -3738,7 +3739,7 @@ public abstract class SequenceStorageNodes {
                                 }
                             } catch (PException e) {
                                 LoopNode.reportLoopCount(this, i);
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ObjectSequenceStorage(elements, i);
                         }
@@ -3752,7 +3753,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        private SequenceStorage createStorageUninitialized(VirtualFrame frame, Object iterator, GetNextNode nextNode, IsBuiltinClassProfile errorProfile, int size) {
+        private SequenceStorage createStorageUninitialized(VirtualFrame frame, Node inliningTarget, Object iterator, GetNextNode nextNode, IsBuiltinObjectProfile errorProfile, int size) {
             Object[] elements = new Object[size];
             int i = 0;
             while (true) {
@@ -3765,7 +3766,7 @@ public abstract class SequenceStorageNodes {
                     }
                     elements[i++] = value;
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     LoopNode.reportLoopCount(this, i);
                     break;
                 }
@@ -3773,7 +3774,7 @@ public abstract class SequenceStorageNodes {
             return SequenceStorageFactory.createStorage(PythonUtils.arrayCopyOf(elements, i));
         }
 
-        private SequenceStorage genericFallback(VirtualFrame frame, Object iterator, Object array, int count, Object result, GetNextNode nextNode, IsBuiltinClassProfile errorProfile,
+        private SequenceStorage genericFallback(VirtualFrame frame, Object iterator, Object array, int count, Object result, GetNextNode nextNode, IsBuiltinObjectProfile errorProfile,
                         Node inliningTarget, InlinedCountingConditionProfile growArrayProfile) {
             Object[] elements = new Object[Array.getLength(array) * 2];
             int i = 0;
@@ -3790,7 +3791,7 @@ public abstract class SequenceStorageNodes {
                     elements[i++] = value;
                 } catch (PException e) {
                     LoopNode.reportLoopCount(this, i);
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 }
             }
@@ -3801,7 +3802,7 @@ public abstract class SequenceStorageNodes {
          * This version is specific to builtin iterators and looks for STOP_MARKER instead of
          * StopIteration.
          */
-        protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, ListStorageType type, NextNode nextNode, IsBuiltinClassProfile errorProfile,
+        protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, ListStorageType type, NextNode nextNode, IsBuiltinObjectProfile errorProfile,
                         Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, LoopConditionProfile loopProfile) {
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
@@ -3816,7 +3817,7 @@ public abstract class SequenceStorageNodes {
                         elements[i] = value;
                     }
                 } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
+                    e.expectStopIteration(inliningTarget, errorProfile);
                 }
                 return SequenceStorageFactory.createStorage(PythonUtils.arrayCopyOf(elements, i));
             } else {
@@ -3837,7 +3838,7 @@ public abstract class SequenceStorageNodes {
                                     elements[i] = PGuards.expectBoolean(value);
                                 }
                             } catch (PException e) {
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new BoolSequenceStorage(elements, i);
                         }
@@ -3858,7 +3859,7 @@ public abstract class SequenceStorageNodes {
                                     }
                                 }
                             } catch (PException e) {
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ByteSequenceStorage(elements, i);
                         }
@@ -3873,7 +3874,7 @@ public abstract class SequenceStorageNodes {
                                     elements[i] = PGuards.expectInteger(value);
                                 }
                             } catch (PException e) {
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new IntSequenceStorage(elements, i);
                         }
@@ -3888,7 +3889,7 @@ public abstract class SequenceStorageNodes {
                                     elements[i] = PGuards.expectLong(value);
                                 }
                             } catch (PException e) {
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new LongSequenceStorage(elements, i);
                         }
@@ -3903,7 +3904,7 @@ public abstract class SequenceStorageNodes {
                                     elements[i] = PGuards.expectDouble(value);
                                 }
                             } catch (PException e) {
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new DoubleSequenceStorage(elements, i);
                         }
@@ -3917,7 +3918,7 @@ public abstract class SequenceStorageNodes {
                                     elements[i] = value;
                                 }
                             } catch (PException e) {
-                                e.expectStopIteration(errorProfile);
+                                e.expectStopIteration(inliningTarget, errorProfile);
                             }
                             return new ObjectSequenceStorage(elements, i);
                         }
@@ -3926,12 +3927,13 @@ public abstract class SequenceStorageNodes {
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {
-                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, errorProfile);
+                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, inliningTarget, errorProfile);
                 }
             }
         }
 
-        private static SequenceStorage genericFallback(VirtualFrame frame, PBuiltinIterator iterator, Object array, int count, Object result, NextNode nextNode, IsBuiltinClassProfile errorProfile) {
+        private static SequenceStorage genericFallback(VirtualFrame frame, PBuiltinIterator iterator, Object array, int count, Object result, NextNode nextNode, Node inliningTarget,
+                        IsBuiltinObjectProfile errorProfile) {
             Object[] elements = new Object[Array.getLength(array) * 2];
             int i = 0;
             for (; i < count; i++) {
@@ -3947,7 +3949,7 @@ public abstract class SequenceStorageNodes {
                     elements[i++] = value;
                 }
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
+                e.expectStopIteration(inliningTarget, errorProfile);
             }
             return new ObjectSequenceStorage(elements, i);
         }
@@ -3984,7 +3986,7 @@ public abstract class SequenceStorageNodes {
                             @Bind("this") Node inliningTarget,
                             @Cached BuiltinIteratorLengthHint lengthHint,
                             @Shared("loopProfile") @Cached LoopConditionProfile loopProfile,
-                            @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
+                            @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached NextNode nextNode) {
                 int expectedLen = lengthHint.execute(iterator);
@@ -3999,7 +4001,7 @@ public abstract class SequenceStorageNodes {
             public SequenceStorage createBuiltinKnownLen(VirtualFrame frame, PBuiltinIterator iterator, int len,
                             @Bind("this") Node inliningTarget,
                             @Shared("loopProfile") @Cached LoopConditionProfile loopProfile,
-                            @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
+                            @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached NextNode nextNode) {
                 SequenceStorage s = createStorageFromBuiltin(frame, iterator, len, expectedElementType, nextNode, errorProfile, inliningTarget, arrayGrowProfile, loopProfile);
@@ -4009,7 +4011,7 @@ public abstract class SequenceStorageNodes {
             @Specialization(guards = {"!isBuiltinIterator(iterator)", "len < 0"})
             public SequenceStorage createGenericUnknownLen(VirtualFrame frame, Object iterator, @SuppressWarnings("unused") int len,
                             @Bind("this") Node inliningTarget,
-                            @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
+                            @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached GetNextNode getNextNode) {
                 SequenceStorage s = createStorage(frame, iterator, startSizeProfiled, expectedElementType, getNextNode, errorProfile, inliningTarget, arrayGrowProfile);
@@ -4019,7 +4021,7 @@ public abstract class SequenceStorageNodes {
             @Specialization(guards = {"!isBuiltinIterator(iterator)", "len >= 0"})
             public SequenceStorage createGenericKnownLen(VirtualFrame frame, Object iterator, int len,
                             @Bind("this") Node inliningTarget,
-                            @Shared("errProfile") @Cached IsBuiltinClassProfile errorProfile,
+                            @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached GetNextNode getNextNode) {
                 SequenceStorage s = createStorage(frame, iterator, len, expectedElementType, getNextNode, errorProfile, inliningTarget, arrayGrowProfile);
@@ -4065,7 +4067,7 @@ public abstract class SequenceStorageNodes {
                         }
                     }
                 }
-                return create().createStorageUninitialized(null, iterator, GetNextNode.getUncached(), IsBuiltinClassProfile.getUncached(), len >= 0 ? len : START_SIZE);
+                return create().createStorageUninitialized(null, null, iterator, GetNextNode.getUncached(), IsBuiltinObjectProfile.getUncached(), len >= 0 ? len : START_SIZE);
             }
         }
 

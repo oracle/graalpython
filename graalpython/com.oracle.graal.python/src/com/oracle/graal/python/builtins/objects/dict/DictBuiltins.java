@@ -92,10 +92,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -518,24 +519,25 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetItem,
                         @Cached CallTernaryMethodNode callSetItem,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             Object it = getIter.execute(frame, iterable);
-            Object setitemMethod = lookupSetItem.execute(frame, getClassNode.execute(dict), dict);
+            Object setitemMethod = lookupSetItem.execute(frame, getClassNode.execute(inliningTarget, dict), dict);
             if (setitemMethod != PNone.NO_VALUE) {
                 while (true) {
                     try {
                         Object key = nextNode.execute(frame, it);
                         callSetItem.execute(frame, setitemMethod, dict, key, val);
                     } catch (PException e) {
-                        e.expectStopIteration(errorProfile);
+                        e.expectStopIteration(inliningTarget, errorProfile);
                         break;
                     }
                 }

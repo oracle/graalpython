@@ -101,10 +101,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -113,6 +114,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -384,18 +386,19 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString repr(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinClassProfile isValueError,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached IsBuiltinObjectProfile isValueError,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString typeName = getNameNode.execute(getClassNode.execute(self));
+            TruffleString typeName = getNameNode.execute(getClassNode.execute(inliningTarget, self));
             Object nameobj = PNone.NO_VALUE;
             try {
                 nameobj = lookup.execute(frame, self, T_NAME);
             } catch (PException e) {
-                e.expect(ValueError, isValueError);
+                e.expect(inliningTarget, ValueError, isValueError);
                 // ignore
             }
             if (nameobj instanceof PNone) {

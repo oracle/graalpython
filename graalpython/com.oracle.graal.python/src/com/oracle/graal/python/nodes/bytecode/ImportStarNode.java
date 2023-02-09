@@ -44,13 +44,14 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -68,6 +70,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
 
     @Specialization
     void doImport(VirtualFrame frame, TruffleString moduleName, int level,
+                    @Bind("this") Node inliningTarget,
                     @Cached ImportName importNameNode,
                     @Cached PyObjectSetItem setItemNode,
                     @Cached PyObjectSetAttr setAttrNode,
@@ -81,8 +84,8 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                    @Cached IsBuiltinClassProfile isAttributeErrorProfile,
-                    @Cached IsBuiltinClassProfile isStopIterationProfile) {
+                    @Cached IsBuiltinObjectProfile isAttributeErrorProfile,
+                    @Cached IsBuiltinObjectProfile isStopIterationProfile) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level, importNameNode);
         Object locals = PArguments.getSpecialArgument(frame);
         if (locals == null) {
@@ -115,7 +118,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                                     codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
                 }
             } catch (PException e) {
-                e.expectAttributeError(isAttributeErrorProfile);
+                e.expectAttributeError(inliningTarget, isAttributeErrorProfile);
                 assert importedModule instanceof PythonModule;
                 Object keysIterator = getIterNode.execute(frame, getDictNode.execute(importedModule));
                 while (true) {
@@ -124,7 +127,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                         writeAttributeToLocals(frame, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
                                         codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
                     } catch (PException iterException) {
-                        iterException.expectStopIteration(isStopIterationProfile);
+                        iterException.expectStopIteration(inliningTarget, isStopIterationProfile);
                         break;
                     }
                 }

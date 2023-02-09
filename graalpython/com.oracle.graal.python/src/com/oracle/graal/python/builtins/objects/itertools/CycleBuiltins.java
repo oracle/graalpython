@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,16 +72,19 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCycle})
 public final class CycleBuiltins extends PythonBuiltins {
@@ -105,27 +108,26 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object next(VirtualFrame frame, PCycle self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinClassProfile isStopIterationProfile,
-                        @Cached BranchProfile iterableProfile,
-                        @Cached BranchProfile firstPassProfile,
-                        @Cached BranchProfile savedProfile) {
+                        @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        @Cached InlinedBranchProfile iterableProfile,
+                        @Cached InlinedBranchProfile firstPassProfile) {
             if (self.getIterable() != null) {
-                iterableProfile.enter();
+                iterableProfile.enter(inliningTarget);
                 try {
                     Object item = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
                     if (!self.isFirstpass()) {
-                        firstPassProfile.enter();
+                        firstPassProfile.enter(inliningTarget);
                         add(self.getSaved(), item);
                     }
                     return item;
                 } catch (PException e) {
-                    e.expectStopIteration(isStopIterationProfile);
+                    e.expectStopIteration(inliningTarget, isStopIterationProfile);
                     self.setIterable(null);
                 }
             }
             if (isEmpty(self.getSaved())) {
-                savedProfile.enter();
                 throw raiseStopIteration();
             }
             Object item = get(self.getSaved(), self.getIndex());
@@ -214,9 +216,10 @@ public final class CycleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setState(VirtualFrame frame, PCycle self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
-                        @Cached IsBuiltinClassProfile isTypeErrorProfile,
+                        @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Cached ToArrayNode toArrayNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
@@ -232,7 +235,7 @@ public final class CycleBuiltins extends PythonBuiltins {
             try {
                 firstPass = asSizeNode.executeLossy(frame, getItemNode.execute(frame, state, 1)) != 0;
             } catch (PException e) {
-                e.expectTypeError(isTypeErrorProfile);
+                e.expectTypeError(inliningTarget, isTypeErrorProfile);
                 throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
             }
 

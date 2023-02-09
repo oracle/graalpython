@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,10 +48,11 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -80,17 +81,18 @@ public abstract class PyObjectGetAttr extends Node {
     @InliningCutoff
     @Specialization(replaces = "getFixedAttr")
     static Object getDynamicAttr(Frame frame, Object receiver, Object name,
-                    @Cached GetClassNode getClass,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClass,
                     @Cached(parameters = "GetAttribute") LookupSpecialMethodSlotNode lookupGetattribute,
                     @Cached(parameters = "GetAttr") LookupSpecialMethodSlotNode lookupGetattr,
                     @Cached CallBinaryMethodNode callGetattribute,
                     @Cached CallBinaryMethodNode callGetattr,
-                    @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        Object type = getClass.execute(receiver);
+        Object type = getClass.execute(inliningTarget, receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
-        if (!getClass.isAdoptable()) {
+        if (!callGetattribute.isAdoptable()) {
             // It pays to try this in the uncached case, avoiding a full call to __getattribute__
             Object result = PyObjectLookupAttr.readAttributeQuickly(type, getattribute, receiver, name, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
@@ -108,7 +110,7 @@ public abstract class PyObjectGetAttr extends Node {
         try {
             return callGetattribute.executeObject(frame, getattribute, receiver, name);
         } catch (PException e) {
-            e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
+            e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
             Object getattr = lookupGetattr.execute(frame, type, receiver);
             if (getattr != PNone.NO_VALUE) {
                 return callGetattr.executeObject(frame, getattr, receiver, name);

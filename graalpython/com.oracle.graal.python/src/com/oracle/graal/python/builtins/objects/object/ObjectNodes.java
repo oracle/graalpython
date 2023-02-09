@@ -125,8 +125,10 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -241,10 +243,11 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PBytes self,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
-                        @Cached IsBuiltinClassProfile isBuiltin,
+                        @Cached IsAnyBuiltinObjectProfile isBuiltin,
                         @Cached PyObjectSizeNode sizeNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
+            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_BYTES;
             }
             return getObjectIdNode.execute(self);
@@ -252,10 +255,11 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PFrozenSet self,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
-                        @Cached IsBuiltinClassProfile isBuiltin,
+                        @Cached IsAnyBuiltinObjectProfile isBuiltin,
                         @Cached PyObjectSizeNode sizeNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
+            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_FROZENSET;
             }
             return getObjectIdNode.execute(self);
@@ -263,10 +267,11 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PTuple self,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
-                        @Cached IsBuiltinClassProfile isBuiltin,
+                        @Cached IsAnyBuiltinObjectProfile isBuiltin,
                         @Cached PyObjectSizeNode sizeNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
+            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_TUPLE;
             }
             return getObjectIdNode.execute(self);
@@ -416,11 +421,12 @@ public abstract class ObjectNodes {
 
         @Specialization
         static boolean isList(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached IsBuiltinClassProfile objProfile) {
+                        @Cached InlineIsBuiltinClassProfile objProfile) {
             Object type = getClassNode.execute(object);
-            if (objProfile.profileClass(type, PythonBuiltinClassType.PList)) {
+            if (objProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PList)) {
                 return true;
             }
             return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PList);
@@ -439,11 +445,12 @@ public abstract class ObjectNodes {
 
         @Specialization
         static boolean isTuple(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached IsBuiltinClassProfile objProfile) {
+                        @Cached InlineIsBuiltinClassProfile objProfile) {
             Object type = getClassNode.execute(object);
-            if (objProfile.profileClass(type, PythonBuiltinClassType.PTuple)) {
+            if (objProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PTuple)) {
                 return true;
             }
             return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PTuple);
@@ -467,11 +474,12 @@ public abstract class ObjectNodes {
 
         @Specialization
         static boolean isDict(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached IsBuiltinClassProfile objProfile) {
+                        @Cached InlineIsBuiltinClassProfile objProfile) {
             Object type = getClassNode.execute(object);
-            if (objProfile.profileClass(type, PythonBuiltinClassType.PDict)) {
+            if (objProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PDict)) {
                 return true;
             }
             return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PDict);
@@ -582,9 +590,10 @@ public abstract class ObjectNodes {
 
         @Fallback
         Object dispatchGeneric(VirtualFrame frame, Object cls, Object clsDict, Object copyReg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Cached PyObjectGetItem getItemNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile) {
             /*
              * CPython looks at tp_dict of the type and assumes that it must be a builtin
              * dictionary, otherwise it fails with type error. We do not have tp_dict for managed
@@ -598,7 +607,7 @@ public abstract class ObjectNodes {
                 try {
                     slotNames = getItemNode.execute(frame, clsDict, T___SLOTNAMES__);
                 } catch (PException ex) {
-                    ex.expect(PythonBuiltinClassType.KeyError, isBuiltinClassProfile);
+                    ex.expect(inliningTarget, PythonBuiltinClassType.KeyError, isBuiltinClassProfile);
                 }
             }
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);

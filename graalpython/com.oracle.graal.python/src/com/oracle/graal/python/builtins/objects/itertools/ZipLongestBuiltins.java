@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,15 +58,18 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PZipLongest})
@@ -97,40 +100,42 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!zeroSize(self)", "isNullFillValue(self)"})
         Object nextNoFillValue(VirtualFrame frame, PZipLongest self,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinClassProfile isStopIterationProfile,
-                        @Cached ConditionProfile noItProfile,
-                        @Cached ConditionProfile noActiveProfile,
-                        @Cached LoopConditionProfile loopProfile) {
-            return next(frame, self, PNone.NONE, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
+                        @Bind("this") Node inliningTarget,
+                        /* @Shared */ @Cached BuiltinFunctions.NextNode nextNode,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        /* @Shared */ @Cached InlinedConditionProfile noItProfile,
+                        /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
+                        /* @Shared */ @Cached LoopConditionProfile loopProfile) {
+            return next(frame, inliningTarget, self, PNone.NONE, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
         }
 
         @Specialization(guards = {"!zeroSize(self)", "!isNullFillValue(self)"})
         Object next(VirtualFrame frame, PZipLongest self,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinClassProfile isStopIterationProfile,
-                        @Cached ConditionProfile noItProfile,
-                        @Cached ConditionProfile noActiveProfile,
-                        @Cached LoopConditionProfile loopProfile) {
-            return next(frame, self, self.getFillValue(), nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
+                        @Bind("this") Node inliningTarget,
+                        /* @Shared */ @Cached BuiltinFunctions.NextNode nextNode,
+                        /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        /* @Shared */ @Cached InlinedConditionProfile noItProfile,
+                        /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
+                        /* @Shared */ @Cached LoopConditionProfile loopProfile) {
+            return next(frame, inliningTarget, self, self.getFillValue(), nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
         }
 
-        private Object next(VirtualFrame frame, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinClassProfile isStopIterationProfile, LoopConditionProfile loopProfile,
-                        ConditionProfile noItProfile, ConditionProfile noActiveProfile) {
+        private Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
+                        LoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile) {
             Object[] result = new Object[self.getItTuple().length];
             loopProfile.profileCounted(result.length);
             for (int i = 0; loopProfile.inject(i < result.length); i++) {
                 Object it = self.getItTuple()[i];
                 Object item;
-                if (noItProfile.profile(it == PNone.NONE)) {
+                if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
                     item = fillValue;
                 } else {
                     try {
                         item = nextNode.execute(frame, it, PNone.NO_VALUE);
                     } catch (PException e) {
-                        if (isStopIterationProfile.profileException(e, StopIteration)) {
+                        if (isStopIterationProfile.profileException(inliningTarget, e, StopIteration)) {
                             self.setNumActive(self.getNumActive() - 1);
-                            if (noActiveProfile.profile(self.getNumActive() == 0)) {
+                            if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
                                 throw raiseStopIteration();
                             } else {
                                 item = fillValue;
