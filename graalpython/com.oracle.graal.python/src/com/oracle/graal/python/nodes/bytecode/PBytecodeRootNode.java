@@ -2278,7 +2278,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     CompilerAsserts.partialEvaluationConstant(targetIndex);
                     chainPythonExceptions(virtualFrame, mutableData, pe);
                     if (targetIndex == -1) {
-                        throw reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, isGeneratorOrCoroutine, mutableData, bciSlot, beginBci, pe, tracingEnabled, profilingEnabled);
+                        reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, isGeneratorOrCoroutine, mutableData, bciSlot, beginBci, pe, tracingEnabled, profilingEnabled);
+                        if (pe != null) {
+                            throw pe;
+                        }
+                        throw e;
                     }
                     if (pe != null) {
                         pe.setCatchingFrameReference(virtualFrame, this, beginBci);
@@ -3042,7 +3046,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private PException reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, boolean isGeneratorOrCoroutine, MutableLoopData mutableData, int bciSlot,
+    private void reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, boolean isGeneratorOrCoroutine, MutableLoopData mutableData, int bciSlot,
                     int beginBci, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
         // For tracebacks
         setCurrentBci(virtualFrame, bciSlot, beginBci);
@@ -3059,7 +3063,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             LoopNode.reportLoopCount(this, mutableData.loopCount);
         }
         traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
-        throw pe;
     }
 
     @InliningCutoff
