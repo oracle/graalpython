@@ -747,6 +747,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
             @Specialization
             public static Object doFallback(@SuppressWarnings("unused") CApiBuiltinExecutable self, @SuppressWarnings("unused") Object[] arguments) {
+                CompilerDirectives.transferToInterpreter();
                 throw CompilerDirectives.shouldNotReachHere("shouldn't hit generic case of " + Execute.class.getName());
             }
         }
