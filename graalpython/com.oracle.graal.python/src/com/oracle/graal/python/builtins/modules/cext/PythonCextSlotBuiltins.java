@@ -1424,7 +1424,6 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         public Object get(PythonManagedClass object,
-                        @Cached PythonObjectFactory factory,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
@@ -1435,7 +1434,7 @@ public final class PythonCextSlotBuiltins {
             HashingStorage dictStorage = dict.getDictStorage();
             if (dictStorage instanceof DynamicObjectStorage) {
                 // reuse the existing and modifiable storage
-                return factory.createDict(dict.getDictStorage());
+                return dict;
             }
             HashingStorage storage = new DynamicObjectStorage(object.getStorage());
             dict.setDictStorage(storage);
