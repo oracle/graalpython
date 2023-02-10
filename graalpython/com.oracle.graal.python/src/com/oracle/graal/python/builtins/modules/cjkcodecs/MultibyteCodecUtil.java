@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -137,6 +138,7 @@ public class MultibyteCodecUtil {
         }
     }
 
+    @GenerateInline(false)
     static abstract class CallErrorCallbackNode extends Node {
 
         abstract Object execute(VirtualFrame frame, Object errors, Object exc);

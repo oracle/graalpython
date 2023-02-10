@@ -42,14 +42,15 @@ package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecUtil.findCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.PyMultibyteCodec_CAPSULE_NAME;
+import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.registerCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.CreateCodecNode.createCodec;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS_TW;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TW;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_NAME_MUST_BE_A_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_SUCH_CODEC_IS_SUPPORTED;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -71,7 +73,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_codecs_tw")
+@CoreFunctions(defineModule = J__CODECS_TW)
 public class CodecsTWModuleBuiltins extends PythonBuiltins {
 
     @Override
@@ -87,34 +89,18 @@ public class CodecsTWModuleBuiltins extends PythonBuiltins {
     // CODEC_STATELESS(big5)
     // CODEC_STATELESS(cp950)
 
-    @TruffleBoundary
-    protected static boolean setCodecs(String name, TruffleString tsName, Charset charset) {
-        if (name.contentEquals("big5")) {
-            CODEC_LIST[0] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            MAPPING_LIST[0] = new DBCSMap(name, tsName, charset, MappingType.ENCDEC);
-            return true;
-        }
-        if (name.contentEquals("cp950")) {
-            CODEC_LIST[1] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("cp950ext")) {
-            MAPPING_LIST[1] = new DBCSMap(name, tsName, charset, MappingType.ENCDEC);
-            return true;
-        }
-        return false;
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        PythonObjectFactory factory = core.factory();
+        PythonModule codec = core.lookupBuiltinModule(T__CODECS_TW);
+        registerCodec("big5", 0, CodecType.STATELESS, 0, MappingType.ENCDEC, MAPPING_LIST, CODEC_LIST, codec, factory);
+        registerCodec("cp950", 1, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("cp950ext", -1, null, 1, MappingType.ENCDEC, MAPPING_LIST, null, codec, factory);
     }
 
     @Override
     public void initialize(Python3Core core) {
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        for (DBCSMap h : MAPPING_LIST) {
-            if (h == null) {
-                continue;
-            }
-            addBuiltinConstant(h.charsetMapName,
-                            factory.createCapsule(h, PyMultibyteCodec_CAPSULE_NAME, null));
-        }
         super.initialize(core);
     }
 

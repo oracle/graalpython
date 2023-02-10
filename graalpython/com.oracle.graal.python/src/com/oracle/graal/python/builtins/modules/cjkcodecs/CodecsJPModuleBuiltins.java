@@ -42,14 +42,15 @@ package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecUtil.findCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.PyMultibyteCodec_CAPSULE_NAME;
+import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.registerCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.CreateCodecNode.createCodec;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS_JP;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_JP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_NAME_MUST_BE_A_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_SUCH_CODEC_IS_SUPPORTED;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -71,7 +73,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_codecs_jp")
+@CoreFunctions(defineModule = J__CODECS_JP)
 public class CodecsJPModuleBuiltins extends PythonBuiltins {
 
     @Override
@@ -101,93 +103,36 @@ public class CodecsJPModuleBuiltins extends PythonBuiltins {
     // { "euc_jisx0213", (void *)2000, NULL, _STATELESS_METHODS(euc_jis_2004) },
     // { "shift_jisx0213", (void *)2000, NULL, _STATELESS_METHODS(shift_jis_2004) },
 
-    @TruffleBoundary
-    protected static boolean setCodecs(String name, TruffleString tsName, Charset charset) {
-        if (name.contentEquals("shift_jis")) {
-            CODEC_LIST[0] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("cp932")) {
-            CODEC_LIST[1] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("euc_jp")) {
-            CODEC_LIST[2] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("shift_jis_2004")) {
-            CODEC_LIST[3] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("euc_jis_2004")) {
-            CODEC_LIST[4] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("euc_jisx0213")) {
-            CODEC_LIST[5] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("shift_jisx0213")) {
-            CODEC_LIST[6] = new MultibyteCodec(tsName, charset, CodecType.STATELESS);
-            return true;
-        }
-        if (name.contentEquals("jisx0208")) {
-            MAPPING_LIST[0] = new DBCSMap(name, tsName, charset, MappingType.DECONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0212")) {
-            MAPPING_LIST[1] = new DBCSMap(name, tsName, charset, MappingType.DECONLY);
-            return true;
-        }
-        if (name.contentEquals("jisxcommon")) {
-            MAPPING_LIST[2] = new DBCSMap(name, tsName, charset, MappingType.ENCONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0213_1_bmp")) {
-            MAPPING_LIST[3] = new DBCSMap(name, tsName, charset, MappingType.DECONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0213_2_bmp")) {
-            MAPPING_LIST[4] = new DBCSMap(name, tsName, charset, MappingType.DECONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0213_bmp")) {
-            MAPPING_LIST[5] = new DBCSMap(name, tsName, charset, MappingType.ENCONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0213_1_emp")) {
-            MAPPING_LIST[6] = new DBCSMap(name, tsName, charset, MappingType.DECONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0213_2_emp")) {
-            MAPPING_LIST[7] = new DBCSMap(name, tsName, charset, MappingType.DECONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0213_emp")) {
-            MAPPING_LIST[8] = new DBCSMap(name, tsName, charset, MappingType.ENCONLY);
-            return true;
-        }
-        if (name.contentEquals("jisx0213_pair")) {
-            MAPPING_LIST[9] = new DBCSMap(name, tsName, charset, MappingType.ENCDEC);
-            return true;
-        }
-        if (name.contentEquals("cp932ext")) {
-            MAPPING_LIST[10] = new DBCSMap(name, tsName, charset, MappingType.ENCDEC);
-            return true;
-        }
-        return false;
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        PythonObjectFactory factory = core.factory();
+        PythonModule codec = core.lookupBuiltinModule(T__CODECS_JP);
+        int i = 0;
+        registerCodec("shift_jis", i++, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("cp932", i++, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("euc_jp", i++, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("shift_jis_2004", i++, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("euc_jis_2004", i++, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("euc_jisx0213", i++, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("shift_jisx0213", i, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+
+        i = 0;
+        registerCodec("jisx0208", -1, null, i++, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0212", -1, null, i++, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisxcommon", -1, null, i++, MappingType.ENCONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0213_1_bmp", -1, null, i++, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0213_2_bmp", -1, null, i++, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0213_bmp", -1, null, i++, MappingType.ENCONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0213_1_emp", -1, null, i++, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0213_2_emp", -1, null, i++, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0213_emp", -1, null, i++, MappingType.ENCONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("jisx0213_pair", -1, null, i++, MappingType.ENCDEC, MAPPING_LIST, null, codec, factory);
+        registerCodec("cp932ext", -1, null, i, MappingType.ENCDEC, MAPPING_LIST, null, codec, factory);
     }
 
     @Override
     public void initialize(Python3Core core) {
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        for (DBCSMap h : MAPPING_LIST) {
-            if (h == null) {
-                continue;
-            }
-            addBuiltinConstant(h.charsetMapName,
-                            factory.createCapsule(h, PyMultibyteCodec_CAPSULE_NAME, null));
-        }
         super.initialize(core);
     }
 

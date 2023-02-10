@@ -91,6 +91,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -159,10 +160,10 @@ public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         @Specialization
         Object ts(VirtualFrame frame, MultibyteStatefulEncoderContext ctx, TruffleString ucvt, int end,
                         PythonObjectFactory factory,
-                        @Cached MultibyteCodecUtil.EncodeNode encodeNode,
-                        @Cached TruffleString.ConcatNode concatNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
+                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Cached @Shared("c") TruffleString.ConcatNode concatNode,
+                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared("s") TruffleString.SubstringNode substringNode) {
             TruffleString inbuf = ucvt;
             TruffleString origpending = null;
             if (ctx.pending != null) {
@@ -203,10 +204,10 @@ public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached MultibyteCodecUtil.EncodeNode encodeNode,
-                        @Cached TruffleString.ConcatNode concatNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.SubstringNode substringNode) {
+                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Cached @Shared("c") TruffleString.ConcatNode concatNode,
+                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared("s") TruffleString.SubstringNode substringNode) {
             Object ucvt = unistr;
             if (!unicodeCheckNode.execute(unistr)) {
                 ucvt = strNode.execute(frame, unistr);

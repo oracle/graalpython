@@ -42,14 +42,15 @@ package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecUtil.findCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.PyMultibyteCodec_CAPSULE_NAME;
+import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.registerCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.CreateCodecNode.createCodec;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS_ISO2022;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_ISO2022;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_NAME_MUST_BE_A_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_SUCH_CODEC_IS_SUPPORTED;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -59,17 +60,19 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_codecs_iso2022")
+@CoreFunctions(defineModule = J__CODECS_ISO2022)
 public class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
 
     @Override
@@ -91,37 +94,19 @@ public class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
     // ISO2022_CODEC(jp_3)
     // ISO2022_CODEC(jp_ext)
 
-    @TruffleBoundary
-    protected static boolean setCodecs(String name, TruffleString tsName, Charset charset) {
-        if (name.contentEquals("iso2022_kr")) {
-            CODEC_LIST[0] = new MultibyteCodec(tsName, charset, CodecType.ISO2022);
-            return true;
-        }
-        if (name.contentEquals("iso2022_jp")) {
-            CODEC_LIST[1] = new MultibyteCodec(tsName, charset, CodecType.ISO2022);
-            return true;
-        }
-        if (name.contentEquals("iso2022_jp_1")) {
-            CODEC_LIST[2] = new MultibyteCodec(tsName, charset, CodecType.ISO2022);
-            return true;
-        }
-        if (name.contentEquals("iso2022_jp_2")) {
-            CODEC_LIST[3] = new MultibyteCodec(tsName, charset, CodecType.ISO2022);
-            return true;
-        }
-        if (name.contentEquals("iso2022_jp_2004")) {
-            CODEC_LIST[4] = new MultibyteCodec(tsName, charset, CodecType.ISO2022);
-            return true;
-        }
-        if (name.contentEquals("iso2022_jp_3")) {
-            CODEC_LIST[5] = new MultibyteCodec(tsName, charset, CodecType.ISO2022);
-            return true;
-        }
-        if (name.contentEquals("iso2022_jp_ext")) {
-            CODEC_LIST[6] = new MultibyteCodec(tsName, charset, CodecType.ISO2022);
-            return true;
-        }
-        return false;
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        PythonObjectFactory factory = core.factory();
+        PythonModule codec = core.lookupBuiltinModule(T__CODECS_ISO2022);
+        int i = 0;
+        registerCodec("iso2022_kr", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("iso2022_jp", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("iso2022_jp_1", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("iso2022_jp_2", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("iso2022_jp_2004", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("iso2022_jp_3", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("iso2022_jp_ext", i, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
     }
 
     @Override

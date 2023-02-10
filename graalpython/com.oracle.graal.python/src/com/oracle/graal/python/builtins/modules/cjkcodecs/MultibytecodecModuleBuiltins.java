@@ -57,11 +57,16 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.graal.python.util.CharsetMappingFactory.NormalizeEncodingNameNodeGen;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -93,23 +98,22 @@ public class MultibytecodecModuleBuiltins extends PythonBuiltins {
         return MultibytecodecModuleBuiltinsFactory.getFactories();
     }
 
-    public static void initCodecCharsets(String name, TruffleString tsName, Charset charset) {
-        if (CodecsCNModuleBuiltins.setCodecs(name, tsName, charset)) {
-            return;
+    protected static void registerCodec(String name, int cidx, CodecType ct, int midx, MappingType mt,
+                    DBCSMap[] maps, MultibyteCodec[] codecs,
+                    PythonModule codec, PythonObjectFactory factory) {
+        TruffleString tsName = tsLiteral(name);
+        TruffleString normalizedEncoding = NormalizeEncodingNameNodeGen.getUncached().execute(tsName);
+        Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
+        if (charset != null) {
+            if (cidx != -1) {
+                codecs[cidx] = new MultibyteCodec(tsName, charset, ct);
+            }
+            if (midx != -1) {
+                DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset, mt);
+                codec.setAttribute(tsLiteral(h.charsetMapName),
+                                factory.createCapsule(h, PyMultibyteCodec_CAPSULE_NAME, null));
+            }
         }
-        if (CodecsHKModuleBuiltins.setCodecs(name, tsName, charset)) {
-            return;
-        }
-        if (CodecsISO2022ModuleBuiltins.setCodecs(name, tsName, charset)) {
-            return;
-        }
-        if (CodecsJPModuleBuiltins.setCodecs(name, tsName, charset)) {
-            return;
-        }
-        if (CodecsKRModuleBuiltins.setCodecs(name, tsName, charset)) {
-            return;
-        }
-        CodecsTWModuleBuiltins.setCodecs(name, tsName, charset);
     }
 
     @Override

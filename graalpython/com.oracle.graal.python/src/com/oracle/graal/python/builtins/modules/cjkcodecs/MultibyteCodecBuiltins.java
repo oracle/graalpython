@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -109,9 +110,9 @@ public class MultibyteCodecBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteCodec_encode_impl
         @Specialization
         Object ts(VirtualFrame frame, MultibyteCodecObject self, TruffleString ucvt, TruffleString errors,
-                        @Cached MultibyteCodecUtil.EncodeNode encodeNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.EqualNode isEqual) {
+                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared("q") TruffleString.EqualNode isEqual) {
             TruffleString errorcb = internalErrorCallback(errors, isEqual);
             MultibyteCodecState state = self.codec.encinit(errorcb);
             int datalen = codePointLengthNode.execute(ucvt, TS_ENCODING);
@@ -126,12 +127,12 @@ public class MultibyteCodecBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isTruffleString(input)")
         Object notTS(VirtualFrame frame, MultibyteCodecObject self, Object input, TruffleString errors,
-                        @Cached MultibyteCodecUtil.EncodeNode encodeNode,
                         @Cached PyUnicodeCheckNode unicodeCheck,
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.EqualNode isEqual) {
+                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared("q") TruffleString.EqualNode isEqual) {
             Object ucvt = input;
             if (!unicodeCheck.execute(input)) {
                 ucvt = strNode.execute(frame, input);
