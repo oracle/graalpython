@@ -237,79 +237,76 @@ static void initialize_builtin_type(PyTypeObject* structure, const char* typname
     initialize_type_structure(structure, ptype, tid);
 }
 
-#define ctor_hidden(a) __attribute__((constructor (10 ## a
-#define ctor(a) ctor_hidden(a))))
-#define init_hidden(a, b) initialize ## a ## _ ## b ## _gen
-#define init(a, b) init_hidden(a, b)
+#define TYPES_AND_STRUCTS \
+declare_struct(PyType_Type, type, _typeobject) \
+declare_struct(PyBaseObject_Type, object, _object) \
+declare_type(PyUnicode_Type, str, PyUnicodeObject) \
+declare_struct(PyLong_Type, int, _longobject) \
+declare_type(PyBytes_Type, bytes, PyBytesObject) \
+declare_type(PyDict_Type, dict, PyDictObject) \
+declare_type(PyTuple_Type, tuple, PyTupleObject) \
+declare_type(PyList_Type, list, PyListObject) \
+declare_type(Arraytype, array, arrayobject) \
+declare_type(PyArrayIter_Type, arrayiterator, arrayiterobject) \
+declare_type(PyComplex_Type, complex, PyComplexObject) \
+declare_type(PyModule_Type, module, PyModuleObject) \
+declare_type(PyModuleDef_Type, moduledef, PyModuleDef) \
+declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject) \
+declare_type(PySet_Type, set, PySetObject) \
+declare_type(PyFloat_Type, float, PyFloatObject) \
+declare_type(PySlice_Type, slice, PySliceObject) \
+declare_type(PyByteArray_Type, bytearray, PyByteArrayObject) \
+declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject) \
+declare_type(PyCMethod_Type, builtin_method, PyCMethodObject) \
+declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject) \
+declare_type(PyCapsule_Type, capsule, PyCapsule) \
+declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject) \
+declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject) \
+declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject) \
+declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject) \
+declare_type(_PyExc_StopIteration, StopIteration, PyStopIterationObject) \
+declare_type(PyBuffer_Type, buffer, PyBufferDecorator) \
+declare_type(PyFunction_Type, function, PyFunctionObject) \
+declare_type(PyMethod_Type, method, PyMethodObject) \
+declare_type(PyInstanceMethod_Type, instancemethod, PyInstanceMethodObject) \
+declare_type(PyCode_Type, code, PyCodeObject) \
+declare_type(PyFrame_Type, frame, PyFrameObject) \
+declare_type(PyTraceBack_Type, traceback, PyTracebackObject) \
+declare_type(_PyWeakref_RefType, ReferenceType, PyWeakReference) \
+declare_type(PyGen_Type, generator, PyGenObject) \
+declare_type(PyProperty_Type, property, propertyobject) \
+initialize_type(PySuper_Type, super, _object) \
+initialize_type(_PyNone_Type, NoneType, _object) \
+initialize_type(PyFrozenSet_Type, frozenset, PySetObject) \
+initialize_type(PyBool_Type, bool, _longobject) \
+initialize_type(_PyNotImplemented_Type, NotImplementedType, _object) \
+initialize_type(PyDictProxy_Type, mappingproxy, _object) \
+initialize_type(PyEllipsis_Type, ellipsis, _object) \
+initialize_type(_PyWeakref_ProxyType, ProxyType, PyWeakReference) \
+initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference)
+/* The last few types use the same object structure as others, and thus
+ POLYGLOT_DECLARE_TYPE should not be called again */
+/* Below types use the same object structure as others, and thus
+ POLYGLOT_DECLARE_TYPE should not be called again */ \
 
-#define initialize_type(typeobject, typename, struct)              \
-    ctor(__COUNTER__)                                              \
-    static void init(__COUNTER__, typeobject)(void) {              \
-        initialize_builtin_type(&typeobject,                       \
-                                #typename,                         \
-                                polyglot_ ## struct ## _typeid()); \
-    }
+#define initialize_type(typeobject, typename, structtype) // empty
+#define declare_struct(typeobject, typename, structtype) POLYGLOT_DECLARE_STRUCT(structtype);
+#define declare_type(typeobject, typename, objecttype) POLYGLOT_DECLARE_TYPE(objecttype);
 
-#define declare_struct(typeobject, typename, struct)    \
-    POLYGLOT_DECLARE_STRUCT(struct);                    \
-    initialize_type(typeobject, typename, struct)
+TYPES_AND_STRUCTS;
 
-#define declare_type(typeobject, typename, objecttype)  \
-    POLYGLOT_DECLARE_TYPE(objecttype);                  \
-    initialize_type(typeobject, typename, objecttype)
+ void initialize_builtin_types_and_structs() {
+#define initialize_type(typeobject, typename, structtype)          \
+	initialize_builtin_type(&typeobject, #typename, polyglot_ ## structtype ## _typeid());
+#define declare_struct(typeobject, typename, structtype) initialize_type(typeobject, typename, structtype)
+#define declare_type(typeobject, typename, objecttype) initialize_type(typeobject, typename, objecttype)
 
-declare_struct(PyType_Type, type, _typeobject);
-declare_struct(PyBaseObject_Type, object, _object);
-declare_type(PyUnicode_Type, str, PyUnicodeObject);
-declare_struct(PyLong_Type, int, _longobject);
-declare_type(PyBytes_Type, bytes, PyBytesObject);
-declare_type(PyDict_Type, dict, PyDictObject);
-declare_type(PyTuple_Type, tuple, PyTupleObject);
-declare_type(PyList_Type, list, PyListObject);
-declare_type(Arraytype, array, arrayobject);
-declare_type(PyArrayIter_Type, arrayiterator, arrayiterobject);
-declare_type(PyComplex_Type, complex, PyComplexObject);
-declare_type(PyModule_Type, module, PyModuleObject);
-declare_type(PyModuleDef_Type, moduledef, PyModuleDef);
-declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject);
-declare_type(PySet_Type, set, PySetObject);
-declare_type(PyFloat_Type, float, PyFloatObject);
-declare_type(PySlice_Type, slice, PySliceObject);
-declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
-declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
-declare_type(PyCMethod_Type, builtin_method, PyCMethodObject);
-declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
-declare_type(PyCapsule_Type, capsule, PyCapsule);
-// tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
-// PyMethodDescr_Type. This reflects our interpreter, but we need to make sure
-// that the dynamic type for method_descriptor is always going to be
-// PyMethodDescr_Type, so these two declarations cannot be in the wrong order
-declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject);
-declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject);
-declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject);
-declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
-declare_type(_PyExc_StopIteration, StopIteration, PyStopIterationObject);
-declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
-declare_type(PyFunction_Type, function, PyFunctionObject);
-declare_type(PyMethod_Type, method, PyMethodObject);
-declare_type(PyInstanceMethod_Type, instancemethod, PyInstanceMethodObject);
-declare_type(PyCode_Type, code, PyCodeObject);
-declare_type(PyFrame_Type, frame, PyFrameObject);
-declare_type(PyTraceBack_Type, traceback, PyTracebackObject);
-declare_type(_PyWeakref_RefType, ReferenceType, PyWeakReference);
-declare_type(PyGen_Type, generator, PyGenObject);
-declare_type(PyProperty_Type, property, propertyobject);
-// Below types use the same object structure as others, and thus
-// POLYGLOT_DECLARE_TYPE should not be called again
-initialize_type(PySuper_Type, super, _object);
-initialize_type(_PyNone_Type, NoneType, _object);
-initialize_type(PyFrozenSet_Type, frozenset, PySetObject);
-initialize_type(PyBool_Type, bool, _longobject);
-initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
-initialize_type(PyDictProxy_Type, mappingproxy, _object);
-initialize_type(PyEllipsis_Type, ellipsis, _object);
-initialize_type(_PyWeakref_ProxyType, ProxyType, PyWeakReference);
-initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference);
+	 TYPES_AND_STRUCTS;
+#undef initialize_type
+#undef declare_struct
+#undef declare_type
+ }
+
 
 POLYGLOT_DECLARE_TYPE(newfunc);
 POLYGLOT_DECLARE_TYPE(Py_buffer);
@@ -457,6 +454,7 @@ void initialize_hashes();
 __attribute__((constructor (20000)))
 static void initialize_capi() {
     // initialize global variables like '_Py_NoneStruct', etc.
+	initialize_builtin_types_and_structs();
     initialize_globals();
     initialize_exceptions();
     initialize_hashes();
