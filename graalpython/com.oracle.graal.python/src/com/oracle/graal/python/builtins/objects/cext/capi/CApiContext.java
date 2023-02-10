@@ -132,6 +132,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -139,6 +140,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.llvm.api.Toolchain;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public final class CApiContext extends CExtContext {
@@ -1184,6 +1186,13 @@ public final class CApiContext extends CExtContext {
 
             if (!env.isNativeAccessAllowed()) {
                 LOGGER.config("not loading native C API support library (native access not allowed)");
+                return false;
+            }
+
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            if (!toolchain.getIdentifier().equals("native")) {
+                LOGGER.config("not loading native C API support library (non-native toolchain detected)");
                 return false;
             }
 
