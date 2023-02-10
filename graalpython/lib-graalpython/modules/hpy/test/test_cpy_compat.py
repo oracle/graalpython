@@ -44,9 +44,9 @@ class TestCPythonCompatibility(HPyTest):
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
-                Py_ssize_t initial_refcount = o->ob_refcnt;
+                Py_ssize_t initial_refcount = Py_REFCNT(o);
                 HPy h = HPy_FromPyObject(ctx, o);
-                Py_ssize_t final_refcount = o->ob_refcnt;
+                Py_ssize_t final_refcount = Py_REFCNT(o);
 
                 PyList_Append(o, PyLong_FromLong(1234));
                 PyList_Append(o, PyLong_FromSsize_t(final_refcount -
@@ -148,9 +148,9 @@ class TestCPythonCompatibility(HPyTest):
                 PyObject *o = PyList_New(0);
 
                 HPy h = HPy_FromPyObject(ctx, o);
-                Py_ssize_t initial_refcount = o->ob_refcnt;
+                Py_ssize_t initial_refcount = Py_REFCNT(o);
                 HPy_Close(ctx, h);
-                Py_ssize_t final_refcount = o->ob_refcnt;
+                Py_ssize_t final_refcount = Py_REFCNT(o);
 
                 Py_DECREF(o);
                 return HPyLong_FromLong(ctx, (long)(final_refcount -
@@ -172,9 +172,9 @@ class TestCPythonCompatibility(HPyTest):
                 PyObject *o = PyList_New(0);
 
                 HPy h = HPy_FromPyObject(ctx, o);
-                Py_ssize_t initial_refcount = o->ob_refcnt;
+                Py_ssize_t initial_refcount = Py_REFCNT(o);
                 HPy h2 = HPy_Dup(ctx, h);
-                Py_ssize_t final_refcount = o->ob_refcnt;
+                Py_ssize_t final_refcount = Py_REFCNT(o);
 
                 HPy_Close(ctx, h);
                 HPy_Close(ctx, h2);
@@ -203,7 +203,7 @@ class TestCPythonCompatibility(HPyTest):
                 Py_ssize_t result = -42;
                 HPy handles[NUM_HANDLES];
                 int i;
-                Py_ssize_t initial_refcount = o->ob_refcnt;
+                Py_ssize_t initial_refcount = Py_REFCNT(o);
                 for (i = 0; i < NUM_HANDLES; i++)
                     handles[i] = HPy_FromPyObject(ctx, o);
                 for (i = 0; i < NUM_HANDLES; i++)
@@ -211,7 +211,7 @@ class TestCPythonCompatibility(HPyTest):
                         goto error;
                 for (i = 0; i < NUM_HANDLES; i++)
                     HPy_Close(ctx, handles[i]);
-                final_refcount = o->ob_refcnt;
+                final_refcount = Py_REFCNT(o);
                 result = final_refcount - initial_refcount;
 
              error:
