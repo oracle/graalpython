@@ -182,6 +182,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -1804,7 +1805,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         ptr = coerceToLong(callNativeUnary.call(FUN_PYTRUFFLE_ALLOCATE_TYPE, obj, 1), lib);
                     }
 
-                    boolean isType = IsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
+                    boolean isType = InlineIsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
                     callNativeUnary.call(FUN_PYTRUFFLE_POPULATE_TYPE, ptr, obj, isType ? 1 : 0);
                     if (!obj.isNative()) {
                         CApiTransitions.firstToNative(obj, ptr);

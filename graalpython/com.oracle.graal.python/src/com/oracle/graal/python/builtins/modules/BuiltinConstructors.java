@@ -1454,13 +1454,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         @Megamorphic
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, PInt base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode) {
             checkBase(base);
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            return stringToInt(frame, cls, castToStringNode.execute(arg), base.intValue(), arg);
+            return stringToInt(frame, cls, castToStringNode.execute(arg), base.intValue(), arg, inliningTarget, isPrimitiveIntProfile);
         }
 
         // other
