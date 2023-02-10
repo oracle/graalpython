@@ -1654,7 +1654,7 @@ def update_import_cmd(args):
     revisions = {}
     # now update all imports
     for name in imports_to_update:
-        for idx, suite_py in enumerate(suite_py_files):
+        for _, suite_py in enumerate(suite_py_files):
             revisions[name] = update_import(name, suite_py, args)
 
     # copy files we inline from our imports
