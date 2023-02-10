@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.FUNCFLAG_CDECL;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getFunctionFromLongObject;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getHandleFromLongObject;
+import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_sint;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FIN;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FLCID;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FOUT;
@@ -75,11 +76,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -97,6 +96,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.Ctyp
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DLHandler;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.NativeFunction;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
+import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -195,9 +195,9 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(args, longCheckNode)"})
-        Object callback(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+        Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
-                        // @Cached KeepRefNode keepRefNode,
+                        @Cached KeepRefNode keepRefNode,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             Object callable = args[0];
@@ -223,18 +223,16 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
 
-            throw raise(NotImplementedError, toTruffleStringUncached("callbacks aren't supported yet."));
-            /*-
-            CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags);
+            CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags,
+                            pyTypeStgDictNode);
             PyCFuncPtrObject self = factory().createPyCFuncPtrObject(type);
             GenericPyCDataNew(dict, self);
             self.callable = callable;
             self.thunk = thunk;
-            self.b_ptr = PtrValue.object(thunk.pcl_exec);
-            
-            keepRefNode.execute(self, 0, thunk, factory());
+            self.b_ptr = PtrValue.nativePointer(thunk.pcl_exec);
+
+            keepRefNode.execute(frame, self, 0, thunk, factory());
             return self;
-            */
         }
 
         @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(args, longCheckNode)"})
@@ -243,8 +241,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
         }
 
-        @SuppressWarnings("unused")
-        CThunkObject CThunkObject_new(int nArgs) {
+        CThunkObject CThunkObjectNew(int nArgs) {
             CThunkObject p = factory().createCThunkObject(PythonBuiltinClassType.CThunkObject, nArgs);
 
             p.pcl_write = null;
@@ -263,15 +260,24 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             return p;
         }
 
+        FFIType _ctypes_get_ffi_type(Object obj,
+                        PyTypeStgDictNode pyTypeStgDictNode) {
+            if (obj == null) {
+                return ffi_type_sint;
+            }
+            StgDictObject dict = pyTypeStgDictNode.execute(obj);
+            if (dict == null) {
+                return ffi_type_sint;
+            }
+            return dict.ffi_type_pointer;
+        }
+
         @SuppressWarnings("unused")
-        CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags) {
-            throw raise(NotImplementedError, toTruffleStringUncached("callbacks aren't supported yet."));
-            /*- TODO
+        CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags,
+                        PyTypeStgDictNode pyTypeStgDictNode) {
             int nArgs = converters.length;
-            CThunkObject p = CThunkObject_new(nArgs);
-            
-            p.pcl_write = ffi_closure_alloc(sizeof(ffi_closure), p.pcl_exec);
-            
+            CThunkObject p = CThunkObjectNew(nArgs);
+
             p.flags = flags;
             int i;
             for (i = 0; i < nArgs; ++i) {
@@ -279,20 +285,21 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 p.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
             }
             p.atypes[i] = null;
-            
+
             p.restype = restype;
             if (restype == PNone.NONE) {
                 p.setfunc = FieldSet.nil;
-                p.ffi_restype = ffi_type_void;
+                p.ffi_restype = new FFIType();
             } else {
                 StgDictObject dict = pyTypeStgDictNode.execute(restype);
                 if (dict == null || dict.setfunc == FieldSet.nil) {
-                    throw raise(TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
+                    throw raise(TypeError); // , INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
                 }
                 p.setfunc = dict.setfunc;
                 p.ffi_restype = dict.ffi_type_pointer;
             }
-            
+            /*-
+            p.pcl_write = ffi_closure_alloc(sizeof(ffi_closure), p.pcl_exec);
             ffi_abi cc = FFI_DEFAULT_ABI;
             int result = ffi_prep_cif(p.cif, cc, nArgs, _ctypes_get_ffi_type(restype, pyTypeStgDictNode), p.atypes);
             if (result != FFI_OK) {
@@ -302,11 +309,11 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             if (result != FFI_OK) {
                 throw raise(RuntimeError, FFI_PREP_CLOSURE_FAILED_WITH_D, result);
             }
-            
+            */
+            p.createCallback();
             p.converters = converters;
             p.callable = callable;
             return p;
-            */
         }
 
     }

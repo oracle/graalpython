@@ -41,7 +41,15 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 public final class CThunkObject extends PythonBuiltinObject {
@@ -60,5 +68,31 @@ public final class CThunkObject extends PythonBuiltinObject {
     public CThunkObject(Object cls, Shape instanceShape, int nArgs) {
         super(cls, instanceShape);
         atypes = new FFIType[nArgs + 1];
+    }
+
+    public void createCallback() {
+        this.pcl_exec = new CtypeCallback(this);
+        this.pcl_write = this.pcl_exec;
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    protected static class CtypeCallback implements TruffleObject {
+        private CThunkObject thunk;
+
+        public CtypeCallback(CThunkObject thunk) {
+            this.thunk = thunk;
+        }
+
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @TruffleBoundary
+        @ExportMessage
+        Object execute(Object... args) throws ArityException {
+            // we don't need to check arity as it will be checked by the callable
+            return CallNode.getUncached().execute(thunk.callable, args, PKeyword.EMPTY_KEYWORDS);
+        }
     }
 }
