@@ -52,13 +52,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextSliceBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySlice_New extends CApiTernaryBuiltinNode {
         @Specialization
         public static Object slice(Object start, Object stop, Object step,
@@ -75,7 +73,6 @@ public final class PythonCextSliceBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_Ellipsis extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {

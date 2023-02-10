@@ -75,14 +75,12 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextModuleBuiltins {
 
     @CApiBuiltin(ret = Py_ssize_t, args = {}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class _PyTruffleModule_GetAndIncMaxModuleNumber extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -93,7 +91,6 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyModule_SetDocString extends CApiBinaryBuiltinNode {
         @Specialization
         static int run(PythonModule module, Object doc,
@@ -105,7 +102,6 @@ public final class PythonCextModuleBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
     @CApiBuiltin(name = "PyModule_New", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyModule_NewObject extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -116,7 +112,6 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class _PyTruffleModule_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -152,7 +147,6 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
         Object getName(Object o,
@@ -162,7 +156,6 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
         static Object addObject(Object m, TruffleString k, Object o,
@@ -188,7 +181,6 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ArgDescriptor.Long}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
         Object addObject(Object m, TruffleString k, long o,

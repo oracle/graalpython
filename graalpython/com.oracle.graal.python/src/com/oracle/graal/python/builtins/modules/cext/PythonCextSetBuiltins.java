@@ -80,7 +80,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -88,7 +87,6 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 public final class PythonCextSetBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
         public Object newSet(Object iterable,
@@ -104,7 +102,6 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySet_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         public static int contains(PSet anyset, Object item,
@@ -130,7 +127,6 @@ public final class PythonCextSetBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     public abstract static class _PyTruffleSet_NextEntry extends CApiBinaryBuiltinNode {
         @Specialization(guards = "pos < size(set, sizeNode)", limit = "3")
         Object nextEntry(PSet set, long pos,
@@ -200,7 +196,6 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySet_Pop extends CApiUnaryBuiltinNode {
         @Specialization
         Object pop(PSet set,
@@ -215,7 +210,6 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyFrozenSet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
         public Object newFrozenSet(Object iterable,
@@ -231,7 +225,6 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySet_Discard extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
@@ -247,7 +240,6 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySet_Clear extends CApiUnaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
@@ -264,7 +256,6 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySet_Add extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -281,7 +272,6 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySet_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static long get(PBaseSet object,

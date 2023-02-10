@@ -124,7 +124,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -136,7 +135,6 @@ public final class PythonCextAbstractBuiltins {
     /////// PyIndex ///////
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyIndex_Check extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object obj,
@@ -148,7 +146,6 @@ public final class PythonCextAbstractBuiltins {
     /////// PyNumber ///////
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_Check extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object obj,
@@ -159,7 +156,6 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(name = "_PyNumber_Index", ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_Index extends CApiUnaryBuiltinNode {
         @Specialization
         Object index(Object obj,
@@ -170,7 +166,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_Long extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -191,7 +186,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_Absolute extends CApiUnaryBuiltinNode {
         @Specialization
         Object abs(Object obj,
@@ -201,7 +195,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_Divmod extends CApiBinaryBuiltinNode {
         @Specialization
         Object div(Object a, Object b,
@@ -211,7 +204,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_ToBase extends CApiBinaryBuiltinNode {
         @Specialization(guards = "base == 2")
         Object toBase(Object n, @SuppressWarnings("unused") int base,
@@ -257,7 +249,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_Float extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -278,7 +269,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleNumber_UnaryOp extends CApiBinaryBuiltinNode {
         static int MAX_CACHE_SIZE = UnaryArithmetic.values().length;
 
@@ -312,7 +302,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleNumber_BinOp extends CApiTernaryBuiltinNode {
         static int MAX_CACHE_SIZE = BinaryArithmetic.values().length;
 
@@ -364,7 +353,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleNumber_InPlaceBinOp extends CApiTernaryBuiltinNode {
         static int MAX_CACHE_SIZE = InplaceArithmetic.values().length;
 
@@ -416,7 +404,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_InPlacePower extends CApiTernaryBuiltinNode {
         @Child private LookupAndCallInplaceNode callNode;
 
@@ -440,7 +427,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyNumber_Power extends CApiTernaryBuiltinNode {
         @Child private LookupAndCallTernaryNode callNode;
 
@@ -461,7 +447,6 @@ public final class PythonCextAbstractBuiltins {
     /////// PySequence ///////
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySequence_Tuple extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isTuple(obj, getClassNode)")
         public static PTuple values(PTuple obj,
@@ -482,7 +467,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySequence_List extends CApiUnaryBuiltinNode {
         @Specialization
         public Object values(Object obj,
@@ -492,7 +476,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySequence_SetItem extends CApiTernaryBuiltinNode {
         @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         public Object setItem(Object obj, Object key, Object value,
@@ -518,7 +501,6 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     abstract static class PySequence_GetSlice extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "checkNode.execute(obj)", limit = "1")
@@ -539,7 +521,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_Contains extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -550,7 +531,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_Repeat extends CApiBinaryBuiltinNode {
         @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         Object repeat(Object obj, long n,
@@ -571,7 +551,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_InPlaceRepeat extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"checkNode.execute(obj)"}, limit = "1")
         Object repeat(Object obj, long n,
@@ -599,7 +578,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_Concat extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"}, limit = "1")
         Object concat(Object s1, Object s2,
@@ -620,7 +598,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_InPlaceConcat extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"checkNode.execute(s1)"}, limit = "1")
@@ -648,7 +625,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySequence_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static Object run(Object o, Object i,
@@ -659,7 +635,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_Check extends CApiUnaryBuiltinNode {
         @Specialization
         static int check(Object object,
@@ -672,7 +647,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
         Object doManaged(Object delegate, Object position,
@@ -687,7 +661,6 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(name = "PySequence_Length", ret = Py_ssize_t, args = {PyObject}, call = Direct)
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PySequence_Size extends CApiUnaryBuiltinNode {
 
         // cant use PySequence_Size: PySequence_Size returns the __len__ value also for
@@ -729,7 +702,6 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     @CApiBuiltin(name = "PyTruffleObject_GetItemString", ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyObject_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
         Object doManaged(Object list, Object key,
@@ -739,7 +711,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Size extends CApiUnaryBuiltinNode {
 
         @Specialization(guards = "!isNativeObject(obj)")
@@ -764,7 +735,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_LengthHint extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -781,7 +751,6 @@ public final class PythonCextAbstractBuiltins {
     /////// PyMapping ///////
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyMapping_Keys extends CApiUnaryBuiltinNode {
         @Specialization
         public Object keys(PDict obj,
@@ -806,7 +775,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyMapping_Items extends CApiUnaryBuiltinNode {
         @Specialization
         public Object items(PDict obj,
@@ -826,7 +794,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyMapping_Values extends CApiUnaryBuiltinNode {
         @Specialization
         public Object values(PDict obj,
@@ -847,7 +814,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyMapping_Check extends CApiUnaryBuiltinNode {
 
         @Specialization(guards = "!isNativeObject(object)")
@@ -865,7 +831,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyMapping_Size extends CApiUnaryBuiltinNode {
 
         // cant use PyMapping_Check: PyMapping_Size returns the __len__ value also for
@@ -904,7 +869,6 @@ public final class PythonCextAbstractBuiltins {
     /////// PyIter ///////
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyIter_Next extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object object,
@@ -925,7 +889,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.ConstCharPtr, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_GetDoc extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(@SuppressWarnings("unused") Object obj) {
@@ -934,7 +897,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
         int check(@SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") TruffleString value) {

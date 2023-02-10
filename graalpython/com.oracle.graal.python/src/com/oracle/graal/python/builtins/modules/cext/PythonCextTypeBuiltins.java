@@ -57,14 +57,12 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextTypeBuiltins {
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyType_Lookup extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(Object type, Object name,
@@ -78,7 +76,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Direct)
-    @GenerateNodeFactory
     @ImportStatic(PythonOptions.class)
     abstract static class PyType_IsSubtype extends CApiBinaryBuiltinNode {
 

@@ -45,13 +45,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextBoolBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_True extends CApiNullaryBuiltinNode {
         @Specialization
         static boolean run() {
@@ -60,7 +58,6 @@ public final class PythonCextBoolBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_False extends CApiNullaryBuiltinNode {
         @Specialization
         static boolean run() {

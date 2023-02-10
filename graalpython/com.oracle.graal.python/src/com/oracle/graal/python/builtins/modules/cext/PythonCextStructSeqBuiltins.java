@@ -77,7 +77,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -89,7 +88,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextStructSeqBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Pointer, Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleStructSequence_InitType2 extends CApiQuaternaryBuiltinNode {
 
         @Specialization(limit = "1")
@@ -141,7 +139,6 @@ public final class PythonCextStructSeqBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer, Pointer, Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleStructSequence_NewType extends CApi5BuiltinNode {
 
         @Specialization(limit = "1")
@@ -165,7 +162,6 @@ public final class PythonCextStructSeqBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyStructSequence_New extends CApiUnaryBuiltinNode {
 
         @Specialization

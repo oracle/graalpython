@@ -66,14 +66,12 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PythonCextTupleBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyTuple_New extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -83,7 +81,6 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyTuple_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static int doManaged(PTuple tuple, Object position, Object element,
@@ -99,7 +96,6 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyTuple_GetItem extends CApiBinaryBuiltinNode {
 
         public abstract Object execute(PTuple tuple, long key);
@@ -133,7 +129,6 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
         @Specialization
         public static int size(Object tuple,
@@ -143,7 +138,6 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyTuple_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
         Object getSlice(PTuple tuple, Object iLow, Object iHigh,

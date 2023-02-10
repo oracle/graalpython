@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -59,7 +58,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 public final class PythonCextPyLifecycleBuiltins {
 
     @CApiBuiltin(ret = Int, args = {func_voidvoid}, call = Direct)
-    @GenerateNodeFactory
     abstract static class Py_AtExit extends CApiUnaryBuiltinNode {
 
         @Specialization

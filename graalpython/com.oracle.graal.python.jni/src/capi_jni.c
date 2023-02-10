@@ -342,7 +342,7 @@ EXCEPTIONS
 #undef EXCEPTION
 
 
-#define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
+#define BUILTIN(ID, NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef BUILTIN
 
@@ -356,7 +356,7 @@ int initNativeForwardCalled = 0;
 /**
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
-PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
+PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
     LOG("%s", "capi_jni.c:initNativeForward\n");
     if (initNativeForwardCalled) {
     	return 0;
@@ -396,7 +396,7 @@ PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
 #undef SET_TYPE_OBJECT_STORE
     
-#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getAPI(#NAME);
+#define BUILTIN(ID, NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(ID);
 CAPI_BUILTINS
 #undef BUILTIN
     Py_Truffle_Options = GraalPyTruffle_Native_Options();

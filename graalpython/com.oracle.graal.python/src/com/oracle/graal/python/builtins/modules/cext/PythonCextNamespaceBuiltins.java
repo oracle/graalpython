@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -67,7 +66,6 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 public final class PythonCextNamespaceBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class _PyNamespace_New extends CApiUnaryBuiltinNode {
         @Specialization
         public Object impDict(PDict dict,

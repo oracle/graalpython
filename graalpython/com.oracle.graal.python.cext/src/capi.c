@@ -155,7 +155,7 @@ PyTypeObject PyWrapperDescr_Type = 			PY_TRUFFLE_TYPE("wrapper_descriptor", &PyT
 // dummy definitions:
 PyTypeObject _PyBytesIOBuffer_Type =		PY_TRUFFLE_TYPE("_io._BytesIOBuffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, 0);
 
-#define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
+#define BUILTIN(ID, NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef BUILTIN
 
@@ -176,7 +176,7 @@ static void initialize_upcall_functions() {
 	javaStringToTruffleString = (void_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 20);
 	points_to_py_handle_space = (cache_query_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 2);
 
-#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetBuiltin", truffleString(#NAME));
+#define BUILTIN(ID, NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetBuiltin", ID);
 CAPI_BUILTINS
 #undef BUILTIN
 
@@ -292,16 +292,17 @@ initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference
 #define initialize_type(typeobject, typename, structtype) // empty
 #define declare_struct(typeobject, typename, structtype) POLYGLOT_DECLARE_STRUCT(structtype);
 #define declare_type(typeobject, typename, objecttype) POLYGLOT_DECLARE_TYPE(objecttype);
-
-TYPES_AND_STRUCTS;
+TYPES_AND_STRUCTS
+#undef initialize_type
+#undef declare_struct
+#undef declare_type
 
  void initialize_builtin_types_and_structs() {
 #define initialize_type(typeobject, typename, structtype)          \
 	initialize_builtin_type(&typeobject, #typename, polyglot_ ## structtype ## _typeid());
 #define declare_struct(typeobject, typename, structtype) initialize_type(typeobject, typename, structtype)
 #define declare_type(typeobject, typename, objecttype) initialize_type(typeobject, typename, objecttype)
-
-	 TYPES_AND_STRUCTS;
+	 TYPES_AND_STRUCTS
 #undef initialize_type
 #undef declare_struct
 #undef declare_type

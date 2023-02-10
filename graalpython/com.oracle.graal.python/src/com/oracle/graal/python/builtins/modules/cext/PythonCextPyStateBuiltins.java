@@ -53,13 +53,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextPyStateBuiltins {
 
     @CApiBuiltin(ret = PyThreadState, args = {}, call = Direct, inlined = true)
-    @GenerateNodeFactory
     abstract static class PyThreadState_Get extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -69,7 +67,6 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PYMODULEDEF_PTR}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleState_FindModule extends CApiUnaryBuiltinNode {
 
         @Specialization

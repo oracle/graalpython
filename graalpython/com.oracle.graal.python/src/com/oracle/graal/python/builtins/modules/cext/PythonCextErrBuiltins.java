@@ -120,7 +120,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -130,7 +129,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextErrBuiltins {
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_Restore extends CApiTernaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
@@ -157,7 +155,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleErr_Fetch extends CApiNullaryBuiltinNode {
         @Specialization
         public Object run(@Cached GetThreadStateNode getThreadStateNode,
@@ -184,7 +181,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_Occurred extends CApiNullaryBuiltinNode {
         @Specialization
         Object run(
@@ -200,7 +196,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_SetExcInfo extends CApiTernaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
@@ -236,7 +231,6 @@ public final class PythonCextErrBuiltins {
      * {@code sys.excepthook}. This is the last resort if the hook function itself failed.
      */
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_Display extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -250,7 +244,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyErr_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(type, isTypeNode, isSubClassNode)")
         Object create(Object type, @SuppressWarnings("unused") Object value,
@@ -288,7 +281,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyErr_BadInternalCall extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -302,7 +294,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_NewException extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -344,7 +335,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_NewExceptionWithDoc extends CApiQuaternaryBuiltinNode {
 
         @Specialization
@@ -364,7 +354,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleErr_GetExcInfo extends CApiNullaryBuiltinNode {
         @Specialization
         Object info(
@@ -389,7 +378,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_GivenExceptionMatches extends CApiBinaryBuiltinNode {
         public abstract int executeInt(Object err, Object exc);
 
@@ -448,7 +436,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
         @Specialization
         Object write(Object msg, Object obj,
@@ -486,7 +473,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyErr_PrintEx extends CApiUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
@@ -601,7 +587,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyException_SetCause extends CApiBinaryBuiltinNode {
         @Specialization
         Object setCause(Object exc, Object cause,
@@ -612,7 +597,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyException_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         Object setCause(Object exc,
@@ -622,7 +606,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyException_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         Object setCause(Object exc, Object context,
@@ -633,7 +616,6 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyException_SetTraceback extends CApiBinaryBuiltinNode {
 
         @Specialization

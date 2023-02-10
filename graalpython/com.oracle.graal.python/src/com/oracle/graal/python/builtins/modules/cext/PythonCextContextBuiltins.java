@@ -58,14 +58,12 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextContextBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyContextVar_New extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(TruffleString name, Object def,
@@ -81,7 +79,6 @@ public final class PythonCextContextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffleContextVar_Get extends CApiTernaryBuiltinNode {
         @Specialization
         Object doGeneric(Object var, Object def, Object marker,
@@ -107,7 +104,6 @@ public final class PythonCextContextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyContextVar_Set extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(Object var, Object val) {

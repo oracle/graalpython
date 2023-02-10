@@ -90,6 +90,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
@@ -617,12 +618,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         public static CApiUnaryBuiltinNode getSlotBuiltin(String key) {
             CompilerAsserts.neverPartOfCompilation();
-            return (CApiUnaryBuiltinNode) PythonCextBuiltins.capiBuiltins.get("Py_get_PyTypeObject_" + key).createBuiltinNode();
+            return (CApiUnaryBuiltinNode) PythonCextBuiltinRegistry.getSlot("PyTypeObject_" + key).createBuiltinNode();
         }
 
         @TruffleBoundary
         public static CApiUnaryBuiltinNode getSlotBuiltinUncached(String key) {
-            return (CApiUnaryBuiltinNode) PythonCextBuiltins.capiBuiltins.get("Py_get_PyTypeObject_" + key).getUncachedNode();
+            return (CApiUnaryBuiltinNode) PythonCextBuiltinRegistry.getSlot("PyTypeObject_" + key).getUncachedNode();
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")

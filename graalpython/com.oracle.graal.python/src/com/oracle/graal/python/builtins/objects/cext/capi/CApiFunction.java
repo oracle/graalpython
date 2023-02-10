@@ -1395,16 +1395,19 @@ public final class CApiFunction {
     public final boolean inlined;
     public final ArgDescriptor[] arguments;
     public final ArgDescriptor returnType;
-    private final CApiCallPath call;
-    private final String forwardsTo;
+    public final CApiCallPath call;
+    public final String forwardsTo;
+    public final String factory;
+    public int id;
 
-    CApiFunction(String name, boolean inlined, ArgDescriptor returnType, ArgDescriptor[] arguments, CApiCallPath call, String forwardsTo) {
+    public CApiFunction(String name, boolean inlined, ArgDescriptor returnType, ArgDescriptor[] arguments, CApiCallPath call, String forwardsTo, String factory) {
         this.name = name;
         this.inlined = inlined;
         this.returnType = returnType;
         this.arguments = arguments;
         this.call = call;
         this.forwardsTo = forwardsTo;
+        this.factory = factory;
     }
 
     private static final ArrayList<CApiFunction> unusedValues = new ArrayList<>();
@@ -1413,18 +1416,15 @@ public final class CApiFunction {
     static {
         CApiBuiltins builtins = Dummy.class.getAnnotation(CApiBuiltins.class);
         for (var builtin : builtins.value()) {
-            unusedValues.add(new CApiFunction(builtin.name(), builtin.inlined(), builtin.ret(), builtin.args(), builtin.call(), builtin.forwardsTo()));
+            unusedValues.add(new CApiFunction(builtin.name(), builtin.inlined(), builtin.ret(), builtin.args(), builtin.call(), builtin.forwardsTo(), null));
         }
         values.addAll(unusedValues);
-        for (var entry : new TreeMap<>(PythonCextBuiltins.capiBuiltins).entrySet()) {
-            CApiBuiltin annotation = entry.getValue().getAnnotation();
-            CApiFunction existing = valueOf(entry.getKey());
-            ArgDescriptor[] args = annotation.args();
-            ArgDescriptor ret = annotation.ret();
+        for (var entry : PythonCextBuiltins.processAllBuiltins()) {
+            CApiFunction existing = valueOf(entry.name);
             if (existing != null) {
-                compareFunction(entry.getKey(), ret, existing.returnType, args, existing.arguments);
+                compareFunction(entry.name, entry.returnType, existing.returnType, entry.arguments, existing.arguments);
             } else {
-                values.add(new CApiFunction(entry.getKey(), annotation.inlined(), ret, args, annotation.call(), annotation.forwardsTo()));
+                values.add(entry);
             }
         }
         Collections.sort(values, (a, b) -> a.name.compareTo(b.name));
@@ -1763,4 +1763,5 @@ public final class CApiFunction {
         messages.forEach(System.out::println);
         return messages.isEmpty();
     }
+
 }

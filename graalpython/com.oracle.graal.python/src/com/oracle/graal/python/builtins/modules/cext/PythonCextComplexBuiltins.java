@@ -63,14 +63,12 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextComplexBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleComplex_AsCComplex extends CApiUnaryBuiltinNode {
         @Specialization
         PTuple asComplex(PComplex c) {
@@ -86,7 +84,6 @@ public final class PythonCextComplexBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyComplex_RealAsDouble extends CApiUnaryBuiltinNode {
 
         public static final TruffleString T_REAL = tsLiteral("real");
@@ -128,7 +125,6 @@ public final class PythonCextComplexBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyComplex_ImagAsDouble extends CApiUnaryBuiltinNode {
 
         public static final TruffleString T_IMAG = tsLiteral("imag");
@@ -161,7 +157,6 @@ public final class PythonCextComplexBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double, ArgDescriptor.Double}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyComplex_FromDoubles extends CApiBinaryBuiltinNode {
 
         @Specialization

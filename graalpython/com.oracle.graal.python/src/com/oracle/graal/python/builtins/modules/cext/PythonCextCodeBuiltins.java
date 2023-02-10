@@ -59,14 +59,12 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCodeBuiltins {
 
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCode_New extends CApi15BuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -88,7 +86,6 @@ public final class PythonCextCodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCode_NewWithPosOnlyArgs extends CApi16BuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -110,7 +107,6 @@ public final class PythonCextCodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyCode_NewEmpty extends CApiTernaryBuiltinNode {
         public abstract PCode execute(TruffleString filename, TruffleString funcname, int lineno);
 

@@ -54,13 +54,11 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextFileBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, Int}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyFile_WriteObject extends CApiTernaryBuiltinNode {
 
         @Specialization

@@ -59,14 +59,12 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextTracebackBuiltins {
 
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyTraceback_Add extends CApiTernaryBuiltinNode {
         @Specialization
         Object tbHere(TruffleString funcname, TruffleString filename, int lineno,
@@ -79,7 +77,6 @@ public final class PythonCextTracebackBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyTraceBack_Here extends CApiUnaryBuiltinNode {
         @Specialization
         int tbHere(PFrame frame,

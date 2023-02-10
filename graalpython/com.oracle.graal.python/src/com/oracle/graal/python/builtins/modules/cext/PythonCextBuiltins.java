@@ -90,11 +90,12 @@ import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -207,7 +208,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -270,12 +270,58 @@ import com.oracle.truffle.llvm.api.Toolchain;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
 public final class PythonCextBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return filterFactories(PythonCextBuiltinsFactory.getFactories(), PythonBuiltinBaseNode.class);
+    }
+
+    // This appears to be used only from HPy
+    @Builtin(name = "PyTruffle_CreateType", minNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_CreateType extends PythonQuaternaryBuiltinNode {
+        @Specialization
+        static PythonClass createType(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespaceOrig, Object metaclass,
+                        @Cached CreateTypeNode createType) {
+            return createType.execute(frame, namespaceOrig, name, bases, metaclass, PKeyword.EMPTY_KEYWORDS);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_GetBuiltin", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleGetBuiltin extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object doI(int id) {
+            if (id >= 0 && id < PythonCextBuiltinRegistry.builtins.length) {
+                return PythonCextBuiltinRegistry.builtins[id];
+            }
+            throw raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, id);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_HandleResolver_Create", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleHandleResolverCreate extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object create(int which) {
+            switch (which) {
+                case 0:
+                    return new HandleResolver();
+                case 1:
+                    return new HandleResolverStealing();
+                case 2:
+                    return new HandleTester();
+                case 12: // pythonToNative
+                    return new PythonToNativeTransfer();
+                case 20: // javaStringToTruffleString
+                    return new JavaStringToTruffleString();
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
     }
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextBuiltins.class);
@@ -676,17 +722,17 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         final ArgDescriptor ret;
         final ArgDescriptor[] args;
-        final NodeFactory<? extends CApiBuiltinNode> factory;
         @CompilationFinal private CallTarget callTarget;
-        private final CApiBuiltin annotation;
+        private final CApiCallPath call;
         private final String name;
+        private final int id;
 
-        public CApiBuiltinExecutable(String name, CApiBuiltin annotation, ArgDescriptor ret, ArgDescriptor[] args, NodeFactory<? extends CApiBuiltinNode> factory) {
+        public CApiBuiltinExecutable(String name, CApiCallPath call, ArgDescriptor ret, ArgDescriptor[] args, int id) {
             this.name = name;
-            this.annotation = annotation;
+            this.call = call;
             this.ret = ret;
             this.args = args;
-            this.factory = factory;
+            this.id = id;
         }
 
         CallTarget getCallTarget() {
@@ -703,8 +749,12 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             return true;
         }
 
-        public CApiBuiltin getAnnotation() {
-            return annotation;
+        public CApiCallPath call() {
+            return call;
+        }
+
+        public String name() {
+            return name;
         }
 
         CExtToNativeNode createRetNode() {
@@ -720,14 +770,14 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         public CApiBuiltinNode createBuiltinNode() {
-            CApiBuiltinNode node = factory.createNode();
+            CApiBuiltinNode node = PythonCextBuiltinRegistry.createBuiltinNode(id);
             node.ret = ret;
             return node;
         }
 
         public CApiBuiltinNode getUncachedNode() {
             // TODO: how to set "node.ret"?
-            return factory.getUncachedInstance();
+            throw CompilerDirectives.shouldNotReachHere("not supported - uncached for " + name);
         }
 
         @ExportMessage
@@ -822,7 +872,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public String toString() {
-            return "CApiBuiltin(" + name + " / " + factory.getNodeClass().getSimpleName() + ")";
+            return "CApiBuiltin(" + name + " / " + id + ")";
         }
     }
 
@@ -835,7 +885,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 return new CachedExecuteCApiBuiltinNode(self);
             } catch (Throwable t) {
                 PNodeWithContext.printStack();
-                LOGGER.logp(Level.SEVERE, "ExecuteCApiBuiltinNode", "create", "while creating CApiBuiltin " + self.factory.getNodeClass(), t);
+                LOGGER.logp(Level.SEVERE, "ExecuteCApiBuiltinNode", "create", "while creating CApiBuiltin " + self.name, t);
                 throw t;
             }
         }
@@ -879,7 +929,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     CApiTransitions.maybeGCALot();
                     return result;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "CApiBuiltin", self.factory);
+                    throw checkThrowableBeforeNative(t, "CApiBuiltin", self.name);
                 }
             } catch (PException e) {
                 if (transformExceptionToNativeNode == null) {
@@ -897,7 +947,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     return PNone.NO_VALUE;
                 } else {
                     CompilerDirectives.transferToInterpreter();
-                    throw CompilerDirectives.shouldNotReachHere("return type while handling PException: " + cachedSelf.getRetDescriptor() + " in " + cachedSelf.factory.getNodeClass());
+                    throw CompilerDirectives.shouldNotReachHere("return type while handling PException: " + cachedSelf.getRetDescriptor() + " in " + self.name);
                 }
             }
         }
@@ -915,34 +965,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Override
         Object execute(CApiBuiltinExecutable self, Object[] arguments) {
             return IndirectCallNode.getUncached().call(self.getCallTarget(), arguments);
-        }
-    }
-
-    // This appears to be used only from HPy
-    @Builtin(name = "PyTruffle_CreateType", minNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_CreateType extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        static PythonClass createType(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespaceOrig, Object metaclass,
-                        @Cached CreateTypeNode createType) {
-            return createType.execute(frame, namespaceOrig, name, bases, metaclass, PKeyword.EMPTY_KEYWORDS);
-        }
-    }
-
-    @Builtin(name = "PyTruffle_GetBuiltin", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffleGetBuiltin extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        Object doI(Object builtinNameObject,
-                        @Cached CastToJavaStringNode castToStringNode) {
-            String builtinName = castToStringNode.execute(builtinNameObject);
-            CApiBuiltinExecutable builtin = capiBuiltins.get(builtinName);
-            if (builtin != null) {
-                return builtin;
-            }
-            throw raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, builtinName);
         }
     }
 
@@ -1454,28 +1476,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             PythonNativePointer nn = getContext().getNativeNull();
             nn.setPtr(object);
             return PNone.NO_VALUE;
-        }
-    }
-
-    @Builtin(name = "PyTruffle_HandleResolver_Create", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffleHandleResolverCreate extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object create(int which) {
-            switch (which) {
-                case 0:
-                    return new HandleResolver();
-                case 1:
-                    return new HandleResolverStealing();
-                case 2:
-                    return new HandleTester();
-                case 12: // pythonToNative
-                    return new PythonToNativeTransfer();
-                case 20: // javaStringToTruffleString
-                    return new JavaStringToTruffleString();
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
         }
     }
 
@@ -2529,114 +2529,177 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    public static final HashMap<String, CApiBuiltinExecutable> capiBuiltins = new HashMap<>();
+    public static Collection<CApiFunction> processAllBuiltins() {
+        ArrayList<CApiFunction> result = new ArrayList<>();
+        addCApiBuiltins(result, PythonCextAbstractBuiltins.class);
+        addCApiBuiltins(result, PythonCextBoolBuiltins.class);
+        addCApiBuiltins(result, PythonCextBuiltins.class);
+        addCApiBuiltins(result, PythonCextBytesBuiltins.class);
+        addCApiBuiltins(result, PythonCextCapsuleBuiltins.class);
+        addCApiBuiltins(result, PythonCextCEvalBuiltins.class);
+        addCApiBuiltins(result, PythonCextClassBuiltins.class);
+        addCApiBuiltins(result, PythonCextCodeBuiltins.class);
+        addCApiBuiltins(result, PythonCextComplexBuiltins.class);
+        addCApiBuiltins(result, PythonCextContextBuiltins.class);
+        addCApiBuiltins(result, PythonCextDescrBuiltins.class);
+        addCApiBuiltins(result, PythonCextDictBuiltins.class);
+        addCApiBuiltins(result, PythonCextErrBuiltins.class);
+        addCApiBuiltins(result, PythonCextFileBuiltins.class);
+        addCApiBuiltins(result, PythonCextFloatBuiltins.class);
+        addCApiBuiltins(result, PythonCextFuncBuiltins.class);
+        addCApiBuiltins(result, PythonCextGenericAliasBuiltins.class);
+        addCApiBuiltins(result, PythonCextHashBuiltins.class);
+        addCApiBuiltins(result, PythonCextImportBuiltins.class);
+        addCApiBuiltins(result, PythonCextIterBuiltins.class);
+        addCApiBuiltins(result, PythonCextListBuiltins.class);
+        addCApiBuiltins(result, PythonCextLongBuiltins.class);
+        addCApiBuiltins(result, PythonCextMemoryViewBuiltins.class);
+        addCApiBuiltins(result, PythonCextMethodBuiltins.class);
+        addCApiBuiltins(result, PythonCextModuleBuiltins.class);
+        addCApiBuiltins(result, PythonCextNamespaceBuiltins.class);
+        addCApiBuiltins(result, PythonCextObjectBuiltins.class);
+        addCApiBuiltins(result, PythonCextPosixmoduleBuiltins.class);
+        addCApiBuiltins(result, PythonCextPyLifecycleBuiltins.class);
+        addCApiBuiltins(result, PythonCextPyStateBuiltins.class);
+        addCApiBuiltins(result, PythonCextPythonRunBuiltins.class);
+        addCApiBuiltins(result, PythonCextSetBuiltins.class);
+        addCApiBuiltins(result, PythonCextSliceBuiltins.class);
+        addCApiBuiltins(result, PythonCextSlotBuiltins.class);
+        addCApiBuiltins(result, PythonCextStructSeqBuiltins.class);
+        addCApiBuiltins(result, PythonCextSysBuiltins.class);
+        addCApiBuiltins(result, PythonCextTracebackBuiltins.class);
+        addCApiBuiltins(result, PythonCextTupleBuiltins.class);
+        addCApiBuiltins(result, PythonCextTypeBuiltins.class);
+        addCApiBuiltins(result, PythonCextUnicodeBuiltins.class);
+        addCApiBuiltins(result, PythonCextWarnBuiltins.class);
+        addCApiBuiltins(result, PythonCextWeakrefBuiltins.class);
 
-    static {
-        // List<NodeFactory<? extends PNodeWithRaise>>
-        addCApiBuiltins(PythonCextAbstractBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextBoolBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextBytesBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextCapsuleBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextCEvalBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextClassBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextCodeBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextComplexBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextContextBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextDescrBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextDictBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextErrBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextFileBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextFloatBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextFuncBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextGenericAliasBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextHashBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextImportBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextIterBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextListBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextLongBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextMemoryViewBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextMethodBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextModuleBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextNamespaceBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextObjectBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextPosixmoduleBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextPyLifecycleBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextPyStateBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextPythonRunBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextSetBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextSliceBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextSlotBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextStructSeqBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextSysBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextTracebackBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextTupleBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextTypeBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextUnicodeBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextWarnBuiltinsFactory.getFactories());
-        addCApiBuiltins(PythonCextWeakrefBuiltinsFactory.getFactories());
+        result.sort((a, b) -> a.name.compareTo(b.name));
+        for (int i = 0; i < result.size(); i++) {
+            result.get(i).id = i;
+        }
+        return result;
     }
 
-    private static void addCApiBuiltins(List<?> list) {
-        List<? extends NodeFactory<? extends CApiBuiltinNode>> factories = filterFactories(list, CApiBuiltinNode.class);
+    private static void addCApiBuiltins(Collection<CApiFunction> result, Class<?> container) {
+        Class<?>[] declaredClasses = container.getDeclaredClasses();
 
-        for (var factory : factories) {
-            CApiBuiltins builtins = factory.getNodeClass().getAnnotation(CApiBuiltins.class);
-            CApiBuiltin[] annotations;
-            if (builtins == null) {
-                annotations = new CApiBuiltin[]{factory.getNodeClass().getAnnotation(CApiBuiltin.class)};
-            } else {
-                annotations = builtins.value();
-            }
-            try {
-                for (var annotation : annotations) {
-                    String name = factory.getNodeClass().getSimpleName();
-                    if (!annotation.name().isEmpty()) {
-                        name = annotation.name();
+        for (Class<?> clazz : declaredClasses) {
+            if (CApiBuiltinNode.class.isAssignableFrom(clazz)) {
+                CApiBuiltins builtins = clazz.getAnnotation(CApiBuiltins.class);
+                CApiBuiltin[] annotations;
+                if (builtins == null) {
+                    CApiBuiltin annotation = clazz.getAnnotation(CApiBuiltin.class);
+                    if (annotation == null) {
+                        // not builtin, but base class
+                        continue;
                     }
-                    CApiBuiltinExecutable result = new CApiBuiltinExecutable(name, annotation, annotation.ret(), annotation.args(), factory);
-                    assert !capiBuiltins.containsKey(name);
-                    capiBuiltins.put(name, result);
+                    annotations = new CApiBuiltin[]{annotation};
+                } else {
+                    annotations = builtins.value();
                 }
-            } catch (Throwable t) {
-                LOGGER.logp(Level.SEVERE, PythonCextBuiltins.class.getName(), "addCApiBuiltins", "while processing " + factory.getNodeClass(), t);
-                throw t;
+                try {
+                    for (var annotation : annotations) {
+                        String name = clazz.getSimpleName();
+                        if (!annotation.name().isEmpty()) {
+                            name = annotation.name();
+                        }
+                        Class<?> gen;
+                        try {
+                            gen = Class.forName(container.getName() + "Factory$" + clazz.getSimpleName() + "NodeGen");
+                        } catch (ClassNotFoundException e) {
+                            try {
+                                gen = Class.forName(container.getName() + "Factory$" + clazz.getSimpleName() + "Factory");
+                            } catch (ClassNotFoundException e2) {
+                                throw new RuntimeException(e2);
+                            }
+                        }
+                        result.add(new CApiFunction(name, annotation.inlined(), annotation.ret(), annotation.args(), annotation.call(), annotation.forwardsTo(), gen.getCanonicalName()));
+                    }
+                } catch (Throwable t) {
+                    LOGGER.logp(Level.SEVERE, PythonCextBuiltins.class.getName(), "addCApiBuiltins", "while processing " + clazz, t);
+                    throw t;
+                }
             }
+
         }
     }
 
     public static void main(String[] args) throws IOException {
+
+        Collection<CApiFunction> builtins = processAllBuiltins();
+
+        {
+            ArrayList<String> lines = new ArrayList<>();
+
+            lines.clear();
+
+            lines.add("    public static final CApiBuiltinExecutable[] builtins = {");
+            for (var builtin : builtins) {
+                String argString = "\n                                    new ArgDescriptor[]{" + Arrays.stream(builtin.arguments).map(Object::toString).collect(Collectors.joining(", ")) + "}";
+                lines.add("                    new CApiBuiltinExecutable(\"" + builtin.name + "\", " + builtin.call + ", " + builtin.returnType + "," + argString + ", " + builtin.id + "),");
+            }
+            lines.add("    };");
+            lines.add("");
+
+            lines.add("    static CApiBuiltinNode createBuiltinNode(int id) {");
+            lines.add("        switch (id) {");
+
+            for (var builtin : builtins) {
+                lines.add("            case " + builtin.id + ":");
+                lines.add("                return " + builtin.factory + ".create();");
+            }
+
+            lines.add("        }");
+            lines.add("        return null;");
+            lines.add("    }");
+            lines.add("");
+            lines.add("    public static CApiBuiltinExecutable getSlot(String key) {");
+            lines.add("        switch (key) {");
+
+            for (var builtin : builtins) {
+                if (builtin.name.startsWith("Py_get_")) {
+                    lines.add("            case \"" + builtin.name.substring(7) + "\":");
+                    lines.add("                return builtins[" + builtin.id + "];");
+                }
+            }
+
+            lines.add("        }");
+            lines.add("        return null;");
+            lines.add("    }");
+
+            CApiFunction.writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCExtBuiltinRegistry.java"), lines);
+        }
+
         TreeSet<String> duplicates = new TreeSet<>();
-        TreeSet<String> set = new TreeSet<>();
-        for (var entry : new TreeMap<>(capiBuiltins).entrySet()) {
-            String name = entry.getKey();
-            CApiBuiltinExecutable value = entry.getValue();
-            String line = "    BUILTIN(" + name + ", " + value.ret.cSignature;
-            for (var arg : value.args) {
+        ArrayList<String> builtinDefinitions = new ArrayList<>();
+        for (var entry : builtins) {
+            String line = "    BUILTIN(" + entry.id + ", " + entry.name + ", " + entry.returnType.cSignature;
+            for (var arg : entry.arguments) {
                 line += ", " + arg.cSignature;
             }
             line += ") \\";
-            set.add(line);
+            builtinDefinitions.add(line);
 
-            CApiFunction apiFunction = CApiFunction.valueOf(name);
+            CApiFunction apiFunction = CApiFunction.valueOf(entry.name);
             if (apiFunction != null) {
                 String mismatch = "";
-                if (apiFunction.returnType != value.ret) {
-                    mismatch += ", returns " + apiFunction.returnType + " vs. " + value.ret;
+                if (apiFunction.returnType != entry.returnType) {
+                    mismatch += ", returns " + apiFunction.returnType + " vs. " + entry.returnType;
                 }
-                if (apiFunction.arguments.length != value.args.length) {
+                if (apiFunction.arguments.length != entry.arguments.length) {
                     mismatch += ", mismatching arg length";
                 } else {
-                    for (int i = 0; i < value.args.length; i++) {
-                        if (apiFunction.arguments[i] != value.args[i]) {
-                            mismatch += ", arg " + i + " " + apiFunction.arguments[i] + " vs. " + value.args[i];
+                    for (int i = 0; i < entry.arguments.length; i++) {
+                        if (apiFunction.arguments[i] != entry.arguments[i]) {
+                            mismatch += ", arg " + i + " " + apiFunction.arguments[i] + " vs. " + entry.arguments[i];
                         }
                     }
                 }
                 if (mismatch.isEmpty()) {
-                    duplicates.add(name);
+                    duplicates.add(entry.name);
                 } else {
-                    duplicates.add(name + mismatch);
+                    duplicates.add(entry.name + mismatch);
                 }
             }
         }
@@ -2649,21 +2712,20 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         ArrayList<String> defines = new ArrayList<>();
 
-        for (var entry : new TreeMap<>(capiBuiltins).entrySet()) {
-            String name = entry.getKey();
-            CApiBuiltinExecutable value = entry.getValue();
+        for (var entry : builtins) {
+            String name = entry.name;
             if (!name.endsWith("_dummy")) {
                 if (name.startsWith("Py_get_")) {
-                    assert value.args.length == 1;
-                    String type = value.args[0].name().replace("Wrapper", "");
+                    assert entry.arguments.length == 1;
+                    String type = entry.arguments[0].name().replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
                     assert name.charAt(7 + type.length()) == '_';
                     String field = name.substring(7 + type.length() + 1); // after "_"
                     macro.append("#define " + name.substring(7) + "(OBJ) ( points_to_py_handle_space(OBJ) ? Graal" + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + " )");
                     defines.add(macro.toString());
                 } else if (name.startsWith("Py_set_")) {
-                    assert value.args.length == 2;
-                    String type = value.args[0].name().replace("Wrapper", "");
+                    assert entry.arguments.length == 2;
+                    String type = entry.arguments[0].name().replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
                     assert name.charAt(7 + type.length()) == '_';
                     String field = name.substring(7 + type.length() + 1); // after "_"
@@ -2676,28 +2738,28 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         List<String> result = new ArrayList<>();
         result.add("#define CAPI_BUILTINS \\");
-        result.addAll(set);
+        result.addAll(builtinDefinitions);
         result.add("");
         result.addAll(defines);
 
         CApiFunction.writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.h"), result);
 
         ArrayList<String> stubs = new ArrayList<>();
-        for (var entry : new TreeMap<>(capiBuiltins).entrySet()) {
-            String name = entry.getKey();
-            CApiBuiltinExecutable value = entry.getValue();
-            if (value.annotation.call() == Direct) {
+        for (var entry : builtins) {
+            String name = entry.name;
+            CApiFunction value = entry;
+            if (value.call == Direct) {
                 stubs.add("#undef " + name);
-                String line = "PyAPI_FUNC(" + value.ret.cSignature + ") " + name + "(";
-                for (int i = 0; i < value.args.length; i++) {
-                    line += (i == 0 ? "" : ", ") + CApiFunction.getArgSignatureWithName(value.args[i], i);
+                String line = "PyAPI_FUNC(" + value.returnType.cSignature + ") " + name + "(";
+                for (int i = 0; i < value.arguments.length; i++) {
+                    line += (i == 0 ? "" : ", ") + CApiFunction.getArgSignatureWithName(value.arguments[i], i);
                 }
                 line += ") {";
                 stubs.add(line);
-                line = "    " + (value.ret == ArgDescriptor.Void ? "" : "return ") + "Graal" + name + "(";
-                for (int i = 0; i < value.args.length; i++) {
+                line = "    " + (value.returnType == ArgDescriptor.Void ? "" : "return ") + "Graal" + name + "(";
+                for (int i = 0; i < value.arguments.length; i++) {
                     line += (i == 0 ? "" : ", ");
-                    if (value.args[i] == ConstCharPtrAsTruffleString) {
+                    if (value.arguments[i] == ConstCharPtrAsTruffleString) {
                         line += "truffleString(" + CApiFunction.argName(i) + ")";
                     } else {
                         line += CApiFunction.argName(i);

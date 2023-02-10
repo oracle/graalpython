@@ -82,7 +82,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -95,7 +94,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextLongBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyLong_Sign extends CApiUnaryBuiltinNode {
 
         @SuppressWarnings("unused")
@@ -184,7 +182,6 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyLong_FromDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -196,7 +193,6 @@ public final class PythonCextLongBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, Int}, call = Ignored)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     abstract static class PyTruffleLong_FromString extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "negative == 0")
@@ -214,7 +210,6 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Long, args = {PyObject, Int, ArgDescriptor.Long}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleLong_AsPrimitive extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -257,7 +252,6 @@ public final class PythonCextLongBuiltins {
     @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
     @CApiBuiltin(name = "PyLong_FromLong", ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyLong_FromLongLong extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -292,7 +286,6 @@ public final class PythonCextLongBuiltins {
 
     @CApiBuiltin(name = "PyLong_FromUnsignedLong", ret = PyObjectTransfer, args = {UNSIGNED_LONG}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {UNSIGNED_LONG_LONG}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyLong_FromUnsignedLongLong extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -334,7 +327,6 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyLong_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
@@ -398,7 +390,6 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffleLong_One extends CApiNullaryBuiltinNode {
         @Specialization
         static int run() {
@@ -407,7 +398,6 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffleLong_Zero extends CApiNullaryBuiltinNode {
         @Specialization
         static int run() {

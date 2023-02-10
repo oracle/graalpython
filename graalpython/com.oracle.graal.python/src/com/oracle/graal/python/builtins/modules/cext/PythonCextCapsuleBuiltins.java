@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -119,7 +118,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, PY_CAPSULE_DESTRUCTOR}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
         @Specialization
         public Object doit(Object pointer, Object name, Object destructor,
@@ -133,7 +131,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
         @Specialization
         public static int PyCapsuleIsValid(PyCapsule o, TruffleString name,
@@ -154,7 +151,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         public Object doit(PyCapsule o, Object name,
@@ -175,7 +171,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
         @Specialization
         public Object doit(PyCapsule o) {
@@ -195,7 +190,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_GetDestructor extends CApiUnaryBuiltinNode {
         @Specialization
         public Object doit(PyCapsule o) {
@@ -215,7 +209,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         public Object doit(PyCapsule o) {
@@ -235,7 +228,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_SetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         public int doit(PyCapsule o, Object pointer,
@@ -259,7 +251,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
         @Specialization
         public int doit(PyCapsule o, TruffleString name) {
@@ -287,7 +278,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PY_CAPSULE_DESTRUCTOR}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_SetDestructor extends CApiBinaryBuiltinNode {
         @Specialization
         public int doit(PyCapsule o, Object destructor) {
@@ -305,7 +295,6 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         public int doit(PyCapsule o, Object context) {
@@ -325,7 +314,6 @@ public final class PythonCextCapsuleBuiltins {
     static final TruffleString dotChar = tsLiteral(".");
 
     @CApiBuiltin(ret = Pointer, args = {ConstCharPtrAsTruffleString, Int}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
         @Specialization
         public Object doit(TruffleString name, int noBlock,

@@ -82,7 +82,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -95,7 +94,6 @@ public final class PythonCextCEvalBuiltins {
     private static final long LOCK_MASK = 0xA10C000000000000L;
 
     @CApiBuiltin(ret = PY_THREAD_TYPE_LOCK, args = {}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -109,7 +107,6 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PY_THREAD_TYPE_LOCK, Int}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -125,7 +122,6 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -142,7 +138,6 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyEval_GetBuiltins extends CApiNullaryBuiltinNode {
         @Specialization
         public Object release(
@@ -153,7 +148,6 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class _PyTruffleEval_EvalCodeEx extends CApi11BuiltinNode {
         @Specialization
         Object doGeneric(PCode code, Object globals, Object locals,

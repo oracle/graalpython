@@ -58,7 +58,6 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -69,7 +68,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 public final class PythonCextHashBuiltins {
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleHash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -89,7 +87,6 @@ public final class PythonCextHashBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Long, args = {Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_HashConstant extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -110,7 +107,6 @@ public final class PythonCextHashBuiltins {
     }
 
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject, ArgDescriptor.Double}, call = Direct)
-    @GenerateNodeFactory
     @ImportStatic(Double.class)
     abstract static class _Py_HashDouble extends CApiBinaryBuiltinNode {
 
@@ -127,7 +123,6 @@ public final class PythonCextHashBuiltins {
     }
 
     @CApiBuiltin(ret = Py_hash_t, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class _PyTruffle_HashBytes extends CApiUnaryBuiltinNode {
 
         @Specialization

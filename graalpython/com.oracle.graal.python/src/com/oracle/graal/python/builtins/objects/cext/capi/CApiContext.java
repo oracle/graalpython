@@ -70,6 +70,7 @@ import org.graalvm.collections.Pair;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
@@ -1036,18 +1037,41 @@ public final class CApiContext extends CExtContext {
             String name = (String) arguments[0];
             try {
                 Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
-                CApiBuiltinExecutable builtin = PythonCextBuiltins.capiBuiltins.get(name);
-                Object result;
-                if (builtin != null) {
-                    result = builtin;
-                    assert builtin.getAnnotation().call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, name) : "name clash in builtin vs. CAPI library: " +
-                                    name;
-                } else {
-                    result = InteropLibrary.getUncached().readMember(llvmLibrary, name);
-                }
+                Object result = InteropLibrary.getUncached().readMember(llvmLibrary, name);
                 InteropLibrary.getUncached().toNative(result);
                 long pointer = InteropLibrary.getUncached().asPointer(result);
-                LOGGER.finer((builtin != null ? "getAPI(builtin) " : "getAPI(library) ") + name + " -> " + java.lang.Long.toHexString(pointer));
+                LOGGER.finer("getAPI " + name + " -> " + java.lang.Long.toHexString(pointer));
+                return pointer;
+            } catch (Throwable e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class GetBuiltin implements TruffleObject {
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @SuppressWarnings("static-method")
+        @ExportMessage
+        @TruffleBoundary
+        Object execute(Object[] arguments) {
+            assert arguments.length == 1;
+            int id = (int) arguments[0];
+            try {
+                Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+                CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
+                assert builtin.call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name()) : "name clash in builtin vs. CAPI library: " +
+                                builtin.name();
+                InteropLibrary.getUncached().toNative(builtin);
+                long pointer = InteropLibrary.getUncached().asPointer(builtin);
+                LOGGER.finer("getBuiltin " + id + " / " + builtin.name() + " -> " + java.lang.Long.toHexString(pointer));
                 return pointer;
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -1209,8 +1233,8 @@ public final class CApiContext extends CExtContext {
                  */
                 Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
 
-                Object signature = env.parseInternal(Source.newBuilder("nfi", "((STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):SINT32", "exec").build()).call();
-                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetAPI(), new GetType(), new SetTypeStore());
+                Object signature = env.parseInternal(Source.newBuilder("nfi", "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):SINT32", "exec").build()).call();
+                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore());
                 if (InteropLibrary.getUncached().asInt(result) == 0) {
                     // this is not the first context - native C API backend not supported
                     nativeLibrary = null;
@@ -1219,6 +1243,7 @@ public final class CApiContext extends CExtContext {
                     LOGGER.config("loading native C API support library " + GraalHPyContext.getJNILibrary());
                 }
             } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
+                e.printStackTrace();
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }

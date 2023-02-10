@@ -57,14 +57,12 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextDescrBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDictProxy_New extends CApiUnaryBuiltinNode {
         @Specialization
         public static Object values(Object obj,
@@ -74,7 +72,6 @@ public final class PythonCextDescrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyTypeObject, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleDescr_NewGetSet extends CApi6BuiltinNode {
 
         @Specialization
@@ -85,7 +82,6 @@ public final class PythonCextDescrBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Int, Pointer, PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleDescr_NewClassMethod extends CApi7BuiltinNode {
 
         @Specialization

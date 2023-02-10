@@ -54,14 +54,12 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSysBuiltins {
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySys_GetObject extends CApiUnaryBuiltinNode {
 
         @Specialization

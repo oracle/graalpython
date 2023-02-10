@@ -50,13 +50,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextIterBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PySeqIter_New extends CApiUnaryBuiltinNode {
         @Specialization
         PSequenceIterator call(Object seq) {
@@ -65,7 +63,6 @@ public final class PythonCextIterBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyCallIter_New extends CApiBinaryBuiltinNode {
         @Specialization
         public Object getItem(Object it, Object sentinel,

@@ -105,7 +105,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -113,7 +112,6 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 public final class PythonCextDictBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_New extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -123,7 +121,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffleDict_Next extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "pos < size(dict, sizeNode)", limit = "1")
@@ -187,7 +184,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class _PyDict_Pop extends CApiTernaryBuiltinNode {
         @Specialization
         public Object pop(PDict dict, Object key, Object defaultValue,
@@ -202,7 +198,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Size extends CApiUnaryBuiltinNode {
         @Specialization
         public static int size(PDict dict,
@@ -217,7 +212,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Copy extends CApiUnaryBuiltinNode {
         @Specialization
         public Object copy(PDict dict,
@@ -232,7 +226,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -272,7 +265,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
         public Object getItem(PDict dict, Object key,
@@ -300,7 +292,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         public static int setItem(PDict dict, Object key, Object value,
@@ -317,7 +308,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject, Py_hash_t}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class _PyDict_SetItem_KnownHash extends CApiQuaternaryBuiltinNode {
         @Specialization
         public int setItem(PDict dict, Object key, Object value, Object givenHash,
@@ -341,7 +331,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_SetDefault extends CApiTernaryBuiltinNode {
         @Specialization
         public Object setItem(PDict dict, Object key, Object value,
@@ -356,7 +345,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         public static int delItem(PDict dict, Object key,
@@ -372,7 +360,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Update extends CApiBinaryBuiltinNode {
         @Specialization
         public static int update(PDict dict, Object other,
@@ -388,7 +375,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         public static int contains(PDict dict, Object key,
@@ -403,7 +389,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Clear extends CApiUnaryBuiltinNode {
         @Specialization
         public Object keys(PDict dict,
@@ -418,7 +403,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Keys extends CApiUnaryBuiltinNode {
         @Specialization
         public Object keys(PDict dict,
@@ -433,7 +417,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Values extends CApiUnaryBuiltinNode {
         @Specialization
         public Object values(PDict dict,
@@ -448,7 +431,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, Int}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyDict_Merge extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = {"override != 0"})

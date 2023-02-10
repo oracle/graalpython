@@ -54,13 +54,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextWeakrefBuiltins {
 
     @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_ClearWeakRefs extends CApiUnaryBuiltinNode {
         @Specialization
         Object warn(@SuppressWarnings("unused") Object ref) {
@@ -70,7 +68,6 @@ public final class PythonCextWeakrefBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyWeakref_NewRef extends CApiQuaternaryBuiltinNode {
         @Specialization
         public Object refType(Object object, Object callback,
@@ -80,7 +77,6 @@ public final class PythonCextWeakrefBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyWeakref_GetObject extends CApiQuaternaryBuiltinNode {
         @Specialization
         public Object call(PReferenceType self) {

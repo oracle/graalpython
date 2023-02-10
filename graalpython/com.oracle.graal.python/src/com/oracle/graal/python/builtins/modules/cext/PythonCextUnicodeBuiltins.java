@@ -126,9 +126,8 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropException;
@@ -146,7 +145,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_FromOrdinal extends CApiUnaryBuiltinNode {
         @Specialization
         public static Object chr(int value,
@@ -156,7 +154,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_FromObject extends CApiUnaryBuiltinNode {
         @Specialization
         public static TruffleString fromObject(TruffleString s) {
@@ -194,7 +191,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_GetLength extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -205,7 +201,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_Concat extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"isString(left) || isStringSubtype(left, getClassNode, isSubtypeNode)", "isString(right) || isStringSubtype(right, getClassNode, isSubtypeNode)"})
@@ -236,7 +231,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_FromEncodedObject extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -270,7 +264,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {ArgDescriptor.PyObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffleUnicode_InternInPlace extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isTruffleString(obj)", "isStringSubtype(obj, getClassNode, isSubtypeNode)"})
         public Object intern(Object obj,
@@ -294,7 +287,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_Format extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"isString(format) || isStringSubtype(format, getClassNode, isSubtypeNode)"})
         public Object find(Object format, Object args,
@@ -320,7 +312,6 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PY_UCS4, Py_ssize_t, Py_ssize_t, Int}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_FindChar extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(string) || isStringSubtype(string, getClassNode, isSubtypeNode)", "direction > 0"})
         public static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
@@ -355,7 +346,6 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_Substring extends CApiTernaryBuiltinNode {
         @Specialization(guards = {"isString(s) || isStringSubtype(s, getClassNode, isSubtypeNode)"})
         public Object find(Object s, long start, long end,
@@ -382,7 +372,6 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_Join extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"isString(separator) || isStringSubtype(separator, getClassNode, isSubtypeNode)"})
         public Object find(Object separator, Object seq,
@@ -407,7 +396,6 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(name = "_PyUnicode_EqualToASCIIString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_Compare extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"isAnyString(left, getClassNode, isSubtypeNode)", "isAnyString(right, getClassNode, isSubtypeNode)"})
@@ -442,7 +430,6 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject, Py_ssize_t, Py_ssize_t, Int}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_Tailmatch extends CApi5BuiltinNode {
         @Specialization(guards = {"isAnyString(string, getClassNode, isSubtypeNode)", "isAnyString(substring, getClassNode, isSubtypeNode)", "direction > 0"})
         public static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
@@ -488,7 +475,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_AsEncodedString extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isString(obj) || isStringSubtype(obj, getClassNode, isSubtypeNode)")
         public Object encode(Object obj, Object encoding, Object errors,
@@ -512,7 +498,6 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Py_ssize_t}, call = Direct)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_Replace extends CApiQuaternaryBuiltinNode {
         @Specialization(guards = {"isString(s)", "isString(substr)", "isString(replstr)"})
         public Object replace(Object s, Object substr, Object replstr, long count,
@@ -548,7 +533,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyUnicode_AsUnicodeEscapeString extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isString(s)")
         public Object escape(Object s,
@@ -579,7 +563,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PY_UCS4, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_ReadChar extends CApiBinaryBuiltinNode {
         @Specialization
         int doGeneric(Object type, long lindex,
@@ -603,7 +586,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, PY_UCS4}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleUnicode_New extends CApiTernaryBuiltinNode {
         @Specialization
         Object doGeneric(Object ptr, long elementSize, int isAscii) {
@@ -612,7 +594,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_FromString extends CApiUnaryBuiltinNode {
         @Specialization
         PString run(TruffleString str) {
@@ -626,7 +607,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_DecodeFSDefault extends CApiUnaryBuiltinNode {
 
         // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and
@@ -644,7 +624,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(Object haystack, Object needle,
@@ -654,7 +633,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_Split extends CApiTernaryBuiltinNode {
         @Specialization
         Object split(Object string, Object sep, Object maxsplit,
@@ -664,7 +642,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleUnicode_DecodeUTF8Stateful extends CApiTernaryBuiltinNode {
 
         @TruffleBoundary
@@ -698,7 +675,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleUnicode_Decode extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -709,7 +685,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyUnicode_EncodeFSDefault extends CApiUnaryBuiltinNode {
         @Specialization
         PBytes fromObject(TruffleString s,
@@ -728,7 +703,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, SIZE_T}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_FromWchar extends CApiBinaryBuiltinNode {
         @Specialization
         Object doInt(Object arr, long elementSize,
@@ -769,7 +743,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyUnicode_AsLatin1String extends NativeEncoderNode {
         protected _PyUnicode_AsLatin1String() {
             super(StandardCharsets.ISO_8859_1);
@@ -777,7 +750,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyUnicode_AsASCIIString extends NativeEncoderNode {
         protected _PyUnicode_AsASCIIString() {
             super(StandardCharsets.US_ASCII);
@@ -785,7 +757,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyUnicode_AsUTF8String extends NativeEncoderNode {
 
         protected _PyUnicode_AsUTF8String() {
@@ -794,7 +765,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_AsUnicodeAndSize extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -812,7 +782,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends CApiQuaternaryBuiltinNode {
 
         @Specialization
@@ -843,7 +812,6 @@ public final class PythonCextUnicodeBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_AsWideChar extends CApiBinaryBuiltinNode {
         @Specialization
         Object doUnicode(Object s, long elementSize,

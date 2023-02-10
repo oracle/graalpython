@@ -63,7 +63,6 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -72,7 +71,6 @@ public final class PythonCextImportBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
     @CApiBuiltin(name = "PyImport_Import", ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
     @CApiBuiltin(name = "PyImport_ImportModuleNoBlock", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyImport_ImportModule extends CApiUnaryBuiltinNode {
         @Specialization
         public Object imp(TruffleString name) {
@@ -81,7 +79,6 @@ public final class PythonCextImportBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyImport_GetModuleDict extends CApiNullaryBuiltinNode {
         @Specialization
         public Object getModuleDict() {
@@ -90,7 +87,6 @@ public final class PythonCextImportBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, PyObject, PyObject, PyObject, Int}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyImport_ImportModuleLevelObject extends CApi5BuiltinNode {
         @Specialization
         public Object importModuleLevelObject(TruffleString name, Object globals, Object locals, Object fromlist, int level,

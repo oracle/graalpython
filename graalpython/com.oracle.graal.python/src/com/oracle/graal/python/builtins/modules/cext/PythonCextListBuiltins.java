@@ -78,7 +78,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -86,7 +85,6 @@ public final class PythonCextListBuiltins {
 
     ///////////// list /////////////
     @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyList_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
         public Object newListError(long size) {
@@ -112,7 +110,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyList_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -144,7 +141,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_Append extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -164,7 +160,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_AsTuple extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -180,7 +175,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
         Object getSlice(PList list, Object iLow, Object iHigh,
@@ -196,7 +190,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_SetSlice extends CApiQuaternaryBuiltinNode {
 
         @Specialization
@@ -214,7 +207,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyListObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyList_Extend extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -231,7 +223,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_Size extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -246,7 +237,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_Sort extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -263,7 +253,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_Insert extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -280,7 +269,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PList list, Object position, Object element,
@@ -300,7 +288,6 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyList_Reverse extends CApiUnaryBuiltinNode {
         @Specialization
         static int reverse(PList self,

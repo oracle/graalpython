@@ -52,13 +52,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextFloatBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyFloat_FromDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -75,7 +73,6 @@ public final class PythonCextFloatBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyFloat_AsDouble extends CApiUnaryBuiltinNode {
 
         @Specialization

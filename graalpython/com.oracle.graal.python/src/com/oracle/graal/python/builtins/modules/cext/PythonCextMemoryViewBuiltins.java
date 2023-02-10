@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.Relea
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -72,7 +71,6 @@ public final class PythonCextMemoryViewBuiltins {
     public static final int PY_BUF_WRITE = 0x200;
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int, CHAR}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyMemoryView_GetContiguous extends CApiTernaryBuiltinNode {
         @Specialization()
         public Object get(Object obj, int buffertype, byte orderByte,
@@ -119,7 +117,6 @@ public final class PythonCextMemoryViewBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyMemoryView_FromObject extends CApiUnaryBuiltinNode {
         @Specialization
         Object wrap(Object object,

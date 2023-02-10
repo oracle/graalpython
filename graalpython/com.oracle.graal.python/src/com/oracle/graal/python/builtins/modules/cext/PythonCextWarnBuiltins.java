@@ -52,13 +52,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuat
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextWarnBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class _PyTruffleErr_Warn extends CApiQuaternaryBuiltinNode {
         @Specialization
         Object warn(Object message, Object category, long stackLevel, @SuppressWarnings("unused") Object source,

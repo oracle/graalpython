@@ -121,7 +121,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -134,7 +133,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class PythonCextObjectBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyObject_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object callable, Object argsObj, Object kwargsObj, int singleArg,
@@ -154,7 +152,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, VA_LIST_PTR}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleObject_CallFunctionObjArgs extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -200,7 +197,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, VA_LIST_PTR}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleObject_CallMethodObjArgs extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -217,7 +213,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyObject_CallMethod1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object receiver, TruffleString methodName, Object argsObj, int singleArg,
@@ -236,7 +231,6 @@ public class PythonCextObjectBuiltins {
 
     // directly called without landing function
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Pointer, Int, Pointer, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class _PyTruffleObject_MakeTpCall extends CApi5BuiltinNode {
 
         @Specialization
@@ -284,7 +278,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Str extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doGeneric(Object obj,
@@ -299,7 +292,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Repr extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doGeneric(Object obj,
@@ -314,7 +306,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object obj, Object k,
@@ -325,7 +316,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object obj, Object k, Object v,
@@ -336,7 +326,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_IsInstance extends CApiBinaryBuiltinNode {
         @Specialization
         static int doGeneric(Object obj, Object typ,
@@ -346,7 +335,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_IsSubclass extends CApiBinaryBuiltinNode {
         @Specialization
         static int doGeneric(Object obj, Object typ,
@@ -356,7 +344,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_RichCompare extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "op == 0")
@@ -397,7 +384,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_AsFileDescriptor extends CApiUnaryBuiltinNode {
         @Specialization
         static Object asFileDescriptor(Object obj,
@@ -407,7 +393,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleObject_GenericGetAttr extends CApiBinaryBuiltinNode {
         @Specialization
         Object getAttr(Object obj, Object attr,
@@ -417,7 +402,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleObject_GenericSetAttr extends CApiTernaryBuiltinNode {
         @Specialization
         static int setAttr(Object obj, Object attr, Object value,
@@ -429,7 +413,6 @@ public class PythonCextObjectBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     @CApiBuiltin(name = "PyObject_HasAttrString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_HasAttr extends CApiBinaryBuiltinNode {
         @Specialization
         static int hasAttr(Object obj, Object attr,
@@ -445,7 +428,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_HashNotImplemented extends CApiUnaryBuiltinNode {
         @Specialization
         Object unhashable(Object obj) {
@@ -454,7 +436,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_IsTrue extends CApiUnaryBuiltinNode {
         @Specialization
         static int isTrue(Object obj,
@@ -464,7 +445,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Bytes extends CApiUnaryBuiltinNode {
         @Specialization
         static Object bytes(PBytesLike bytes) {
@@ -512,7 +492,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_NotImplemented extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
@@ -521,7 +500,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_NoValue extends CApiNullaryBuiltinNode {
         @Specialization
         static PNone doNoValue() {
@@ -530,7 +508,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_None extends CApiNullaryBuiltinNode {
         @Specialization
         static PNone doNativeNone() {
@@ -539,7 +516,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObjectWrapper}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyObject_Dump extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -612,7 +588,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_ASCII extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         static TruffleString ascii(Object obj,
@@ -627,7 +602,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Type extends CApiUnaryBuiltinNode {
         @Specialization
         Object type(Object obj,
@@ -637,7 +611,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Format extends CApiBinaryBuiltinNode {
         @Specialization
         public static Object ascii(Object obj, Object spec,
@@ -647,7 +620,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_GetIter extends CApiUnaryBuiltinNode {
         @Specialization
         static Object iter(Object object,
@@ -657,7 +629,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Hash extends CApiUnaryBuiltinNode {
         @Specialization
         static long hash(Object object,
@@ -667,7 +638,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyCallable_Check extends CApiUnaryBuiltinNode {
         @Specialization
         static int doGeneric(Object object,
@@ -677,7 +647,6 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_Dir extends CApiUnaryBuiltinNode {
         @Specialization
         static Object dir(Object object,

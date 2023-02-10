@@ -281,7 +281,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -297,7 +296,6 @@ public final class PythonCextSlotBuiltins {
 
     @CApiBuiltin(name = "Py_get_PyListObject_ob_item", ret = PyObjectPtr, args = {PyListObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTupleObject_ob_item", ret = PyObjectPtr, args = {PyTupleObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PSequence_ob_item extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -312,7 +310,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = CHAR_PTR, args = {mmap_object}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_mmap_object_data extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -327,7 +324,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyASCIIObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyASCIIObject_length extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -338,7 +334,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyASCIIObject_state_ascii extends CApiUnaryBuiltinNode {
 
         @TruffleBoundary
@@ -367,7 +362,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyASCIIObject_state_compact extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -377,7 +371,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyASCIIObject_state_kind extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -393,7 +386,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyASCIIObject_state_ready extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -403,7 +395,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = WCHAR_T_PTR, args = {PyASCIIObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyASCIIObject_wstr extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -416,7 +407,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObject, args = {PyCMethodObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyCMethodObject_mm_class extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PBuiltinMethod object) {
@@ -425,7 +415,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonObject object,
@@ -439,7 +428,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCFunctionObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyCFunctionObject_m_module extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(Object object,
@@ -450,7 +438,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCFunctionObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyCFunctionObject_m_self extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PBuiltinMethod object) {
@@ -464,7 +451,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCFunctionObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyCFunctionObject_m_weakreflist extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -473,7 +459,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = vectorcallfunc, args = {PyCFunctionObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyCFunctionObject_vectorcall extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -482,7 +467,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyByteArrayObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyByteArrayObject_ob_start extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -497,7 +481,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyByteArrayObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyByteArrayObject_ob_exports extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -507,7 +490,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyByteArrayObject, Int}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyByteArrayObject_ob_exports extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -518,7 +500,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyCompactUnicodeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyCompactUnicodeObject_wstr_length extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -532,7 +513,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObject, args = {PyDescrObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyDescrObject_d_name extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -547,7 +527,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObject, args = {PyDescrObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyDescrObject_d_type extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -563,7 +542,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyFrameObject_f_lineno extends CApiUnaryBuiltinNode {
         @Specialization
         public int get(PFrame frame) {
@@ -572,7 +550,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyGetSetDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyGetSetDef_closure extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -581,7 +558,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyGetSetDef_doc extends CApiUnaryBuiltinNode {
         @Specialization
         Object getDoc(PythonObject object,
@@ -597,7 +573,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = getter, args = {PyGetSetDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyGetSetDef_get extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -606,7 +581,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyGetSetDef_name extends CApiUnaryBuiltinNode {
         @Specialization
         Object getName(PythonObject object,
@@ -622,7 +596,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = setter, args = {PyGetSetDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyGetSetDef_set extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -631,7 +604,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyLongObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyLongObject_ob_digit extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doObDigit(int object) {
@@ -650,7 +622,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = objobjargproc, args = {PyMappingMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMappingMethods_mp_ass_subscript extends PyGetTypeSlotNode {
 
         Py_get_PyMappingMethods_mp_ass_subscript() {
@@ -659,7 +630,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = lenfunc, args = {PyMappingMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMappingMethods_mp_length extends PyGetTypeSlotNode {
 
         Py_get_PyMappingMethods_mp_length() {
@@ -668,7 +638,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyMappingMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMappingMethods_mp_subscript extends PyGetTypeSlotNode {
 
         Py_get_PyMappingMethods_mp_subscript() {
@@ -677,7 +646,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyMethodDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMethodDef_ml_doc extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -701,7 +669,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyMethodDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMethodDef_ml_flags extends CApiUnaryBuiltinNode {
         @Specialization
         static int getFlags(Object object) {
@@ -715,7 +682,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyMethodDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMethodDef_ml_meth extends CApiUnaryBuiltinNode {
 
         @TruffleBoundary
@@ -759,7 +725,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyMethodDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMethodDef_ml_name extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -779,7 +744,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMethodDef, args = {PyMethodDescrObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -789,7 +753,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyInstanceMethodObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyInstanceMethodObject_func extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doFunc(PDecoratedMethod object) {
@@ -798,7 +761,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyMethodObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMethodObject_im_func extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doImFunc(PBuiltinMethod object) {
@@ -812,7 +774,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyMethodObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyMethodObject_im_self extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -827,7 +788,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyModuleDef_m_doc extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -836,7 +796,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMethodDef, args = {PyModuleDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyModuleDef_m_methods extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -845,7 +804,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyModuleDef_m_name extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -854,7 +812,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyModuleDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyModuleDef_m_size extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -863,7 +820,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyModuleDef, args = {PyModuleObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyModuleObject_md_def extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonModule object) {
@@ -872,7 +828,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyModuleObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyModuleObject_md_dict extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object object,
@@ -882,7 +837,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyModuleObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyModuleObject_md_state extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(PythonModule object) {
@@ -891,7 +845,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_absolute extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_absolute() {
@@ -900,7 +853,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_add extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_add() {
@@ -909,7 +861,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_and extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_and() {
@@ -918,7 +869,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = inquiry, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_bool extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_bool() {
@@ -927,7 +877,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_divmod extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_divmod() {
@@ -936,7 +885,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_float extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_float() {
@@ -945,7 +893,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_floor_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_floor_divide() {
@@ -954,7 +901,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_index extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_index() {
@@ -963,7 +909,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_add extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_add() {
@@ -972,7 +917,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_and extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_and() {
@@ -981,7 +925,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_floor_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_floor_divide() {
@@ -990,7 +933,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_lshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_lshift() {
@@ -999,7 +941,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_multiply extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_multiply() {
@@ -1008,7 +949,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_or extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_or() {
@@ -1017,7 +957,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ternaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_power extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_power() {
@@ -1026,7 +965,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_remainder extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_remainder() {
@@ -1035,7 +973,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_rshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_rshift() {
@@ -1044,7 +981,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_subtract extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_subtract() {
@@ -1053,7 +989,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_true_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_true_divide() {
@@ -1062,7 +997,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_inplace_xor extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_xor() {
@@ -1071,7 +1005,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_int extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_int() {
@@ -1080,7 +1013,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_invert extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_invert() {
@@ -1089,7 +1021,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_lshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_lshift() {
@@ -1098,7 +1029,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_multiply extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_multiply() {
@@ -1107,7 +1037,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_negative extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_negative() {
@@ -1116,7 +1045,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_or extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_or() {
@@ -1125,7 +1053,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_positive extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_positive() {
@@ -1134,7 +1061,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ternaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_power extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_power() {
@@ -1143,7 +1069,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_remainder extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_remainder() {
@@ -1152,7 +1077,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_rshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_rshift() {
@@ -1161,7 +1085,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_subtract extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_subtract() {
@@ -1170,7 +1093,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_true_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_true_divide() {
@@ -1179,7 +1101,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyNumberMethods_nb_xor extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_xor() {
@@ -1188,7 +1109,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectWrapper}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1198,7 +1118,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObject, args = {PyObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyObject_ob_type extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1209,7 +1128,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PySequenceMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PySequenceMethods_sq_concat extends PyGetTypeSlotNode {
 
         Py_get_PySequenceMethods_sq_concat() {
@@ -1218,7 +1136,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ssizeargfunc, args = {PySequenceMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PySequenceMethods_sq_item extends PyGetTypeSlotNode {
 
         Py_get_PySequenceMethods_sq_item() {
@@ -1227,7 +1144,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ssizeargfunc, args = {PySequenceMethods}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PySequenceMethods_sq_repeat extends PyGetTypeSlotNode {
 
         Py_get_PySequenceMethods_sq_repeat() {
@@ -1236,7 +1152,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PySetObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PySetObject_used extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1247,7 +1162,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PySliceObject_start extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doStart(PSlice object) {
@@ -1256,7 +1170,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PySliceObject_step extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doStep(PSlice object) {
@@ -1265,7 +1178,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObject, args = {PySliceObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PySliceObject_stop extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doStop(PSlice object) {
@@ -1274,7 +1186,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = allocfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_alloc extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1285,7 +1196,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyAsyncMethods, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_as_async extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1295,7 +1205,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyBufferProcs, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_as_buffer extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1310,7 +1219,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyMappingMethods, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_as_mapping extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1326,7 +1234,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyNumberMethods, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_as_number extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1337,7 +1244,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PySequenceMethods, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_as_sequence extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1352,7 +1258,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObject, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_base extends CApiUnaryBuiltinNode {
 
         private static Object ensureClassObject(PythonContext context, Object klass) {
@@ -1374,7 +1279,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_basicsize extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1387,7 +1291,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ternaryfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_call extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_call() {
@@ -1396,7 +1299,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = destructor, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_dealloc extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1407,7 +1309,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = destructor, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_del extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1419,7 +1320,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_dict extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1447,7 +1347,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_dictoffset extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1464,7 +1363,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_doc extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1483,7 +1381,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_LONG, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_flags extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1498,7 +1395,6 @@ public final class PythonCextSlotBuiltins {
      */
 
     @CApiBuiltin(ret = freefunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_free extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1509,7 +1405,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = getattrofunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_getattro extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_getattro() {
@@ -1518,7 +1413,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = hashfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_hash extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_hash() {
@@ -1527,7 +1421,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = initproc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_init extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_init() {
@@ -1536,7 +1429,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_itemsize extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1554,7 +1446,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = getiterfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_iter extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_iter() {
@@ -1563,7 +1454,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = iternextfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_iternext extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_iternext() {
@@ -1572,7 +1462,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_mro extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1587,7 +1476,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_name extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1598,7 +1486,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = newfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_new extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1617,7 +1504,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = reprfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_repr extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_repr() {
@@ -1626,7 +1512,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = richcmpfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_richcompare extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_richcompare() {
@@ -1635,7 +1520,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = setattrofunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_setattro extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_setattro() {
@@ -1644,7 +1528,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = reprfunc, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_str extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_str() {
@@ -1653,7 +1536,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = PyObject, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_subclasses extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1665,7 +1547,6 @@ public final class PythonCextSlotBuiltins {
 
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_traverse", ret = traverseproc, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_clear", ret = inquiry, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_TraverseClear extends CApiUnaryBuiltinNode {
         public static final TruffleString T_SEQUENCE_CLEAR = tsLiteral("sequence_clear");
 
@@ -1689,7 +1570,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_vectorcall_offset extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1702,7 +1582,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = UNSIGNED_INT, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_version_tag extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1712,7 +1591,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyTypeObject_tp_weaklistoffset extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1730,7 +1608,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1748,7 +1625,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyVarObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_get_PyVarObject_ob_size extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1759,7 +1635,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyFrameObject, Int}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyFrameObject_f_lineno extends CApiBinaryBuiltinNode {
         @Specialization
         public Object set(PFrame frame, int value) {
@@ -1769,7 +1644,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyModuleObject_md_def extends CApiBinaryBuiltinNode {
         @Specialization
         static Object set(PythonModule object, Object value) {
@@ -1779,7 +1653,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyModuleObject, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyModuleObject_md_state extends CApiBinaryBuiltinNode {
         @Specialization
         static Object set(PythonModule object, Object value) {
@@ -1789,7 +1662,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObjectWrapper, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyObject_ob_refcnt extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -1800,7 +1672,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, allocfunc}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_alloc extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "isPythonClass(object)")
@@ -1812,7 +1683,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_as_buffer extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "isPythonClass(object)")
@@ -1824,7 +1694,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_basicsize extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "isPythonClass(object)")
@@ -1845,7 +1714,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, destructor}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_dealloc extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "isPythonClass(object)")
@@ -1857,7 +1725,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_dict extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -1899,7 +1766,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_dictoffset extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -1921,7 +1787,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, UNSIGNED_LONG}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_flags extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doTpFlags(PythonManagedClass object, long flags,
@@ -1948,7 +1813,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, freefunc}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_free extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "isPythonClass(object)")
@@ -1960,7 +1824,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_itemsize extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "isPythonClass(object)")
@@ -1976,7 +1839,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_subclasses extends CApiBinaryBuiltinNode {
 
         @GenerateUncached
@@ -2015,7 +1877,6 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class Py_set_PyTypeObject_tp_vectorcall_offset extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = "isPythonClass(object)")
@@ -2049,7 +1910,6 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(name = "Py_get_PyNumberMethods_nb_inplace_matrix_multiply", ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyBufferProcs_bf_getbuffer", ret = getbufferproc, args = {PyBufferProcs}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyBufferProcs_bf_releasebuffer", ret = releasebufferproc, args = {PyBufferProcs}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyGetSlotDummyPtr extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -2061,7 +1921,6 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_bases", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_cache", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_weaklist", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyGetSlotDummyPyPtr extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -2160,7 +2019,6 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_new", ret = Void, args = {PyTypeObject, newfunc}, call = Ignored)
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_traverse", ret = Void, args = {PyTypeObject, traverseproc}, call = Ignored)
     @CApiBuiltin(name = "Py_set_PyTypeObject_tp_weaklistoffset", ret = Void, args = {PyTypeObject, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PySetSlotDummyPtr extends CApiBinaryBuiltinNode {
 
         @SuppressWarnings("unused")
