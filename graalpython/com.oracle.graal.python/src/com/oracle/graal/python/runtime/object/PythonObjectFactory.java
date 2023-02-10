@@ -1192,8 +1192,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
     }
 
-    public final PMMap createMMap(Object clazz, Object mmapHandle, int fd, long length, int access) {
-        return trace(new PMMap(clazz, getShape(clazz), mmapHandle, fd, length, access));
+    public final PMMap createMMap(PythonContext context, Object clazz, Object mmapHandle, int fd, long length, int access) {
+        return trace(new PMMap(clazz, getShape(clazz), context, mmapHandle, fd, length, access));
     }
 
     public final BZ2Object.BZ2Compressor createBZ2Compressor(Object clazz) {

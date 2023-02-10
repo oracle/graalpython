@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -68,37 +69,27 @@ public final class PMMap extends PythonObject {
     public static final int ACCESS_WRITE = 2;
     public static final int ACCESS_COPY = 3;
 
-    private Object handle;
+    private final MMapRef ref;
     private long pos;
-    private final int fd; // -1 for anonymous mapping
-    private final long length;
     private final int access;
 
-    public PMMap(Object pythonClass, Shape instanceShape, Object handle, int fd, long length, int access) {
+    public PMMap(Object pythonClass, Shape instanceShape, PythonContext context, Object handle, int fd, long length, int access) {
         super(pythonClass, instanceShape);
         assert handle != null;
-        this.handle = handle;
-        this.length = length;
+        this.ref = new PMMap.MMapRef(this, handle, context.getSharedFinalizer(), fd, length);
         this.access = access;
-        this.fd = fd;
     }
 
     public Object getPosixSupportHandle() {
-        return handle;
+        return ref.getReference();
     }
 
-    void close(PosixSupportLibrary lib, Object posix) throws PosixException {
-        if (handle != null) {
-            if (fd != -1) {
-                lib.close(posix, fd);
-            }
-            lib.mmapUnmap(posix, handle, length);
-            handle = null;
-        }
+    void close(PosixSupportLibrary lib, Object posix) {
+        ref.close(lib, posix);
     }
 
     boolean isClosed() {
-        return handle == null;
+        return ref.isReleased();
     }
 
     @ExportMessage
@@ -115,7 +106,7 @@ public final class PMMap extends PythonObject {
     }
 
     public long getLength() {
-        return length;
+        return ref.length;
     }
 
     public long getPos() {
@@ -127,7 +118,7 @@ public final class PMMap extends PythonObject {
     }
 
     public long getRemaining() {
-        return pos < length ? length - pos : 0;
+        return pos < ref.length ? ref.length - pos : 0;
     }
 
     @ExportMessage
@@ -139,7 +130,7 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     int getBufferLength(
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode) {
-        return castToIntNode.execute(length);
+        return castToIntNode.execute(ref.length);
     }
 
     @ExportMessage
@@ -183,4 +174,43 @@ public final class PMMap extends PythonObject {
     boolean hasBuffer() {
         return true;
     }
+
+    static class MMapRef extends AsyncHandler.SharedFinalizer.FinalizableReference {
+
+        final int fd;
+        private final long length;
+
+        MMapRef(PMMap referent, Object handle, AsyncHandler.SharedFinalizer finalizer, int fd, long length) {
+            super(referent, handle, finalizer);
+            this.fd = fd;
+            this.length = length;
+        }
+
+        @Override
+        public AsyncHandler.AsyncAction release() {
+            return new MMapBuiltins.ReleaseCallback(this);
+        }
+
+        void close(PosixSupportLibrary posixLib, Object posixSupport) {
+            if (isReleased()) {
+                return;
+            }
+            markReleased();
+
+            Object handle = getReference();
+            if (fd != -1) {
+                try {
+                    posixLib.close(posixSupport, fd);
+                } catch (PosixException e) {
+                    // ignored (CPython does not check the return value)
+                }
+            }
+            try {
+                posixLib.mmapUnmap(posixSupport, handle, length);
+            } catch (PosixException e) {
+                // ignored (CPython does not check the return value)
+            }
+        }
+    }
+
 }
