@@ -80,7 +80,7 @@ POLYGLOT_DECLARE_TYPE(wchar_t)
 POLYGLOT_DECLARE_TYPE(HPyType_Spec)
 POLYGLOT_DECLARE_TYPE(HPyType_SpecParam)
 
-int graal_hpy_init(HPyContext *context, void *initObject) {
+int Py_EXPORTED_SYMBOL graal_hpy_init(HPyContext *context, void *initObject) {
 	// save context in global for NFI upcalls
 	g_universal_ctx = context;
 
