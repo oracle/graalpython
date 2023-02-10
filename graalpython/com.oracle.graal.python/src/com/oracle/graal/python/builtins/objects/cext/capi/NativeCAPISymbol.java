@@ -56,6 +56,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
     FUN_POLYGLOT_ARRAY_TYPEID("polyglot_array_typeid"),
     FUN_POLYGLOT_FROM_STRING("polyglot_from_string"),
+    GRAALVM_LLVM_VA_ARG("_graalvm_llvm_va_arg"),
 
     FUN_PYTRUFFLE_ALLOCATE_TYPE("PyTruffle_AllocateType"),
     FUN_PYTRUFFLE_POPULATE_TYPE("PyTruffle_PopulateType"),

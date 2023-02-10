@@ -184,6 +184,16 @@ CAPI_BUILTINS
 	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_upcall_functions: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
+void* _graalvm_llvm_va_arg(void* valist,void* type);
+
+// forcing the _graalvm_llvm_va_arg function to be available
+void forceVA(int a, ...) {
+	va_list va;
+	va_start(va, a);
+	_graalvm_llvm_va_arg(&va, polyglot_i32_typeid());
+	va_end(va);
+}
+
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
     // Store the Sulong struct type id to be used for instances of this class
     GraalPyTruffle_Set_SulongType(ptype, tid);
@@ -219,6 +229,7 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     if (as_buffer) {
     	set_PyTypeObject_tp_as_buffer(type_handle, as_buffer);
     }
+    forceVA(1, 2, 3);
 }
 
 static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {

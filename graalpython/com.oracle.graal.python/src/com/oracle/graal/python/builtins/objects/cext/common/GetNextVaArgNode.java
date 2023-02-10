@@ -42,15 +42,13 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -79,14 +77,10 @@ public abstract class GetNextVaArgNode extends Node {
 
     public abstract Object execute(Object valist, LLVMType llvmType) throws InteropException;
 
-    @Specialization(limit = "3")
+    @Specialization
     static Object doGeneric(Object valist, LLVMType llvmType,
-                    @CachedLibrary("valist") InteropLibrary valistLib,
-                    @Cached GetLLVMType getLLVMType) throws InteropException {
-        try {
-            return valistLib.invokeMember(valist, "next", getLLVMType.execute(llvmType));
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
+                    @Cached PCallCapiFunction nextNode,
+                    @Cached GetLLVMType getLLVMType) {
+        return nextNode.call(NativeCAPISymbol.GRAALVM_LLVM_VA_ARG, valist, getLLVMType.execute(llvmType));
     }
 }
