@@ -585,7 +585,7 @@ typedef struct {
     BUILTIN(_PyTruffleEval_EvalCodeEx, PyObject*, PyObject*, PyObject*, PyObject*, void*, void*, void*, PyObject*, PyObject*) \
     BUILTIN(_PyTruffleModule_CreateInitialized_PyModule_New, PyModuleObject*, const char*) \
     BUILTIN(_PyTruffleModule_GetAndIncMaxModuleNumber, Py_ssize_t) \
-    BUILTIN(_PyTruffleObject_MakeTpCall, PyObject*, PyObject*, void*, int, void*, PyObject*) \
+    BUILTIN(_PyTruffleObject_MakeTpCall, PyObject*, PyObject*, void*, int, void*, void*) \
     BUILTIN(_PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(_PyTruffle_HashBytes, Py_hash_t, const char*) \
     BUILTIN(_PyTruffle_Trace_Free, int, void*, Py_ssize_t) \
