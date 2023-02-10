@@ -36,12 +36,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import test
 
 import glob
 import os
+import shlex
 import subprocess
 import sys
-import test
 from itertools import zip_longest
 
 if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "__main__":
@@ -106,7 +107,7 @@ def make_test_function(working_test):
             else:
                 rcode = run_with_timeout(cmd).returncode
                 if rcode:
-                    raise CalledProcessError(rcode, cmd)
+                    raise subprocess.CalledProcessError(rcode, cmd)
                 print(working_test[0], "was finished.")
 
     def run_serialize_out(cmd):
@@ -175,7 +176,7 @@ def parse_unittest_output(output):
     # The whole reason for this function's complexity is that we want to consume arbitrary
     # warnings after the '...' part without accidentally consuming the next test result
     import re
-    re_test_result = re.compile(r"""\b(test\S+) \(([^\s]+)\)(?:\n.*?)?? \.\.\. """, re.MULTILINE | re.DOTALL)
+    re_test_result = re.compile(r"""\b(test\S+) \((\S+)\)(?:\n.*?)?? \.\.\. """, re.MULTILINE | re.DOTALL)
     re_test_status = re.compile(r"""\b(ok|skipped (?:'[^']*'|"[^"]*")|FAIL|ERROR)$""", re.MULTILINE | re.DOTALL)
     pos = 0
     current_result = None
@@ -241,7 +242,7 @@ def main():
             else:
                 testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = executable
+            cmd = list(executable)
             if repeat == 0:
                 # Allow catching Java exceptions in the first iteration only, so that subsequent iterations
                 # (there will be one even if everything succeeds) filter out possible false-passes caused by
@@ -264,7 +265,7 @@ def main():
                 cmd += ["-k", selector]
             cmd.append(testfile)
 
-            print(" ".join(cmd))
+            print(shlex.join(cmd))
             p = run_with_timeout(cmd, errors='backslashreplace', **kwargs)
             print("*stdout*")
             print(p.stdout)
@@ -273,7 +274,7 @@ def main():
 
             if p.returncode == -9:
                 print(
-                    f"\nTimeout (return code -9)\nyou can try to increase the current timeout {tout}s by using --timeout=NNN")
+                    f"\nTimeout (return code -9)\nyou can try to increase the current timeout {TIMEOUT}s by using --timeout=NNN")
 
             passing_tests = set()
             failing_tests = set()

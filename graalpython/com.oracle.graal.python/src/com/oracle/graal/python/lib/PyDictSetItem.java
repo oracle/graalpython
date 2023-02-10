@@ -65,6 +65,10 @@ public abstract class PyDictSetItem extends Node {
         getUncached().execute(null, dict, key, item);
     }
 
+    public final void execute(PDict dict, TruffleString key, Object item) {
+        execute(null, dict, key, item);
+    }
+
     public abstract void execute(Frame frame, PDict dict, Object key, Object item);
 
     // We never need a frame for setting string keys

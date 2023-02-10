@@ -49,16 +49,19 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
     private Object[] arguments;
-    private final Object localsDict;
+    private final MaterializedFrame locals;
+    private Object localsDict;
     private final Reference virtualFrameInfo;
     private Node location;
     private RootCallTarget callTarget;
@@ -150,42 +153,50 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location) {
-        this(lang, virtualFrameInfo, location, null);
-    }
-
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object locals) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, MaterializedFrame locals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
-        this.localsDict = locals;
+        this.locals = locals;
         this.location = location;
     }
 
-    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
+    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object localsDict) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);
+        PArguments.setSpecialArgument(frameArgs, localsDict);
         Reference curFrameInfo = new Reference(null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
         this.location = GetCodeRootNode.getUncached().execute(code);
         this.line = this.location == null ? code.getFirstLineNo() : -2;
         this.arguments = frameArgs;
-
-        localsDict = locals;
+        this.locals = null;
+        this.localsDict = localsDict;
     }
 
     /**
-     * Prefer to use the {@link GetLocalsNode}.<br/>
-     * <br/>
-     *
-     * Returns a dictionary with the locals, possibly creating it from the frame. Note that the
-     * dictionary may have been modified and should then be updated with the current frame locals.
-     * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
+     * Get the locals synced by {@link MaterializeFrameNode}. May be null when using custom locals.
+     * In most cases, you should use {@link GetFrameLocalsNode}.
+     */
+    public MaterializedFrame getLocals() {
+        return locals;
+    }
+
+    /**
+     * Use {@link GetFrameLocalsNode} instead of accessing this directly.
      */
     public Object getLocalsDict() {
         return localsDict;
+    }
+
+    public boolean hasCustomLocals() {
+        return locals == null;
+    }
+
+    public void setLocalsDict(Object dict) {
+        localsDict = dict;
     }
 
     public PFrame.Reference getRef() {
@@ -235,16 +246,6 @@ public final class PFrame extends PythonBuiltinObject {
             }
         }
         return line;
-    }
-
-    /**
-     * Returns a dictionary with the locals. Note that the dictionary may have been modified and
-     * should then be updated with the current frame locals. To that end, use the
-     * {@link MaterializeFrameNode}.
-     */
-    public Object getLocals() {
-        assert localsDict != null;
-        return localsDict;
     }
 
     /**

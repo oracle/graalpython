@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
@@ -223,7 +222,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.nodes.Node;
@@ -792,14 +790,6 @@ public abstract class PythonObjectFactory extends Node {
         return createDict(EconomicMapStorage.createGeneric(map));
     }
 
-    public final PDict createDictLocals(MaterializedFrame frame) {
-        return createDict(new LocalsStorage(frame));
-    }
-
-    public final PDict createDictLocals(FrameDescriptor fd) {
-        return createDict(new LocalsStorage(fd));
-    }
-
     public final PDict createDictFixedStorage(PythonObject pythonObject, MroSequenceStorage mroSequenceStorage) {
         return createDict(new DynamicObjectStorage(pythonObject.getStorage(), mroSequenceStorage));
     }
@@ -918,16 +908,12 @@ public abstract class PythonObjectFactory extends Node {
      * Frames, traces and exceptions
      */
 
-    public final PFrame createPFrame(PFrame.Reference frameInfo, Node location) {
-        return trace(new PFrame(getLanguage(), frameInfo, location));
-    }
-
-    public final PFrame createPFrame(PFrame.Reference frameInfo, Node location, Object locals) {
+    public final PFrame createPFrame(PFrame.Reference frameInfo, Node location, MaterializedFrame locals) {
         return trace(new PFrame(getLanguage(), frameInfo, location, locals));
     }
 
-    public final PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
-        return trace(new PFrame(getLanguage(), threadState, code, globals, locals));
+    public final PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object localsDict) {
+        return trace(new PFrame(getLanguage(), threadState, code, globals, localsDict));
     }
 
     public final PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {

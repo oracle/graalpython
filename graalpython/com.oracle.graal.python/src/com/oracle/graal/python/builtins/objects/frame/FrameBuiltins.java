@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.objectHashCodeAsHexString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
@@ -47,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
@@ -59,6 +58,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -222,16 +222,17 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
                         @Cached ConditionProfile profile,
-                        @Cached MaterializeFrameNode materializeNode) {
+                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached GetFrameLocalsNode getFrameLocalsNode) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the values of the frame if and only if 'self' represents the current
             // frame. If 'self' represents another frame on the stack, the values are already
             // refreshed.
             if (profile.profile(frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.execute(frame, false, true, frame);
+                PFrame pyFrame = materializeNode.execute(false, true, frame);
                 assert pyFrame == self;
             }
-            return self.getLocals();
+            return getFrameLocalsNode.execute(self);
         }
     }
 
@@ -258,7 +259,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), FrameSelector.ALL_PYTHON_FRAMES, 0);
+                    callerFrame = readCallerFrame.executeWith(cur.getRef(), FrameSelector.ALL_PYTHON_FRAMES, 0);
 
                     // We don't need to mark the caller frame as 'escaped' because if 'self' is
                     // escaped, the caller frame will be escaped when leaving the current function.

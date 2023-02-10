@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -124,6 +124,19 @@ def test_code():
 
 def test_builtins():
     assert print == sys._getframe().f_builtins["print"]
+
+
+def test_locals_sync():
+    a = 1
+    l = locals()
+    assert l == {'a': 1}
+    b = 2
+    # Forces caller frame materialization, this used to erroneously cause the locals dict to update
+    globals()
+    assert l == {'a': 1}
+    # Now this should really cause the locals dict to update
+    locals()
+    assert l == {'a': 1, 'b': 2, 'l': l}
 
 
 # GR-22089

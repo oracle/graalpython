@@ -26,20 +26,14 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 //@formatter:off
 /**
@@ -69,22 +63,9 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  *                                         | ...               |
  *                                         | arg_(nArgs-1)     |
  *                                         +-------------------+
- *
- * The layout of a generator frame (stored in INDEX_GENERATOR_FRAME in the figure above)
- * is different in on place:
- *
- * MaterializedFrame
- *       |
- *       |                              ....
- *       |                    |                      |
- *       |                    +----------------------+
- * INDEX_CALLER_FRAME_INFO -> | PDict (locals)       |
- *                            +----------------------+
- *                            |         ....         |
  */
 //@formatter:on
 public final class PArguments {
-    private static final FrameDescriptor EMTPY_FD = new FrameDescriptor();
 
     private static final int INDEX_VARIABLE_ARGUMENTS = 0;
     private static final int INDEX_KEYWORD_ARGUMENTS = 1;
@@ -334,25 +315,9 @@ public final class PArguments {
         arguments[INDEX_GENERATOR_FRAME] = generatorFunction;
     }
 
-    public static void setGeneratorFrameLocals(Object[] arguments, PDict locals) {
-        arguments[INDEX_CALLER_FRAME_INFO] = locals;
-    }
-
-    public static PDict getGeneratorFrameLocals(Frame frame) {
-        return getGeneratorFrameLocals(frame.getArguments());
-    }
-
-    public static PDict getGeneratorFrameLocals(Object[] arguments) {
-        return (PDict) arguments[INDEX_CALLER_FRAME_INFO];
-    }
-
     /**
      * Synchronizes the arguments array of a Truffle frame with a {@link PFrame}. Copies only those
      * arguments that are necessary to be synchronized between the two.
-     *
-     * NOTE: such arguments usually need to be preserved in {@link ThreadState} so that when we are
-     * materializing a frame restored from {@link ThreadState}, the newly created instance of
-     * {@link PFrame} will contain those arguments.
      */
     public static void synchronizeArgs(Frame frameToMaterialize, PFrame escapedFrame) {
         Object[] arguments = frameToMaterialize.getArguments();
@@ -367,41 +332,5 @@ public final class PArguments {
         PythonUtils.arraycopy(arguments, USER_ARGUMENTS_OFFSET, copiedArgs, USER_ARGUMENTS_OFFSET, getUserArgumentLength(arguments));
 
         escapedFrame.setArguments(copiedArgs);
-    }
-
-    public static ThreadState getThreadState(VirtualFrame frame) {
-        assert frame != null : "cannot get thread state without a frame";
-        return new ThreadState(PArguments.getCurrentFrameInfo(frame),
-                        PArguments.getExceptionUnchecked(frame.getArguments()),
-                        PArguments.getGlobals(frame));
-    }
-
-    public static ThreadState getThreadStateOrNull(VirtualFrame frame, ConditionProfile hasFrameProfile) {
-        return hasFrameProfile.profile(frame != null) ? getThreadState(frame) : null;
-    }
-
-    public static VirtualFrame frameForCall(ThreadState frame) {
-        Object[] args = PArguments.create();
-        PArguments.setCurrentFrameInfo(args, frame.info);
-        PArguments.setExceptionUnchecked(args, frame.exc);
-        args[INDEX_GLOBALS_ARGUMENT] = frame.globals;
-        return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
-    }
-
-    /**
-     * Represents the current thread state information that needs to be passed between calls.
-     */
-    @ValueType
-    public static final class ThreadState {
-        private final PFrame.Reference info;
-        // The type is object because it is Object in the frame and casting it slows things down
-        private final Object exc;
-        private final Object globals;
-
-        private ThreadState(Reference info, Object exc, Object globals) {
-            this.info = info;
-            this.exc = exc;
-            this.globals = globals;
-        }
     }
 }

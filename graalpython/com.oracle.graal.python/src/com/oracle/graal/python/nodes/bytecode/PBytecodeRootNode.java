@@ -174,6 +174,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNodeGen;
@@ -570,7 +571,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (co.arg2cell != null && i < co.arg2cell.length && co.arg2cell[i] >= 0) {
                 /*
                  * If an argument is a cell, its slot gets superseded by the cell's slot below. We
-                 * need to hide it from LocalsStorage and other introspection.
+                 * need to hide it from introspection.
                  */
                 varname = null;
             }
@@ -1023,7 +1024,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // it, otherwise they stay at the initial value, which we must set to null here
         PArguments.setException(arguments, null);
         PArguments.setCallerFrameInfo(arguments, null);
-        PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         copyArgsAndCells(generatorFrame, arguments);
     }
 
@@ -2963,7 +2963,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (line != -1) {
                 pyFrame.setLineLock(line);
             }
+            // Force locals dict sync, so that we can sync them back later
+            GetFrameLocalsNode.getUncached().execute(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
+            syncLocalsBack(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
@@ -2974,6 +2977,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 pyFrame.lineUnlock();
             }
             threadState.tracingStop();
+        }
+    }
+
+    // PyFrame_LocalsToFast
+    private void syncLocalsBack(VirtualFrame virtualFrame, PFrame pyFrame) {
+        Frame localFrame = virtualFrame;
+        if (co.isGeneratorOrCoroutine()) {
+            localFrame = PArguments.getGeneratorFrame(virtualFrame);
+        }
+        Object localsDict = pyFrame.getLocalsDict();
+        copyLocalsArray(localFrame, localsDict, varnames, 0, false);
+        copyLocalsArray(localFrame, localsDict, cellvars, celloffset, true);
+        copyLocalsArray(localFrame, localsDict, freevars, freeoffset, true);
+    }
+
+    private static void copyLocalsArray(Frame localFrame, Object localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        for (int i = 0; i < namesArray.length; i++) {
+            TruffleString varname = namesArray[i];
+            Object value = null;
+            try {
+                value = PyObjectGetItem.getUncached().execute(null, localsDict, varname);
+            } catch (AbstractTruffleException e) {
+                // CPython ignores all exceptions
+            }
+            if (deref) {
+                PCell cell = (PCell) localFrame.getObject(offset + i);
+                cell.setRef(value);
+            } else {
+                localFrame.setObject(offset + i, value);
+            }
         }
     }
 
@@ -3013,7 +3046,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         try {
+            // Force locals dict sync, so that we can sync them back later
+            GetFrameLocalsNode.getUncached().execute(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
+            syncLocalsBack(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
@@ -5563,28 +5599,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTopBeforeBlock;
     }
 
-    public PCell readClassCell(VirtualFrame virtualFrame) {
-        Frame localFrame = virtualFrame;
-        if (co.isGeneratorOrCoroutine()) {
-            localFrame = PArguments.getGeneratorFrame(virtualFrame);
-        }
+    public PCell readClassCell(Frame frame) {
         if (classcellIndex < 0) {
             return null;
         }
-        return (PCell) localFrame.getObject(classcellIndex);
+        return (PCell) frame.getObject(classcellIndex);
     }
 
-    public Object readSelf(VirtualFrame virtualFrame) {
-        Frame localFrame = virtualFrame;
-        if (co.isGeneratorOrCoroutine()) {
-            localFrame = PArguments.getGeneratorFrame(virtualFrame);
-        }
+    public Object readSelf(Frame frame) {
         if (selfIndex < 0) {
             return null;
         } else if (selfIndex == 0) {
-            return localFrame.getObject(0);
+            return frame.getObject(0);
         } else {
-            PCell selfCell = (PCell) localFrame.getObject(selfIndex);
+            PCell selfCell = (PCell) frame.getObject(selfIndex);
             return selfCell.getRef();
         }
     }

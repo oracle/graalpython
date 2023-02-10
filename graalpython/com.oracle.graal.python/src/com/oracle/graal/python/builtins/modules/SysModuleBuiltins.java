@@ -832,7 +832,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         private static PFrame escapeFrame(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode) {
             Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
             currentFrameInfo.markAsEscaped();
-            return readCallerNode.executeWith(frame, currentFrameInfo, num);
+            return readCallerNode.executeWith(currentFrameInfo, num);
         }
 
         private PException raiseCallStackDepth() {

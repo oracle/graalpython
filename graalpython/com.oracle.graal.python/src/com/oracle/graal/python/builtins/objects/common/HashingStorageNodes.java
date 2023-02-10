@@ -40,9 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
@@ -74,7 +72,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
@@ -129,12 +126,6 @@ public class HashingStorageNodes {
         @Specialization
         static Object keywords(Frame frame, KeywordsStorage self, Object key, long keyHash,
                         @Cached KeywordsStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key, keyHash);
-        }
-
-        @Specialization
-        static Object locals(Frame frame, LocalsStorage self, Object key, long keyHash,
-                        @Cached LocalsStorage.GetItemNode getNode) {
             return getNode.execute(frame, self, key, keyHash);
         }
     }
@@ -197,12 +188,6 @@ public class HashingStorageNodes {
                         @Cached KeywordsStorage.GetItemNode getNode) {
             return getNode.execute(frame, self, key, -1);
         }
-
-        @Specialization
-        static Object locals(Frame frame, LocalsStorage self, Object key,
-                        @Cached LocalsStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key, -1);
-        }
     }
 
     abstract static class SpecializedSetStringKey extends Node {
@@ -219,7 +204,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization
-        static EconomicMapStorage doEmptyStorage(EmptyStorage s) {
+        static EconomicMapStorage doEmptyStorage(@SuppressWarnings("unused") EmptyStorage s) {
             return EconomicMapStorage.create();
         }
 
@@ -245,16 +230,8 @@ public class HashingStorageNodes {
         }
 
         @Specialization
-        static EconomicMapStorage doLocals(LocalsStorage s,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
-            EconomicMapStorage result = EconomicMapStorage.create(s.lengthHint());
-            s.addAllTo(result, specializedPutNode);
-            return result;
-        }
-
-        @Specialization
         static EconomicMapStorage doKeywords(KeywordsStorage s,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+                        @Cached EconomicMapSetStringKey specializedPutNode) {
             EconomicMapStorage result = EconomicMapStorage.create(s.length());
             s.addAllTo(result, specializedPutNode);
             return result;
@@ -264,7 +241,6 @@ public class HashingStorageNodes {
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HashingStorageSetItemWithHash extends Node {
-        static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
         @NeverDefault
         public static HashingStorageSetItemWithHash create() {
@@ -298,7 +274,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
-        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
+        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, @SuppressWarnings("unused") long keyHash, Object value,
                         @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             self.setStringKey(key, value, dylib, invalidateMroProfile);
@@ -306,7 +282,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
-        static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, long keyHash, Object value,
+        static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Cached CastToTruffleStringNode castStr,
@@ -317,7 +293,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
-        static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, long keyHash, Object value,
+        static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
@@ -328,34 +304,12 @@ public class HashingStorageNodes {
             return result;
         }
 
-        @Specialization(guards = "self.lengthHint() < DOM_SIZE_THRESHOLD")
-        HashingStorage localsStringKey(LocalsStorage self, TruffleString key, long keyHash, Object value,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
-                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
-                        @Cached DynamicObjectStorageSetStringKey specializedPutNode) {
-            DynamicObjectStorage result = new DynamicObjectStorage(PythonLanguage.get(this));
-            self.addAllTo(result, specializedPutNode);
-            return domStringKey(result, key, keyHash, value, invalidateMroProfile, dylib);
-        }
-
-        @Specialization(guards = "!isTruffleString(key) || lengthHint >= DOM_SIZE_THRESHOLD")
-        static HashingStorage localsGenericKey(Frame frame, LocalsStorage self, Object key, long keyHash, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("self.lengthHint()") int lengthHint,
-                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
-                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
-            EconomicMapStorage result = EconomicMapStorage.create(lengthHint);
-            self.addAllTo(result, specializedPutNode);
-            return economicMap(frame, result, key, keyHash, value, inliningTarget, profile, putNode);
-        }
-
         @Specialization
         static HashingStorage keywords(Frame frame, KeywordsStorage self, Object key, long keyHash, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+                        @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(result, specializedPutNode);
@@ -371,7 +325,6 @@ public class HashingStorageNodes {
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HashingStorageSetItem extends Node {
-        static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
         @NeverDefault
         public static HashingStorageSetItem create() {
@@ -448,36 +401,13 @@ public class HashingStorageNodes {
             return result;
         }
 
-        @Specialization(guards = "self.lengthHint() < DOM_SIZE_THRESHOLD")
-        HashingStorage localsStringKey(LocalsStorage self, TruffleString key, Object value,
-                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
-                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
-                        @Cached DynamicObjectStorageSetStringKey specializedPutNode) {
-            DynamicObjectStorage result = new DynamicObjectStorage(PythonLanguage.get(this));
-            self.addAllTo(result, specializedPutNode);
-            return domStringKey(result, key, value, invalidateMroProfile, dylib);
-        }
-
-        @Specialization(guards = "!isTruffleString(key) || lengthHint >= DOM_SIZE_THRESHOLD")
-        static HashingStorage localsGenericKey(Frame frame, LocalsStorage self, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("self.lengthHint()") int lengthHint,
-                        @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
-                        @Shared("hash") @Cached PyObjectHashNode hashNode,
-                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
-            EconomicMapStorage result = EconomicMapStorage.create(lengthHint);
-            self.addAllTo(result, specializedPutNode);
-            return economicMap(frame, result, key, value, inliningTarget, profile, hashNode, putNode);
-        }
-
         @Specialization
         static HashingStorage keywords(Frame frame, KeywordsStorage self, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+                        @Cached EconomicMapSetStringKey specializedPutNode) {
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             EconomicMapStorage result = EconomicMapStorage.create(self.length());
             self.addAllTo(result, specializedPutNode);
@@ -560,7 +490,8 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")
-        static Object domOther(Frame frame, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") boolean isPop, @SuppressWarnings("unused") PHashingCollection toUpdate,
+        static Object domOther(Frame frame, @SuppressWarnings("unused") DynamicObjectStorage self, Object key, @SuppressWarnings("unused") boolean isPop,
+                        @SuppressWarnings("unused") PHashingCollection toUpdate,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinObjectProfile profile,
                         @Shared("hash") @Cached PyObjectHashNode hashNode) {
@@ -580,19 +511,8 @@ public class HashingStorageNodes {
         static Object keywords(Frame frame, KeywordsStorage self, Object key, boolean isPop, PHashingCollection toUpdate,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Shared("economicRemove") @Cached ObjectHashMap.RemoveNode removeNode,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+                        @Cached EconomicMapSetStringKey specializedPutNode) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(self.length());
-            self.addAllTo(newStorage, specializedPutNode);
-            toUpdate.setDictStorage(newStorage);
-            return economicMap(frame, newStorage, key, isPop, toUpdate, hashNode, removeNode);
-        }
-
-        @Specialization
-        static Object locals(Frame frame, LocalsStorage self, Object key, boolean isPop, PHashingCollection toUpdate,
-                        @Shared("hash") @Cached PyObjectHashNode hashNode,
-                        @Shared("economicRemove") @Cached ObjectHashMap.RemoveNode removeNode,
-                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
-            EconomicMapStorage newStorage = EconomicMapStorage.create(self.lengthHint());
             self.addAllTo(newStorage, specializedPutNode);
             toUpdate.setDictStorage(newStorage);
             return economicMap(frame, newStorage, key, isPop, toUpdate, hashNode, removeNode);
@@ -632,12 +552,6 @@ public class HashingStorageNodes {
         @Specialization
         static int keywords(KeywordsStorage self) {
             return self.length();
-        }
-
-        @Specialization
-        static int locals(LocalsStorage self,
-                        @Cached LocalsStorage.LengthNode lengthNode) {
-            return lengthNode.execute(self);
         }
     }
 
@@ -683,7 +597,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization
-        static EmptyStorage empty(EmptyStorage map) {
+        static EmptyStorage empty(@SuppressWarnings("unused") EmptyStorage map) {
             return EmptyStorage.INSTANCE;
         }
 
@@ -695,11 +609,6 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage keywords(KeywordsStorage self) {
-            return self.copy();
-        }
-
-        @Specialization
-        static HashingStorage locals(LocalsStorage self) {
             return self.copy();
         }
     }
@@ -783,16 +692,6 @@ public class HashingStorageNodes {
         static HashingStorageIterator keywords(@SuppressWarnings("unused") KeywordsStorage self) {
             return new HashingStorageIterator();
         }
-
-        @Specialization
-        static HashingStorageIterator locals(LocalsStorage self,
-                        @Cached BranchProfile calculateLen) {
-            if (self.len == -1) {
-                calculateLen.enter();
-                self.calculateLength();
-            }
-            return new HashingStorageIterator();
-        }
     }
 
     @GenerateUncached
@@ -830,18 +729,6 @@ public class HashingStorageNodes {
         static HashingStorageIterator keywords(@SuppressWarnings("unused") KeywordsStorage self) {
             HashingStorageIterator it = new HashingStorageIterator(true);
             it.index = self.length();
-            return it;
-        }
-
-        @Specialization
-        static HashingStorageIterator locals(LocalsStorage self,
-                        @Cached BranchProfile calculateLen) {
-            if (self.len == -1) {
-                calculateLen.enter();
-                self.calculateLength();
-            }
-            HashingStorageIterator it = new HashingStorageIterator(true);
-            it.index = self.len;
             return it;
         }
     }
@@ -945,38 +832,6 @@ public class HashingStorageNodes {
         static boolean keywordsReverse(@SuppressWarnings("unused") KeywordsStorage self, HashingStorageIterator it) {
             return --it.index >= 0;
         }
-
-        @Specialization(guards = "!it.isReverse")
-        static boolean locals(LocalsStorage self, HashingStorageIterator it) {
-            FrameDescriptor fd = self.frame.getFrameDescriptor();
-            it.index++;
-            while (it.index < fd.getNumberOfSlots()) {
-                Object identifier = fd.getSlotName(it.index);
-                if (identifier != null && self.getValue(it.index) != null) {
-                    // Update the code in HashingStorageIteratorKey if this assumption changes:
-                    assert identifier instanceof TruffleString;
-                    return true;
-                }
-                it.index++;
-            }
-            return false;
-        }
-
-        @Specialization(guards = "it.isReverse")
-        static boolean localsReverse(LocalsStorage self, HashingStorageIterator it) {
-            FrameDescriptor fd = self.frame.getFrameDescriptor();
-            it.index--;
-            while (it.index >= 0) {
-                Object identifier = fd.getSlotName(it.index);
-                if (identifier != null && self.getValue(it.index) != null) {
-                    // Update the code in HashingStorageIteratorKey if this assumption changes:
-                    assert identifier instanceof TruffleString;
-                    return true;
-                }
-                it.index--;
-            }
-            return false;
-        }
     }
 
     @GenerateUncached
@@ -1012,11 +867,6 @@ public class HashingStorageNodes {
         @Specialization
         static Object keywords(KeywordsStorage self, HashingStorageIterator it) {
             return self.keywords[it.index].getValue();
-        }
-
-        @Specialization
-        static Object locals(LocalsStorage self, HashingStorageIterator it) {
-            return LocalsStorage.getValue(self.frame, it.index);
         }
     }
 
@@ -1054,11 +904,6 @@ public class HashingStorageNodes {
         static Object keywords(KeywordsStorage self, HashingStorageIterator it) {
             return self.keywords[it.index].getName();
         }
-
-        @Specialization
-        static TruffleString locals(LocalsStorage self, HashingStorageIterator it) {
-            return (TruffleString) self.frame.getFrameDescriptor().getSlotName(it.index);
-        }
     }
 
     @GenerateUncached
@@ -1087,12 +932,6 @@ public class HashingStorageNodes {
         static long keywords(KeywordsStorage self, HashingStorageIterator it,
                         @Shared("hash") @Cached TruffleString.HashCodeNode hashNode) {
             return PyObjectHashNode.hash(self.keywords[it.index].getName(), hashNode);
-        }
-
-        @Specialization
-        static long locals(LocalsStorage self, HashingStorageIterator it,
-                        @Shared("hash") @Cached TruffleString.HashCodeNode hashNode) {
-            return PyObjectHashNode.hash((TruffleString) self.frame.getFrameDescriptor().getSlotName(it.index), hashNode);
         }
     }
 
@@ -1415,7 +1254,6 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage doGeneric(Frame frame, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage,
-                        @Cached ObjectHashMap.PutNode putResultNode,
                         @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
