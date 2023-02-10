@@ -679,8 +679,10 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         final NodeFactory<? extends CApiBuiltinNode> factory;
         @CompilationFinal private CallTarget callTarget;
         private final CApiBuiltin annotation;
+        private final String name;
 
-        public CApiBuiltinExecutable(CApiBuiltin annotation, ArgDescriptor ret, ArgDescriptor[] args, NodeFactory<? extends CApiBuiltinNode> factory) {
+        public CApiBuiltinExecutable(String name, CApiBuiltin annotation, ArgDescriptor ret, ArgDescriptor[] args, NodeFactory<? extends CApiBuiltinNode> factory) {
+            this.name = name;
             this.annotation = annotation;
             this.ret = ret;
             this.args = args;
@@ -742,6 +744,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     throw CompilerDirectives.shouldNotReachHere(t);
                 }
             }
+
+            @Specialization
+            public static Object doFallback(@SuppressWarnings("unused") CApiBuiltinExecutable self, @SuppressWarnings("unused") Object[] arguments) {
+                throw CompilerDirectives.shouldNotReachHere("shouldn't hit generic case of " + Execute.class.getName());
+            }
         }
 
         @ExportMessage
@@ -763,7 +770,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         private static final class SignatureContainerRootNode extends RootNode {
 
-            final HashMap<Class<?>, SignatureLibrary> libs = new HashMap<>();
+            final HashMap<String, SignatureLibrary> libs = new HashMap<>();
 
             protected SignatureContainerRootNode() {
                 super(null);
@@ -774,8 +781,8 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere("not meant to be executed");
             }
 
-            public SignatureLibrary getLibrary(Class<?> clazz) {
-                return libs.computeIfAbsent(clazz, c -> {
+            public SignatureLibrary getLibrary(String name) {
+                return libs.computeIfAbsent(name, n -> {
                     SignatureLibrary lib = SignatureLibrary.getFactory().createDispatched(3);
                     SignatureContainerRootNode.this.insert(lib);
                     return lib;
@@ -801,7 +808,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 }
                 signature.append("):").append(ret.getNFISignature());
                 Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", signature.toString(), "exec").build()).call();
-                Object closure = container.getLibrary(factory.getNodeClass()).createClosure(nfiSignature, this);
+                Object closure = container.getLibrary(name).createClosure(nfiSignature, this);
                 InteropLibrary.getUncached().toNative(closure);
                 try {
                     pointer = InteropLibrary.getUncached().asPointer(closure);
@@ -814,7 +821,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public String toString() {
-            return "CApiBuiltin(" + factory.getNodeClass().getSimpleName() + ")";
+            return "CApiBuiltin(" + name + " / " + factory.getNodeClass().getSimpleName() + ")";
         }
     }
 
@@ -2582,11 +2589,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             }
             try {
                 for (var annotation : annotations) {
-                    CApiBuiltinExecutable result = new CApiBuiltinExecutable(annotation, annotation.ret(), annotation.args(), factory);
                     String name = factory.getNodeClass().getSimpleName();
                     if (!annotation.name().isEmpty()) {
                         name = annotation.name();
                     }
+                    CApiBuiltinExecutable result = new CApiBuiltinExecutable(name, annotation, annotation.ret(), annotation.args(), factory);
                     assert !capiBuiltins.containsKey(name);
                     capiBuiltins.put(name, result);
                 }
