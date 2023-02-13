@@ -139,6 +139,18 @@ def test_locals_sync():
     assert l == {'a': 1, 'b': 2, 'l': l}
 
 
+def test_locals_cells():
+    x = 1
+
+    def foo():
+        return x, locals()
+
+    assert foo()[1]['x'] == 1
+
+    cell = foo.__closure__[0]
+
+    assert type(locals()['cell']).__name__ == 'cell'
+
 # GR-22089
 # def test_backref_from_traceback():
 #     def bar():
