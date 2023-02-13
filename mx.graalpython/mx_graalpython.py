@@ -36,6 +36,7 @@ import re
 import shlex
 import shutil
 import sys
+import time
 from functools import wraps
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
@@ -281,7 +282,7 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def punittest(ars):
+def punittest(ars, report=False):
     """
     Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
 
@@ -300,7 +301,7 @@ def punittest(ars):
     args += ars
     args2 += ars
     with _pythonhome_context():
-        mx_unittest.unittest(args)
+        mx_unittest.unittest(args, test_report_tags=({"task": "punittest"} if report else None))
         if len(args2) > len(ars):
             mx_unittest.unittest(args2)
 
@@ -854,7 +855,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
-                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False, timeout=None):
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False, timeout=None, report=False):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
@@ -888,6 +889,14 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         args += [_graalpytest_driver(), "-v"]
 
+    if report:
+        reportfile = None
+        t0 = time.time()
+        if not use_pytest:
+            reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
+            args += ["--report", reportfile]
+
+    result = 0
     if is_collectiong_coverage():
         env['ENABLE_THREADED_GRAALPYTEST'] = "false"
         if mx_gate.get_jacoco_agent_args():
@@ -906,7 +915,18 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         mx.logv(" ".join([python_binary] + args))
         if lock:
             lock.release()
-        return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
+        result = mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
+
+    if report:
+        if reportfile:
+            mx_gate.make_test_report(reportfile, report.title)
+        else:
+            mx_gate.make_test_report([{
+                "name": report.title,
+                "status": "PASSED" if result == 0 else "FAILED",
+                "duration": int((time.time() - t0) * 1000)
+            }], report.title)
+    return result
 
 
 def get_venv_env(env_dir):
@@ -966,7 +986,7 @@ def patch_batch_launcher(launcher_path, jvm_args):
         launcher.writelines(lines)
 
 
-def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None):
+def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None, report=False):
     args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
         env = env or os.environ.copy()
@@ -997,7 +1017,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                     try:
                         self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
                                                       env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
-                                                      out=self.out, err=self.out, timeout=timeout)
+                                                      out=self.out, err=self.out, timeout=timeout, report=report)
                     except BaseException as e: # pylint: disable=broad-except;
                         self.result = e
         else:
@@ -1010,7 +1030,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                 def start(self):
                     self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
                                                        env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal,
-                                                       timeout=timeout)
+                                                       timeout=timeout, report=report)
 
                 def join(self, *args, **kwargs):
                     return
@@ -1045,7 +1065,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True,
-                         checkIfWithGraalPythonEE=False):
+                         checkIfWithGraalPythonEE=False, report=False):
     python_path = os.path.join(_dev_pythonhome(), 'lib-python/3')
     sub_env = dict(
         ENABLE_THREADED_GRAALPYTEST="true",
@@ -1068,20 +1088,24 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
         cwd=cwd,
         javaAsserts=javaAsserts,
         nonZeroIsFatal=nonZeroIsFatal,
+        report=report,
     )
 
 
 def graalpython_gate_runner(args, tasks):
+    report = lambda: (not is_collectiong_coverage()) and task
+    nonZeroIsFatal = not is_collectiong_coverage()
+
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
-            punittest(['--verbose'])
+            punittest(['--verbose'], report=report())
 
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=(not is_collectiong_coverage()))
+            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
@@ -1097,64 +1121,64 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_gvm(), javaAsserts=True)
+            run_python_unittests(python_managed_gvm(), javaAsserts=True, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=(not is_collectiong_coverage()))
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True)
+            run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True, report=report(), nonZeroIsFatal=nonZeroIsFatal)
 
-    with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall]) as task:
+    with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall], report=True) as task:
         if task:
             run_ginstall(python_gvm(), args=["--quiet"])
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_hpy_unittests(python_svm(), nonZeroIsFatal=(not is_collectiong_coverage()))
+            run_hpy_unittests(python_svm(), nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(python_managed_svm(), include_native=False)
+            run_hpy_unittests(python_managed_svm(), include_native=False, report=report())
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True)
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True)
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True, report=report())
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
-            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not is_collectiong_coverage()))
+            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not is_collectiong_coverage()), report=report())
 
     with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
         if task:
-            run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir)
+            run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            run_python_unittests(python_svm(), aot_compatible=True)
+            run_python_unittests(python_svm(), aot_compatible=True, report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_svm(), aot_compatible=True)
+            run_python_unittests(python_managed_svm(), aot_compatible=True, report=report())
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
             python_checkcopyrights([])
 
-    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm]) as task:
+    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm], report=True) as task:
         if task:
             run_shared_lib_test(python_so())
 
-    with Task('GraalPython GraalVM sandboxed shared-library build', tasks, tags=[GraalPythonTags.shared_object_sandboxed, GraalPythonTags.graalvm_sandboxed]) as task:
+    with Task('GraalPython GraalVM sandboxed shared-library build', tasks, tags=[GraalPythonTags.shared_object_sandboxed, GraalPythonTags.graalvm_sandboxed], report=True) as task:
         if task:
             run_shared_lib_test(python_managed_so(), ("sandboxed",))
 
-    with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm]) as task:
+    with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm], report=True) as task:
         if task:
             svm_image = python_svm()
             benchmark = os.path.join(PATH_MESO, "image-magix.py")
@@ -1169,7 +1193,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
         if task:
-            punittest(["--no-leak-tests", "--regex", r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'])
+            punittest(["--no-leak-tests", "--regex", r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'], report=True)
             svm_image = python_svm()
             out = mx.OutputCapture()
             mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
@@ -1181,7 +1205,7 @@ def graalpython_gate_runner(args, tasks):
             if success not in out.data:
                 mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
 
-    with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker]) as task:
+    with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker], report=True) as task:
         if task:
             mx.run_mx([
                 "--dy", "graalpython,/substratevm",

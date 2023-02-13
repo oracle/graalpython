@@ -281,7 +281,7 @@ _pytest_module.skip = _pytest_skip
 sys.modules["pytest"] = _pytest_module
 
 verbose = False
-
+reportfile = None
 
 def _cleanup_tempdirs():
     import shutil
@@ -423,19 +423,19 @@ class TestCase(object):
             def do_run():
                 if hasattr(self, "setUp"):
                     if not self.run_safely(self.setUp, print_immediately=True):
-                        self.failure(0)
+                        self.failure(func, 0)
                         return
                 start = time.monotonic()
                 r = self.run_safely(func)
                 end = time.monotonic() - start
                 if hasattr(self, "tearDown"):
                     if not self.run_safely(self.tearDown):
-                        self.failure(end)
+                        self.failure(func, end)
                 with print_lock:
                     if r is _skipped_marker:
-                        self.skipped()
+                        self.skipped(func)
                     elif r:
-                        self.success(end)
+                        self.success(func, end)
                     else:
                         transient_marker = [name for name in TRANSIENTS if name in func.__qualname__]
                         if transient_marker:
@@ -453,7 +453,7 @@ class TestCase(object):
                                 pass
                             do_run()
                         else:
-                            self.failure(end)
+                            self.failure(func, end)
                             if TestCase.fail_fast:
                                 if verbose:
                                     print(FAIL, BOLD)
@@ -468,22 +468,40 @@ class TestCase(object):
             if force_serial_execution:
                 ThreadPool.shutdown()
 
-    def success(self, time):
+    def success(self, func, time):
         self.passed += 1
         if verbose:
             print("[%.3fs]" % time, end=" ")
         print(".", end="", flush=True)
+        if reportfile:
+            reportfile.append({
+                "name": f"{func.__module__}.{func.__qualname__}",
+                "status": "PASSED",
+                "duration": int(time * 1000),
+            })
 
-    def failure(self, time):
+    def failure(self, func, time):
         self.failed += 1
         fail_msg = FAIL + BOLD + "F" + ENDC if verbose else "F"
         if verbose:
             print("[%.3fs]" % time, end=" ")
         print(fail_msg, end="", flush=True)
+        if reportfile:
+            reportfile.append({
+                "name": f"{func.__module__}.{func.__qualname__}",
+                "status": "FAILED",
+                "duration": int(time * 1000),
+            })
 
-    def skipped(self):
+    def skipped(self, func):
         self.skipped_n += 1
         print("s ", end="", flush=True)
+        if reportfile:
+            reportfile.append({
+                "name": f"{func.__module__}.{func.__qualname__}",
+                "status": "IGNORED",
+                "duration": 0,
+            })
 
     def assertIsInstance(self, value, cls):
         assert isinstance(value, cls), "Expected %r to be instance of %r" % (value, cls)
@@ -803,7 +821,19 @@ if __name__ == "__main__":
     argv = sys.argv[:]
     idx = 0
     while idx < len(argv):
-        if argv[idx] == "-k":
+        if argv[idx].startswith("--report"):
+            argv.pop(idx)
+            try:
+                import json
+            except:
+                print("--report needs working json module")
+                raise
+            try:
+                reportfile = [argv.pop(idx),]
+            except:
+                print("--report needs argument path to the json output")
+                raise
+        elif argv[idx] == "-k":
             argv.pop(idx)
             try:
                 pattern = argv.pop(idx)
@@ -835,4 +865,7 @@ if __name__ == "__main__":
     try:
         TestRunner(paths).run()
     finally:
+        if reportfile:
+            with open(reportfile[0], 'w') as f:
+                json.dump(reportfile[1:], f)
         _cleanup_tempdirs()
