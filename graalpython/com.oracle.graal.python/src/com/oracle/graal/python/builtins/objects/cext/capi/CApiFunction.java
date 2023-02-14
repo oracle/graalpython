@@ -111,7 +111,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_TYPE_SPEC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyASCIIObject;
@@ -195,7 +194,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
@@ -1001,14 +999,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "Py_SetPythonHome", ret = Void, args = {CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "Py_SetRecursionLimit", ret = Void, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_SetStandardStreamEncoding", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strcat", ret = PY_UNICODE_PTR, args = {PY_UNICODE_PTR, CONST_PY_UNICODE}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strchr", ret = PY_UNICODE_PTR, args = {CONST_PY_UNICODE, PY_UNICODE}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strcmp", ret = Int, args = {CONST_PY_UNICODE, CONST_PY_UNICODE}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strcpy", ret = PY_UNICODE_PTR, args = {PY_UNICODE_PTR, CONST_PY_UNICODE}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strlen", ret = SIZE_T, args = {CONST_PY_UNICODE}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strncmp", ret = Int, args = {CONST_PY_UNICODE, CONST_PY_UNICODE, SIZE_T}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strncpy", ret = PY_UNICODE_PTR, args = {PY_UNICODE_PTR, CONST_PY_UNICODE, SIZE_T}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_UNICODE_strrchr", ret = PY_UNICODE_PTR, args = {CONST_PY_UNICODE, PY_UNICODE}, call = NotImplemented)
     @CApiBuiltin(name = "Py_UniversalNewlineFgets", ret = CHAR_PTR, args = {CHAR_PTR, Int, FILE_PTR, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyAIter_Check", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyArg_ValidateKeywordArguments", ret = Int, args = {PyObject}, call = NotImplemented)

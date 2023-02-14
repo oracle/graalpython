@@ -1021,14 +1021,6 @@ long totalCount;
 #undef Py_SetPythonHome
 #undef Py_SetRecursionLimit
 #undef Py_SetStandardStreamEncoding
-#undef Py_UNICODE_strcat
-#undef Py_UNICODE_strchr
-#undef Py_UNICODE_strcmp
-#undef Py_UNICODE_strcpy
-#undef Py_UNICODE_strlen
-#undef Py_UNICODE_strncmp
-#undef Py_UNICODE_strncpy
-#undef Py_UNICODE_strrchr
 #undef Py_UniversalNewlineFgets
 #undef Py_VaBuildValue
 #undef Py_XNewRef
@@ -7247,30 +7239,6 @@ PyAPI_FUNC(void) Py_SetRecursionLimit(int a) {
 }
 PyAPI_FUNC(int) Py_SetStandardStreamEncoding(const char* a, const char* b) {
     unimplemented("Py_SetStandardStreamEncoding"); exit(-1);
-}
-PyAPI_FUNC(Py_UNICODE*) Py_UNICODE_strcat(Py_UNICODE* a, const Py_UNICODE* b) {
-    unimplemented("Py_UNICODE_strcat"); exit(-1);
-}
-PyAPI_FUNC(Py_UNICODE*) Py_UNICODE_strchr(const Py_UNICODE* a, Py_UNICODE b) {
-    unimplemented("Py_UNICODE_strchr"); exit(-1);
-}
-PyAPI_FUNC(int) Py_UNICODE_strcmp(const Py_UNICODE* a, const Py_UNICODE* b) {
-    unimplemented("Py_UNICODE_strcmp"); exit(-1);
-}
-PyAPI_FUNC(Py_UNICODE*) Py_UNICODE_strcpy(Py_UNICODE* a, const Py_UNICODE* b) {
-    unimplemented("Py_UNICODE_strcpy"); exit(-1);
-}
-PyAPI_FUNC(size_t) Py_UNICODE_strlen(const Py_UNICODE* a) {
-    unimplemented("Py_UNICODE_strlen"); exit(-1);
-}
-PyAPI_FUNC(int) Py_UNICODE_strncmp(const Py_UNICODE* a, const Py_UNICODE* b, size_t c) {
-    unimplemented("Py_UNICODE_strncmp"); exit(-1);
-}
-PyAPI_FUNC(Py_UNICODE*) Py_UNICODE_strncpy(Py_UNICODE* a, const Py_UNICODE* b, size_t c) {
-    unimplemented("Py_UNICODE_strncpy"); exit(-1);
-}
-PyAPI_FUNC(Py_UNICODE*) Py_UNICODE_strrchr(const Py_UNICODE* a, Py_UNICODE b) {
-    unimplemented("Py_UNICODE_strrchr"); exit(-1);
 }
 PyAPI_FUNC(char*) Py_UniversalNewlineFgets(char* a, int b, FILE* c, PyObject* d) {
     unimplemented("Py_UniversalNewlineFgets"); exit(-1);
