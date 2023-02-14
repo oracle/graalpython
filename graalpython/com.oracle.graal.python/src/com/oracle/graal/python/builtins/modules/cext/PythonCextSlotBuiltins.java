@@ -1554,16 +1554,12 @@ public final class PythonCextSlotBuiltins {
         public Object get(PythonManagedClass object,
                         @Cached IsBuiltinClassProfile isTupleProfile,
                         @Cached IsBuiltinClassProfile isDictProfile,
-                        @Cached IsBuiltinClassProfile isListProfile,
-                        @Cached ReadAttributeFromObjectNode readAttrNode) {
+                        @Cached IsBuiltinClassProfile isListProfile) {
             if (isTupleProfile.profileClass(object, PythonBuiltinClassType.PTuple) || isDictProfile.profileClass(object, PythonBuiltinClassType.PDict) ||
                             isListProfile.profileClass(object, PythonBuiltinClassType.PList)) {
-                // We do not actually return _the_ traverse or clear function since we will never
-                // need
-                // it. It is just important to return a function.
-                PythonModule pythonCextModule = getContext().lookupBuiltinModule(PythonCextBuiltins.T_PYTHON_CEXT);
-                Object sequenceClearMethod = readAttrNode.execute(pythonCextModule, T_SEQUENCE_CLEAR);
-                return sequenceClearMethod;
+
+                // TODO: return a proper traverse function, or at least a dummy
+                return getNULL();
             }
             return getNULL();
         }
