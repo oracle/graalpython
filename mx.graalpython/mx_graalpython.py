@@ -2725,6 +2725,8 @@ def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_d
         vm_args += extra_vm_args
 
     vm_args.append("com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins")
+    
+    print("\nGraalPython needs to be built before executing this command. If you encounter build errors because of changed builtin definitions, manually remove the contents of com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry.createBuiltinNode before building.\n")
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
