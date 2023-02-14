@@ -1960,7 +1960,7 @@ public class GraalHPyNodes {
 
                 // create the type object
                 Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
-                PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(PythonCextBuiltins.T_PYTHON_CEXT);
+                PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(BuiltinNames.T___GRAALPYTHON__);
                 PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, T_PYTRUFFLE_CREATETYPE,
                                 names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
                 // allocate additional memory for the metatype and set it

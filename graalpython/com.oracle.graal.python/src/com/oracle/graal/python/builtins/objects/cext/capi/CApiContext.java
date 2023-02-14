@@ -71,7 +71,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -85,6 +84,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransfer;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -913,6 +915,8 @@ public final class CApiContext extends CExtContext {
                 // keep the call target of 'libpython' alive; workaround until GR-32297 is fixed
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
                 Object capiLibrary = capiLibraryCallTarget.call();
+                InteropLibrary.getUncached().invokeMember(capiLibrary, "initialize_graal_capi", new PythonToNativeTransfer(), new JavaStringToTruffleString(), new HandleTester(), new GetBuiltin());
+
                 String libpython = System.getProperty("LibPythonNativeLibrary");
                 if (libpython != null) {
                     SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + libpython + "\"", "<libpython-native>");
@@ -930,7 +934,7 @@ public final class CApiContext extends CExtContext {
                  * through
                  */
                 throw e;
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | UnsupportedMessageException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
                 if (!context.isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
@@ -1037,11 +1041,8 @@ public final class CApiContext extends CExtContext {
             String name = (String) arguments[0];
             try {
                 Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
-                Object result = InteropLibrary.getUncached().readMember(llvmLibrary, name);
-                InteropLibrary.getUncached().toNative(result);
-                long pointer = InteropLibrary.getUncached().asPointer(result);
-                LOGGER.finer("getAPI " + name + " -> " + java.lang.Long.toHexString(pointer));
-                return pointer;
+                LOGGER.finer("getAPI " + name);
+                return InteropLibrary.getUncached().readMember(llvmLibrary, name);
             } catch (Throwable e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
@@ -1065,14 +1066,14 @@ public final class CApiContext extends CExtContext {
             assert arguments.length == 1;
             int id = (int) arguments[0];
             try {
-                Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
                 CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                assert builtin.call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name()) : "name clash in builtin vs. CAPI library: " +
-                                builtin.name();
-                InteropLibrary.getUncached().toNative(builtin);
-                long pointer = InteropLibrary.getUncached().asPointer(builtin);
-                LOGGER.finer("getBuiltin " + id + " / " + builtin.name() + " -> " + java.lang.Long.toHexString(pointer));
-                return pointer;
+                if (PythonContext.get(null).getCApiContext() != null) {
+                    Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+                    assert builtin.call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name()) : "name clash in builtin vs. CAPI library: " +
+                                    builtin.name();
+                }
+                LOGGER.finer("getBuiltin " + id + " / " + builtin.name());
+                return builtin;
             } catch (Throwable e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
@@ -1251,7 +1252,6 @@ public final class CApiContext extends CExtContext {
     }
 
     private static final TruffleString[] LOOKUP_MODULES = tsArray(new String[]{
-                    PythonCextBuiltins.PYTHON_CEXT,
                     "_weakref",
                     "builtins"
     });

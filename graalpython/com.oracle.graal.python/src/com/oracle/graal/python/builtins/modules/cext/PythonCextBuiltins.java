@@ -98,11 +98,8 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
@@ -140,11 +137,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolver;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolverStealing;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransfer;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
@@ -182,7 +175,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -201,9 +193,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -269,65 +258,9 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
-@CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
-public final class PythonCextBuiltins extends PythonBuiltins {
-
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return filterFactories(PythonCextBuiltinsFactory.getFactories(), PythonBuiltinBaseNode.class);
-    }
-
-    // This appears to be used only from HPy
-    @Builtin(name = "PyTruffle_CreateType", minNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_CreateType extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        static PythonClass createType(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespaceOrig, Object metaclass,
-                        @Cached CreateTypeNode createType) {
-            return createType.execute(frame, namespaceOrig, name, bases, metaclass, PKeyword.EMPTY_KEYWORDS);
-        }
-    }
-
-    @Builtin(name = "PyTruffle_GetBuiltin", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffleGetBuiltin extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        Object doI(int id) {
-            if (id >= 0 && id < PythonCextBuiltinRegistry.builtins.length) {
-                return PythonCextBuiltinRegistry.builtins[id];
-            }
-            throw raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, id);
-        }
-    }
-
-    @Builtin(name = "PyTruffle_HandleResolver_Create", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffleHandleResolverCreate extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object create(int which) {
-            switch (which) {
-                case 0:
-                    return new HandleResolver();
-                case 1:
-                    return new HandleResolverStealing();
-                case 2:
-                    return new HandleTester();
-                case 12: // pythonToNative
-                    return new PythonToNativeTransfer();
-                case 20: // javaStringToTruffleString
-                    return new JavaStringToTruffleString();
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-    }
+public final class PythonCextBuiltins {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextBuiltins.class);
-
-    public static final String PYTHON_CEXT = "python_cext";
-    public static final TruffleString T_PYTHON_CEXT = tsLiteral(PYTHON_CEXT);
 
     @GenerateUncached
     public abstract static class PromoteBorrowedValue extends Node {
@@ -850,6 +783,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 if (context.signatureContainer == null) {
                     context.signatureContainer = new SignatureContainerRootNode().getCallTarget();
                 }
+
                 SignatureContainerRootNode container = (SignatureContainerRootNode) context.signatureContainer.getRootNode();
                 // create NFI closure and get its address
                 StringBuilder signature = new StringBuilder("(");
@@ -867,6 +801,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
                 context.setClosurePointer(this, closure, pointer);
+                LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
             }
         }
 
@@ -1050,7 +985,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Type extends CApiUnaryBuiltinNode {
 
         private static final TruffleString[] LOOKUP_MODULES = new TruffleString[]{
-                        PythonCextBuiltins.T_PYTHON_CEXT,
                         T__WEAKREF,
                         T_BUILTINS
         };

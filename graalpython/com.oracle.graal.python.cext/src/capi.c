@@ -159,40 +159,17 @@ PyTypeObject _PyBytesIOBuffer_Type =		PY_TRUFFLE_TYPE("_io._BytesIOBuffer", &PyT
 CAPI_BUILTINS
 #undef BUILTIN
 
-uint32_t Py_Truffle_Options;
+PyAPI_FUNC(void) initialize_builtins(void* (*getBuiltin)(int id)) {
+#define BUILTIN(ID, NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(ID);
+CAPI_BUILTINS
+#undef BUILTIN
+}
 
+uint32_t Py_Truffle_Options;
 cache_query_t points_to_py_handle_space;
 ptr_cache_t pythonToNative;
 void_ptr_cache_t javaStringToTruffleString;
 
-__attribute__((constructor (__COUNTER__)))
-static void initialize_upcall_functions() {
-	clock_t t;
-	t = clock();
-
-    void* PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
-
-	pythonToNative = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 12);
-	javaStringToTruffleString = (void_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 20);
-	points_to_py_handle_space = (cache_query_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 2);
-
-#define BUILTIN(ID, NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetBuiltin", ID);
-CAPI_BUILTINS
-#undef BUILTIN
-
-    Py_Truffle_Options = GraalPyTruffle_Native_Options();
-	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_upcall_functions: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
-}
-
-void* _graalvm_llvm_va_arg(void* valist,void* type);
-
-// forcing the _graalvm_llvm_va_arg function to be available
-void forceVA(int a, ...) {
-	va_list va;
-	va_start(va, a);
-	_graalvm_llvm_va_arg(&va, polyglot_i32_typeid());
-	va_end(va);
-}
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
     // Store the Sulong struct type id to be used for instances of this class
@@ -229,7 +206,6 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     if (as_buffer) {
     	set_PyTypeObject_tp_as_buffer(type_handle, as_buffer);
     }
-    forceVA(1, 2, 3);
 }
 
 static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {
@@ -286,8 +262,6 @@ initialize_type(_PyWeakref_ProxyType, ProxyType, PyWeakReference) \
 initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference)
 /* The last few types use the same object structure as others, and thus
  POLYGLOT_DECLARE_TYPE should not be called again */
-/* Below types use the same object structure as others, and thus
- POLYGLOT_DECLARE_TYPE should not be called again */ \
 
 #define initialize_type(typeobject, typename, structtype) // empty
 #define declare_struct(typeobject, typename, structtype) POLYGLOT_DECLARE_STRUCT(structtype);
@@ -297,7 +271,7 @@ TYPES_AND_STRUCTS
 #undef declare_struct
 #undef declare_type
 
- void initialize_builtin_types_and_structs() {
+static void initialize_builtin_types_and_structs() {
 #define initialize_type(typeobject, typename, structtype)          \
 	initialize_builtin_type(&typeobject, #typename, polyglot_ ## structtype ## _typeid());
 #define declare_struct(typeobject, typename, structtype) initialize_type(typeobject, typename, structtype)
@@ -442,27 +416,6 @@ static void initialize_bufferprocs() {
     set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
 }
 
-static void initialize_filesystemencoding() {
-	// TODO: initialize during cext initialization doesn't work at the moment
-    Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
-}
-
-// defined in 'exceptions.c'
-void initialize_exceptions();
-// defined in 'pyhash.c'
-void initialize_hashes();
-
-__attribute__((constructor (20000)))
-static void initialize_capi() {
-    // initialize global variables like '_Py_NoneStruct', etc.
-	initialize_builtin_types_and_structs();
-    initialize_globals();
-    initialize_exceptions();
-    initialize_hashes();
-    initialize_bufferprocs();
-    initialize_filesystemencoding();
-}
-
 /** to be used from Java code only; reads native fields */
 #define TYPE_FIELD_GETTER(RECEIVER, NAME) \
 PyAPI_FUNC(PyTypeObject*) get_##NAME(RECEIVER obj) {  \
@@ -571,7 +524,7 @@ PyAPI_FUNC(void) PyTruffle_DECREF(PyObject* obj) {
     Py_DECREF(obj);
 }
 
-/** to be used from Java code only; calls DECREF */
+/** to be used from Java code only; calls ADDREF */
 PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(unsigned long ptr, Py_ssize_t value) {
 	PyObject* obj = (PyObject*) ptr; // avoid type attachment at the interop boundary
 #ifdef ASSERTIONS
@@ -644,10 +597,6 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_SUBREF(PyObject *ptrArray[], Py_ssize_t va
     }
     return 0;
 }
-
-typedef struct PyObjectHandle {
-    PyObject_HEAD
-} PyObjectHandle;
 
 PyAPI_FUNC(uint64_t) PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
@@ -1277,6 +1226,46 @@ void* truffle_get_constant(int entry) {
 	return NULL;
 }
 
+// defined in 'exceptions.c'
+void initialize_exceptions();
+// defined in 'pyhash.c'
+void initialize_hashes();
+
+void* _graalvm_llvm_va_arg(void* valist,void* type);
+
+// forcing the _graalvm_llvm_va_arg function to be available
+void forceVA(int a, ...) {
+	va_list va;
+	va_start(va, a);
+	_graalvm_llvm_va_arg(&va, polyglot_i32_typeid());
+	va_end(va);
+}
+
+PyAPI_FUNC(void) initialize_graal_capi(ptr_cache_t _pythonToNative, void_ptr_cache_t _javaStringToTruffleString, cache_query_t _points_to_py_handle_space, void* (*getBuiltin)(int id)) {
+	clock_t t;
+	t = clock();
+    forceVA(1, 2, 3);
+
+	pythonToNative = _pythonToNative;
+	javaStringToTruffleString = _javaStringToTruffleString;
+	points_to_py_handle_space = _points_to_py_handle_space;
+
+	initialize_builtins(getBuiltin);
+
+    Py_Truffle_Options = GraalPyTruffle_Native_Options();
+
+    // initialize global variables like '_Py_NoneStruct', etc.
+	initialize_builtin_types_and_structs();
+    initialize_globals();
+    initialize_exceptions();
+    initialize_hashes();
+    initialize_bufferprocs();
+
+	// TODO: initialize during cext initialization doesn't work at the moment
+    Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
+
+    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_upcall_functions: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+}
 
 // {{start CAPI_BUILTINS}}
 // GENERATED CODE - see PythonCextBuiltins
