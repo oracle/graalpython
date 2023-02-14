@@ -85,7 +85,8 @@ def collect_working_tests():
 def make_test_function(working_test):
     testmod = working_test[0].rpartition(".")[2]
 
-    def test_tagged(max_patterns=100):
+    def test_tagged():
+        max_patterns = 100
         for working_test_group in grouper(working_test[1], max_patterns):
             cmd = [sys.executable]
             if "--inspect" in sys.argv:
@@ -96,7 +97,8 @@ def make_test_function(working_test):
             if "-vv" in sys.argv:
                 cmd += ['-v']
             for testpattern in working_test_group:
-                cmd.extend(["-k", testpattern])
+                if testpattern:
+                    cmd.extend(["-k", testpattern])
             print("Running test:", working_test[0])
             testfile = os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod)
             if not os.path.isfile(testfile):
