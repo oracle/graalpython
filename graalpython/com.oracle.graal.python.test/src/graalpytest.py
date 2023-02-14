@@ -346,9 +346,11 @@ def dump_truffle_ast(func):
         pass
 
 
-class TestCase(object):
-    fail_fast = os.environ.get(b"GRAALPYTEST_FAIL_FAST", "") == b"true"
+fail_fast = os.environ.get(b"GRAALPYTEST_FAIL_FAST", "") == b"true"
+exitting = False
 
+
+class TestCase(object):
     def __init__(self):
         self.exceptions = []
         self.passed = 0
@@ -412,7 +414,6 @@ class TestCase(object):
         else:
             return True
 
-
     def run_test(self, func):
         if "test_main" in str(func):
             pass
@@ -453,13 +454,16 @@ class TestCase(object):
                             do_run()
                         else:
                             self.failure(func, end)
-                            if TestCase.fail_fast:
-                                if verbose:
-                                    print(FAIL, BOLD)
-                                print("\nFailing fast since GRAALPYTEST_FAIL_FAST is set ...")
-                                if verbose:
-                                    print(ENDC)
-                                sys.exit(1)
+                            if fail_fast:
+                                global exitting
+                                if not exitting:
+                                    exitting = True
+                                    if verbose:
+                                        print(FAIL, BOLD)
+                                    print("\nFailing fast since GRAALPYTEST_FAIL_FAST is set ...")
+                                    if verbose:
+                                        print(ENDC)
+                                return
             force_serial_execution = any(name in func.__qualname__ for name in SERIAL_TESTS)
             if force_serial_execution:
                 ThreadPool.shutdown()
@@ -640,6 +644,8 @@ class TestCase(object):
             if not instance.run_safely(instance.setUpClass, print_immediately=True):
                 return instance
         for k, v in items:
+            if exitting:
+                break
             if k.startswith("test"):
                 testfn = getattr(instance, k, v)
                 if patterns:
@@ -757,6 +763,8 @@ class TestRunner(object):
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
             module_dict = dict(module.__dict__)
             for k, v in module_dict.items():
+                if exitting:
+                    break
                 if (k.startswith("Test") or k.endswith("Test") or k.endswith("Tests")) and isinstance(v, type):
                     testcases.append(TestCase.runClass(v))
                 else:
