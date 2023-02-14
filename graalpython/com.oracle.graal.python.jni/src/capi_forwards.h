@@ -39,11 +39,10 @@
  * SOFTWARE.
  */
 
-// {{start CAPI_BUILTINS}}
-// GENERATED CODE - see PythonCextBuiltins
-// generated from class com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction
+void unimplemented(const char* name) {
+	printf("Function not implemented in GraalPy: %s\n", name);
+}
 
-void unimplemented(const char* name) { printf("Function not implemented in GraalPy: %s\n", name); }
 #ifdef STATS
 long totalTime;
 long totalCount;
@@ -64,11 +63,14 @@ long totalCount;
 #define STATS_CONTAINER(NAME, LAST)
 #define STATS_BEFORE(NAME)
 #define STATS_AFTER(NAME)
-#endif
+#endif // STATS
+
 #define LOG_AFTER LOG("-> 0x%lx", (unsigned long) result);
 #define LOG_AFTER_VOID LOGS("finished");
 
-// explicit undef, some existing functions are redefined by macros:
+// {{start CAPI_BUILTINS}}
+// GENERATED CODE - see PythonCextBuiltins
+// explicit #undef, some existing functions are redefined by macros and we need to export precise names:
 #undef PyAIter_Check
 #undef PyArg_Parse
 #undef PyArg_ParseTuple
@@ -1121,6 +1123,7 @@ long totalCount;
 #undef Py_get_PySliceObject_start
 #undef Py_get_PySliceObject_step
 #undef Py_get_PySliceObject_stop
+#undef Py_get_PyThreadState_dict
 #undef Py_get_PyTupleObject_ob_item
 #undef Py_get_PyTypeObject_tp_alloc
 #undef Py_get_PyTypeObject_tp_as_async

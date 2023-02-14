@@ -100,501 +100,503 @@ typedef struct {
 // {{start CAPI_BUILTINS}}
 // GENERATED CODE - see PythonCextBuiltins
 #define CAPI_BUILTINS \
-    BUILTIN(0, PyByteArray_Resize, int, PyObject*, Py_ssize_t) \
-    BUILTIN(1, PyBytes_FromObject, PyObject*, PyObject*) \
-    BUILTIN(2, PyBytes_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(3, PyCallIter_New, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(4, PyCallable_Check, int, PyObject*) \
-    BUILTIN(5, PyCapsule_GetContext, void*, PyObject*) \
-    BUILTIN(6, PyCapsule_GetDestructor, PyCapsule_Destructor, PyObject*) \
-    BUILTIN(7, PyCapsule_GetName, const char*, PyObject*) \
-    BUILTIN(8, PyCapsule_GetPointer, void*, PyObject*, const char*) \
-    BUILTIN(9, PyCapsule_Import, void*, const char*, int) \
-    BUILTIN(10, PyCapsule_IsValid, int, PyObject*, const char*) \
-    BUILTIN(11, PyCapsule_New, PyObject*, void*, const char*, PyCapsule_Destructor) \
-    BUILTIN(12, PyCapsule_SetContext, int, PyObject*, void*) \
-    BUILTIN(13, PyCapsule_SetDestructor, int, PyObject*, PyCapsule_Destructor) \
-    BUILTIN(14, PyCapsule_SetName, int, PyObject*, const char*) \
-    BUILTIN(15, PyCapsule_SetPointer, int, PyObject*, void*) \
-    BUILTIN(16, PyClassMethod_New, PyObject*, PyObject*) \
-    BUILTIN(17, PyCode_New, PyCodeObject*, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
-    BUILTIN(18, PyCode_NewEmpty, PyCodeObject*, const char*, const char*, int) \
-    BUILTIN(19, PyCode_NewWithPosOnlyArgs, PyCodeObject*, int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
-    BUILTIN(20, PyComplex_FromDoubles, PyObject*, double, double) \
-    BUILTIN(21, PyComplex_ImagAsDouble, double, PyObject*) \
-    BUILTIN(22, PyComplex_RealAsDouble, double, PyObject*) \
-    BUILTIN(23, PyContextVar_New, PyObject*, const char*, PyObject*) \
-    BUILTIN(24, PyContextVar_Set, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(25, PyDictProxy_New, PyObject*, PyObject*) \
-    BUILTIN(26, PyDict_Clear, void, PyObject*) \
-    BUILTIN(27, PyDict_Contains, int, PyObject*, PyObject*) \
-    BUILTIN(28, PyDict_Copy, PyObject*, PyObject*) \
-    BUILTIN(29, PyDict_DelItem, int, PyObject*, PyObject*) \
-    BUILTIN(30, PyDict_GetItem, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(31, PyDict_GetItemWithError, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(32, PyDict_Keys, PyObject*, PyObject*) \
-    BUILTIN(33, PyDict_Merge, int, PyObject*, PyObject*, int) \
-    BUILTIN(34, PyDict_New, PyObject*) \
-    BUILTIN(35, PyDict_SetDefault, PyObject*, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(36, PyDict_SetItem, int, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(37, PyDict_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(38, PyDict_Update, int, PyObject*, PyObject*) \
-    BUILTIN(39, PyDict_Values, PyObject*, PyObject*) \
-    BUILTIN(40, PyErr_Display, void, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(41, PyErr_GivenExceptionMatches, int, PyObject*, PyObject*) \
-    BUILTIN(42, PyErr_NewException, PyObject*, const char*, PyObject*, PyObject*) \
-    BUILTIN(43, PyErr_NewExceptionWithDoc, PyObject*, const char*, const char*, PyObject*, PyObject*) \
-    BUILTIN(44, PyErr_Occurred, PyObject*) \
-    BUILTIN(45, PyErr_PrintEx, void, int) \
-    BUILTIN(46, PyErr_Restore, void, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(47, PyErr_SetExcInfo, void, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(48, PyEval_GetBuiltins, PyObject*) \
-    BUILTIN(49, PyEval_RestoreThread, void, PyThreadState*) \
-    BUILTIN(50, PyEval_SaveThread, PyThreadState*) \
-    BUILTIN(51, PyException_GetContext, PyObject*, PyObject*) \
-    BUILTIN(52, PyException_SetCause, void, PyObject*, PyObject*) \
-    BUILTIN(53, PyException_SetContext, void, PyObject*, PyObject*) \
-    BUILTIN(54, PyException_SetTraceback, int, PyObject*, PyObject*) \
-    BUILTIN(55, PyFile_WriteObject, int, PyObject*, PyObject*, int) \
-    BUILTIN(56, PyFloat_AsDouble, double, PyObject*) \
-    BUILTIN(57, PyFloat_FromDouble, PyObject*, double) \
-    BUILTIN(58, PyFrame_New, PyFrameObject*, PyThreadState*, PyCodeObject*, PyObject*, PyObject*) \
-    BUILTIN(59, PyFrozenSet_New, PyObject*, PyObject*) \
-    BUILTIN(60, PyGILState_Ensure, PyGILState_STATE) \
-    BUILTIN(61, PyGILState_Release, void, PyGILState_STATE) \
-    BUILTIN(62, PyImport_GetModuleDict, PyObject*) \
-    BUILTIN(63, PyImport_Import, PyObject*, PyObject*) \
-    BUILTIN(64, PyImport_ImportModule, PyObject*, const char*) \
-    BUILTIN(65, PyImport_ImportModuleLevelObject, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int) \
-    BUILTIN(66, PyImport_ImportModuleNoBlock, PyObject*, const char*) \
-    BUILTIN(67, PyIndex_Check, int, PyObject*) \
-    BUILTIN(68, PyInstanceMethod_New, PyObject*, PyObject*) \
-    BUILTIN(69, PyIter_Next, PyObject*, PyObject*) \
-    BUILTIN(70, PyList_Append, int, PyObject*, PyObject*) \
-    BUILTIN(71, PyList_AsTuple, PyObject*, PyObject*) \
-    BUILTIN(72, PyList_GetItem, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(73, PyList_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
-    BUILTIN(74, PyList_Insert, int, PyObject*, Py_ssize_t, PyObject*) \
-    BUILTIN(75, PyList_New, PyObject*, Py_ssize_t) \
-    BUILTIN(76, PyList_Reverse, int, PyObject*) \
-    BUILTIN(77, PyList_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
-    BUILTIN(78, PyList_SetSlice, int, PyObject*, Py_ssize_t, Py_ssize_t, PyObject*) \
-    BUILTIN(79, PyList_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(80, PyList_Sort, int, PyObject*) \
-    BUILTIN(81, PyLong_AsVoidPtr, void*, PyObject*) \
-    BUILTIN(82, PyLong_FromDouble, PyObject*, double) \
-    BUILTIN(83, PyLong_FromLong, PyObject*, long) \
-    BUILTIN(84, PyLong_FromLongLong, PyObject*, long long) \
-    BUILTIN(85, PyLong_FromSize_t, PyObject*, size_t) \
-    BUILTIN(86, PyLong_FromSsize_t, PyObject*, Py_ssize_t) \
-    BUILTIN(87, PyLong_FromUnsignedLong, PyObject*, unsigned long) \
-    BUILTIN(88, PyLong_FromUnsignedLongLong, PyObject*, unsigned long long) \
-    BUILTIN(89, PyMapping_Check, int, PyObject*) \
-    BUILTIN(90, PyMapping_Items, PyObject*, PyObject*) \
-    BUILTIN(91, PyMapping_Keys, PyObject*, PyObject*) \
-    BUILTIN(92, PyMapping_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(93, PyMapping_Values, PyObject*, PyObject*) \
-    BUILTIN(94, PyMemoryView_FromObject, PyObject*, PyObject*) \
-    BUILTIN(95, PyMemoryView_GetContiguous, PyObject*, PyObject*, int, char) \
-    BUILTIN(96, PyMethod_New, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(97, PyModule_AddIntConstant, int, PyObject*, const char*, long) \
-    BUILTIN(98, PyModule_AddObjectRef, int, PyObject*, const char*, PyObject*) \
-    BUILTIN(99, PyModule_GetNameObject, PyObject*, PyObject*) \
-    BUILTIN(100, PyModule_New, PyObject*, const char*) \
-    BUILTIN(101, PyModule_NewObject, PyObject*, PyObject*) \
-    BUILTIN(102, PyModule_SetDocString, int, PyObject*, const char*) \
-    BUILTIN(103, PyNumber_Absolute, PyObject*, PyObject*) \
-    BUILTIN(104, PyNumber_Check, int, PyObject*) \
-    BUILTIN(105, PyNumber_Divmod, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(106, PyNumber_Float, PyObject*, PyObject*) \
-    BUILTIN(107, PyNumber_InPlacePower, PyObject*, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(108, PyNumber_Index, PyObject*, PyObject*) \
-    BUILTIN(109, PyNumber_Long, PyObject*, PyObject*) \
-    BUILTIN(110, PyNumber_Power, PyObject*, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(111, PyNumber_ToBase, PyObject*, PyObject*, int) \
-    BUILTIN(112, PyOS_FSPath, PyObject*, PyObject*) \
-    BUILTIN(113, PyObject_ASCII, PyObject*, PyObject*) \
-    BUILTIN(114, PyObject_AsFileDescriptor, int, PyObject*) \
-    BUILTIN(115, PyObject_Bytes, PyObject*, PyObject*) \
-    BUILTIN(116, PyObject_ClearWeakRefs, void, PyObject*) \
-    BUILTIN(117, PyObject_DelItem, int, PyObject*, PyObject*) \
-    BUILTIN(118, PyObject_Dir, PyObject*, PyObject*) \
-    BUILTIN(119, PyObject_Format, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(120, PyObject_GC_Track, void, void*) \
-    BUILTIN(121, PyObject_GC_UnTrack, void, void*) \
-    BUILTIN(122, PyObject_GetDoc, const char*, PyObject*) \
-    BUILTIN(123, PyObject_GetItem, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(124, PyObject_GetIter, PyObject*, PyObject*) \
-    BUILTIN(125, PyObject_HasAttr, int, PyObject*, PyObject*) \
-    BUILTIN(126, PyObject_HasAttrString, int, PyObject*, const char*) \
-    BUILTIN(127, PyObject_Hash, Py_hash_t, PyObject*) \
-    BUILTIN(128, PyObject_HashNotImplemented, Py_hash_t, PyObject*) \
-    BUILTIN(129, PyObject_IsInstance, int, PyObject*, PyObject*) \
-    BUILTIN(130, PyObject_IsSubclass, int, PyObject*, PyObject*) \
-    BUILTIN(131, PyObject_IsTrue, int, PyObject*) \
-    BUILTIN(132, PyObject_LengthHint, Py_ssize_t, PyObject*, Py_ssize_t) \
-    BUILTIN(133, PyObject_Repr, PyObject*, PyObject*) \
-    BUILTIN(134, PyObject_RichCompare, PyObject*, PyObject*, PyObject*, int) \
-    BUILTIN(135, PyObject_SetDoc, int, PyObject*, const char*) \
-    BUILTIN(136, PyObject_SetItem, int, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(137, PyObject_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(138, PyObject_Str, PyObject*, PyObject*) \
-    BUILTIN(139, PyObject_Type, PyObject*, PyObject*) \
-    BUILTIN(140, PyRun_StringFlags, PyObject*, const char*, int, PyObject*, PyObject*, PyCompilerFlags*) \
-    BUILTIN(141, PySeqIter_New, PyObject*, PyObject*) \
-    BUILTIN(142, PySequence_Check, int, PyObject*) \
-    BUILTIN(143, PySequence_Concat, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(144, PySequence_Contains, int, PyObject*, PyObject*) \
-    BUILTIN(145, PySequence_DelItem, int, PyObject*, Py_ssize_t) \
-    BUILTIN(146, PySequence_GetItem, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(147, PySequence_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
-    BUILTIN(148, PySequence_InPlaceConcat, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(149, PySequence_InPlaceRepeat, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(150, PySequence_Length, Py_ssize_t, PyObject*) \
-    BUILTIN(151, PySequence_List, PyObject*, PyObject*) \
-    BUILTIN(152, PySequence_Repeat, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(153, PySequence_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
-    BUILTIN(154, PySequence_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(155, PySequence_Tuple, PyObject*, PyObject*) \
-    BUILTIN(156, PySet_Add, int, PyObject*, PyObject*) \
-    BUILTIN(157, PySet_Clear, int, PyObject*) \
-    BUILTIN(158, PySet_Contains, int, PyObject*, PyObject*) \
-    BUILTIN(159, PySet_Discard, int, PyObject*, PyObject*) \
-    BUILTIN(160, PySet_New, PyObject*, PyObject*) \
-    BUILTIN(161, PySet_Pop, PyObject*, PyObject*) \
-    BUILTIN(162, PySet_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(163, PySlice_New, PyObject*, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(164, PyStaticMethod_New, PyObject*, PyObject*) \
-    BUILTIN(165, PyStructSequence_New, PyObject*, PyTypeObject*) \
-    BUILTIN(166, PySys_GetObject, PyObject*, const char*) \
-    BUILTIN(167, PyThreadState_Get, PyThreadState*) \
-    BUILTIN(168, PyThread_acquire_lock, int, PyThread_type_lock, int) \
-    BUILTIN(169, PyThread_allocate_lock, PyThread_type_lock) \
-    BUILTIN(170, PyThread_release_lock, void, PyThread_type_lock) \
-    BUILTIN(171, PyTraceBack_Here, int, PyFrameObject*) \
-    BUILTIN(172, PyTraceMalloc_Track, int, unsigned int, uintptr_t, size_t) \
-    BUILTIN(173, PyTraceMalloc_Untrack, int, unsigned int, uintptr_t) \
-    BUILTIN(174, PyTruffleByteArray_FromStringAndSize, PyObject*, int8_t*, Py_ssize_t) \
-    BUILTIN(175, PyTruffleBytes_Concat, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(176, PyTruffleBytes_FromFormat, PyObject*, const char*, PyObject*) \
-    BUILTIN(177, PyTruffleBytes_FromStringAndSize, PyObject*, const char*, Py_ssize_t) \
-    BUILTIN(178, PyTruffleCMethod_NewEx, PyObject*, PyMethodDef*, const char*, void*, int, int, PyObject*, PyObject*, PyTypeObject*, const char*) \
-    BUILTIN(179, PyTruffleComplex_AsCComplex, PyObject*, PyObject*) \
-    BUILTIN(180, PyTruffleContextVar_Get, PyObject*, PyObject*, PyObject*, void*) \
-    BUILTIN(181, PyTruffleDescr_NewClassMethod, PyObject*, void*, const char*, const char*, int, int, void*, PyTypeObject*) \
-    BUILTIN(182, PyTruffleDescr_NewGetSet, PyObject*, const char*, PyTypeObject*, void*, void*, const char*, void*) \
-    BUILTIN(183, PyTruffleDict_Next, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(184, PyTruffleErr_Fetch, PyObject*) \
-    BUILTIN(185, PyTruffleErr_GetExcInfo, PyObject*) \
-    BUILTIN(186, PyTruffleHash_InitSecret, void, void*) \
-    BUILTIN(187, PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
-    BUILTIN(188, PyTruffleLong_FromString, PyObject*, const char*, int, int) \
-    BUILTIN(189, PyTruffleLong_One, PyObject*) \
-    BUILTIN(190, PyTruffleLong_Zero, PyObject*) \
-    BUILTIN(191, PyTruffleModule_AddFunctionToModule, int, void*, PyObject*, const char*, void*, int, int, void*) \
-    BUILTIN(192, PyTruffleNumber_BinOp, PyObject*, PyObject*, PyObject*, int) \
-    BUILTIN(193, PyTruffleNumber_InPlaceBinOp, PyObject*, PyObject*, PyObject*, int) \
-    BUILTIN(194, PyTruffleNumber_UnaryOp, PyObject*, PyObject*, int) \
-    BUILTIN(195, PyTruffleObject_CallFunctionObjArgs, PyObject*, PyObject*, va_list*) \
-    BUILTIN(196, PyTruffleObject_CallMethodObjArgs, PyObject*, PyObject*, PyObject*, va_list*) \
-    BUILTIN(197, PyTruffleObject_GenericGetAttr, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(198, PyTruffleObject_GenericSetAttr, int, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(199, PyTruffleObject_GetItemString, PyObject*, PyObject*, const char*) \
-    BUILTIN(200, PyTruffleState_FindModule, PyObject*, struct PyModuleDef*) \
-    BUILTIN(201, PyTruffleStructSequence_InitType2, int, PyTypeObject*, void*, void*, int) \
-    BUILTIN(202, PyTruffleStructSequence_NewType, PyTypeObject*, const char*, const char*, void*, void*, int) \
-    BUILTIN(203, PyTruffleToCharPointer, void*, PyObject*) \
-    BUILTIN(204, PyTruffleType_AddFunctionToType, int, void*, PyTypeObject*, PyObject*, const char*, void*, int, int, void*) \
-    BUILTIN(205, PyTruffleType_AddGetSet, int, PyTypeObject*, PyObject*, const char*, void*, void*, void*, void*) \
-    BUILTIN(206, PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, void*) \
-    BUILTIN(207, PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, void*) \
-    BUILTIN(208, PyTruffleUnicode_Decode, PyObject*, PyObject*, const char*, const char*) \
-    BUILTIN(209, PyTruffleUnicode_DecodeUTF8Stateful, PyObject*, void*, const char*, int) \
-    BUILTIN(210, PyTruffleUnicode_InternInPlace, PyObject*, PyObject*) \
-    BUILTIN(211, PyTruffleUnicode_New, PyObject*, void*, Py_ssize_t, Py_UCS4) \
-    BUILTIN(212, PyTruffle_Arg_ParseTupleAndKeywords, int, PyObject*, PyObject*, const char*, void*, void*) \
-    BUILTIN(213, PyTruffle_ByteArray_EmptyWithCapacity, PyObject*, Py_ssize_t) \
-    BUILTIN(214, PyTruffle_Bytes_AsString, void*, PyObject*) \
-    BUILTIN(215, PyTruffle_Bytes_CheckEmbeddedNull, int, PyObject*) \
-    BUILTIN(216, PyTruffle_Bytes_EmptyWithCapacity, PyObject*, long) \
-    BUILTIN(217, PyTruffle_Compute_Mro, PyObject*, PyTypeObject*, const char*) \
-    BUILTIN(218, PyTruffle_Debug, int, void*) \
-    BUILTIN(219, PyTruffle_DebugTrace, void) \
-    BUILTIN(220, PyTruffle_Ellipsis, PyObject*) \
-    BUILTIN(221, PyTruffle_False, PyObject*) \
-    BUILTIN(222, PyTruffle_FatalErrorFunc, void, const char*, const char*, int) \
-    BUILTIN(223, PyTruffle_FileSystemDefaultEncoding, PyObject*) \
-    BUILTIN(224, PyTruffle_Get_Inherited_Native_Slots, void*, PyTypeObject*, const char*) \
-    BUILTIN(225, PyTruffle_HashConstant, long, int) \
-    BUILTIN(226, PyTruffle_LogString, void, int, const char*) \
-    BUILTIN(227, PyTruffle_MemoryViewFromBuffer, PyObject*, void*, PyObject*, Py_ssize_t, int, Py_ssize_t, const char*, int, void*, void*, void*, void*) \
-    BUILTIN(228, PyTruffle_Native_Options, int) \
-    BUILTIN(229, PyTruffle_NewTypeDict, PyObject*, PyTypeObject*) \
-    BUILTIN(230, PyTruffle_NoValue, PyObject*) \
-    BUILTIN(231, PyTruffle_None, PyObject*) \
-    BUILTIN(232, PyTruffle_NotImplemented, PyObject*) \
-    BUILTIN(233, PyTruffle_OS_DoubleToString, PyObject*, double, int, int, int) \
-    BUILTIN(234, PyTruffle_OS_StringToDouble, PyObject*, const char*, int) \
-    BUILTIN(235, PyTruffle_Object_Alloc, int, void*, long) \
-    BUILTIN(236, PyTruffle_Object_Free, int, void*) \
-    BUILTIN(237, PyTruffle_Register_NULL, void, void*) \
-    BUILTIN(238, PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
-    BUILTIN(239, PyTruffle_Set_SulongType, void*, PyTypeObject*, void*) \
-    BUILTIN(240, PyTruffle_ToNative, int, void*) \
-    BUILTIN(241, PyTruffle_Trace_Type, int, void*, void*) \
-    BUILTIN(242, PyTruffle_True, PyObject*) \
-    BUILTIN(243, PyTruffle_Type, PyTypeObject*, const char*) \
-    BUILTIN(244, PyTruffle_Type_Modified, int, PyTypeObject*, const char*, PyObject*) \
-    BUILTIN(245, PyTruffle_Unicode_AsUnicodeAndSize, PyObject*, PyObject*) \
-    BUILTIN(246, PyTruffle_Unicode_AsWideChar, PyObject*, PyObject*, int) \
-    BUILTIN(247, PyTruffle_Unicode_DecodeUTF32, PyObject*, void*, Py_ssize_t, const char*, int) \
-    BUILTIN(248, PyTruffle_Unicode_FromFormat, PyObject*, const char*, va_list*) \
-    BUILTIN(249, PyTruffle_Unicode_FromWchar, PyObject*, void*, size_t) \
-    BUILTIN(250, PyTruffle_tss_create, long) \
-    BUILTIN(251, PyTruffle_tss_delete, void, long) \
-    BUILTIN(252, PyTruffle_tss_get, void*, long) \
-    BUILTIN(253, PyTruffle_tss_set, int, long, void*) \
-    BUILTIN(254, PyTuple_GetItem, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(255, PyTuple_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
-    BUILTIN(256, PyTuple_New, PyObject*, Py_ssize_t) \
-    BUILTIN(257, PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
-    BUILTIN(258, PyTuple_Size, Py_ssize_t, PyObject*) \
-    BUILTIN(259, PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
-    BUILTIN(260, PyUnicode_AsEncodedString, PyObject*, PyObject*, const char*, const char*) \
-    BUILTIN(261, PyUnicode_AsUnicodeEscapeString, PyObject*, PyObject*) \
-    BUILTIN(262, PyUnicode_Compare, int, PyObject*, PyObject*) \
-    BUILTIN(263, PyUnicode_Concat, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(264, PyUnicode_Contains, int, PyObject*, PyObject*) \
-    BUILTIN(265, PyUnicode_DecodeFSDefault, PyObject*, const char*) \
-    BUILTIN(266, PyUnicode_EncodeFSDefault, PyObject*, PyObject*) \
-    BUILTIN(267, PyUnicode_FindChar, Py_ssize_t, PyObject*, Py_UCS4, Py_ssize_t, Py_ssize_t, int) \
-    BUILTIN(268, PyUnicode_Format, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(269, PyUnicode_FromEncodedObject, PyObject*, PyObject*, const char*, const char*) \
-    BUILTIN(270, PyUnicode_FromObject, PyObject*, PyObject*) \
-    BUILTIN(271, PyUnicode_FromOrdinal, PyObject*, int) \
-    BUILTIN(272, PyUnicode_FromString, PyObject*, const char*) \
-    BUILTIN(273, PyUnicode_GetLength, Py_ssize_t, PyObject*) \
-    BUILTIN(274, PyUnicode_Join, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(275, PyUnicode_ReadChar, Py_UCS4, PyObject*, Py_ssize_t) \
-    BUILTIN(276, PyUnicode_Replace, PyObject*, PyObject*, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(277, PyUnicode_Split, PyObject*, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(278, PyUnicode_Substring, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
-    BUILTIN(279, PyUnicode_Tailmatch, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t, int) \
-    BUILTIN(280, PyWeakref_GetObject, PyObject*, PyObject*) \
-    BUILTIN(281, PyWeakref_NewRef, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(282, Py_AtExit, int, void (*)(void)) \
-    BUILTIN(283, Py_GenericAlias, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(284, Py_get_PyASCIIObject_length, Py_ssize_t, PyASCIIObject*) \
-    BUILTIN(285, Py_get_PyASCIIObject_state_ascii, unsigned int, PyASCIIObject*) \
-    BUILTIN(286, Py_get_PyASCIIObject_state_compact, unsigned int, PyASCIIObject*) \
-    BUILTIN(287, Py_get_PyASCIIObject_state_kind, unsigned int, PyASCIIObject*) \
-    BUILTIN(288, Py_get_PyASCIIObject_state_ready, unsigned int, PyASCIIObject*) \
-    BUILTIN(289, Py_get_PyASCIIObject_wstr, wchar_t*, PyASCIIObject*) \
-    BUILTIN(290, Py_get_PyAsyncMethods_am_aiter, unaryfunc, PyAsyncMethods*) \
-    BUILTIN(291, Py_get_PyAsyncMethods_am_anext, unaryfunc, PyAsyncMethods*) \
-    BUILTIN(292, Py_get_PyAsyncMethods_am_await, unaryfunc, PyAsyncMethods*) \
-    BUILTIN(293, Py_get_PyBufferProcs_bf_getbuffer, getbufferproc, PyBufferProcs*) \
-    BUILTIN(294, Py_get_PyBufferProcs_bf_releasebuffer, releasebufferproc, PyBufferProcs*) \
-    BUILTIN(295, Py_get_PyByteArrayObject_ob_exports, Py_ssize_t, PyByteArrayObject*) \
-    BUILTIN(296, Py_get_PyByteArrayObject_ob_start, void*, PyByteArrayObject*) \
-    BUILTIN(297, Py_get_PyCFunctionObject_m_ml, PyMethodDef*, PyCFunctionObject*) \
-    BUILTIN(298, Py_get_PyCFunctionObject_m_module, PyObject*, PyCFunctionObject*) \
-    BUILTIN(299, Py_get_PyCFunctionObject_m_self, PyObject*, PyCFunctionObject*) \
-    BUILTIN(300, Py_get_PyCFunctionObject_m_weakreflist, PyObject*, PyCFunctionObject*) \
-    BUILTIN(301, Py_get_PyCFunctionObject_vectorcall, vectorcallfunc, PyCFunctionObject*) \
-    BUILTIN(302, Py_get_PyCMethodObject_mm_class, PyTypeObject*, PyCMethodObject*) \
-    BUILTIN(303, Py_get_PyCompactUnicodeObject_wstr_length, Py_ssize_t, PyCompactUnicodeObject*) \
-    BUILTIN(304, Py_get_PyDescrObject_d_name, PyObject*, PyDescrObject*) \
-    BUILTIN(305, Py_get_PyDescrObject_d_type, PyTypeObject*, PyDescrObject*) \
-    BUILTIN(306, Py_get_PyFrameObject_f_lineno, int, PyFrameObject*) \
-    BUILTIN(307, Py_get_PyGetSetDef_closure, void*, PyGetSetDef*) \
-    BUILTIN(308, Py_get_PyGetSetDef_doc, const char*, PyGetSetDef*) \
-    BUILTIN(309, Py_get_PyGetSetDef_get, getter, PyGetSetDef*) \
-    BUILTIN(310, Py_get_PyGetSetDef_name, const char*, PyGetSetDef*) \
-    BUILTIN(311, Py_get_PyGetSetDef_set, setter, PyGetSetDef*) \
-    BUILTIN(312, Py_get_PyInstanceMethodObject_func, PyObject*, PyInstanceMethodObject*) \
-    BUILTIN(313, Py_get_PyListObject_ob_item, PyObject**, PyListObject*) \
-    BUILTIN(314, Py_get_PyLongObject_ob_digit, void*, PyLongObject*) \
-    BUILTIN(315, Py_get_PyMappingMethods_mp_ass_subscript, objobjargproc, PyMappingMethods*) \
-    BUILTIN(316, Py_get_PyMappingMethods_mp_length, lenfunc, PyMappingMethods*) \
-    BUILTIN(317, Py_get_PyMappingMethods_mp_subscript, binaryfunc, PyMappingMethods*) \
-    BUILTIN(318, Py_get_PyMethodDef_ml_doc, void*, PyMethodDef*) \
-    BUILTIN(319, Py_get_PyMethodDef_ml_flags, int, PyMethodDef*) \
-    BUILTIN(320, Py_get_PyMethodDef_ml_meth, void*, PyMethodDef*) \
-    BUILTIN(321, Py_get_PyMethodDef_ml_name, void*, PyMethodDef*) \
-    BUILTIN(322, Py_get_PyMethodDescrObject_d_method, PyMethodDef*, PyMethodDescrObject*) \
-    BUILTIN(323, Py_get_PyMethodObject_im_func, PyObject*, PyMethodObject*) \
-    BUILTIN(324, Py_get_PyMethodObject_im_self, PyObject*, PyMethodObject*) \
-    BUILTIN(325, Py_get_PyModuleDef_m_doc, const char*, PyModuleDef*) \
-    BUILTIN(326, Py_get_PyModuleDef_m_methods, PyMethodDef*, PyModuleDef*) \
-    BUILTIN(327, Py_get_PyModuleDef_m_name, const char*, PyModuleDef*) \
-    BUILTIN(328, Py_get_PyModuleDef_m_size, Py_ssize_t, PyModuleDef*) \
-    BUILTIN(329, Py_get_PyModuleObject_md_def, PyModuleDef*, PyModuleObject*) \
-    BUILTIN(330, Py_get_PyModuleObject_md_dict, PyObject*, PyModuleObject*) \
-    BUILTIN(331, Py_get_PyModuleObject_md_state, void*, PyModuleObject*) \
-    BUILTIN(332, Py_get_PyNumberMethods_nb_absolute, unaryfunc, PyNumberMethods*) \
-    BUILTIN(333, Py_get_PyNumberMethods_nb_add, binaryfunc, PyNumberMethods*) \
-    BUILTIN(334, Py_get_PyNumberMethods_nb_and, binaryfunc, PyNumberMethods*) \
-    BUILTIN(335, Py_get_PyNumberMethods_nb_bool, inquiry, PyNumberMethods*) \
-    BUILTIN(336, Py_get_PyNumberMethods_nb_divmod, binaryfunc, PyNumberMethods*) \
-    BUILTIN(337, Py_get_PyNumberMethods_nb_float, unaryfunc, PyNumberMethods*) \
-    BUILTIN(338, Py_get_PyNumberMethods_nb_floor_divide, binaryfunc, PyNumberMethods*) \
-    BUILTIN(339, Py_get_PyNumberMethods_nb_index, unaryfunc, PyNumberMethods*) \
-    BUILTIN(340, Py_get_PyNumberMethods_nb_inplace_add, binaryfunc, PyNumberMethods*) \
-    BUILTIN(341, Py_get_PyNumberMethods_nb_inplace_and, binaryfunc, PyNumberMethods*) \
-    BUILTIN(342, Py_get_PyNumberMethods_nb_inplace_floor_divide, binaryfunc, PyNumberMethods*) \
-    BUILTIN(343, Py_get_PyNumberMethods_nb_inplace_lshift, binaryfunc, PyNumberMethods*) \
-    BUILTIN(344, Py_get_PyNumberMethods_nb_inplace_matrix_multiply, binaryfunc, PyNumberMethods*) \
-    BUILTIN(345, Py_get_PyNumberMethods_nb_inplace_multiply, binaryfunc, PyNumberMethods*) \
-    BUILTIN(346, Py_get_PyNumberMethods_nb_inplace_or, binaryfunc, PyNumberMethods*) \
-    BUILTIN(347, Py_get_PyNumberMethods_nb_inplace_power, ternaryfunc, PyNumberMethods*) \
-    BUILTIN(348, Py_get_PyNumberMethods_nb_inplace_remainder, binaryfunc, PyNumberMethods*) \
-    BUILTIN(349, Py_get_PyNumberMethods_nb_inplace_rshift, binaryfunc, PyNumberMethods*) \
-    BUILTIN(350, Py_get_PyNumberMethods_nb_inplace_subtract, binaryfunc, PyNumberMethods*) \
-    BUILTIN(351, Py_get_PyNumberMethods_nb_inplace_true_divide, binaryfunc, PyNumberMethods*) \
-    BUILTIN(352, Py_get_PyNumberMethods_nb_inplace_xor, binaryfunc, PyNumberMethods*) \
-    BUILTIN(353, Py_get_PyNumberMethods_nb_int, unaryfunc, PyNumberMethods*) \
-    BUILTIN(354, Py_get_PyNumberMethods_nb_invert, unaryfunc, PyNumberMethods*) \
-    BUILTIN(355, Py_get_PyNumberMethods_nb_lshift, binaryfunc, PyNumberMethods*) \
-    BUILTIN(356, Py_get_PyNumberMethods_nb_matrix_multiply, binaryfunc, PyNumberMethods*) \
-    BUILTIN(357, Py_get_PyNumberMethods_nb_multiply, binaryfunc, PyNumberMethods*) \
-    BUILTIN(358, Py_get_PyNumberMethods_nb_negative, unaryfunc, PyNumberMethods*) \
-    BUILTIN(359, Py_get_PyNumberMethods_nb_or, binaryfunc, PyNumberMethods*) \
-    BUILTIN(360, Py_get_PyNumberMethods_nb_positive, unaryfunc, PyNumberMethods*) \
-    BUILTIN(361, Py_get_PyNumberMethods_nb_power, ternaryfunc, PyNumberMethods*) \
-    BUILTIN(362, Py_get_PyNumberMethods_nb_remainder, binaryfunc, PyNumberMethods*) \
-    BUILTIN(363, Py_get_PyNumberMethods_nb_rshift, binaryfunc, PyNumberMethods*) \
-    BUILTIN(364, Py_get_PyNumberMethods_nb_subtract, binaryfunc, PyNumberMethods*) \
-    BUILTIN(365, Py_get_PyNumberMethods_nb_true_divide, binaryfunc, PyNumberMethods*) \
-    BUILTIN(366, Py_get_PyNumberMethods_nb_xor, binaryfunc, PyNumberMethods*) \
-    BUILTIN(367, Py_get_PyObject_ob_refcnt, Py_ssize_t, PyObject*) \
-    BUILTIN(368, Py_get_PyObject_ob_type, PyTypeObject*, PyObject*) \
-    BUILTIN(369, Py_get_PySequenceMethods_sq_ass_item, ssizeobjargproc, PySequenceMethods*) \
-    BUILTIN(370, Py_get_PySequenceMethods_sq_concat, binaryfunc, PySequenceMethods*) \
-    BUILTIN(371, Py_get_PySequenceMethods_sq_contains, objobjproc, PySequenceMethods*) \
-    BUILTIN(372, Py_get_PySequenceMethods_sq_inplace_concat, binaryfunc, PySequenceMethods*) \
-    BUILTIN(373, Py_get_PySequenceMethods_sq_inplace_repeat, ssizeargfunc, PySequenceMethods*) \
-    BUILTIN(374, Py_get_PySequenceMethods_sq_item, ssizeargfunc, PySequenceMethods*) \
-    BUILTIN(375, Py_get_PySequenceMethods_sq_length, lenfunc, PySequenceMethods*) \
-    BUILTIN(376, Py_get_PySequenceMethods_sq_repeat, ssizeargfunc, PySequenceMethods*) \
-    BUILTIN(377, Py_get_PySetObject_used, Py_ssize_t, PySetObject*) \
-    BUILTIN(378, Py_get_PySliceObject_start, PyObject*, PySliceObject*) \
-    BUILTIN(379, Py_get_PySliceObject_step, PyObject*, PySliceObject*) \
-    BUILTIN(380, Py_get_PySliceObject_stop, PyObject*, PySliceObject*) \
-    BUILTIN(381, Py_get_PyTupleObject_ob_item, PyObject**, PyTupleObject*) \
-    BUILTIN(382, Py_get_PyTypeObject_tp_alloc, allocfunc, PyTypeObject*) \
-    BUILTIN(383, Py_get_PyTypeObject_tp_as_async, PyAsyncMethods*, PyTypeObject*) \
-    BUILTIN(384, Py_get_PyTypeObject_tp_as_buffer, PyBufferProcs*, PyTypeObject*) \
-    BUILTIN(385, Py_get_PyTypeObject_tp_as_mapping, PyMappingMethods*, PyTypeObject*) \
-    BUILTIN(386, Py_get_PyTypeObject_tp_as_number, PyNumberMethods*, PyTypeObject*) \
-    BUILTIN(387, Py_get_PyTypeObject_tp_as_sequence, PySequenceMethods*, PyTypeObject*) \
-    BUILTIN(388, Py_get_PyTypeObject_tp_base, PyTypeObject*, PyTypeObject*) \
-    BUILTIN(389, Py_get_PyTypeObject_tp_bases, PyObject*, PyTypeObject*) \
-    BUILTIN(390, Py_get_PyTypeObject_tp_basicsize, Py_ssize_t, PyTypeObject*) \
-    BUILTIN(391, Py_get_PyTypeObject_tp_cache, PyObject*, PyTypeObject*) \
-    BUILTIN(392, Py_get_PyTypeObject_tp_call, ternaryfunc, PyTypeObject*) \
-    BUILTIN(393, Py_get_PyTypeObject_tp_clear, inquiry, PyTypeObject*) \
-    BUILTIN(394, Py_get_PyTypeObject_tp_dealloc, destructor, PyTypeObject*) \
-    BUILTIN(395, Py_get_PyTypeObject_tp_del, destructor, PyTypeObject*) \
-    BUILTIN(396, Py_get_PyTypeObject_tp_descr_get, descrgetfunc, PyTypeObject*) \
-    BUILTIN(397, Py_get_PyTypeObject_tp_descr_set, descrsetfunc, PyTypeObject*) \
-    BUILTIN(398, Py_get_PyTypeObject_tp_dict, PyObject*, PyTypeObject*) \
-    BUILTIN(399, Py_get_PyTypeObject_tp_dictoffset, Py_ssize_t, PyTypeObject*) \
-    BUILTIN(400, Py_get_PyTypeObject_tp_doc, const char*, PyTypeObject*) \
-    BUILTIN(401, Py_get_PyTypeObject_tp_finalize, destructor, PyTypeObject*) \
-    BUILTIN(402, Py_get_PyTypeObject_tp_flags, unsigned long, PyTypeObject*) \
-    BUILTIN(403, Py_get_PyTypeObject_tp_free, freefunc, PyTypeObject*) \
-    BUILTIN(404, Py_get_PyTypeObject_tp_getattr, getattrfunc, PyTypeObject*) \
-    BUILTIN(405, Py_get_PyTypeObject_tp_getattro, getattrofunc, PyTypeObject*) \
-    BUILTIN(406, Py_get_PyTypeObject_tp_getset, PyGetSetDef*, PyTypeObject*) \
-    BUILTIN(407, Py_get_PyTypeObject_tp_hash, hashfunc, PyTypeObject*) \
-    BUILTIN(408, Py_get_PyTypeObject_tp_init, initproc, PyTypeObject*) \
-    BUILTIN(409, Py_get_PyTypeObject_tp_is_gc, inquiry, PyTypeObject*) \
-    BUILTIN(410, Py_get_PyTypeObject_tp_itemsize, Py_ssize_t, PyTypeObject*) \
-    BUILTIN(411, Py_get_PyTypeObject_tp_iter, getiterfunc, PyTypeObject*) \
-    BUILTIN(412, Py_get_PyTypeObject_tp_iternext, iternextfunc, PyTypeObject*) \
-    BUILTIN(413, Py_get_PyTypeObject_tp_members, struct PyMemberDef*, PyTypeObject*) \
-    BUILTIN(414, Py_get_PyTypeObject_tp_methods, PyMethodDef*, PyTypeObject*) \
-    BUILTIN(415, Py_get_PyTypeObject_tp_mro, PyObject*, PyTypeObject*) \
-    BUILTIN(416, Py_get_PyTypeObject_tp_name, const char*, PyTypeObject*) \
-    BUILTIN(417, Py_get_PyTypeObject_tp_new, newfunc, PyTypeObject*) \
-    BUILTIN(418, Py_get_PyTypeObject_tp_repr, reprfunc, PyTypeObject*) \
-    BUILTIN(419, Py_get_PyTypeObject_tp_richcompare, richcmpfunc, PyTypeObject*) \
-    BUILTIN(420, Py_get_PyTypeObject_tp_setattr, setattrfunc, PyTypeObject*) \
-    BUILTIN(421, Py_get_PyTypeObject_tp_setattro, setattrofunc, PyTypeObject*) \
-    BUILTIN(422, Py_get_PyTypeObject_tp_str, reprfunc, PyTypeObject*) \
-    BUILTIN(423, Py_get_PyTypeObject_tp_subclasses, PyObject*, PyTypeObject*) \
-    BUILTIN(424, Py_get_PyTypeObject_tp_traverse, traverseproc, PyTypeObject*) \
-    BUILTIN(425, Py_get_PyTypeObject_tp_vectorcall, vectorcallfunc, PyTypeObject*) \
-    BUILTIN(426, Py_get_PyTypeObject_tp_vectorcall_offset, Py_ssize_t, PyTypeObject*) \
-    BUILTIN(427, Py_get_PyTypeObject_tp_version_tag, unsigned int, PyTypeObject*) \
-    BUILTIN(428, Py_get_PyTypeObject_tp_weaklist, PyObject*, PyTypeObject*) \
-    BUILTIN(429, Py_get_PyTypeObject_tp_weaklistoffset, Py_ssize_t, PyTypeObject*) \
-    BUILTIN(430, Py_get_PyUnicodeObject_data, void*, PyUnicodeObject*) \
-    BUILTIN(431, Py_get_PyVarObject_ob_size, Py_ssize_t, PyVarObject*) \
-    BUILTIN(432, Py_get_dummy, void*, void*) \
-    BUILTIN(433, Py_get_mmap_object_data, char*, mmap_object*) \
-    BUILTIN(434, Py_set_PyByteArrayObject_ob_exports, void, PyByteArrayObject*, int) \
-    BUILTIN(435, Py_set_PyFrameObject_f_lineno, void, PyFrameObject*, int) \
-    BUILTIN(436, Py_set_PyModuleObject_md_def, void, PyModuleObject*, PyModuleDef*) \
-    BUILTIN(437, Py_set_PyModuleObject_md_state, void, PyModuleObject*, void*) \
-    BUILTIN(438, Py_set_PyObject_ob_refcnt, void, PyObject*, Py_ssize_t) \
-    BUILTIN(439, Py_set_PyTypeObject_tp_alloc, void, PyTypeObject*, allocfunc) \
-    BUILTIN(440, Py_set_PyTypeObject_tp_as_buffer, void, PyTypeObject*, PyBufferProcs*) \
-    BUILTIN(441, Py_set_PyTypeObject_tp_base, void, PyTypeObject*, PyTypeObject*) \
-    BUILTIN(442, Py_set_PyTypeObject_tp_bases, void, PyTypeObject*, PyObject*) \
-    BUILTIN(443, Py_set_PyTypeObject_tp_basicsize, void, PyTypeObject*, Py_ssize_t) \
-    BUILTIN(444, Py_set_PyTypeObject_tp_clear, void, PyTypeObject*, inquiry) \
-    BUILTIN(445, Py_set_PyTypeObject_tp_dealloc, void, PyTypeObject*, destructor) \
-    BUILTIN(446, Py_set_PyTypeObject_tp_dict, void, PyTypeObject*, PyObject*) \
-    BUILTIN(447, Py_set_PyTypeObject_tp_dictoffset, void, PyTypeObject*, Py_ssize_t) \
-    BUILTIN(448, Py_set_PyTypeObject_tp_finalize, void, PyTypeObject*, destructor) \
-    BUILTIN(449, Py_set_PyTypeObject_tp_flags, void, PyTypeObject*, unsigned long) \
-    BUILTIN(450, Py_set_PyTypeObject_tp_free, void, PyTypeObject*, freefunc) \
-    BUILTIN(451, Py_set_PyTypeObject_tp_getattr, void, PyTypeObject*, getattrfunc) \
-    BUILTIN(452, Py_set_PyTypeObject_tp_getattro, void, PyTypeObject*, getattrofunc) \
-    BUILTIN(453, Py_set_PyTypeObject_tp_itemsize, void, PyTypeObject*, Py_ssize_t) \
-    BUILTIN(454, Py_set_PyTypeObject_tp_iter, void, PyTypeObject*, getiterfunc) \
-    BUILTIN(455, Py_set_PyTypeObject_tp_iternext, void, PyTypeObject*, iternextfunc) \
-    BUILTIN(456, Py_set_PyTypeObject_tp_mro, void, PyTypeObject*, PyObject*) \
-    BUILTIN(457, Py_set_PyTypeObject_tp_new, void, PyTypeObject*, newfunc) \
-    BUILTIN(458, Py_set_PyTypeObject_tp_setattr, void, PyTypeObject*, setattrfunc) \
-    BUILTIN(459, Py_set_PyTypeObject_tp_setattro, void, PyTypeObject*, setattrofunc) \
-    BUILTIN(460, Py_set_PyTypeObject_tp_subclasses, void, PyTypeObject*, PyObject*) \
-    BUILTIN(461, Py_set_PyTypeObject_tp_traverse, void, PyTypeObject*, traverseproc) \
-    BUILTIN(462, Py_set_PyTypeObject_tp_vectorcall_offset, void, PyTypeObject*, Py_ssize_t) \
-    BUILTIN(463, Py_set_PyTypeObject_tp_weaklistoffset, void, PyTypeObject*, Py_ssize_t) \
-    BUILTIN(464, Py_set_PyVarObject_ob_size, void, PyVarObject*, Py_ssize_t) \
-    BUILTIN(465, _PyBytes_Join, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(466, _PyDict_Pop, PyObject*, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(467, _PyDict_SetItem_KnownHash, int, PyObject*, PyObject*, PyObject*, Py_hash_t) \
-    BUILTIN(468, _PyErr_BadInternalCall, void, const char*, int) \
-    BUILTIN(469, _PyErr_CreateAndSetException, void, PyObject*, PyObject*) \
-    BUILTIN(470, _PyErr_WriteUnraisableMsg, void, const char*, PyObject*) \
-    BUILTIN(471, _PyList_Extend, PyObject*, PyListObject*, PyObject*) \
-    BUILTIN(472, _PyLong_Sign, int, PyObject*) \
-    BUILTIN(473, _PyNamespace_New, PyObject*, PyObject*) \
-    BUILTIN(474, _PyNumber_Index, PyObject*, PyObject*) \
-    BUILTIN(475, _PyObject_Call1, PyObject*, PyObject*, PyObject*, PyObject*, int) \
-    BUILTIN(476, _PyObject_CallMethod1, PyObject*, PyObject*, const char*, PyObject*, int) \
-    BUILTIN(477, _PyObject_Dump, void, PyObject*) \
-    BUILTIN(478, _PyTraceMalloc_NewReference, int, PyObject*) \
-    BUILTIN(479, _PyTraceback_Add, void, const char*, const char*, int) \
-    BUILTIN(480, _PyTruffleBytes_Resize, int, PyObject*, Py_ssize_t) \
-    BUILTIN(481, _PyTruffleErr_Warn, PyObject*, PyObject*, PyObject*, Py_ssize_t, PyObject*) \
-    BUILTIN(482, _PyTruffleEval_EvalCodeEx, PyObject*, PyObject*, PyObject*, PyObject*, void*, void*, void*, PyObject*, PyObject*) \
-    BUILTIN(483, _PyTruffleModule_CreateInitialized_PyModule_New, PyModuleObject*, const char*) \
-    BUILTIN(484, _PyTruffleModule_GetAndIncMaxModuleNumber, Py_ssize_t) \
-    BUILTIN(485, _PyTruffleObject_MakeTpCall, PyObject*, PyObject*, void*, int, void*, void*) \
-    BUILTIN(486, _PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
-    BUILTIN(487, _PyTruffle_HashBytes, Py_hash_t, const char*) \
-    BUILTIN(488, _PyTruffle_Trace_Free, int, void*, Py_ssize_t) \
-    BUILTIN(489, _PyType_Lookup, PyObject*, PyTypeObject*, PyObject*) \
-    BUILTIN(490, _PyUnicode_AsASCIIString, PyObject*, PyObject*, const char*) \
-    BUILTIN(491, _PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \
-    BUILTIN(492, _PyUnicode_AsUTF8String, PyObject*, PyObject*, const char*) \
-    BUILTIN(493, _PyUnicode_EqualToASCIIString, int, PyObject*, const char*) \
-    BUILTIN(494, _Py_HashDouble, Py_hash_t, PyObject*, double) \
+    BUILTIN(PyByteArray_Resize, int, PyObject*, Py_ssize_t) \
+    BUILTIN(PyBytes_FromObject, PyObject*, PyObject*) \
+    BUILTIN(PyBytes_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PyCallIter_New, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyCallable_Check, int, PyObject*) \
+    BUILTIN(PyCapsule_GetContext, void*, PyObject*) \
+    BUILTIN(PyCapsule_GetDestructor, PyCapsule_Destructor, PyObject*) \
+    BUILTIN(PyCapsule_GetName, const char*, PyObject*) \
+    BUILTIN(PyCapsule_GetPointer, void*, PyObject*, const char*) \
+    BUILTIN(PyCapsule_Import, void*, const char*, int) \
+    BUILTIN(PyCapsule_IsValid, int, PyObject*, const char*) \
+    BUILTIN(PyCapsule_New, PyObject*, void*, const char*, PyCapsule_Destructor) \
+    BUILTIN(PyCapsule_SetContext, int, PyObject*, void*) \
+    BUILTIN(PyCapsule_SetDestructor, int, PyObject*, PyCapsule_Destructor) \
+    BUILTIN(PyCapsule_SetName, int, PyObject*, const char*) \
+    BUILTIN(PyCapsule_SetPointer, int, PyObject*, void*) \
+    BUILTIN(PyClassMethod_New, PyObject*, PyObject*) \
+    BUILTIN(PyCode_New, PyCodeObject*, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
+    BUILTIN(PyCode_NewEmpty, PyCodeObject*, const char*, const char*, int) \
+    BUILTIN(PyCode_NewWithPosOnlyArgs, PyCodeObject*, int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) \
+    BUILTIN(PyComplex_FromDoubles, PyObject*, double, double) \
+    BUILTIN(PyComplex_ImagAsDouble, double, PyObject*) \
+    BUILTIN(PyComplex_RealAsDouble, double, PyObject*) \
+    BUILTIN(PyContextVar_New, PyObject*, const char*, PyObject*) \
+    BUILTIN(PyContextVar_Set, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDictProxy_New, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Clear, void, PyObject*) \
+    BUILTIN(PyDict_Contains, int, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Copy, PyObject*, PyObject*) \
+    BUILTIN(PyDict_DelItem, int, PyObject*, PyObject*) \
+    BUILTIN(PyDict_GetItem, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDict_GetItemWithError, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Keys, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Merge, int, PyObject*, PyObject*, int) \
+    BUILTIN(PyDict_New, PyObject*) \
+    BUILTIN(PyDict_SetDefault, PyObject*, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDict_SetItem, int, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PyDict_Update, int, PyObject*, PyObject*) \
+    BUILTIN(PyDict_Values, PyObject*, PyObject*) \
+    BUILTIN(PyErr_Display, void, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyErr_GivenExceptionMatches, int, PyObject*, PyObject*) \
+    BUILTIN(PyErr_NewException, PyObject*, const char*, PyObject*, PyObject*) \
+    BUILTIN(PyErr_NewExceptionWithDoc, PyObject*, const char*, const char*, PyObject*, PyObject*) \
+    BUILTIN(PyErr_Occurred, PyObject*) \
+    BUILTIN(PyErr_PrintEx, void, int) \
+    BUILTIN(PyErr_Restore, void, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyErr_SetExcInfo, void, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyEval_GetBuiltins, PyObject*) \
+    BUILTIN(PyEval_RestoreThread, void, PyThreadState*) \
+    BUILTIN(PyEval_SaveThread, PyThreadState*) \
+    BUILTIN(PyException_GetContext, PyObject*, PyObject*) \
+    BUILTIN(PyException_SetCause, void, PyObject*, PyObject*) \
+    BUILTIN(PyException_SetContext, void, PyObject*, PyObject*) \
+    BUILTIN(PyException_SetTraceback, int, PyObject*, PyObject*) \
+    BUILTIN(PyFile_WriteObject, int, PyObject*, PyObject*, int) \
+    BUILTIN(PyFloat_AsDouble, double, PyObject*) \
+    BUILTIN(PyFloat_FromDouble, PyObject*, double) \
+    BUILTIN(PyFrame_New, PyFrameObject*, PyThreadState*, PyCodeObject*, PyObject*, PyObject*) \
+    BUILTIN(PyFrozenSet_New, PyObject*, PyObject*) \
+    BUILTIN(PyGILState_Ensure, PyGILState_STATE) \
+    BUILTIN(PyGILState_Release, void, PyGILState_STATE) \
+    BUILTIN(PyImport_GetModuleDict, PyObject*) \
+    BUILTIN(PyImport_Import, PyObject*, PyObject*) \
+    BUILTIN(PyImport_ImportModule, PyObject*, const char*) \
+    BUILTIN(PyImport_ImportModuleLevelObject, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int) \
+    BUILTIN(PyImport_ImportModuleNoBlock, PyObject*, const char*) \
+    BUILTIN(PyIndex_Check, int, PyObject*) \
+    BUILTIN(PyInstanceMethod_New, PyObject*, PyObject*) \
+    BUILTIN(PyIter_Next, PyObject*, PyObject*) \
+    BUILTIN(PyList_Append, int, PyObject*, PyObject*) \
+    BUILTIN(PyList_AsTuple, PyObject*, PyObject*) \
+    BUILTIN(PyList_GetItem, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PyList_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
+    BUILTIN(PyList_Insert, int, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(PyList_New, PyObject*, Py_ssize_t) \
+    BUILTIN(PyList_Reverse, int, PyObject*) \
+    BUILTIN(PyList_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(PyList_SetSlice, int, PyObject*, Py_ssize_t, Py_ssize_t, PyObject*) \
+    BUILTIN(PyList_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PyList_Sort, int, PyObject*) \
+    BUILTIN(PyLong_AsVoidPtr, void*, PyObject*) \
+    BUILTIN(PyLong_FromDouble, PyObject*, double) \
+    BUILTIN(PyLong_FromLong, PyObject*, long) \
+    BUILTIN(PyLong_FromLongLong, PyObject*, long long) \
+    BUILTIN(PyLong_FromSize_t, PyObject*, size_t) \
+    BUILTIN(PyLong_FromSsize_t, PyObject*, Py_ssize_t) \
+    BUILTIN(PyLong_FromUnsignedLong, PyObject*, unsigned long) \
+    BUILTIN(PyLong_FromUnsignedLongLong, PyObject*, unsigned long long) \
+    BUILTIN(PyMapping_Check, int, PyObject*) \
+    BUILTIN(PyMapping_Items, PyObject*, PyObject*) \
+    BUILTIN(PyMapping_Keys, PyObject*, PyObject*) \
+    BUILTIN(PyMapping_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PyMapping_Values, PyObject*, PyObject*) \
+    BUILTIN(PyMemoryView_FromObject, PyObject*, PyObject*) \
+    BUILTIN(PyMemoryView_GetContiguous, PyObject*, PyObject*, int, char) \
+    BUILTIN(PyMethod_New, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyModule_AddIntConstant, int, PyObject*, const char*, long) \
+    BUILTIN(PyModule_AddObjectRef, int, PyObject*, const char*, PyObject*) \
+    BUILTIN(PyModule_GetNameObject, PyObject*, PyObject*) \
+    BUILTIN(PyModule_New, PyObject*, const char*) \
+    BUILTIN(PyModule_NewObject, PyObject*, PyObject*) \
+    BUILTIN(PyModule_SetDocString, int, PyObject*, const char*) \
+    BUILTIN(PyNumber_Absolute, PyObject*, PyObject*) \
+    BUILTIN(PyNumber_Check, int, PyObject*) \
+    BUILTIN(PyNumber_Divmod, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyNumber_Float, PyObject*, PyObject*) \
+    BUILTIN(PyNumber_InPlacePower, PyObject*, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyNumber_Index, PyObject*, PyObject*) \
+    BUILTIN(PyNumber_Long, PyObject*, PyObject*) \
+    BUILTIN(PyNumber_Power, PyObject*, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyNumber_ToBase, PyObject*, PyObject*, int) \
+    BUILTIN(PyOS_FSPath, PyObject*, PyObject*) \
+    BUILTIN(PyObject_ASCII, PyObject*, PyObject*) \
+    BUILTIN(PyObject_AsFileDescriptor, int, PyObject*) \
+    BUILTIN(PyObject_Bytes, PyObject*, PyObject*) \
+    BUILTIN(PyObject_ClearWeakRefs, void, PyObject*) \
+    BUILTIN(PyObject_DelItem, int, PyObject*, PyObject*) \
+    BUILTIN(PyObject_Dir, PyObject*, PyObject*) \
+    BUILTIN(PyObject_Format, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyObject_GC_Track, void, void*) \
+    BUILTIN(PyObject_GC_UnTrack, void, void*) \
+    BUILTIN(PyObject_GetDoc, const char*, PyObject*) \
+    BUILTIN(PyObject_GetItem, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyObject_GetIter, PyObject*, PyObject*) \
+    BUILTIN(PyObject_HasAttr, int, PyObject*, PyObject*) \
+    BUILTIN(PyObject_HasAttrString, int, PyObject*, const char*) \
+    BUILTIN(PyObject_Hash, Py_hash_t, PyObject*) \
+    BUILTIN(PyObject_HashNotImplemented, Py_hash_t, PyObject*) \
+    BUILTIN(PyObject_IsInstance, int, PyObject*, PyObject*) \
+    BUILTIN(PyObject_IsSubclass, int, PyObject*, PyObject*) \
+    BUILTIN(PyObject_IsTrue, int, PyObject*) \
+    BUILTIN(PyObject_LengthHint, Py_ssize_t, PyObject*, Py_ssize_t) \
+    BUILTIN(PyObject_Repr, PyObject*, PyObject*) \
+    BUILTIN(PyObject_RichCompare, PyObject*, PyObject*, PyObject*, int) \
+    BUILTIN(PyObject_SetDoc, int, PyObject*, const char*) \
+    BUILTIN(PyObject_SetItem, int, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyObject_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PyObject_Str, PyObject*, PyObject*) \
+    BUILTIN(PyObject_Type, PyObject*, PyObject*) \
+    BUILTIN(PyRun_StringFlags, PyObject*, const char*, int, PyObject*, PyObject*, PyCompilerFlags*) \
+    BUILTIN(PySeqIter_New, PyObject*, PyObject*) \
+    BUILTIN(PySequence_Check, int, PyObject*) \
+    BUILTIN(PySequence_Concat, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PySequence_Contains, int, PyObject*, PyObject*) \
+    BUILTIN(PySequence_DelItem, int, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_GetItem, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
+    BUILTIN(PySequence_InPlaceConcat, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PySequence_InPlaceRepeat, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_Length, Py_ssize_t, PyObject*) \
+    BUILTIN(PySequence_List, PyObject*, PyObject*) \
+    BUILTIN(PySequence_Repeat, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PySequence_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(PySequence_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PySequence_Tuple, PyObject*, PyObject*) \
+    BUILTIN(PySet_Add, int, PyObject*, PyObject*) \
+    BUILTIN(PySet_Clear, int, PyObject*) \
+    BUILTIN(PySet_Contains, int, PyObject*, PyObject*) \
+    BUILTIN(PySet_Discard, int, PyObject*, PyObject*) \
+    BUILTIN(PySet_New, PyObject*, PyObject*) \
+    BUILTIN(PySet_Pop, PyObject*, PyObject*) \
+    BUILTIN(PySet_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PySlice_New, PyObject*, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyStaticMethod_New, PyObject*, PyObject*) \
+    BUILTIN(PyStructSequence_New, PyObject*, PyTypeObject*) \
+    BUILTIN(PySys_GetObject, PyObject*, const char*) \
+    BUILTIN(PyThreadState_Get, PyThreadState*) \
+    BUILTIN(PyThreadState_GetDict, PyObject*) \
+    BUILTIN(PyThread_acquire_lock, int, PyThread_type_lock, int) \
+    BUILTIN(PyThread_allocate_lock, PyThread_type_lock) \
+    BUILTIN(PyThread_release_lock, void, PyThread_type_lock) \
+    BUILTIN(PyTraceBack_Here, int, PyFrameObject*) \
+    BUILTIN(PyTraceMalloc_Track, int, unsigned int, uintptr_t, size_t) \
+    BUILTIN(PyTraceMalloc_Untrack, int, unsigned int, uintptr_t) \
+    BUILTIN(PyTruffleByteArray_FromStringAndSize, PyObject*, int8_t*, Py_ssize_t) \
+    BUILTIN(PyTruffleBytes_Concat, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleBytes_FromFormat, PyObject*, const char*, PyObject*) \
+    BUILTIN(PyTruffleBytes_FromStringAndSize, PyObject*, const char*, Py_ssize_t) \
+    BUILTIN(PyTruffleCMethod_NewEx, PyObject*, PyMethodDef*, const char*, void*, int, int, PyObject*, PyObject*, PyTypeObject*, const char*) \
+    BUILTIN(PyTruffleComplex_AsCComplex, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleContextVar_Get, PyObject*, PyObject*, PyObject*, void*) \
+    BUILTIN(PyTruffleDescr_NewClassMethod, PyObject*, void*, const char*, const char*, int, int, void*, PyTypeObject*) \
+    BUILTIN(PyTruffleDescr_NewGetSet, PyObject*, const char*, PyTypeObject*, void*, void*, const char*, void*) \
+    BUILTIN(PyTruffleDict_Next, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PyTruffleErr_Fetch, PyObject*) \
+    BUILTIN(PyTruffleErr_GetExcInfo, PyObject*) \
+    BUILTIN(PyTruffleHash_InitSecret, void, void*) \
+    BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
+    BUILTIN(PyTruffleLong_FromString, PyObject*, const char*, int, int) \
+    BUILTIN(PyTruffleLong_One, PyObject*) \
+    BUILTIN(PyTruffleLong_Zero, PyObject*) \
+    BUILTIN(PyTruffleModule_AddFunctionToModule, int, void*, PyObject*, const char*, void*, int, int, void*) \
+    BUILTIN(PyTruffleNumber_BinOp, PyObject*, PyObject*, PyObject*, int) \
+    BUILTIN(PyTruffleNumber_InPlaceBinOp, PyObject*, PyObject*, PyObject*, int) \
+    BUILTIN(PyTruffleNumber_UnaryOp, PyObject*, PyObject*, int) \
+    BUILTIN(PyTruffleObject_CallFunctionObjArgs, PyObject*, PyObject*, va_list*) \
+    BUILTIN(PyTruffleObject_CallMethodObjArgs, PyObject*, PyObject*, PyObject*, va_list*) \
+    BUILTIN(PyTruffleObject_GenericGetAttr, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleObject_GenericSetAttr, int, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleObject_GetItemString, PyObject*, PyObject*, const char*) \
+    BUILTIN(PyTruffleState_FindModule, PyObject*, struct PyModuleDef*) \
+    BUILTIN(PyTruffleStructSequence_InitType2, int, PyTypeObject*, void*, void*, int) \
+    BUILTIN(PyTruffleStructSequence_NewType, PyTypeObject*, const char*, const char*, void*, void*, int) \
+    BUILTIN(PyTruffleToCharPointer, void*, PyObject*) \
+    BUILTIN(PyTruffleType_AddFunctionToType, int, void*, PyTypeObject*, PyObject*, const char*, void*, int, int, void*) \
+    BUILTIN(PyTruffleType_AddGetSet, int, PyTypeObject*, PyObject*, const char*, void*, void*, void*, void*) \
+    BUILTIN(PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, void*) \
+    BUILTIN(PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, void*) \
+    BUILTIN(PyTruffleUnicode_Decode, PyObject*, PyObject*, const char*, const char*) \
+    BUILTIN(PyTruffleUnicode_DecodeUTF8Stateful, PyObject*, void*, const char*, int) \
+    BUILTIN(PyTruffleUnicode_InternInPlace, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleUnicode_New, PyObject*, void*, Py_ssize_t, Py_UCS4) \
+    BUILTIN(PyTruffle_Arg_ParseTupleAndKeywords, int, PyObject*, PyObject*, const char*, void*, void*) \
+    BUILTIN(PyTruffle_ByteArray_EmptyWithCapacity, PyObject*, Py_ssize_t) \
+    BUILTIN(PyTruffle_Bytes_AsString, void*, PyObject*) \
+    BUILTIN(PyTruffle_Bytes_CheckEmbeddedNull, int, PyObject*) \
+    BUILTIN(PyTruffle_Bytes_EmptyWithCapacity, PyObject*, long) \
+    BUILTIN(PyTruffle_Compute_Mro, PyObject*, PyTypeObject*, const char*) \
+    BUILTIN(PyTruffle_Debug, int, void*) \
+    BUILTIN(PyTruffle_DebugTrace, void) \
+    BUILTIN(PyTruffle_Ellipsis, PyObject*) \
+    BUILTIN(PyTruffle_False, PyObject*) \
+    BUILTIN(PyTruffle_FatalErrorFunc, void, const char*, const char*, int) \
+    BUILTIN(PyTruffle_FileSystemDefaultEncoding, PyObject*) \
+    BUILTIN(PyTruffle_Get_Inherited_Native_Slots, void*, PyTypeObject*, const char*) \
+    BUILTIN(PyTruffle_HashConstant, long, int) \
+    BUILTIN(PyTruffle_LogString, void, int, const char*) \
+    BUILTIN(PyTruffle_MemoryViewFromBuffer, PyObject*, void*, PyObject*, Py_ssize_t, int, Py_ssize_t, const char*, int, void*, void*, void*, void*) \
+    BUILTIN(PyTruffle_Native_Options, int) \
+    BUILTIN(PyTruffle_NewTypeDict, PyObject*, PyTypeObject*) \
+    BUILTIN(PyTruffle_NoValue, PyObject*) \
+    BUILTIN(PyTruffle_None, PyObject*) \
+    BUILTIN(PyTruffle_NotImplemented, PyObject*) \
+    BUILTIN(PyTruffle_OS_DoubleToString, PyObject*, double, int, int, int) \
+    BUILTIN(PyTruffle_OS_StringToDouble, PyObject*, const char*, int) \
+    BUILTIN(PyTruffle_Object_Alloc, int, void*, long) \
+    BUILTIN(PyTruffle_Object_Free, int, void*) \
+    BUILTIN(PyTruffle_Register_NULL, void, void*) \
+    BUILTIN(PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
+    BUILTIN(PyTruffle_Set_SulongType, void*, PyTypeObject*, void*) \
+    BUILTIN(PyTruffle_ToNative, int, void*) \
+    BUILTIN(PyTruffle_Trace_Type, int, void*, void*) \
+    BUILTIN(PyTruffle_True, PyObject*) \
+    BUILTIN(PyTruffle_Type, PyTypeObject*, const char*) \
+    BUILTIN(PyTruffle_Type_Modified, int, PyTypeObject*, const char*, PyObject*) \
+    BUILTIN(PyTruffle_Unicode_AsUnicodeAndSize, PyObject*, PyObject*) \
+    BUILTIN(PyTruffle_Unicode_AsWideChar, PyObject*, PyObject*, int) \
+    BUILTIN(PyTruffle_Unicode_DecodeUTF32, PyObject*, void*, Py_ssize_t, const char*, int) \
+    BUILTIN(PyTruffle_Unicode_FromFormat, PyObject*, const char*, va_list*) \
+    BUILTIN(PyTruffle_Unicode_FromWchar, PyObject*, void*, size_t) \
+    BUILTIN(PyTruffle_tss_create, long) \
+    BUILTIN(PyTruffle_tss_delete, void, long) \
+    BUILTIN(PyTruffle_tss_get, void*, long) \
+    BUILTIN(PyTruffle_tss_set, int, long, void*) \
+    BUILTIN(PyTuple_GetItem, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PyTuple_GetSlice, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
+    BUILTIN(PyTuple_New, PyObject*, Py_ssize_t) \
+    BUILTIN(PyTuple_SetItem, int, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(PyTuple_Size, Py_ssize_t, PyObject*) \
+    BUILTIN(PyType_IsSubtype, int, PyTypeObject*, PyTypeObject*) \
+    BUILTIN(PyUnicode_AsEncodedString, PyObject*, PyObject*, const char*, const char*) \
+    BUILTIN(PyUnicode_AsUnicodeEscapeString, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_Compare, int, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_Concat, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_Contains, int, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_DecodeFSDefault, PyObject*, const char*) \
+    BUILTIN(PyUnicode_EncodeFSDefault, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_FindChar, Py_ssize_t, PyObject*, Py_UCS4, Py_ssize_t, Py_ssize_t, int) \
+    BUILTIN(PyUnicode_Format, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_FromEncodedObject, PyObject*, PyObject*, const char*, const char*) \
+    BUILTIN(PyUnicode_FromObject, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_FromOrdinal, PyObject*, int) \
+    BUILTIN(PyUnicode_FromString, PyObject*, const char*) \
+    BUILTIN(PyUnicode_GetLength, Py_ssize_t, PyObject*) \
+    BUILTIN(PyUnicode_Join, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyUnicode_ReadChar, Py_UCS4, PyObject*, Py_ssize_t) \
+    BUILTIN(PyUnicode_Replace, PyObject*, PyObject*, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PyUnicode_Split, PyObject*, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(PyUnicode_Substring, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t) \
+    BUILTIN(PyUnicode_Tailmatch, Py_ssize_t, PyObject*, PyObject*, Py_ssize_t, Py_ssize_t, int) \
+    BUILTIN(PyWeakref_GetObject, PyObject*, PyObject*) \
+    BUILTIN(PyWeakref_NewRef, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(Py_AtExit, int, void (*)(void)) \
+    BUILTIN(Py_GenericAlias, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(Py_get_PyASCIIObject_length, Py_ssize_t, PyASCIIObject*) \
+    BUILTIN(Py_get_PyASCIIObject_state_ascii, unsigned int, PyASCIIObject*) \
+    BUILTIN(Py_get_PyASCIIObject_state_compact, unsigned int, PyASCIIObject*) \
+    BUILTIN(Py_get_PyASCIIObject_state_kind, unsigned int, PyASCIIObject*) \
+    BUILTIN(Py_get_PyASCIIObject_state_ready, unsigned int, PyASCIIObject*) \
+    BUILTIN(Py_get_PyASCIIObject_wstr, wchar_t*, PyASCIIObject*) \
+    BUILTIN(Py_get_PyAsyncMethods_am_aiter, unaryfunc, PyAsyncMethods*) \
+    BUILTIN(Py_get_PyAsyncMethods_am_anext, unaryfunc, PyAsyncMethods*) \
+    BUILTIN(Py_get_PyAsyncMethods_am_await, unaryfunc, PyAsyncMethods*) \
+    BUILTIN(Py_get_PyBufferProcs_bf_getbuffer, getbufferproc, PyBufferProcs*) \
+    BUILTIN(Py_get_PyBufferProcs_bf_releasebuffer, releasebufferproc, PyBufferProcs*) \
+    BUILTIN(Py_get_PyByteArrayObject_ob_exports, Py_ssize_t, PyByteArrayObject*) \
+    BUILTIN(Py_get_PyByteArrayObject_ob_start, void*, PyByteArrayObject*) \
+    BUILTIN(Py_get_PyCFunctionObject_m_ml, PyMethodDef*, PyCFunctionObject*) \
+    BUILTIN(Py_get_PyCFunctionObject_m_module, PyObject*, PyCFunctionObject*) \
+    BUILTIN(Py_get_PyCFunctionObject_m_self, PyObject*, PyCFunctionObject*) \
+    BUILTIN(Py_get_PyCFunctionObject_m_weakreflist, PyObject*, PyCFunctionObject*) \
+    BUILTIN(Py_get_PyCFunctionObject_vectorcall, vectorcallfunc, PyCFunctionObject*) \
+    BUILTIN(Py_get_PyCMethodObject_mm_class, PyTypeObject*, PyCMethodObject*) \
+    BUILTIN(Py_get_PyCompactUnicodeObject_wstr_length, Py_ssize_t, PyCompactUnicodeObject*) \
+    BUILTIN(Py_get_PyDescrObject_d_name, PyObject*, PyDescrObject*) \
+    BUILTIN(Py_get_PyDescrObject_d_type, PyTypeObject*, PyDescrObject*) \
+    BUILTIN(Py_get_PyFrameObject_f_lineno, int, PyFrameObject*) \
+    BUILTIN(Py_get_PyGetSetDef_closure, void*, PyGetSetDef*) \
+    BUILTIN(Py_get_PyGetSetDef_doc, const char*, PyGetSetDef*) \
+    BUILTIN(Py_get_PyGetSetDef_get, getter, PyGetSetDef*) \
+    BUILTIN(Py_get_PyGetSetDef_name, const char*, PyGetSetDef*) \
+    BUILTIN(Py_get_PyGetSetDef_set, setter, PyGetSetDef*) \
+    BUILTIN(Py_get_PyInstanceMethodObject_func, PyObject*, PyInstanceMethodObject*) \
+    BUILTIN(Py_get_PyListObject_ob_item, PyObject**, PyListObject*) \
+    BUILTIN(Py_get_PyLongObject_ob_digit, void*, PyLongObject*) \
+    BUILTIN(Py_get_PyMappingMethods_mp_ass_subscript, objobjargproc, PyMappingMethods*) \
+    BUILTIN(Py_get_PyMappingMethods_mp_length, lenfunc, PyMappingMethods*) \
+    BUILTIN(Py_get_PyMappingMethods_mp_subscript, binaryfunc, PyMappingMethods*) \
+    BUILTIN(Py_get_PyMethodDef_ml_doc, void*, PyMethodDef*) \
+    BUILTIN(Py_get_PyMethodDef_ml_flags, int, PyMethodDef*) \
+    BUILTIN(Py_get_PyMethodDef_ml_meth, void*, PyMethodDef*) \
+    BUILTIN(Py_get_PyMethodDef_ml_name, void*, PyMethodDef*) \
+    BUILTIN(Py_get_PyMethodDescrObject_d_method, PyMethodDef*, PyMethodDescrObject*) \
+    BUILTIN(Py_get_PyMethodObject_im_func, PyObject*, PyMethodObject*) \
+    BUILTIN(Py_get_PyMethodObject_im_self, PyObject*, PyMethodObject*) \
+    BUILTIN(Py_get_PyModuleDef_m_doc, const char*, PyModuleDef*) \
+    BUILTIN(Py_get_PyModuleDef_m_methods, PyMethodDef*, PyModuleDef*) \
+    BUILTIN(Py_get_PyModuleDef_m_name, const char*, PyModuleDef*) \
+    BUILTIN(Py_get_PyModuleDef_m_size, Py_ssize_t, PyModuleDef*) \
+    BUILTIN(Py_get_PyModuleObject_md_def, PyModuleDef*, PyModuleObject*) \
+    BUILTIN(Py_get_PyModuleObject_md_dict, PyObject*, PyModuleObject*) \
+    BUILTIN(Py_get_PyModuleObject_md_state, void*, PyModuleObject*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_absolute, unaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_add, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_and, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_bool, inquiry, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_divmod, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_float, unaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_floor_divide, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_index, unaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_add, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_and, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_floor_divide, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_lshift, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_matrix_multiply, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_multiply, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_or, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_power, ternaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_remainder, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_rshift, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_subtract, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_true_divide, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_inplace_xor, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_int, unaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_invert, unaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_lshift, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_matrix_multiply, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_multiply, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_negative, unaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_or, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_positive, unaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_power, ternaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_remainder, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_rshift, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_subtract, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_true_divide, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyNumberMethods_nb_xor, binaryfunc, PyNumberMethods*) \
+    BUILTIN(Py_get_PyObject_ob_refcnt, Py_ssize_t, PyObject*) \
+    BUILTIN(Py_get_PyObject_ob_type, PyTypeObject*, PyObject*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_ass_item, ssizeobjargproc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_concat, binaryfunc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_contains, objobjproc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_inplace_concat, binaryfunc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_inplace_repeat, ssizeargfunc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_item, ssizeargfunc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_length, lenfunc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySequenceMethods_sq_repeat, ssizeargfunc, PySequenceMethods*) \
+    BUILTIN(Py_get_PySetObject_used, Py_ssize_t, PySetObject*) \
+    BUILTIN(Py_get_PySliceObject_start, PyObject*, PySliceObject*) \
+    BUILTIN(Py_get_PySliceObject_step, PyObject*, PySliceObject*) \
+    BUILTIN(Py_get_PySliceObject_stop, PyObject*, PySliceObject*) \
+    BUILTIN(Py_get_PyThreadState_dict, PyObject*, PyThreadState*) \
+    BUILTIN(Py_get_PyTupleObject_ob_item, PyObject**, PyTupleObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_alloc, allocfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_as_async, PyAsyncMethods*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_as_buffer, PyBufferProcs*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_as_mapping, PyMappingMethods*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_as_number, PyNumberMethods*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_as_sequence, PySequenceMethods*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_base, PyTypeObject*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_bases, PyObject*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_basicsize, Py_ssize_t, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_cache, PyObject*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_call, ternaryfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_clear, inquiry, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_dealloc, destructor, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_del, destructor, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_descr_get, descrgetfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_descr_set, descrsetfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_dict, PyObject*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_dictoffset, Py_ssize_t, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_doc, const char*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_finalize, destructor, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_flags, unsigned long, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_free, freefunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_getattr, getattrfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_getattro, getattrofunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_getset, PyGetSetDef*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_hash, hashfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_init, initproc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_is_gc, inquiry, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_itemsize, Py_ssize_t, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_iter, getiterfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_iternext, iternextfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_members, struct PyMemberDef*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_methods, PyMethodDef*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_mro, PyObject*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_name, const char*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_new, newfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_repr, reprfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_richcompare, richcmpfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_setattr, setattrfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_setattro, setattrofunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_str, reprfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_subclasses, PyObject*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_traverse, traverseproc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_vectorcall, vectorcallfunc, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_vectorcall_offset, Py_ssize_t, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_version_tag, unsigned int, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_weaklist, PyObject*, PyTypeObject*) \
+    BUILTIN(Py_get_PyTypeObject_tp_weaklistoffset, Py_ssize_t, PyTypeObject*) \
+    BUILTIN(Py_get_PyUnicodeObject_data, void*, PyUnicodeObject*) \
+    BUILTIN(Py_get_PyVarObject_ob_size, Py_ssize_t, PyVarObject*) \
+    BUILTIN(Py_get_dummy, void*, void*) \
+    BUILTIN(Py_get_mmap_object_data, char*, mmap_object*) \
+    BUILTIN(Py_set_PyByteArrayObject_ob_exports, void, PyByteArrayObject*, int) \
+    BUILTIN(Py_set_PyFrameObject_f_lineno, void, PyFrameObject*, int) \
+    BUILTIN(Py_set_PyModuleObject_md_def, void, PyModuleObject*, PyModuleDef*) \
+    BUILTIN(Py_set_PyModuleObject_md_state, void, PyModuleObject*, void*) \
+    BUILTIN(Py_set_PyObject_ob_refcnt, void, PyObject*, Py_ssize_t) \
+    BUILTIN(Py_set_PyTypeObject_tp_alloc, void, PyTypeObject*, allocfunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_as_buffer, void, PyTypeObject*, PyBufferProcs*) \
+    BUILTIN(Py_set_PyTypeObject_tp_base, void, PyTypeObject*, PyTypeObject*) \
+    BUILTIN(Py_set_PyTypeObject_tp_bases, void, PyTypeObject*, PyObject*) \
+    BUILTIN(Py_set_PyTypeObject_tp_basicsize, void, PyTypeObject*, Py_ssize_t) \
+    BUILTIN(Py_set_PyTypeObject_tp_clear, void, PyTypeObject*, inquiry) \
+    BUILTIN(Py_set_PyTypeObject_tp_dealloc, void, PyTypeObject*, destructor) \
+    BUILTIN(Py_set_PyTypeObject_tp_dict, void, PyTypeObject*, PyObject*) \
+    BUILTIN(Py_set_PyTypeObject_tp_dictoffset, void, PyTypeObject*, Py_ssize_t) \
+    BUILTIN(Py_set_PyTypeObject_tp_finalize, void, PyTypeObject*, destructor) \
+    BUILTIN(Py_set_PyTypeObject_tp_flags, void, PyTypeObject*, unsigned long) \
+    BUILTIN(Py_set_PyTypeObject_tp_free, void, PyTypeObject*, freefunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_getattr, void, PyTypeObject*, getattrfunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_getattro, void, PyTypeObject*, getattrofunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_itemsize, void, PyTypeObject*, Py_ssize_t) \
+    BUILTIN(Py_set_PyTypeObject_tp_iter, void, PyTypeObject*, getiterfunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_iternext, void, PyTypeObject*, iternextfunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_mro, void, PyTypeObject*, PyObject*) \
+    BUILTIN(Py_set_PyTypeObject_tp_new, void, PyTypeObject*, newfunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_setattr, void, PyTypeObject*, setattrfunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_setattro, void, PyTypeObject*, setattrofunc) \
+    BUILTIN(Py_set_PyTypeObject_tp_subclasses, void, PyTypeObject*, PyObject*) \
+    BUILTIN(Py_set_PyTypeObject_tp_traverse, void, PyTypeObject*, traverseproc) \
+    BUILTIN(Py_set_PyTypeObject_tp_vectorcall_offset, void, PyTypeObject*, Py_ssize_t) \
+    BUILTIN(Py_set_PyTypeObject_tp_weaklistoffset, void, PyTypeObject*, Py_ssize_t) \
+    BUILTIN(Py_set_PyVarObject_ob_size, void, PyVarObject*, Py_ssize_t) \
+    BUILTIN(_PyBytes_Join, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(_PyDict_Pop, PyObject*, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(_PyDict_SetItem_KnownHash, int, PyObject*, PyObject*, PyObject*, Py_hash_t) \
+    BUILTIN(_PyErr_BadInternalCall, void, const char*, int) \
+    BUILTIN(_PyErr_CreateAndSetException, void, PyObject*, PyObject*) \
+    BUILTIN(_PyErr_WriteUnraisableMsg, void, const char*, PyObject*) \
+    BUILTIN(_PyList_Extend, PyObject*, PyListObject*, PyObject*) \
+    BUILTIN(_PyLong_Sign, int, PyObject*) \
+    BUILTIN(_PyNamespace_New, PyObject*, PyObject*) \
+    BUILTIN(_PyNumber_Index, PyObject*, PyObject*) \
+    BUILTIN(_PyObject_Call1, PyObject*, PyObject*, PyObject*, PyObject*, int) \
+    BUILTIN(_PyObject_CallMethod1, PyObject*, PyObject*, const char*, PyObject*, int) \
+    BUILTIN(_PyObject_Dump, void, PyObject*) \
+    BUILTIN(_PyTraceMalloc_NewReference, int, PyObject*) \
+    BUILTIN(_PyTraceback_Add, void, const char*, const char*, int) \
+    BUILTIN(_PyTruffleBytes_Resize, int, PyObject*, Py_ssize_t) \
+    BUILTIN(_PyTruffleErr_Warn, PyObject*, PyObject*, PyObject*, Py_ssize_t, PyObject*) \
+    BUILTIN(_PyTruffleEval_EvalCodeEx, PyObject*, PyObject*, PyObject*, PyObject*, void*, void*, void*, PyObject*, PyObject*) \
+    BUILTIN(_PyTruffleModule_CreateInitialized_PyModule_New, PyModuleObject*, const char*) \
+    BUILTIN(_PyTruffleModule_GetAndIncMaxModuleNumber, Py_ssize_t) \
+    BUILTIN(_PyTruffleObject_MakeTpCall, PyObject*, PyObject*, void*, int, void*, void*) \
+    BUILTIN(_PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
+    BUILTIN(_PyTruffle_HashBytes, Py_hash_t, const char*) \
+    BUILTIN(_PyTruffle_Trace_Free, int, void*, Py_ssize_t) \
+    BUILTIN(_PyType_Lookup, PyObject*, PyTypeObject*, PyObject*) \
+    BUILTIN(_PyUnicode_AsASCIIString, PyObject*, PyObject*, const char*) \
+    BUILTIN(_PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \
+    BUILTIN(_PyUnicode_AsUTF8String, PyObject*, PyObject*, const char*) \
+    BUILTIN(_PyUnicode_EqualToASCIIString, int, PyObject*, const char*) \
+    BUILTIN(_Py_HashDouble, Py_hash_t, PyObject*, double) \
 
 #define PyASCIIObject_length(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_length((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->length )
 #define PyASCIIObject_state_ascii(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_state_ascii((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->state_ascii )
@@ -693,6 +695,7 @@ typedef struct {
 #define PySliceObject_start(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PySliceObject_start((PySliceObject*) (OBJ)) : ((PySliceObject*) (OBJ))->start )
 #define PySliceObject_step(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PySliceObject_step((PySliceObject*) (OBJ)) : ((PySliceObject*) (OBJ))->step )
 #define PySliceObject_stop(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PySliceObject_stop((PySliceObject*) (OBJ)) : ((PySliceObject*) (OBJ))->stop )
+#define PyThreadState_dict(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyThreadState_dict((PyThreadState*) (OBJ)) : ((PyThreadState*) (OBJ))->dict )
 #define PyTupleObject_ob_item(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyTupleObject_ob_item((PyTupleObject*) (OBJ)) : ((PyTupleObject*) (OBJ))->ob_item )
 #define PyTypeObject_tp_alloc(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyTypeObject_tp_alloc((PyTypeObject*) (OBJ)) : ((PyTypeObject*) (OBJ))->tp_alloc )
 #define PyTypeObject_tp_as_async(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyTypeObject_tp_as_async((PyTypeObject*) (OBJ)) : ((PyTypeObject*) (OBJ))->tp_as_async )
@@ -779,7 +782,7 @@ typedef struct {
 // {{end CAPI_BUILTINS}}
 
 
-#define BUILTIN(ID, NAME, RET, ...) extern PyAPI_FUNC(RET) (*Graal##NAME)(__VA_ARGS__);
+#define BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef BUILTIN
 

@@ -84,18 +84,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
-import java.util.TreeSet;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -110,7 +105,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
@@ -227,7 +221,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -2461,264 +2454,5 @@ public final class PythonCextBuiltins {
             }
             return 0;
         }
-    }
-
-    public static Collection<CApiFunction> processAllBuiltins() {
-        ArrayList<CApiFunction> result = new ArrayList<>();
-        addCApiBuiltins(result, PythonCextAbstractBuiltins.class);
-        addCApiBuiltins(result, PythonCextBoolBuiltins.class);
-        addCApiBuiltins(result, PythonCextBuiltins.class);
-        addCApiBuiltins(result, PythonCextBytesBuiltins.class);
-        addCApiBuiltins(result, PythonCextCapsuleBuiltins.class);
-        addCApiBuiltins(result, PythonCextCEvalBuiltins.class);
-        addCApiBuiltins(result, PythonCextClassBuiltins.class);
-        addCApiBuiltins(result, PythonCextCodeBuiltins.class);
-        addCApiBuiltins(result, PythonCextComplexBuiltins.class);
-        addCApiBuiltins(result, PythonCextContextBuiltins.class);
-        addCApiBuiltins(result, PythonCextDescrBuiltins.class);
-        addCApiBuiltins(result, PythonCextDictBuiltins.class);
-        addCApiBuiltins(result, PythonCextErrBuiltins.class);
-        addCApiBuiltins(result, PythonCextFileBuiltins.class);
-        addCApiBuiltins(result, PythonCextFloatBuiltins.class);
-        addCApiBuiltins(result, PythonCextFuncBuiltins.class);
-        addCApiBuiltins(result, PythonCextGenericAliasBuiltins.class);
-        addCApiBuiltins(result, PythonCextHashBuiltins.class);
-        addCApiBuiltins(result, PythonCextImportBuiltins.class);
-        addCApiBuiltins(result, PythonCextIterBuiltins.class);
-        addCApiBuiltins(result, PythonCextListBuiltins.class);
-        addCApiBuiltins(result, PythonCextLongBuiltins.class);
-        addCApiBuiltins(result, PythonCextMemoryViewBuiltins.class);
-        addCApiBuiltins(result, PythonCextMethodBuiltins.class);
-        addCApiBuiltins(result, PythonCextModuleBuiltins.class);
-        addCApiBuiltins(result, PythonCextNamespaceBuiltins.class);
-        addCApiBuiltins(result, PythonCextObjectBuiltins.class);
-        addCApiBuiltins(result, PythonCextPosixmoduleBuiltins.class);
-        addCApiBuiltins(result, PythonCextPyLifecycleBuiltins.class);
-        addCApiBuiltins(result, PythonCextPyStateBuiltins.class);
-        addCApiBuiltins(result, PythonCextPythonRunBuiltins.class);
-        addCApiBuiltins(result, PythonCextSetBuiltins.class);
-        addCApiBuiltins(result, PythonCextSliceBuiltins.class);
-        addCApiBuiltins(result, PythonCextSlotBuiltins.class);
-        addCApiBuiltins(result, PythonCextStructSeqBuiltins.class);
-        addCApiBuiltins(result, PythonCextSysBuiltins.class);
-        addCApiBuiltins(result, PythonCextTracebackBuiltins.class);
-        addCApiBuiltins(result, PythonCextTupleBuiltins.class);
-        addCApiBuiltins(result, PythonCextTypeBuiltins.class);
-        addCApiBuiltins(result, PythonCextUnicodeBuiltins.class);
-        addCApiBuiltins(result, PythonCextWarnBuiltins.class);
-        addCApiBuiltins(result, PythonCextWeakrefBuiltins.class);
-
-        result.sort((a, b) -> a.name.compareTo(b.name));
-        for (int i = 0; i < result.size(); i++) {
-            result.get(i).id = i;
-        }
-        return result;
-    }
-
-    private static void addCApiBuiltins(Collection<CApiFunction> result, Class<?> container) {
-        Class<?>[] declaredClasses = container.getDeclaredClasses();
-
-        for (Class<?> clazz : declaredClasses) {
-            if (CApiBuiltinNode.class.isAssignableFrom(clazz)) {
-                CApiBuiltins builtins = clazz.getAnnotation(CApiBuiltins.class);
-                CApiBuiltin[] annotations;
-                if (builtins == null) {
-                    CApiBuiltin annotation = clazz.getAnnotation(CApiBuiltin.class);
-                    if (annotation == null) {
-                        // not builtin, but base class
-                        continue;
-                    }
-                    annotations = new CApiBuiltin[]{annotation};
-                } else {
-                    annotations = builtins.value();
-                }
-                try {
-                    for (var annotation : annotations) {
-                        String name = clazz.getSimpleName();
-                        if (!annotation.name().isEmpty()) {
-                            name = annotation.name();
-                        }
-                        Class<?> gen;
-                        try {
-                            gen = Class.forName(container.getName() + "Factory$" + clazz.getSimpleName() + "NodeGen");
-                        } catch (ClassNotFoundException e) {
-                            try {
-                                gen = Class.forName(container.getName() + "Factory$" + clazz.getSimpleName() + "Factory");
-                            } catch (ClassNotFoundException e2) {
-                                throw new RuntimeException(e2);
-                            }
-                        }
-                        result.add(new CApiFunction(name, annotation.inlined(), annotation.ret(), annotation.args(), annotation.call(), annotation.forwardsTo(), gen.getCanonicalName()));
-                    }
-                } catch (Throwable t) {
-                    LOGGER.logp(Level.SEVERE, PythonCextBuiltins.class.getName(), "addCApiBuiltins", "while processing " + clazz, t);
-                    throw t;
-                }
-            }
-
-        }
-    }
-
-    public static void main(String[] args) throws IOException {
-
-        Collection<CApiFunction> builtins = processAllBuiltins();
-
-        {
-            ArrayList<String> lines = new ArrayList<>();
-
-            lines.clear();
-
-            lines.add("    public static final CApiBuiltinExecutable[] builtins = {");
-            for (var builtin : builtins) {
-                String argString = "\n                                    new ArgDescriptor[]{" + Arrays.stream(builtin.arguments).map(Object::toString).collect(Collectors.joining(", ")) + "}";
-                lines.add("                    new CApiBuiltinExecutable(\"" + builtin.name + "\", " + builtin.call + ", " + builtin.returnType + "," + argString + ", " + builtin.id + "),");
-            }
-            lines.add("    };");
-            lines.add("");
-
-            lines.add("    static CApiBuiltinNode createBuiltinNode(int id) {");
-            lines.add("        switch (id) {");
-
-            for (var builtin : builtins) {
-                lines.add("            case " + builtin.id + ":");
-                lines.add("                return " + builtin.factory + ".create();");
-            }
-
-            lines.add("        }");
-            lines.add("        return null;");
-            lines.add("    }");
-            lines.add("");
-            lines.add("    public static CApiBuiltinExecutable getSlot(String key) {");
-            lines.add("        switch (key) {");
-
-            for (var builtin : builtins) {
-                if (builtin.name.startsWith("Py_get_")) {
-                    lines.add("            case \"" + builtin.name.substring(7) + "\":");
-                    lines.add("                return builtins[" + builtin.id + "];");
-                }
-            }
-
-            lines.add("        }");
-            lines.add("        return null;");
-            lines.add("    }");
-
-            CApiFunction.writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCExtBuiltinRegistry.java"), lines);
-        }
-
-        TreeSet<String> duplicates = new TreeSet<>();
-        ArrayList<String> builtinDefinitions = new ArrayList<>();
-        for (var entry : builtins) {
-            String line = "    BUILTIN(" + entry.id + ", " + entry.name + ", " + entry.returnType.cSignature;
-            for (var arg : entry.arguments) {
-                line += ", " + arg.cSignature;
-            }
-            line += ") \\";
-            builtinDefinitions.add(line);
-
-            CApiFunction apiFunction = CApiFunction.valueOf(entry.name);
-            if (apiFunction != null) {
-                String mismatch = "";
-                if (apiFunction.returnType != entry.returnType) {
-                    mismatch += ", returns " + apiFunction.returnType + " vs. " + entry.returnType;
-                }
-                if (apiFunction.arguments.length != entry.arguments.length) {
-                    mismatch += ", mismatching arg length";
-                } else {
-                    for (int i = 0; i < entry.arguments.length; i++) {
-                        if (apiFunction.arguments[i] != entry.arguments[i]) {
-                            mismatch += ", arg " + i + " " + apiFunction.arguments[i] + " vs. " + entry.arguments[i];
-                        }
-                    }
-                }
-                if (mismatch.isEmpty()) {
-                    duplicates.add(entry.name);
-                } else {
-                    duplicates.add(entry.name + mismatch);
-                }
-            }
-        }
-
-        if (!duplicates.isEmpty()) {
-            System.out.println("Duplicate CApiBuiltin specifications:");
-            duplicates.forEach(System.out::println);
-            System.out.println();
-        }
-
-        ArrayList<String> defines = new ArrayList<>();
-
-        for (var entry : builtins) {
-            String name = entry.name;
-            if (!name.endsWith("_dummy")) {
-                if (name.startsWith("Py_get_")) {
-                    assert entry.arguments.length == 1;
-                    String type = entry.arguments[0].name().replace("Wrapper", "");
-                    StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_';
-                    String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define " + name.substring(7) + "(OBJ) ( points_to_py_handle_space(OBJ) ? Graal" + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + " )");
-                    defines.add(macro.toString());
-                } else if (name.startsWith("Py_set_")) {
-                    assert entry.arguments.length == 2;
-                    String type = entry.arguments[0].name().replace("Wrapper", "");
-                    StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_';
-                    String field = name.substring(7 + type.length() + 1); // after "_"
-                    macro.append("#define set_" + name.substring(7) + "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) Graal" + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type +
-                                    "*) (OBJ))->" + field + " = (VALUE); }");
-                    defines.add(macro.toString());
-                }
-            }
-        }
-
-        List<String> result = new ArrayList<>();
-        result.add("#define CAPI_BUILTINS \\");
-        result.addAll(builtinDefinitions);
-        result.add("");
-        result.addAll(defines);
-
-        CApiFunction.writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.h"), result);
-
-        ArrayList<String> stubs = new ArrayList<>();
-        for (var entry : builtins) {
-            String name = entry.name;
-            CApiFunction value = entry;
-            if (value.call == Direct) {
-                stubs.add("#undef " + name);
-                String line = "PyAPI_FUNC(" + value.returnType.cSignature + ") " + name + "(";
-                for (int i = 0; i < value.arguments.length; i++) {
-                    line += (i == 0 ? "" : ", ") + CApiFunction.getArgSignatureWithName(value.arguments[i], i);
-                }
-                line += ") {";
-                stubs.add(line);
-                line = "    " + (value.returnType == ArgDescriptor.Void ? "" : "return ") + "Graal" + name + "(";
-                for (int i = 0; i < value.arguments.length; i++) {
-                    line += (i == 0 ? "" : ", ");
-                    if (value.arguments[i] == ConstCharPtrAsTruffleString) {
-                        line += "truffleString(" + CApiFunction.argName(i) + ")";
-                    } else {
-                        line += CApiFunction.argName(i);
-                    }
-                }
-                line += ");";
-                stubs.add(line);
-                stubs.add("}");
-            }
-        }
-
-        CApiFunction.writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.c"), stubs);
-
-        CApiFunction.generateCForwards();
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> List<? extends NodeFactory<? extends T>> filterFactories(List<?> factories, Class<T> clazz) {
-        List<NodeFactory<? extends T>> result = new ArrayList<>();
-        for (Object entry : factories) {
-            NodeFactory<?> factory = (NodeFactory<?>) entry;
-            if (clazz.isAssignableFrom(factory.getNodeClass())) {
-                result.add((NodeFactory<? extends T>) factory);
-            }
-        }
-        return result;
     }
 }

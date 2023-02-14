@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYMODULEDEF_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 
@@ -50,9 +51,13 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextPyStateBuiltins {
@@ -63,6 +68,23 @@ public final class PythonCextPyStateBuiltins {
         @Specialization
         PThreadState get() {
             return PThreadState.getThreadState(getLanguage(), getContext());
+        }
+    }
+
+    @CApiBuiltin(ret = PyObject, args = {}, call = Direct)
+    abstract static class PyThreadState_GetDict extends CApiNullaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        PDict get(@Cached PythonObjectFactory factory) {
+
+            PThreadState state = PThreadState.getThreadState(getLanguage(), getContext());
+            PDict threadStateDict = state.getThreadState().getDict();
+            if (threadStateDict == null) {
+                threadStateDict = factory.createDict();
+                state.getThreadState().setDict(threadStateDict);
+            }
+            return threadStateDict;
         }
     }
 

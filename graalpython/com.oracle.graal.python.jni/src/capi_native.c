@@ -342,7 +342,7 @@ EXCEPTIONS
 #undef EXCEPTION
 
 
-#define BUILTIN(ID, NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
+#define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef BUILTIN
 
@@ -357,7 +357,7 @@ int initNativeForwardCalled = 0;
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
 PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
-    LOG("%s", "capi_jni.c:initNativeForward\n");
+    LOG("%s", "capi_native.c:initNativeForward\n");
     if (initNativeForwardCalled) {
     	return 0;
     }
@@ -396,7 +396,8 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
 #undef SET_TYPE_OBJECT_STORE
     
-#define BUILTIN(ID, NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(ID);
+    int id = 0;
+#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
 CAPI_BUILTINS
 #undef BUILTIN
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
@@ -578,7 +579,7 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
 }
 
 PyObject * PyObject_CallMethodObjArgs(PyObject *a, PyObject *b, ...)  {
-    printf("PyObject_CallMethodObjArgs not implemented in capi_jni - exiting\n");
+    printf("PyObject_CallMethodObjArgs not implemented in capi_native - exiting\n");
     exit(-1);
 }
 

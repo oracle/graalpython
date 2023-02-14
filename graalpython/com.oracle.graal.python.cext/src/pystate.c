@@ -41,10 +41,6 @@
 
 #include "capi.h"
 
-PyObject * PyThreadState_GetDict() {
-	return PyThreadState_Get()->dict;
-}
-
 PyThreadState *
 _PyThreadState_UncheckedGet(void) {
     return GraalPyThreadState_Get();

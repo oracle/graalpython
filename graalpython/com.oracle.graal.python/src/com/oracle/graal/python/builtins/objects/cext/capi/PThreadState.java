@@ -85,7 +85,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-public class PThreadState extends PythonNativeWrapper {
+public final class PThreadState extends PythonNativeWrapper {
     public static final String J_CUR_EXC_TYPE = "curexc_type";
     public static final String J_CUR_EXC_VALUE = "curexc_value";
     public static final String J_CUR_EXC_TRACEBACK = "curexc_traceback";
@@ -116,6 +116,10 @@ public class PThreadState extends PythonNativeWrapper {
         }
         // does not require a 'to_sulong' since it is already a native wrapper type
         return nativeWrapper;
+    }
+
+    public PythonThreadState getThreadState() {
+        return threadState;
     }
 
     // READ

@@ -155,12 +155,13 @@ PyTypeObject PyWrapperDescr_Type = 			PY_TRUFFLE_TYPE("wrapper_descriptor", &PyT
 // dummy definitions:
 PyTypeObject _PyBytesIOBuffer_Type =		PY_TRUFFLE_TYPE("_io._BytesIOBuffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, 0);
 
-#define BUILTIN(ID, NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
+#define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef BUILTIN
 
 PyAPI_FUNC(void) initialize_builtins(void* (*getBuiltin)(int id)) {
-#define BUILTIN(ID, NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(ID);
+	int id = 0;
+#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
 CAPI_BUILTINS
 #undef BUILTIN
 }
@@ -1940,6 +1941,10 @@ PyAPI_FUNC(PyObject*) PySys_GetObject(const char* a) {
 #undef PyThreadState_Get
 PyAPI_FUNC(PyThreadState*) PyThreadState_Get() {
     return GraalPyThreadState_Get();
+}
+#undef PyThreadState_GetDict
+PyAPI_FUNC(PyObject*) PyThreadState_GetDict() {
+    return GraalPyThreadState_GetDict();
 }
 #undef PyThread_acquire_lock
 PyAPI_FUNC(int) PyThread_acquire_lock(PyThread_type_lock a, int b) {

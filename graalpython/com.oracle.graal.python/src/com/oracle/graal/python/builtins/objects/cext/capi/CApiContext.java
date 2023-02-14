@@ -923,7 +923,7 @@ public final class CApiContext extends CExtContext {
                     nativeLibpython = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
                 }
 
-                assert CApiFunction.assertBuiltins(capiLibrary);
+                assert CApiCodeGen.assertBuiltins(capiLibrary);
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
 
