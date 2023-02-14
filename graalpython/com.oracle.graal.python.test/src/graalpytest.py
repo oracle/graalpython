@@ -742,6 +742,11 @@ class TestRunner(object):
     def load_conftest(self, testfile):
         self.load_module(testfile)
 
+    def trim_traceback(self, tb):
+        if tb and tb.tb_frame.f_code is TestCase.run_safely.__code__:
+            return tb.tb_next
+        return tb
+
     def run(self):
         # eval session scope
         eval_scope("session")
@@ -783,14 +788,12 @@ class TestRunner(object):
         for e in self.exceptions:
             msg, exc = e
             print(msg)
-            if verbose:
-                try:
-                    import traceback
-                    traceback.print_exception(type(exc), exc, exc.__traceback__)
-                except Exception:
-                    pass
-            else:
-                print(exc)
+            try:
+                import traceback
+                traceback.print_exception(type(exc), exc, self.trim_traceback(exc.__traceback__))
+                print()
+            except Exception:
+                pass
 
         if self.exceptions or self.failed:
             _cleanup_tempdirs()
