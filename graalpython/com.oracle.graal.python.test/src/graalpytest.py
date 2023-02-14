@@ -317,7 +317,6 @@ class ThreadPool():
             finally:
                 self.release_token()
         self.start_new_thread(runner, ())
-        self.sleep(0.5)
 
     @classmethod
     def acquire_token(self):
@@ -326,7 +325,7 @@ class ThreadPool():
                 if self.cnt < self.maxcnt:
                     self.cnt += 1
                     break
-            self.sleep(1)
+            self.sleep(0.1)
 
     @classmethod
     def release_token(self):
@@ -335,9 +334,9 @@ class ThreadPool():
 
     @classmethod
     def shutdown(self):
-        self.sleep(2)
+        self.sleep(0.1)
         while self.cnt > 0:
-            self.sleep(2)
+            self.sleep(0.1)
 
 
 def dump_truffle_ast(func):
