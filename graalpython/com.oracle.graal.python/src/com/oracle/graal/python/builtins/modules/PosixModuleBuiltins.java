@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_SYMLINK_FOLLOW;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -1258,6 +1259,32 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return PosixModuleBuiltinsClinicProviders.RemoveNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "link", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "dst_dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class LinkNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.LinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone link(VirtualFrame frame, PosixPath src, PosixPath dst, int srcDirFd, int dstDirFd, boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.linkat(getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value, followSymlinks ? AT_SYMLINK_FOLLOW.value : 0);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
+            }
+            return PNone.NONE;
         }
     }
 

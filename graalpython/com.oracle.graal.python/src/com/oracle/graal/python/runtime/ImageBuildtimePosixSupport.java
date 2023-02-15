@@ -349,6 +349,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.linkat(nativePosixSupport, oldFdDir, oldPath, newFdDir, newPath, flags);
+    }
+
+    @ExportMessage
     final void symlinkat(Object target, int linkpathDirFd, Object linkpath,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
