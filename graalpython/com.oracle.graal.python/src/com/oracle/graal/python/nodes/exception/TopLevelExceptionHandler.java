@@ -214,7 +214,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         try {
             boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
             if (!exitException) {
-                ExceptionUtils.printPythonLikeStackTrace(e);
+                ExceptionUtils.printPythonLikeStackTrace(getContext(), e);
                 if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
                     e.printStackTrace();
                 }

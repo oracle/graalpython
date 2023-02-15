@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.exception;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -97,7 +98,7 @@ public final class ExceptionUtils {
             appendStackLine(stack, location, rootNode, true, lineno);
             return null;
         });
-        printStack(stack);
+        printStack(new PrintWriter(System.err), stack);
     }
 
     private static int getLineno(Frame frame) {
@@ -114,10 +115,23 @@ public final class ExceptionUtils {
     }
 
     /**
-     * this method is similar to 'PyErr_WriteUnraisable'
+     * this method is similar to 'PyErr_WriteUnraisable' and may be used when the context is not
+     * available.
      */
     @TruffleBoundary
     public static void printPythonLikeStackTrace(Throwable e) {
+        printPythonLikeStackTrace(new PrintWriter(System.err), e);
+    }
+
+    /**
+     * this method is similar to 'PyErr_WriteUnraisable'
+     */
+    @TruffleBoundary
+    public static void printPythonLikeStackTrace(PythonContext context, Throwable e) {
+        printPythonLikeStackTrace(new PrintWriter(context.getEnv().err()), e);
+    }
+
+    private static void printPythonLikeStackTrace(PrintWriter p, Throwable e) {
         List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
         if (stackTrace != null) {
             ArrayList<String> stack = new ArrayList<>();
@@ -127,17 +141,17 @@ public final class ExceptionUtils {
                 int lineno = getLineno(frame.getFrame());
                 appendStackLine(stack, location, rootNode, false, lineno);
             }
-            printStack(stack);
+            printStack(p, stack);
         }
         InteropLibrary lib = InteropLibrary.getUncached();
         if (lib.isException(e) && lib.hasExceptionMessage(lib)) {
             try {
-                System.err.println(lib.getExceptionMessage(e));
+                p.println(lib.getExceptionMessage(e));
             } catch (UnsupportedMessageException unsupportedMessageException) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         } else {
-            System.err.println(e.getMessage());
+            p.println(e.getMessage());
         }
     }
 
@@ -175,11 +189,11 @@ public final class ExceptionUtils {
         }
     }
 
-    private static void printStack(final ArrayList<String> stack) {
-        System.err.println("Traceback (most recent call last):");
+    private static void printStack(PrintWriter p, final ArrayList<String> stack) {
+        p.println("Traceback (most recent call last):");
         ListIterator<String> listIterator = stack.listIterator(stack.size());
         while (listIterator.hasPrevious()) {
-            System.err.println(listIterator.previous());
+            p.println(listIterator.previous());
         }
     }
 
