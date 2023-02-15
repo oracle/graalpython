@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PyDict_GetItem;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PyTuple_GetItem;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -65,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNa
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertSingleArgNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -940,7 +940,7 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
-                        @Cached HashingStorageGetItem getItem,
+                        @Cached PyDict_GetItem getDictItemNode,
                         @Cached PCallCExtFunction callCStringToString,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
 
@@ -960,10 +960,10 @@ public abstract class CExtParseArgumentsNode {
                 if (kwdname instanceof TruffleString) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
-                    out = getItem.execute(((PDict) kwds).getDictStorage(), (TruffleString) kwdname);
+                    out = getDictItemNode.execute(kwds, kwdname);
                 }
             }
-            if (out == null && !state.restOptional) {
+            if ((out == null || out == PythonContext.get(this).getNativeNull()) && !state.restOptional) {
                 raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.S_MISSING_REQUIRED_ARG_POS_D, state.funName, state.v.argnum);
                 throw ParseArgumentsException.raise();
             }
