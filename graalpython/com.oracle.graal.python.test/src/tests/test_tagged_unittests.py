@@ -86,7 +86,7 @@ def make_test_function(working_test):
     testmod = working_test[0].rpartition(".")[2]
 
     def test_tagged():
-        max_patterns = 100
+        max_patterns = 250
         for working_test_group in grouper(working_test[1], max_patterns):
             cmd = [sys.executable]
             if "--inspect" in sys.argv:
