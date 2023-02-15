@@ -70,7 +70,7 @@ long totalCount;
 
 // {{start CAPI_BUILTINS}}
 // GENERATED CODE - see CApiCodeGen
-// This can be re-generated using the 'mx python-capi-forwards' command or 
+// This can be re-generated using the 'mx python-capi-forwards' command or
 // by executing the main class CApiCodeGen
 // explicit #undef, some existing functions are redefined by macros and we need to export precise names:
 #undef PyAIter_Check

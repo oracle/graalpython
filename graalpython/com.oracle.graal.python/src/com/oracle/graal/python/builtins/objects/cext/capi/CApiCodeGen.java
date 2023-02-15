@@ -245,7 +245,7 @@ public final class CApiCodeGen {
         List<String> result = new ArrayList<>();
         result.addAll(lines.subList(0, start));
         result.add(prefix + "GENERATED CODE - see " + CApiCodeGen.class.getSimpleName());
-        result.add(prefix + "This can be re-generated using the 'mx python-capi-forwards' command or ");
+        result.add(prefix + "This can be re-generated using the 'mx python-capi-forwards' command or");
         result.add(prefix + "by executing the main class " + CApiCodeGen.class.getSimpleName());
         result.addAll(contents);
         result.addAll(lines.subList(end, lines.size()));
