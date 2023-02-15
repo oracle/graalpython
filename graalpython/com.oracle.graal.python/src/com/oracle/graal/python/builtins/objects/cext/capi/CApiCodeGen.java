@@ -79,6 +79,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  */
 public final class CApiCodeGen {
 
+    private static final String START_CAPI_BUILTINS = "{{start CAPI_BUILTINS}}";
+    private static final String END_CAPI_BUILTINS = "{{end CAPI_BUILTINS}}";
     /**
      * Used to create a linked list of all stats elements.
      */
@@ -220,18 +222,21 @@ public final class CApiCodeGen {
     /**
      * Updates the given file by replacing the lines between the start/end markers with the given
      * lines.
+     *
+     * @return true if the file was modified, false if there were no changes
      */
-    private static void writeGenerated(Path path, List<String> contents) throws IOException {
+    private static boolean writeGenerated(Path path, List<String> contents) throws IOException {
         Path capi = CApiCodeGen.resolvePath(path);
-        System.out.println("replacing CAPI_BUILTINS in " + capi);
         List<String> lines = Files.readAllLines(capi);
         int start = -1;
         int end = -1;
+        String prefix = "";
         for (int i = 0; i < lines.size(); i++) {
-            if (lines.get(i).contains("{{start CAPI_BUILTINS}}")) {
+            if (lines.get(i).contains(START_CAPI_BUILTINS)) {
                 assert start == -1;
                 start = i + 1;
-            } else if (lines.get(i).contains("{{end CAPI_BUILTINS}}")) {
+                prefix = lines.get(i).substring(0, lines.get(i).indexOf(START_CAPI_BUILTINS));
+            } else if (lines.get(i).contains(END_CAPI_BUILTINS)) {
                 assert end == -1;
                 end = i;
             }
@@ -239,11 +244,20 @@ public final class CApiCodeGen {
         assert start != -1 && end != -1;
         List<String> result = new ArrayList<>();
         result.addAll(lines.subList(0, start));
-        result.add("// GENERATED CODE - see " + CApiCodeGen.class.getSimpleName());
-        result.add("// This can be re-generated using the 'mx python-capi-forwards' command or by executing the main class " + CApiCodeGen.class.getSimpleName());
+        result.add(prefix + "GENERATED CODE - see " + CApiCodeGen.class.getSimpleName());
+        result.add(prefix + "This can be re-generated using the 'mx python-capi-forwards' command or ");
+        result.add(prefix + "by executing the main class " + CApiCodeGen.class.getSimpleName());
         result.addAll(contents);
         result.addAll(lines.subList(end, lines.size()));
-        Files.write(capi, result);
+        if (result.equals(lines)) {
+            System.out.println("no changes for CAPI_BUILTINS in " + capi);
+            return false;
+        } else {
+            assert result.stream().noneMatch(l -> l.contains("\n")) : "comparison fails with embedded newlines";
+            Files.write(capi, result);
+            System.out.println("replacing CAPI_BUILTINS in " + capi);
+            return true;
+        }
     }
 
     /**
@@ -277,12 +291,15 @@ public final class CApiCodeGen {
         return builtins.stream().filter(n -> n.name.equals(name)).findFirst();
     }
 
+    private static List<String> MANUAL_VARARGS = Arrays.asList("PyArg_Parse", "PyObject_CallFunction", "PyObject_CallFunctionObjArgs", "PyObject_CallMethod", "PyObject_CallMethodObjArgs",
+                    "PyTuple_Pack", "_PyArg_ParseStack_SizeT", "_PyArg_Parse_SizeT", "_PyObject_CallFunction_SizeT", "_PyObject_CallMethod_SizeT");
+
     /**
      * Generates all the forwards in capi_forwards.h, either outputting an "unimplemented" message,
      * forwarding to a "Va" version of a builtin (for varargs builtins), or simply forwarding to the
      * builtin in Sulong-executed C code.
      */
-    private static void generateCForwards(List<CApiBuiltinDesc> builtins) throws IOException {
+    private static boolean generateCForwards(List<CApiBuiltinDesc> builtins) throws IOException {
         System.out.println("generating C API forwards in capi_forwards.h");
 
         List<String> lines = new ArrayList<>();
@@ -311,7 +328,7 @@ public final class CApiCodeGen {
                     compareFunction(name, function.returnType, va.returnType, argMod, va.arguments);
                     forwards.put(function, name);
                 } else {
-                    if (function.call != NotImplemented) {
+                    if (function.call != NotImplemented && !MANUAL_VARARGS.contains(function.name)) {
                         missingVarargForwards.add(function.name);
                     }
                 }
@@ -324,8 +341,11 @@ public final class CApiCodeGen {
         // insert varargs forwards at the end (targets may not be defined in header files)
         forwards.forEach((k, v) -> k.generateVarargForward(lines, v));
         if (!missingVarargForwards.isEmpty()) {
-            System.out.println("missing forward for VARARG functions ('...' cannot cross NFI boundary, " +
-                            "these functions need to be implemented manually in capi_native.c)");
+            System.out.println("""
+                            Missing forwards for VARARG functions ('...' cannot cross NFI boundary,
+                            so these functions either need to be implemented manually in capi_native.c,
+                            or they need to use CApiBuiltin.forwardsTo to call a "Va"-style builtin)
+                            """);
             System.out.println("    " + missingVarargForwards.stream().collect(Collectors.joining(", ")));
         }
 
@@ -339,14 +359,14 @@ public final class CApiCodeGen {
         }
         lines.add("}");
 
-        writeGenerated(Path.of("com.oracle.graal.python.jni", "src", "capi_forwards.h"), lines);
+        return !missingVarargForwards.isEmpty() | writeGenerated(Path.of("com.oracle.graal.python.jni", "src", "capi_forwards.h"), lines);
     }
 
     /**
      * Generates the functions in capi.c that forward {@link CApiCallPath#Direct} builtins to their
      * associated Java implementations.
      */
-    private static void generateCApiSource(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
+    private static boolean generateCApiSource(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
         for (var entry : javaBuiltins) {
             String name = entry.name;
@@ -374,14 +394,14 @@ public final class CApiCodeGen {
             }
         }
 
-        writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.c"), lines);
+        return writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.c"), lines);
     }
 
     /**
      * Generates the builtin specification in capi.h, which includes only the builtins implmemented
      * in Java code. Additionally, it generates helpers for all "Py_get_" and "Py_set_" builtins.
      */
-    private static void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
+    private static boolean generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         List<String> lines = new ArrayList<>();
         lines.add("#define CAPI_BUILTINS \\");
         int id = 0;
@@ -420,20 +440,21 @@ public final class CApiCodeGen {
             }
         }
 
-        writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.h"), lines);
+        return writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.h"), lines);
     }
 
     /**
      * Generates the contents of the {@link PythonCextBuiltinRegistry} class: the list of builtins,
      * the {@link CApiBuiltinNode} factory function, and the slot query function.
      */
-    private static void generateBuiltinRegistry(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
+    private static boolean generateBuiltinRegistry(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
 
         lines.add("    public static final CApiBuiltinExecutable[] builtins = {");
         for (var builtin : javaBuiltins) {
-            String argString = "\n                                    new ArgDescriptor[]{" + Arrays.stream(builtin.arguments).map(Object::toString).collect(Collectors.joining(", ")) + "}";
-            lines.add("                    new CApiBuiltinExecutable(\"" + builtin.name + "\", " + builtin.call + ", " + builtin.returnType + "," + argString + ", " + builtin.id + "),");
+            lines.add("                    new CApiBuiltinExecutable(\"" + builtin.name + "\", " + builtin.call + ", " + builtin.returnType + ",");
+            String argString = Arrays.stream(builtin.arguments).map(Object::toString).collect(Collectors.joining(", "));
+            lines.add("                                    new ArgDescriptor[]{" + argString + "}, " + builtin.id + "),");
         }
         lines.add("    };");
         lines.add("");
@@ -464,7 +485,7 @@ public final class CApiCodeGen {
         lines.add("        return null;");
         lines.add("    }");
 
-        writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCExtBuiltinRegistry.java"), lines);
+        return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCExtBuiltinRegistry.java"), lines);
     }
 
     /**
@@ -486,12 +507,16 @@ public final class CApiCodeGen {
         }
         Collections.sort(allBuiltins, (a, b) -> a.name.compareTo(b.name));
 
-        generateCForwards(allBuiltins);
-        generateCApiSource(javaBuiltins);
-        generateCApiHeader(javaBuiltins);
-        generateBuiltinRegistry(javaBuiltins);
+        boolean changed = false;
+        changed |= generateCForwards(allBuiltins);
+        changed |= generateCApiSource(javaBuiltins);
+        changed |= generateCApiHeader(javaBuiltins);
+        changed |= generateBuiltinRegistry(javaBuiltins);
 
         checkImports(allBuiltins);
+        if (changed) {
+            System.exit(-1);
+        }
     }
 
     /**
@@ -532,11 +557,12 @@ public final class CApiCodeGen {
                                     "PyObject_CallFunctionObjArgs", "_PyByteArray_empty_string", "_Py_tracemalloc_config"));
 
     /**
-     * Check the list of implemented and unimplemented builtins agains the list of CPython exported
+     * Check the list of implemented and unimplemented builtins against the list of CPython exported
      * symbols, to determine if builtins are missing. If a builtin is missing, this function
      * suggests the appropriate {@link CApiBuiltin} specification.
      */
-    private static void checkImports(List<CApiBuiltinDesc> builtins) throws IOException {
+    private static boolean checkImports(List<CApiBuiltinDesc> builtins) throws IOException {
+        boolean result = false;
         List<String> lines = Files.readAllLines(resolvePath(Path.of("com.oracle.graal.python.cext", "CAPIFunctions.txt")));
 
         TreeSet<String> newBuiltins = new TreeSet<>();
@@ -562,8 +588,9 @@ public final class CApiCodeGen {
             }
         }
         if (!newBuiltins.isEmpty()) {
-            System.out.println("new builtins (defined in CPython, but not in GraalPy):");
+            System.out.println("missing builtins (defined in CPython, but not in GraalPy):");
             newBuiltins.stream().forEach(System.out::println);
+            result = true;
         }
 
         names.removeIf(n -> n.startsWith("Py_get_"));
@@ -572,5 +599,6 @@ public final class CApiCodeGen {
         names.removeIf(n -> n.startsWith("_PyTruffle"));
         System.out.println("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");
         System.out.println("    " + names.stream().collect(Collectors.joining(", ")));
+        return result;
     }
 }

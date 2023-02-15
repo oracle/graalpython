@@ -1762,6 +1762,9 @@ def python_style_checks(args):
         mx.command_function("eclipseformat")(["--primary"])
     if "--no-spotbugs" not in args:
         mx.command_function("spotbugs")([])
+    r = generate_capi_forwards([])
+    if r != 0:
+        mx.abort("re-generating C API forwards produced changes, out of sync")
 
 
 def python_checkcopyrights(args):
@@ -2713,7 +2716,7 @@ def no_return(fn):
     return inner
 
 
-def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=False, **kwargs):
+def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, **kwargs):
     dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     if extra_dists:
