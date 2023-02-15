@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
 public final class PString extends PSequence {
     public static final HiddenKey INTERNED = new HiddenKey("_interned");

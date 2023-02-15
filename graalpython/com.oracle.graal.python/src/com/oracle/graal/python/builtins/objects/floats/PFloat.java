@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -43,6 +43,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+@SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
