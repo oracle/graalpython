@@ -1813,6 +1813,8 @@ def _python_checkpatchfiles():
             'scipy-1.4.1.patch',
             'scipy-1.7.3.patch',
             'scipy-1.8.1.patch',
+            'scipy-1.9.1.patch',
+            'scipy-1.10.0.patch',
             # Empty license field, skip it. It's MIT
             'setuptools-60.patch',
             'setuptools-60.9.patch',
