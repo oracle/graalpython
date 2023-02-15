@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -187,16 +186,6 @@ public final class PythonCextUnicodeBuiltins {
 
         protected boolean isPStringType(Object obj, GetClassNode getClassNode) {
             return getClassNode.execute(obj) == PythonBuiltinClassType.PString;
-        }
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    public abstract static class PyUnicode_GetLength extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        public static Object getLength(Object obj,
-                        @Cached StringLenNode lenNode) {
-            return lenNode.execute(obj);
         }
     }
 

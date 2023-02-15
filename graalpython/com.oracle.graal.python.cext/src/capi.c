@@ -2060,10 +2060,6 @@ PyAPI_FUNC(PyObject*) PyUnicode_FromOrdinal(int a) {
 PyAPI_FUNC(PyObject*) PyUnicode_FromString(const char* a) {
     return GraalPyUnicode_FromString(truffleString(a));
 }
-#undef PyUnicode_GetLength
-PyAPI_FUNC(Py_ssize_t) PyUnicode_GetLength(PyObject* a) {
-    return GraalPyUnicode_GetLength(a);
-}
 #undef PyUnicode_Join
 PyAPI_FUNC(PyObject*) PyUnicode_Join(PyObject* a, PyObject* b) {
     return GraalPyUnicode_Join(a, b);

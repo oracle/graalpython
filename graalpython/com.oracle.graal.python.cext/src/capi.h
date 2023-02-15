@@ -376,7 +376,6 @@ typedef struct {
     BUILTIN(PyUnicode_FromObject, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_FromOrdinal, PyObject*, int) \
     BUILTIN(PyUnicode_FromString, PyObject*, const char*) \
-    BUILTIN(PyUnicode_GetLength, Py_ssize_t, PyObject*) \
     BUILTIN(PyUnicode_Join, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyUnicode_ReadChar, Py_UCS4, PyObject*, Py_ssize_t) \
     BUILTIN(PyUnicode_Replace, PyObject*, PyObject*, PyObject*, PyObject*, Py_ssize_t) \

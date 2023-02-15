@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.PolyglotImpl;
@@ -650,6 +651,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_FromStringAndSize", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyUnicode_FromUnicode", ret = PyObject, args = {CONST_PY_UNICODE, Py_ssize_t}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyUnicode_FromWideChar", ret = PyObject, args = {CONST_WCHAR_PTR, Py_ssize_t}, call = PolyglotImpl)
+    @CApiBuiltin(name = "PyUnicode_GetLength", ret = Py_ssize_t, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyUnicode_InternFromString", ret = PyObject, args = {ConstCharPtrAsTruffleString}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyUnicode_InternInPlace", ret = Void, args = {PyObjectPtr}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyUnicode_New", ret = PyObject, args = {Py_ssize_t, PY_UCS4}, call = PolyglotImpl)

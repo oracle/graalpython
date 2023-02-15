@@ -583,6 +583,11 @@ PyObject * PyObject_CallMethodObjArgs(PyObject *a, PyObject *b, ...)  {
     exit(-1);
 }
 
+int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
+    printf("_PyArg_ParseStack_SizeT not implemented in capi_native - exiting\n");
+    exit(-1);
+}
+
 PyAPI_FUNC(int) PyArg_Parse(PyObject* a, const char* b, ...) {
     va_list args;
     va_start(args, b);

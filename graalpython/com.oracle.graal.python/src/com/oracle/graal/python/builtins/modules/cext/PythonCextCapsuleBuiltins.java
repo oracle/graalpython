@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
@@ -174,7 +175,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
     public abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
         private void checkLegalCapsule(PyCapsule capsule) {
             if (capsule.getPointer() == null) {

@@ -236,6 +236,10 @@ PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
     return NULL;
 }
 
+Py_ssize_t PyUnicode_GetLength(PyObject *unicode) {
+    return PyUnicode_GET_LENGTH(unicode);
+}
+
 void PyUnicode_Append(PyObject **p_left, PyObject *right) {
     // XX: This implementation misses the fact that some unicode storages can be resized.
     *p_left = PyUnicode_Concat(*p_left, right);
