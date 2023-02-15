@@ -239,7 +239,8 @@ public final class CApiCodeGen {
         assert start != -1 && end != -1;
         List<String> result = new ArrayList<>();
         result.addAll(lines.subList(0, start));
-        result.add("// GENERATED CODE - see PythonCextBuiltins");
+        result.add("// GENERATED CODE - see " + CApiCodeGen.class.getSimpleName());
+        result.add("// This can be re-generated using the 'mx python-capi-forwards' command or by executing the main class " + CApiCodeGen.class.getSimpleName());
         result.addAll(contents);
         result.addAll(lines.subList(end, lines.size()));
         Files.write(capi, result);
