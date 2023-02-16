@@ -1184,21 +1184,6 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @TruffleBoundary
-    protected static CharBuffer allocateCharBuffer(int cap) {
-        return CharBuffer.allocate(cap);
-    }
-
-    @TruffleBoundary
-    protected static TruffleString toString(CharBuffer cb) {
-        int len = cb.position();
-        if (len > 0) {
-            cb.rewind();
-            return toTruffleStringUncached(cb.subSequence(0, len).toString());
-        }
-        return T_EMPTY_STRING;
-    }
-
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
     @GenerateNodeFactory
     abstract static class PyTruffle_Bytes_AsString extends CApiUnaryBuiltinNode {

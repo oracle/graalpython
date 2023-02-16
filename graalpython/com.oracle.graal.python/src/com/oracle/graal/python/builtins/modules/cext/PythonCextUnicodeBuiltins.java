@@ -56,6 +56,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -107,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -360,7 +362,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
     public abstract static class PyUnicode_Join extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"isString(separator) || isStringSubtype(separator, getClassNode, isSubtypeNode)"})
         public Object find(Object separator, Object seq,
@@ -382,9 +383,35 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "_PyUnicode_EqualToASCIIString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    public abstract static class _PyUnicode_EqualToASCIIString extends CApiBinaryBuiltinNode {
+
+        @Specialization(guards = {"isAnyString(left, getClassNode, isSubtypeNode)", "isAnyString(right, getClassNode, isSubtypeNode)"})
+        public static Object compare(Object left, Object right,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached EqNode eqNode,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return PInt.intValue(isTrue.execute(null, eqNode.execute(null, left, right)));
+        }
+
+        @Specialization(guards = {"!isAnyString(left, getClassNode, isSubtypeNode) || !isAnyString(right, getClassNode, isSubtypeNode)"})
+        public Object compare(Object left, Object right,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            throw raise(TypeError, ErrorMessages.CANT_COMPARE, left, right);
+        }
+
+        protected boolean isAnyString(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return PGuards.isString(obj) || isStringSubtype(obj, getClassNode, isSubtypeNode);
+        }
+
+        private static boolean isStringSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PString);
+        }
+    }
+
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
     public abstract static class PyUnicode_Compare extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"isAnyString(left, getClassNode, isSubtypeNode)", "isAnyString(right, getClassNode, isSubtypeNode)"})
@@ -633,33 +660,38 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, Int}, call = Ignored)
     abstract static class PyTruffleUnicode_DecodeUTF8Stateful extends CApiTernaryBuiltinNode {
 
-        @TruffleBoundary
-        protected static int remaining(ByteBuffer cb) {
-            return cb.remaining();
-        }
-
         @Specialization
         Object doUtf8Decode(Object cByteArray, TruffleString errors, @SuppressWarnings("unused") int reportConsumed,
                         @Cached GetByteArrayNode getByteArrayNode) {
 
             try {
-                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(cByteArray, -1));
-                int n = remaining(inputBuffer);
-                CharBuffer resultBuffer = PythonCextBuiltins.allocateCharBuffer(n * 4);
-                decodeUTF8(resultBuffer, inputBuffer, errors);
-                return factory().createTuple(new Object[]{PythonCextBuiltins.toString(resultBuffer), n - remaining(inputBuffer)});
-            } catch (InteropException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+                byte[] bytes = getByteArrayNode.execute(cByteArray, -1);
+                return factory().createTuple(decode(errors, bytes));
             } catch (OverflowException e) {
                 throw raise(PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
+            } catch (InteropException e) {
+                throw raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             }
         }
 
         @TruffleBoundary
-        private static void decodeUTF8(CharBuffer resultBuffer, ByteBuffer inputBuffer, TruffleString errors) {
+        private static Object[] decode(TruffleString errors, byte[] bytes) {
+            ByteBuffer inputBuffer = wrap(bytes);
+            int n = inputBuffer.remaining();
+            CharBuffer resultBuffer = CharBuffer.allocate(n * 4);
+
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, PRaiseNode.getUncached(), TruffleString.EqualNode.getUncached());
             decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
+            int len = resultBuffer.position();
+            TruffleString string;
+            if (len > 0) {
+                resultBuffer.rewind();
+                string = toTruffleStringUncached(resultBuffer.subSequence(0, len).toString());
+            } else {
+                string = T_EMPTY_STRING;
+            }
+            return new Object[]{string, n - inputBuffer.remaining()};
         }
     }
 
@@ -702,7 +734,7 @@ public final class PythonCextUnicodeBuiltins {
              * are directly handled by the node. Otherwise, it is assumed that the object is a typed
              * pointer object.
              */
-            return unicodeFromWcharNode.execute(arr, castToInt(elementSize));
+            return factory().createString(unicodeFromWcharNode.execute(arr, castToInt(elementSize)));
         }
     }
 

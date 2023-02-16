@@ -98,6 +98,7 @@ import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
@@ -439,7 +440,7 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_IsTrue extends CApiUnaryBuiltinNode {
         @Specialization
         static int isTrue(Object obj,
-                        @Cached com.oracle.graal.python.lib.PyObjectIsTrueNode isTrueNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             return isTrueNode.execute(null, obj) ? 1 : 0;
         }
     }

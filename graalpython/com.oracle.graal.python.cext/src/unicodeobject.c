@@ -369,16 +369,21 @@ PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
 }
 
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
-	// CPython assumes latin1 when decoding an UCS1 array
-	return pythonToNative(javaStringToTruffleString(polyglot_from_string((const char *) u, "ISO-8859-1")));
+	Py_UCS1* buffer = (Py_UCS1*) malloc(size * PyUnicode_1BYTE_KIND);
+	memcpy(buffer, u, size * PyUnicode_1BYTE_KIND);
+    return GraalPyTruffleUnicode_New(polyglot_from_Py_UCS1_array(buffer, size), PyUnicode_1BYTE_KIND, 0);
 }
 
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
-	return GraalPyTruffle_Unicode_FromWchar(polyglot_from_Py_UCS2_array(u, size), sizeof(Py_UCS2));
+	Py_UCS2* buffer = (Py_UCS2*) malloc(size * PyUnicode_2BYTE_KIND);
+	memcpy(buffer, u, size * PyUnicode_2BYTE_KIND);
+    return GraalPyTruffleUnicode_New(polyglot_from_Py_UCS2_array(buffer, size), PyUnicode_2BYTE_KIND, 0);
 }
 
 static PyObject* _PyUnicode_FromUCS4(const Py_UCS4 *u, Py_ssize_t size) {
-	return GraalPyTruffle_Unicode_FromWchar(polyglot_from_Py_UCS4_array(u, size), sizeof(Py_UCS4));
+	Py_UCS4* buffer = (Py_UCS4*) malloc(size * PyUnicode_4BYTE_KIND);
+	memcpy(buffer, u, size * PyUnicode_4BYTE_KIND);
+    return GraalPyTruffleUnicode_New(polyglot_from_Py_UCS4_array(buffer, size), PyUnicode_4BYTE_KIND, 0);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"

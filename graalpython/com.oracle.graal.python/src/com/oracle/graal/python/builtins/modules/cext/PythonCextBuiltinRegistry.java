@@ -768,7 +768,7 @@ public abstract class PythonCextBuiltinRegistry {
                                     new ArgDescriptor[]{PyCMethodObject}, 302),
                     new CApiBuiltinExecutable("Py_get_PyCompactUnicodeObject_wstr_length", Ignored, Py_ssize_t,
                                     new ArgDescriptor[]{PyCompactUnicodeObject}, 303),
-                    new CApiBuiltinExecutable("Py_get_PyDescrObject_d_name", Ignored, PyObject,
+                    new CApiBuiltinExecutable("Py_get_PyDescrObject_d_name", Ignored, PyObjectBorrowed,
                                     new ArgDescriptor[]{PyDescrObject}, 304),
                     new CApiBuiltinExecutable("Py_get_PyDescrObject_d_type", Ignored, PyTypeObject,
                                     new ArgDescriptor[]{PyDescrObject}, 305),
@@ -922,7 +922,7 @@ public abstract class PythonCextBuiltinRegistry {
                                     new ArgDescriptor[]{PySliceObject}, 379),
                     new CApiBuiltinExecutable("Py_get_PySliceObject_stop", Ignored, PyObject,
                                     new ArgDescriptor[]{PySliceObject}, 380),
-                    new CApiBuiltinExecutable("Py_get_PyThreadState_dict", Ignored, PyObject,
+                    new CApiBuiltinExecutable("Py_get_PyThreadState_dict", Ignored, PyObjectBorrowed,
                                     new ArgDescriptor[]{PyThreadState}, 381),
                     new CApiBuiltinExecutable("Py_get_PyTupleObject_ob_item", Ignored, PyObjectPtr,
                                     new ArgDescriptor[]{PyTupleObject}, 382),
@@ -2145,7 +2145,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 493:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory._PyUnicode_AsUTF8StringNodeGen.create();
             case 494:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_CompareNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory._PyUnicode_EqualToASCIIStringNodeGen.create();
             case 495:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory._Py_HashDoubleNodeGen.create();
         }
