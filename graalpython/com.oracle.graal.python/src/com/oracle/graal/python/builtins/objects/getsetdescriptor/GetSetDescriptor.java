@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,15 +45,17 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
     private final Object get;
     private final Object set;
-    private final TruffleString name;
+    private final PString name;
     private final boolean allowsDelete;
     private final Object type;
 
@@ -67,7 +69,7 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
         this.get = get;
         this.set = set;
-        this.name = name;
+        this.name = PythonUtils.toPString(name);
         this.type = type;
         this.allowsDelete = allowsDelete;
     }
@@ -85,6 +87,10 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
     }
 
     public TruffleString getName() {
+        return name.getMaterialized();
+    }
+
+    public PString getCApiName() {
         return name;
     }
 
@@ -100,7 +106,7 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         if (klass == type) {
             return this;
         } else {
-            return factory.createGetSetDescriptor(get, set, name, klass, allowsDelete);
+            return factory.createGetSetDescriptor(get, set, getName(), klass, allowsDelete);
         }
     }
 }

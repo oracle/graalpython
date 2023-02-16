@@ -486,7 +486,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyByteArrayObject_ob_exports extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static long doObExports(PByteArray object) {
+        static long get(PByteArray object) {
             return object.getExports();
         }
     }
@@ -495,7 +495,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_set_PyByteArrayObject_ob_exports extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doObExports(PByteArray object, int value) {
+        static Object set(PByteArray object, int value) {
             object.setExports(value);
             return PNone.NO_VALUE;
         }
@@ -514,17 +514,17 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PyDescrObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyDescrObject}, call = Ignored)
     public abstract static class Py_get_PyDescrObject_d_name extends CApiUnaryBuiltinNode {
 
         @Specialization
-        public Object doDType(PBuiltinFunction object) {
-            return object.getName();
+        public Object get(PBuiltinFunction object) {
+            return object.getCApiName();
         }
 
         @Specialization
         public Object get(GetSetDescriptor object) {
-            return object.getName();
+            return object.getCApiName();
         }
     }
 
@@ -532,7 +532,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyDescrObject_d_type extends CApiUnaryBuiltinNode {
 
         @Specialization
-        public Object doDType(PBuiltinFunction object) {
+        public Object get(PBuiltinFunction object) {
             Object enclosingType = object.getEnclosingType();
             return enclosingType != null ? enclosingType : getNativeNull();
         }
@@ -562,7 +562,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
     public abstract static class Py_get_PyGetSetDef_doc extends CApiUnaryBuiltinNode {
         @Specialization
-        Object getDoc(PythonObject object,
+        Object get(PythonObject object,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
             Object doc = getAttrNode.execute(object, T___DOC__);
@@ -585,7 +585,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
     public abstract static class Py_get_PyGetSetDef_name extends CApiUnaryBuiltinNode {
         @Specialization
-        Object getName(PythonObject object,
+        Object get(PythonObject object,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
             Object name = getAttrNode.execute(object, T___NAME__);
@@ -608,17 +608,17 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Pointer, args = {PyLongObject}, call = Ignored)
     public abstract static class Py_get_PyLongObject_ob_digit extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object doObDigit(int object) {
+        static Object get(int object) {
             return new PyLongDigitsWrapper(object);
         }
 
         @Specialization
-        static Object doObDigit(long object) {
+        static Object get(long object) {
             return new PyLongDigitsWrapper(object);
         }
 
         @Specialization
-        static Object doObDigit(PInt object) {
+        static Object get(PInt object) {
             return new PyLongDigitsWrapper(object);
         }
     }
@@ -651,7 +651,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMethodDef_ml_doc extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object getDoc(PythonObject object,
+        Object get(PythonObject object,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Cached CastToTruffleStringNode castToStringNode) {
             Object doc = getAttrNode.execute(object, PyMethodDefWrapper.__C_DOC__);
@@ -673,7 +673,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Int, args = {PyMethodDef}, call = Ignored)
     public abstract static class Py_get_PyMethodDef_ml_flags extends CApiUnaryBuiltinNode {
         @Specialization
-        static int getFlags(Object object) {
+        static int get(Object object) {
             if (object instanceof PBuiltinFunction) {
                 return ((PBuiltinFunction) object).getFlags();
             } else if (object instanceof PBuiltinMethod) {
@@ -688,7 +688,7 @@ public final class PythonCextSlotBuiltins {
 
         @TruffleBoundary
         private static Object createFunctionWrapper(Object object) {
-            int flags = Py_get_PyMethodDef_ml_flags.getFlags(object);
+            int flags = Py_get_PyMethodDef_ml_flags.get(object);
             PythonNativeWrapper wrapper;
             if (CExtContext.isMethNoArgs(flags)) {
                 wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
@@ -702,11 +702,6 @@ public final class PythonCextSlotBuiltins {
                 throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
             }
             return wrapper;
-        }
-
-        @Fallback
-        Object getMeth(Object object) {
-            return createFunctionWrapper(object);
         }
 
         @Specialization
@@ -723,6 +718,11 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         Object getMethFromBuiltinMethod(PBuiltinMethod object) {
             return getMethFromBuiltinFunction(object.getFunction());
+        }
+
+        @Fallback
+        Object getMeth(Object object) {
+            return createFunctionWrapper(object);
         }
     }
 
@@ -757,7 +757,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyInstanceMethodObject}, call = Ignored)
     public abstract static class Py_get_PyInstanceMethodObject_func extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object doFunc(PDecoratedMethod object) {
+        static Object get(PDecoratedMethod object) {
             return object.getCallable();
         }
     }
@@ -765,12 +765,12 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyMethodObject}, call = Ignored)
     public abstract static class Py_get_PyMethodObject_im_func extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object doImFunc(PBuiltinMethod object) {
+        static Object get(PBuiltinMethod object) {
             return object.getFunction();
         }
 
         @Specialization
-        static Object doImFunc(PMethod object) {
+        static Object get(PMethod object) {
             return object.getFunction();
         }
     }
@@ -779,12 +779,12 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMethodObject_im_self extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object doImSelf(PBuiltinMethod object) {
+        static Object get(PBuiltinMethod object) {
             return object.getSelf();
         }
 
         @Specialization
-        static Object doImSelf(PMethod object) {
+        static Object get(PMethod object) {
             return object.getSelf();
         }
     }
@@ -1187,7 +1187,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {PyThreadState}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyThreadState}, call = Ignored)
     public abstract static class Py_get_PyThreadState_dict extends CApiUnaryBuiltinNode {
 
         @Specialization

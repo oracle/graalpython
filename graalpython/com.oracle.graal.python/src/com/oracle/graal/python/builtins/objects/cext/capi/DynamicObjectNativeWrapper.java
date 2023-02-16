@@ -1026,7 +1026,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(D_NAME, key)")
         static Object doDName(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(object.getName());
+            return toSulongNode.execute(object.getCApiName());
         }
 
         @Specialization(guards = "eq(D_TYPE, key)")
@@ -1039,7 +1039,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(D_NAME, key)")
         static Object doDName(GetSetDescriptor object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(object.getName());
+            return toSulongNode.execute(object.getCApiName());
         }
 
         @Specialization(guards = "eq(D_TYPE, key)")
