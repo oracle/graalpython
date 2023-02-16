@@ -262,6 +262,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -284,6 +285,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1593,9 +1595,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     public abstract static class MinMaxNode extends PythonBuiltinNode {
-
-        @CompilationFinal private boolean seenNonBoolean = false;
-
         @NeverDefault
         protected final BinaryComparisonNode createComparison() {
             if (this instanceof MaxNode) {
@@ -1606,29 +1605,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone key, Object defaultVal,
+        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached InlinedConditionProfile hasDefaultProfile) {
-            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, inliningTarget, getIter, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
-        }
+                        @Shared @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Shared @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Shared @Cached CallNode.Lazy keyCall,
+                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
+                        @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
+                        @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Cached InlinedConditionProfile hasDefaultProfile) {
+            boolean kwArgsAreNone = keywordArgIsNone.profile(inliningTarget, PGuards.isPNone(keywordArgIn));
+            Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
-        @Specialization(guards = {"args.length == 0", "!isPNone(keywordArg)"})
-        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg, Object defaultVal,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached CallNode keyCall,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached InlinedConditionProfile hasDefaultProfile) {
             Object iterator = getIter.execute(frame, arg1);
             Object currentValue;
             try {
@@ -1641,32 +1632,37 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return defaultVal;
                 }
             }
-            Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = nextNode.execute(frame, iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile2);
-                    break;
-                }
-                Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-                boolean isTrue;
-                if (!seenNonBoolean) {
+            Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
+            int loopCount = 0;
+            try {
+                while (true) {
+                    Object nextValue;
                     try {
-                        isTrue = compare.executeBool(frame, nextKey, currentKey);
-                    } catch (UnexpectedResultException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        seenNonBoolean = true;
-                        isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                        nextValue = nextNode.execute(frame, iterator);
+                    } catch (PException e) {
+                        e.expectStopIteration(inliningTarget, errorProfile2);
+                        break;
                     }
-                } else {
-                    isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
+                    Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
+                    boolean isTrue;
+                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
+                        try {
+                            isTrue = compare.executeBool(frame, nextKey, currentKey);
+                        } catch (UnexpectedResultException e) {
+                            seenNonBoolean.enter(inliningTarget);
+                            isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                        }
+                    } else {
+                        isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
+                    }
+                    if (isTrue) {
+                        currentKey = nextKey;
+                        currentValue = nextValue;
+                    }
+                    loopCount++;
                 }
-                if (isTrue) {
-                    currentKey = nextKey;
-                    currentValue = nextValue;
-                }
+            } finally {
+                LoopNode.reportLoopCount(this, loopCount < 0 ? Integer.MAX_VALUE : loopCount);
             }
             return currentValue;
         }
@@ -1675,52 +1671,54 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return this instanceof MaxNode ? "max" : "min";
         }
 
-        @Specialization(guards = "args.length != 0")
-        Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg, Object defaultVal,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Shared("hasDefaultProfile") @Cached ConditionProfile hasDefaultProfile) {
-            return minmaxBinaryWithKey(frame, arg1, args, null, defaultVal, compare, null, moreThanTwo, castToBooleanNode, hasDefaultProfile);
-        }
+        @Specialization(guards = {"args.length != 0"})
+        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Shared @Cached CallNode.Lazy keyCall,
+                        @Shared @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
+                        @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
+                        @Cached InlinedConditionProfile moreThanTwo,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedConditionProfile hasDefaultProfile) {
 
-        @Specialization(guards = {"args.length != 0", "!isPNone(keywordArg)"})
-        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArg, Object defaultVal,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached CallNode keyCall,
-                        @Cached ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Shared("hasDefaultProfile") @Cached ConditionProfile hasDefaultProfile) {
+            boolean kwArgsAreNone = keywordArgIsNone.profile(inliningTarget, PGuards.isPNone(keywordArgIn));
+            Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
-            if (!hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
+            if (!hasDefaultProfile.profile(inliningTarget, PGuards.isNoValue(defaultVal))) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_SPECIFY_DEFAULT_FOR_S, getName());
             }
             Object currentValue = arg1;
-            Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
+            Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
-            Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
+            Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
             boolean isTrue;
-            try {
-                isTrue = compare.executeBool(frame, nextKey, currentKey);
-            } catch (UnexpectedResultException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                seenNonBoolean = true;
-                isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+            if (!seenNonBoolean.wasEntered(inliningTarget)) {
+                try {
+                    isTrue = compare.executeBool(frame, nextKey, currentKey);
+                } catch (UnexpectedResultException e) {
+                    seenNonBoolean.enter(inliningTarget);
+                    isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                }
+            } else {
+                isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
             }
             if (isTrue) {
                 currentKey = nextKey;
                 currentValue = nextValue;
             }
-            if (moreThanTwo.profile(args.length > 1)) {
-                for (int i = 0; i < args.length; i++) {
+            if (moreThanTwo.profile(inliningTarget, args.length > 1)) {
+                loopProfile.profileCounted(inliningTarget, args.length);
+                LoopNode.reportLoopCount(this, args.length);
+                for (int i = 0; loopProfile.inject(inliningTarget, i < args.length); i++) {
                     nextValue = args[i];
-                    nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-                    if (!seenNonBoolean) {
+                    nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
+                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
                         try {
                             isTrue = compare.executeBool(frame, nextKey, currentKey);
                         } catch (UnexpectedResultException e) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            seenNonBoolean = true;
+                            seenNonBoolean.enter(inliningTarget);
                             isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
                         }
                     } else {
@@ -1735,8 +1733,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        private static Object applyKeyFunction(VirtualFrame frame, Object keywordArg, CallNode keyCall, Object currentValue) {
-            return keyCall == null ? currentValue : keyCall.execute(frame, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
+        private static Object applyKeyFunction(VirtualFrame frame, Node inliningTarget, Object keywordArg, CallNode.Lazy keyCall, Object currentValue) {
+            return keywordArg == null ? currentValue : keyCall.get(inliningTarget).execute(frame, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
         }
     }
 

@@ -67,6 +67,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -296,5 +298,21 @@ public abstract class CallNode extends PNodeWithContext {
 
     protected static boolean isForeignMethod(Object object) {
         return object instanceof ForeignMethod;
+    }
+
+    @GenerateInline
+    @GenerateUncached(false)
+    @GenerateCached(false)
+    public abstract static class Lazy extends Node {
+        public final CallNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract CallNode execute(Node inliningTarget);
+
+        @Specialization
+        protected static CallNode doIt(@Cached(inline = false) CallNode callNode) {
+            return callNode;
+        }
     }
 }
