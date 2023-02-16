@@ -84,7 +84,7 @@ if sys.implementation.name == "graalpy":
 
         def run_test_fun(self):
             code = "import patched_package; print(patched_package.test_fun())"
-            out = subprocess.getoutput(f"{self.venv_python} -c '{code}'").strip()
+            out = subprocess.check_output([self.venv_python, '-c', code], universal_newlines=True).strip()
             return out
 
         def test_pip_launcher(self):
