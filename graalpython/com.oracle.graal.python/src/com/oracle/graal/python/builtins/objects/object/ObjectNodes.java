@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -367,6 +368,11 @@ public abstract class ObjectNodes {
         @Specialization
         Object id(PythonNativeVoidPtr self) {
             return self.getNativePointer();
+        }
+
+        @Specialization
+        Object id(PCell self) {
+            return PythonContext.get(this).getNextObjectId(self);
         }
 
         protected static boolean isDefaultCase(PythonObject object) {
