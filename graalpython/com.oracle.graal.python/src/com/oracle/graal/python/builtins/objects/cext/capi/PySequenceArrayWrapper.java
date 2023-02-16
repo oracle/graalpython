@@ -449,7 +449,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             } else if (!isObjectArrayProfile.profile(array instanceof Object[])) {
                 array = generalize(s);
             }
-            return storageToNativeNode.execute(array);
+            return storageToNativeNode.execute(array, s.length());
         }
 
         @TruffleBoundary
@@ -466,7 +466,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         static NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             // TODO(fa): not sure if that completely reflects semantics
-            return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY);
+            return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY, 0);
         }
 
         protected static boolean isNative(SequenceStorage s) {

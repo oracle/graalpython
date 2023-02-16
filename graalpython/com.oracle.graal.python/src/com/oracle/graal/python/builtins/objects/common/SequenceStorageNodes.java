@@ -751,7 +751,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (byte) readNativeElement(lib, storage.getPtr(), i, raise);
             }
-            return storageToNativeNode.execute(newArray);
+            return storageToNativeNode.execute(newArray, length);
         }
 
         @Specialization(guards = "isInt(storage.getElementType())")
@@ -763,7 +763,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (int) readNativeElement(lib, storage.getPtr(), i, raise);
             }
-            return storageToNativeNode.execute(newArray);
+            return storageToNativeNode.execute(newArray, length);
         }
 
         @Specialization(guards = "isLong(storage.getElementType())")
@@ -775,7 +775,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (long) readNativeElement(lib, storage.getPtr(), i, raise);
             }
-            return storageToNativeNode.execute(newArray);
+            return storageToNativeNode.execute(newArray, length);
         }
 
         @Specialization(guards = "isDouble(storage.getElementType())")
@@ -787,7 +787,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (double) readNativeElement(lib, storage.getPtr(), i, raise);
             }
-            return storageToNativeNode.execute(newArray);
+            return storageToNativeNode.execute(newArray, length);
         }
 
         @Specialization(guards = "isObject(storage.getElementType())")
@@ -799,7 +799,7 @@ public abstract class SequenceStorageNodes {
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = readNativeElement(lib, storage.getPtr(), i, raise);
             }
-            return storageToNativeNode.execute(newArray);
+            return storageToNativeNode.execute(newArray, length);
         }
 
         private static Object readNativeElement(InteropLibrary lib, Object ptr, int idx, PRaiseNode raise) {
@@ -1580,34 +1580,34 @@ public abstract class SequenceStorageNodes {
     @GenerateUncached
     public abstract static class StorageToNativeNode extends Node {
 
-        public abstract NativeSequenceStorage execute(Object obj);
+        public abstract NativeSequenceStorage execute(Object obj, int length);
 
         @Specialization
-        static NativeSequenceStorage doByte(byte[] arr,
+        static NativeSequenceStorage doByte(byte[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Byte);
         }
 
         @Specialization
-        static NativeSequenceStorage doInt(int[] arr,
+        static NativeSequenceStorage doInt(int[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Int);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Int);
         }
 
         @Specialization
-        static NativeSequenceStorage doLong(long[] arr,
+        static NativeSequenceStorage doLong(long[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Long);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Long);
         }
 
         @Specialization
-        static NativeSequenceStorage doDouble(double[] arr,
+        static NativeSequenceStorage doDouble(double[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Double);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Double);
         }
 
         @Specialization
-        static NativeSequenceStorage doObject(Object[] arr,
+        static NativeSequenceStorage doObject(Object[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode,
                         @Exclusive @Cached ToSulongNode toSulongNode) {
             Object[] wrappedValues = new Object[arr.length];
