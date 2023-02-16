@@ -265,7 +265,6 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
-import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractBuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
@@ -567,7 +566,6 @@ public abstract class Python3Core {
                         new UnicodeDataModuleBuiltins(),
                         new LocaleModuleBuiltins(),
                         new SysModuleBuiltins(),
-                        new BufferBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
                         PythonOptions.WITHOUT_SSL ? null : new SSLModuleBuiltins(),

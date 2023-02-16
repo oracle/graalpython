@@ -99,7 +99,6 @@ static void object_dealloc(PyObject *self) {
 /* prototype */
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
 
-PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 
@@ -115,7 +114,6 @@ PyTypeObject Arraytype = 					PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_
 PyTypeObject PyArrayIter_Type = 			PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
 PyTypeObject PyBaseObject_Type = 			PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del);
 PyTypeObject PyBool_Type = 					PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(struct _longobject));
-PyTypeObject PyBuffer_Type = 				PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyBufferDecorator));
 PyTypeObject PyByteArray_Type = 			PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyByteArrayObject));
 PyTypeObject PyBytes_Type = 				PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, PyBytesObject_SIZE, sizeof(char));
 PyTypeObject PyCapsule_Type = 				PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
@@ -248,7 +246,6 @@ declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject) \
 declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject) \
 declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject) \
 declare_type(_PyExc_StopIteration, StopIteration, PyStopIterationObject) \
-declare_type(PyBuffer_Type, buffer, PyBufferDecorator) \
 declare_type(PyFunction_Type, function, PyFunctionObject) \
 declare_type(PyMethod_Type, method, PyMethodObject) \
 declare_type(PyInstanceMethod_Type, instancemethod, PyInstanceMethodObject) \
@@ -392,8 +389,7 @@ int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
 void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
-/* MEMORYVIEW, BUFFERDECORATOR */
-int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
+/* MEMORYVIEW */
 int memoryview_getbuffer(PyMemoryViewObject *self, Py_buffer *view, int flags);
 void memoryview_releasebuffer(PyMemoryViewObject *self, Py_buffer *view);
 
@@ -409,12 +405,6 @@ static void initialize_bufferprocs() {
         (releasebufferproc)bytearray_releasebuffer,  /* bf_releasebuffer */
     };
     set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
-
-    static PyBufferProcs buffer_as_buffer = {
-        (getbufferproc)bufferdecorator_getbuffer,    /* bf_getbuffer */
-        (releasebufferproc)NULL,                     /* bf_releasebuffer */
-    };
-    set_PyTypeObject_tp_as_buffer(&PyBuffer_Type, &buffer_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
         (getbufferproc)memoryview_getbuffer,         /* bf_getbuffer */

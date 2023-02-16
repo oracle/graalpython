@@ -141,7 +141,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
@@ -944,16 +943,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(MD_STATE, key)")
         static Object doMdState(PythonModule object, @SuppressWarnings("unused") DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return object.getNativeModuleState();
-        }
-
-        @Specialization(guards = "eq(BUF_DELEGATE, key)")
-        static Object doBufDelegate(PBuffer object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object.getDelegate(), 1);
-        }
-
-        @Specialization(guards = "eq(BUF_READONLY, key)")
-        static int doBufReadonly(PBuffer object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return object.isReadOnly() ? 1 : 0;
         }
 
         @Specialization(guards = "eq(MEMORYVIEW_FLAGS, key)")

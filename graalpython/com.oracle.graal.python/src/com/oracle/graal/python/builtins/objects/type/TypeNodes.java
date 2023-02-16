@@ -383,7 +383,6 @@ public abstract class TypeNodes {
                 case MemberDescriptor:
                 case PFrame:
                 case PGenerator:
-                case PBuffer:
                 case PSlice:
                 case PTraceback:
                 case PDequeIter:

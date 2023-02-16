@@ -59,7 +59,6 @@
 OBJECT(PyAsyncGen_Type, async_generator) \
 OBJECT(PyBaseObject_Type, object) \
 OBJECT(PyBool_Type, bool) \
-OBJECT(PyBuffer_Type, buffer) \
 OBJECT(PyByteArrayIter_Type, unimplemented) \
 OBJECT(PyByteArray_Type, bytearray) \
 OBJECT(PyBytesIter_Type, unimplemented) \
