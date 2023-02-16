@@ -1762,9 +1762,6 @@ def python_style_checks(args):
         mx.command_function("eclipseformat")(["--primary"])
     if "--no-spotbugs" not in args:
         mx.command_function("spotbugs")([])
-    r = generate_capi_forwards([])
-    if r != 0:
-        mx.abort("re-generating C API forwards produced changes, out of sync")
 
 
 def python_checkcopyrights(args):
@@ -1789,6 +1786,10 @@ def python_checkcopyrights(args):
         os.unlink(listfilename)
 
     _python_checkpatchfiles()
+
+    r = generate_capi_forwards([])
+    if r != 0:
+        mx.abort("re-generating C API forwards produced changes, out of sync")
 
 
 def python_run_mx_filetests(args):
