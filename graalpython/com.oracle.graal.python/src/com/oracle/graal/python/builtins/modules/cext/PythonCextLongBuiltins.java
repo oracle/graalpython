@@ -249,7 +249,6 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(name = "PyLong_FromSsize_t", ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
     @CApiBuiltin(name = "PyLong_FromLong", ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Direct)
     abstract static class PyLong_FromLongLong extends CApiUnaryBuiltinNode {
@@ -277,13 +276,9 @@ public final class PythonCextLongBuiltins {
             }
             return factory().createNativeVoidPtr(pointer);
         }
-
-        @TruffleBoundary
-        private static BigInteger convertToBigInteger(long n) {
-            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
-        }
     }
 
+    @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
     @CApiBuiltin(name = "PyLong_FromUnsignedLong", ret = PyObjectTransfer, args = {UNSIGNED_LONG}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {UNSIGNED_LONG_LONG}, call = Direct)
     abstract static class PyLong_FromUnsignedLongLong extends CApiUnaryBuiltinNode {

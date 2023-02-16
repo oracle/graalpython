@@ -1327,7 +1327,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 84:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyLong_FromLongLongNodeGen.create();
             case 85:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyLong_FromLongLongNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyLong_FromUnsignedLongLongNodeGen.create();
             case 86:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyLong_FromLongLongNodeGen.create();
             case 87:
