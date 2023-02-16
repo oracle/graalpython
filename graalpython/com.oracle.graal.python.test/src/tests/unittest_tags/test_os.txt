@@ -109,6 +109,9 @@
 *graalpython.lib-python.3.test.test_os.GetRandomTests.test_getrandom_random
 *graalpython.lib-python.3.test.test_os.GetRandomTests.test_getrandom_type
 *graalpython.lib-python.3.test.test_os.GetRandomTests.test_getrandom_value
+*graalpython.lib-python.3.test.test_os.LinkTests.test_link
+*graalpython.lib-python.3.test.test_os.LinkTests.test_link_bytes
+*graalpython.lib-python.3.test.test_os.LinkTests.test_unicode_name
 *graalpython.lib-python.3.test.test_os.LoginTests.test_getlogin
 *graalpython.lib-python.3.test.test_os.MakedirTests.test_exist_ok_existing_directory
 *graalpython.lib-python.3.test.test_os.MakedirTests.test_exist_ok_existing_regular_file
