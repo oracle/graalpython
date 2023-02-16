@@ -958,12 +958,18 @@ public abstract class CExtParseArgumentsNode {
                 // NULL-terminated
                 Object kwdname = callCStringToString.call(PythonContext.get(this).getCApiContext(), NativeCAPISymbol.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
                 if (kwdname instanceof TruffleString) {
-                    // the cast to PDict is safe because either it is null or a PDict (ensured by
-                    // the guards)
+                    /*
+                     * the cast to PDict is safe because either it is null or a PDict (ensured by
+                     * the guards)
+                     */
                     out = getDictItemNode.execute(kwds, kwdname);
+                    // always convert native null to Java null
+                    if (out == PythonContext.get(this).getNativeNull()) {
+                        out = null;
+                    }
                 }
             }
-            if ((out == null || out == PythonContext.get(this).getNativeNull()) && !state.restOptional) {
+            if (out == null && !state.restOptional) {
                 raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.S_MISSING_REQUIRED_ARG_POS_D, state.funName, state.v.argnum);
                 throw ParseArgumentsException.raise();
             }
