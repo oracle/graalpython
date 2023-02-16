@@ -2088,7 +2088,9 @@ public abstract class TypeNodes {
                 // takes care of checking if we may_add_dict and adds it if needed
                 addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize);
                 addDictDescrAttribute(basesArray, pythonClass, factory);
-                addWeakrefDescrAttribute(pythonClass, factory);
+                if (mayAddWeakRef) {
+                    addWeakrefDescrAttribute(pythonClass, factory);
+                }
             } else {
                 // have slots
                 // Make it into a list
