@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,9 +26,11 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
@@ -37,6 +39,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -49,6 +54,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -102,6 +108,19 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         Object objclass(PBuiltinFunction self,
                         @Cached ConditionProfile profile) {
             return getPythonClass(self.getEnclosingType(), profile);
+        }
+    }
+
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func,
+                        @Cached PyObjectGetAttr getAttr) {
+            PythonModule builtins = getCore().getBuiltins();
+            Object getattr = getAttr.execute(frame, builtins, T_GETATTR);
+            PTuple args = factory().createTuple(new Object[]{func.getEnclosingType(), func.getName()});
+            return factory().createTuple(new Object[]{getattr, args});
         }
     }
 }

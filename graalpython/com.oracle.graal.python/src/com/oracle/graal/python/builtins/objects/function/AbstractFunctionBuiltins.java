@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,7 +26,6 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLOSURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
@@ -38,7 +37,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
@@ -60,8 +58,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -357,19 +353,6 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
         public static TextSignatureNode create() {
             return AbstractFunctionBuiltinsFactory.TextSignatureNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonBuiltinNode {
-        @Specialization
-        Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func, @SuppressWarnings("unused") Object obj,
-                        @Cached PyObjectGetAttr getAttr) {
-            PythonModule builtins = getCore().getBuiltins();
-            Object getattr = getAttr.execute(frame, builtins, T_GETATTR);
-            PTuple args = factory().createTuple(new Object[]{func.getEnclosingType(), func.getName()});
-            return factory().createTuple(new Object[]{getattr, args});
         }
     }
 }
