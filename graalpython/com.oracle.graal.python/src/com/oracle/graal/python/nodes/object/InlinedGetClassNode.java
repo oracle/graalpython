@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -189,6 +190,7 @@ public abstract class InlinedGetClassNode extends PNodeWithContext {
             return getNativeClassNode.execute(object);
         }
 
+        @Idempotent
         protected static boolean hasInitialClass(Shape shape) {
             return (shape.getFlags() & PythonObject.CLASS_CHANGED_FLAG) == 0;
         }

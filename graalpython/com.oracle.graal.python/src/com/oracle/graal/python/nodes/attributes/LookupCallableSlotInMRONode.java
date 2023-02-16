@@ -63,6 +63,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -142,6 +143,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
         // For PythonBuiltinClass it depends on whether we can cache the result:
 
+        @Idempotent
         protected static boolean isCacheable(Object value) {
             return PythonLanguage.canCache(value) || BuiltinMethodDescriptor.isInstance(value);
         }

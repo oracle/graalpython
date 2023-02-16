@@ -62,6 +62,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -491,21 +492,25 @@ public final class PythonOptions {
         return true;
     }
 
+    @Idempotent
     public static int getAttributeAccessInlineCacheMaxDepth() {
         CompilerAsserts.neverPartOfCompilation();
         return PythonLanguage.get(null).getEngineOption(AttributeAccessInlineCacheMaxDepth);
     }
 
+    @Idempotent
     public static int getCallSiteInlineCacheMaxDepth() {
         CompilerAsserts.neverPartOfCompilation();
         return PythonLanguage.get(null).getEngineOption(CallSiteInlineCacheMaxDepth);
     }
 
+    @Idempotent
     public static int getVariableArgumentInlineCacheLimit() {
         CompilerAsserts.neverPartOfCompilation();
         return PythonLanguage.get(null).getEngineOption(VariableArgumentInlineCacheLimit);
     }
 
+    @Idempotent
     public static int getNodeRecursionLimit() {
         CompilerAsserts.neverPartOfCompilation();
         int result = PythonLanguage.get(null).getEngineOption(NodeRecursionLimit);

@@ -79,6 +79,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -221,10 +222,12 @@ public abstract class ListNodes {
 
         public abstract Object execute(VirtualFrame frame, Object object);
 
+        @Idempotent
         protected boolean isSubscript() {
             return checkType == CheckType.SUBSCRIPT;
         }
 
+        @Idempotent
         protected boolean isNumber() {
             return checkType == CheckType.NUMBER;
         }

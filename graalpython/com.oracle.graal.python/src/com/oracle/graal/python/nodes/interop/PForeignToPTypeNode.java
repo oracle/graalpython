@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,6 +60,7 @@ public abstract class PForeignToPTypeNode extends Node {
 
     public abstract Object executeConvert(Object value);
 
+    @Idempotent
     protected static boolean isOtherClass(Class<?> clazz) {
         // ATTENTION: this is basically a fallback guard, review it when adding a new specialization
         return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class ||

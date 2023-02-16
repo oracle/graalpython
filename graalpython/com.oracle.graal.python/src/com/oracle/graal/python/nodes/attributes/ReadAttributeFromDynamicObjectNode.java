@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,8 +49,10 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -82,12 +84,19 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return DynamicObjectLibrary.getUncached().getOrDefault(object, key, PNone.NO_VALUE);
     }
 
+    @Idempotent
     protected static boolean isLongLivedObject(DynamicObject object) {
         return object instanceof PythonModule || object instanceof PythonManagedClass;
     }
 
+    @Idempotent
     protected static boolean isPrimitive(Object value) {
         return value instanceof Integer || value instanceof Long || value instanceof Boolean || value instanceof Double;
+    }
+
+    @NonIdempotent
+    protected static boolean locationIsAssumedFinal(Location loc) {
+        return loc != null && loc.isAssumedFinal();
     }
 
     @SuppressWarnings("unused")
@@ -98,8 +107,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                                     "isLongLivedObject(cachedObject)",
                                     "key == cachedKey",
                                     "dynamicObject.getShape() == cachedShape",
-                                    "loc != null",
-                                    "loc.isAssumedFinal()",
+                                    "locationIsAssumedFinal(loc)",
                                     "!isPrimitive(value)"
                     }, //
                     assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
@@ -121,8 +129,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                                     "isLongLivedObject(cachedObject)",
                                     "key == cachedKey",
                                     "dynamicObject.getShape() == cachedShape",
-                                    "loc != null",
-                                    "loc.isAssumedFinal()",
+                                    "locationIsAssumedFinal(loc)",
                                     "isPrimitive(value)"
                     }, //
                     assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})

@@ -142,6 +142,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -407,6 +408,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode attrRead;
         @Child private GetClassNode getDescClassNode;
 
+        @Idempotent
         protected static int tsLen(TruffleString ts) {
             CompilerAsserts.neverPartOfCompilation();
             return TruffleString.CodePointLengthNode.getUncached().execute(ts, TS_ENCODING) + 1;

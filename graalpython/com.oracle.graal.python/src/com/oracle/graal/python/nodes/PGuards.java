@@ -111,6 +111,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -202,14 +203,17 @@ public abstract class PGuards {
         return dict instanceof StgDictObject;
     }
 
+    @Idempotent
     public static boolean isFunction(Object value) {
         return value instanceof PBuiltinFunction || value instanceof PFunction;
     }
 
+    @Idempotent
     public static boolean isPBuiltinFunction(Object value) {
         return value instanceof PBuiltinFunction;
     }
 
+    @Idempotent
     public static boolean isPFunction(Object value) {
         return value instanceof PFunction;
     }

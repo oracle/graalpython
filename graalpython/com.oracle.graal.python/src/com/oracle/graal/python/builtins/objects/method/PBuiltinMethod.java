@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.method;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -61,6 +62,7 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
         this.classObject = classObject;
     }
 
+    @Idempotent
     public PBuiltinFunction getFunction() {
         return function;
     }

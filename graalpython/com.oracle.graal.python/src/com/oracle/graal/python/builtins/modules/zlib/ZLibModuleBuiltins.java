@@ -100,6 +100,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -326,6 +327,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.Crc32NodeClinicProviderGen.INSTANCE;
         }
 
+        @NonIdempotent
         protected boolean useNative() {
             return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
@@ -403,6 +405,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.Adler32NodeClinicProviderGen.INSTANCE;
         }
 
+        @NonIdempotent
         protected boolean useNative() {
             return getContext().getNFIZlibSupport().isAvailable();
         }
@@ -489,6 +492,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.CompressNodeClinicProviderGen.INSTANCE;
         }
 
+        @NonIdempotent
         protected boolean useNative() {
             return getContext().getNFIZlibSupport().isAvailable();
         }
@@ -560,6 +564,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.DecompressNodeClinicProviderGen.INSTANCE;
         }
 
+        @NonIdempotent
         protected boolean useNative() {
             return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
@@ -647,6 +652,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.CompressObjNodeClinicProviderGen.INSTANCE;
         }
 
+        @NonIdempotent
         protected boolean useNative() {
             return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
@@ -720,6 +726,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.DecompressObjNodeClinicProviderGen.INSTANCE;
         }
 
+        @NonIdempotent
         protected boolean useNative() {
             return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }

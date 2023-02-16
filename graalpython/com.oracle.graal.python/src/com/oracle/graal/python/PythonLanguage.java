@@ -104,6 +104,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.DebuggerTags;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -229,6 +230,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @CompilationFinal private boolean singleContext = true;
 
+    @Idempotent
     public boolean isSingleContext() {
         return singleContext;
     }
@@ -366,6 +368,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return context;
     }
 
+    @Idempotent
     public <T> T getEngineOption(OptionKey<T> key) {
         assert engineOptions != null;
         if (CompilerDirectives.inInterpreter()) {
@@ -681,6 +684,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /**
      * If this object can be cached in the AST.
      */
+    @Idempotent
     public static boolean canCache(Object value) {
         CompilerAsserts.neverPartOfCompilation();
         // We cache strings with at most 16 characters. This corresponds to byte length of 64 for

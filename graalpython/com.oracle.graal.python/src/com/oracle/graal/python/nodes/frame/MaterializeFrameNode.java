@@ -49,6 +49,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -240,6 +241,7 @@ public abstract class MaterializeFrameNode extends Node {
             // nothing to do
         }
 
+        @Idempotent
         protected static int variableSlotCount(FrameDescriptor fd) {
             FrameInfo info = (FrameInfo) fd.getInfo();
             if (info == null) {

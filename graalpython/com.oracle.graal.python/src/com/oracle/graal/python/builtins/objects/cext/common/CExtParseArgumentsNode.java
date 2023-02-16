@@ -95,6 +95,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -150,8 +151,13 @@ public abstract class CExtParseArgumentsNode {
 
         public abstract int execute(TruffleString funName, Object argv, Object kwds, Object format, Object kwdnames, Object varargs);
 
+        @Idempotent
+        static int tsLength(TruffleString.CodePointLengthNode lengthNode, TruffleString s) {
+            return lengthNode.execute(s, TS_ENCODING);
+        }
+
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        @Specialization(guards = {"isDictOrNull(kwds)", "eqNode.execute(cachedFormat, format, TS_ENCODING)", "lengthNode.execute(cachedFormat, TS_ENCODING) <= 8"}, limit = "5")
+        @Specialization(guards = {"isDictOrNull(kwds)", "eqNode.execute(cachedFormat, format, TS_ENCODING)", "tsLength(lengthNode, cachedFormat) <= 8"}, limit = "5")
         int doSpecial(TruffleString funName, PTuple argv, Object kwds, @SuppressWarnings("unused") TruffleString format, Object kwdnames, Object varargs,
                         @Cached(value = "format", allowUncached = true) @SuppressWarnings("unused") TruffleString cachedFormat,
                         @Cached TruffleString.CodePointLengthNode lengthNode,

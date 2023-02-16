@@ -104,6 +104,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -224,6 +225,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @Idempotent
         protected boolean isInBuiltinFunctionRoot() {
             return getRootNode() instanceof BuiltinFunctionRootNode;
         }
