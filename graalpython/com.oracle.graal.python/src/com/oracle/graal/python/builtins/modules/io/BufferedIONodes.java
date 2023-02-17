@@ -46,11 +46,9 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SE
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.readahead;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEK;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEKABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_FIT_P_IN_OFFSET_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
@@ -85,6 +83,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -110,35 +110,38 @@ public class BufferedIONodes {
 
         @Specialization
         boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
-                        @Cached PRaiseNode raiseNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached IsClosedNode isClosedNode) {
-            if (isClosedNode.execute(frame, self)) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, messageFmt, method);
+            if (isClosedNode.execute(frame, inliningTarget, self)) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, messageFmt, method);
             }
             return false;
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class IsClosedNode extends PNodeWithContext {
 
-        public abstract boolean execute(VirtualFrame frame, PBuffered self);
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.getBuffer() == null"})
-        static boolean isClosed(VirtualFrame frame, PBuffered self) {
+        static boolean isClosed(PBuffered self) {
             return true;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.getBuffer() != null", "self.isFastClosedChecks()"})
-        static boolean isClosedFileIO(VirtualFrame frame, PBuffered self) {
+        static boolean isClosedFileIO(PBuffered self) {
             return self.getFileIORaw().isClosed();
         }
 
         @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"})
         static boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
-                        @Cached PyObjectGetAttr getAttr,
-                        @Cached PyObjectIsTrueNode isTrue) {
+                        @Cached(inline = false) PyObjectGetAttr getAttr,
+                        @Cached(inline = false) PyObjectIsTrueNode isTrue) {
             Object res = getAttr.execute(frame, self.getRaw(), T_CLOSED);
             return isTrue.execute(frame, res);
         }
@@ -150,52 +153,14 @@ public class BufferedIONodes {
 
         @Specialization
         boolean isSeekable(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached IsSeekableNode isSeekableNode) {
-            if (!isSeekableNode.execute(frame, self)) {
-                throw raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
-            }
-            return true;
-        }
-    }
-
-    abstract static class IsSeekableNode extends Node {
-
-        public abstract boolean execute(VirtualFrame frame, PBuffered self);
-
-        @Specialization
-        static boolean isSeekable(VirtualFrame frame, PBuffered self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
             assert self.isOK();
             Object res = callMethod.execute(frame, self.getRaw(), T_SEEKABLE);
-            return isTrue.execute(frame, res);
-        }
-    }
-
-    abstract static class IsReadableNode extends Node {
-
-        public abstract boolean execute(VirtualFrame frame, Object raw);
-
-        @Specialization
-        static boolean isReadable(VirtualFrame frame, Object raw,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectIsTrueNode isTrue) {
-            Object res = callMethod.execute(frame, raw, T_READABLE);
-            return isTrue.execute(frame, res);
-        }
-    }
-
-    abstract static class IsWritableNode extends PNodeWithContext {
-
-        public abstract boolean execute(VirtualFrame frame, Object raw);
-
-        @Specialization
-        static boolean isWritable(VirtualFrame frame, Object raw,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectIsTrueNode isTrue) {
-            Object res = callMethod.execute(frame, raw, T_WRITABLE);
-            return isTrue.execute(frame, res);
+            if (!isTrue.execute(frame, res)) {
+                throw raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
+            }
+            return true;
         }
     }
 

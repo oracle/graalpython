@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,9 +52,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltinsFactory.BufferedReaderInitNodeGen;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -75,14 +77,15 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
-                        @Cached IOBaseBuiltins.CheckReadableNode checkReadableNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
                         @Cached BufferedInitNode bufferedInitNode,
-                        @Cached GetClassNode getSelfClass,
-                        @Cached GetClassNode getRawClass) {
+                        @Cached(inline = true) GetPythonObjectClassNode getSelfClass,
+                        @Cached InlinedGetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
-            checkReadableNode.execute(frame, raw);
-            self.setRaw(raw, isFileIO(self, raw, PBufferedReader, getSelfClass, getRawClass));
+            checkReadableNode.checkReadable(frame, inliningTarget, raw);
+            self.setRaw(raw, isFileIO(self, raw, PBufferedReader, inliningTarget, getSelfClass, getRawClass));
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetRead();
             self.setOK(true);

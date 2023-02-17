@@ -118,9 +118,13 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -183,17 +187,65 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateCached(false)
+    @GenerateUncached(false)
+    @GenerateInline
+    abstract static class CheckClosedHelperNode extends Node {
+        abstract PNone execute(VirtualFrame frame, Node inliningTarget, PythonObject self);
+
+        @Specialization
+        static PNone doIt(VirtualFrame frame, Node inliningTarget, PythonObject self,
+                        @Cached(inline = false) PyObjectGetAttr getAttr,
+                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
+            if (isTrueNode.execute(frame, getAttr.execute(frame, self, T_CLOSED))) {
+                throw lazyRaiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IO_CLOSED);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = J__CHECKCLOSED, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckClosedNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doCheckClosed(VirtualFrame frame, PythonObject self,
-                        @Cached PyObjectGetAttr getAttr,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
-            if (isTrueNode.execute(frame, getAttr.execute(frame, self, T_CLOSED))) {
-                throw raise(ValueError, ErrorMessages.IO_CLOSED);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckClosedHelperNode helper) {
+            return helper.execute(frame, inliningTarget, self);
+        }
+    }
+
+    @GenerateCached(false)
+    @GenerateUncached(false)
+    @GenerateInline
+    abstract static class CheckBoolMethodHelperNode extends Node {
+        final boolean checkSeekable(VirtualFrame frame, Node inliningTarget, Object self) {
+            return this.execute(frame, inliningTarget, self, T_SEEKABLE, ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE);
+        }
+
+        final boolean checkWriteable(VirtualFrame frame, Node inliningTarget, Object self) {
+            return this.execute(frame, inliningTarget, self, T_WRITABLE, ErrorMessages.FILE_OR_STREAM_IS_NOT_WRITABLE);
+        }
+
+        final boolean checkReadable(VirtualFrame frame, Node inliningTarget, Object self) {
+            return this.execute(frame, inliningTarget, self, T_READABLE, ErrorMessages.FILE_OR_STREAM_IS_NOT_READABLE);
+        }
+
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object self, TruffleString method, TruffleString errorMessage);
+
+        @Specialization
+        static boolean doIt(VirtualFrame frame, Node inliningTarget, Object self, TruffleString method, TruffleString errorMessage,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached(inline = false) IsNode isNode,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
+            CompilerAsserts.partialEvaluationConstant(method);
+            CompilerAsserts.partialEvaluationConstant(errorMessage);
+            Object v = callMethod.execute(frame, self, method);
+            if (isNode.isTrue(v)) {
+                return true;
             }
-            return PNone.NONE;
+            throw unsupported(lazyRaiseNode.get(inliningTarget), errorMessage);
         }
     }
 
@@ -202,13 +254,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckSeekableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckSeekable(VirtualFrame frame, PythonObject self,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached IsNode isNode) {
-            Object v = callMethod.execute(frame, self, T_SEEKABLE);
-            if (isNode.isTrue(v)) {
-                return true;
-            }
-            throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckBoolMethodHelperNode helper) {
+            return helper.checkSeekable(frame, inliningTarget, self);
         }
     }
 
@@ -217,13 +265,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckReadableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckReadable(VirtualFrame frame, PythonObject self,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached IsNode isNode) {
-            Object v = callMethod.execute(frame, self, T_READABLE);
-            if (isNode.isTrue(v)) {
-                return true;
-            }
-            throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_READABLE);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckBoolMethodHelperNode helper) {
+            return helper.checkReadable(frame, inliningTarget, self);
         }
     }
 
@@ -232,13 +276,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckWritableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckWritable(VirtualFrame frame, PythonObject self,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached IsNode isNode) {
-            Object result = callMethod.execute(frame, self, T_WRITABLE);
-            if (isNode.isTrue(result)) {
-                return true;
-            }
-            throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_WRITABLE);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckBoolMethodHelperNode helper) {
+            return helper.checkWriteable(frame, inliningTarget, self);
         }
     }
 
@@ -318,8 +358,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PythonObject enter(VirtualFrame frame, PythonObject self,
-                        @Cached CheckClosedNode checkClosedNode) {
-            checkClosedNode.execute(frame, self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckClosedHelperNode checkClosedNode) {
+            checkClosedNode.execute(frame, inliningTarget, self);
             return self;
         }
     }
@@ -348,8 +389,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class IsattyNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean isatty(VirtualFrame frame, PythonObject self,
-                        @Cached CheckClosedNode checkClosedNode) {
-            checkClosedNode.execute(frame, self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckClosedHelperNode checkClosedNode) {
+            checkClosedNode.execute(frame, inliningTarget, self);
             return false;
         }
     }
@@ -359,8 +401,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PythonObject iter(VirtualFrame frame, PythonObject self,
-                        @Cached CheckClosedNode checkClosedNode) {
-            checkClosedNode.execute(frame, self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckClosedHelperNode checkClosedNode) {
+            checkClosedNode.execute(frame, inliningTarget, self);
             return self;
         }
     }
@@ -386,12 +429,12 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static Object writeLines(VirtualFrame frame, PythonObject self, Object lines,
                         @Bind("this") Node inliningTarget,
-                        @Cached CheckClosedNode checkClosedNode,
+                        @Cached CheckClosedHelperNode checkClosedNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter) {
-            checkClosedNode.execute(frame, self);
+            checkClosedNode.execute(frame, inliningTarget, self);
             Object iter = getIter.execute(frame, lines);
             while (true) {
                 Object line;

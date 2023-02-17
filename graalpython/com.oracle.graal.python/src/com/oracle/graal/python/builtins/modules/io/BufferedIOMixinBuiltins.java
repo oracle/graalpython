@@ -155,7 +155,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached InlinedConditionProfile profile) {
             try {
                 lock.enter(self);
-                if (profile.profile(inliningTarget, isClosedNode.execute(frame, self))) {
+                if (profile.profile(inliningTarget, isClosedNode.execute(frame, inliningTarget, self))) {
                     return PNone.NONE;
                 }
                 if (self.isFinalizing()) {
@@ -357,8 +357,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ClosedNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode) {
-            return isClosedNode.execute(frame, self);
+            return isClosedNode.execute(frame, inliningTarget, self);
         }
     }
 

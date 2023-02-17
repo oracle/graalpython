@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,11 +48,13 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltinsFactory.BufferedWriterInitNodeGen;
-import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.CheckWritableNode;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.CheckBoolMethodHelperNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -73,14 +75,15 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
-                        @Cached CheckWritableNode checkWritableNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
-                        @Cached GetClassNode getSelfClass,
-                        @Cached GetClassNode getRawClass) {
+                        @Cached(inline = true) GetPythonObjectClassNode getSelfClass,
+                        @Cached InlinedGetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
-            checkWritableNode.execute(frame, raw);
-            self.setRaw(raw, isFileIO(self, raw, PBufferedWriter, getSelfClass, getRawClass));
+            checkWritableNode.checkWriteable(frame, inliningTarget, raw);
+            self.setRaw(raw, isFileIO(self, raw, PBufferedWriter, inliningTarget, getSelfClass, getRawClass));
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetWrite();
             self.setPos(0);

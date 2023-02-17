@@ -120,12 +120,13 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone doInit(VirtualFrame frame, PRWPair self, Object reader, Object writer, int bufferSize,
-                        @Cached IOBaseBuiltins.CheckReadableNode checkReadableNode,
-                        @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedReaderBuiltins.BufferedReaderInit initReaderNode,
                         @Cached BufferedWriterBuiltins.BufferedWriterInit initWriterNode) {
-            checkReadableNode.execute(frame, reader);
-            checkWritableNode.execute(frame, writer);
+            checkReadableNode.checkReadable(frame, inliningTarget, reader);
+            checkWritableNode.checkWriteable(frame, inliningTarget, writer);
             self.setReader(factory().createBufferedReader(PBufferedReader));
             initReaderNode.execute(frame, self.getReader(), reader, bufferSize, factory());
             self.setWriter(factory().createBufferedWriter(PBufferedWriter));

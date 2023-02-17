@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -123,10 +124,10 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
     }
 
     protected static boolean isFileIO(PBuffered self, Object raw, PythonBuiltinClassType type,
-                    GetClassNode getSelfClass, GetClassNode getRawClass) {
+                    Node inliningTarget, GetPythonObjectClassNode getSelfClass, InlinedGetClassNode getRawClass) {
         return raw instanceof PFileIO &&
-                        getSelfClass.execute(self) == type &&
-                        getRawClass.execute(raw) == PythonBuiltinClassType.PFileIO;
+                        getSelfClass.execute(inliningTarget, self) == type &&
+                        getRawClass.execute(inliningTarget, raw) == PythonBuiltinClassType.PFileIO;
     }
 
     public abstract static class BaseInitNode extends PythonBuiltinNode {
