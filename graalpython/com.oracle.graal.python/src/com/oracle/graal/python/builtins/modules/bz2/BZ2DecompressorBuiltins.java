@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,13 +65,15 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = BZ2Decompressor)
 public class BZ2DecompressorBuiltins extends PythonBuiltins {
@@ -86,13 +88,14 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone init(BZ2Object.BZ2Decompressor self,
+                        @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached InlinedConditionProfile errProfile) {
             NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
             Object bzst = bz2Support.createStream(createStream);
             int err = bz2Support.decompressInit(bzst, compressInit);
-            if (errProfile.profile(err != BZ_OK)) {
+            if (errProfile.profile(inliningTarget, err != BZ_OK)) {
                 errorHandling(err, getRaiseNode());
             }
             self.init(bzst, bz2Support);
@@ -112,23 +115,25 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doNativeBytes(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(data.getSequenceStorage());
                 int len = data.getSequenceStorage().length();
-                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
+                return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
             }
         }
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Decompressor self, Object data, int maxLength,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;
-                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
+                return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
             }
         }
 

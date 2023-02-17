@@ -66,6 +66,9 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -121,16 +124,23 @@ public class Bz2Nodes {
 
     }
 
+    @GenerateUncached(false)
+    @GenerateCached(false)
+    @GenerateInline
     public abstract static class Bz2NativeDecompress extends Node {
 
-        public abstract byte[] execute(BZ2Object.BZ2Decompressor self, byte[] data, int len, int maxLength);
+        public abstract byte[] execute(Node inliningTarget, BZ2Object.BZ2Decompressor self, byte[] data, int len, int maxLength);
 
         @Specialization
-        byte[] nativeDecompress(BZ2Object.BZ2Decompressor self, byte[] bytes, int len, int maxLength,
-                        @Cached Bz2NativeInternalDecompress decompress) {
+        static byte[] nativeDecompress(Node inliningTarget, BZ2Object.BZ2Decompressor self, byte[] bytes, int len, int maxLength,
+                        @Cached InlinedConditionProfile hasNextIntProfile,
+                        @Cached InlinedBranchProfile isEofProfile,
+                        @Cached InlinedBranchProfile bzsAvailProfile,
+                        @Cached InlinedBranchProfile noInputBufferInUseProfile,
+                        @Cached(inline = false) Bz2NativeInternalDecompress decompress) {
             boolean inputBufferInUse;
             /* Prepend unconsumed input if necessary */
-            if (self.getNextIn() != null) {
+            if (hasNextIntProfile.profile(inliningTarget, self.getNextIn() != null)) {
                 /* Number of bytes we can append to input buffer */
                 int availNow = self.getInputBufferSize() - (self.getNextInIndex() + self.getBzsAvailInReal());
 
@@ -167,11 +177,13 @@ public class Bz2Nodes {
             byte[] result = decompress.execute(self, maxLength);
 
             if (self.isEOF()) {
+                isEofProfile.enter(inliningTarget);
                 self.setNeedsInput(false);
                 if (self.getBzsAvailInReal() > 0) {
                     self.setUnusedData();
                 }
             } else if (self.getBzsAvailInReal() == 0) {
+                bzsAvailProfile.enter(inliningTarget);
                 self.clearNextIn();
                 self.setNextInIndex(0);
                 self.setNeedsInput(true);
@@ -183,6 +195,7 @@ public class Bz2Nodes {
                  * caller's buffer into the input buffer
                  */
                 if (!inputBufferInUse) {
+                    noInputBufferInUseProfile.enter(inliningTarget);
 
                     /*
                      * Discard buffer if it's too small (resizing it may needlessly copy the current
