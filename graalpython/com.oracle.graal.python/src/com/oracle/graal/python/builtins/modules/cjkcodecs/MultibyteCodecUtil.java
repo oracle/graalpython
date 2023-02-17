@@ -72,19 +72,18 @@ import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 import java.nio.CharBuffer;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -118,10 +117,6 @@ public class MultibyteCodecUtil {
     @TruffleBoundary
     protected static CharBuffer writerInit(int len) {
         return CharBuffer.allocate(len);
-    }
-
-    public static boolean PyBytesCheck(VirtualFrame frame, Object clazz, IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(frame, clazz, PythonBuiltinClassType.PBytes);
     }
 
     @TruffleBoundary
@@ -178,7 +173,7 @@ public class MultibyteCodecUtil {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached CastToTruffleStringNode toTString,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PyBytesCheckNode bytesCheckNode,
                         @Cached PyLongAsIntNode asSizeNode,
                         @Cached CallErrorCallbackNode callErrorCallbackNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
@@ -263,7 +258,7 @@ public class MultibyteCodecUtil {
                     tobj = array[0];
                     newposobj = array[1];
                     isUnicode = unicodeCheckNode.execute(tobj);
-                    isError = !isUnicode && !PyBytesCheck(frame, tobj, isSubtypeNode);
+                    isError = !isUnicode && !bytesCheckNode.execute(frame, tobj);
                     isError = isError || !longCheckNode.execute(newposobj);
                 }
             }

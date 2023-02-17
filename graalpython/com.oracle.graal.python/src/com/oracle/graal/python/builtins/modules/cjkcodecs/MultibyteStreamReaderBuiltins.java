@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MultibyteStreamReader;
-import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecUtil.PyBytesCheck;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecUtil.internalErrorCallback;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDecoderBuiltins.DecodeNode.decoderAppendPending;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDecoderBuiltins.DecodeNode.decoderFeedBuffer;
@@ -65,10 +64,10 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -144,7 +143,7 @@ public class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PyBytesCheckNode bytesCheckNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode) {
@@ -163,7 +162,7 @@ public class MultibyteStreamReaderBuiltins extends PythonBuiltins {
 
                 if (!(cres instanceof PBytes)) {
                     Object crestType = getClassNode.execute(cres);
-                    if (!PyBytesCheck(frame, crestType, isSubtypeNode)) {
+                    if (!bytesCheckNode.execute(frame, crestType)) {
                         throw raise(TypeError, STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S, getNameNode.execute(cres));
                     }
                 }

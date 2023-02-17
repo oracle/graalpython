@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.Charset;
@@ -101,7 +102,7 @@ public class MultibytecodecModuleBuiltins extends PythonBuiltins {
     protected static void registerCodec(String name, int cidx, CodecType ct, int midx, MappingType mt,
                     DBCSMap[] maps, MultibyteCodec[] codecs,
                     PythonModule codec, PythonObjectFactory factory) {
-        TruffleString tsName = tsLiteral(name);
+        TruffleString tsName = toTruffleStringUncached(name);
         TruffleString normalizedEncoding = NormalizeEncodingNameNodeGen.getUncached().execute(tsName);
         Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
         if (charset != null) {
@@ -110,7 +111,7 @@ public class MultibytecodecModuleBuiltins extends PythonBuiltins {
             }
             if (midx != -1) {
                 DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset, mt);
-                codec.setAttribute(tsLiteral(h.charsetMapName),
+                codec.setAttribute(toTruffleStringUncached(h.charsetMapName),
                                 factory.createCapsule(h, PyMultibyteCodec_CAPSULE_NAME, null));
             }
         }
