@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,6 +100,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -107,7 +108,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -167,10 +168,9 @@ public abstract class TextIOWrapperNodes {
         @Specialization(guards = "!self.isFileIO()")
         void checkGeneric(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached ConditionProfile isError) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object res = getAttr.execute(frame, self.getBuffer(), T_CLOSED);
-            if (isError.profile(isTrueNode.execute(frame, res))) {
+            if (isTrueNode.execute(frame, res)) {
                 error(self);
             }
         }
@@ -709,13 +709,14 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         static void setDecoder(VirtualFrame frame, PTextIO self, Object codecInfo, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
-                        @Cached ConditionProfile isTrueProfile,
+                        @Cached InlinedConditionProfile isTrueProfile,
                         @Cached PyObjectCallMethodObjArgs callMethodReadable,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PythonObjectFactory factory) {
             Object res = callMethodReadable.execute(frame, self.getBuffer(), T_READABLE);
-            if (isTrueProfile.profile(!isTrueNode.execute(frame, res))) {
+            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
                 return;
             }
             Object decoder = getIncrementalDecoderNode.execute(frame, codecInfo, errors);
@@ -738,12 +739,13 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         static void setEncoder(VirtualFrame frame, PTextIO self, Object codecInfo, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalEncoderNode getIncrementalEncoderNode,
-                        @Cached ConditionProfile isTrueProfile,
+                        @Cached InlinedConditionProfile isTrueProfile,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PyObjectCallMethodObjArgs callMethodWritable) {
             Object res = callMethodWritable.execute(frame, self.getBuffer(), T_WRITABLE);
-            if (isTrueProfile.profile(!isTrueNode.execute(frame, res))) {
+            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
                 return;
             }
             self.setEncoder(null);

@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -104,7 +105,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedRandom})
@@ -127,11 +129,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         // This is the spec way
         @Specialization
         byte[] bufferedreaderRawRead(VirtualFrame frame, PBuffered self, int len,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached PythonObjectFactory factory,
                         @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached ConditionProfile osError) {
+                        @Cached InlinedConditionProfile osError) {
             PByteArray memobj = factory.createByteArray(new byte[len]);
             // TODO _PyIO_trap_eintr [GR-23297]
             Object res = callMethodReadInto.execute(frame, self.getRaw(), T_READINTO, memobj);
@@ -145,7 +148,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             } catch (PException e) {
                 throw raise(OSError, e, ErrorMessages.RAW_READINTO_FAILED);
             }
-            if (osError.profile(n < 0 || n > len)) {
+            if (osError.profile(inliningTarget, n < 0 || n > len)) {
                 throw raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
             }
             if (n > 0 && self.getAbsPos() != -1) {
@@ -364,10 +367,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          */
         @Specialization(guards = {"self.isOK()", "isReadAll(size)"})
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached("create(T_READALL)") LookupAttributeInMRONode readallAttr,
-                        @Cached ConditionProfile hasReadallProfile,
+                        @Cached InlinedConditionProfile hasReadallProfile,
+                        @Cached InlinedConditionProfile currentSize0Profile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
@@ -378,7 +383,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 byte[] data = PythonUtils.EMPTY_BYTE_ARRAY;
                 /* First copy what we have in the current buffer. */
                 int currentSize = safeDowncast(self);
-                if (currentSize != 0) {
+                if (currentSize0Profile.profile(inliningTarget, currentSize != 0)) {
                     data = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getPos(), self.getPos() + currentSize);
                     self.incPos(currentSize);
                 }
@@ -392,14 +397,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
                 Object clazz = getClassNode.execute(self.getRaw());
                 Object readall = readallAttr.execute(clazz);
-                if (hasReadallProfile.profile(readall != PNone.NO_VALUE)) {
+                if (hasReadallProfile.profile(inliningTarget, readall != PNone.NO_VALUE)) {
                     Object tmp = dispatchGetattribute.executeObject(frame, readall, self.getRaw());
                     if (tmp != PNone.NONE && !(tmp instanceof PBytes)) {
                         throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
                     }
-                    if (currentSize == 0) {
-                        return tmp;
-                    } else {
+                    if (currentSize0Profile.profile(inliningTarget, currentSize != 0)) {
                         if (tmp != PNone.NONE) {
                             int bytesLen = bufferLib.getBufferLength(tmp);
                             byte[] res = new byte[data.length + bytesLen];
@@ -408,6 +411,8 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                             return factory().createBytes(res);
                         }
                         return factory().createBytes(data);
+                    } else {
+                        return tmp;
                     }
                 }
 
@@ -626,11 +631,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization
         static byte[] readline(VirtualFrame frame, PBuffered self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached FillBufferNode fillBufferNode,
-                        @Cached ConditionProfile notFound,
-                        @Cached ConditionProfile reachedLimit) {
+                        @Cached InlinedConditionProfile notFound,
+                        @Cached InlinedConditionProfile reachedLimit) {
             int limit = size;
             /*-
                 First, try to find a line in the buffer. This can run unlocked because
@@ -642,12 +648,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 n = limit;
             }
             int idx = BytesUtils.memchr(self.getBuffer(), self.getPos(), (byte) '\n', n);
-            if (notFound.profile(idx != -1)) {
+            if (notFound.profile(inliningTarget, idx != -1)) {
                 byte[] res = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getPos(), idx + 1);
                 self.incPos(idx - self.getPos() + 1);
                 return res;
             }
-            if (reachedLimit.profile(n == limit)) {
+            if (reachedLimit.profile(inliningTarget, n == limit)) {
                 byte[] res = new byte[n];
                 PythonUtils.arraycopy(self.getBuffer(), self.getPos(), res, 0, n);
                 self.incPos(n);

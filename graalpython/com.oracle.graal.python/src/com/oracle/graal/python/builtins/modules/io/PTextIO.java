@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,8 +55,9 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PTextIO extends PTextIOBase {
@@ -423,13 +424,13 @@ public final class PTextIO extends PTextIOBase {
             return factory.createInt(v);
         }
 
-        public static CookieType parse(long v, ConditionProfile overflow, PRaiseNode raise) {
-            byte[] buffer = IntBuiltins.ToBytesNode.fromLong(v, COOKIE_BUF_LEN, false, false, overflow, raise);
+        public static CookieType parse(long v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode raise) {
+            byte[] buffer = IntBuiltins.ToBytesNode.fromLong(v, COOKIE_BUF_LEN, false, false, inliningTarget, overflow, raise);
             return parse(buffer);
         }
 
-        public static CookieType parse(PInt v, ConditionProfile overflow, PRaiseNode raise) {
-            byte[] buffer = IntBuiltins.ToBytesNode.fromBigInteger(v, COOKIE_BUF_LEN, false, false, overflow, raise);
+        public static CookieType parse(PInt v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode raise) {
+            byte[] buffer = IntBuiltins.ToBytesNode.fromBigInteger(v, COOKIE_BUF_LEN, false, false, inliningTarget, overflow, raise);
             return parse(buffer);
         }
 

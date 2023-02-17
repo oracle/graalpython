@@ -91,7 +91,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class BufferedIONodes {
@@ -111,9 +111,8 @@ public class BufferedIONodes {
         @Specialization
         boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
                         @Cached PRaiseNode raiseNode,
-                        @Cached IsClosedNode isClosedNode,
-                        @Cached ConditionProfile isError) {
-            if (isError.profile(isClosedNode.execute(frame, self))) {
+                        @Cached IsClosedNode isClosedNode) {
+            if (isClosedNode.execute(frame, self)) {
                 throw raiseNode.raise(PythonBuiltinClassType.ValueError, messageFmt, method);
             }
             return false;
@@ -151,9 +150,9 @@ public class BufferedIONodes {
 
         @Specialization
         boolean isSeekable(VirtualFrame frame, PBuffered self,
-                        @Cached IsSeekableNode isSeekableNode,
-                        @Cached ConditionProfile isError) {
-            if (isError.profile(!isSeekableNode.execute(frame, self))) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsSeekableNode isSeekableNode) {
+            if (!isSeekableNode.execute(frame, self)) {
                 throw raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
             }
             return true;
@@ -253,11 +252,11 @@ public class BufferedIONodes {
          */
         @Specialization(guards = "!ignore")
         long bufferedRawTell(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode,
-                        @Cached ConditionProfile isValid) {
+                        @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
             long n = tell(frame, self.getRaw(), callMethod, asOffNumberNode);
-            if (isValid.profile(n < 0)) {
+            if (n < 0) {
                 throw raise(OSError, IO_STREAM_INVALID_POS, n);
             }
             self.setAbsPos(n);
@@ -298,11 +297,10 @@ public class BufferedIONodes {
         static long bufferedRawSeek(VirtualFrame frame, PBuffered self, long target, int whence,
                         @Cached PRaiseNode raise,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached AsOffNumberNode asOffNumberNode,
-                        @Cached ConditionProfile profile) {
+                        @Cached AsOffNumberNode asOffNumberNode) {
             Object res = callMethod.execute(frame, self.getRaw(), T_SEEK, target, whence);
             long n = asOffNumberNode.execute(frame, res, ValueError);
-            if (profile.profile(n < 0)) {
+            if (n < 0) {
                 raise.raise(OSError, IO_STREAM_INVALID_POS, n);
             }
             self.setAbsPos(n);
@@ -359,19 +357,27 @@ public class BufferedIONodes {
 
         @Specialization
         static long seek(VirtualFrame frame, PBuffered self, long off, int whence,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
                         @Cached RawSeekNode rawSeekNode,
                         @Cached RawTellNode rawTellNode,
-                        @Cached ConditionProfile isSetOrCur,
-                        @Cached ConditionProfile isAvail) {
+                        @Cached InlinedConditionProfile whenceSeekSetProfile,
+                        @Cached InlinedConditionProfile whenceSeekCurProfile,
+                        @Cached InlinedConditionProfile isReadbleProfile,
+                        @Cached InlinedConditionProfile isWriteableProfile,
+                        @Cached InlinedConditionProfile isSetOrCur,
+                        @Cached InlinedConditionProfile isAvail) {
             long target = off;
             /*
              * SEEK_SET and SEEK_CUR are special because we could seek inside the buffer. Other
              * whence values must be managed without this optimization. Some Operating Systems can
              * provide additional values, like SEEK_HOLE/SEEK_DATA.
              */
-            if (isSetOrCur.profile(((whence == SEEK_SET) || (whence == SEEK_CUR)) && self.isReadable())) {
+            boolean whenceSeekSet = whenceSeekSetProfile.profile(inliningTarget, whence == SEEK_SET);
+            boolean whenceSeekCur = whenceSeekCurProfile.profile(inliningTarget, whence == SEEK_CUR);
+            boolean selfIsReadable = isReadbleProfile.profile(inliningTarget, self.isReadable());
+            if (isSetOrCur.profile(inliningTarget, (whenceSeekSet || whenceSeekCur) && selfIsReadable)) {
                 /*
                  * Check if seeking leaves us inside the current buffer, so as to return quickly if
                  * possible. Also, we needn't take the lock in this fast path. Don't know how to do
@@ -379,9 +385,9 @@ public class BufferedIONodes {
                  */
                 long current = self.getAbsPos() != -1 ? self.getAbsPos() : rawTellNode.execute(frame, self);
                 int avail = readahead(self);
-                if (isAvail.profile(avail > 0)) {
+                if (isAvail.profile(inliningTarget, avail > 0)) {
                     long offset = target;
-                    if (whence == SEEK_SET) {
+                    if (whenceSeekSet) {
                         offset -= (current - rawOffset(self));
                     }
                     if (offset >= -self.getPos() && offset <= avail) {
@@ -394,16 +400,16 @@ public class BufferedIONodes {
             lock.enter(self);
             try {
                 /* Fallback: invoke raw seek() method and clear buffer */
-                if (self.isWritable()) {
+                if (isWriteableProfile.profile(inliningTarget, self.isWritable())) {
                     flushUnlockedNode.execute(frame, self);
                 }
 
-                if (whence == SEEK_CUR) {
+                if (whenceSeekCur) {
                     target -= rawOffset(self);
                 }
                 long n = rawSeekNode.execute(frame, self, target, whence);
                 self.setRawPos(-1);
-                if (self.isReadable()) {
+                if (selfIsReadable) {
                     self.resetRead(); // _bufferedreader_reset_buf
                 }
                 return n;
@@ -420,9 +426,10 @@ public class BufferedIONodes {
 
         @Specialization
         static void doEnter(PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedBusyNode enterBufferedBusyNode,
-                        @Cached ConditionProfile isBusy) {
-            if (isBusy.profile(!self.getLock().acquireNonBlocking())) {
+                        @Cached InlinedConditionProfile isBusy) {
+            if (isBusy.profile(inliningTarget, !self.getLock().acquireNonBlocking())) {
                 enterBufferedBusyNode.execute(self);
             }
             self.setOwner(ThreadModuleBuiltins.GetCurrentThreadIdNode.getId());

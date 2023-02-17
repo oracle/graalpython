@@ -171,7 +171,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -631,7 +631,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "checkAttached(self)")
         Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
-                        @Cached ConditionProfile overflow,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
@@ -701,13 +702,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 if (((PInt) cookieLong).isNegative()) {
                     throw raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
                 }
-                cookie = PTextIO.CookieType.parse((PInt) cookieLong, overflow, getRaiseNode());
+                cookie = PTextIO.CookieType.parse((PInt) cookieLong, inliningTarget, overflow, getRaiseNode());
             } else {
                 long l = toLong.execute(cookieLong);
                 if (l < 0) {
                     throw raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
                 }
-                cookie = PTextIO.CookieType.parse(l, overflow, getRaiseNode());
+                cookie = PTextIO.CookieType.parse(l, inliningTarget, overflow, getRaiseNode());
             }
 
             callMethodFlush.execute(frame, self, T_FLUSH);

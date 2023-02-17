@@ -68,7 +68,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -107,13 +106,14 @@ public class Bz2Nodes {
 
         @Specialization
         byte[] nativeCompress(BZ2Object.BZ2Compressor self, PythonContext context, byte[] bytes, int len, int action,
+                        @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction compress,
                         @Cached GetOutputNativeBufferNode getBuffer,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached InlinedConditionProfile errProfile) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             Object inGuest = context.getEnv().asGuestValue(bytes);
             int err = bz2Support.compress(self.getBzs(), inGuest, len, action, INITIAL_BUFFER_SIZE, compress);
-            if (errProfile.profile(err != BZ_OK)) {
+            if (errProfile.profile(inliningTarget, err != BZ_OK)) {
                 errorHandling(err, getRaiseNode());
             }
             return getBuffer.execute(self.getBzs(), context);

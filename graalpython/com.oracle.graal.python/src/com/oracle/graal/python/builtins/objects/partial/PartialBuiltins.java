@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,6 +100,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -107,21 +108,22 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PPartial)
 public class PartialBuiltins extends PythonBuiltins {
-    public static Object[] getNewPartialArgs(PPartial partial, Object[] args, ConditionProfile hasArgsProfile) {
-        return getNewPartialArgs(partial, args, hasArgsProfile, 0);
+    public static Object[] getNewPartialArgs(PPartial partial, Object[] args, Node inliningTarget, InlinedConditionProfile hasArgsProfile) {
+        return getNewPartialArgs(partial, args, inliningTarget, hasArgsProfile, 0);
     }
 
-    public static Object[] getNewPartialArgs(PPartial partial, Object[] args, ConditionProfile hasArgsProfile, int offset) {
+    public static Object[] getNewPartialArgs(PPartial partial, Object[] args, Node inliningTarget, InlinedConditionProfile hasArgsProfile, int offset) {
         Object[] newArgs;
         Object[] pArgs = partial.getArgs();
-        if (hasArgsProfile.profile(args.length > offset)) {
+        if (hasArgsProfile.profile(inliningTarget, args.length > offset)) {
             newArgs = new Object[pArgs.length + args.length - offset];
             PythonUtils.arraycopy(pArgs, 0, newArgs, 0, pArgs.length);
             PythonUtils.arraycopy(args, offset, newArgs, pArgs.length, args.length - offset);
@@ -294,30 +296,33 @@ public class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.hasKw(lenNode)")
         Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
-                        @Cached ConditionProfile hasArgsProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
-            Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
+            Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, keywords);
         }
 
         @Specialization(guards = {"self.hasKw(lenNode)", "!withKeywords(keywords)"})
         Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached ExpandKeywordStarargsNode starargsNode,
-                        @Cached ConditionProfile hasArgsProfile,
+                        @Cached InlinedConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
-            Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
+            Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, starargsNode.execute(self.getKw()));
         }
 
         @Specialization(guards = {"self.hasKw(lenNode)", "withKeywords(keywords)"})
         Object callWDictWKw(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached ExpandKeywordStarargsNode starargsNode,
-                        @Cached ConditionProfile hasArgsProfile,
+                        @Cached InlinedConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
-            Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
+            Object[] callArgs = getNewPartialArgs(self, args, inliningTarget, hasArgsProfile);
 
             final PKeyword[] pKeywords = starargsNode.execute(self.getKw());
             PKeyword[] callKeywords = PKeyword.create(pKeywords.length + keywords.length);

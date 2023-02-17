@@ -141,8 +141,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -1076,11 +1076,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd, boolean followSymlinks,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+                        @Cached @Shared("positive") InlinedConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstatat(getPosixSupport(), dirFd, path.value, followSymlinks);
-                return createStatResult(factory(), positiveLongProfile, out);
+                return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1100,11 +1101,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isDefault(dirFd)", "followSymlinks"})
         PTuple doStatFd(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+                        @Cached @Shared("positive") InlinedConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd.fd);
-                return createStatResult(factory(), positiveLongProfile, out);
+                return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -1128,12 +1130,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached ConditionProfile positiveLongProfile) {
+                        @Cached InlinedConditionProfile positiveLongProfile) {
             try {
                 // TODO we used to return all zeros when the filename was equal to sys.executable
                 long[] out = posixLib.fstatat(getPosixSupport(), dirFd, path.value, false);
-                return createStatResult(factory(), positiveLongProfile, out);
+                return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1152,15 +1155,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doStatFd(VirtualFrame frame, int fd,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached ConditionProfile positiveLongProfile,
-                        @Cached BranchProfile errorProfile) {
+                        @Cached InlinedConditionProfile positiveLongProfile,
+                        @Cached InlinedBranchProfile errorProfile) {
             while (true) {
                 try {
                     long[] out = posixLib.fstat(getPosixSupport(), fd);
-                    return createStatResult(factory(), positiveLongProfile, out);
+                    return createStatResult(inliningTarget, factory(), positiveLongProfile, out);
                 } catch (PosixException e) {
-                    errorProfile.enter();
+                    errorProfile.enter(inliningTarget);
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                         PythonContext.triggerAsyncActions(this);
                     } else {
@@ -1183,11 +1187,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doStatvfsPath(VirtualFrame frame, PosixPath path,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+                        @Cached @Shared InlinedConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.statvfs(getPosixSupport(), path.value);
-                return createStatvfsResult(factory(), positiveLongProfile, out);
+                return createStatvfsResult(inliningTarget, factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1195,20 +1200,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization()
         PTuple doStatvfsFd(VirtualFrame frame, PosixFd fd,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+                        @Cached @Shared InlinedConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstatvfs(getPosixSupport(), fd.fd);
-                return createStatvfsResult(factory(), positiveLongProfile, out);
+                return createStatvfsResult(inliningTarget, factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
         }
 
-        private static PTuple createStatvfsResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+        private static PTuple createStatvfsResult(Node inliningTarget, PythonObjectFactory factory, InlinedConditionProfile positiveLongProfile, long[] out) {
             Object[] res = new Object[out.length];
             for (int i = 0; i < out.length; i++) {
-                res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
+                res[i] = PInt.createPythonIntFromUnsignedLong(inliningTarget, factory, positiveLongProfile, out[i]);
             }
             return factory.createStructSeq(STATVFS_RESULT_DESC, res);
         }
@@ -2575,10 +2581,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         return dirFd == AT_FDCWD.value ? -1 : dirFd;
     }
 
-    public static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+    public static PTuple createStatResult(Node inliningTarget, PythonObjectFactory factory, InlinedConditionProfile positiveLongProfile, long[] out) {
         Object[] res = new Object[16];
         for (int i = 0; i < 7; i++) {
-            res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
+            res[i] = PInt.createPythonIntFromUnsignedLong(inliningTarget, factory, positiveLongProfile, out[i]);
         }
         res[6] = out[6];
         for (int i = 7; i < 10; i++) {

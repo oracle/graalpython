@@ -86,8 +86,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -116,13 +116,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         public abstract Source execute(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options);
 
-        private static Source constructRegexSource(TruffleString encoding, TruffleString options, TruffleString pattern, TruffleString flags, ConditionProfile nonEmptyOptionsProfile,
+        private static Source constructRegexSource(Node inliningTarget, TruffleString encoding, TruffleString options, TruffleString pattern, TruffleString flags,
+                        InlinedConditionProfile nonEmptyOptionsProfile,
                         TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode, TruffleString.ToJavaStringNode toJavaStringNode) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, T_FLAVOR_PYTHON);
             appendStringNode.execute(sb, T_COMMA);
             appendStringNode.execute(sb, encoding);
-            if (nonEmptyOptionsProfile.profile(!options.isEmpty())) {
+            if (nonEmptyOptionsProfile.profile(inliningTarget, !options.isEmpty())) {
                 appendStringNode.execute(sb, T_COMMA);
                 appendStringNode.execute(sb, options);
             }
@@ -140,16 +141,18 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Source doString(TruffleString pattern, TruffleString flags, TruffleString options,
-                        @Shared("nonEmptyOptions") @Cached ConditionProfile nonEmptyOptionsProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("nonEmptyOptions") @Cached InlinedConditionProfile nonEmptyOptionsProfile,
                         @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return constructRegexSource(T_ENCODING_UTF_32, options, pattern, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
+            return constructRegexSource(inliningTarget, T_ENCODING_UTF_32, options, pattern, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
         }
 
         @Specialization
         protected Source doGeneric(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options,
-                        @Shared("nonEmptyOptions") @Cached ConditionProfile nonEmptyOptionsProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("nonEmptyOptions") @Cached InlinedConditionProfile nonEmptyOptionsProfile,
                         @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
@@ -158,7 +161,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
             try {
-                return doString(cast.execute(pattern), flags, options, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
+                return doString(cast.execute(pattern), flags, options, inliningTarget, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
             } catch (CannotCastException ce) {
                 Object buffer;
                 try {
@@ -170,7 +173,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                     int bytesLen = bufferLib.getBufferLength(buffer);
                     TruffleString patternStr = fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
-                    return constructRegexSource(T_ENCODING_LATIN_1, options, patternStr, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
+                    return constructRegexSource(inliningTarget, T_ENCODING_LATIN_1, options, patternStr, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
                 } finally {
                     bufferLib.release(buffer, frame, this);
                 }

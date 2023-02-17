@@ -127,7 +127,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -424,21 +423,22 @@ public final class IOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         PBytes readline(VirtualFrame frame, Object self, int limit,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupPeek,
                         @Cached CallNode callPeek,
                         @Cached PyObjectCallMethodObjArgs callRead,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile hasPeek,
-                        @Cached ConditionProfile isBytes) {
+                        @Cached InlinedConditionProfile hasPeek,
+                        @Cached InlinedConditionProfile isBytes) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lookupPeek.execute(frame, self, T_PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
-                if (hasPeek.profile(peek != PNone.NO_VALUE)) {
+                if (hasPeek.profile(inliningTarget, peek != PNone.NO_VALUE)) {
                     Object readahead = callPeek.execute(frame, peek, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
-                    if (isBytes.profile(!(readahead instanceof PBytes))) {
+                    if (isBytes.profile(inliningTarget, !(readahead instanceof PBytes))) {
                         throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
                     }
                     byte[] buf = bufferLib.getInternalOrCopiedByteArray(readahead);
@@ -455,7 +455,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 }
 
                 Object b = callRead.execute(frame, self, T_READ, nreadahead);
-                if (isBytes.profile(!(b instanceof PBytes))) {
+                if (isBytes.profile(inliningTarget, !(b instanceof PBytes))) {
                     throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(b);

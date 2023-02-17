@@ -97,7 +97,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -333,12 +332,13 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class IsAttyNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(VirtualFrame frame, PRWPair self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodWriter,
                         @Cached PyObjectCallMethodObjArgs callMethodReader,
                         @Cached IsNode isNode,
-                        @Cached ConditionProfile isSameProfile) {
+                        @Cached InlinedConditionProfile isSameProfile) {
             Object res = callMethodWriter.execute(frame, self.getWriter(), T_ISATTY);
-            if (isSameProfile.profile(isNode.isTrue(res))) {
+            if (isSameProfile.profile(inliningTarget, isNode.isTrue(res))) {
                 /* either True or exception */
                 return res;
             }

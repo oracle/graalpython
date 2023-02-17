@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -89,7 +89,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDirEntry)
@@ -260,27 +261,29 @@ public class DirEntryBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"followSymlinks", "self.statCache == null", "isSymlink"}, limit = "1")
         PTuple uncachedStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsSymlinkNode isSymlinkNode,
                         @SuppressWarnings("unused") @Bind("isSymlinkNode.executeBoolean(frame, self)") boolean isSymlink,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("cachedPosixPathNode") @Cached CachedPosixPathNode cachedPosixPathNode,
-                        @Shared("positiveLongProfile") @Cached ConditionProfile positiveLongProfile) {
+                        @Shared("positiveLongProfile") @Cached InlinedConditionProfile positiveLongProfile) {
             // There are two caches - one for `follow_symlinks=True` and the other for
             // 'follow_symlinks=False`. They are different only when the dir entry is a symlink.
-            return uncachedLStatWithSymlink(frame, self, followSymlinks, catchNoent, posixLib, cachedPosixPathNode, positiveLongProfile);
+            return uncachedLStatWithSymlink(frame, self, followSymlinks, catchNoent, inliningTarget, posixLib, cachedPosixPathNode, positiveLongProfile);
         }
 
         @Specialization(guards = {"!followSymlinks", "self.lstatCache == null"})
         PTuple uncachedLStatWithSymlink(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("cachedPosixPathNode") @Cached CachedPosixPathNode cachedPosixPathNode,
-                        @Shared("positiveLongProfile") @Cached ConditionProfile positiveLongProfile) {
+                        @Shared("positiveLongProfile") @Cached InlinedConditionProfile positiveLongProfile) {
             PTuple res;
             int dirFd = self.scandirPath instanceof PosixFd ? ((PosixFd) self.scandirPath).fd : AT_FDCWD.value;
             PosixPath posixPath = cachedPosixPathNode.execute(frame, self);
             try {
                 long[] rawStat = posixLib.fstatat(getPosixSupport(), dirFd, posixPath.value, followSymlinks);
-                res = PosixModuleBuiltins.createStatResult(factory(), positiveLongProfile, rawStat);
+                res = PosixModuleBuiltins.createStatResult(inliningTarget, factory(), positiveLongProfile, rawStat);
             } catch (PosixException e) {
                 if (catchNoent && e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
                     return null;

@@ -48,8 +48,10 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
@@ -604,8 +606,8 @@ public final class PInt extends PythonBuiltinObject {
      * @return either {@code Long} or {@code PInt} containing an unsigned value with bit pattern
      *         matching that of {@code value}
      */
-    public static Object createPythonIntFromUnsignedLong(PythonObjectFactory factory, ConditionProfile profile, long value) {
-        return profile.profile(value >= 0) ? value : factory.createInt(longToUnsignedBigInt(value));
+    public static Object createPythonIntFromUnsignedLong(Node inliningTarget, PythonObjectFactory factory, InlinedConditionProfile profile, long value) {
+        return profile.profile(inliningTarget, value >= 0) ? value : factory.createInt(longToUnsignedBigInt(value));
     }
 
     @TruffleBoundary

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,7 +110,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_io")
@@ -294,8 +293,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached("create(T_MODE)") SetAttributeNode setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared("e") @Cached ConditionProfile profile) {
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             Object result = fileIO;
             try {
@@ -323,7 +321,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 if (buffering < 0) {
                     buffering = fileIO.getBlksize();
                 }
-                if (profile.profile(buffering < 0)) {
+                if (buffering < 0) {
                     throw raise(ValueError, INVALID_BUFFERING_SIZE);
                 }
 
@@ -373,10 +371,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared("e") @Cached ConditionProfile profile) {
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, callClose, profile);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, callClose);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
@@ -388,8 +385,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared("e") @Cached ConditionProfile profile) {
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             try {
                 /* buffering */
@@ -412,7 +408,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 if (buffering < 0) {
                     buffering = fileIO.getBlksize();
                 }
-                if (profile.profile(buffering < 0)) {
+                if (buffering < 0) {
                     throw raise(ValueError, INVALID_BUFFERING_SIZE);
                 }
 

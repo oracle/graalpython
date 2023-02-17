@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,13 +70,15 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBufferedIOBase)
@@ -140,20 +142,21 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object readinto(VirtualFrame frame, Object self, Object buffer,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached ConditionProfile isBytes,
-                        @Cached ConditionProfile oversize) {
+                        @Cached InlinedConditionProfile isBytes,
+                        @Cached InlinedConditionProfile oversize) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 Object data = callMethod.execute(frame, self, getMethodName(), len);
-                if (isBytes.profile(!(data instanceof PBytes))) {
+                if (isBytes.profile(inliningTarget, !(data instanceof PBytes))) {
                     throw raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
                 }
                 // Directly using data as buffer because CPython also accesses the underlying memory
                 // of the bytes object
                 int dataLen = bufferLib.getBufferLength(data);
-                if (oversize.profile(dataLen > len)) {
+                if (oversize.profile(inliningTarget, dataLen > len)) {
                     throw raise(ValueError, S_RETURNED_TOO_MUCH_DATA, "read()", len, dataLen);
                 }
                 bufferLib.readIntoBuffer(data, 0, buffer, 0, dataLen, bufferLib);

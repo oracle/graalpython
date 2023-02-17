@@ -115,7 +115,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedWriter, PBufferedRandom})
@@ -146,15 +146,16 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodClose,
                         @Cached PyObjectCallMethodObjArgs callMethodDeallocWarn,
                         @Cached EnterBufferedNode lock,
-                        @Cached ConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile) {
             try {
                 lock.enter(self);
-                if (profile.profile(isClosedNode.execute(frame, self))) {
+                if (profile.profile(inliningTarget, isClosedNode.execute(frame, self))) {
                     return PNone.NONE;
                 }
                 if (self.isFinalizing()) {

@@ -247,7 +247,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
@@ -826,10 +826,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PFrame counted(VirtualFrame frame, int num,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadCallerFrameNode readCallerNode,
-                        @Cached ConditionProfile callStackDepthProfile) {
+                        @Cached InlinedConditionProfile callStackDepthProfile) {
             PFrame requested = escapeFrame(frame, num, readCallerNode);
-            if (callStackDepthProfile.profile(requested == null)) {
+            if (callStackDepthProfile.profile(inliningTarget, requested == null)) {
                 throw raiseCallStackDepth();
             }
             return requested;

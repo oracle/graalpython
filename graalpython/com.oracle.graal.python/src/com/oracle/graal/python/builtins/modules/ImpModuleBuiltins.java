@@ -125,6 +125,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -134,7 +135,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = ImpModuleBuiltins.J__IMP, isEager = true)
@@ -545,10 +547,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, TruffleString name, Object dataObj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile isCodeObjectProfile) {
+                        @Cached InlinedConditionProfile isCodeObjectProfile) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 try {
@@ -575,7 +578,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 raiseFrozenError(FROZEN_INVALID, name, raiseNode);
             }
 
-            if (!isCodeObjectProfile.profile(code instanceof PCode)) {
+            if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
                 throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
             }
 
