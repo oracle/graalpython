@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UNICODE_ESCAPE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -62,6 +64,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.ISO_8859_1;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -122,6 +126,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -132,8 +137,14 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleString.FromByteArrayNode;
+import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
+import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 
 public final class PythonCextUnicodeBuiltins {
 
@@ -606,6 +617,66 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         Object doGeneric(Object ptr, long elementSize, int isAscii) {
             return factory().createString(new NativeCharSequence(ptr, (int) elementSize, isAscii != 0));
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int}, call = Ignored)
+    abstract static class PyTruffleUnicode_FromUCS extends CApiTernaryBuiltinNode {
+
+        private Encoding encodingFromKind(int kind) throws PException {
+            return switch (kind) {
+                case 1 -> ISO_8859_1;
+                case 2 -> UTF_16;
+                case 4 -> TS_ENCODING;
+                default -> throw raiseBadInternalCall();
+            };
+        }
+
+        private PString asPString(TruffleString ts, SwitchEncodingNode switchEncodingNode) {
+            return factory().createString(switchEncodingNode.execute(ts, TS_ENCODING));
+        }
+
+        @Specialization(guards = "ptrLib.isPointer(ptr)")
+        Object doNative(Object ptr, long byteLength, int kind,
+                        @SuppressWarnings("unused") @Shared("ptrLib") @CachedLibrary(limit = "1") InteropLibrary ptrLib,
+                        @Cached FromNativePointerNode fromNativePointerNode,
+                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode) {
+
+            try {
+                int iByteLength = PInt.intValueExact(byteLength);
+                Encoding srcEncoding = encodingFromKind(kind);
+                /*
+                 * TODO(fa): TruffleString does currently not support creating strings from UCS1 and
+                 * UCS2 bytes (GR-44312). Remind: UCS1 and UCS2 are actually compacted UTF-32 bytes.
+                 * For now, we use ISO-8859-1 and UTF-16 but that's not entirely correct.
+                 */
+                TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, srcEncoding, true);
+                return asPString(ts, switchEncodingNode);
+            } catch (OverflowException e) {
+                throw raise(MemoryError);
+            }
+        }
+
+        @Specialization(guards = "!ptrLib.isPointer(ptr)")
+        Object doManaged(Object ptr, long byteLength, int kind,
+                        @SuppressWarnings("unused") @Shared("ptrLib") @CachedLibrary(limit = "1") InteropLibrary ptrLib,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached FromByteArrayNode fromByteArrayNode,
+                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode) {
+            try {
+                Encoding srcEncoding = encodingFromKind(kind);
+                byte[] ucsBytes = getByteArrayNode.execute(ptr, byteLength);
+                TruffleString ts = fromByteArrayNode.execute(ucsBytes, srcEncoding);
+                return asPString(ts, switchEncodingNode);
+            } catch (InteropException e) {
+                /*
+                 * This means that we cannot read the array-like foreign object or the foreign
+                 * elements cannot be interpreted as bytes. In any case, that's a fatal error.
+                 */
+                throw raise(SystemError, ErrorMessages.M, e);
+            } catch (OverflowException e) {
+                throw raise(MemoryError);
+            }
         }
     }
 

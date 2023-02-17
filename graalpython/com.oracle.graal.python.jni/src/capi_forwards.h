@@ -768,6 +768,7 @@ long totalCount;
 #undef PyTruffleType_AddSlot
 #undef PyTruffleUnicode_Decode
 #undef PyTruffleUnicode_DecodeUTF8Stateful
+#undef PyTruffleUnicode_FromUCS
 #undef PyTruffleUnicode_InternInPlace
 #undef PyTruffleUnicode_New
 #undef PyTruffle_Arg_ParseTupleAndKeywords

@@ -313,6 +313,7 @@ typedef struct {
     BUILTIN(PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, void*) \
     BUILTIN(PyTruffleUnicode_Decode, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyTruffleUnicode_DecodeUTF8Stateful, PyObject*, void*, const char*, int) \
+    BUILTIN(PyTruffleUnicode_FromUCS, PyObject*, void*, Py_ssize_t, int) \
     BUILTIN(PyTruffleUnicode_InternInPlace, PyObject*, PyObject*) \
     BUILTIN(PyTruffleUnicode_New, PyObject*, void*, Py_ssize_t, Py_UCS4) \
     BUILTIN(PyTruffle_Arg_ParseTupleAndKeywords, int, PyObject*, PyObject*, const char*, void*, void*) \
