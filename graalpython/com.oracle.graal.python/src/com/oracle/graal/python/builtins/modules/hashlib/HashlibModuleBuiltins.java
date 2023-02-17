@@ -83,9 +83,13 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -343,22 +347,25 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         return mac;
     }
 
+    @GenerateUncached(false)
+    @GenerateCached(false)
+    @GenerateInline
     abstract static class CreateDigestNode extends Node {
-        abstract Object execute(VirtualFrame frame, PythonBuiltinClassType type, String pythonName, String javaName, Object buffer, PythonBuiltinBaseNode indirectCallNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object buffer, PythonBuiltinBaseNode indirectCallNode);
 
         @Specialization
-        Object create(VirtualFrame frame, PythonBuiltinClassType type, String pythonName, String javaName, Object value, PythonBuiltinBaseNode indirectCallNode,
-                        @Cached PythonObjectFactory factory,
+        static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value, PythonBuiltinBaseNode indirectCallNode,
+                        @Cached(inline = false) PythonObjectFactory factory,
                         @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode.Lazy raise) {
             Object buffer;
             if (value instanceof PNone) {
                 buffer = null;
             } else if (acquireLib.hasBuffer(value)) {
                 buffer = acquireLib.acquireReadonly(value, frame, indirectCallNode);
             } else {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, value);
+                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, value);
             }
             try {
                 byte[] bytes = buffer == null ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -367,7 +374,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                 try {
                     digest = createDigest(javaName, bytes, bytesLen);
                 } catch (NoSuchAlgorithmException e) {
-                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
                 return factory.createDigestObject(type, pythonName, digest);
             } finally {
@@ -399,12 +406,13 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
+                        @Bind("this") Node inliningTarget,
                         @Cached CreateDigestNode createNode,
                         @Cached CastToJavaStringNode castStr) {
             String pythonDigestName = getPythonName(castStr.execute(name));
             String javaDigestName = getJavaName(pythonDigestName);
             PythonBuiltinClassType digestType = getTypeFor(javaDigestName);
-            return createNode.execute(frame, digestType, pythonDigestName, javaDigestName, buffer, this);
+            return createNode.execute(frame, inliningTarget, digestType, pythonDigestName, javaDigestName, buffer, this);
         }
 
         private static PythonBuiltinClassType getTypeFor(String digestName) {

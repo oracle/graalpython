@@ -58,12 +58,14 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_blake2")
 public class Blake2ModuleBuiltins extends PythonBuiltins {
@@ -124,6 +126,7 @@ public class Blake2ModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object newDigest(VirtualFrame frame, Object type, Object data, int digestSize,
                         PNone key, PNone salt, PNone person, int fanout, int depth, int leafSize, int nodeOffset, int nodeDepth, int innerSize, boolean lastNode, boolean usedforsecurity,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
             if (fanout != 1 || depth != 1 || leafSize != 0 || nodeOffset != 0 || nodeDepth != 0 || innerSize != 0 || lastNode) {
                 throw fail(frame, type, data, digestSize, key, salt, person, fanout, depth, leafSize, nodeOffset, nodeDepth, innerSize, lastNode, usedforsecurity);
@@ -151,7 +154,7 @@ public class Blake2ModuleBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             javaName = PythonUtils.formatJString(javaName, javaDigestSize);
-            return createNode.execute(frame, resultType, pythonName, javaName, data, this);
+            return createNode.execute(frame, inliningTarget, resultType, pythonName, javaName, data, this);
         }
 
         @SuppressWarnings("unused")
