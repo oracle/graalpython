@@ -85,6 +85,10 @@ public abstract class InlinedGetClassNode extends PNodeWithContext {
 
     public abstract Object execute(Node inliningTarget, Object object);
 
+    public static Object executeUncached(Object object) {
+        return InlinedGetClassNodeGen.getUncached().execute(null, object);
+    }
+
     @Specialization
     static Object getBoolean(@SuppressWarnings("unused") Boolean object) {
         return PythonBuiltinClassType.Boolean;
