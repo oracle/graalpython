@@ -89,6 +89,7 @@ public final class PosixConstants {
     public static final MandatoryIntConstant NI_MAXHOST;
     public static final MandatoryIntConstant NI_MAXSERV;
     public static final MandatoryIntConstant AT_FDCWD;
+    public static final MandatoryIntConstant AT_SYMLINK_FOLLOW;
     public static final MandatoryIntConstant SEEK_SET;
     public static final MandatoryIntConstant SEEK_CUR;
     public static final MandatoryIntConstant SEEK_END;
@@ -341,6 +342,7 @@ public final class PosixConstants {
         NI_MAXHOST = reg.createMandatoryInt("NI_MAXHOST");
         NI_MAXSERV = reg.createMandatoryInt("NI_MAXSERV");
         AT_FDCWD = reg.createMandatoryInt("AT_FDCWD");
+        AT_SYMLINK_FOLLOW = reg.createMandatoryInt("AT_SYMLINK_FOLLOW");
         SEEK_SET = reg.createMandatoryInt("SEEK_SET");
         SEEK_CUR = reg.createMandatoryInt("SEEK_CUR");
         SEEK_END = reg.createMandatoryInt("SEEK_END");

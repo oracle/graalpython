@@ -347,6 +347,10 @@ int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmdir) {
     return unlinkat(dirFd, pathname, rmdir ? AT_REMOVEDIR : 0);
 }
 
+int32_t call_linkat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath, int32_t flags) {
+    return linkat(oldDirFd, oldPath, newDirFd, newPath, flags);
+}
+
 int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
     return symlinkat(target, dirFd, linkpath);
 }

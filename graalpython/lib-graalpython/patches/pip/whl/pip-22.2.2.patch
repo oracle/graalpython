@@ -58,10 +58,10 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..d8d97eb
+index 0000000..d41572c
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,145 @@
+@@ -0,0 +1,148 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -136,12 +136,15 @@ index 0000000..d8d97eb
 +
 +    # end of code duplicated in ginstall.py
 +
-+    def apply_first_existing(dir, suffix, wd=''):
++    def apply_first_existing(dir, suffix, wd=None):
++        patch_target_dir = location
++        if wd:
++            patch_target_dir = os.path.join(location, wd)
 +        filename = first_existing(package_name, name_ver_match, dir, suffix)
 +        if filename:
 +            print("Patching package " + package_name + " using " + filename)
 +            try:
-+                subprocess.run(["patch", "-f", "-d", os.path.join(location, wd), "-p1", "-i", filename], check=True)
++                subprocess.run(["patch", "-f", "-d", patch_target_dir, "-p1", "-i", filename], check=True)
 +            except FileNotFoundError:
 +                print(
 +                    "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
@@ -163,7 +166,7 @@ index 0000000..d8d97eb
 +        # with a patch intended for a binary distribution, because in the source
 +        # distribution the actual deployed sources may be in a subdirectory (typically "src")
 +        bdist_dir = os.path.join(pbd, package_name, "whl")
-+        bdist_patch_wd = read_first_existing(package_name, name_ver_match, bdist_dir, ".dir") if is_sdist else ''
++        bdist_patch_wd = read_first_existing(package_name, name_ver_match, bdist_dir, ".dir") if is_sdist else None
 +        apply_first_existing(bdist_dir, ".patch", bdist_patch_wd)
 +
 +        # patches intended for source distribution if applicable

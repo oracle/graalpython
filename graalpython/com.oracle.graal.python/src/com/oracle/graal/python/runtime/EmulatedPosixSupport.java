@@ -1251,6 +1251,28 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
+        TruffleString srcPath = pathToTruffleString(oldPath, fromJavaStringNode);
+        TruffleFile srcFile = resolvePath(oldFdDir, srcPath, defaultDirFdPofile, eqNode, toJavaStringNode);
+        TruffleString dstPath = pathToTruffleString(newPath, fromJavaStringNode);
+        TruffleFile dstFile = resolvePath(newFdDir, srcPath, defaultDirFdPofile, eqNode, toJavaStringNode);
+        try {
+            if ((flags & PosixConstants.AT_SYMLINK_FOLLOW.value) != 0) {
+                dstFile = dstFile.getCanonicalFile();
+            }
+            srcFile.createLink(dstFile);
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e, eqNode));
+        }
+    }
+
+    @ExportMessage
     public void symlinkat(Object target, int linkDirFd, Object link,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,

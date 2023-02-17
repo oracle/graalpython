@@ -41,8 +41,6 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -104,6 +102,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -167,6 +166,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_fstatvfs("(sint32, [sint64]):sint32"),
         call_uname("([sint8], [sint8], [sint8], [sint8], [sint8], sint32):sint32"),
         call_unlinkat("(sint32, [sint8], sint32):sint32"),
+        call_linkat("(sint32, [sint8], sint32, [sint8], sint32):sint32"),
         call_symlinkat("([sint8], sint32, [sint8]):sint32"),
         call_mkdirat("(sint32, [sint8], sint32):sint32"),
         call_getcwd("([sint8], uint64):sint32"),
@@ -724,6 +724,15 @@ public final class NFIPosixSupport extends PosixSupport {
     public void unlinkat(int dirFd, Object pathname, boolean rmdir,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(this, PosixNativeFunction.call_unlinkat, dirFd, pathToCString(pathname), rmdir ? 1 : 0);
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_linkat, oldFdDir, pathToCString(oldPath), newFdDir, pathToCString(newPath), flags);
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }

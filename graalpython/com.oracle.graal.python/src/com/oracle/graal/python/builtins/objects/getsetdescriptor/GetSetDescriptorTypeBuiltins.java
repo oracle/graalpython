@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,13 +84,13 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static GetSetDescriptor doGetSetDescriptor(GetSetDescriptor self) {
-            return self;
+        static Object doGetSetDescriptor(GetSetDescriptor self) {
+            return self.getType();
         }
 
         @Specialization
-        static HiddenKeyDescriptor doHiddenKeyDescriptor(HiddenKeyDescriptor self) {
-            return self;
+        static Object doHiddenKeyDescriptor(HiddenKeyDescriptor self) {
+            return self.getType();
         }
     }
 

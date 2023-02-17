@@ -268,10 +268,10 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < length; ++i) {
                 byte[] bytes = toBytesNode.execute(frame, getItem.execute(frame, executableList, i));
                 if (Arrays.equals(bytes, sysExecutable)) {
-                    if (length != 1) {
+                    TruffleString[] additionalArgs = PythonOptions.getExecutableList(getContext());
+                    if (length != 1 && additionalArgs.length != 1) {
                         throw raise(ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);
                     }
-                    TruffleString[] additionalArgs = PythonOptions.getExecutableList(getContext());
                     Object[] extendedArgs = new Object[additionalArgs.length + (processArgs.length == 0 ? 0 : processArgs.length - 1)];
                     for (int j = 0; j < additionalArgs.length; ++j) {
                         extendedArgs[j] = createPathFromBytes(fsEncode(additionalArgs[j].toJavaStringUncached()), posixLib);

@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
@@ -102,8 +103,10 @@ public abstract class GetFrameLocalsNode extends Node {
                         @Bind("info.getVariableCount()") int count,
                         @Shared("setItem") @Cached PyDictSetItem setItem,
                         @Shared("delItem") @Cached PyDictDelItem delItem) {
+            CodeUnit co = info.getRootNode().getCodeUnit();
+            int regularVarCount = co.varnames.length;
             for (int i = 0; i < count; i++) {
-                copyItem(locals, info, dict, setItem, delItem, i);
+                copyItem(locals, info, dict, setItem, delItem, i, i >= regularVarCount);
             }
         }
 
@@ -113,15 +116,17 @@ public abstract class GetFrameLocalsNode extends Node {
                         @Shared("delItem") @Cached PyDictDelItem delItem) {
             FrameInfo info = getInfo(locals.getFrameDescriptor());
             int count = info.getVariableCount();
+            CodeUnit co = info.getRootNode().getCodeUnit();
+            int regularVarCount = co.varnames.length;
             for (int i = 0; i < count; i++) {
-                copyItem(locals, info, dict, setItem, delItem, i);
+                copyItem(locals, info, dict, setItem, delItem, i, i >= regularVarCount);
             }
         }
 
-        private static void copyItem(MaterializedFrame locals, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i) {
+        private static void copyItem(MaterializedFrame locals, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i, boolean deref) {
             TruffleString name = info.getVariableName(i);
             Object value = locals.getValue(i);
-            if (value instanceof PCell) {
+            if (deref && value != null) {
                 value = ((PCell) value).getRef();
             }
             if (value == null) {

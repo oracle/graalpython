@@ -1,0 +1,34 @@
+diff --git a/cloudpickle/cloudpickle.py b/cloudpickle/cloudpickle.py
+index 317be69..4e409e4 100644
+--- a/cloudpickle/cloudpickle.py
++++ b/cloudpickle/cloudpickle.py
+@@ -512,6 +512,8 @@ def _walk_global_ops(code):
+     """
+     Yield referenced name for all global-referencing instructions in *code*.
+     """
++    # GraalPy change: we don't support dis
++    yield from code.co_names
+     for instr in dis.get_instructions(code):
+         op = instr.opcode
+         if op in GLOBAL_OPS:
+diff --git a/cloudpickle/cloudpickle_fast.py b/cloudpickle/cloudpickle_fast.py
+index 63aaffa..65ff18c 100644
+--- a/cloudpickle/cloudpickle_fast.py
++++ b/cloudpickle/cloudpickle_fast.py
+@@ -21,6 +21,7 @@ import struct
+ import types
+ import weakref
+ import typing
++import platform
+ 
+ from enum import Enum
+ from collections import ChainMap, OrderedDict
+@@ -663,7 +664,7 @@ class CloudPickler(Pickler):
+             self.globals_ref = {}
+             assert hasattr(self, 'proto')
+ 
+-    if pickle.HIGHEST_PROTOCOL >= 5 and not PYPY:
++    if pickle.HIGHEST_PROTOCOL >= 5 and platform.python_implementation() == 'CPython':
+         # Pickler is the C implementation of the CPython pickler and therefore
+         # we rely on reduce_override method to customize the pickler behavior.
+ 

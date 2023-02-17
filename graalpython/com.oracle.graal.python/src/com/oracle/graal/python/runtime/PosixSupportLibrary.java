@@ -143,6 +143,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void unlinkat(Object receiver, int dirFd, Object pathname, boolean rmdir) throws PosixException;
 
+    public abstract void linkat(Object receiver, int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags) throws PosixException;
+
     public abstract void symlinkat(Object receiver, Object target, int linkpathDirFd, Object linkpath) throws PosixException;
 
     public abstract void mkdirat(Object receiver, int dirFd, Object pathname, int mode) throws PosixException;

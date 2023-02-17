@@ -401,6 +401,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("linkAt", "%d, %s, %d, %s, %d", oldFdDir, oldPath, newFdDir, newPath, flags);
+        try {
+            lib.linkat(delegate, oldFdDir, oldPath, newFdDir, newPath, flags);
+        } catch (PosixException e) {
+            throw logException("symlinkAt", e);
+        }
+    }
+
+    @ExportMessage
     final void symlinkat(Object target, int linkpathDirFd, Object linkpath,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("symlinkAt", "%s, %d, %s", target, linkpathDirFd, linkpath);

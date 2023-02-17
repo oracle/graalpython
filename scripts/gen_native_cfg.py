@@ -129,6 +129,7 @@ constant_defs = '''
   i NI_MAXSERV
 
 0 i AT_FDCWD
+0 i AT_SYMLINK_FOLLOW
 
   i SEEK_SET
   i SEEK_CUR
@@ -393,7 +394,7 @@ layout_defs = '''
 '''
 
 java_copyright = '''/*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
