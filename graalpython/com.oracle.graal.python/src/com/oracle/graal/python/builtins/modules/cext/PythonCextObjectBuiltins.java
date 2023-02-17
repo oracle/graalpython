@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CastKwar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins.PyBytes_FromObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
@@ -478,9 +479,12 @@ public class PythonCextObjectBuiltins {
         }
 
         @Specialization(guards = "isNoValue(obj)")
-        static Object bytesNoValue(@SuppressWarnings("unused") Object obj,
-                        @Cached PyBytes_FromObject fromObjectNode) {
-            return fromObjectNode.execute(StringLiterals.T_NULL_RESULT);
+        Object bytesNoValue(@SuppressWarnings("unused") Object obj) {
+            /*
+             * Note: CPython calls PyBytes_FromString("<NULL>") but we do not directly have it.
+             * Therefore, we directly create the bytes object with string "<NULL>" here.
+             */
+            return factory().createBytes(BytesUtils.NULL_STRING);
         }
 
         protected static boolean hasBytes(Object obj, PyObjectLookupAttr lookupAttrNode) {
