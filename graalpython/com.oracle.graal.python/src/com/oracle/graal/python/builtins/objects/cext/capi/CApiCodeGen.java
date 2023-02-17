@@ -485,7 +485,7 @@ public final class CApiCodeGen {
         lines.add("        return null;");
         lines.add("    }");
 
-        return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCExtBuiltinRegistry.java"), lines);
+        return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCextBuiltinRegistry.java"), lines);
     }
 
     /**
