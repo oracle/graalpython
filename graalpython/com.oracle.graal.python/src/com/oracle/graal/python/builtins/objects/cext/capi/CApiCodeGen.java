@@ -512,8 +512,7 @@ public final class CApiCodeGen {
         changed |= generateCApiSource(javaBuiltins);
         changed |= generateCApiHeader(javaBuiltins);
         changed |= generateBuiltinRegistry(javaBuiltins);
-
-        checkImports(allBuiltins);
+        changed |= checkImports(allBuiltins);
         if (changed) {
             System.exit(-1);
         }
