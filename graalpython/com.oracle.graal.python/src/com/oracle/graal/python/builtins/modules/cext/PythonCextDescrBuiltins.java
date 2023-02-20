@@ -56,6 +56,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.CreateGetSetNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.NewClassMethodNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -76,7 +78,7 @@ public final class PythonCextDescrBuiltins {
 
         @Specialization
         Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Cached PythonCextBuiltins.CreateGetSetNode createGetSetNode) {
+                        @Cached CreateGetSetNode createGetSetNode) {
             return createGetSetNode.execute(name, cls, getter, setter, doc, closure, getLanguage(), factory());
         }
     }
@@ -86,7 +88,7 @@ public final class PythonCextDescrBuiltins {
 
         @Specialization
         Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
-                        @Cached PythonCextBuiltins.NewClassMethodNode newClassMethodNode) {
+                        @Cached NewClassMethodNode newClassMethodNode) {
             Object func = newClassMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, type, doc, factory());
             if (!isClassOrStaticMethod(flags)) {
                 /*

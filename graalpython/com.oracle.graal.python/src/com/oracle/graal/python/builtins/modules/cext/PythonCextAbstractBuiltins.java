@@ -93,14 +93,18 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -116,7 +120,6 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -141,7 +144,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyIndex_Check extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object obj,
-                        @Cached com.oracle.graal.python.lib.PyIndexCheckNode checkNode) {
+                        @Cached PyIndexCheckNode checkNode) {
             return checkNode.execute(obj) ? 1 : 0;
         }
     }
@@ -152,7 +155,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyNumber_Check extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object obj,
-                        @Cached com.oracle.graal.python.lib.PyNumberCheckNode checkNode) {
+                        @Cached PyNumberCheckNode checkNode) {
             return PInt.intValue(checkNode.execute(obj));
         }
     }
@@ -451,21 +454,17 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     public abstract static class PySequence_Tuple extends CApiUnaryBuiltinNode {
-        @Specialization(guards = "isTuple(obj, getClassNode)")
-        public static PTuple values(PTuple obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return obj;
-        }
 
-        @Specialization(guards = "!isTuple(obj, getClassNode)")
+        @Specialization
         public Object values(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached TupleNode tupleNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return tupleNode.execute(null, PythonBuiltinClassType.PTuple, obj);
-        }
-
-        protected boolean isTuple(Object obj, GetClassNode getClassNode) {
-            return getClassNode.execute(obj) == PythonBuiltinClassType.PTuple;
+                        @Cached InlinedGetClassNode getClassNode) {
+            if (getClassNode.execute(inliningTarget, obj) == PythonBuiltinClassType.PTuple) {
+                return obj;
+            } else {
+                return tupleNode.execute(null, PythonBuiltinClassType.PTuple, obj);
+            }
         }
     }
 
@@ -482,7 +481,7 @@ public final class PythonCextAbstractBuiltins {
     public abstract static class PySequence_SetItem extends CApiTernaryBuiltinNode {
         @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         public Object setItem(Object obj, Object key, Object value,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached ConditionProfile hasSetItem,
                         @Cached CallNode callNode) {
@@ -497,7 +496,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         Object setItem(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
         }
     }
@@ -508,7 +507,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         Object getSlice(Object obj, long iLow, long iHigh,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode) {
@@ -518,7 +517,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         Object getSlice(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
         }
     }
@@ -537,14 +536,14 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_Repeat extends CApiBinaryBuiltinNode {
         @Specialization(guards = "checkNode.execute(obj)", limit = "1")
         Object repeat(Object obj, long n,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached("createMul()") MulNode mulNode) {
             return mulNode.executeObject(null, obj, n);
         }
 
         @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         protected Object repeat(Object obj, @SuppressWarnings("unused") Object n,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
 
@@ -560,7 +559,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createMul()") MulNode mulNode,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             Object imulCallable = lookupNode.execute(null, obj, T___IMUL__);
             if (imulCallable != PNone.NO_VALUE) {
                 Object ret = callNode.execute(imulCallable, n);
@@ -571,7 +570,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkNode.execute(obj)", limit = "1")
         protected Object repeat(Object obj, @SuppressWarnings("unused") Object n,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
 
@@ -584,14 +583,14 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_Concat extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"checkNode.execute(s1)", "checkNode.execute(s1)"}, limit = "1")
         Object concat(Object s1, Object s2,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode) {
             return addNode.executeObject(null, s1, s2);
         }
 
         @Specialization(guards = {"!checkNode.execute(s1) || checkNode.execute(s2)"}, limit = "1")
         protected Object cantConcat(Object s1, @SuppressWarnings("unused") Object s2,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
 
@@ -608,7 +607,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
                         @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             Object iaddCallable = lookupNode.execute(null, s1, T___IADD__);
             if (iaddCallable != PNone.NO_VALUE) {
                 return callNode.execute(iaddCallable, s2);
@@ -618,7 +617,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkNode.execute(s1)", limit = "1")
         protected Object concat(Object s1, @SuppressWarnings("unused") Object s2,
-                        @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode) {
+                        @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode) {
             throw raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
 
@@ -641,7 +640,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_Check extends CApiUnaryBuiltinNode {
         @Specialization
         static int check(Object object,
-                        @Cached com.oracle.graal.python.lib.PySequenceCheckNode check) {
+                        @Cached PySequenceCheckNode check) {
             if (object == PNone.NO_VALUE) {
                 return intValue(false);
             }
@@ -653,8 +652,8 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
         Object doManaged(Object delegate, Object position,
-                        @Cached com.oracle.graal.python.lib.PySequenceCheckNode pySequenceCheck,
-                        @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem) {
+                        @Cached PySequenceCheckNode pySequenceCheck,
+                        @Cached PyObjectGetItem getItem) {
             if (!pySequenceCheck.execute(delegate)) {
                 throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, delegate);
             }
@@ -669,13 +668,17 @@ public final class PythonCextAbstractBuiltins {
         // cant use PySequence_Size: PySequence_Size returns the __len__ value also for
         // subclasses of types not accepted by PySequence_Check as long they have an overriden
         // __len__ method
-        @Specialization(guards = {"!isNativeObject(obj)", "!isDictOrMappingProxy(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
-        static Object doSequence(Object obj,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
-                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(null, obj);
+        @Specialization(guards = "!isNativeObject(obj)")
+        Object doSequence(Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedIsSameTypeNode isSameType,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached PyObjectSizeNode sizeNode) {
+            if (obj instanceof PMappingproxy || isSameType.execute(inliningTarget, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PDict)) {
+                throw raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
+            } else {
+                return sizeNode.execute(null, obj);
+            }
         }
 
         @Specialization(guards = "isNativeObject(obj)")
@@ -688,18 +691,6 @@ public final class PythonCextAbstractBuiltins {
             } finally {
                 IndirectCallContext.exit(null, this, state);
             }
-        }
-
-        @Specialization(guards = {"isDictOrMappingProxy(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
-        Object notSequence(Object obj,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
-        }
-
-        protected static boolean isDictOrMappingProxy(Node inliningTarget, Object obj, InlinedIsSameTypeNode isSameType, InlinedGetClassNode getClassNode) {
-            return obj instanceof PMappingproxy || isSameType.execute(inliningTarget, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PDict);
         }
     }
 
@@ -823,7 +814,7 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!isNativeObject(object)")
         static int doPythonObject(Object object,
-                        @Cached com.oracle.graal.python.lib.PyMappingCheckNode checkNode) {
+                        @Cached PyMappingCheckNode checkNode) {
             return intValue(checkNode.execute(object));
         }
 
@@ -841,13 +832,20 @@ public final class PythonCextAbstractBuiltins {
         // cant use PyMapping_Check: PyMapping_Size returns the __len__ value also for
         // subclasses of types not accepted by PyMapping_Check as long they have an overriden
         // __len__ method
-        @Specialization(guards = {"!isNativeObject(obj)", "!isSetOrDeque(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
-        static int doMapping(Object obj,
+        @Specialization(guards = "!isNativeObject(obj)")
+        int doMapping(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode) {
-            return sizeNode.execute(null, obj);
+                        @Cached InlinedIsSameTypeNode isSameType,
+                        @Cached InlinedGetClassNode getClassNode) {
+            Object cls = getClassNode.execute(inliningTarget, obj);
+            if (isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PSet) ||
+                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PFrozenSet) ||
+                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PDeque)) {
+                throw raise(TypeError, OBJ_ISNT_MAPPING, obj);
+            } else {
+                return sizeNode.execute(null, obj);
+            }
         }
 
         @Specialization(guards = "isNativeObject(obj)")
@@ -855,21 +853,6 @@ public final class PythonCextAbstractBuiltins {
                         @Cached ToSulongNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction) {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
-        }
-
-        @Specialization(guards = {"isSetOrDeque(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
-        Object notMapping(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode) {
-            throw raise(TypeError, OBJ_ISNT_MAPPING, obj);
-        }
-
-        protected static boolean isSetOrDeque(Node inliningTarget, Object obj, InlinedIsSameTypeNode isSameType, InlinedGetClassNode getClassNode) {
-            Object cls = getClassNode.execute(inliningTarget, obj);
-            return isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PSet) ||
-                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PFrozenSet) ||
-                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PDeque);
         }
     }
 

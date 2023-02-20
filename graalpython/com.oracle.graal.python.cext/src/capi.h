@@ -337,8 +337,6 @@ typedef struct {
     BUILTIN(PyTruffle_NoValue, PyObject*) \
     BUILTIN(PyTruffle_None, PyObject*) \
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
-    BUILTIN(PyTruffle_OS_DoubleToString, PyObject*, double, int, int, int) \
-    BUILTIN(PyTruffle_OS_StringToDouble, PyObject*, const char*, int) \
     BUILTIN(PyTruffle_Object_Alloc, int, void*, long) \
     BUILTIN(PyTruffle_Object_Free, int, void*) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \

@@ -41,7 +41,6 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.METHOD_DEF_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PYTRUFFLE_ALLOCATE_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PYTRUFFLE_PATCH_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PYTRUFFLE_POPULATE_TYPE;
@@ -92,6 +91,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -1065,7 +1065,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"eq(M_ML, key)", "isAnyFunctionObject(object)"}, limit = "1")
         static Object doPyCFunctionObjectMMl(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @CachedLibrary("object") DynamicObjectLibrary dylib) {
-            Object methodDefPtr = dylib.getOrDefault(object, METHOD_DEF_PTR, null);
+            Object methodDefPtr = dylib.getOrDefault(object, PythonCextMethodBuiltins.METHOD_DEF_PTR, null);
             if (methodDefPtr != null) {
                 return methodDefPtr;
             }

@@ -792,8 +792,6 @@ long totalCount;
 #undef PyTruffle_NoValue
 #undef PyTruffle_None
 #undef PyTruffle_NotImplemented
-#undef PyTruffle_OS_DoubleToString
-#undef PyTruffle_OS_StringToDouble
 #undef PyTruffle_Object_Alloc
 #undef PyTruffle_Object_Free
 #undef PyTruffle_Register_NULL

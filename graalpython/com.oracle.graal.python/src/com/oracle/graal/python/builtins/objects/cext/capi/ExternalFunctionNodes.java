@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
@@ -1309,7 +1310,7 @@ public abstract class ExternalFunctionNodes {
         GetAttrFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
-            this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
+            this.asCharPointerNode = AsCharPointerNodeGen.create();
         }
 
         @Override
@@ -1359,7 +1360,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
-            this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
+            this.asCharPointerNode = AsCharPointerNodeGen.create();
         }
 
         @Override

@@ -42,18 +42,15 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_TYPE_LOCK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi11BuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -61,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -70,18 +68,18 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockNode;
-import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -91,49 +89,34 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCEvalBuiltins {
 
-    private static final long LOCK_MASK = 0xA10C000000000000L;
+    @CApiBuiltin(ret = PyThreadState, args = {}, acquiresGIL = false, call = Direct)
+    @GenerateNodeFactory
+    public abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
-    @CApiBuiltin(ret = PY_THREAD_TYPE_LOCK, args = {}, call = Direct)
-    public abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        public long allocate() {
-            CApiContext context = getContext().getCApiContext();
-            long id = context.lockId.incrementAndGet() ^ LOCK_MASK;
-            PLock lock = factory().createLock(PythonBuiltinClassType.PLock);
-            context.locks.put(id, lock);
-            return id;
+        Object save(@Cached GilNode gil) {
+            PythonContext context = PythonContext.get(gil);
+            PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            LOGGER.fine("C extension releases GIL");
+            gil.release(context, true);
+            return threadState;
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PY_THREAD_TYPE_LOCK, Int}, call = Direct)
-    public abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public int acquire(long id, int waitflag,
-                        @Cached AcquireLockNode acquireNode) {
-            CApiContext context = getContext().getCApiContext();
-            PLock lock = context.locks.get(id);
-            if (lock == null) {
-                throw badInternalCall("lock");
-            }
-            return intValue((boolean) acquireNode.execute(null, lock, waitflag != 0 ? -1 : 0, PNone.NONE));
-        }
-    }
+    @CApiBuiltin(ret = Void, args = {PyThreadState}, acquiresGIL = false, call = Direct)
+    @GenerateNodeFactory
+    public abstract static class PyEval_RestoreThread extends CApiUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 
-    @CApiBuiltin(ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = Direct)
-    public abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        public Object release(long id,
-                        @Cached ReleaseLockNode releaseNode) {
-            CApiContext context = getContext().getCApiContext();
-            PLock lock = context.locks.get(id);
-            if (lock == null) {
-                throw badInternalCall("lock");
-            }
-            releaseNode.execute(null, lock);
-            return PNone.NO_VALUE;
+        Object restore(@SuppressWarnings("unused") Object ptr,
+                        @Cached GilNode gil) {
+            PythonContext context = PythonContext.get(gil);
+            PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            LOGGER.fine("C extension acquires GIL");
+            gil.acquire(context);
+            return threadState;
         }
     }
 

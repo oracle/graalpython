@@ -219,6 +219,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPosixmoduleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPyLifecycleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins;
@@ -234,9 +235,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextWeakrefBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen.CApiBuiltinDesc;
 
 /**
- * This file contains the specification of all CAPI builtins that aren't explicitly imlpemented in
- * the {@link PythonCextBuiltins}, i.e., all builtins that are implemented in C code or that are not
- * implemented at all at the moment.
+ * This file contains the specification of all CAPI builtins that aren't explicitly implemented in
+ * {@link PythonCextBuiltins}, etc. I.e., all builtins that are implemented in C code or that are
+ * not implemented at all at the moment.
  */
 public final class CApiFunction {
 
@@ -1442,6 +1443,7 @@ public final class CApiFunction {
         addCApiBuiltins(result, PythonCextPosixmoduleBuiltins.class);
         addCApiBuiltins(result, PythonCextPyLifecycleBuiltins.class);
         addCApiBuiltins(result, PythonCextPyStateBuiltins.class);
+        addCApiBuiltins(result, PythonCextPyThreadBuiltins.class);
         addCApiBuiltins(result, PythonCextPythonRunBuiltins.class);
         addCApiBuiltins(result, PythonCextSetBuiltins.class);
         addCApiBuiltins(result, PythonCextSliceBuiltins.class);
