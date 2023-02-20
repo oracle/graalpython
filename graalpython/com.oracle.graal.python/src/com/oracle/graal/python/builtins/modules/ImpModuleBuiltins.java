@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,9 +83,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
@@ -95,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -135,6 +132,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -355,7 +353,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
         int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
-                        @Cached HashingStorageGetItem getItem,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached ExecModuleNode execModuleNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
@@ -364,15 +362,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
             /*
              * Check if module is already initialized. CPython does that by testing if 'md_state !=
-             * NULL'. So, we do the same. Currently, we store this in the generic storage of the
-             * native wrapper.
+             * NULL'. So, we do the same.
              */
-            DynamicObjectNativeWrapper nativeWrapper = extensionModule.getNativeWrapper();
-            if (nativeWrapper != null && nativeWrapper.getNativeMemberStore() != null) {
-                Object item = getItem.execute(nativeWrapper.getNativeMemberStore(), NativeMember.MD_STATE.getMemberNameTruffleString());
-                if (item != PNone.NO_VALUE) {
-                    return 0;
-                }
+            Object mdState = extensionModule.getNativeModuleState();
+            if (mdState != null && !lib.isNull(mdState)) {
+                return 0;
             }
 
             PythonContext context = getContext();
