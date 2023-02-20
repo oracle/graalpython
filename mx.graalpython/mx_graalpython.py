@@ -1200,7 +1200,7 @@ def graalpython_gate_runner(args, tasks):
             success = "\n".join(["win32"])
             if success not in out.data:
                 mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
-            mx.run([svm_image, "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "--experimental-options", "--python.NativeModules=", "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "b'abcd'"
             if success not in out.data:
                 mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
