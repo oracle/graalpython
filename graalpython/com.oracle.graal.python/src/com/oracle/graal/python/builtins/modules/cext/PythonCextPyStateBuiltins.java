@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYMODULEDEF_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_GIL_STATE_STATE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
@@ -99,7 +98,7 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
     abstract static class PyThreadState_GetDict extends CApiNullaryBuiltinNode {
 
         @Specialization
