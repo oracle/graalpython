@@ -61,7 +61,7 @@ new file mode 100644
 index 0000000..d41572c
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,148 @@
+@@ -0,0 +1,151 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
