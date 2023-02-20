@@ -107,7 +107,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNodeGen;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -983,7 +983,7 @@ public final class CApiContext extends CExtContext {
              * init function did this initialization by calling 'PyModuleDef_Init' on it. So, we
              * must do it here because 'CreateModuleNode' should just ignore this case.
              */
-            Object clazz = GetClassNode.getUncached().execute(result);
+            Object clazz = InlinedGetClassNodeGen.getUncached().execute(null, result);
             if (clazz == PNone.NO_VALUE) {
                 throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
@@ -1228,6 +1228,7 @@ public final class CApiContext extends CExtContext {
 
             SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
             try {
+                LOGGER.config("loading native C API support library " + GraalHPyContext.getJNILibrary());
                 nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
                 /*-
                  * PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*))
@@ -1239,9 +1240,9 @@ public final class CApiContext extends CExtContext {
                 if (InteropLibrary.getUncached().asInt(result) == 0) {
                     // this is not the first context - native C API backend not supported
                     nativeLibrary = null;
-                    LOGGER.config("not loading native C API support library (only supported on initial context)");
+                    LOGGER.config("not using native C API support library (only supported on initial context)");
                 } else {
-                    LOGGER.config("loading native C API support library " + GraalHPyContext.getJNILibrary());
+                    LOGGER.config("using native C API support library");
                 }
             } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                 e.printStackTrace();

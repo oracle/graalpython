@@ -51,7 +51,7 @@ long totalCount;
 #define STATS_BEFORE(NAME) \
     totalCount++; \
     __stats__##NAME.count++;\
-    if ((totalCount) % 100000 == 0)\
+    if ((totalCount) % 10000 == 0)\
         printAllStats();\
     long t1 = t();
 #define STATS_AFTER(NAME) \

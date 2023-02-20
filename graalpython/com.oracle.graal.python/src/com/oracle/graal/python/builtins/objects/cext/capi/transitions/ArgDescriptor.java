@@ -202,6 +202,7 @@ public enum ArgDescriptor {
     PyInterpreterState(ArgBehavior.Pointer, "PyInterpreterState*"),
     PY_LOCK_STATUS("PyLockStatus"),
     PyLongObject(ArgBehavior.PyObject, "PyLongObject*"),
+    PyLongObjectTransfer(ArgBehavior.PyObject, "PyLongObject*", true),
     PyMemberDef(ArgBehavior.Pointer, "struct PyMemberDef*"),
     PyModuleObject(ArgBehavior.PyObject, "PyModuleObject*"),
     PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true),

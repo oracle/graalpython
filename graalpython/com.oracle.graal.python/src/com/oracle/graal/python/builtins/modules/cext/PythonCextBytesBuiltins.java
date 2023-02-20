@@ -83,15 +83,17 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -100,6 +102,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -160,36 +163,29 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     public abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
-        @Specialization(guards = {"isPBytes(obj) || isBytesSubtype(obj, getClassNode, isSubtypeNode)"})
-        public static Object fromObject(@SuppressWarnings("unused") Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            return obj;
-        }
-
-        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(obj, getClassNode, isSubtypeNode)", "isAcceptedSubtype(obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
+        @Specialization
         public Object fromObject(Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
                         @Cached BytesNode bytesNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode) {
-            return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
+                        @Cached PyObjectLookupAttr lookupAttrNode) {
+
+            if (PGuards.isPBytes(obj)) {
+                return obj;
+            } else {
+                Object klass = getClassNode.execute(inliningTarget, obj);
+                if (isSubtypeNode.execute(klass, PythonBuiltinClassType.PBytes)) {
+                    return obj;
+                } else if (isAcceptedSubtype(obj, klass, isSubtypeNode, lookupAttrNode)) {
+                    return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
+                } else {
+                    throw raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
+                }
+            }
         }
 
-        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(obj, getClassNode, isSubtypeNode)", "!isAcceptedSubtype(obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
-        public Object fromObject(Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode) {
-            throw raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
-        }
-
-        protected static boolean isBytesSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
-        }
-
-        protected static boolean isAcceptedSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
-            Object klass = getClassNode.execute(obj);
+        private static boolean isAcceptedSubtype(Object obj, Object klass, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
             return isSubtypeNode.execute(klass, PythonBuiltinClassType.PList) ||
                             isSubtypeNode.execute(klass, PythonBuiltinClassType.PTuple) ||
                             isSubtypeNode.execute(klass, PythonBuiltinClassType.PMemoryView) ||
