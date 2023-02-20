@@ -526,7 +526,7 @@ PyAPI_FUNC(void) PyTruffle_DECREF(PyObject* obj) {
 }
 
 /** to be used from Java code only; calls ADDREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(unsigned long ptr, Py_ssize_t value) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(intptr_t ptr, Py_ssize_t value) {
 	PyObject* obj = (PyObject*) ptr; // avoid type attachment at the interop boundary
 #ifdef ASSERTIONS
 	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
@@ -546,7 +546,7 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(unsigned long ptr, Py_ssize_t value) {
 }
 
 /** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(unsigned long ptr, Py_ssize_t value) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value) {
 	PyObject* obj = (PyObject*) ptr; // avoid type attachment at the interop boundary
 #ifdef ASSERTIONS
 	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
@@ -604,7 +604,7 @@ PyAPI_FUNC(uint64_t) PyTruffle_Wchar_Size() {
 }
 
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
-PyAPI_FUNC(void) PyTruffle_Free(unsigned long val) {
+PyAPI_FUNC(void) PyTruffle_Free(intptr_t val) {
     PyMem_RawFree((void*) val);
 }
 
