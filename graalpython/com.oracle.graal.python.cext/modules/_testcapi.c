@@ -5007,7 +5007,8 @@ dict_get_version(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &dict))
         return NULL;
 
-    version = dict->ma_version_tag;
+    // version = dict->ma_version_tag;
+    version = 0; // GraalPy: dict versions is an implementation detail
 
     Py_BUILD_ASSERT(sizeof(unsigned long long) >= sizeof(version));
     return PyLong_FromUnsignedLongLong((unsigned long long)version);
