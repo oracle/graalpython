@@ -1772,47 +1772,36 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     abstract static class ToNativeTypeNode extends Node {
         public abstract void execute(PythonNativeWrapper obj);
 
-        static int level = 0;
-
         @Specialization
         @TruffleBoundary
         void doPythonNativeWrapper(PythonNativeWrapper obj,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction callNativeUnary,
                         @Cached PCallCapiFunction callNativeUnaryPatch) {
-            level++;
-            if (level > 10) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                LOGGER.severe("recursion in " + ToNativeTypeNode.class.getName());
-            }
-            try {
-                if (!obj.isNative()) {
-                    obj.setRefCount(Long.MAX_VALUE / 2); // make this object immortal
-                    PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
-                    Long ptr = null;
-                    if (clazz instanceof PythonBuiltinClass) {
-                        PythonBuiltinClass builtinClass = (PythonBuiltinClass) clazz;
-                        PythonBuiltinClassType type = builtinClass.getType();
-                        ptr = PythonContext.get(this).getCApiContext().getTypeStore(type.getName().toJavaStringUncached());
-                    }
-                    if (ptr == null) {
-                        ptr = coerceToLong(callNativeUnary.call(FUN_PYTRUFFLE_ALLOCATE_TYPE, obj, 1), lib);
-                    }
+            if (!obj.isNative()) {
+                obj.setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+                PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
+                Long ptr = null;
+                if (clazz instanceof PythonBuiltinClass) {
+                    PythonBuiltinClass builtinClass = (PythonBuiltinClass) clazz;
+                    PythonBuiltinClassType type = builtinClass.getType();
+                    ptr = PythonContext.get(this).getCApiContext().getTypeStore(type.getName().toJavaStringUncached());
+                }
+                if (ptr == null) {
+                    ptr = coerceToLong(callNativeUnary.call(FUN_PYTRUFFLE_ALLOCATE_TYPE, obj, 1), lib);
+                }
 
-                    boolean isType = InlineIsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
-                    callNativeUnary.call(FUN_PYTRUFFLE_POPULATE_TYPE, ptr, obj, isType ? 1 : 0);
-                    if (!obj.isNative()) {
-                        CApiTransitions.firstToNative(obj, ptr);
-                        if (isType) {
-                            // PopulateType omits certain fields in this type to avoid circular
-                            // references
-                            Object base = ToSulongNode.getUncached().execute(PythonBuiltinClassType.PythonObject);
-                            callNativeUnaryPatch.call(FUN_PYTRUFFLE_PATCH_TYPE, ptr, base);
-                        }
+                boolean isType = InlineIsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
+                callNativeUnary.call(FUN_PYTRUFFLE_POPULATE_TYPE, ptr, obj, isType ? 1 : 0);
+                if (!obj.isNative()) {
+                    CApiTransitions.firstToNative(obj, ptr);
+                    if (isType) {
+                        // PopulateType omits certain fields in this type to avoid circular
+                        // references
+                        Object base = ToSulongNode.getUncached().execute(PythonBuiltinClassType.PythonObject);
+                        callNativeUnaryPatch.call(FUN_PYTRUFFLE_PATCH_TYPE, ptr, base);
                     }
                 }
-            } finally {
-                level--;
             }
         }
     }
