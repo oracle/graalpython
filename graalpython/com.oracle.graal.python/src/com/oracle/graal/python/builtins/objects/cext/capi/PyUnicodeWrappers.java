@@ -53,10 +53,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.UN
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
@@ -67,7 +65,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -83,30 +80,27 @@ public abstract class PyUnicodeWrappers {
             super(delegate);
         }
 
-        public PString getPString(PythonNativeWrapperLibrary lib) {
-            return (PString) lib.getDelegate(this);
+        public PString getPString() {
+            return (PString) getDelegate();
+        }
+
+        // TO POINTER / AS POINTER / TO NATIVE
+
+        @ExportMessage
+        protected boolean isPointer() {
+            return isNative();
         }
 
         @ExportMessage
-        boolean isPointer(
-                        @Cached IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(this);
+        public long asPointer() {
+            return getNativePointer();
         }
 
         @ExportMessage
-        long asPointer(
-                        @Cached PAsPointerNode pAsPointerNode) {
-            return pAsPointerNode.execute(this);
-        }
-
-        @ExportMessage
-        void toNative(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                setNativePointer(toPyObjectNode.execute(this));
+        protected void toNative(
+                        @Cached ConditionProfile isNativeProfile) {
+            if (!isNative(isNativeProfile)) {
+                CApiTransitions.firstToNative(this);
             }
         }
 
@@ -160,7 +154,6 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         Object readMember(String member,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SizeofWCharNode sizeofWcharNode,
                         @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
@@ -168,7 +161,7 @@ public abstract class PyUnicodeWrappers {
             try {
                 if (isMemberReadable(member)) {
                     int elementSize = (int) sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
-                    PString s = getPString(lib);
+                    PString s = getPString();
 
                     if (s.isNativeCharSequence()) {
                         // in this case, we can just return the pointer
@@ -221,7 +214,6 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         Object readMember(String member,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ConditionProfile storageProfile,
                         @Cached StringMaterializeNode materializeNode,
                         @Cached SizeofWCharNode sizeofWcharNode,
@@ -231,7 +223,7 @@ public abstract class PyUnicodeWrappers {
                 if (isMemberReadable(member)) {
                     // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
                     int value = 0b000000000000000000000000_1_0_0_000_00;
-                    PString delegate = getPString(lib);
+                    PString delegate = getPString();
                     if (onlyAscii(delegate, storageProfile, materializeNode)) {
                         value |= 0b1_0_000_00;
                     }

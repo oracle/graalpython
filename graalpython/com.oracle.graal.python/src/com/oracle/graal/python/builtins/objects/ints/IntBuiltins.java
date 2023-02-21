@@ -1455,8 +1455,8 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = J___LSHIFT__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LShiftNode extends PythonBinaryBuiltinNode {
         public abstract int executeInt(int left, int right) throws UnexpectedResultException;
 
@@ -1521,6 +1521,16 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object doILOvf(int left, long right) {
+            return doLLOvf(left, right);
+        }
+
+        @Specialization
+        Object doLIOvf(long left, int right) {
+            return doLLOvf(left, right);
+        }
+
+        @Specialization
         Object doLLOvf(long left, long right) {
             raiseNegativeShiftCount(right < 0);
             try {
@@ -1539,9 +1549,30 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"left == 0", "right.isZeroOrPositive()"})
+        static int doIPiZero(@SuppressWarnings("unused") int left, @SuppressWarnings("unused") PInt right) {
+            return 0;
+        }
+
+        @Specialization(replaces = "doIPiZero")
+        PInt doIPi(int left, PInt right) {
+            raiseNegativeShiftCount(!right.isZeroOrPositive());
+            if (left == 0) {
+                return factory().createInt(BigInteger.ZERO);
+            }
+            try {
+                int iright = right.intValueExact();
+                return factory().createInt(op(PInt.longToBigInteger(left), iright));
+            } catch (OverflowException e) {
+                throw raise(PythonErrorType.OverflowError);
+            }
+        }
+
+        @Specialization(guards = {"left == 0", "right.isZeroOrPositive()"})
         static int doLPiZero(@SuppressWarnings("unused") long left, @SuppressWarnings("unused") PInt right) {
             return 0;
         }
+
+        // there is some duplication in here because of GR-44123
 
         @Specialization(replaces = "doLPiZero")
         PInt doLPi(long left, PInt right) {

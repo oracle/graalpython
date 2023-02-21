@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,75 +40,65 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.lib.PyImportImport.T_FROMLIST;
+import static com.oracle.graal.python.lib.PyImportImport.T_LEVEL;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_GLOBALS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.T_IMPORT_ALL;
 
-import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextImportBuiltins extends PythonBuiltins {
+public final class PythonCextImportBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextImportBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyImport_ImportModule", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyImportImportModuleNode extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(name = "PyImport_Import", ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
+    @CApiBuiltin(name = "PyImport_ImportModuleNoBlock", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
+    public abstract static class PyImport_ImportModule extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object imp(TruffleString name,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return AbstractImportNode.importModule(name, T_IMPORT_ALL);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
-        }
-
-        @Specialization
-        public Object imp(PString name,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return imp(castToStringNode.execute(name), transformExceptionToNativeNode);
+        public Object imp(TruffleString name) {
+            return AbstractImportNode.importModule(name, T_IMPORT_ALL);
         }
     }
 
-    @Builtin(name = "PyImport_GetModuleDict")
-    @GenerateNodeFactory
-    public abstract static class PyImportGetModuleDictNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
+    public abstract static class PyImport_GetModuleDict extends CApiNullaryBuiltinNode {
         @Specialization
-        public Object getModuleDict(@Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return getContext().getSysModules();
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        public Object getModuleDict() {
+            return getContext().getSysModules();
         }
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, PyObject, PyObject, PyObject, Int}, call = Direct)
+    public abstract static class PyImport_ImportModuleLevelObject extends CApi5BuiltinNode {
+        @Specialization
+        public Object importModuleLevelObject(TruffleString name, Object globals, Object locals, Object fromlist, int level,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached CallNode callNode) {
+            // Get the __import__ function from the builtins
+            Object importFunc = getAttrNode.execute(null, getContext().getBuiltins(), T___IMPORT__);
+            // Call the __import__ function with the proper argument list
+            return callNode.execute(importFunc, new Object[]{name}, new PKeyword[]{
+                            new PKeyword(T_GLOBALS, globals), new PKeyword(T_LOCALS, locals),
+                            new PKeyword(T_FROMLIST, fromlist), new PKeyword(T_LEVEL, level)
+            });
+        }
+    }
 }

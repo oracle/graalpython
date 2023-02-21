@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,13 +53,18 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     /* Sulong intrinsics */
 
-    FUN_POINTS_TO_HANDLE_SPACE("_graalvm_llvm_points_to_handle_space"),
-    FUN_DEREF_HANDLE("_graalvm_llvm_create_deref_handle"),
-    FUN_RESOLVE_HANDLE("_graalvm_llvm_resolve_handle"),
-    FUN_IS_HANDLE("_graalvm_llvm_is_handle"),
     FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
     FUN_POLYGLOT_ARRAY_TYPEID("polyglot_array_typeid"),
     FUN_POLYGLOT_FROM_STRING("polyglot_from_string"),
+    GRAALVM_LLVM_VA_ARG("_graalvm_llvm_va_arg"),
+
+    FUN_PYTRUFFLE_ALLOCATE_TYPE("PyTruffle_AllocateType"),
+    FUN_PYTRUFFLE_POPULATE_TYPE("PyTruffle_PopulateType"),
+    FUN_PYTRUFFLE_PATCH_TYPE("PyTruffle_PatchType"),
+    FUN_PYTRUFFLE_ALLOCATE_METHOD_DEF("PyTruffle_AllocateMethodDef"),
+    FUN_PYTRUFFLE_ALLOCATE_DATETIME_API("PyTruffle_AllocateDateTimeAPI"),
+    FUN_PYTRUFFLE_ALLOCATE_MEMORY_VIEW("PyTruffle_AllocateMemoryView"),
+    FUN_PYTRUFFLE_CONVERT_TO_POINTER("PyTruffle_ConvertToPointer"),
 
     /* C functions for reading native members by offset */
 
@@ -103,7 +108,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     /* Python C API functions */
 
-    FUN_NATIVE_LONG_TO_JAVA("native_long_to_java"),
     FUN_PY_TRUFFLE_STRING_TO_CSTR("PyTruffle_StringToCstr"),
     FUN_NATIVE_HANDLE_FOR_ARRAY("NativeHandle_ForArray"),
     FUN_PY_NONE_HANDLE("PyNoneHandle"),
@@ -129,12 +133,17 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_TP_BASICSIZE("get_tp_basicsize"),
     FUN_GET_TP_ITEMSIZE("get_tp_itemsize"),
     FUN_GET_TP_AS_BUFFER("get_tp_as_buffer"),
+    FUN_GET_OB_SVAL("get_ob_sval"),
+    FUN_GET_M_INDEX("get_m_index"),
+    FUN_GET_M_SIZE("get_m_size"),
+    FUN_GET_M_DOC("get_m_doc"),
     FUN_GET_PYMODULEDEF_M_METHODS("get_PyModuleDef_m_methods"),
     FUN_GET_PYMODULEDEF_M_SLOTS("get_PyModuleDef_m_slots"),
     FUN_GET_BYTE_ARRAY_TYPE_ID("get_byte_array_typeid"),
     FUN_GET_PTR_ARRAY_TYPE_ID("get_ptr_array_typeid"),
     FUN_PTR_COMPARE("truffle_ptr_compare"),
     FUN_PTR_ADD("truffle_ptr_add"),
+    FUN_PTR_CONVERT("truffle_ptr_convert"),
     FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE("PyTruffle_ByteArrayToNative"),
     FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE("PyTruffle_IntArrayToNative"),
     FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE("PyTruffle_LongArrayToNative"),
@@ -160,7 +169,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_CONVERTBUFFER("convertbuffer"),
     FUN_NATIVE_UNICODE_AS_STRING("native_unicode_as_string"),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength"),
-    FUN_GET_UINT32_ARRAY_TYPE_ID("get_uint32_array_typeid"),
+    FUN_GET_UINT32_T_ARRAY_TYPE_ID("get_uint32_t_array_typeid"),
     FUN_PYMEM_RAWCALLOC("PyMem_RawCalloc"),
     FUN_PY_TRUFFLE_FREE("PyTruffle_Free"),
     FUN_INCREF("Py_IncRef"),
@@ -220,6 +229,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new"),
     FUN_FLOAT_SUBTYPE_NEW("float_subtype_new"),
     FUN_SUBCLASS_CHECK("truffle_subclass_check"),
+    FUN_BASETYPE_CHECK("truffle_BASETYPE_check"),
     FUN_MEMCPY_BYTES("truffle_memcpy_bytes"),
     FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new"),
     FUN_CHECK_BASESIZE_FOR_GETSTATE("tuffle_check_basesize_for_getstate"),

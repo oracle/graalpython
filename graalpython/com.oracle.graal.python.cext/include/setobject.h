@@ -48,7 +48,7 @@ typedef struct {
     PyObject_HEAD
 
     Py_ssize_t fill;            /* Number active and dummy entries*/
-    Py_ssize_t used;            /* Number active entries */
+    Py_ssize_t Py_HIDE_IMPL_FIELD(used);            /* Number active entries */
 
     /* The table contains mask + 1 slots, and that's a power of 2.
      * We store the mask instead of the size because the mask is more
@@ -69,7 +69,7 @@ typedef struct {
     PyObject *weakreflist;      /* List of weak references */
 } PySetObject;
 
-#define PySet_GET_SIZE(so) (assert(PyAnySet_Check(so)),(((PySetObject *)(so))->used))
+#define PySet_GET_SIZE(so) (PySet_Size(_PyObject_CAST(so)))
 
 PyAPI_DATA(PyObject *) _PySet_Dummy;
 

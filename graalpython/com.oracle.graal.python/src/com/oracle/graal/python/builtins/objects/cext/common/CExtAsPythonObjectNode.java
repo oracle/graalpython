@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,39 +44,5 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 
 public abstract class CExtAsPythonObjectNode extends PNodeWithContext {
 
-    public final Object execute(Object object) {
-        return execute(null, object);
-    }
-
-    public final boolean executeBool(boolean b) {
-        return executeBool(null, b);
-    }
-
-    public final byte executeByte(byte b) {
-        return executeByte(null, b);
-    }
-
-    public final int executeInt(int i) {
-        return executeInt(null, i);
-    }
-
-    public final double executeDouble(double d) {
-        return executeDouble(null, d);
-    }
-
-    public final long executeLong(long l) {
-        return executeLong(null, l);
-    }
-
-    public abstract boolean executeBool(CExtContext nativeContext, boolean value);
-
-    public abstract byte executeByte(CExtContext nativeContext, byte value);
-
-    public abstract int executeInt(CExtContext nativeContext, int l);
-
-    public abstract long executeLong(CExtContext nativeContext, long l);
-
-    public abstract double executeDouble(CExtContext nativeContext, double value);
-
-    public abstract Object execute(CExtContext nativeContext, Object object);
+    public abstract Object execute(Object object);
 }

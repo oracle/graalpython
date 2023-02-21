@@ -85,7 +85,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -106,7 +105,6 @@ public abstract class IteratorNodes {
      * o.__len__() or o.__length_hint__(). If those methods aren't found the defaultvalue is
      * returned. If either has no viable or defaultvalue implementation then this node returns -1.
      */
-    @GenerateNodeFactory
     @ImportStatic({PGuards.class, SpecialMethodNames.class, SpecialMethodSlot.class})
     public abstract static class GetLength extends PNodeWithContext {
 

@@ -42,18 +42,3 @@
 
 int (*PyOS_InputHook)(void) = NULL;
 
-UPCALL_ID(PyRun_String);
-PyObject* PyRun_StringFlags(const char* source, int type, PyObject* globals, PyObject* locals, PyCompilerFlags* ignored) {
-    const char* stype;
-    if (type == Py_single_input) {
-        stype = "single";
-    } else if (type == Py_file_input) {
-        stype = "exec";
-    } else if (Py_eval_input) {
-        stype = "eval";
-    } else {
-        return NULL;
-    }
-    return UPCALL_CEXT_O(_jls_PyRun_String, polyglot_from_string(source, SRC_CS), polyglot_from_string(stype, SRC_CS), native_to_java(globals), native_to_java(locals));
-}
-

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -139,11 +139,13 @@ public class LeakTest extends AbstractLanguageLauncher {
             final String line = "=====================================\n";
             StringBuilder sb = new StringBuilder(line);
             for (ThreadInfo thread : threads) {
-                sb.append("-------\n");
-                sb.append(thread.getThreadName()).append('\n');
-                sb.append("Thread state:").append(thread.getThreadState()).append('\n');
-                for (StackTraceElement element : thread.getStackTrace()) {
-                    sb.append("    ").append(element).append('\n');
+                if (thread != null) {
+                    sb.append("-------\n");
+                    sb.append(thread.getThreadName()).append('\n');
+                    sb.append("Thread state:").append(thread.getThreadState()).append('\n');
+                    for (StackTraceElement element : thread.getStackTrace()) {
+                        sb.append("    ").append(element).append('\n');
+                    }
                 }
             }
             return sb.append(line).toString();
@@ -204,7 +206,7 @@ public class LeakTest extends AbstractLanguageLauncher {
         private MBeanServer doFullGC() {
             // do this a few times to dump a small heap if we can
             MBeanServer server = null;
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 10; i++) {
                 System.gc();
                 Runtime.getRuntime().freeMemory();
                 server = ManagementFactory.getPlatformMBeanServer();
@@ -215,7 +217,7 @@ public class LeakTest extends AbstractLanguageLauncher {
                     throw new RuntimeException(e);
                 }
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(2000);
                 } catch (InterruptedException e1) {
                     // do nothing
                 }

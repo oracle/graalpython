@@ -96,7 +96,7 @@ public final class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void ensureCapacity(@SuppressWarnings("unused") int newCapacity) {
+    public void ensureCapacity(int newCapacity) {
         throw CompilerDirectives.shouldNotReachHere();
     }
 

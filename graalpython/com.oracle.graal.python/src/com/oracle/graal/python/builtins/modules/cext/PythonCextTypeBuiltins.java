@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,77 +40,50 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import java.util.List;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextTypeBuiltins extends PythonBuiltins {
+public final class PythonCextTypeBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextTypeBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyType_Lookup", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTypeLookup extends PythonBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject, PyObject}, call = Direct)
+    abstract static class _PyType_Lookup extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(Object type, Object name,
-                        @Cached CExtNodes.AsPythonObjectNode typeAsPythonObjectNode,
-                        @Cached CExtNodes.AsPythonObjectNode nameAsPythonObjectNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttributeInMRONode,
-                        @Cached CExtNodes.ToBorrowedRefNode toBorrowedRefNode) {
-            Object result = lookupAttributeInMRONode.execute(typeAsPythonObjectNode.execute(type), nameAsPythonObjectNode.execute(name));
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttributeInMRONode) {
+            Object result = lookupAttributeInMRONode.execute(type, name);
             if (result == PNone.NO_VALUE) {
-                return getContext().getNativeNull();
+                return getNativeNull();
             }
-            return toBorrowedRefNode.execute(result);
+            return result;
         }
     }
 
-    @Builtin(name = "PyType_IsSubtype", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Direct)
     @ImportStatic(PythonOptions.class)
-    abstract static class PyTypeIsSubtypeNode extends PythonBinaryBuiltinNode {
+    abstract static class PyType_IsSubtype extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"isSingleContext()", "a == cachedA", "b == cachedB"})
-        static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
+        static int doCached(@SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
                         @Cached(value = "a", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedA,
                         @Cached(value = "b", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedB,
-                        @Cached("doSlow(frame, a, b)") int result) {
+                        @Cached("doSlow(a, b)") int result) {
             return result;
         }
 
@@ -119,7 +92,7 @@ public final class PythonCextTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doCached", guards = {"cachedClassA == getClazz(a)", "cachedClassB == getClazz(b)"}, limit = "getVariableArgumentInlineCacheLimit()")
-        static int doCachedClass(VirtualFrame frame, Object a, Object b,
+        static int doCachedClass(Object a, Object b,
                         @Cached("getClazz(a)") Class<?> cachedClassA,
                         @Cached("getClazz(b)") Class<?> cachedClassB,
                         @Cached CExtNodes.ToJavaNode leftToJavaNode,
@@ -127,31 +100,21 @@ public final class PythonCextTypeBuiltins extends PythonBuiltins {
                         @Cached IsSubtypeNode isSubtypeNode) {
             Object ua = leftToJavaNode.execute(cachedClassA.cast(a));
             Object ub = rightToJavaNode.execute(cachedClassB.cast(b));
-            return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
+            return isSubtypeNode.execute(ua, ub) ? 1 : 0;
         }
 
         @Specialization(replaces = {"doCached", "doCachedClass"})
-        static int doGeneric(VirtualFrame frame, Object a, Object b,
+        static int doGeneric(Object a, Object b,
                         @Cached CExtNodes.ToJavaNode leftToJavaNode,
                         @Cached CExtNodes.ToJavaNode rightToJavaNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             Object ua = leftToJavaNode.execute(a);
             Object ub = rightToJavaNode.execute(b);
-            return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
+            return isSubtypeNode.execute(ua, ub) ? 1 : 0;
         }
 
-        static int doSlow(VirtualFrame frame, Object derived, Object cls) {
-            return doGeneric(frame, derived, cls, ToJavaNodeGen.getUncached(), ToJavaNodeGen.getUncached(), IsSubtypeNodeGen.getUncached());
-        }
-    }
-
-    @Builtin(name = "PyTruffle_CreateType", minNumOfPositionalArgs = 4, needsFrame = true)
-    @GenerateNodeFactory
-    abstract static class PyTruffleCreateType extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        static PythonClass createType(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespaceOrig, Object metaclass,
-                        @Cached CreateTypeNode createType) {
-            return createType.execute(frame, namespaceOrig, name, bases, metaclass, PKeyword.EMPTY_KEYWORDS);
+        static int doSlow(Object derived, Object cls) {
+            return doGeneric(derived, cls, ToJavaNodeGen.getUncached(), ToJavaNodeGen.getUncached(), IsSubtypeNodeGen.getUncached());
         }
     }
 }

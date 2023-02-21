@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -147,7 +146,7 @@ public final class GraalHPyBuffer implements TruffleObject {
             case J_MEMBER_OBJ:
                 if (ownerHandle == null) {
                     Object obj = buffer.getObj();
-                    ownerHandle = toNativeNode.execute(context, obj != null ? obj : PNone.NO_VALUE);
+                    ownerHandle = toNativeNode.execute(obj != null ? obj : PNone.NO_VALUE);
                 }
                 return ownerHandle;
             case J_MEMBER_LEN:
@@ -159,13 +158,13 @@ public final class GraalHPyBuffer implements TruffleObject {
             case J_MEMBER_NDIM:
                 return buffer.getDims();
             case J_MEMBER_FORMAT:
-                return buffer.getFormat() != null ? new CStringWrapper(buffer.getFormat()) : toNativeNode.execute(context, PNone.NO_VALUE);
+                return buffer.getFormat() != null ? new CStringWrapper(buffer.getFormat()) : toNativeNode.execute(PNone.NO_VALUE);
             case J_MEMBER_SHAPE:
-                return toCArray(context, toNativeNode, buffer.getShape());
+                return toCArray(toNativeNode, buffer.getShape());
             case J_MEMBER_STRIDES:
-                return toCArray(context, toNativeNode, buffer.getStrides());
+                return toCArray(toNativeNode, buffer.getStrides());
             case J_MEMBER_SUBOFFSETS:
-                return toCArray(context, toNativeNode, buffer.getSuboffsets());
+                return toCArray(toNativeNode, buffer.getSuboffsets());
             case J_MEMBER_INTERNAL:
                 return buffer.getInternal();
         }
@@ -173,11 +172,11 @@ public final class GraalHPyBuffer implements TruffleObject {
         throw UnknownIdentifierException.create(member);
     }
 
-    private static Object toCArray(CExtContext context, HPyAsHandleNode toNativeNode, int[] arr) {
+    private static Object toCArray(HPyAsHandleNode toNativeNode, int[] arr) {
         if (arr != null) {
             return new CIntArrayWrapper(arr);
         }
-        return toNativeNode.execute(context, PNone.NO_VALUE);
+        return toNativeNode.execute(PNone.NO_VALUE);
     }
 
     @ExportMessage
@@ -205,7 +204,7 @@ public final class GraalHPyBuffer implements TruffleObject {
              */
             if (ownerHandle == null) {
                 Object obj = buffer.getObj();
-                ownerHandle = toNativeNode.execute(context, obj != null ? obj : PNone.NO_VALUE);
+                ownerHandle = toNativeNode.execute(obj != null ? obj : PNone.NO_VALUE);
             }
             Object[] args = new Object[]{
                             buffer.getBuf(), // buf

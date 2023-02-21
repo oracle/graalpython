@@ -108,6 +108,8 @@ public abstract class SpecialAttributeNames {
 
     public static final TruffleString T___FILE__ = tsLiteral("__file__");
 
+    public static final TruffleString T___LIBRARY__ = tsLiteral("__library__");
+
     public static final TruffleString T___ORIGNAME__ = tsLiteral("__origname__");
 
     public static final TruffleString T___CACHED__ = tsLiteral("__cached__");

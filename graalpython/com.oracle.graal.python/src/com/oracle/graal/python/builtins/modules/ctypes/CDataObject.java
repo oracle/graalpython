@@ -40,22 +40,22 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.DeRefHandleNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
@@ -203,7 +203,7 @@ public class CDataObject extends PythonBuiltinObject {
     @SuppressWarnings("static-method")
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-    public static class CDataObjectWrapper implements TruffleObject {
+    public static class CDataObjectWrapper extends PythonNativeWrapper {
 
         final byte[] storage;
         final StgDictObject stgDict;
@@ -284,22 +284,23 @@ public class CDataObject extends PythonBuiltinObject {
             throw UnknownIdentifierException.create(member);
         }
 
+        // TO POINTER / AS POINTER / TO NATIVE
+
         @ExportMessage
-        boolean isPointer() {
-            return nativePointer != null;
+        protected boolean isPointer() {
+            return isNative();
         }
 
         @ExportMessage
-        long asPointer(
-                        @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-            return lib.asPointer(nativePointer);
+        public long asPointer() {
+            return getNativePointer();
         }
 
         @ExportMessage
-        void toNative(
-                        @Cached DeRefHandleNode deRefHandleNode) {
-            if (nativePointer == null) {
-                nativePointer = deRefHandleNode.execute(this);
+        protected void toNative(
+                        @Cached ConditionProfile isNativeProfile) {
+            if (!isNative(isNativeProfile)) {
+                CApiTransitions.firstToNative(this);
             }
         }
 
@@ -317,5 +318,4 @@ public class CDataObject extends PythonBuiltinObject {
             return null;
         }
     }
-
 }

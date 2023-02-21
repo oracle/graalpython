@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -182,6 +182,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
      * Tests if the two meta objects {@code derived} and {@code cls} are the same. This differs from
      * {@link IsSameTypeNode} because it will also accept meta objects that are not classes.
      */
+    @SuppressWarnings("javadoc")
     static boolean isSameMetaObject(IsSameTypeNode isSameTypeNode, Object derived, Object cls) {
         return derived == cls || isSameTypeNode.execute(derived, cls);
     }

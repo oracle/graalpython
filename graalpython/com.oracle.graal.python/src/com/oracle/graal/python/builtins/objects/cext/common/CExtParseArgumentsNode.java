@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,8 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PyDict_GetItem;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PyTuple_GetItem;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -64,10 +66,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNa
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertSingleArgNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -95,7 +95,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -110,7 +109,9 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtParseArgumentsNode {
     static final int FORMAT_LOWER_S = 's';
@@ -144,7 +145,6 @@ public abstract class CExtParseArgumentsNode {
     static final int FORMAT_PAR_OPEN = '(';
     static final int FORMAT_PAR_CLOSE = ')';
 
-    @GenerateUncached
     @ImportStatic({PGuards.class, PythonUtils.class})
     public abstract static class ParseTupleAndKeywordsNode extends Node {
 
@@ -232,7 +232,6 @@ public abstract class CExtParseArgumentsNode {
         }
     }
 
-    @GenerateUncached
     abstract static class ConvertSingleArgNode extends Node {
 
         public abstract int execute(ParserState state, Object kwds, TruffleString format, int formatIdx, int formatLength, Object kwdnames, Object varargs,
@@ -620,7 +619,6 @@ public abstract class CExtParseArgumentsNode {
      * {@code convertsimple} function. Each specifier is implemented in a separate specialization
      * since the different specifiers need a very different set of helper nodes.
      */
-    @GenerateUncached
     @ImportStatic(CExtParseArgumentsNode.class)
     abstract static class ConvertArgNode extends Node {
         public abstract void execute(int c, int la, Object arg, Object varargs) throws InteropException;
@@ -704,7 +702,7 @@ public abstract class CExtParseArgumentsNode {
                 Object typeObject = typeToJavaNode.execute(argValue);
                 assert PGuards.isClass(typeObject, lib);
                 if (!isSubtypeNode.execute(getClassNode.execute(arg), typeObject)) {
-                    raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, typeObject, arg);
+                    raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_P_GOT_P, typeObject, arg);
                     throw ParseArgumentsException.raise();
                 }
                 writeOutVarNode.writePyObject(varargs, toNativeNode.execute(arg));
@@ -805,7 +803,6 @@ public abstract class CExtParseArgumentsNode {
      * {@code convertsimple} function. Each specifier is implemented in a separate specialization
      * since the different specifiers need a very different set of helper nodes.
      */
-    @GenerateUncached
     @ImportStatic(CExtParseArgumentsNode.class)
     abstract static class ConvertParArgNode extends Node {
         public abstract void execute(ParserState state, Object kwds, int c, Object kwdnames) throws InteropException;
@@ -864,7 +861,6 @@ public abstract class CExtParseArgumentsNode {
      * {@code convertsimple} function. Each specifier is implemented in a separate specialization
      * since the different specifiers need a very different set of helper nodes.
      */
-    @GenerateUncached
     @ImportStatic(CExtParseArgumentsNode.class)
     abstract static class ConvertExtendedArgNode extends Node {
         public abstract void execute(int c, int la1, int la2, Object arg, Object varargs) throws InteropException;
@@ -891,7 +887,7 @@ public abstract class CExtParseArgumentsNode {
             // TODO(tfel) we could use CStringWrapper to do the copying lazily
             writeOutVarNode.writePyObject(varargs, asCharPointerNode.execute(arg));
             if (la2 == '#') {
-                final int size = sizeNode.execute(null, argToJavaNode.execute(PythonContext.get(this).getCApiContext(), arg));
+                final int size = sizeNode.execute(null, argToJavaNode.execute(arg));
                 writeOutVarNode.writeInt64(varargs, size);
             }
         }
@@ -914,7 +910,6 @@ public abstract class CExtParseArgumentsNode {
     /**
      * Gets a single argument from the arguments tuple or from the keywords dictionary.
      */
-    @GenerateUncached
     abstract static class GetArgNode extends Node {
 
         public abstract Object execute(ParserState state, Object kwds, Object kwdnames, boolean keywords_only) throws InteropException;
@@ -923,15 +918,14 @@ public abstract class CExtParseArgumentsNode {
         @SuppressWarnings("unused")
         static Object doNoKeywords(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
-                        @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) {
 
             Object out = null;
             assert !keywordsOnly;
             int l = lenNode.execute(state.v.argv);
             if (state.v.argnum < l) {
-                out = getItemNode.execute(getSequenceStorageNode.execute(state.v.argv), state.v.argnum);
+                out = getItemNode.execute(state.v.argv, state.v.argnum);
             }
             if (out == null && !state.restOptional) {
                 raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.S_MISSING_REQUIRED_ARG_POS_D, state.funName, state.v.argnum);
@@ -944,10 +938,9 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(replaces = "doNoKeywords")
         Object doGeneric(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
-                        @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
-                        @Cached HashingStorageGetItem getItem,
+                        @Cached PyDict_GetItem getDictItemNode,
                         @Cached PCallCExtFunction callCStringToString,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
 
@@ -955,7 +948,7 @@ public abstract class CExtParseArgumentsNode {
             if (!keywordsOnly) {
                 int l = lenNode.execute(state.v.argv);
                 if (state.v.argnum < l) {
-                    out = getItemNode.execute(getSequenceStorageNode.execute(state.v.argv), state.v.argnum);
+                    out = getItemNode.execute(state.v.argv, state.v.argnum);
                 }
             }
             // only the bottom argstack can have keyword names
@@ -965,9 +958,15 @@ public abstract class CExtParseArgumentsNode {
                 // NULL-terminated
                 Object kwdname = callCStringToString.call(PythonContext.get(this).getCApiContext(), NativeCAPISymbol.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
                 if (kwdname instanceof TruffleString) {
-                    // the cast to PDict is safe because either it is null or a PDict (ensured by
-                    // the guards)
-                    out = getItem.execute(((PDict) kwds).getDictStorage(), (TruffleString) kwdname);
+                    /*
+                     * the cast to PDict is safe because either it is null or a PDict (ensured by
+                     * the guards)
+                     */
+                    out = getDictItemNode.execute(kwds, kwdname);
+                    // always convert native null to Java null
+                    if (out == PythonContext.get(this).getNativeNull()) {
+                        out = null;
+                    }
                 }
             }
             if (out == null && !state.restOptional) {
@@ -983,12 +982,26 @@ public abstract class CExtParseArgumentsNode {
      * Executes a custom argument converter (i.e.
      * {@code int converter_fun(PyObject *arg, void *outVar)}.
      */
-    @GenerateUncached
     abstract static class ExecuteConverterNode extends Node {
+
+        private static final Source NFI_SIGNATURE = Source.newBuilder("nfi", "(POINTER,POINTER):SINT32", "exec").build();
 
         public abstract void execute(Object converter, Object inputArgument, Object outputArgument);
 
-        @Specialization(limit = "5")
+        @Specialization(guards = "!converterLib.isExecutable(converter)")
+        static void doExecuteConverterNative(Object converter, Object inputArgument, Object outputArgument,
+                        @Cached(value = "parseSignature()", allowUncached = true) Object signature,
+                        @CachedLibrary("signature") SignatureLibrary signatureLib,
+                        @CachedLibrary(limit = "1") InteropLibrary converterLib,
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Exclusive @Cached PRaiseNativeNode raiseNode,
+                        @Exclusive @Cached ConverterCheckResultNode checkResultNode) {
+            Object boundConverter = signatureLib.bind(signature, converter);
+            doExecuteConverterGeneric(boundConverter, inputArgument, outputArgument, converterLib, resultLib, toNativeNode, raiseNode, checkResultNode);
+        }
+
+        @Specialization(limit = "5", guards = "converterLib.isExecutable(converter)")
         static void doExecuteConverterGeneric(Object converter, Object inputArgument, Object outputArgument,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
@@ -1017,12 +1030,16 @@ public abstract class CExtParseArgumentsNode {
             throw ParseArgumentsException.raise();
         }
 
-        CExtToNativeNode createTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().createToNativeNode();
+        static Object parseSignature() {
+            return PythonContext.get(null).getEnv().parseInternal(NFI_SIGNATURE).call();
         }
 
-        CExtToNativeNode getUncachedTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().getUncachedToNativeNode();
+        static CExtToNativeNode createTN() {
+            return PythonContext.get(null).getCApiContext().getSupplier().createToNativeNode();
+        }
+
+        static CExtToNativeNode getUncachedTN() {
+            return PythonContext.get(null).getCApiContext().getSupplier().getUncachedToNativeNode();
         }
     }
 
@@ -1030,7 +1047,6 @@ public abstract class CExtParseArgumentsNode {
      * Executes a custom argument converter (i.e.
      * {@code int converter_fun(PyObject *arg, void *outVar)}.
      */
-    @GenerateUncached
     abstract static class ConverterCheckResultNode extends Node {
 
         public abstract void execute(int statusCode) throws ParseArgumentsException;
@@ -1063,7 +1079,6 @@ public abstract class CExtParseArgumentsNode {
         }
     }
 
-    @GenerateUncached
     public abstract static class SplitFormatStringNode extends Node {
 
         public abstract TruffleString[] execute(TruffleString format);

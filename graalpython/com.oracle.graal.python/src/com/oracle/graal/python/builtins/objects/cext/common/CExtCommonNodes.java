@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -389,41 +388,37 @@ public abstract class CExtCommonNodes {
             }
         }
 
-        @Specialization(limit = "1")
-        static TruffleString doCStringWrapper(CStringWrapper obj, @SuppressWarnings("unused") int sizeofWchar,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
-            return obj.getString(lib);
+        @Specialization
+        static TruffleString doCStringWrapper(CStringWrapper obj, @SuppressWarnings("unused") int sizeofWchar) {
+            return obj.getString();
         }
 
-        @Specialization(limit = "1", rewriteOn = UnexpectedCodepointException.class)
+        @Specialization(rewriteOn = UnexpectedCodepointException.class)
         static TruffleString doCByteArrayWrapperBMP(CByteArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
-            byte[] bytes = obj.getByteArray(lib);
+            byte[] bytes = obj.getByteArray();
             char[] chars = decodeBytesBMP(bytes, elementSize);
             return switchEncodingNode.execute(fromCharArray.execute(chars), TS_ENCODING);
         }
 
-        @Specialization(limit = "1", replaces = "doCByteArrayWrapperBMP")
+        @Specialization(replaces = "doCByteArrayWrapperBMP")
         static TruffleString doCByteArrayWrapper(CByteArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            byte[] bytes = obj.getByteArray(lib);
+            byte[] bytes = obj.getByteArray();
             int[] i = decodeBytesUnicode(bytes, elementSize);
             // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
             // but might change in the future
             return switchEncodingNode.execute(fromIntArrayNode.execute(i, 0, i.length), TS_ENCODING);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static TruffleString doCIntArrayWrapper(CIntArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (elementSize == Integer.BYTES) {
-                int[] codePoints = obj.getIntArray(lib);
+                int[] codePoints = obj.getIntArray();
                 // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
                 // but might change in the future
                 return switchEncodingNode.execute(fromIntArrayNode.execute(codePoints, 0, codePoints.length), TS_ENCODING);
@@ -431,13 +426,12 @@ public abstract class CExtCommonNodes {
             throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         }
 
-        @Specialization(limit = "1", rewriteOn = UnexpectedCodepointException.class)
+        @Specialization(rewriteOn = UnexpectedCodepointException.class)
         static TruffleString doSequenceArrayWrapperBMP(PySequenceArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
-            Object delegate = lib.getDelegate(obj);
+            Object delegate = obj.getDelegate();
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 char[] chars = decodeBytesBMP(bytes, elementSize);
@@ -446,13 +440,12 @@ public abstract class CExtCommonNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        @Specialization(limit = "1", replaces = "doSequenceArrayWrapperBMP")
+        @Specialization(replaces = "doSequenceArrayWrapperBMP")
         static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            Object delegate = lib.getDelegate(obj);
+            Object delegate = obj.getDelegate();
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 int[] i = decodeBytesUnicode(bytes, elementSize);
@@ -524,7 +517,7 @@ public abstract class CExtCommonNodes {
          * @return The Unicode codepoint.
          */
         private static int getCodepoint(byte[] bytes, int byteOffset, int sizeofWchar) {
-            // TODO maybe via TruffleSgring api? [GR-38108]
+            // TODO maybe via TruffleString api? [GR-38108]
             switch (sizeofWchar) {
                 case 1:
                     return bytes[byteOffset];
@@ -715,14 +708,10 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     @ImportStatic({SpecialMethodNames.class, CApiGuards.class})
     public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
-        public abstract double executeDouble(CExtContext cExtContext, Object arg);
-
-        public final double executeDouble(Object arg) {
-            return executeDouble(CExtContext.LAZY_CONTEXT, arg);
-        }
+        public abstract double executeDouble(Object arg);
 
         @Specialization(guards = "!isNativeWrapper(value)")
-        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
+        static double runGeneric(Object value,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
             // is a float object, use the value and do *NOT* call '__float__'.
@@ -730,12 +719,12 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
     }
@@ -749,17 +738,15 @@ public abstract class CExtCommonNodes {
 
         public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
 
-        @Specialization(limit = "1")
-        static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
-            return subRangeIfNeeded(obj.getByteArray(lib), n);
+        @Specialization
+        static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n) {
+            return subRangeIfNeeded(obj.getByteArray(), n);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            Object delegate = lib.getDelegate(obj);
+            Object delegate = obj.getDelegate();
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 return subRangeIfNeeded(bytes, n);
@@ -1174,20 +1161,20 @@ public abstract class CExtCommonNodes {
     public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
 
         @Specialization
-        static TruffleString doJavaString(@SuppressWarnings("unused") CExtContext hpyContext, String value,
+        static TruffleString doJavaString(String value,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             // TODO review with GR-37896
             return fromJavaStringNode.execute(value, TS_ENCODING);
         }
 
         @Specialization
-        static TruffleString doTruffleString(@SuppressWarnings("unused") CExtContext hpyContext, TruffleString value) {
+        static TruffleString doTruffleString(TruffleString value) {
             return value;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "interopLib.isNull(value)", limit = "3")
-        static Object doGeneric(CExtContext hpyContext, Object value,
+        static Object doGeneric(Object value,
                         @CachedLibrary("value") InteropLibrary interopLib) {
             return PNone.NONE;
         }
@@ -1200,24 +1187,24 @@ public abstract class CExtCommonNodes {
     public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
 
         @Specialization
-        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
+        static Object doByte(byte b) {
             return b != 0;
         }
 
         @Specialization
-        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
+        static Object doShort(short i) {
             return i != 0;
         }
 
         @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
+        static Object doLong(long l) {
             // If the integer is out of byte range, we just to a lossy cast since that's the same
             // sematics as we should just read a single byte.
             return l != 0;
         }
 
         @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+        static Object doGeneric(Object n,
                         @CachedLibrary("n") InteropLibrary lib) {
             if (lib.fitsInLong(n)) {
                 try {
@@ -1238,7 +1225,7 @@ public abstract class CExtCommonNodes {
     public abstract static class NativePrimitiveAsPythonCharNode extends CExtToJavaNode {
 
         @Specialization
-        static TruffleString doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b,
+        static TruffleString doByte(byte b,
                         @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
@@ -1247,7 +1234,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static TruffleString doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i,
+        static TruffleString doShort(short i,
                         @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
@@ -1256,13 +1243,13 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static TruffleString doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l,
+        static TruffleString doLong(long l,
                         @Cached TruffleString.FromLongNode fromLongNode) {
             return fromLongNode.execute(l, TS_ENCODING, true);
         }
 
         @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+        static Object doGeneric(Object n,
                         @CachedLibrary("n") InteropLibrary lib,
                         @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -1289,12 +1276,12 @@ public abstract class CExtCommonNodes {
     public abstract static class NativeUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
 
         @Specialization(guards = "n >= 0")
-        static int doUnsignedIntPositive(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+        static int doUnsignedIntPositive(int n) {
             return n;
         }
 
         @Specialization(replaces = "doUnsignedIntPositive")
-        static long doUnsignedInt(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+        static long doUnsignedInt(int n) {
             if (n < 0) {
                 return n & 0xffffffffL;
             }
@@ -1302,32 +1289,32 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "n >= 0")
-        static long doUnsignedLongPositive(@SuppressWarnings("unused") CExtContext hpyContext, long n) {
+        static long doUnsignedLongPositive(long n) {
             return n;
         }
 
         @Specialization(guards = "n < 0")
-        static Object doUnsignedLongNegative(@SuppressWarnings("unused") CExtContext hpyContext, long n,
+        static Object doUnsignedLongNegative(long n,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(PInt.longToUnsignedBigInteger(n));
         }
 
         @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
-        static Object doGeneric(CExtContext hpyContext, Object n,
+        static Object doGeneric(Object n,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             if (n instanceof Integer) {
                 int i = (int) n;
                 if (i >= 0) {
                     return i;
                 } else {
-                    return doUnsignedInt(hpyContext, i);
+                    return doUnsignedInt(i);
                 }
             } else if (n instanceof Long) {
                 long l = (long) n;
                 if (l >= 0) {
                     return l;
                 } else {
-                    return doUnsignedLongNegative(hpyContext, l, factory);
+                    return doUnsignedLongNegative(l, factory);
                 }
             }
             throw CompilerDirectives.shouldNotReachHere();
@@ -1343,7 +1330,7 @@ public abstract class CExtCommonNodes {
     public abstract static class AsNativeCharNode extends CExtToNativeNode {
 
         @Specialization
-        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        static byte doGeneric(Object value,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached PRaiseNode raiseNode) {
             byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
@@ -1362,7 +1349,7 @@ public abstract class CExtCommonNodes {
     public abstract static class AsNativeBooleanNode extends CExtToNativeNode {
 
         @Specialization
-        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        static byte doGeneric(Object value,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -1391,7 +1378,7 @@ public abstract class CExtCommonNodes {
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        Object doGeneric(Object value,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
         }

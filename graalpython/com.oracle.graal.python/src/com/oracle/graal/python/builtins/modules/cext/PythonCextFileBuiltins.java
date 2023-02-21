@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,91 +40,49 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.WRITEOBJ_WITH_NULL_FILE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 
-import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ReprNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextFileBuiltins extends PythonBuiltins {
+public final class PythonCextFileBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextFileBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyFile_WriteObject", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    public abstract static class PyFileWriteObjectNode extends PythonTernaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, Int}, call = Direct)
+    public abstract static class PyFile_WriteObject extends CApiTernaryBuiltinNode {
 
         @Specialization
-        public static Object writeNone(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") PNone f, @SuppressWarnings("unused") int flags,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, TypeError, WRITEOBJ_WITH_NULL_FILE);
-        }
-
-        @Specialization(guards = {"!isPNone(f)", "isWriteStr(flags)"})
-        public static Object writeStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
+        public int writeStr(Object obj, Object f, int flags,
                         @Cached StrNode strNode,
-                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
-                        @Shared("call") @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object value = strNode.executeWith(frame, obj);
-                Object writeCallable = getAttr.execute(frame, f, T_WRITE);
-                callNode.execute(frame, writeCallable, value);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
-        }
-
-        @Specialization(guards = {"!isPNone(f)", "!isWriteStr(flags)"})
-        public static Object getStr(VirtualFrame frame, Object obj, Object f, @SuppressWarnings("unused") int flags,
                         @Cached ReprNode reprNode,
-                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr,
-                        @Shared("call") @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object value = reprNode.execute(frame, obj);
-                Object writeCallable = getAttr.execute(frame, f, T_WRITE);
-                callNode.execute(frame, writeCallable, value);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode) {
+            checkNonNullArg(obj);
+            checkNonNullArg(f);
+            Object value;
+            if (obj == PNone.NO_VALUE) {
+                value = StringLiterals.T_NULL_RESULT;
+            } else if (isWriteStr(flags)) {
+                value = strNode.executeWith(obj);
+            } else {
+                value = reprNode.execute(null, obj);
             }
+            Object writeCallable = getAttr.execute(f, T_WRITE);
+            callNode.execute(writeCallable, value);
+            return 0;
         }
 
-        protected boolean isWriteStr(int flags) {
+        static boolean isWriteStr(int flags) {
             return (flags & 0x1) > 0;
         }
     }

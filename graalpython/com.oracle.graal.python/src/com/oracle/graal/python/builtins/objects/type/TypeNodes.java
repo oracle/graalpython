@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_VECTORCALL;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IMMUTABLETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
@@ -69,7 +68,9 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SUBCLASS_F
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
@@ -96,7 +97,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.AddMemberNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyTruffleType_AddMember;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -107,7 +108,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
@@ -173,7 +173,6 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttribute
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -220,6 +219,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -364,7 +364,7 @@ public abstract class TypeNodes {
                     break;
                 case PFunction:
                 case PBuiltinFunction:
-                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR | HAVE_VECTORCALL;
+                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
                     break;
                 case WrapperDescriptor:
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
@@ -373,7 +373,7 @@ public abstract class TypeNodes {
                 case PBuiltinFunctionOrMethod:
                 case PBuiltinMethod:
                 case MethodWrapper:
-                    result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
+                    result = DEFAULT | HAVE_GC;
                     break;
                 case PInstancemethod:
                     result = DEFAULT | HAVE_GC;
@@ -1411,8 +1411,25 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return lib.isIdentical(left, right, lib);
+                        @CachedLibrary(limit = "3") InteropLibrary lib1,
+                        @CachedLibrary(limit = "3") InteropLibrary lib2) {
+            if (lib1.isPointer(left.getPtr())) {
+                if (lib2.isPointer(right.getPtr())) {
+                    try {
+                        return lib1.asPointer(left.getPtr()) == lib2.asPointer(right.getPtr());
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                } else {
+                    return false;
+                }
+            } else {
+                if (lib2.isPointer(right.getPtr())) {
+                    return false;
+                } else {
+                    return lib1.isIdentical(left.getPtr(), right.getPtr(), lib2);
+                }
+            }
         }
 
         @Fallback
@@ -1781,6 +1798,9 @@ public abstract class TypeNodes {
                         @Cached GetTypeMemberNode getTpDictNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
             Object tpDictObj = getTpDictNode.execute(clazz, NativeMember.TP_DICT);
+            if (tpDictObj instanceof PythonManagedClass) {
+                return ((PythonManagedClass) tpDictObj).getInstanceShape();
+            }
             if (tpDictObj instanceof PDict) {
                 HashingStorage dictStorage = ((PDict) tpDictObj).getDictStorage();
                 if (dictStorage instanceof DynamicObjectStorage) {
@@ -1809,7 +1829,6 @@ public abstract class TypeNodes {
 
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private ReadCallerFrameNode readCallerFrameNode;
-        @Child private PyObjectSetAttr writeAttrNode;
         @Child private CastToTruffleStringNode castToStringNode;
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
@@ -1826,14 +1845,6 @@ public abstract class TypeNodes {
                 readCallerFrameNode = insert(ReadCallerFrameNode.create());
             }
             return readCallerFrameNode;
-        }
-
-        private PyObjectSetAttr ensureWriteAttrNode() {
-            if (writeAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeAttrNode = insert(PyObjectSetAttr.create());
-            }
-            return writeAttrNode;
         }
 
         private CastToTruffleStringNode ensureCastToStringNode() {
@@ -1902,7 +1913,7 @@ public abstract class TypeNodes {
                     if (globals != null) {
                         TruffleString moduleName = getModuleNameFromGlobals(globals, getItemGlobals);
                         if (moduleName != null) {
-                            ensureWriteAttrNode().execute(frame, newType, SpecialAttributeNames.T___MODULE__, moduleName);
+                            newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
                         }
                     }
                 }
@@ -2321,12 +2332,10 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static int installMemberDescriptors(PythonLanguage language, PythonManagedClass pythonClass, SequenceStorage slotsStorage, int slotOffset) {
-            Object typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+            PDict typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
             for (int i = 0; i < slotsStorage.length(); i++) {
                 Object slotName = SequenceStorageNodes.GetItemScalarNode.getUncached().execute(slotsStorage, i);
-                AddMemberNode.addMember(language, pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE,
-                                CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
-                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached());
+                PyTruffleType_AddMember.addMember(pythonClass, typeDict, (TruffleString) slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE);
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
             return slotOffset;
@@ -2527,9 +2536,9 @@ public abstract class TypeNodes {
                                 basicsize += SIZEOF_PY_OBJECT_PTR;
                             }
                         }
-                        ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.T___DICTOFFSET__, dictoffset);
-                        ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.T___BASICSIZE__, basicsize);
-                        writeItemSize.execute(pythonClass, TYPE_ITEMSIZE, itemsize);
+                        DynamicObjectLibrary.getUncached().putLong(pythonClass, T___DICTOFFSET__, dictoffset);
+                        DynamicObjectLibrary.getUncached().putLong(pythonClass, T___BASICSIZE__, basicsize);
+                        DynamicObjectLibrary.getUncached().putLong(pythonClass, TYPE_ITEMSIZE, itemsize);
                         break;
                     }
                 }

@@ -729,11 +729,11 @@ PyAPI_FUNC(PyObject *) PySequence_Fast(PyObject *o, const char* m);
 #define PySequence_Fast_GET_ITEM(o, i)\
      (PyList_Check(o) ? PyList_GET_ITEM(o, i) : PyTuple_GET_ITEM(o, i))
 
+PyAPI_FUNC(PyObject **) _PySequence_Fast_ITEMS(PyObject *o);
+
 /* Return a pointer to the underlying item array for
    an object returned by PySequence_Fast */
-#define PySequence_Fast_ITEMS(sf) \
-    (PyList_Check(sf) ? ((PyListObject *)(sf))->ob_item \
-                      : ((PyTupleObject *)(sf))->ob_item)
+#define PySequence_Fast_ITEMS(sf) _PySequence_Fast_ITEMS(sf)
 
 /* Return the number of occurrences on value on 'o', that is, return
    the number of keys for which o[key] == value.
@@ -865,6 +865,12 @@ PyAPI_FUNC(int) PyObject_IsInstance(PyObject *object, PyObject *typeorclass);
 
 /* issubclass(object, typeorclass) */
 PyAPI_FUNC(int) PyObject_IsSubclass(PyObject *object, PyObject *typeorclass);
+
+
+/* GraalPy-specific API */
+PyAPI_FUNC(const char*) PyObject_GetDoc(PyObject* object);
+
+PyAPI_FUNC(int) PyObject_SetDoc(PyObject* object, const char* doc);
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_ABSTRACTOBJECT_H

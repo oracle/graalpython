@@ -45,8 +45,7 @@
 typedef struct {
     PyObject_VAR_HEAD
     Py_hash_t ob_shash;
-    // Truffle change: char ob_sval[1] doesn't work for us in Sulong
-    char *ob_sval;
+    char Py_HIDE_IMPL_FIELD(ob_sval)[1];
 
     /* Invariants:
      *     ob_sval contains space for 'ob_size+1' elements.
@@ -70,8 +69,7 @@ PyAPI_FUNC(PyObject *) _PyBytes_DecodeEscape(const char *, Py_ssize_t,
                                              const char *, const char **);
 
 /* Macro, trading safety for speed */
-#define PyBytes_AS_STRING(op) (assert(PyBytes_Check(op)), \
-                                (((PyBytesObject *)(op))->ob_sval))
+#define PyBytes_AS_STRING(op) (PyBytes_AsString((PyObject*) (op)))
 #define PyBytes_GET_SIZE(op)  (assert(PyBytes_Check(op)),Py_SIZE(op))
 
 /* _PyBytes_Join(sep, x) is like sep.join(x).  sep must be PyBytesObject*,

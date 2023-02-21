@@ -106,8 +106,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -184,6 +185,8 @@ public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
+
+    public final HandleContext nativeContext = new HandleContext();
     private volatile boolean finalizing;
 
     private static String getJniSoExt() {
@@ -614,7 +617,6 @@ public final class PythonContext extends Python3Core {
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
-    private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -714,7 +716,8 @@ public final class PythonContext extends Python3Core {
     // the full module name for package imports
     private TruffleString pyPackageContext;
 
-    private final PythonNativeNull nativeNull = new PythonNativeNull();
+    // the actual pointer will be set when the cext is initialized
+    private final PythonNativePointer nativeNull = new PythonNativePointer(null);
 
     public TruffleString getPyPackageContext() {
         return pyPackageContext;
@@ -1096,7 +1099,7 @@ public final class PythonContext extends Python3Core {
         return REFERENCE.get(node);
     }
 
-    public PythonNativeNull getNativeNull() {
+    public PythonNativePointer getNativeNull() {
         return nativeNull;
     }
 
@@ -2091,10 +2094,6 @@ public final class PythonContext extends Python3Core {
         return singleNativeContext;
     }
 
-    public final Assumption getNativeObjectsAllManagedAssumption() {
-        return nativeObjectsAllManagedAssumption;
-    }
-
     public boolean isExecutableAccessAllowed() {
         return getEnv().isHostLookupAllowed() || isNativeAccessAllowed();
     }
@@ -2121,7 +2120,7 @@ public final class PythonContext extends Python3Core {
     /**
      * Poll async actions in case they are not set to run automatically.
      *
-     * @see PythonOptions.AUTOMATIC_ASYNC_ACTIONS
+     * @see PythonOptions#AUTOMATIC_ASYNC_ACTIONS
      */
     public void pollAsyncActions() {
         handler.poll();
@@ -2491,4 +2490,5 @@ public final class PythonContext extends Python3Core {
         }
         return null;
     }
+
 }

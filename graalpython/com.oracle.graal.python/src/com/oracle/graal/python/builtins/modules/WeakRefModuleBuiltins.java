@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -172,7 +173,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     // ReferenceType constructor
     @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
     @GenerateNodeFactory
-    public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
+    public abstract static class ReferenceTypeNode extends PythonTernaryBuiltinNode {
         @Child private ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
         @Child private CExtNodes.GetTypeMemberNode getTpWeaklistoffsetNode;
 

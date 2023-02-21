@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,10 @@
  */
 #include "capi.h"
 
-PyTypeObject PyMethod_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodObject), offsetof(PyMethodObject, vectorcall));
-PyTypeObject PyInstanceMethod_Type = PY_TRUFFLE_TYPE("instancemethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyInstanceMethodObject));
 
 PyObject* PyMethod_Function(PyObject* obj) {
     if (PyMethod_Check(obj)) {
-        return PyMethod_GET_FUNCTION(obj);
+        return PyMethodObject_im_func(obj);
     } else {
         PyErr_BadInternalCall();
         return NULL;
@@ -54,24 +52,18 @@ PyObject* PyMethod_Function(PyObject* obj) {
 
 PyObject* PyMethod_Self(PyObject* obj) {
     if (PyMethod_Check(obj)) {
-        return PyMethod_GET_SELF(obj);
+        return PyMethodObject_im_self(obj);
     } else {
         PyErr_BadInternalCall();
         return NULL;
     }
 }
 
-UPCALL_ID(PyMethod_New)
-PyObject * PyMethod_New(PyObject *func, PyObject *self) {
-    PyMethodObject *im;
-    if (self == NULL) {
+PyObject* PyInstanceMethod_Function(PyObject* obj) {
+    if (PyInstanceMethod_Check(obj)) {
+        return PyInstanceMethodObject_func(obj);
+    } else {
         PyErr_BadInternalCall();
         return NULL;
     }
-    return UPCALL_CEXT_O(_jls_PyMethod_New, native_to_java(func), native_to_java(self));
-}
-
-UPCALL_ID(PyInstanceMethod_New)
-PyObject * PyInstanceMethod_New(PyObject *func) {
-    return UPCALL_CEXT_O(_jls_PyInstanceMethod_New, native_to_java(func));
 }

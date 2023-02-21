@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,23 +41,25 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
-
-import java.util.List;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -70,19 +72,12 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -90,32 +85,17 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
+public final class PythonCextStructSeqBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextStructSeqBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    // directly called without landing function
-    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class PyStructSequenceInitType2 extends PythonCextBuiltins.NativeBuiltin {
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Pointer, Int}, call = Ignored)
+    abstract static class PyTruffleStructSequence_InitType2 extends CApiQuaternaryBuiltinNode {
 
         @Specialization(limit = "1")
         static int doGeneric(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, PythonLanguage.get(lib), lib, clearNewNode, fromJavaStringNode);
+            return initializeStructType(klass, fieldNamesObj, fieldDocsObj, nInSequence, PythonLanguage.get(lib), lib, clearNewNode, fromJavaStringNode);
         }
 
         static int initializeStructType(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence, PythonLanguage language, InteropLibrary lib, WriteAttributeToObjectNode clearNewNode,
@@ -158,65 +138,47 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyStructSequence_NewType", minNumOfPositionalArgs = 5)
-    @GenerateNodeFactory
-    abstract static class PyStructSequenceNewType extends PythonCextBuiltins.NativeBuiltin {
+    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer, Pointer, Int}, call = Ignored)
+    abstract static class PyTruffleStructSequence_NewType extends CApi5BuiltinNode {
 
         @Specialization(limit = "1")
-        Object doGeneric(VirtualFrame frame, TruffleString typeName, TruffleString typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+        Object doGeneric(TruffleString typeName, TruffleString typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CallNode callTypeNewNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
-                        @Cached ToNewRefNode toNewRefNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            try {
-                Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.T_TYPE);
-                PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
-                PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
-                Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
-                PyStructSequenceInitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, getLanguage(), lib, clearNewNode, fromJavaStringNode);
-                if (cls instanceof PythonClass) {
-                    ((PythonClass) cls).makeStaticBase(dylib);
-                }
-                return toNewRefNode.execute(cls);
-            } catch (PException e) {
-                transformToNative(frame, e);
-                return getContext().getNativeNull();
+            Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.T_TYPE);
+            PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
+            PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
+            Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
+            PyTruffleStructSequence_InitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, getLanguage(), lib, clearNewNode, fromJavaStringNode);
+            if (cls instanceof PythonClass) {
+                ((PythonClass) cls).makeStaticBase(dylib);
             }
+            return cls;
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyStructSequence_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyStructSequenceNew extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Direct)
+    abstract static class PyStructSequence_New extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(Object clsPtr,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
+        Object doGeneric(Object cls,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
-                        @Cached CastToJavaIntExactNode castToIntNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ToNewRefNode toNewRefNode) {
+                        @Cached CastToJavaIntExactNode castToIntNode) {
             try {
-                Object cls = asPythonObjectNode.execute(clsPtr);
                 Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.T_N_FIELDS);
-                Object res;
                 if (realSizeObj == PNone.NO_VALUE) {
-                    PRaiseNativeNode.raiseNative(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY, getRaiseNode(), transformExceptionToNativeNode);
-                    res = getContext().getNativeNull();
+                    throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
                 } else {
                     int realSize = castToIntNode.execute(realSizeObj);
-                    res = factory().createTuple(cls, new Object[realSize]);
+                    return factory().createTuple(cls, new Object[realSize]);
                 }
-                return toNewRefNode.execute(res);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");
             }
         }
     }
-
 }

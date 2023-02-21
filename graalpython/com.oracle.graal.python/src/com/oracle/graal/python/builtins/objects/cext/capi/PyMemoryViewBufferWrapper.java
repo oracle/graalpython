@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -64,10 +65,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -126,12 +127,11 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadFieldNode readFieldNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            return readFieldNode.execute((PMemoryView) lib.getDelegate(this), member);
+            return readFieldNode.execute((PMemoryView) getDelegate(), member);
         } finally {
             gil.release(mustRelease);
         }
@@ -280,31 +280,23 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         }
     }
 
+    // TO POINTER / AS POINTER / TO NATIVE
+
     @ExportMessage
-    protected boolean isPointer(
-                    @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    protected boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    public long asPointer(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-        Object nativePointer = lib.getNativePointer(this);
-        if (nativePointer instanceof Long) {
-            return (long) nativePointer;
-        }
-        return interopLibrary.asPointer(nativePointer);
+    public long asPointer() {
+        return getNativePointer();
     }
 
     @ExportMessage
     protected void toNative(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-        invalidateNode.execute();
-        if (!lib.isNative(this)) {
-            setNativePointer(toPyObjectNode.execute(this));
+                    @Cached ConditionProfile isNativeProfile) {
+        if (!isNative(isNativeProfile)) {
+            CApiTransitions.firstToNative(this);
         }
     }
 

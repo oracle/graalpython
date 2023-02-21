@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,40 +40,8 @@
  */
 #include "capi.h"
 
-/* prototype */
-PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
-
-/* tuple type */
-PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, 0, 0, 0);
 
 /* Tuples */
-UPCALL_ID(PyTuple_New);
-PyObject* PyTuple_New(Py_ssize_t size) {
-    return UPCALL_CEXT_O(_jls_PyTuple_New, size);
-}
-
-
-UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
-int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
-    /* We cannot use 'UPCALL_CEXT_I' because that would assume borrowed references.
-       But this function steals the references, so we call without a landing function. */
-    return _jls_PyTuple_SetItem(native_to_java(tuple), position, native_to_java_stealing(item));
-}
-
-UPCALL_ID(PyTuple_GetItem);
-PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-    return UPCALL_CEXT_BORROWED(_jls_PyTuple_GetItem, native_to_java(tuple), position);
-}
-
-UPCALL_ID(PyTuple_Size);
-Py_ssize_t PyTuple_Size(PyObject *op) {
-    return UPCALL_CEXT_L(_jls_PyTuple_Size, native_to_java(op));
-}
-
-UPCALL_ID(PyTuple_GetSlice);
-PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
-    return UPCALL_CEXT_O(_jls_PyTuple_GetSlice, native_to_java(tuple), i, j);
-}
 
 NO_INLINE
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
@@ -93,14 +61,6 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     return result;
 }
 
-MUST_INLINE
-static PyObject * tuple_create(PyObject *iterable) {
-    if (iterable == NULL) {
-        return PyTuple_New(0);
-    }
-    return PySequence_Tuple(iterable);
-}
-
 POLYGLOT_DECLARE_TYPE(PyTupleObject);
 PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
 	PyTupleObject* newobj;
@@ -108,7 +68,7 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     Py_ssize_t i, n;
 
     assert(PyType_IsSubtype(type, &PyTuple_Type));
-    tmp = tuple_create(iterable);
+    tmp = iterable == NULL ? PyTuple_New(0) : PySequence_Tuple(iterable);
     if (tmp == NULL) {
         return NULL;
     }
@@ -141,7 +101,7 @@ int PyTruffle_Tuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item
 }
 
 PyObject* PyTruffle_Tuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-    return native_to_java(PyTuple_GET_ITEM(tuple, position));
+    return PyTuple_GET_ITEM(tuple, position);
 }
 
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {

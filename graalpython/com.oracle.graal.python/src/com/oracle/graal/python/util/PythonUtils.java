@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.util;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -164,6 +166,10 @@ public final class PythonUtils {
     @TruffleBoundary
     public static TruffleString toTruffleStringUncached(String s) {
         return s == null ? null : TruffleString.fromJavaStringUncached(s, TS_ENCODING);
+    }
+
+    public static PString toPString(TruffleString name) {
+        return new PString(PString, PString.getInstanceShape(PythonLanguage.get(null)), name);
     }
 
     /**

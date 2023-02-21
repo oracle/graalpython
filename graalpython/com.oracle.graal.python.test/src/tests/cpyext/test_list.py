@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,6 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
-
-def raise_Py6_SystemError():
-    if sys.version_info.minor >= 6:
-        raise SystemError
-    else:
-        return -1
     
 def _reference_new_list(args):
     n = args[0]
@@ -73,14 +67,13 @@ def _reference_setitem(args):
     listObj[pos] = newitem
     return listObj
 
+
 def _reference_setslice(args):
     if not isinstance(args[0], list):
-        raise_Py6_SystemError()
-    try:        
-        args[0][args[1]:args[2]] = args[3]
-        return 0;
-    except:
-        return raise_Py6_SystemError()
+        raise SystemError
+    args[0][args[1]:args[2]] = args[3]
+    return 0;
+
 
 def _reference_reverse(args):
     args[0].reverse()
@@ -186,8 +179,10 @@ class TestPyList(CPyExtTestCase):
             Py_ssize_t i;
             for (i = 0; i < capacity; i++) {
                 if (i == idx) {
+                    Py_INCREF(new_item);
                     PyList_SetItem(newList, i, new_item);
                 } else {
+                    Py_INCREF(Py_None);
                     PyList_SetItem(newList, i, Py_None);
                 }
             }
@@ -208,6 +203,7 @@ class TestPyList(CPyExtTestCase):
             ([1,2,3,4], 3, 5),
         ),
         code='''PyObject* wrap_PyList_SET_ITEM(PyObject* op, Py_ssize_t idx, PyObject* newitem) {
+            Py_INCREF(newitem);
             PyList_SET_ITEM(op, idx, newitem);
             return op;
         }

@@ -40,34 +40,8 @@
  */
 #include "capi.h"
 
-UPCALL_ID(PyImport_ImportModule);
-PyObject* PyImport_ImportModule(const char *name) {
-    return UPCALL_CEXT_O(_jls_PyImport_ImportModule, polyglot_from_string(name, SRC_CS));
-}
-
-PyObject* PyImport_ImportModuleNoBlock(const char *name) {
-    return UPCALL_CEXT_O(_jls_PyImport_ImportModule, polyglot_from_string(name, SRC_CS));
-}
-
-PyObject* PyImport_Import(PyObject *name) {
-    return UPCALL_CEXT_O(_jls_PyImport_ImportModule, native_to_java(name));
-}
-
-PyObject* PyImport_ImportModuleLevelObject(PyObject* name, PyObject* globals, PyObject* locals,
-                                           PyObject* fromlist, int level) {
-    return UPCALL_O(PY_BUILTIN, polyglot_from_string("__import__", SRC_CS), native_to_java(name), native_to_java(globals),
-                    native_to_java(locals), native_to_java(fromlist), level);
-}
-
-PyObject* PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObject *locals,
-                                     PyObject *fromlist, int level) {
+PyObject* PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObject *locals, PyObject *fromlist, int level) {
     return PyImport_ImportModuleLevelObject(PyUnicode_FromString(name), globals, locals, fromlist, level);
-}
-
-
-UPCALL_ID(PyImport_GetModuleDict);
-PyObject* PyImport_GetModuleDict() {
-    return UPCALL_CEXT_O(_jls_PyImport_GetModuleDict);
 }
 
 int _PyImport_SetModule(PyObject *name, PyObject *m) {
@@ -75,7 +49,8 @@ int _PyImport_SetModule(PyObject *name, PyObject *m) {
     return PyObject_SetItem(modules, name, m);
 }
 
-PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {
+PyObject* PyImport_AddModuleObject(PyObject *name) {
+	PyObject *modules = PyImport_GetModuleDict();
     PyObject* m = PyObject_GetItem(modules, name);
     if (PyErr_ExceptionMatches(PyExc_KeyError)) {
         PyErr_Clear();
@@ -94,10 +69,6 @@ PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {
         return NULL;
     }
     return m;
-}
-
-PyObject* PyImport_AddModuleObject(PyObject *name) {
-    return _PyImport_AddModuleObject(name, PyImport_GetModuleDict());
 }
 
 PyObject* PyImport_AddModule(const char *name) {

@@ -42,12 +42,11 @@ package com.oracle.graal.python.processor;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -59,9 +58,18 @@ import javax.tools.JavaFileObject;
 import com.oracle.graal.python.annotations.GenerateEnumConstants;
 import com.oracle.graal.python.processor.CodeWriter.Block;
 
-@SupportedAnnotationTypes("com.oracle.graal.python.annotations.GenerateEnumConstants")
-@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class GenerateEnumConstantsProcessor extends AbstractProcessor {
+
+    @Override
+    public Set<String> getSupportedAnnotationTypes() {
+        return Collections.singleton(GenerateEnumConstants.class.getName());
+    }
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latestSupported();
+    }
+
     @Override
     @SuppressWarnings({"try", "unused"})
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment re) {

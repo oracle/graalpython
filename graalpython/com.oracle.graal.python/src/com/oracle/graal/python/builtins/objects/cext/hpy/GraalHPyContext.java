@@ -392,7 +392,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
                 Object nativeResult = initHPyModule(hpyUniversalContext, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib);
-                return checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyUniversalContext, name, nativeResult);
+                return checkResultNode.execute(context.getThreadState(context.getLanguage()), name, nativeResult);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, basename, path, hpyInitFuncName);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -421,7 +421,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                     InteropLibrary llvmInteropLib, HPyCheckFunctionResultNode checkResultNode)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException {
         Object nativeResult = initHPyModule(this, llvmLibrary, initFuncName, name, path, false, llvmInteropLib);
-        return checkResultNode.execute(context.getThreadState(context.getLanguage()), this, name, nativeResult);
+        return checkResultNode.execute(context.getThreadState(context.getLanguage()), name, nativeResult);
     }
 
     /**
@@ -1444,7 +1444,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    private static Object evalNFI(PythonContext context, String source, String name) {
+    public static Object evalNFI(PythonContext context, String source, String name) {
         Source src = Source.newBuilder("nfi", source, name).build();
         CallTarget ct = context.getEnv().parseInternal(src);
         return ct.call();
@@ -1519,12 +1519,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private static boolean jniBackendLoaded = false;
 
-    private String getJNILibrary() {
+    public static String getJNILibrary() {
         CompilerAsserts.neverPartOfCompilation();
-        return Paths.get(getContext().getJNIHome().toJavaStringUncached(), PythonContext.J_PYTHON_JNI_LIBRARY_NAME).toString();
+        return Paths.get(PythonContext.get(null).getJNIHome().toJavaStringUncached(), PythonContext.J_PYTHON_JNI_LIBRARY_NAME).toString();
     }
 
-    private void loadJNIBackend() {
+    public static void loadJNIBackend() {
         if (!(ImageInfo.inImageBuildtimeCode() || jniBackendLoaded)) {
             String pythonJNIPath = getJNILibrary();
             LOGGER.fine("Loading HPy JNI backend from " + pythonJNIPath);
@@ -1996,8 +1996,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
             Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hSequence));
             Object clazz = GetClassNode.getUncached().execute(receiver);
-            Object key = HPyAsPythonObjectNodeGen.getUncached().execute(this, hKey);
-            Object value = HPyAsPythonObjectNodeGen.getUncached().execute(this, hValue);
+            Object key = HPyAsPythonObjectNodeGen.getUncached().execute(hKey);
+            Object value = HPyAsPythonObjectNodeGen.getUncached().execute(hValue);
 
             // fast path
             if (clazz == PythonBuiltinClassType.PDict) {
@@ -2043,7 +2043,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             if (clazz == PythonBuiltinClassType.PList && ctxListSetItem(receiver, lidx, hValue)) {
                 return 0;
             }
-            Object value = HPyAsPythonObjectNodeGen.getUncached().execute(this, hValue);
+            Object value = HPyAsPythonObjectNodeGen.getUncached().execute(hValue);
             return setItemGeneric(receiver, clazz, lidx, value);
         } catch (PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
@@ -2261,7 +2261,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         Object[] objects = new Object[hItems.length];
         for (int i = 0; i < hItems.length; i++) {
             long hBits = hItems[i];
-            objects[i] = HPyAsPythonObjectNodeGen.getUncached().execute(this, hBits);
+            objects[i] = HPyAsPythonObjectNodeGen.getUncached().execute(hBits);
             if (steal) {
                 closeNativeHandle(hBits);
             }

@@ -40,17 +40,27 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import java.util.List;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_TYPE_LOCK;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins.AllocateLockNode;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi11BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -65,118 +75,85 @@ import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockN
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextCEvalBuiltins extends PythonBuiltins {
+public final class PythonCextCEvalBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextCEvalBuiltinsFactory.getFactories();
-    }
+    private static final long LOCK_MASK = 0xA10C000000000000L;
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyThread_allocate_lock")
-    @GenerateNodeFactory
-    public abstract static class PyThreadAllocateLockNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PY_THREAD_TYPE_LOCK, args = {}, call = Direct)
+    public abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
         @Specialization
-        public Object allocate(VirtualFrame frame,
-                        @Cached AllocateLockNode allocateNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return allocateNode.execute(frame, PNone.NO_VALUE, PNone.NO_VALUE);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        @TruffleBoundary
+        public long allocate() {
+            CApiContext context = getContext().getCApiContext();
+            long id = context.lockId.incrementAndGet() ^ LOCK_MASK;
+            PLock lock = factory().createLock(PythonBuiltinClassType.PLock);
+            context.locks.put(id, lock);
+            return id;
         }
     }
 
-    @Builtin(name = "PyThread_acquire_lock", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class PyThreadAcquireLockNode extends PythonBinaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PY_THREAD_TYPE_LOCK, Int}, call = Direct)
+    public abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
         @Specialization
-        public static int acquire(VirtualFrame frame, PLock lock, int waitflag,
-                        @Cached AcquireLockNode acquireNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return ((boolean) acquireNode.execute(frame, lock, waitflag, PNone.NONE)) ? 1 : 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
+        @TruffleBoundary
+        public int acquire(long id, int waitflag,
+                        @Cached AcquireLockNode acquireNode) {
+            CApiContext context = getContext().getCApiContext();
+            PLock lock = context.locks.get(id);
+            if (lock == null) {
+                throw badInternalCall("lock");
             }
+            return intValue((boolean) acquireNode.execute(null, lock, waitflag != 0 ? -1 : 0, PNone.NONE));
         }
     }
 
-    @Builtin(name = "PyThread_release_lock", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyThreadReleaseLockNode extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = Direct)
+    public abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object release(VirtualFrame frame, PLock lock,
-                        @Cached ReleaseLockNode releaseNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return releaseNode.execute(frame, lock);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
+        @TruffleBoundary
+        public Object release(long id,
+                        @Cached ReleaseLockNode releaseNode) {
+            CApiContext context = getContext().getCApiContext();
+            PLock lock = context.locks.get(id);
+            if (lock == null) {
+                throw badInternalCall("lock");
             }
+            releaseNode.execute(null, lock);
+            return PNone.NO_VALUE;
         }
     }
 
-    @Builtin(name = "PyEval_GetBuiltins")
-    @GenerateNodeFactory
-    public abstract static class PyEvalGetBuiltinsNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
+    public abstract static class PyEval_GetBuiltins extends CApiNullaryBuiltinNode {
         @Specialization
-        public Object release(@Cached GetDictIfExistsNode getDictNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                PythonModule cext = getCore().getBuiltins();
-                return getDictNode.execute(cext);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        public Object release(
+                        @Cached GetDictIfExistsNode getDictNode) {
+            PythonModule cext = getCore().getBuiltins();
+            return getDictNode.execute(cext);
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyEval_EvalCodeEx", minNumOfPositionalArgs = 8, needsFrame = true)
-    @GenerateNodeFactory
-    abstract static class PyEvalEvalCodeEx extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, call = Ignored)
+    abstract static class _PyTruffleEval_EvalCodeEx extends CApi11BuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object codeWrapper, Object globalsWrapper, Object localsWrapper,
+        Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, Object kwsPtr, Object defaultValueArrayPtr,
-                        Object kwdefaultsWrapper, Object closureWrapper,
+                        Object kwdefaultsWrapper, Object closureObj,
                         @CachedLibrary(limit = "2") InteropLibrary ptrLib,
-                        @Cached CExtNodes.AsPythonObjectNode codeAsPythonObjectNode,
-                        @Cached CExtNodes.AsPythonObjectNode globalsAsPythonObjectNode,
-                        @Cached CExtNodes.AsPythonObjectNode localsAsPythonObjectNode,
-                        @Cached CExtNodes.AsPythonObjectNode closureAsPythonObjectNode,
                         @Cached CExtNodes.ToJavaNode elementToJavaNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
                         @Cached CastToTruffleStringNode castToStringNode,
@@ -184,16 +161,10 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
                         @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
                         @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
                         @Cached CreateArgumentsNode.CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached GenericInvokeNode invokeNode) {
-            PCode code = (PCode) codeAsPythonObjectNode.execute(codeWrapper);
-            Object globals = globalsAsPythonObjectNode.execute(globalsWrapper);
-            Object locals = localsAsPythonObjectNode.execute(localsWrapper);
             Object[] defaults = unwrapArray(defaultValueArrayPtr, ptrLib, elementToJavaNode);
             PKeyword[] kwdefaults = castKwargsNode.execute(kwdefaultsWrapper);
             PCell[] closure = null;
-            Object closureObj = closureAsPythonObjectNode.execute(closureWrapper);
             if (closureObj != PNone.NO_VALUE) {
                 // CPython also just accesses the object as tuple without further checks.
                 closure = PCell.toCellArray(getObjectArrayNode.execute(closureObj));
@@ -218,21 +189,15 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
             PArguments.setClosure(pArguments, closure);
             // TODO(fa): set builtins in globals
             // PythonModule builtins = getContext().getBuiltins();
-            // setBuiltinsInGlobals(frame, globals, setBuiltins, builtins, lib);
+            // setBuiltinsInGlobals(globals, setBuiltins, builtins, lib);
             if (globals instanceof PythonObject) {
                 PArguments.setGlobals(pArguments, (PythonObject) globals);
             } else {
                 // TODO(fa): raise appropriate exception
             }
 
-            try {
-                RootCallTarget rootCallTarget = getCallTargetNode.execute(code);
-                Object result = invokeNode.execute(frame, rootCallTarget, pArguments);
-                return toNewRefNode.execute(result);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return getContext().getNativeNull();
-            }
+            RootCallTarget rootCallTarget = getCallTargetNode.execute(code);
+            return invokeNode.execute(rootCallTarget, pArguments);
         }
 
         private static Object[] unwrapArray(Object ptr, InteropLibrary ptrLib, CExtNodes.ToJavaNode elementToJavaNode) {

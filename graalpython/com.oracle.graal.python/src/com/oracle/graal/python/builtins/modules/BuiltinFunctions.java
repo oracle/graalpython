@@ -2079,11 +2079,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected ArgumentClinicProvider getArgumentClinic() {
             return BuiltinFunctionsClinicProviders.SortedNodeClinicProviderGen.INSTANCE;
         }
-
-        public static SortedNode create() {
-            return BuiltinFunctionsFactory.SortedNodeFactory.create(null);
-        }
-
     }
 
     @Builtin(name = J_BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)

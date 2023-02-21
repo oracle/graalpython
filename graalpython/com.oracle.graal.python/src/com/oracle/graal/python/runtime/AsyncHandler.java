@@ -308,7 +308,7 @@ public class AsyncHandler {
 
     /**
      * Register an async action for regular execution. The value of
-     * {@link PythonOptions.AUTOMATIC_ASYNC_ACTIONS} determines if the action is scheduled at
+     * {@link PythonOptions#AUTOMATIC_ASYNC_ACTIONS} determines if the action is scheduled at
      * regular intervals to run on a separate thread, or if it will be polled. The caller needs to
      * ensure that the AsyncAction passed into this method does not block in the latter case.
      */

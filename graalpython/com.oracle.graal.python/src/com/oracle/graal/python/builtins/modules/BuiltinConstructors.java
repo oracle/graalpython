@@ -1158,6 +1158,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
+        private void checkBase(PInt base) {
+            int ibase;
+            try {
+                ibase = base.intValueExact();
+            } catch (OverflowException e) {
+                // this should just trigger the error
+                ibase = 1;
+            }
+            checkBase(ibase);
+        }
+
         // Adapted from Jython
         private static BigInteger asciiToBigInteger(String str, int possibleBase, PythonContext context) throws NumberFormatException {
             CompilerAsserts.neverPartOfCompilation();
@@ -1418,7 +1429,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode) {
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
@@ -1431,13 +1442,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, int base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode) {
             checkBase(base);
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
             return stringToInt(frame, cls, castToStringNode.execute(arg), base, arg, inliningTarget, isPrimitiveIntProfile);
+        }
+
+        @Specialization
+        @Megamorphic
+        Object parsePInt(VirtualFrame frame, Object cls, PString arg, PInt base,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode) {
+            checkBase(base);
+            Object result = callInt(frame, arg);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            return stringToInt(frame, cls, castToStringNode.execute(arg), base.intValue(), arg, inliningTarget, isPrimitiveIntProfile);
         }
 
         // other
@@ -1983,6 +2008,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;
         @Child private CastToTruffleStringNode castToTruffleStringNode;
+
+        public final Object executeWith(Object arg) {
+            return executeWith(null, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
 
         public final Object executeWith(VirtualFrame frame, Object arg) {
             return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);

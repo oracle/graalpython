@@ -178,11 +178,6 @@ public class BufferedIONodes {
 
         public abstract boolean execute(VirtualFrame frame, Object raw);
 
-        public boolean isBufferReadable(VirtualFrame frame, PBuffered self) {
-            assert self.isOK();
-            return execute(frame, self.getRaw());
-        }
-
         @Specialization
         static boolean isReadable(VirtualFrame frame, Object raw,
                         @Cached PyObjectCallMethodObjArgs callMethod,
@@ -190,17 +185,11 @@ public class BufferedIONodes {
             Object res = callMethod.execute(frame, raw, T_READABLE);
             return isTrue.execute(frame, res);
         }
-
     }
 
     abstract static class IsWritableNode extends PNodeWithContext {
 
         public abstract boolean execute(VirtualFrame frame, Object raw);
-
-        public boolean isBufferWritable(VirtualFrame frame, PBuffered self) {
-            assert self.isOK();
-            return execute(frame, self.getRaw());
-        }
 
         @Specialization
         static boolean isWritable(VirtualFrame frame, Object raw,
@@ -209,7 +198,6 @@ public class BufferedIONodes {
             Object res = callMethod.execute(frame, raw, T_WRITABLE);
             return isTrue.execute(frame, res);
         }
-
     }
 
     @ImportStatic(PGuards.class)

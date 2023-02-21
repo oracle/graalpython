@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -131,6 +131,7 @@ class DefaultExtensionTemplate(object):
                 textwrap.dedent('''
                 static HPyGlobal *module_globals[] = {
                     %s
+                    NULL
                 };''') % NL_INDENT.join(self.globals_table)
             globals_field = '.globals = module_globals'
 

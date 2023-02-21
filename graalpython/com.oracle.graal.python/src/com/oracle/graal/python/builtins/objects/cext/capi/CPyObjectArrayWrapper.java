@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -90,22 +89,18 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
         wrappers = new Object[delegate.length];
     }
 
-    public Object[] getObjectArray(PythonNativeWrapperLibrary lib) {
-        return ((Object[]) lib.getDelegate(this));
+    public Object[] getObjectArray() {
+        return ((Object[]) getDelegate());
     }
 
     @ExportMessage
-    boolean isPointer(
-                    @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    long asPointer(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-        Object nativePointer = lib.getNativePointer(this);
-        assert nativePointer instanceof Long;
-        return (long) nativePointer;
+    long asPointer() {
+        return getNativePointer();
     }
 
     @ExportMessage
@@ -121,13 +116,12 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object readArrayElement(long index,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) throws InvalidArrayIndexException {
         try {
             int idx = PInt.intValueExact(index);
             if (idx >= 0 && idx < wrappers.length) {
                 if (wrappers[idx] == null) {
-                    Object[] arr = getObjectArray(lib);
+                    Object[] arr = getObjectArray();
                     wrappers[idx] = toNewRefNode.execute(arr[idx]);
                 }
                 return wrappers[idx];
@@ -163,17 +157,14 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
      */
     @ExportMessage
     void toNative(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                     @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLib) {
-        if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+        if (!PythonContext.get(toNewRefNode).isNativeAccessAllowed()) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
         }
-        invalidateNode.execute();
-        if (!lib.isNative(this)) {
-            Object[] data = getObjectArray(lib);
+        if (!isNative()) {
+            Object[] data = getObjectArray();
             long ptr = allocateBoundary((long) wrappers.length * Long.BYTES);
             try {
                 for (int i = 0; i < data.length; i++) {
@@ -191,16 +182,16 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
         }
     }
 
-    public void free(PythonNativeWrapperLibrary lib, ReleaseNativeWrapperNode releaseNativeWrapperNode) {
+    public void free(ReleaseNativeWrapperNode releaseNativeWrapperNode) {
         for (int i = 0; i < wrappers.length; i++) {
             releaseNativeWrapperNode.execute(wrappers[i]);
         }
-        if (lib.isNative(this)) {
-            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+        if (isNative()) {
+            if (!PythonContext.get(releaseNativeWrapperNode).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            freeBoundary((long) lib.getNativePointer(this));
+            freeBoundary(getNativePointer());
         }
     }
 }

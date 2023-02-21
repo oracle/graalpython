@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,69 +40,48 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.util.List;
-
-import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextModuleBuiltins extends PythonBuiltins {
+public final class PythonCextModuleBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextModuleBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "_PyModule_GetAndIncMaxModuleNumber")
-    @GenerateNodeFactory
-    abstract static class PyModuleGetAndIncMaxModuleNumber extends PythonBuiltinNode {
+    @CApiBuiltin(ret = Py_ssize_t, args = {}, call = Ignored)
+    abstract static class _PyTruffleModule_GetAndIncMaxModuleNumber extends CApiNullaryBuiltinNode {
 
         @Specialization
         long doIt() {
@@ -111,46 +90,32 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyModule_SetDocString", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class SetDocStringNode extends PythonBinaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    public abstract static class PyModule_SetDocString extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object run(VirtualFrame frame, PythonModule module, Object doc,
+        static int run(PythonModule module, Object doc,
                         @Cached ObjectBuiltins.SetattrNode setattrNode) {
-            setattrNode.execute(frame, module, T___DOC__, doc);
-            return PNone.NONE;
+            setattrNode.execute(null, module, T___DOC__, doc);
+            return 0;
         }
     }
 
-    @Builtin(name = "PyModule_NewObject", minNumOfPositionalArgs = 1, parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
-    @GenerateNodeFactory
-    public abstract static class PyModuleNewObjectNode extends PythonUnaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextModuleBuiltinsClinicProviders.PyModuleNewObjectNodeClinicProviderGen.INSTANCE;
-        }
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
+    @CApiBuiltin(name = "PyModule_New", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
+    public abstract static class PyModule_NewObject extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object run(VirtualFrame frame, TruffleString name,
+        static Object run(TruffleString name,
                         @Cached CallNode callNode) {
-            return callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{name});
+            return callNode.execute(PythonBuiltinClassType.PythonModule, new Object[]{name});
         }
     }
 
-    @Builtin(name = "_PyModule_CreateInitialized_PyModule_New", parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
-    @GenerateNodeFactory
-    public abstract static class PyModuleCreateInitializedNewNode extends PythonUnaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextModuleBuiltinsClinicProviders.PyModuleCreateInitializedNewNodeClinicProviderGen.INSTANCE;
-        }
+    @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored)
+    public abstract static class _PyTruffleModule_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object run(VirtualFrame frame, TruffleString name,
+        Object run(TruffleString name,
                         @Cached CallNode callNode,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -162,11 +127,11 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
             TruffleString newModuleName = name;
             PythonContext ctx = getContext();
             TruffleString pyPackageContext = ctx.getPyPackageContext() == null ? null : ctx.getPyPackageContext();
-            if (pyPackageContext != null && endsWithNode.executeBoolean(frame, pyPackageContext, newModuleName, 0, codePointLengthNode.execute(pyPackageContext, TS_ENCODING))) {
+            if (pyPackageContext != null && endsWithNode.executeBoolean(null, pyPackageContext, newModuleName, 0, codePointLengthNode.execute(pyPackageContext, TS_ENCODING))) {
                 newModuleName = pyPackageContext;
                 ctx.setPyPackageContext(null);
             }
-            Object newModule = callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{newModuleName});
+            Object newModule = callNode.execute(PythonBuiltinClassType.PythonModule, new Object[]{newModuleName});
             // TODO: (tfel) I don't think this is the right place to set it, but somehow
             // at least in the import of sklearn.neighbors.dist_metrics through
             // sklearn.neighbors.ball_tree the __package__ attribute seems to be already
@@ -175,67 +140,66 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
             int nameLength = codePointLengthNode.execute(newModuleName, TS_ENCODING);
             int idx = lastIndexNode.execute(newModuleName, '.', nameLength, 0, TS_ENCODING);
             if (idx > -1) {
-                setattrNode.execute(frame, newModule, T___PACKAGE__, substringNode.execute(newModuleName, 0, idx, TS_ENCODING, false));
+                setattrNode.execute(null, newModule, T___PACKAGE__, substringNode.execute(newModuleName, 0, idx, TS_ENCODING, false));
             }
             return newModule;
         }
     }
 
-    @Builtin(name = "PyModule_GetNameObject", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyModuleGetNameObjectNode extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    public abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
-        Object getName(VirtualFrame frame, Object o,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return lookupAttrNode.execute(frame, o, T___NAME__);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        Object getName(Object o,
+                        @Cached PyObjectLookupAttr lookupAttrNode) {
+            return lookupAttrNode.execute(null, o, T___NAME__);
         }
     }
 
-    @Builtin(name = "PyModule_AddObjectRef", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    public abstract static class PyModuleAddObjectNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
-        static Object addObject(@SuppressWarnings("unused") VirtualFrame frame, Object m, TruffleString k, Object o,
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
+    public abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
+        @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        static Object addObject(Object m, TruffleString k, Object o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached WriteAttributeToObjectNode writeAtrrNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                writeAtrrNode.execute(m, k, o);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
-        }
-
-        @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
-        Object addObject(VirtualFrame frame, Object m, PString k, Object o,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached WriteAttributeToObjectNode writeAtrrNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return addObject(frame, m, castToStringNode.execute(k), o, getClassNode, isSubtypeNode, writeAtrrNode, transformExceptionToNativeNode);
+                        @Cached WriteAttributeToObjectNode writeAtrrNode) {
+            writeAtrrNode.execute(m, k, o);
+            return 0;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
-        public static Object pop(VirtualFrame frame, Object m, Object key, Object defaultValue,
+        @Specialization(guards = "!isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        public static Object pop(Object m, Object key, Object defaultValue,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
+            return raiseNativeNode.raiseInt(null, -1, TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
         }
 
-        protected boolean isModuleSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PythonModule);
+        protected boolean isModuleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(null, getClassNode.execute(obj), PythonBuiltinClassType.PythonModule);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ArgDescriptor.Long}, call = Direct)
+    public abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
+        @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        Object addObject(Object m, TruffleString k, long o,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached WriteAttributeToObjectNode writeAtrrNode) {
+            writeAtrrNode.execute(m, k, o);
+            return 0;
+        }
+
+        @Specialization(guards = "!isModuleSubtype(m, getClassNode, isSubtypeNode)")
+        public Object pop(@SuppressWarnings("unused") Object m, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            throw raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddIntConstant", "module");
+        }
+
+        protected boolean isModuleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(null, getClassNode.execute(obj), PythonBuiltinClassType.PythonModule);
         }
     }
 

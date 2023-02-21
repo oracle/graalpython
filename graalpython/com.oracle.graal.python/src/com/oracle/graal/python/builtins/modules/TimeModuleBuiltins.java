@@ -579,7 +579,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public static long nanoTime() {
+        private static long nanoTime() {
             return System.nanoTime();
         }
 
@@ -675,7 +675,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return date;
         }
 
-        protected static DateFormatSymbols datesyms = new DateFormatSymbols();
+        protected static final DateFormatSymbols datesyms = new DateFormatSymbols();
 
         @TruffleBoundary
         private static String getDayShortName(int day) {

@@ -40,7 +40,7 @@
  */
 #include "capi.h"
 
-#define REAL_SIZE_TP(tp) PyLong_AsSsize_t(PyDict_GetItem((tp)->tp_dict, polyglot_from_string("n_fields", SRC_CS)))
+#define REAL_SIZE_TP(tp) PyLong_AsSsize_t(PyDict_GetItem((tp)->tp_dict, truffleString("n_fields")))
 #define REAL_SIZE(op) REAL_SIZE_TP(Py_TYPE(op))
 
 const char* const PyStructSequence_UnnamedField = "unnamed field";
@@ -48,20 +48,13 @@ const char* const PyStructSequence_UnnamedField = "unnamed field";
 static void
 structseq_dealloc(PyStructSequence *obj)
 {
-	obj = native_pointer_to_java(obj);
     Py_ssize_t i, size;
 
     size = REAL_SIZE(obj);
     for (i = 0; i < size; ++i) {
-        Py_XDECREF(obj->ob_item[i]);
+        Py_XDECREF(PyStructSequence_GET_ITEM(obj, i));
     }
     PyObject_GC_Del(obj);
-}
-
-typedef PyObject *(*structseq_new_fun_t)(PyTypeObject *);
-UPCALL_TYPED_ID(PyStructSequence_New, structseq_new_fun_t);
-PyObject* PyStructSequence_New(PyTypeObject* o) {
-    return _jls_PyStructSequence_New(native_type_to_java(o));
 }
 
 static Py_ssize_t
@@ -77,8 +70,6 @@ count_members(PyStructSequence_Desc *desc, Py_ssize_t *n_unnamed_members) {
     return i;
 }
 
-typedef int (*structseq_init_fun_t)(void *, void *, void *, int);
-UPCALL_TYPED_ID(PyStructSequence_InitType2, structseq_init_fun_t);
 int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) {
     Py_ssize_t n_members, n_unnamed_members, n_named_members;
     Py_ssize_t i;
@@ -110,15 +101,15 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     int j = 0;
     for (i = 0; i < n_members; i++) {
         if (fields[i].name != PyStructSequence_UnnamedField) {
-            field_names[j] = polyglot_from_string(fields[i].name, SRC_CS);
-            field_docs[j] = polyglot_from_string(fields[i].doc, SRC_CS);
+            field_names[j] = truffleString(fields[i].name);
+            field_docs[j] = truffleString(fields[i].doc);
             j++;
         }
     }
 
     // this initializes the type dict (adds attributes)
-    return _jls_PyStructSequence_InitType2(
-            native_type_to_java(type),
+    return GraalPyTruffleStructSequence_InitType2(
+            type,
             /* TODO(fa): use polyglot_from_VoidPtr_array once this is visible */
             polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_names, (uint64_t) n_members),
             polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_docs, (uint64_t) n_members),
@@ -126,8 +117,6 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     );
 }
 
-typedef PyTypeObject *(*structseq_newtype_fun_t)(void *, void *, void *, void *, int);
-UPCALL_TYPED_ID(PyStructSequence_NewType, structseq_newtype_fun_t);
 PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc) {
     Py_ssize_t n_members, n_unnamed_members, n_named_members;
     Py_ssize_t i;
@@ -141,16 +130,16 @@ PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc) {
     int j = 0;
     for (i = 0; i < n_members; i++) {
         if (fields[i].name != PyStructSequence_UnnamedField) {
-            field_names[j] = polyglot_from_string(fields[i].name, SRC_CS);
-            field_docs[j] = polyglot_from_string(fields[i].doc, SRC_CS);
+            field_names[j] = truffleString(fields[i].name);
+            field_docs[j] = truffleString(fields[i].doc);
             j++;
         }
     }
 
     // we create the new type managed
-    return _jls_PyStructSequence_NewType(
-            polyglot_from_string(desc->name, SRC_CS),
-            polyglot_from_string(desc->doc, SRC_CS),
+    return GraalPyTruffleStructSequence_NewType(
+            truffleString(desc->name),
+            truffleString(desc->doc),
             /* TODO(fa): use polyglot_from_VoidPtr_array once this is visible */
             polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_names, (uint64_t) n_members),
             polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_docs, (uint64_t) n_members),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,85 +40,75 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import java.util.List;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextContextBuiltins extends PythonBuiltins {
+public final class PythonCextContextBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextContextBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "PyContextVar_New", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class PyContextVarNewNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
+    public abstract static class PyContextVar_New extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object doGeneric(VirtualFrame frame, TruffleString name, Object def,
+        static Object doGeneric(TruffleString name, Object def,
                         @Cached CallNode callContextvar) {
-            return callContextvar.execute(frame, PythonBuiltinClassType.ContextVar, name, def);
+            return callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def);
+        }
+
+        @Specialization
+        static Object doGeneric(PNone name, @SuppressWarnings("unused") Object def) {
+            assert name == PNone.NO_VALUE;
+            return PNone.NO_VALUE;
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyContextVar_Get", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    public abstract static class PyContextVarGetNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Pointer}, call = Ignored)
+    public abstract static class PyTruffleContextVar_Get extends CApiTernaryBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object varObj, Object defObj, Object marker,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached ToNewRefNode toNewRefNode,
-                        @Cached PRaiseNativeNode raiseNode) {
-            Object var = asPythonObjectNode.execute(varObj);
-            Object def = asPythonObjectNode.execute(defObj);
+        Object doGeneric(Object var, Object def, Object marker,
+                        @Cached PRaiseNativeNode raiseNative) {
             if (!(var instanceof PContextVar)) {
-                return raiseNode.raise(frame, marker, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+                return raiseNative.raise(null, marker, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
             Object result = ((PContextVar) var).getValue(threadState);
             if (result == null) {
                 if (def == PNone.NO_VALUE) {
-                    def = ((PContextVar) var).getDefault();
-                    if (def == PContextVar.NO_DEFAULT) {
-                        def = PNone.NO_VALUE;
+                    if (((PContextVar) var).getDefault() == PContextVar.NO_DEFAULT) {
+                        result = PNone.NO_VALUE;
+                    } else {
+                        result = ((PContextVar) var).getDefault();
                     }
+                } else {
+                    result = def;
                 }
-                result = def;
             }
-            return toNewRefNode.execute(result);
+            return result;
         }
     }
 
-    @Builtin(name = "PyContextVar_Set", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class PyContextVarSetNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    public abstract static class PyContextVar_Set extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object var, Object val,
-                        @Cached PRaiseNativeNode raiseNode) {
+        Object doGeneric(Object var, Object val) {
             if (!(var instanceof PContextVar)) {
-                return raiseNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
             PContextVar pvar = (PContextVar) var;

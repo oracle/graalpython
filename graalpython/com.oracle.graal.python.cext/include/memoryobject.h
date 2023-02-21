@@ -21,9 +21,9 @@ PyAPI_DATA(PyTypeObject) PyMemoryView_Type;
 
 #ifndef Py_LIMITED_API
 /* Get a pointer to the memoryview's private copy of the exporter's buffer. */
-#define PyMemoryView_GET_BUFFER(op) (&((PyMemoryViewObject *)(op))->view)
+#define PyMemoryView_GET_BUFFER(op) (_PyMemoryView_GetBuffer((PyObject *)(op)))
 /* Get a pointer to the exporting object (this may be NULL!). */
-#define PyMemoryView_GET_BASE(op) (((PyMemoryViewObject *)(op))->view.obj)
+#define PyMemoryView_GET_BASE(op) (_PyMemoryView_GetBuffer((PyObject *)(op))->obj)
 #endif
 
 PyAPI_FUNC(PyObject *) PyMemoryView_FromObject(PyObject *base);
@@ -70,6 +70,10 @@ typedef struct {
     PyObject *weakreflist;
     Py_ssize_t ob_array[1];       /* shape, strides, suboffsets */
 } PyMemoryViewObject;
+
+
+PyAPI_FUNC(Py_buffer *) _PyMemoryView_GetBuffer(PyObject *op);
+
 #endif
 
 #ifdef __cplusplus

@@ -101,10 +101,7 @@ def _reference_contains(args):
 
 def _reference_compare(args):
     if not isinstance(args[0], str) or not isinstance(args[1], str):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError  
+        raise TypeError  
 
     if args[0] == args[1]:
         return 0
@@ -133,10 +130,7 @@ def _reference_as_unicode_escape_string(args):
 
 def _reference_tailmatch(args):
     if not isinstance(args[0], str) or not isinstance(args[1], str):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError
+        raise TypeError
 
     s = args[0]
     substr = args[1]

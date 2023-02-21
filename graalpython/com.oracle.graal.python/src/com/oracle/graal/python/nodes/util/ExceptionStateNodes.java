@@ -114,6 +114,23 @@ public abstract class ExceptionStateNodes {
             return ensure(e);
         }
 
+        public PException executeFromNative() {
+            // contextRef acts as a branch profile
+            if (getThreadStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getThreadStateNode = insert(GetThreadStateNodeGen.create());
+            }
+            PythonThreadState threadState = getThreadStateNode.execute();
+            PException fromContext = threadState.getCaughtException();
+            if (fromContext == null || fromContext == PException.NO_EXCEPTION) {
+                fromContext = fromStackWalk();
+
+                // important: set into context to avoid stack walk next time
+                threadState.setCaughtException(fromContext != null ? fromContext : PException.NO_EXCEPTION);
+            }
+            return ensure(fromContext);
+        }
+
         private PException getFromContext() {
             // contextRef acts as a branch profile
             if (getThreadStateNode == null) {

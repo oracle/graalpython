@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,34 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-@GenerateUncached
-public abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
+/**
+ * A simple wrapper around native pointers, also used for {@code NULL}.
+ */
+public final class PythonNativePointer implements TruffleObject {
+    private Object ptr;
 
-    public abstract void execute();
-
-    @Specialization(guards = "isSingleContext()", assumptions = "nativeObjectsAllManagedAssumption")
-    @TruffleBoundary
-    static void doValid(
-                    @Cached("nativeObjectsAllManagedAssumption()") Assumption nativeObjectsAllManagedAssumption) {
-        nativeObjectsAllManagedAssumption.invalidate();
+    public PythonNativePointer(Object ptr) {
+        this.ptr = ptr;
     }
 
-    @Specialization(replaces = "doValid")
-    static void doInvalid() {
-        // nothing to do
+    public void setPtr(Object object) {
+        this.ptr = object;
     }
 
-    Assumption nativeObjectsAllManagedAssumption() {
-        return PythonContext.get(this).getNativeObjectsAllManagedAssumption();
+    public Object getPtr() {
+        return ptr;
     }
 }

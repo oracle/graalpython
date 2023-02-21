@@ -40,8 +40,13 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -99,7 +104,14 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
         return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
-    @Specialization(guards = {"!cannotBeSequence(object)"}, replaces = "doPythonObject")
+    @Specialization
+    static boolean doNative(PythonAbstractNativeObject object,
+                    @Cached ToSulongNode toSulongNode,
+                    @Cached PCallCapiFunction callCapiFunction) {
+        return ((int) callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(object))) != 0;
+    }
+
+    @Specialization(guards = {"!cannotBeSequence(object)", "!isNativeObject(object)"}, replaces = "doPythonObject")
     boolean doGeneric(Object object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,

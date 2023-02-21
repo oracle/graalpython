@@ -43,14 +43,14 @@ package com.oracle.graal.python.builtins.objects.capsule;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Capsule;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PyCapsule extends PythonBuiltinObject {
@@ -107,8 +107,18 @@ public final class PyCapsule extends PythonBuiltinObject {
     @ExportMessage
     @TruffleBoundary
     public String toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
-        return PythonCextCapsuleBuiltins.ReprNode.repr(this,
-                        CastToTruffleStringNode.getUncached(),
-                        CExtNodesFactory.FromCharPointerNodeGen.getUncached()).toJavaStringUncached();
+        String quote, n;
+        if (getName() != null) {
+            quote = "\"";
+            if (getName() instanceof TruffleString) {
+                n = ((TruffleString) getName()).toJavaStringUncached();
+            } else {
+                n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(name));
+            }
+        } else {
+            quote = "";
+            n = "NULL";
+        }
+        return String.format("<capsule object %s%s%s at %x>", quote, n, quote, hashCode());
     }
 }

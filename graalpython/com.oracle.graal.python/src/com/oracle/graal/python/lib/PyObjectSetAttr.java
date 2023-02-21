@@ -72,6 +72,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyObjectSetAttr extends PNodeWithContext {
     public abstract void execute(Frame frame, Object receiver, Object name, Object value);
 
+    public final void execute(Object receiver, Object name, Object value) {
+        execute(null, receiver, name, value);
+    }
+
     public final void delete(Frame frame, Object receiver, Object name) {
         execute(frame, receiver, name, null);
     }

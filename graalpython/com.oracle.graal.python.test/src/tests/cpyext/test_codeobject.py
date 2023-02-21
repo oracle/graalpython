@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -68,6 +68,7 @@ class TestCodeobject(CPyExtTestCase):
             ("file.c", "myfunc", 54),
         ),
         resultspec="O",
+        resulttype="PyCodeObject*",
         argspec="ssi",
         arguments=["char* filename", "char* funcname", "int firstlineno"],
         cmpfunc=lambda cr, pr: pr[0] == cr.co_filename and pr[1] == cr.co_name and pr[2] == cr.co_firstlineno,
@@ -86,6 +87,7 @@ class TestCodeobject(CPyExtTestCase):
             ),
         ),
         resultspec="O",
+        resulttype="PyCodeObject*",
         argspec="iiiiiOOOOOOOOiO",
         arguments=[
             "int argcount", "int kwonlyargcount",
@@ -111,6 +113,7 @@ class TestCodeobject(CPyExtTestCase):
             ),
         ),
         resultspec="O",
+        resulttype="PyCodeObject*",
         argspec="iiiiiiOOOOOOOOiO",
         arguments=[
             "int argcount", "int posonlyargcount", "int kwonlyargcount",

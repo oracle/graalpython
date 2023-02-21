@@ -40,9 +40,8 @@
  */
 #include "capi.h"
 
-UPCALL_ID(PyTruffle_FatalErrorFunc);
 void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
-	UPCALL_CEXT_VOID(_jls_PyTruffle_FatalErrorFunc, func != NULL? polyglot_from_string(func, SRC_CS): NULL, polyglot_from_string(msg, SRC_CS), -1);
+	GraalPyTruffle_FatalErrorFunc(func != NULL? truffleString(func): NULL, truffleString(msg), -1);
 	/* If the above upcall returns, then we just fall through to the 'abort' call. */
 	abort();
 }
@@ -55,11 +54,4 @@ PyOS_sighandler_t PyOS_setsig(int sig, PyOS_sighandler_t handler) {
 int PyOS_InterruptOccurred(void) {
 	PyErr_SetString(PyExc_SystemError, "'PyOS_InterruptOccurred' not implemented");
 	return -1;
-}
-
-typedef void (*py_atexit_fun_t)(void (*func)(void));
-UPCALL_TYPED_ID(Py_AtExit, py_atexit_fun_t);
-int Py_AtExit(void (*func)(void)) {
-    _jls_Py_AtExit(func);
-	return 0;
 }

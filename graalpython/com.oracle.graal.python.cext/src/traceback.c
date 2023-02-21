@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,14 +41,4 @@
 
 #include "capi.h"
 
-PyTypeObject PyTraceBack_Type = PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
 
-UPCALL_ID(PyTraceBack_Here);
-int PyTraceBack_Here(PyFrameObject *frame) {
-    return UPCALL_CEXT_I(_jls_PyTraceBack_Here, native_to_java((PyObject*)frame));
-}
-
-UPCALL_ID(_PyTraceback_Add)
-void _PyTraceback_Add(const char *funcname, const char *filename, int lineno) {
-    UPCALL_CEXT_VOID(_jls__PyTraceback_Add, polyglot_from_string(funcname, SRC_CS), polyglot_from_string(filename, SRC_CS), lineno);
-}

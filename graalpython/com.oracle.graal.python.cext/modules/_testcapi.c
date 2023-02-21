@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -5007,7 +5007,8 @@ dict_get_version(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &dict))
         return NULL;
 
-    version = dict->ma_version_tag;
+    // version = dict->ma_version_tag;
+    version = 0; // GraalPy: dict versions is an implementation detail
 
     Py_BUILD_ASSERT(sizeof(unsigned long long) >= sizeof(version));
     return PyLong_FromUnsignedLongLong((unsigned long long)version);
@@ -5039,15 +5040,16 @@ raise_SIGINT_then_send_None(PyObject *self, PyObject *args)
 
 
 static int
-fastcall_args(PyObject *args, PyObject ***stack, Py_ssize_t *nargs)
+fastcall_args(PyObject *args, PyObject **stack, Py_ssize_t *nargs)
 {
     if (args == Py_None) {
-        *stack = NULL;
         *nargs = 0;
     }
     else if (PyTuple_Check(args)) {
-        *stack = ((PyTupleObject *)args)->ob_item;
         *nargs = PyTuple_GET_SIZE(args);
+        for (int i = 0; i < *nargs; i++) {
+        	stack[i] = PyTuple_GetItem(args, i);
+        }
     }
     else {
         PyErr_SetString(PyExc_TypeError, "args must be None or a tuple");
@@ -5061,14 +5063,14 @@ static PyObject *
 test_pyobject_fastcall(PyObject *self, PyObject *args)
 {
     PyObject *func, *func_args;
-    PyObject **stack;
+    PyObject *stack[8];
     Py_ssize_t nargs;
 
     if (!PyArg_ParseTuple(args, "OO", &func, &func_args)) {
         return NULL;
     }
 
-    if (fastcall_args(func_args, &stack, &nargs) < 0) {
+    if (fastcall_args(func_args, stack, &nargs) < 0) {
         return NULL;
     }
     return _PyObject_FastCall(func, stack, nargs);
@@ -5079,14 +5081,14 @@ static PyObject *
 test_pyobject_fastcalldict(PyObject *self, PyObject *args)
 {
     PyObject *func, *func_args, *kwargs;
-    PyObject **stack;
+    PyObject *stack[8];
     Py_ssize_t nargs;
 
     if (!PyArg_ParseTuple(args, "OOO", &func, &func_args, &kwargs)) {
         return NULL;
     }
 
-    if (fastcall_args(func_args, &stack, &nargs) < 0) {
+    if (fastcall_args(func_args, stack, &nargs) < 0) {
         return NULL;
     }
 
@@ -5106,14 +5108,14 @@ static PyObject *
 test_pyobject_vectorcall(PyObject *self, PyObject *args)
 {
     PyObject *func, *func_args, *kwnames = NULL;
-    PyObject **stack;
+    PyObject *stack[8];
     Py_ssize_t nargs, nkw;
 
     if (!PyArg_ParseTuple(args, "OOO", &func, &func_args, &kwnames)) {
         return NULL;
     }
 
-    if (fastcall_args(func_args, &stack, &nargs) < 0) {
+    if (fastcall_args(func_args, stack, &nargs) < 0) {
         return NULL;
     }
 
@@ -5558,8 +5560,8 @@ test_set_type_size(PyObject *self, PyObject *Py_UNUSED(ignored))
 
     // bpo-39573: Check that Py_TYPE() and Py_SIZE() can be used
     // as l-values to set an object type and size.
-    Py_TYPE(obj) = &PyList_Type;
-    Py_SIZE(obj) = 0;
+    Py_SET_TYPE(obj, &PyList_Type);
+    Py_SET_SIZE(obj, 0);
 
     Py_DECREF(obj);
     Py_RETURN_NONE;

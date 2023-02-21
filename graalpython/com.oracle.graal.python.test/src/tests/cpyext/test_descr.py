@@ -321,8 +321,13 @@ class TestDescr(CPyExtTestCase):
             Py_DECREF(meth);
             if (PyObject_TypeCheck(method, (PyTypeObject *)methoddescr_type)) {
                 PyMethodDescrObject *descr = (PyMethodDescrObject *)method;
+#ifdef GRAALVM_PYTHON
+                PyTypeObject *d_type = PyDescrObject_GetType(method);
+                PyObject *class_method = PyDescr_NewClassMethod(d_type, PyMethodDescrObject_GetMethod(method));
+#else
                 PyTypeObject *d_type = descr->d_common.d_type;
                 PyObject *class_method = PyDescr_NewClassMethod(d_type, descr->d_method);
+#endif
                 PyObject *args = PyTuple_New(0);
                 Py_INCREF(args);
                 PyObject *result = PyObject_CallObject(class_method, args);

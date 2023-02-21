@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,10 +16,12 @@ typedef struct {
     Py_ssize_t ob_exports; /* How many buffer exports */
 } PyByteArrayObject;
 
+PyAPI_FUNC(char*) _PyByteArray_Start(PyObject*);
+
 /* Macros, trading safety for speed */
 #define PyByteArray_AS_STRING(self) \
     (assert(PyByteArray_Check(self)), \
-     Py_SIZE(self) ? ((PyByteArrayObject *)(self))->ob_start : _PyByteArray_empty_string)
+     Py_SIZE(self) ? _PyByteArray_Start((PyObject *)self) : _PyByteArray_empty_string)
 #define PyByteArray_GET_SIZE(self) (assert(PyByteArray_Check(self)), Py_SIZE(self))
 
 PyAPI_DATA(char) _PyByteArray_empty_string[];

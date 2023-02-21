@@ -47,10 +47,14 @@ struct _PyTraceMalloc_Config _Py_tracemalloc_config = {
   .max_nframe = 1
 };
 
+/*
+ * This header needs to be 16 bytes long to ensure that allocations will still be aligned to 16 byte boundaries.
+ * (necessary for aligned vector instruction access)
+ */
 typedef struct {
 	size_t size;
+	size_t dummy;
 } mem_head_t;
-
 
 /* Get an object's GC head */
 #define AS_MEM_HEAD(o) ((mem_head_t *)(o)-1)
@@ -58,23 +62,20 @@ typedef struct {
 /* Get the object given the GC head */
 #define FROM_MEM_HEAD(g) ((void *)(((mem_head_t *)g)+1))
 
-typedef void (*trace_free_fun_t)(void *, size_t);
-UPCALL_TYPED_ID(PyTruffle_Trace_Free, trace_free_fun_t);
-
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
 MUST_INLINE static
 void _PyObject_Free(void* ptr) {
 	if (ptr == NULL) {
 		return;
 	}
-	if((points_to_handle_space(ptr) && is_handle(ptr)) || polyglot_is_value(ptr)) {
-		if(free_upcall(native_pointer_to_java(ptr))) {
+	if(points_to_py_handle_space(ptr) || polyglot_is_value(ptr)) {
+		if(GraalPyTruffle_Object_Free(ptr)) {
 		    /* If 1 is returned, the upcall function already took care of freeing */
 		    return;
 		}
 	}
     mem_head_t* ptr_with_head = AS_MEM_HEAD(ptr);
-    _jls_PyTruffle_Trace_Free(ptr, ptr_with_head->size);
+    Graal_PyTruffle_Trace_Free(ptr, ptr_with_head->size);
     free(ptr_with_head);
 }
 
@@ -83,7 +84,7 @@ void* PyObject_Malloc(size_t size) {
 	mem_head_t* ptr_with_head = calloc(size + sizeof(mem_head_t), 1);
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
 	ptr_with_head->size = size;
-	alloc_upcall(ptr, size);
+	GraalPyTruffle_Object_Alloc(ptr, size);
     return ptr;
 }
 
@@ -105,7 +106,7 @@ void* PyMem_Malloc(size_t size) {
 	mem_head_t* ptr_with_head = malloc(size + sizeof(mem_head_t));
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
 	ptr_with_head->size = size;
-    alloc_upcall(ptr, size);
+	GraalPyTruffle_Object_Alloc(ptr, size);
     return ptr;
 }
 
@@ -120,7 +121,7 @@ void* PyMem_RawMalloc(size_t size) {
 	mem_head_t* ptr_with_head = malloc((size == 0 ? 1 : size) + sizeof(mem_head_t));
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
 	ptr_with_head->size = size;
-    alloc_upcall(ptr, size);
+	GraalPyTruffle_Object_Alloc(ptr, size);
     return ptr;
 }
 
@@ -130,7 +131,7 @@ void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
 	mem_head_t* ptr_with_head = (mem_head_t*) malloc(total);
 	memset(ptr_with_head, 0, total);
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
-    alloc_upcall(ptr, n * elsize);
+	GraalPyTruffle_Object_Alloc(ptr, n * elsize);
     return ptr;
 }
 
@@ -152,36 +153,6 @@ void * PyMem_Realloc(void *ptr, size_t new_size) {
 void PyMem_Free(void *ptr) {
 	_PyObject_Free(ptr);
 }
-
-typedef int (*track_fun_t)(int64_t, int64_t, uint64_t);
-UPCALL_TYPED_ID(PyTruffle_TraceMalloc_Track, track_fun_t);
-int PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr, size_t size) {
-	// 0 = success, -2 = disabled
-	return _jls_PyTruffle_TraceMalloc_Track(domain, ptr, size);
-}
-
-
-typedef int (*untrack_fun_t)(int64_t, int64_t);
-UPCALL_TYPED_ID(PyTruffle_TraceMalloc_Untrack, untrack_fun_t);
-int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr) {
-	// 0 = success, -2 = disabled
-	return _jls_PyTruffle_TraceMalloc_Untrack(domain, ptr);
-}
-
-
-/* If the object memory block is already traced, update its trace
-   with the current Python traceback.
-
-   Do nothing if tracemalloc is not tracing memory allocations
-   or if the object memory block is not already traced. */
-typedef int (*newref_fun_t)(PyObject*);
-UPCALL_TYPED_ID(PyTruffle_TraceMalloc_NewReference, newref_fun_t);
-int _PyTraceMalloc_NewReference(PyObject *op) {
-	// 0 = success, -1 = not tracing
-	return _jls_PyTruffle_TraceMalloc_NewReference(op);
-}
-
-/* */
 
 PyObject *
 _PyObject_GC_Malloc(size_t basicsize)

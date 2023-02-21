@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,3 @@
  */
 #include "capi.h"
 
-typedef struct {
-    PyObject_HEAD
-    PyObject *ns_dict;
-} _PyNamespaceObject;
-
-PyTypeObject _PyNamespace_Type = PY_TRUFFLE_TYPE("SimpleNamespace", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(_PyNamespaceObject));
-
-UPCALL_ID(_PyNamespace_New);
-PyObject *
-_PyNamespace_New(PyObject *kwds) {
-	return UPCALL_CEXT_O(_jls__PyNamespace_New, native_to_java(kwds));
-}

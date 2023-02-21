@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,193 +41,115 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectStealingNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextTupleBuiltins extends PythonBuiltins {
+public final class PythonCextTupleBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextTupleBuiltinsFactory.getFactories();
-    }
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
+    public abstract static class PyTuple_New extends CApiUnaryBuiltinNode {
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyTuple_New", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTupleNew extends PythonUnaryBuiltinNode {
         @Specialization
-        PTuple doGeneric(VirtualFrame frame, Object size,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            return factory().createTuple(new Object[asSizeNode.executeExact(frame, size)]);
+        PTuple doGeneric(long size) {
+            return factory().createTuple(new Object[(int) size]);
         }
     }
 
-    @Builtin(name = "PyTuple_SetItem", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyTupleSetItem extends PythonTernaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
+    public abstract static class PyTuple_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
-        static int doManaged(VirtualFrame frame, PythonNativeWrapper selfWrapper, Object position, Object elementWrapper,
-                        @Cached AsPythonObjectNode selfAsPythonObjectNode,
-                        @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object self = selfAsPythonObjectNode.execute(selfWrapper);
-                if (!PGuards.isPTuple(self) || selfWrapper.getRefCount() != 1) {
-                    throw raiseNode.raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_P, "PTuple_SetItem");
-                }
-                PTuple tuple = (PTuple) self;
-                Object element = elementAsPythonObjectNode.execute(elementWrapper);
-                setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
+        static int doManaged(PTuple tuple, Object position, Object element,
+                        @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached ConditionProfile generalizedProfile) {
+            setItemNode.execute(null, tuple.getSequenceStorage(), position, element);
+            SequenceStorage newStorage = setItemNode.execute(null, tuple.getSequenceStorage(), position, element);
+            if (generalizedProfile.profile(tuple.getSequenceStorage() != newStorage)) {
+                tuple.setSequenceStorage(newStorage);
             }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(tuple)")
-        static int doNative(Object tuple, long position, Object element,
-                        @Cached PCallCapiFunction callSetItem) {
-            // TODO(fa): This path should be avoided since this is called from native code to do a
-            // native operation.
-            callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
             return 0;
         }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign(), ErrorMessages.INVALID_ITEM_FOR_ASSIGMENT);
-        }
     }
 
-    @Builtin(name = "PyTuple_GetItem", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTupleGetItem extends PythonBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct)
+    public abstract static class PyTuple_GetItem extends CApiBinaryBuiltinNode {
+
+        public abstract Object execute(PTuple tuple, long key);
 
         @Specialization
         Object doPTuple(PTuple tuple, long key,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached ListGeneralizationNode generalizationNode,
+                        @Cached SetItemScalarNode setItemNode,
+                        @Cached GetItemScalarNode getItemNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             // we must do a bounds-check but we must not normalize the index
             if (key < 0 || key >= sequenceStorage.length()) {
                 throw raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
             }
-            return getItemNode.execute(sequenceStorage, (int) key);
+            Object result = getItemNode.execute(sequenceStorage, (int) key);
+            Object promotedValue = promoteNode.execute(result);
+            if (promotedValue != null) {
+                sequenceStorage = generalizationNode.execute(sequenceStorage, promotedValue);
+                tuple.setSequenceStorage(sequenceStorage);
+                setItemNode.execute(sequenceStorage, (int) key, promotedValue);
+                return promotedValue;
+            }
+            return result;
         }
 
         @Fallback
-        Object doPTuple(Object tuple, @SuppressWarnings("unused") Object key) {
-            // TODO(fa) To be absolutely correct, we need to do a 'isinstance' check on the object.
-            throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, tuple, tuple);
+        Object fallback(Object tuple, @SuppressWarnings("unused") Object pos) {
+            throw raiseFallback(tuple, PythonBuiltinClassType.PTuple);
         }
     }
 
-    @Builtin(name = "PyTuple_Size", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyTupleSizeNode extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
+    public abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
         @Specialization
-        public static int size(VirtualFrame frame, Object tuple,
-                        @Cached com.oracle.graal.python.lib.PyTupleSizeNode pyTupleSizeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return pyTupleSizeNode.execute(tuple);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
-            }
+        public static int size(Object tuple,
+                        @Cached com.oracle.graal.python.lib.PyTupleSizeNode pyTupleSizeNode) {
+            return pyTupleSizeNode.execute(tuple);
         }
     }
 
-    @Builtin(name = "PyTuple_GetSlice", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
-    abstract static class PyTupleGetSliceNode extends PythonTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
+    abstract static class PyTuple_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
-        Object getSlice(VirtualFrame frame, PTuple tuple, Object iLow, Object iHigh,
+        Object getSlice(PTuple tuple, Object iLow, Object iHigh,
                         @Cached GetItemNode getItemNode,
-                        @Cached PySliceNew sliceNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return getItemNode.execute(frame, tuple, sliceNode.execute(iLow, iHigh, PNone.NONE));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+                        @Cached PySliceNew sliceNode) {
+            return getItemNode.execute(null, tuple, sliceNode.execute(iLow, iHigh, PNone.NONE));
         }
 
-        @Specialization(guards = {"!isPTuple(obj)", "isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object getSliceNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "list");
-        }
-
-        @Specialization(guards = {"!isPTuple(obj)", "!isTupleSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public Object getSlice(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object iLow, @SuppressWarnings("unused") Object iHigh,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
-        }
-
-        protected boolean isTupleSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PTuple);
+        @SuppressWarnings("unused")
+        @Fallback
+        Object fallback(Object tuple, Object iLow, Object iHigh) {
+            throw raiseFallback(tuple, PythonBuiltinClassType.PTuple);
         }
     }
-
 }

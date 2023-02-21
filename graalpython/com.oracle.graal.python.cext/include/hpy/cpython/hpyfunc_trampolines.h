@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -51,7 +51,7 @@ typedef HPy (*_HPyCFunction_VARARGS)(HPyContext*, HPy, HPy *, HPy_ssize_t);
     {                                                                   \
         /* get the tuple elements as an array of "PyObject *", which */ \
         /* is equivalent to an array of "HPy" with enough casting... */ \
-        HPy *items = (HPy *)&PyTuple_GET_ITEM(args, 0);                 \
+        HPy *items = (HPy *)_PySequence_Fast_ITEMS(args);               \
         Py_ssize_t nargs = PyTuple_GET_SIZE(args);                      \
         _HPyCFunction_VARARGS func = (_HPyCFunction_VARARGS)IMPL; \
         return _h2py(func(_HPyGetContext(),                             \
@@ -65,7 +65,7 @@ typedef HPy (*_HPyCFunction_KEYWORDS)(HPyContext*, HPy, HPy *, HPy_ssize_t, HPy)
     {                                                                   \
         /* get the tuple elements as an array of "PyObject *", which */ \
         /* is equivalent to an array of "HPy" with enough casting... */ \
-        HPy *items = (HPy *)&PyTuple_GET_ITEM(args, 0);                 \
+        HPy *items = (HPy *)_PySequence_Fast_ITEMS(args);               \
         Py_ssize_t nargs = PyTuple_GET_SIZE(args);                      \
         _HPyCFunction_KEYWORDS func = (_HPyCFunction_KEYWORDS)IMPL; \
         return _h2py(func(_HPyGetContext(), _py2h(self),                \
@@ -79,7 +79,7 @@ typedef int (*_HPyCFunction_INITPROC)(HPyContext*, HPy, HPy *, HPy_ssize_t, HPy)
     {                                                                   \
         /* get the tuple elements as an array of "PyObject *", which */ \
         /* is equivalent to an array of "HPy" with enough casting... */ \
-        HPy *items = (HPy *)&PyTuple_GET_ITEM(args, 0);                 \
+        HPy *items = (HPy *)_PySequence_Fast_ITEMS(args);               \
         Py_ssize_t nargs = PyTuple_GET_SIZE(args);                      \
         _HPyCFunction_INITPROC func = (_HPyCFunction_INITPROC)IMPL; \
         return func(_HPyGetContext(), _py2h(self),                      \

@@ -6,8 +6,6 @@
 
 #include "capi.h"
 
-PyTypeObject PyEllipsis_Type = PY_TRUFFLE_TYPE("ellipsis", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
-PyTypeObject PySlice_Type = PY_TRUFFLE_TYPE("slice", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PySliceObject));
 
 // Taken from CPython ceval.c
 /* Extract a slice index from a PyLong or an object with the
@@ -16,7 +14,6 @@ PyTypeObject PySlice_Type = PY_TRUFFLE_TYPE("slice", &PyType_Type, Py_TPFLAGS_DE
    and silently boost values less than PY_SSIZE_T_MIN to PY_SSIZE_T_MIN.
    Return 0 on error, 1 on success. */
 int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
-	v = native_pointer_to_java(v);
     if (v != Py_None) {
         Py_ssize_t x;
         if (PyIndex_Check(v)) {
@@ -36,18 +33,17 @@ int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
 }
 
 // Taken from CPython
-int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
-	_r = native_pointer_to_java(_r);
-    PySliceObject *r = (PySliceObject*)_r;
+int PySlice_Unpack(PyObject *r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
     /* this is harder to get right than you might think */
 
     Py_BUILD_ASSERT(PY_SSIZE_T_MIN + 1 <= -PY_SSIZE_T_MAX);
 
-    if (r->step == Py_None) {
+    PyObject* rstep = PySliceObject_step(r);
+    if (rstep == Py_None) {
         *step = 1;
     }
     else {
-        if (!_PyEval_SliceIndex(r->step, step)) return -1;
+        if (!_PyEval_SliceIndex(rstep, step)) return -1;
         if (*step == 0) {
             PyErr_SetString(PyExc_ValueError,
                             "slice step cannot be zero");
@@ -62,18 +58,20 @@ int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t
             *step = -PY_SSIZE_T_MAX;
     }
 
-    if (r->start == Py_None) {
+    PyObject* rstart =  PySliceObject_start(r);
+    if (rstart == Py_None) {
         *start = *step < 0 ? PY_SSIZE_T_MAX : 0;
     }
     else {
-        if (!_PyEval_SliceIndex(r->start, start)) return -1;
+        if (!_PyEval_SliceIndex(rstart, start)) return -1;
     }
 
-    if (r->stop == Py_None) {
+    PyObject* rstop = PySliceObject_stop(r);
+    if (rstop == Py_None) {
         *stop = *step < 0 ? PY_SSIZE_T_MIN : PY_SSIZE_T_MAX;
     }
     else {
-        if (!_PyEval_SliceIndex(r->stop, stop)) return -1;
+        if (!_PyEval_SliceIndex(rstop, stop)) return -1;
     }
 
     return 0;
@@ -119,7 +117,14 @@ Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_
     return 0;
 }
 
-UPCALL_ID(PySlice_New);
-PyObject* PySlice_New(PyObject* start, PyObject *stop, PyObject *step) {
-    return UPCALL_CEXT_O(_jls_PySlice_New, native_to_java(start), native_to_java(stop), native_to_java(step));
+PyObject* PySlice_Start(PyObject *slice) {
+    return PySliceObject_start(slice);
+}
+
+PyObject* PySlice_Stop(PyObject *slice) {
+    return PySliceObject_stop(slice);
+}
+
+PyObject* PySlice_Step(PyObject *slice) {
+    return PySliceObject_step(slice);
 }

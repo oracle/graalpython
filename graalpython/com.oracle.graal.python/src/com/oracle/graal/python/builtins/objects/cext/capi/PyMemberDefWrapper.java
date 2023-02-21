@@ -62,7 +62,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -108,12 +107,11 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadFieldNode readFieldNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return readFieldNode.execute(lib.getDelegate(this), member);
+            return readFieldNode.execute(getDelegate(), member);
         } finally {
             gil.release(mustRelease);
         }
@@ -171,7 +169,6 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
                     @Exclusive @Cached FromCharPointerNode fromCharPointerNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
@@ -181,7 +178,7 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
                 CompilerDirectives.transferToInterpreter();
                 throw UnsupportedMessageException.create();
             }
-            setAttrNode.execute(lib.getDelegate(this), fromJavaStringNode.execute(member, TS_ENCODING), fromCharPointerNode.execute(value));
+            setAttrNode.execute(getDelegate(), fromJavaStringNode.execute(member, TS_ENCODING), fromCharPointerNode.execute(value));
         } finally {
             gil.release(mustRelease);
         }

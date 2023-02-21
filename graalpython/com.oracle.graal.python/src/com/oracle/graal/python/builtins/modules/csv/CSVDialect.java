@@ -48,18 +48,19 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class CSVDialect extends PythonBuiltinObject {
-    TruffleString delimiter; /* field separator */
-    boolean doubleQuote; /* is " represented by ""? */
-    TruffleString escapeChar; /* escape character */
-    TruffleString lineTerminator; /* string to write between records */
-    QuoteStyle quoting; /* style of quoting to write */
-    TruffleString quoteChar; /* quote character */
-    boolean skipInitialSpace; /* ignore spaces following delimiter? */
-    boolean strict; /* raise exception on bad CSV */
 
-    int delimiterCodePoint; /* code point representation for handling utf-32 delimiters */
-    int escapeCharCodePoint; /* code point representation for handling utf-32 escape chars */
-    int quoteCharCodePoint; /* code point representation for handling utf-32 quote chars */
+    final TruffleString delimiter; /* field separator */
+    final boolean doubleQuote; /* is " represented by ""? */
+    final TruffleString escapeChar; /* escape character */
+    final TruffleString lineTerminator; /* string to write between records */
+    final QuoteStyle quoting; /* style of quoting to write */
+    final TruffleString quoteChar; /* quote character */
+    final boolean skipInitialSpace; /* ignore spaces following delimiter? */
+    final boolean strict; /* raise exception on bad CSV */
+
+    final int delimiterCodePoint; /* code point representation for handling utf-32 delimiters */
+    final int escapeCharCodePoint; /* code point representation for handling utf-32 escape chars */
+    final int quoteCharCodePoint; /* code point representation for handling utf-32 quote chars */
 
     public CSVDialect(Object cls, Shape instanceShape, TruffleString delimiter, int delimiterCodePoint, boolean doubleQuote, TruffleString escapeChar, int escapeCharCodePoint,
                     TruffleString lineTerminator, TruffleString quoteChar, int quoteCharCodePoint, QuoteStyle quoting, boolean skipInitialSpace, boolean strict) {

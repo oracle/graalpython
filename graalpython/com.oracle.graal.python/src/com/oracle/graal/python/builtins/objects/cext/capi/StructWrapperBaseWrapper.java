@@ -91,7 +91,7 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     }
 
     PBuiltinFunction getBuiltinFunction() {
-        return (PBuiltinFunction) getDelegateSlowPath();
+        return (PBuiltinFunction) getDelegate();
     }
 
     @ExportMessage

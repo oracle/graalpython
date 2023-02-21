@@ -61,7 +61,7 @@ public abstract class PNodeWithContext extends Node {
     }
 
     @TruffleBoundary
-    public void printStack() {
+    public static void printStack() {
         // a convenience methods for debugging
         ExceptionUtils.printPythonLikeStackTrace();
     }

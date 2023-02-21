@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -49,10 +49,7 @@ class SubModuleType(ModuleType):
 
 def _reference_add_object(args):
     if not isinstance(args[0], ModuleType):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1
+        raise TypeError
     args[0].__dict__[args[1]] = args[2]
     return 0
 
@@ -148,6 +145,27 @@ class TestPyModule(CPyExtTestCase):
     )
         
     test_PyModule_AddObject = CPyExtFunction(
+        _reference_add_object,
+        lambda: (
+            (1, "testAddObject", None),
+            (ModuleType("hello"), "testAddObject", None),
+            (ModuleType("hello"), "testAddObject", "a"),
+            (SubModuleType("subhello"), "testAddObject", "a"),
+        ),
+        code='''
+        static int wrap_PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
+            Py_INCREF(v); // the reference will be stolen
+            return PyModule_AddObject(m, k, v);
+        }
+        ''',
+        resultspec="i",
+        argspec='OsO',
+        arguments=["PyObject* m", "const char* k", "PyObject* v"],
+        callfunction="wrap_PyModule_AddObject",
+        cmpfunc=unhandled_error_compare
+    )
+        
+    test_PyModule_AddObjectRef = CPyExtFunction(
         _reference_add_object,
         lambda: (
             (1, "testAddObject", None),

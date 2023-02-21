@@ -55,7 +55,6 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -111,6 +110,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TermiosModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
@@ -120,46 +120,6 @@ import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBoolBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextClassBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextContextBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextFuncBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextGenericAliasBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextMemoryViewBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextPosixmoduleBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextPyLifecycleBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextStructSeqBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextSysBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTracebackBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextWarnBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
@@ -225,6 +185,7 @@ import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -269,7 +230,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.WrapperDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CoroutineBuiltins;
-import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
@@ -539,46 +499,6 @@ public abstract class Python3Core {
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
-                        new PythonCextBuiltins(),
-                        new PythonCextAbstractBuiltins(),
-                        new PythonCextBoolBuiltins(),
-                        new PythonCextBytesBuiltins(),
-                        new PythonCextCapsuleBuiltins(),
-                        new PythonCextCEvalBuiltins(),
-                        new PythonCextCodeBuiltins(),
-                        new PythonCextComplexBuiltins(),
-                        new PythonCextContextBuiltins(),
-                        new PythonCextClassBuiltins(),
-                        new PythonCextDescrBuiltins(),
-                        new PythonCextDictBuiltins(),
-                        new PythonCextErrBuiltins(),
-                        new PythonCextFileBuiltins(),
-                        new PythonCextFloatBuiltins(),
-                        new PythonCextFuncBuiltins(),
-                        new PythonCextGenericAliasBuiltins(),
-                        new PythonCextHashBuiltins(),
-                        new PythonCextImportBuiltins(),
-                        new PythonCextIterBuiltins(),
-                        new PythonCextListBuiltins(),
-                        new PythonCextLongBuiltins(),
-                        new PythonCextMemoryViewBuiltins(),
-                        new PythonCextMethodBuiltins(),
-                        new PythonCextModuleBuiltins(),
-                        new PythonCextObjectBuiltins(),
-                        new PythonCextPosixmoduleBuiltins(),
-                        new PythonCextPyLifecycleBuiltins(),
-                        new PythonCextPyStateBuiltins(),
-                        new PythonCextPythonRunBuiltins(),
-                        new PythonCextNamespaceBuiltins(),
-                        new PythonCextSetBuiltins(),
-                        new PythonCextSliceBuiltins(),
-                        new PythonCextStructSeqBuiltins(),
-                        new PythonCextSysBuiltins(),
-                        new PythonCextTracebackBuiltins(),
-                        new PythonCextTupleBuiltins(),
-                        new PythonCextTypeBuiltins(),
-                        new PythonCextUnicodeBuiltins(),
-                        new PythonCextWarnBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new TracemallocModuleBuiltins(),

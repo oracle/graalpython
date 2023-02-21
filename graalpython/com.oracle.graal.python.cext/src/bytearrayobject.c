@@ -40,8 +40,12 @@
  */
 #include "capi.h"
 
-PyTypeObject PyByteArray_Type = PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyByteArrayObject));
 char _PyByteArray_empty_string[] = "";
+
+
+char* _PyByteArray_Start(PyObject* obj) {
+	return PyByteArrayObject_ob_start(obj);
+}
 
 // taken from CPython 3.7.0 "Objects/bytearrayobject.c"
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
@@ -54,10 +58,10 @@ int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
     ptr = (void *) PyByteArray_AS_STRING(obj);
     /* cannot fail if view != NULL and readonly == 0 */
     (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
-    obj->ob_exports++;
+    set_PyByteArrayObject_ob_exports(obj, PyByteArrayObject_ob_exports(obj) + 1);
     return 0;
 }
 
 void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view) {
-    obj->ob_exports--;
+    set_PyByteArrayObject_ob_exports(obj, PyByteArrayObject_ob_exports(obj) - 1);
 }

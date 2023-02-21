@@ -251,11 +251,15 @@ def iter_fields(node):
     Yield a tuple of ``(fieldname, value)`` for each field in ``node._fields``
     that is present on *node*.
     """
-    for field in node._fields:
-        try:
-            yield field, getattr(node, field)
-        except AttributeError:
-            pass
+    # GraalPy: ignore missing _fields
+    try:
+        for field in node._fields:
+            try:
+                yield field, getattr(node, field)
+            except AttributeError:
+                pass
+    except AttributeError:
+        pass
 
 
 def iter_child_nodes(node):

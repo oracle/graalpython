@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLongAsVoidPtr;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesDlSymNode;
@@ -206,7 +206,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object CDataType_from_address(Object type, int value,
-                        @Cached PyLongAsVoidPtr asVoidPtr,
+                        @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached PyCDataAtAddress atAddress) {
             Object buf = asVoidPtr.execute(value);
             return atAddress.execute(type, buf, 0, factory());
@@ -331,7 +331,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached("create(T__HANDLE)") GetAttributeNode getAttributeNode,
                         @Cached PyCDataAtAddress atAddress,
                         @Cached AuditNode auditNode,
-                        @Cached PyLongAsVoidPtr asVoidPtr,
+                        @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached CtypesDlSymNode dlSymNode) {
             auditNode.audit("ctypes.dlsym", dll, name);
             Object obj = getAttributeNode.executeObject(frame, dll);

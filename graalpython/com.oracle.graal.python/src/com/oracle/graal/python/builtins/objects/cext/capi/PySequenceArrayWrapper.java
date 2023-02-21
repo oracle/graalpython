@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PTR_ARRAY_TYPE_ID;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NATIVE_HANDLE_FOR_ARRAY;
 
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -83,6 +82,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -119,7 +119,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         CompilerAsserts.neverPartOfCompilation();
         final int prime = 31;
         int result = 1;
-        result = prime * result + PythonNativeWrapperLibrary.getUncached().getDelegate(this).hashCode();
+        result = prime * result + getDelegate().hashCode();
         return result;
     }
 
@@ -137,15 +137,13 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         // n.b.: (tfel) This is hopefully fine here, since if we get to this
         // code path, we don't speculate that either of those objects is
         // constant anymore, so any caching on them won't happen anyway
-        PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return lib.getDelegate(this) == lib.getDelegate(obj);
+        return getDelegate() == ((PySequenceArrayWrapper) obj).getDelegate();
     }
 
     @ExportMessage
     final long getArraySize(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) {
-        return sizeNode.execute(null, lib.getDelegate(this));
+        return sizeNode.execute(null, getDelegate());
     }
 
     @ExportMessage
@@ -156,12 +154,11 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     final Object readArrayElement(long index,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadArrayItemNode readArrayItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return readArrayItemNode.execute(lib.getDelegate(this), index);
+            return readArrayItemNode.execute(getDelegate(), index);
         } finally {
             gil.release(mustRelease);
         }
@@ -173,10 +170,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) {
         // also include the implicit null-terminator
-        return 0 <= identifier && identifier <= getArraySize(lib, sizeNode);
+        return 0 <= identifier && identifier <= getArraySize(sizeNode);
     }
 
     @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
@@ -186,34 +182,50 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         public abstract Object execute(Object arrayObject, Object idx);
 
-        @Specialization(guards = "idx == cachedIdx", limit = "3")
-        static Object doTupleCachedIdx(PTuple tuple, @SuppressWarnings("unused") long idx,
-                        @Cached("idx") long cachedIdx,
-                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Exclusive @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getItemNode.execute(tuple.getSequenceStorage(), cachedIdx));
-        }
-
-        @Specialization(replaces = "doTupleCachedIdx")
-        static Object doTuple(PTuple tuple, long idx,
-                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+        @Specialization
+        static Object doPList(PList list, long key,
+                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached ListGeneralizationNode generalizationNode,
+                        @Cached SetItemScalarNode setItemNode,
+                        @Cached GetItemScalarNode getItemNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getItemNode.execute(tuple.getSequenceStorage(), idx));
+            SequenceStorage sequenceStorage = list.getSequenceStorage();
+            // we must do a bounds-check but we must not normalize the index
+            if (key < 0 || key >= sequenceStorage.length()) {
+                throw CompilerDirectives.shouldNotReachHere("invalid index when dereferencing list items");
+            }
+            Object result = getItemNode.execute(sequenceStorage, (int) key);
+            Object promotedValue = promoteNode.execute(result);
+            if (promotedValue != null) {
+                sequenceStorage = generalizationNode.execute(sequenceStorage, promotedValue);
+                list.setSequenceStorage(sequenceStorage);
+                setItemNode.execute(sequenceStorage, (int) key, promotedValue);
+                result = promotedValue;
+            }
+            return toSulongNode.execute(result);
         }
 
-        @Specialization(guards = "idx == cachedIdx", limit = "3")
-        static Object doListCachedIdx(PList list, @SuppressWarnings("unused") long idx,
-                        @Cached("idx") long cachedIdx,
-                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Exclusive @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getItemNode.execute(list.getSequenceStorage(), cachedIdx));
-        }
-
-        @Specialization(replaces = "doListCachedIdx")
-        static Object doList(PList list, long idx,
-                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+        @Specialization
+        static Object doPTuple(PTuple tuple, long key,
+                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached ListGeneralizationNode generalizationNode,
+                        @Cached SetItemScalarNode setItemNode,
+                        @Cached GetItemScalarNode getItemNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getItemNode.execute(list.getSequenceStorage(), idx));
+            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
+            // we must do a bounds-check but we must not normalize the index
+            if (key < 0 || key >= sequenceStorage.length()) {
+                throw CompilerDirectives.shouldNotReachHere("invalid index when dereferencing tuple items");
+            }
+            Object result = getItemNode.execute(sequenceStorage, (int) key);
+            Object promotedValue = promoteNode.execute(result);
+            if (promotedValue != null) {
+                sequenceStorage = generalizationNode.execute(sequenceStorage, promotedValue);
+                tuple.setSequenceStorage(sequenceStorage);
+                setItemNode.execute(sequenceStorage, (int) key, promotedValue);
+                result = promotedValue;
+            }
+            return toSulongNode.execute(result);
         }
 
         /**
@@ -276,12 +288,11 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached WriteArrayItemNode writeArrayItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            writeArrayItemNode.execute(lib.getDelegate(this), index, value);
+            writeArrayItemNode.execute(getDelegate(), index, value);
         } finally {
             gil.release(mustRelease);
         }
@@ -295,9 +306,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) {
-        return 0 <= index && index <= getArraySize(lib, sizeNode);
+        return 0 <= index && index <= getArraySize(sizeNode);
     }
 
     @ExportMessage
@@ -380,26 +390,23 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void toNative(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ToNativeArrayNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-        invalidateNode.execute();
-        if (!lib.isNative(this)) {
-            setNativePointer(toPyObjectNode.execute(this));
+                    @Exclusive @Cached ToNativeArrayNode toNativeArrayNode) {
+        if (!isPointer()) {
+            toNativeArrayNode.execute(this);
         }
     }
 
     @GenerateUncached
     abstract static class ToNativeArrayNode extends Node {
-        public abstract Object execute(PySequenceArrayWrapper object);
+        public abstract long execute(PySequenceArrayWrapper object);
 
-        @Specialization(guards = "isPSequence(lib.getDelegate(object))")
-        static Object doPSequence(PySequenceArrayWrapper object,
+        @Specialization(guards = "isPSequence(object.getDelegate())")
+        static long doPSequence(PySequenceArrayWrapper object,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
-                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
-            PSequence sequence = (PSequence) lib.getDelegate(object);
+            PSequence sequence = (PSequence) object.getDelegate();
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence), sequence instanceof PBytesLike);
             if (nativeStorage == null) {
                 CompilerDirectives.transferToInterpreter();
@@ -407,15 +414,14 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             }
             // switch to native storage
             setStorage.execute(sequence, nativeStorage);
-            return nativeStorage.getPtr();
+            return PythonNativeWrapper.coerceToLong(nativeStorage.getPtr(), lib);
         }
 
-        @Specialization(guards = "!isPSequence(lib.getDelegate(object))")
-        static Object doGeneric(PySequenceArrayWrapper object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
+        @Specialization(guards = "!isPSequence(object.getDelegate())")
+        static long doGeneric(PySequenceArrayWrapper object,
                         @Exclusive @Cached PCallCapiFunction callNativeHandleForArrayNode) {
-            // TODO correct element size
-            return callNativeHandleForArrayNode.call(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
+            throw CompilerDirectives.shouldNotReachHere("deref handle?");
+            // return callNativeHandleForArrayNode.call(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
         }
 
         protected static boolean isPSequence(Object obj) {
@@ -443,7 +449,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             } else if (!isObjectArrayProfile.profile(array instanceof Object[])) {
                 array = generalize(s);
             }
-            return storageToNativeNode.execute(array);
+            return storageToNativeNode.execute(array, s.length());
         }
 
         @TruffleBoundary
@@ -460,7 +466,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         static NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             // TODO(fa): not sure if that completely reflects semantics
-            return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY);
+            return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY, 0);
         }
 
         protected static boolean isNative(SequenceStorage s) {
@@ -469,20 +475,26 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    public boolean isPointer(
-                    @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    public boolean isPointer() {
+        if (getDelegate() instanceof PSequence) {
+            PSequence sequence = (PSequence) getDelegate();
+            if (sequence.getSequenceStorage() instanceof NativeSequenceStorage) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @ExportMessage
     public long asPointer(
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnsupportedMessageException {
-        Object nativePointer = lib.getNativePointer(this);
-        if (nativePointer instanceof Long) {
-            return (long) nativePointer;
+                    @CachedLibrary(limit = "2") InteropLibrary lib) throws UnsupportedMessageException {
+        if (getDelegate() instanceof PSequence) {
+            PSequence sequence = (PSequence) getDelegate();
+            if (sequence.getSequenceStorage() instanceof NativeSequenceStorage) {
+                return PythonNativeWrapper.coerceToLong(((NativeSequenceStorage) sequence.getSequenceStorage()).getPtr(), lib);
+            }
         }
-        return interopLibrary.asPointer(nativePointer);
+        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
@@ -493,13 +505,12 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object getNativeType(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached GetTypeIDNode getTypeIDNode) {
-        return getTypeIDNode.execute(lib.getDelegate(this));
+        return getTypeIDNode.execute(getDelegate());
     }
 
     @GenerateUncached
-    @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
+    @ImportStatic(PySequenceArrayWrapper.class)
     abstract static class GetTypeIDNode extends PNodeWithContext {
 
         public abstract Object execute(Object delegate);
@@ -544,5 +555,4 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     protected static boolean hasByteArrayContent(Object object) {
         return object instanceof PBytesLike || object instanceof PMMap;
     }
-
 }

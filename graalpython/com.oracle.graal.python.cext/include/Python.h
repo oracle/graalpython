@@ -10,6 +10,10 @@
 /* Include nearly all Python header files */
 
 #include "patchlevel.h"
+
+// can be used to bulk-rename fields, e.g., by concatenating "_internal"
+#define Py_HIDE_IMPL_FIELD(name) name
+
 #include "pyconfig.h"
 
 #include <limits.h>
@@ -140,5 +144,8 @@
 #include "fileutils.h"
 #include "cpython/pyfpe.h"
 #include "tracemalloc.h"
+
+// helper macro for quick printf debugging
+#define __PD {printf("%i \t%s\n", __LINE__, __func__); }
 
 #endif /* !Py_PYTHON_H */

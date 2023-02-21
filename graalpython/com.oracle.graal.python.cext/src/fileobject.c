@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,11 +39,6 @@
  * SOFTWARE.
  */
 #include "capi.h"
-
-UPCALL_ID(PyFile_WriteObject);
-int PyFile_WriteObject(PyObject* v, PyObject* f, int flags) {
-    return UPCALL_CEXT_I(_jls_PyFile_WriteObject, native_to_java(v), native_to_java(f != NULL ? f : Py_None), flags);
-}
 
 int PyFile_WriteString(const char *s, PyObject *f) {
     if (f == NULL) {

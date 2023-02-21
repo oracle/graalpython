@@ -1,0 +1,55 @@
+diff -r -u a/c/_cffi_backend.c b/c/_cffi_backend.c
+--- a/c/_cffi_backend.c	2022-06-30 18:38:43.000000000 +0200
++++ b/c/_cffi_backend.c	2022-09-22 11:40:27.000000000 +0200
+@@ -5763,7 +5763,7 @@
+ }
+
+ static int fb_build_name(struct funcbuilder_s *fb, const char *repl,
+-                         CTypeDescrObject **pfargs, Py_ssize_t nargs,
++                         PyObject *fargs, Py_ssize_t nargs,
+                          CTypeDescrObject *fresult, int ellipsis)
+ {
+     Py_ssize_t i;
+@@ -5790,7 +5790,7 @@
+     for (i=0; i<nargs; i++) {
+         CTypeDescrObject *farg;
+
+-        farg = pfargs[i];
++        farg = (CTypeDescrObject *)PyTuple_GET_ITEM(fargs, i);
+         if (!CTypeDescr_Check(farg)) {
+             PyErr_SetString(PyExc_TypeError, "expected a tuple of ctypes");
+             return -1;
+@@ -5820,7 +5820,7 @@
+                                           CTypeDescrObject *fresult,
+                                           int ellipsis, int fabi)
+ {
+-    CTypeDescrObject *fct, **pfargs;
++    CTypeDescrObject *fct;
+     Py_ssize_t nargs;
+     char *repl = "(*)";
+
+@@ -5828,7 +5828,6 @@
+     fb->bufferp = NULL;
+     fb->fct = NULL;
+
+-    pfargs = (CTypeDescrObject **)&PyTuple_GET_ITEM(fargs, 0);
+     nargs = PyTuple_GET_SIZE(fargs);
+ #if defined(MS_WIN32) && !defined(_WIN64)
+     if (fabi == FFI_STDCALL)
+@@ -5836,7 +5835,7 @@
+ #endif
+
+     /* compute the total size needed for the name */
+-    if (fb_build_name(fb, repl, pfargs, nargs, fresult, ellipsis) < 0)
++    if (fb_build_name(fb, repl, fargs, nargs, fresult, ellipsis) < 0)
+         return NULL;
+
+     /* allocate the function type */
+@@ -5847,7 +5846,7 @@
+
+     /* call again fb_build_name() to really build the ct_name */
+     fb->bufferp = fct->ct_name;
+-    if (fb_build_name(fb, repl, pfargs, nargs, fresult, ellipsis) < 0)
++    if (fb_build_name(fb, repl, fargs, nargs, fresult, ellipsis) < 0)
+         goto error;
+     assert(fb->bufferp == fct->ct_name + fb->nb_bytes);

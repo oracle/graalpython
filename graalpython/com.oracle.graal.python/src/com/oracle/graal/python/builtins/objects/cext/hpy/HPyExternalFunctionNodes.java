@@ -372,7 +372,7 @@ public abstract class HPyExternalFunctionNodes {
                         @CachedLibrary("callable") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
             Object[] convertedArguments = new Object[arguments.length + 1];
-            toSulongNode.executeInto(frame, hPyContext, arguments, 0, convertedArguments, 1);
+            toSulongNode.executeInto(frame, arguments, 0, convertedArguments, 1);
 
             // first arg is always the HPyContext
             convertedArguments[0] = hPyContext;
@@ -386,7 +386,7 @@ public abstract class HPyExternalFunctionNodes {
             Object state = IndirectCallContext.enter(frame, pythonThreadState, this);
 
             try {
-                return checkFunctionResultNode.execute(pythonThreadState, hPyContext, name, lib.execute(callable, convertedArguments));
+                return checkFunctionResultNode.execute(pythonThreadState, name, lib.execute(callable, convertedArguments));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
@@ -399,7 +399,7 @@ public abstract class HPyExternalFunctionNodes {
 
                 // close all handles (if necessary)
                 if (handleCloseNode != null) {
-                    handleCloseNode.executeInto(frame, hPyContext, convertedArguments, 1);
+                    handleCloseNode.executeInto(frame, convertedArguments, 1);
                 }
             }
         }
@@ -1065,14 +1065,14 @@ public abstract class HPyExternalFunctionNodes {
          */
         @Override
         public final Object execute(PythonContext context, TruffleString name, Object result) {
-            return execute(getThreadState(context), context.getHPyContext(), name, result);
+            return execute(getThreadState(context), name, result);
         }
 
         /**
          * This is the preferred way for executing the node since it avoids unnecessary field reads
          * in the interpreter or multi-context mode.
          */
-        public abstract Object execute(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, TruffleString name, Object value);
+        public abstract Object execute(PythonThreadState pythonThreadState, TruffleString name, Object value);
 
         protected final void checkFunctionResult(TruffleString name, boolean indicatesError, PythonThreadState pythonThreadState, PRaiseNode raise, PythonObjectFactory factory) {
             PException currentException = pythonThreadState.getCurrentException();
@@ -1109,12 +1109,12 @@ public abstract class HPyExternalFunctionNodes {
     public abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
 
         @Specialization
-        Object doLongNull(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, TruffleString name, Object value,
+        Object doLongNull(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached ConditionProfile isNullProfile,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
-            Object delegate = closeAndGetHandleNode.execute(nativeContext, value);
+            Object delegate = closeAndGetHandleNode.execute(value);
             checkFunctionResult(name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), pythonThreadState, raiseNode, factory);
             return delegate;
         }
@@ -1126,12 +1126,12 @@ public abstract class HPyExternalFunctionNodes {
      */
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckPrimitiveResultNode extends HPyCheckFunctionResultNode {
-        public abstract int executeInt(PythonThreadState context, GraalHPyContext nativeContext, TruffleString name, int value);
+        public abstract int executeInt(PythonThreadState context, TruffleString name, int value);
 
-        public abstract long executeLong(PythonThreadState context, GraalHPyContext nativeContext, TruffleString name, long value);
+        public abstract long executeLong(PythonThreadState context, TruffleString name, long value);
 
         @Specialization
-        int doInteger(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, TruffleString name, int value,
+        int doInteger(PythonThreadState pythonThreadState, TruffleString name, int value,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory);
@@ -1139,7 +1139,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Specialization(replaces = "doInteger")
-        long doLong(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, TruffleString name, long value,
+        long doLong(PythonThreadState pythonThreadState, TruffleString name, long value,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory);
@@ -1147,7 +1147,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Specialization(limit = "1")
-        Object doObject(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, TruffleString name, Object value,
+        Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @CachedLibrary("value") InteropLibrary lib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
@@ -1172,7 +1172,7 @@ public abstract class HPyExternalFunctionNodes {
     abstract static class HPyCheckVoidResultNode extends HPyCheckFunctionResultNode {
 
         @Specialization
-        Object doGeneric(PythonThreadState threadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, TruffleString name, Object value,
+        Object doGeneric(PythonThreadState threadState, TruffleString name, Object value,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             /*
@@ -1575,7 +1575,7 @@ public abstract class HPyExternalFunctionNodes {
                 bufferPtr = ensureCallAllocateBufferNode().call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_ALLOCATE_BUFFER);
                 Object[] cArguments = new Object[]{getSelf(frame), bufferPtr, getArg1(frame)};
                 getInvokeNode().execute(frame, getTSName(), callable, hpyContext, cArguments);
-                return createPyBuffer(hpyContext, bufferPtr);
+                return createPyBuffer(bufferPtr);
             } finally {
                 if (hpyContext != null && bufferPtr != null) {
                     ensureCallFreeNode().call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FREE, bufferPtr);
@@ -1605,7 +1605,7 @@ public abstract class HPyExternalFunctionNodes {
          * </pre>
          *
          */
-        private CExtPyBuffer createPyBuffer(GraalHPyContext hpyContext, Object bufferPtr) {
+        private CExtPyBuffer createPyBuffer(Object bufferPtr) {
             if (ptrLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ptrLib = insert(InteropLibrary.getFactory().createDispatched(2));
@@ -1654,7 +1654,7 @@ public abstract class HPyExternalFunctionNodes {
                 if (!valueLib.isNull(ownerObj)) {
                     // Since we are now the owner of the handle and no one else will ever use it, we
                     // need to close it.
-                    owner = closeAndGetHandleNode.execute(hpyContext, ownerObj);
+                    owner = closeAndGetHandleNode.execute(ownerObj);
                 }
 
                 int ndim = castToInt(ptrLib.readMember(bufferPtr, "ndim"));

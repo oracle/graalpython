@@ -1,0 +1,135 @@
+diff -u -r a/pyproject.toml b/pyproject.toml
+--- a/pyproject.toml	2023-01-12 15:19:18.000000000 +0100
++++ b/pyproject.toml	2023-01-12 15:19:05.000000000 +0100
+@@ -19,44 +19,7 @@
+     # `wheel` is needed for non-isolated builds, given that `meson-python`
+     # doesn't list it as a runtime requirement (at least in 0.5.0)
+     "wheel<0.39.0",
+-
+-    # NumPy dependencies - to update these, sync from
+-    # https://github.com/scipy/oldest-supported-numpy/, and then
+-    # update minimum version to match our install_requires min version
+-    # ----------------------------------------------------------------
+-
+-    # now matches minimum supported version, keep here as separate requirement
+-    # to be able to sync more easily with oldest-supported-numpy
+-    "numpy==1.19.5; python_version=='3.8' and platform_machine=='aarch64' and platform_python_implementation != 'PyPy'",
+-
+-    # arm64 on Darwin supports Python 3.8 and above requires numpy>=1.21.0
+-    # (first version with arm64 wheels available)
+-    "numpy==1.21.0; python_version=='3.8' and platform_machine=='arm64' and platform_system=='Darwin'",
+-    "numpy==1.21.0; python_version=='3.9' and platform_machine=='arm64' and platform_system=='Darwin'",
+-
+-    # loongarch64 requires numpy>=1.22.0
+-    "numpy==1.22.0; platform_machine=='loongarch64'",
+-
+-    # On Windows we need to avoid 1.21.6, 1.22.0 and 1.22.1 because they were
+-    # built with vc142. 1.22.3 is the first version that has 32-bit Windows
+-    # wheels *and* was built with vc141. So use that:
+-    "numpy==1.22.3; python_version=='3.10' and platform_system=='Windows' and platform_python_implementation != 'PyPy'",
+-
+-    # default numpy requirements
+-    "numpy==1.19.5; python_version=='3.8' and (platform_machine!='arm64' or platform_system!='Darwin') and platform_machine!='aarch64' and platform_machine!='loongarch64' and platform_python_implementation != 'PyPy'",
+-    "numpy==1.19.5; python_version=='3.9' and (platform_machine!='arm64' or platform_system!='Darwin') and platform_machine!='loongarch64' and platform_python_implementation != 'PyPy'",
+-    # Note that 1.21.3 was the first version with a complete set of 3.10 wheels,
+-    # however macOS was broken and it's safe C API/ABI-wise to build against 1.21.6
+-    # (see oldest-supported-numpy issues gh-28 and gh-45)
+-    "numpy==1.21.6; python_version=='3.10' and (platform_system!='Windows' and platform_machine!='loongarch64') and platform_python_implementation != 'PyPy'",
+-    "numpy==1.23.2; python_version=='3.11' and platform_python_implementation != 'PyPy'",
+-
+-    # For Python versions which aren't yet officially supported,
+-    # we specify an unpinned NumPy which allows source distributions
+-    # to be used and allows wheels to be used as soon as they
+-    # become available.
+-    "numpy; python_version>='3.12'",
+-    "numpy; python_version>='3.8' and platform_python_implementation=='PyPy'",
++    "numpy",
+ ]
+ 
+ [project]
+diff -u -r a/scipy/_lib/_ccallback_c.pyx b/scipy/_lib/_ccallback_c.pyx
+--- a/scipy/_lib/_ccallback_c.pyx	2023-01-12 15:19:19.000000000 +0100
++++ b/scipy/_lib/_ccallback_c.pyx	2023-01-12 15:19:06.000000000 +0100
+@@ -210,15 +210,15 @@
+ import ctypes
+ 
+ plus1_t = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.POINTER(ctypes.c_int), ctypes.c_void_p)
+-plus1_ctypes = ctypes.cast(<size_t>&plus1_cython, plus1_t)
++# plus1_ctypes = ctypes.cast(<size_t>&plus1_cython, plus1_t)
+ 
+ plus1b_t = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double,
+                             ctypes.POINTER(ctypes.c_int), ctypes.c_void_p)
+-plus1b_ctypes = ctypes.cast(<size_t>&plus1b_cython, plus1b_t)
++# plus1b_ctypes = ctypes.cast(<size_t>&plus1b_cython, plus1b_t)
+ 
+ plus1bc_t = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,
+                             ctypes.POINTER(ctypes.c_int), ctypes.c_void_p)
+-plus1bc_ctypes = ctypes.cast(<size_t>&plus1bc_cython, plus1bc_t)
++# plus1bc_ctypes = ctypes.cast(<size_t>&plus1bc_cython, plus1bc_t)
+ 
+ sine_t = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_void_p)
+-sine_ctypes = ctypes.cast(<size_t>&sine, sine_t)
++# sine_ctypes = ctypes.cast(<size_t>&sine, sine_t)
+diff -u -r a/scipy/_lib/setup.py b/scipy/_lib/setup.py
+--- a/scipy/_lib/setup.py	2023-01-12 15:19:28.000000000 +0100
++++ b/scipy/_lib/setup.py	2023-01-12 15:19:16.000000000 +0100
+@@ -55,8 +55,6 @@
+         # Generate a header file containing defines
+         config_cmd = config.get_config_cmd()
+         defines = []
+-        if config_cmd.check_func('open_memstream', decl=True, call=True):
+-            defines.append(('HAVE_OPEN_MEMSTREAM', '1'))
+         target = os.path.join(os.path.dirname(__file__), 'src',
+                               'messagestream_config.h')
+         with open(target, 'w') as f:
+diff -u -r a/scipy/_lib/src/messagestream_config.h.in b/scipy/_lib/src/messagestream_config.h.in
+--- a/scipy/_lib/src/messagestream_config.h.in	2023-01-12 15:19:28.000000000 +0100
++++ b/scipy/_lib/src/messagestream_config.h.in	2023-01-12 15:19:16.000000000 +0100
+@@ -1 +1 @@
+-#define HAVE_OPEN_MEMSTREAM @has_openmemstream@
++#define HAVE_OPEN_MEMSTREAM 0 // @has_openmemstream@
+diff -u -r a/tools/cythonize.py b/tools/cythonize.py
+--- a/tools/cythonize.py	2023-01-12 15:19:18.000000000 +0100
++++ b/tools/cythonize.py	2023-01-12 15:19:05.000000000 +0100
+@@ -96,20 +96,18 @@
+         flags += ['--cplus']
+ 
+     try:
+-        try:
+-            r = subprocess.call(['cython'] + flags + ["-o", tofile, fromfile], cwd=cwd)
+-            if r != 0:
+-                raise Exception('Cython failed')
+-        except OSError as e:
+-            # There are ways of installing Cython that don't result in a cython
+-            # executable on the path, see gh-2397.
+-            r = subprocess.call([sys.executable, '-c',
+-                                 'import sys; from Cython.Compiler.Main import '
+-                                 'setuptools_main as main; sys.exit(main())'] + flags +
+-                                 ["-o", tofile, fromfile],
+-                                cwd=cwd)
+-            if r != 0:
+-                raise Exception("Cython either isn't installed or it failed.") from e
++        from Cython.Compiler.CmdLine import parse_command_line
++        from Cython.Compiler.Main import compile
++        # There are ways of installing Cython that don't result in a cython
++        # executable on the path, see gh-2397.
++        options, sources = parse_command_line(flags + ["-o", tofile, fromfile])
++        oldwd = os.getcwd()
++        if cwd != '':
++            os.chdir(cwd)
++        result = compile(sources, options)
++        os.chdir(oldwd)
++        if result.num_errors > 0:
++            raise Exception("Cython either isn't installed or it failed.") from e
+     except OSError as e:
+         raise OSError('Cython needs to be installed') from e
+ 
+@@ -253,7 +251,7 @@
+     lock = Lock()
+ 
+     try:
+-        num_proc = int(os.environ.get('SCIPY_NUM_CYTHONIZE_JOBS', cpu_count()))
++        num_proc = int(os.environ.get('SCIPY_NUM_CYTHONIZE_JOBS', 1))
+         pool = Pool(processes=num_proc)
+     except ImportError as e:
+         # Allow building (single-threaded) on GNU/Hurd, which does not

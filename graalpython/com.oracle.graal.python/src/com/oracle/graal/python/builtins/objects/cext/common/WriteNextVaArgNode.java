@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -124,14 +126,14 @@ public abstract class WriteNextVaArgNode extends Node {
 
     public abstract void execute(Object valist, LLVMType accessType, Object value) throws InteropException;
 
-    @Specialization(guards = "accessType != Py_complex_ptr_t", limit = "1")
+    @Specialization(guards = "accessType != Py_complex_ptr_t")
     static void doPointer(Object valist, @SuppressWarnings("unused") LLVMType accessType, Object value,
-                    @CachedLibrary("valist") InteropLibrary vaListLib,
+                    @Cached PCallCapiFunction nextNode,
                     @Exclusive @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib,
                     @Shared("getLLVMType") @Cached GetLLVMType getLLVMTypeNode) {
         try {
             // like 'some_type* out_var = va_arg(vl, some_type*)'
-            Object outVarPtr = vaListLib.invokeMember(valist, "next", getLLVMTypeNode.execute(accessType));
+            Object outVarPtr = nextNode.call(NativeCAPISymbol.GRAALVM_LLVM_VA_ARG, valist, getLLVMTypeNode.execute(accessType));
             // like 'out_var[0] = value'
             outVarPtrLib.writeArrayElement(outVarPtr, 0, value);
         } catch (InteropException e) {
@@ -139,14 +141,14 @@ public abstract class WriteNextVaArgNode extends Node {
         }
     }
 
-    @Specialization(guards = "accessType == Py_complex_ptr_t", limit = "1")
+    @Specialization(guards = "accessType == Py_complex_ptr_t")
     static void doComplex(Object valist, @SuppressWarnings("unused") LLVMType accessType, PComplex value,
-                    @CachedLibrary("valist") InteropLibrary vaListLib,
+                    @Cached PCallCapiFunction nextNode,
                     @Exclusive @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib,
                     @Shared("getLLVMType") @Cached GetLLVMType getLLVMTypeNode) {
         try {
             // like 'some_type* out_var = va_arg(vl, some_type*)'
-            Object outVarPtr = vaListLib.invokeMember(valist, "next", getLLVMTypeNode.execute(accessType));
+            Object outVarPtr = nextNode.call(NativeCAPISymbol.GRAALVM_LLVM_VA_ARG, valist, getLLVMTypeNode.execute(accessType));
             outVarPtrLib.writeMember(outVarPtr, "real", value.getReal());
             outVarPtrLib.writeMember(outVarPtr, "img", value.getImag());
         } catch (InteropException e) {

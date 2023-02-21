@@ -144,6 +144,11 @@ def file_not_empty(path):
             pass
     raise SystemError("file %s not available" % path)
 
+resulttype_mapping = {'s': 'const char *', 'y': 'const char *', 'z': 'const char *', 'u': 'const wchar_t *', 'U': 'const char *', 
+                      'i': 'int', 'b': 'char', 'h': 'short int', 'l': 'long int', 'B': 'unsigned char', 'H': 'unsigned short int',
+                      'I': 'unsigned int', 'k': 'unsigned long', 'L': 'long long', 'K': 'unsigned long long', 'n': 'Py_ssize_t', 
+                      'c': 'char', 'C': 'int', 'd': 'double', 'f': 'float', 'D': 'Py_complex *', 'O': 'PyObject *', 
+                      'S': 'PyObject *', 'N': 'PyObject *'}
 
 c_template = """
 #define PY_SSIZE_T_CLEAN
@@ -169,7 +174,11 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
 #endif
 #endif
 
-    return Py_BuildValue("{resultspec}", {callfunction}({argumentnames}));
+    {resulttype} res = {callfunction}({argumentnames});
+    if (PyErr_Occurred()) {{
+        return NULL;
+    }}
+    return Py_BuildValue("{resultspec}", res);
 }}
 
 static PyMethodDef TestMethods[] = {{
@@ -314,6 +323,7 @@ class CPyExtFunction():
         kwargs["arguments"] = kwargs["arguments"] if "arguments" in kwargs else ["PyObject* argument"]
         kwargs["parseargs"] = kwargs["parseargs"] if "parseargs" in kwargs else kwargs["arguments"]
         kwargs["resultspec"] = kwargs["resultspec"] if "resultspec" in kwargs else "O"
+        kwargs["resulttype"] = kwargs["resulttype"] if "resulttype" in kwargs else resulttype_mapping[kwargs["resultspec"]]
         self.formatargs = kwargs
         self.cmpfunc = cmpfunc or self.do_compare
         self.stderr_validator = stderr_validator
@@ -519,10 +529,8 @@ def CPyExtType(name, code, **kwargs):
         {nb_inplace_floor_divide},
         {nb_inplace_true_divide},
         {nb_index},
-    """ + ("""
         {nb_matrix_multiply},
         {nb_inplace_matrix_multiply},
-    """ if sys.version_info.minor >= 6 else "") + """
     }};
 
     static PySequenceMethods {name}_sequence_methods = {{
@@ -552,7 +560,7 @@ def CPyExtType(name, code, **kwargs):
         "{name}.{name}",
         sizeof({name}Object),       /* tp_basicsize */
         0,                          /* tp_itemsize */
-        0,                          /* tp_dealloc */
+        {tp_dealloc},               /* tp_dealloc */
         {tp_vectorcall_offset},
         {tp_getattr},
         {tp_setattr},
@@ -584,9 +592,9 @@ def CPyExtType(name, code, **kwargs):
         {tp_descr_set},             /* tp_descr_set */
         {tp_dictoffset},            /* tp_dictoffset */
         {tp_init},                  /* tp_init */
-        PyType_GenericAlloc,        /* tp_alloc */
+        {tp_alloc},                 /* tp_alloc */
         {tp_new},                   /* tp_new */
-        PyObject_Del,               /* tp_free */
+        {tp_free},                  /* tp_free */
     }};
 
     static PyModuleDef {name}module = {{
@@ -622,6 +630,8 @@ def CPyExtType(name, code, **kwargs):
     kwargs.setdefault("post_ready_code", "")
     kwargs.setdefault("tp_methods", "{NULL, NULL, 0, NULL}")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
+    kwargs.setdefault("tp_alloc", "PyType_GenericAlloc")
+    kwargs.setdefault("tp_free", "PyObject_Del")
     kwargs.setdefault("cmembers", "")
     kwargs.setdefault("includes", "")
     c_source = UnseenFormatter().format(template, **kwargs)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,10 +46,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -66,7 +65,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -79,6 +77,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -86,7 +85,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-public class PThreadState extends PythonNativeWrapper {
+public final class PThreadState extends PythonNativeWrapper {
     public static final String J_CUR_EXC_TYPE = "curexc_type";
     public static final String J_CUR_EXC_VALUE = "curexc_value";
     public static final String J_CUR_EXC_TRACEBACK = "curexc_traceback";
@@ -117,6 +116,10 @@ public class PThreadState extends PythonNativeWrapper {
         }
         // does not require a 'to_sulong' since it is already a native wrapper type
         return nativeWrapper;
+    }
+
+    public PythonThreadState getThreadState() {
+        return threadState;
     }
 
     // READ
@@ -247,7 +250,7 @@ public class PThreadState extends PythonNativeWrapper {
         @SuppressWarnings("unused")
         static Object doPrev(PThreadState receiver, String key,
                         @CachedLibrary("receiver") InteropLibrary receiverLib) {
-            return PythonContext.get(receiverLib).getNativeNull();
+            return PythonContext.get(receiverLib).getNativeNull().getPtr();
         }
 
         @Specialization(guards = "eq(key, J_EXC_INFO)")
@@ -292,7 +295,7 @@ public class PThreadState extends PythonNativeWrapper {
         @SuppressWarnings("unused")
         static Object doInterpreterState(PThreadState receiver, String key,
                         @CachedLibrary("receiver") InteropLibrary receiverLib) {
-            return PythonContext.get(receiverLib).getNativeNull();
+            return PythonContext.get(receiverLib).getNativeNull().getPtr();
         }
 
         @Specialization(guards = "eq(key, J_USE_TRACING)")
@@ -486,30 +489,20 @@ public class PThreadState extends PythonNativeWrapper {
 
     // TO POINTER / AS POINTER / TO NATIVE
     @ExportMessage
-    protected boolean isPointer(
-                    @Exclusive @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    protected boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    public long asPointer(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-        Object nativePointer = lib.getNativePointer(this);
-        if (nativePointer instanceof Long) {
-            return (long) nativePointer;
-        }
-        return interopLibrary.asPointer(nativePointer);
+    public long asPointer() {
+        return getNativePointer();
     }
 
     @ExportMessage
     protected void toNative(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-        invalidateNode.execute();
-        if (!lib.isNative(this)) {
-            setNativePointer(toPyObjectNode.execute(this));
+                    @Cached ConditionProfile isNativeProfile) {
+        if (!isNative(isNativeProfile)) {
+            CApiTransitions.firstToNative(this);
         }
     }
 

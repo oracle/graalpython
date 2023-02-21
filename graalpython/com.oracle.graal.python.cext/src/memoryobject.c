@@ -79,8 +79,6 @@
         return -1;                                                \
     }
 
-PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_SEQUENCE, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t));
-PyTypeObject PyBuffer_Type = PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyBufferDecorator));
 
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags) {
     return PyBuffer_FillInfo(view, (PyObject*)self, polyglot_get_member(self, "buf_delegate"), PyObject_Size((PyObject *)self) * sizeof(PyObject*), self->readonly, flags);
@@ -89,11 +87,6 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
 /* called from memoryview implementation to do pointer arithmetics currently not possible from Java */
 int8_t* truffle_add_suboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset, Py_ssize_t remaining_length) {
         return polyglot_from_i8_array(*(int8_t**)(ptr + offset) + suboffset, remaining_length);
-}
-
-UPCALL_ID(PyMemoryView_FromObject)
-PyObject* PyMemoryView_FromObject(PyObject *v) {
-        return UPCALL_CEXT_O(_jls_PyMemoryView_FromObject, native_to_java(v));
 }
 
 /* called back from the above upcall only if the object was native */
@@ -112,9 +105,9 @@ PyObject* PyTruffle_MemoryViewFromObject(PyObject *v, int flags) {
                 needs_release = pb->bf_releasebuffer != NULL;
             }
         }
-        PyObject *mv = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
+        PyObject *mv = GraalPyTruffle_MemoryViewFromBuffer(
                 needs_release ? buffer : NULL, /* We only need the ptr for the release */
-                native_to_java(buffer->obj),
+                buffer->obj,
                 buffer->len,
                 buffer->readonly,
                 buffer->itemsize,
@@ -136,6 +129,10 @@ PyObject* PyTruffle_MemoryViewFromObject(PyObject *v, int flags) {
     return NULL;
 }
 
+Py_buffer* _PyMemoryView_GetBuffer(PyObject* op) {
+	return (&((PyMemoryViewObject *)(op))->view);
+}
+
 /* Release buffer struct allocated in PyTruffle_MemoryViewFromObject */
 void PyTruffle_ReleaseBuffer(Py_buffer* buffer) {
     if (buffer->obj != NULL) {
@@ -155,7 +152,7 @@ PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
             "PyMemoryView_FromBuffer(): info->buf must not be NULL");
         return NULL;
     }
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
+    return GraalPyTruffle_MemoryViewFromBuffer(
             NULL,
             NULL,
             buffer->len,
@@ -173,13 +170,8 @@ PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags) {
     assert(mem != NULL);
     assert(flags == PyBUF_READ || flags == PyBUF_WRITE);
     int readonly = (flags == PyBUF_WRITE) ? 0 : 1;
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
+    return GraalPyTruffle_MemoryViewFromBuffer(
             NULL, NULL, size, readonly, 1, polyglot_from_string("B", "ascii"), 1, polyglot_from_i8_array((int8_t*)mem, size), NULL, NULL, NULL);
-}
-
-UPCALL_ID(PyMemoryView_GetContiguous)
-PyObject* PyMemoryView_GetContiguous(PyObject *obj, int buffertype, char order) {
-    return UPCALL_CEXT_O(_jls_PyMemoryView_GetContiguous, native_to_java(obj), buffertype, (int)order);
 }
 
 /* Taken from CPython memoryobject.c: memory_getbuf */

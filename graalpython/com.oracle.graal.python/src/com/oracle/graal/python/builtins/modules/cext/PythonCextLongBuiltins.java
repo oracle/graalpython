@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,28 +41,32 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
-import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins.IntNode;
@@ -70,51 +74,27 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextLongBuiltins extends PythonBuiltins {
+public final class PythonCextLongBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextLongBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "_PyLong_Sign", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyLongSignNode extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    abstract static class _PyLong_Sign extends CApiUnaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "n == 0")
@@ -180,144 +160,78 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(frame, obj, getClassNode, isSubtypeNode)"})
-        public static Object signNative(VirtualFrame frame, Object obj,
+        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(obj, getClassNode, isSubtypeNode)"})
+        public static Object signNative(Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
             throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         }
 
-        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(frame, obj,getClassNode,isSubtypeNode)"})
-        public static Object sign(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(obj,getClassNode,isSubtypeNode)"})
+        public static Object sign(@SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        protected boolean isPIntSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PInt);
+        protected boolean isPIntSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PInt);
         }
     }
 
-    @Builtin(name = "PyLong_FromDouble", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyLongFromDoubleNode extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Direct)
+    abstract static class PyLong_FromDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object fromDouble(VirtualFrame frame, double d,
-                        @Cached IntNode intNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return intNode.execute(frame, d);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        Object fromDouble(double d,
+                        @Cached IntNode intNode) {
+            return intNode.execute(null, d);
         }
     }
 
-    @Builtin(name = "PyLong_FromString", minNumOfPositionalArgs = 3)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, Int}, call = Ignored)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
-    abstract static class PyLongFromStringNode extends PythonTernaryBuiltinNode {
+    abstract static class PyTruffleLong_FromString extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "negative == 0")
-        Object fromString(VirtualFrame frame, TruffleString s, long base, @SuppressWarnings("unused") long negative,
-                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
-                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return intNode.executeWith(frame, s, base);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        Object fromString(TruffleString s, int base, @SuppressWarnings("unused") int negative,
+                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode) {
+            return intNode.executeWith(null, s, base);
         }
 
         @Specialization(guards = "negative != 0")
-        Object fromString(VirtualFrame frame, TruffleString s, long base, @SuppressWarnings("unused") long negative,
+        Object fromString(TruffleString s, int base, @SuppressWarnings("unused") int negative,
                         @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
-                        @Cached NegNode negNode,
-                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return negNode.execute(frame, intNode.executeWith(frame, s, base));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+                        @Cached NegNode negNode) {
+            return negNode.execute(null, intNode.executeWith(null, s, base));
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyLong_AsPrimitive", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory
-    abstract static class PyLongAsPrimitive extends PythonTernaryBuiltinNode {
-        @Child private ResolveHandleNode resolveHandleNode;
-        @Child private ToJavaNode toJavaNode;
-        @CompilationFinal private ValueProfile pointerClassProfile;
-        @Child private ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-        @Child private CastToNativeLongNode castToNativeLongNode;
-        @Child private GetClassNode getClassNode;
-        @Child private IsSubtypeNode isSubtypeNode;
+    @CApiBuiltin(ret = ArgDescriptor.Long, args = {PyObject, Int, ArgDescriptor.Long}, call = Ignored)
+    abstract static class PyTruffleLong_AsPrimitive extends CApiTernaryBuiltinNode {
 
-        public abstract Object executeWith(VirtualFrame frame, Object object, int mode, long targetTypeSize);
-
-        public abstract long executeLong(VirtualFrame frame, Object object, int mode, long targetTypeSize);
-
-        public abstract int executeInt(VirtualFrame frame, Object object, int mode, long targetTypeSize);
-
-        @Specialization(rewriteOn = {UnexpectedWrapperException.class, UnexpectedResultException.class})
-        long doPrimitiveNativeWrapperToLong(VirtualFrame frame, Object object, int mode, long targetTypeSize) throws UnexpectedWrapperException, UnexpectedResultException {
-            Object resolvedPointer = ensureResolveHandleNode().execute(object);
+        @Specialization
+        Object doGeneric(Object object, int mode, long targetTypeSize,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
+                        @Cached CastToNativeLongNode castToNativeLongNode) {
             try {
-                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
-                    if (requiredPInt(mode) && !wrapper.isSubtypeOfInt()) {
-                        throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
-                    }
-                    return ensureConvertPIntToPrimitiveNode().executeLong(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
-                }
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw UnexpectedWrapperException.INSTANCE;
-            } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            } catch (PException e) {
-                ensureTransformExceptionToNativeNode().execute(frame, e);
-                return -1;
-            }
-        }
-
-        @Specialization(replaces = "doPrimitiveNativeWrapperToLong")
-        Object doGeneric(VirtualFrame frame, Object objectPtr, int mode, long targetTypeSize) {
-            Object resolvedPointer = ensurePointerClassProfile().profile(ensureResolveHandleNode().execute(objectPtr));
-            try {
-                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
-                    if (requiredPInt(mode) && !wrapper.isSubtypeOfInt()) {
-                        throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
-                    }
-                    return ensureConvertPIntToPrimitiveNode().execute(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
-                }
                 /*
                  * The 'mode' parameter is usually a constant since this function is primarily used
                  * in 'PyLong_As*' API functions that pass a fixed mode. So, there is not need to
                  * profile the value and even if it is not constant, it is profiled implicitly.
                  */
-                Object object = ensureToJavaNode().execute(resolvedPointer);
-                if (requiredPInt(mode) && !ensureIsSubtypeNode().execute(getPythonClass(object), PythonBuiltinClassType.PInt)) {
+                if (requiredPInt(mode) && !isSubtypeNode.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
-                Object coerced = ensureConvertPIntToPrimitiveNode().execute(object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
-                return ensureCastToNativeLongNode().execute(coerced);
+                Object coerced = convertPIntToPrimitiveNode.execute(object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
+                return castToNativeLongNode.execute(coerced);
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere();
-            } catch (PException e) {
-                ensureTransformExceptionToNativeNode().execute(frame, e);
-                return -1;
             }
         }
 
@@ -332,127 +246,73 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         private static boolean exact(int mode) {
             return (mode & 0x4) == 0;
         }
-
-        private ResolveHandleNode ensureResolveHandleNode() {
-            if (resolveHandleNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                resolveHandleNode = insert(ResolveHandleNodeGen.create());
-            }
-            return resolveHandleNode;
-        }
-
-        private ToJavaNode ensureToJavaNode() {
-            if (toJavaNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(ToJavaNodeGen.create());
-            }
-            return toJavaNode;
-        }
-
-        private ValueProfile ensurePointerClassProfile() {
-            if (pointerClassProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pointerClassProfile = ValueProfile.createClassProfile();
-            }
-            return pointerClassProfile;
-        }
-
-        private ConvertPIntToPrimitiveNode ensureConvertPIntToPrimitiveNode() {
-            if (convertPIntToPrimitiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                convertPIntToPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
-            }
-            return convertPIntToPrimitiveNode;
-        }
-
-        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
-            if (transformExceptionToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
-            }
-            return transformExceptionToNativeNode;
-        }
-
-        private CastToNativeLongNode ensureCastToNativeLongNode() {
-            if (castToNativeLongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToNativeLongNode = insert(CastToNativeLongNodeGen.create());
-            }
-            return castToNativeLongNode;
-        }
-
-        private Object getPythonClass(Object object) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(object);
-        }
-
-        private IsSubtypeNode ensureIsSubtypeNode() {
-            if (isSubtypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSubtypeNode = insert(IsSubtypeNode.create());
-            }
-            return isSubtypeNode;
-        }
-
-        static final class UnexpectedWrapperException extends ControlFlowException {
-            private static final long serialVersionUID = 1L;
-            static final UnexpectedWrapperException INSTANCE = new UnexpectedWrapperException();
-        }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyLong_FromLongLong", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyLongFromLongLong extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "signed != 0")
-        static Object doSignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.executeInt(n);
+    @CApiBuiltin(name = "PyLong_FromSsize_t", ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
+    @CApiBuiltin(name = "PyLong_FromLong", ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Direct)
+    abstract static class PyLong_FromLongLong extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int doSignedInt(int n) {
+            return n;
         }
 
-        @Specialization(guards = "signed == 0")
-        static Object doUnsignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            if (n < 0) {
-                return toNewRefNode.executeLong(n & 0xFFFFFFFFL);
-            }
-            return toNewRefNode.executeInt(n);
-        }
-
-        @Specialization(guards = "signed != 0")
-        static Object doSignedLong(long n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.executeLong(n);
-        }
-
-        @Specialization(guards = {"signed == 0", "n >= 0"})
-        static Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.executeLong(n);
-        }
-
-        @Specialization(guards = {"signed == 0", "n < 0"})
-        Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") int signed,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.execute(factory().createInt(convertToBigInteger(n)));
+        @Specialization
+        static long doSignedLong(long n) {
+            return n;
         }
 
         @Specialization(guards = "!isInteger(pointer)", limit = "2")
-        Object doPointer(Object pointer, @SuppressWarnings("unused") int signed,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
+        Object doPointer(Object pointer,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
             if (lib.isPointer(pointer)) {
                 try {
-                    return toSulongNode.execute(factory().createNativeVoidPtr(pointer, lib.asPointer(pointer)));
+                    return factory().createNativeVoidPtr(pointer, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return toSulongNode.execute(factory().createNativeVoidPtr(pointer));
+            return factory().createNativeVoidPtr(pointer);
+        }
+    }
+
+    @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
+    @CApiBuiltin(name = "PyLong_FromUnsignedLong", ret = PyObjectTransfer, args = {UNSIGNED_LONG}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {UNSIGNED_LONG_LONG}, call = Direct)
+    abstract static class PyLong_FromUnsignedLongLong extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static long doUnsignedInt(int n) {
+            if (n < 0) {
+                return n & 0xFFFFFFFFL;
+            }
+            return n;
+        }
+
+        @Specialization(guards = "n >= 0")
+        static Object doUnsignedLongPositive(long n) {
+            return n;
+        }
+
+        @Specialization(guards = "n < 0")
+        Object doUnsignedLongNegative(long n) {
+            return factory().createInt(convertToBigInteger(n));
+        }
+
+        @Specialization(guards = "!isInteger(pointer)", limit = "2")
+        Object doPointer(Object pointer,
+                        @CachedLibrary("pointer") InteropLibrary lib) {
+            // We capture the native pointer at the time when we create the wrapper if it exists.
+            if (lib.isPointer(pointer)) {
+                try {
+                    return factory().createNativeVoidPtr(pointer, lib.asPointer(pointer));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return factory().createNativeVoidPtr(pointer);
         }
 
         @TruffleBoundary
@@ -461,13 +321,10 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyLong_AsVoidPtr", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyLongAsVoidPtr extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
+    public abstract static class PyLong_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-
-        public abstract Object execute(Object o);
 
         @Specialization
         static long doPointer(int n) {
@@ -524,6 +381,22 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
             return transformExceptionToNativeNode;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
+    public abstract static class PyTruffleLong_One extends CApiNullaryBuiltinNode {
+        @Specialization
+        static int run() {
+            return 1;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
+    public abstract static class PyTruffleLong_Zero extends CApiNullaryBuiltinNode {
+        @Specialization
+        static int run() {
+            return 0;
         }
     }
 }

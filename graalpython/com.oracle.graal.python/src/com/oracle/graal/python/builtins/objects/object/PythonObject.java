@@ -34,6 +34,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -91,6 +92,9 @@ public class PythonObject extends PythonAbstractObject {
         }
         if (constantClass instanceof PythonBuiltinClass) {
             constantClass = ((PythonBuiltinClass) constantClass).getType();
+        }
+        if (constantClass instanceof PythonAbstractNativeObject && pythonClass instanceof PythonAbstractNativeObject) {
+            return true;
         }
         return constantClass == (pythonClass instanceof PythonBuiltinClass ? ((PythonBuiltinClass) pythonClass).getType() : pythonClass);
     }

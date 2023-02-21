@@ -409,7 +409,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ContextVarsContext("Context", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
     ContextVar("ContextVar", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
 
-    Capsule("PyCapsule"),
+    Capsule("capsule"),
 
     // A marker for @Builtin that is not a class. Must always come last.
     nil("nil");

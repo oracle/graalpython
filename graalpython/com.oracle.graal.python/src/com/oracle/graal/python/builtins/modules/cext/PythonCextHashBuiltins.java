@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,38 +40,96 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextHashBuiltins extends PythonBuiltins {
+public final class PythonCextHashBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextHashBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyHash_Imag")
-    @GenerateNodeFactory
-    abstract static class PyHashImagNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffleHash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
-        static long getHash() {
-            return SysModuleBuiltins.HASH_IMAG;
+        @TruffleBoundary
+        Object get(Object secretPtr) {
+            try {
+                InteropLibrary lib = InteropLibrary.getUncached(secretPtr);
+                byte[] secret = getContext().getHashSecret();
+                int len = (int) lib.getArraySize(secretPtr);
+                for (int i = 0; i < len; i++) {
+                    lib.writeArrayElement(secretPtr, i, secret[i]);
+                }
+                return 0;
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = ArgDescriptor.Long, args = {Int}, call = Ignored)
+    abstract static class PyTruffle_HashConstant extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        long doI(int idx) {
+            switch (idx) {
+                case 0:
+                    return PyObjectHashNode.getUncached().execute(null, Double.POSITIVE_INFINITY);
+                case 1:
+                    return PyObjectHashNode.getUncached().execute(null, Double.NaN);
+                case 2:
+                    return SysModuleBuiltins.HASH_IMAG;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = Py_hash_t, args = {PyObject, ArgDescriptor.Double}, call = Direct)
+    @ImportStatic(Double.class)
+    abstract static class _Py_HashDouble extends CApiBinaryBuiltinNode {
+
+        @Specialization(guards = "isFinite(value)")
+        long doFinite(@SuppressWarnings("unused") Object inst, double value) {
+            return PyObjectHashNode.hash(value);
+        }
+
+        @Specialization(guards = "!isFinite(value)")
+        long doNonFinite(Object inst, @SuppressWarnings("unused") double value,
+                        @Cached PyObjectHashNode hashNode) {
+            return hashNode.execute(null, inst);
+        }
+    }
+
+    @CApiBuiltin(ret = Py_hash_t, args = {ConstCharPtrAsTruffleString}, call = Ignored)
+    abstract static class _PyTruffle_HashBytes extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        long doI(Object value,
+                        @Cached PyObjectHashNode hashNode) {
+            return hashNode.execute(null, value);
         }
     }
 }

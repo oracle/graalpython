@@ -43,65 +43,47 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-// taken from CPython "Objects/bytesobject.c"
-#define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 
-PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, PyBytesObject_SIZE, sizeof(char));
-
-typedef PyObject* (*fromStringAndSize_fun_t)(int8_t* str, int64_t sz);
-
-UPCALL_ID(PyBytes_Size);
-Py_ssize_t PyBytes_Size(PyObject *bytes) {
-    return UPCALL_CEXT_L(_jls_PyBytes_Size, native_to_java(bytes));
-}
-
-UPCALL_ID(PyBytes_FromStringAndSize);
-UPCALL_ID(PyTruffle_Bytes_EmptyWithCapacity);
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
     if (sz < 0) {
         PyErr_SetString(PyExc_SystemError, "Negative size passed to PyBytes_FromStringAndSize");
         return NULL;
     }
     if (str != NULL) {
-        return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
+        return GraalPyTruffleBytes_FromStringAndSize(polyglot_from_i8_array(str, sz), sz);
     }
-    return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
+    return GraalPyTruffle_Bytes_EmptyWithCapacity(sz);
 }
 
-UPCALL_ID(PyByteArray_FromStringAndSize);
-UPCALL_ID(PyTruffle_ByteArray_EmptyWithCapacity);
 PyObject* PyByteArray_FromStringAndSize(const char* str, Py_ssize_t sz) {
     if (sz < 0) {
         PyErr_SetString(PyExc_SystemError, "Negative size passed to PyByteArray_FromStringAndSize");
         return NULL;
     }
     if (str != NULL) {
-        return ((fromStringAndSize_fun_t)_jls_PyByteArray_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
+        return GraalPyTruffleByteArray_FromStringAndSize(polyglot_from_i8_array(str, sz), sz);
     }
-    return UPCALL_CEXT_O(_jls_PyTruffle_ByteArray_EmptyWithCapacity, sz);
+    return GraalPyTruffle_ByteArray_EmptyWithCapacity(sz);
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	if (str != NULL) {
-		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, strlen(str)), strlen(str));
+		return GraalPyTruffleBytes_FromStringAndSize(polyglot_from_i8_array(str, strlen(str)), strlen(str));
 	}
-	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, 0);
+	return GraalPyTruffle_Bytes_EmptyWithCapacity(0);
 }
 
-UPCALL_ID(PyTruffle_Bytes_AsString);
 char* PyBytes_AsString(PyObject *obj) {
-    return (char*)(UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, native_to_java(obj), ERROR_MARKER));
+    return (char*)GraalPyTruffle_Bytes_AsString(obj);
 }
 
-UPCALL_ID(PyTruffle_Bytes_CheckEmbeddedNull);
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
-    PyObject* resolved = native_to_java(obj);
-    *s = (char*)(UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, resolved, ERROR_MARKER));
+    *s = (char*)GraalPyTruffle_Bytes_AsString(obj);
     if (len != NULL) {
-        *len = UPCALL_CEXT_L(_jls_PyBytes_Size, resolved);
+        *len = GraalPyBytes_Size(obj);
         return 0;
     } else {
-    	return UPCALL_CEXT_I(_jls_PyTruffle_Bytes_CheckEmbeddedNull, resolved);
+    	return GraalPyTruffle_Bytes_CheckEmbeddedNull(obj);
     }
 }
 
@@ -120,8 +102,6 @@ PyObject * PyBytes_FromFormat(const char *format, ...) {
 }
 
 
-UPCALL_ID(PyBytes_FromFormat);
-UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
 PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     /* Unfortunately, we need to know the expected types of the arguments before we can do an upcall. */
     char *s;
@@ -226,50 +206,50 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
 
         default:
             // TODO correctly handle this case
-            return UPCALL_CEXT_O(_jls_PyBytes_FromFormat, polyglot_from_string(format, SRC_CS), f+i);
+        	Py_FatalError("unhandled case in PyBytes_FromFormatV");
         }
     }
-
-
-#define SETARG(__args, __i, __arg) _jls_PyTuple_SetItem(native_to_java(__args), (__i), (__arg))
 
     // do actual conversion using one-character type specifiers
     int conversions = strlen(buffer);
     PyObject* args = PyTuple_New(conversions);
     for (int i=0; i < conversions; i++) {
+    	PyObject* entry = NULL;
     	switch(buffer[i]) {
     	case 'c':
     	case 'i':
     	case 'x':
     	case 'd':
-            SETARG(args, i, PyLong_FromLong(va_arg(vargs, int)));
+            entry = PyLong_FromLong(va_arg(vargs, int));
     		break;
     	case 'D':
-            SETARG(args, i, PyLong_FromLong(va_arg(vargs, long)));
+    		entry = PyLong_FromLong(va_arg(vargs, long));
     		break;
     	case 'u':
-            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned int)));
+    		entry = PyLong_FromUnsignedLong(va_arg(vargs, unsigned int));
     		break;
     	case 'U':
-            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned long)));
+    		entry = PyLong_FromUnsignedLong(va_arg(vargs, unsigned long));
     		break;
     	case 't':
-            SETARG(args, i, PyLong_FromSize_t(va_arg(vargs, size_t)));
+    		entry = PyLong_FromSize_t(va_arg(vargs, size_t));
             break;
     	case 's':
-            SETARG(args, i, polyglot_from_string(va_arg(vargs, const char*), SRC_CS));
+    		entry = PyUnicode_FromString(va_arg(vargs, const char*));
     		break;
     	case 'p':
-            SETARG(args, i, PyLong_FromVoidPtr(va_arg(vargs, void*)));
+    		entry = PyLong_FromVoidPtr(va_arg(vargs, void*));
     		break;
     	}
+    	GraalPyTuple_SetItem(args, i, entry);
     }
-    return UPCALL_CEXT_O(_jls_PyBytes_FromFormat, polyglot_from_string(format, SRC_CS), native_to_java(args));
+    PyObject* result = GraalPyTruffleBytes_FromFormat(truffleString(format), args);
+  	Py_DecRef(args);
+    return result;
 }
 
-UPCALL_ID(PyBytes_Concat);
 void PyBytes_Concat(PyObject **bytes, PyObject *newpart) {
-    *bytes = UPCALL_CEXT_O(_jls_PyBytes_Concat, native_to_java(*bytes), native_to_java(newpart));
+    *bytes = GraalPyTruffleBytes_Concat(*bytes, newpart);
 }
 
 void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
@@ -278,7 +258,7 @@ void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
 }
 
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags) {
-    return PyBuffer_FillInfo(view, (PyObject*)self, (void *)self->ob_sval, Py_SIZE(self), 1, flags);
+    return PyBuffer_FillInfo(view, (PyObject*)self, (void *)PyBytes_AS_STRING(self), Py_SIZE(self), 1, flags);
 }
 
 int bytes_copy2mem(char* target, char* source, size_t nbytes) {
@@ -289,24 +269,8 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes) {
     return 0;
 }
 
-UPCALL_ID(PyBytes_Join);
-PyObject *_PyBytes_Join(PyObject *sep, PyObject *x) {
-    return UPCALL_CEXT_O(_jls_PyBytes_Join, native_to_java(sep), native_to_java(x));
-}
-
-UPCALL_ID(_PyBytes_Resize);
 int _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize) {
-    return UPCALL_CEXT_I(_jls__PyBytes_Resize, native_to_java(*pv), newsize);
-}
-
-UPCALL_ID(PyByteArray_Resize);
-int PyByteArray_Resize(PyObject *pv, Py_ssize_t newsize) {
-    return UPCALL_CEXT_I(_jls_PyByteArray_Resize, native_to_java(pv), newsize);
-}
-
-UPCALL_ID(PyBytes_FromObject);
-PyObject * PyBytes_FromObject(PyObject *x) {
-    return UPCALL_CEXT_O(_jls_PyBytes_FromObject, native_to_java(x));
+    return Graal_PyTruffleBytes_Resize(*pv, newsize);
 }
 
 #define OVERALLOCATE_FACTOR 4

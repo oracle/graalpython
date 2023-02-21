@@ -39,8 +39,3 @@
  * SOFTWARE.
  */
 #include "capi.h"
-
-UPCALL_ID(PyOS_FSPath);
-PyObject* PyOS_FSPath(PyObject* path) {
-    return UPCALL_CEXT_O(_jls_PyOS_FSPath, native_to_java(path));
-}

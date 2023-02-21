@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,40 +40,30 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYMODULEDEF_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
+
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextPyStateBuiltins extends PythonBuiltins {
+public final class PythonCextPyStateBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextPyStateBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyThreadState_Get")
-    @GenerateNodeFactory
-    abstract static class PyThreadStateGet extends PythonCextBuiltins.NativeBuiltin {
+    @CApiBuiltin(ret = PyThreadState, args = {}, call = Direct, inlined = true)
+    abstract static class PyThreadState_Get extends CApiNullaryBuiltinNode {
 
         @Specialization
         PThreadState get() {
@@ -81,25 +71,38 @@ public final class PythonCextPyStateBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyState_FindModule", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyStateFindModule extends PythonUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObject, args = {}, call = Direct)
+    abstract static class PyThreadState_GetDict extends CApiNullaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(long mIndex,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            Object result;
+        @TruffleBoundary
+        PDict get(@Cached PythonObjectFactory factory) {
+
+            PThreadState state = PThreadState.getThreadState(getLanguage(), getContext());
+            PDict threadStateDict = state.getThreadState().getDict();
+            if (threadStateDict == null) {
+                threadStateDict = factory.createDict();
+                state.getThreadState().setDict(threadStateDict);
+            }
+            return threadStateDict;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PYMODULEDEF_PTR}, call = Ignored)
+    abstract static class PyTruffleState_FindModule extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object doGeneric(long mIndex) {
             try {
                 int i = PInt.intValueExact(mIndex);
-                result = getContext().getCApiContext().getModuleByIndex(i);
+                Object result = getContext().getCApiContext().getModuleByIndex(i);
                 if (result == null) {
-                    result = getContext().getNativeNull();
+                    return getNativeNull();
                 }
+                return result;
             } catch (CannotCastException | OverflowException e) {
-                result = getContext().getNativeNull();
+                return getNativeNull();
             }
-            return toSulongNode.execute(result);
         }
     }
 }

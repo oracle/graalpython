@@ -1,0 +1,12 @@
+diff -ur a/pythran/pythonic/python/core.hpp b/pythran/pythonic/python/core.hpp
+--- a/pythran/pythonic/python/core.hpp	2021-07-22 16:45:28.000000000 +0200
++++ b/pythran/pythonic/python/core.hpp	2022-10-04 14:27:39.000000000 +0200
+@@ -52,7 +52,7 @@
+ {
+
+ #ifndef PyString_AS_STRING
+-#define PyString_AS_STRING (char *) _PyUnicode_COMPACT_DATA
++#define PyString_AS_STRING PyBytes_AS_STRING
+ #endif
+
+   void PyObject_TypePrettyPrinter(std::ostream &oss, PyObject *obj)

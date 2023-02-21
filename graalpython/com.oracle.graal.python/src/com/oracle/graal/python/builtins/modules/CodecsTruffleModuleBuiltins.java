@@ -92,7 +92,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -237,10 +236,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         };
     }
 
-    protected SetAttributeNode createSetEncoding() {
-        return SetAttributeNode.create(T_ATTR_ENCODING);
-    }
-
     /**
      * create classes based on types declared in lib/3/codes.py
      */
@@ -341,10 +336,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
             callNode.execute(frame, superInit, callArgs, kw);
             setAttrNode.execute(frame, self, args[0]);
             return PNone.NONE;
-        }
-
-        protected LookupAndCallVarargsNode createCallNode() {
-            return LookupAndCallVarargsNode.create(T___INIT__);
         }
 
         @NeverDefault

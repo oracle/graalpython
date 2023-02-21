@@ -1200,7 +1200,7 @@ def graalpython_gate_runner(args, tasks):
             success = "\n".join(["win32"])
             if success not in out.data:
                 mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
-            mx.run([svm_image, "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            mx.run([svm_image, "--experimental-options", "--python.NativeModules=", "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "b'abcd'"
             if success not in out.data:
                 mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
@@ -1787,6 +1787,10 @@ def python_checkcopyrights(args):
 
     _python_checkpatchfiles()
 
+    r = generate_capi_forwards([])
+    if r != 0:
+        mx.abort("re-generating C API forwards produced changes, out of sync")
+
 
 def python_run_mx_filetests(args):
     for test in glob.glob(os.path.join(os.path.dirname(__file__), "test_*.py")):
@@ -1813,6 +1817,8 @@ def _python_checkpatchfiles():
             'scipy-1.4.1.patch',
             'scipy-1.7.3.patch',
             'scipy-1.8.1.patch',
+            'scipy-1.9.1.patch',
+            'scipy-1.10.0.patch',
             # Empty license field, skip it. It's MIT
             'setuptools-60.patch',
             'setuptools-60.9.patch',
@@ -1822,7 +1828,7 @@ def _python_checkpatchfiles():
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
             "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache", "Apache License", "new BSD",
-            "(Apache-2.0 OR BSD-3-Clause) AND PSF-2.0", "Apache 2.0", "MPL-2.0",
+            "(Apache-2.0 OR BSD-3-Clause) AND PSF-2.0", "Apache 2.0", "MPL-2.0", "BSD 3-Clause",
         ]
         for line in content.split("\n"):
             if not line or os.stat(line).st_size == 0:
@@ -2711,6 +2717,25 @@ def no_return(fn):
     return inner
 
 
+def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, **kwargs):
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
+    vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
+    if extra_dists:
+        dists += extra_dists
+    vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk, cp_prefix=cp_prefix, cp_suffix=cp_suffix)
+    if not jdk:
+        jdk = get_jdk()
+    vm_args += ['-ea', '-esa']
+
+    if extra_vm_args:
+        vm_args += extra_vm_args
+
+    vm_args.append("com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen")
+
+    print("\nGraalPython needs to be built before executing this command. If you encounter build errors because of changed builtin definitions, manually remove the contents of com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry.createBuiltinNode before building.\n")
+    return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, cwd=SUITE.dir, **kwargs)
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -2742,4 +2767,5 @@ mx.update_commands(SUITE, {
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
+    'python-capi-forwards': [generate_capi_forwards, ''],
 })

@@ -41,6 +41,18 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InitResult;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InquiryResult;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.IterResult;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -53,35 +65,23 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.BinaryFirstToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MethodArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeArgProcToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeObjArgProcToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstSecondToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstThirdToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBorrowedRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -104,6 +104,8 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
@@ -117,7 +119,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -128,6 +129,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -145,12 +147,14 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class ExternalFunctionNodes {
 
-    static final TruffleString KW_CALLABLE = tsLiteral("$callable");
-    static final TruffleString KW_CLOSURE = tsLiteral("$closure");
+    public static final TruffleString KW_CALLABLE = tsLiteral("$callable");
+    public static final TruffleString KW_CLOSURE = tsLiteral("$closure");
     static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE = new TruffleString[]{KW_CALLABLE};
     static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new TruffleString[]{KW_CALLABLE, KW_CLOSURE};
 
@@ -171,82 +175,215 @@ public abstract class ExternalFunctionNodes {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
+    public abstract static class FinishArgNode extends PNodeWithContext {
+
+        public abstract void execute(Object value);
+    }
+
+    /**
+     * On Windows, "long" is 32 bits, so that we might need to convert int to long for consistency.
+     */
+    public abstract static class FromLongNode extends CExtToJavaNode {
+
+        @Specialization
+        static long doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        static long doLong(long value) {
+            return value;
+        }
+
+        @Fallback
+        static Object doOther(Object value) {
+            assert CApiTransitions.isBackendPointerObject(value);
+            return value;
+        }
+    }
+
+    public abstract static class ToInt64Node extends CExtToNativeNode {
+
+        @Specialization
+        static long doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        static long doLong(long value) {
+            return value;
+        }
+
+        @Fallback
+        static Object doOther(Object value) {
+            assert CApiTransitions.isBackendPointerObject(value);
+            return value;
+        }
+    }
+
+    public abstract static class ToInt32Node extends CExtToNativeNode {
+
+        @Specialization
+        static int doInt(int value) {
+            return value;
+        }
+    }
+
+    public static final class ToNativeNode extends CExtToNativeNode {
+
+        @Override
+        public Object execute(Object object) {
+            return CApiTransitions.pythonToNative(object, false);
+        }
+    }
+
+    public static final class ToNativeBorrowedNode extends CExtToNativeNode {
+
+        @Override
+        public Object execute(Object object) {
+            assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
+            return CApiTransitions.pythonToNative(object, false);
+        }
+    }
+
+    public static final class ToNativeTransferNode extends CExtToNativeNode {
+
+        @Override
+        public Object execute(Object object) {
+            return CApiTransitions.pythonToNative(object, true);
+        }
+    }
+
+    public static final class ToPythonNode extends CExtToJavaNode {
+
+        @Override
+        public Object execute(Object object) {
+            return CApiTransitions.nativeToPython(object, false);
+        }
+    }
+
+    public static final class WrappedPointerToPythonNode extends CExtToJavaNode {
+
+        @Override
+        public Object execute(Object object) {
+            if (object instanceof PythonNativeWrapper) {
+                return ((PythonNativeWrapper) object).getDelegate();
+            } else {
+                return object;
+            }
+        }
+    }
+
+    public static final class ToPythonStringNode extends CExtToJavaNode {
+        @Child private CastToTruffleStringNode castToStringNode = CastToTruffleStringNodeGen.create();
+
+        @Override
+        public Object execute(Object object) {
+            Object result = CApiTransitions.nativeToPython(object, false);
+            if (result instanceof TruffleString) {
+                return result;
+            } else if (result instanceof PString) {
+                return castToStringNode.execute(result);
+            } else if (result == PNone.NO_VALUE) {
+                return result;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+    }
+
+    public static final class ToPythonWrapperNode extends CExtToJavaNode {
+
+        @Override
+        public PythonNativeWrapper execute(Object object) {
+            return CApiTransitions.nativeToPythonWrapper(object);
+        }
+    }
+
+    public static final class ToPythonTransferNode extends CExtToJavaNode {
+
+        @Override
+        public Object execute(Object object) {
+            return CApiTransitions.nativeToPython(object, true);
+        }
+    }
+
     /**
      * Enum of well-known function and slot signatures. The integer values must stay in sync with
      * the definition in {code capi.h}.
      */
     public enum PExternalFunctionWrapper {
-        DIRECT(1),
-        FASTCALL(2, FastCallArgsToSulongNode::create),
-        FASTCALL_WITH_KEYWORDS(3, FastCallWithKeywordsArgsToSulongNode::create),
-        KEYWORDS(4),                                // METH_VARARGS | METH_KEYWORDS
-        VARARGS(5),                                 // METH_VARARGS
-        NOARGS(6),                                  // METH_NOARGS
-        O(7),                                       // METH_O
-        METHOD(8, MethodArgsToSulongNode::create),  // METH_FASTCALL | METH_KEYWORDS | METH_METHOD
-        ALLOC(10, BinaryFirstToSulongNode::create),
-        GETATTR(11, BinaryFirstToSulongNode::create),
-        SETATTR(12, TernaryFirstThirdToSulongNode::create),
-        RICHCMP(13, TernaryFirstSecondToSulongNode::create),
-        SETITEM(14, SSizeObjArgProcToSulongNode::create),
-        UNARYFUNC(15),
-        BINARYFUNC(16),
-        BINARYFUNC_L(17),
-        BINARYFUNC_R(18),
-        TERNARYFUNC(19),
-        TERNARYFUNC_R(20),
-        LT(21, TernaryFirstSecondToSulongNode::create),
-        LE(22, TernaryFirstSecondToSulongNode::create),
-        EQ(23, TernaryFirstSecondToSulongNode::create),
-        NE(24, TernaryFirstSecondToSulongNode::create),
-        GT(25, TernaryFirstSecondToSulongNode::create),
-        GE(26, TernaryFirstSecondToSulongNode::create),
-        ITERNEXT(27, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
-        INQUIRY(28, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        DELITEM(29, 1, SSizeObjArgProcToSulongNode::create),
-        GETITEM(30, 0, SSizeArgProcToSulongNode::create),
-        GETTER(31, BinaryFirstToSulongNode::create),
-        SETTER(32, TernaryFirstSecondToSulongNode::create),
-        INITPROC(33, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
-        HASHFUNC(34, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        CALL(35),
-        SETATTRO(36, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
-        DESCR_GET(37),
-        DESCR_SET(38, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
-        LENFUNC(39, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        OBJOBJPROC(40, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        OBJOBJARGPROC(41, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        NEW(42),
-        MP_DELITEM(43, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        TP_STR(44),
-        TP_REPR(45);
+        DIRECT(1, PyObjectTransfer, PyObject, PyObject),
+        FASTCALL(2, PyObjectTransfer, PyObject, Pointer, Py_ssize_t),
+        FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, Pointer, Py_ssize_t, PyObject),
+        KEYWORDS(4, PyObjectTransfer, PyObject, PyObject, PyObject), // METH_VARARGS | METH_KEYWORDS
+        VARARGS(5, PyObjectTransfer, PyObject, PyObject),            // METH_VARARGS
+        NOARGS(6, PyObjectTransfer, PyObject, PyObject),             // METH_NOARGS
+        O(7, PyObjectTransfer, PyObject, PyObject),                  // METH_O
+        METHOD(8, PyObjectTransfer, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),  // METH_FASTCALL
+                                                                                             // |
+                                                                                             // METH_KEYWORDS
+                                                                                             // |
+                                                                                             // METH_METHOD
+        ALLOC(10, PyObjectTransfer, PyObject, Py_ssize_t),
+        GETATTR(11, PyObjectTransfer, PyObject, CharPtrAsTruffleString),
+        SETATTR(12, Int, PyObject, CharPtrAsTruffleString, PyObject),
+        RICHCMP(13, PyObjectTransfer, PyObject, PyObject, Int),
+        SETITEM(14, Int, PyObject, Py_ssize_t, PyObject),
+        UNARYFUNC(15, PyObjectTransfer, PyObject),
+        BINARYFUNC(16, PyObjectTransfer, PyObject, PyObject),
+        BINARYFUNC_L(17, PyObjectTransfer, PyObject, PyObject),
+        BINARYFUNC_R(18, PyObjectTransfer, PyObject, PyObject),
+        TERNARYFUNC(19, PyObjectTransfer, PyObject, PyObject, PyObject),
+        TERNARYFUNC_R(20, PyObjectTransfer, PyObject, PyObject, PyObject),
+        LT(21, PyObjectTransfer, PyObject, PyObject, Int),
+        LE(22, PyObjectTransfer, PyObject, PyObject, Int),
+        EQ(23, PyObjectTransfer, PyObject, PyObject, Int),
+        NE(24, PyObjectTransfer, PyObject, PyObject, Int),
+        GT(25, PyObjectTransfer, PyObject, PyObject, Int),
+        GE(26, PyObjectTransfer, PyObject, PyObject, Int),
+        ITERNEXT(27, IterResult, PyObject),
+        INQUIRY(28, InquiryResult, PyObject),
+        DELITEM(29, Int, PyObject, Py_ssize_t, PyObject),
+        GETITEM(30, PyObjectTransfer, PyObject, Py_ssize_t),
+        GETTER(31, PyObjectTransfer, PyObject, Pointer),
+        SETTER(32, Int, PyObject, PyObject, Pointer),
+        INITPROC(33, InitResult, PyObject, PyObject, PyObject),
+        HASHFUNC(34, PrimitiveResult64, PyObject),
+        CALL(35, PyObjectTransfer, PyObject, PyObject, PyObject),
+        SETATTRO(36, InitResult, PyObject, PyObject, PyObject),
+        DESCR_GET(37, PyObjectTransfer, PyObject, PyObject, PyObject),
+        DESCR_SET(38, InitResult, PyObject, PyObject, PyObject),
+        LENFUNC(39, PrimitiveResult64, PyObject),
+        OBJOBJPROC(40, InquiryResult, PyObject, PyObject),
+        OBJOBJARGPROC(41, PrimitiveResult32, PyObject, PyObject, PyObject),
+        NEW(42, PyObjectTransfer, PyObject, PyObject, PyObject),
+        MP_DELITEM(43, PrimitiveResult32, PyObject, PyObject, PyObject),
+        TP_STR(44, PyObjectTransfer, PyObject),
+        TP_REPR(45, PyObjectTransfer, PyObject);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[50];
 
-        PExternalFunctionWrapper(int value, int numDefaults, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
+        public final String signature;
+        public final ArgDescriptor returnValue;
+        public final ArgDescriptor[] arguments;
+
+        PExternalFunctionWrapper(int value, ArgDescriptor returnValue, ArgDescriptor... arguments) {
             this.value = value;
-            this.numDefaults = numDefaults;
-            this.convertArgsNodeSupplier = convertArgsNodeSupplier;
-            this.checkFunctionResultNodeSupplier = checkFunctionResultNodeSupplier;
-        }
+            this.returnValue = returnValue;
+            this.arguments = arguments;
 
-        PExternalFunctionWrapper(int value, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
-            this(value, 0, convertArgsNodeSupplier, DefaultCheckFunctionResultNodeGen::create);
-        }
-
-        PExternalFunctionWrapper(int value, int numDefaults, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
-            this(value, numDefaults, convertArgsNodeSupplier, DefaultCheckFunctionResultNodeGen::create);
-        }
-
-        PExternalFunctionWrapper(int value) {
-            this(value, 0, AllToSulongNode::create, DefaultCheckFunctionResultNodeGen::create);
+            StringBuilder s = new StringBuilder("(");
+            for (int i = 0; i < arguments.length; i++) {
+                s.append(i == 0 ? "" : ",");
+                s.append(arguments[i].getNFISignature());
+            }
+            s.append("):").append(returnValue.getNFISignature());
+            this.signature = s.toString();
         }
 
         private final int value;
-        private final int numDefaults;
-        private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
-        private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
 
         static {
             for (var e : VALUES) {
@@ -452,7 +589,7 @@ public abstract class ExternalFunctionNodes {
                 return null;
             }
             Object[] defaults;
-            int numDefaults = sig.numDefaults;
+            int numDefaults = sig == DELITEM ? 1 : 0;
             if (numDefaults > 0) {
                 defaults = new Object[numDefaults];
                 Arrays.fill(defaults, PNone.NO_VALUE);
@@ -493,14 +630,20 @@ public abstract class ExternalFunctionNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        @TruffleBoundary
-        ConvertArgsToSulongNode createConvertArgsToSulongNode() {
-            return convertArgsNodeSupplier.get();
+        CheckFunctionResultNode createCheckFunctionResultNode() {
+            return returnValue.createCheckResultNode();
         }
 
-        @TruffleBoundary
-        CheckFunctionResultNode getCheckFunctionResultNode() {
-            return checkFunctionResultNodeSupplier.get();
+        CExtToNativeNode[] createConvertArgNodes() {
+            return createConvertArgNodes(arguments);
+        }
+
+        public static CExtToNativeNode[] createConvertArgNodes(ArgDescriptor[] descriptors) {
+            CExtToNativeNode[] result = new CExtToNativeNode[descriptors.length];
+            for (int i = 0; i < descriptors.length; i++) {
+                result[i] = descriptors[i].createPythonToNativeNode();
+            }
+            return result;
         }
     }
 
@@ -550,6 +693,8 @@ public abstract class ExternalFunctionNodes {
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+        @CompilationFinal private Object signature;
+        @Child private SignatureLibrary signatureLib;
 
         private final PExternalFunctionWrapper provider;
 
@@ -577,7 +722,7 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         ExternalFunctionInvokeNode(PExternalFunctionWrapper provider) {
-            CheckFunctionResultNode node = provider.getCheckFunctionResultNode();
+            CheckFunctionResultNode node = provider.createCheckFunctionResultNode();
             this.checkResultNode = node != null ? node : DefaultCheckFunctionResultNodeGen.create();
             this.provider = provider;
         }
@@ -601,7 +746,22 @@ public abstract class ExternalFunctionNodes {
             Object state = IndirectCallContext.enter(frame, threadState, this);
 
             try {
-                return fromNative(asPythonObjectNode.execute(checkResultNode.execute(ctx, name, lib.execute(callable, cArguments))));
+
+                Object result;
+                if (!lib.isExecutable(callable)) {
+                    if (signature == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        signature = getContext().getEnv().parseInternal(Source.newBuilder("nfi", provider.signature, "exec").build()).call();
+                    }
+                    if (signatureLib == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        signatureLib = insert(SignatureLibrary.getFactory().create(signature));
+                    }
+                    result = signatureLib.call(signature, callable, cArguments);
+                } else {
+                    result = lib.execute(callable, cArguments);
+                }
+                return fromNative(asPythonObjectNode.execute(checkResultNode.execute(ctx, name, result)));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
@@ -650,7 +810,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
         @Child private PRaiseNode raiseNode;
-        @Child private ConvertArgsToSulongNode toSulongNode;
+        @Children private final CExtToNativeNode[] convertArgs;
 
         private final TruffleString name;
 
@@ -664,13 +824,22 @@ public abstract class ExternalFunctionNodes {
             this.name = name;
             if (provider != null) {
                 this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider);
-                ConvertArgsToSulongNode convertArgsNode = provider.createConvertArgsToSulongNode();
-                this.toSulongNode = convertArgsNode != null ? convertArgsNode : CExtNodes.AllToSulongNode.create();
+                this.convertArgs = provider.createConvertArgNodes();
             } else {
                 this.invokeNode = CallVarargsMethodNode.create();
+                this.convertArgs = null;
             }
             if (!isStatic) {
                 readSelfNode = ReadIndexedArgumentNode.create(0);
+            }
+        }
+
+        @ExplodeLoop
+        private void prepareArguments(Object[] arguments) {
+            for (int i = 0; i < convertArgs.length; i++) {
+                if (convertArgs[i] != null) {
+                    arguments[i] = convertArgs[i].execute(arguments[i]);
+                }
             }
         }
 
@@ -681,7 +850,7 @@ public abstract class ExternalFunctionNodes {
                 Object callable = ensureReadCallableNode().execute(frame);
                 if (externalInvokeNode != null) {
                     Object[] cArguments = prepareCArguments(frame);
-                    toSulongNode.executeInto(cArguments, 0, cArguments, 0);
+                    prepareArguments(cArguments);
                     try {
                         return externalInvokeNode.execute(frame, name, callable, cArguments);
                     } finally {
@@ -698,7 +867,8 @@ public abstract class ExternalFunctionNodes {
 
         /**
          * Prepare the arguments for calling the C function. The arguments will then be converted to
-         * LLVM arguments using the {@link #toSulongNode}. This will modify the returned array.
+         * LLVM arguments using the {@link ArgDescriptor#createPythonToNativeNode()}. This will
+         * modify the returned array.
          */
         protected abstract Object[] prepareCArguments(VirtualFrame frame);
 
@@ -956,7 +1126,6 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private PythonNativeWrapperLibrary wrapperLib;
 
         public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -989,16 +1158,8 @@ public abstract class ExternalFunctionNodes {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
-            wrapper.free(ensureWrapperLib(wrapper), ensureReleaseNativeWrapperNode());
+            wrapper.free(ensureReleaseNativeWrapperNode());
             releaseNativeWrapperNode.execute(cArguments[3]);
-        }
-
-        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
-            if (wrapperLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
-            }
-            return wrapperLib;
         }
 
         @Override
@@ -1013,7 +1174,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readClsNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private PythonNativeWrapperLibrary wrapperLib;
 
         public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1049,16 +1209,8 @@ public abstract class ExternalFunctionNodes {
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
             CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[2];
-            wrapper.free(ensureWrapperLib(wrapper), releaseNativeWrapperNode);
+            wrapper.free(releaseNativeWrapperNode);
             releaseNativeWrapperNode.execute(cArguments[4]);
-        }
-
-        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
-            if (wrapperLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
-            }
-            return wrapperLib;
         }
 
         @Override
@@ -1070,7 +1222,6 @@ public abstract class ExternalFunctionNodes {
     public static final class MethFastcallRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadVarArgsNode readVarargsNode;
-        @Child private PythonNativeWrapperLibrary wrapperLib;
 
         public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1093,15 +1244,7 @@ public abstract class ExternalFunctionNodes {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
-            wrapper.free(ensureWrapperLib(wrapper), ensureReleaseNativeWrapperNode());
-        }
-
-        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
-            if (wrapperLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
-            }
-            return wrapperLib;
+            wrapper.free(ensureReleaseNativeWrapperNode());
         }
 
         @Override
@@ -1745,44 +1888,22 @@ public abstract class ExternalFunctionNodes {
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
         static PTuple doCachedLen(PythonObjectFactory factory, Object[] args,
                         @Cached("args.length") int cachedLen,
-                        @Cached("createToBorrowedRefNodes(args.length)") ToBorrowedRefNode[] toBorrowedRefNodes,
                         @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
 
             for (int i = 0; i < cachedLen; i++) {
-                args[i] = prepareReference(args[i], factory, materializePrimitiveNodes[i], toBorrowedRefNodes[i]);
+                args[i] = materializePrimitiveNodes[i].execute(factory, args[i]);
             }
             return factory.createTuple(args);
         }
 
         @Specialization(replaces = "doCachedLen")
         static PTuple doGeneric(PythonObjectFactory factory, Object[] args,
-                        @Cached ToBorrowedRefNode toNewRefNode,
                         @Cached MaterializePrimitiveNode materializePrimitiveNode) {
 
             for (int i = 0; i < args.length; i++) {
-                args[i] = prepareReference(args[i], factory, materializePrimitiveNode, toNewRefNode);
+                args[i] = materializePrimitiveNode.execute(factory, args[i]);
             }
             return factory.createTuple(args);
-        }
-
-        private static Object prepareReference(Object arg, PythonObjectFactory factory, MaterializePrimitiveNode materializePrimitiveNode, ToBorrowedRefNode toNewRefNode) {
-            Object result = materializePrimitiveNode.execute(factory, arg);
-
-            // Tuples are actually stealing the reference of their items. That's why we need to
-            // increase the reference count by 1 at this point. However, it could be that the
-            // object does not have a native wrapper yet. We use ToNewRefNode to ensure that the
-            // object has a native wrapper or to increase the reference count by 1 if a native
-            // wrapper already exists.
-            toNewRefNode.execute(result);
-            return result;
-        }
-
-        static ToBorrowedRefNode[] createToBorrowedRefNodes(int length) {
-            ToBorrowedRefNode[] newRefNodes = new ToBorrowedRefNode[length];
-            for (int i = 0; i < length; i++) {
-                newRefNodes[i] = ToBorrowedRefNodeGen.create();
-            }
-            return newRefNodes;
         }
 
         static MaterializePrimitiveNode[] createMaterializeNodes(int length) {
@@ -1840,11 +1961,10 @@ public abstract class ExternalFunctionNodes {
     @GenerateUncached
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                        @CachedLibrary(value = "result") PythonNativeWrapperLibrary lib,
                         @Cached DefaultCheckFunctionResultNode recursive) {
-            return recursive.execute(context, name, lib.getDelegate(result));
+            return recursive.execute(context, name, result.getDelegate());
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
@@ -1869,7 +1989,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        Object doPythonNativeNull(PythonContext context, TruffleString name, @SuppressWarnings("unused") PythonNativeNull result,
+        Object doPythonNativeNull(PythonContext context, TruffleString name, @SuppressWarnings("unused") PythonNativePointer result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             checkFunctionResult(this, name, true, true, context, errOccurredProfile);
             return result;
@@ -1968,7 +2088,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         protected static boolean isNativeNull(Object object) {
-            return object instanceof PythonNativeNull;
+            return object instanceof PythonNativePointer;
         }
 
         protected static boolean isPythonObjectNativeWrapper(Object object) {
@@ -1979,7 +2099,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Equivalent of the result processing part in {@code Objects/typeobject.c: wrap_next}.
      */
-    abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
+    public abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "3")
         static Object doGeneric(PythonContext context, @SuppressWarnings("unused") TruffleString name, Object result,
@@ -2113,7 +2233,7 @@ public abstract class ExternalFunctionNodes {
      * equivalent to the result processing part in {@code Object/typeobject.c: wrap_inquirypred} and
      * {@code Object/typeobject.c: wrap_objobjproc}.
      */
-    abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
+    public abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
 
         @Specialization(guards = "result > 0")
         boolean doLongTrue(PythonContext context, TruffleString name, @SuppressWarnings("unused") long result,

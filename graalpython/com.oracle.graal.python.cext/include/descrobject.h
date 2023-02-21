@@ -45,19 +45,19 @@ struct wrapperbase {
 
 typedef struct {
     PyObject_HEAD
-    PyTypeObject *d_type;
-    PyObject *d_name;
-    PyObject *d_qualname;
+    PyTypeObject *Py_HIDE_IMPL_FIELD(d_type);
+    PyObject *Py_HIDE_IMPL_FIELD(d_name);
+    PyObject *Py_HIDE_IMPL_FIELD(d_qualname);
 } PyDescrObject;
 
 #define PyDescr_COMMON PyDescrObject d_common
 
-#define PyDescr_TYPE(x) (((PyDescrObject *)(x))->d_type)
-#define PyDescr_NAME(x) (((PyDescrObject *)(x))->d_name)
+#define PyDescr_TYPE(x) (PyDescrObject_GetType((PyObject*) (x)))
+#define PyDescr_NAME(x) (PyDescrObject_GetName((PyObject*) (x)))
 
 typedef struct {
     PyDescr_COMMON;
-    PyMethodDef *d_method;
+    PyMethodDef *Py_HIDE_IMPL_FIELD(d_method);
     vectorcallfunc vectorcall;
 } PyMethodDescrObject;
 
@@ -103,6 +103,10 @@ PyAPI_FUNC(int) PyDescr_IsData(PyObject *);
 
 PyAPI_FUNC(PyObject *) PyDictProxy_New(PyObject *);
 PyAPI_FUNC(PyObject *) PyWrapper_New(PyObject *, PyObject *);
+
+PyAPI_FUNC(PyMethodDef*) PyMethodDescrObject_GetMethod(PyObject*);
+PyAPI_FUNC(PyTypeObject*) PyDescrObject_GetType(PyObject*);
+PyAPI_FUNC(PyObject*) PyDescrObject_GetName(PyObject*);
 
 
 PyAPI_DATA(PyTypeObject) PyProperty_Type;

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -151,7 +150,7 @@ public class HPyArrayWrappers {
             int i = (int) index;
             Object object = delegate[i];
             if (!isHandleProfile.profile(object instanceof GraalHPyHandle)) {
-                object = asHandleNode.execute(hpyContext, object);
+                object = asHandleNode.execute(object);
                 delegate[i] = object;
             }
             return object;
@@ -173,15 +172,13 @@ public class HPyArrayWrappers {
 
         @ExportMessage
         void toNative(
-                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                         @CachedLibrary(limit = "1") InteropLibrary delegateLib,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            invalidateNode.execute();
             if (!isPointer()) {
                 for (int i = 0; i < delegate.length; i++) {
                     Object element = delegate[i];
                     if (!(element instanceof GraalHPyHandle)) {
-                        delegate[i] = asHandleNode.execute(hpyContext, element);
+                        delegate[i] = asHandleNode.execute(element);
                     }
                 }
                 setNativePointer(hpyContext.createNativeArguments(delegate, delegateLib));
@@ -202,11 +199,11 @@ public class HPyArrayWrappers {
 
     abstract static class HPyCloseArrayWrapperNode extends Node {
 
-        public abstract void execute(GraalHPyContext hpyContext, HPyArrayWrapper wrapper);
+        public abstract void execute(HPyArrayWrapper wrapper);
 
         @Specialization(guards = {"cachedLen == wrapper.delegate.length", "cachedLen <= 8"}, limit = "1")
         @ExplodeLoop
-        static void doCachedLen(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
+        static void doCachedLen(HPyArrayWrapper wrapper,
                         @Cached("wrapper.delegate.length") int cachedLen,
                         @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
@@ -214,7 +211,7 @@ public class HPyArrayWrappers {
             for (int i = 0; i < cachedLen; i++) {
                 Object element = wrapper.delegate[i];
                 if (profiles[i].profile(element instanceof GraalHPyHandle)) {
-                    closeHandleNode.execute(hpyContext, element);
+                    closeHandleNode.execute(element);
                 }
             }
             if (isPointerProfile.profile(wrapper.isPointer())) {
@@ -224,7 +221,7 @@ public class HPyArrayWrappers {
         }
 
         @Specialization(replaces = "doCachedLen")
-        static void doLoop(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
+        static void doLoop(HPyArrayWrapper wrapper,
                         @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached ConditionProfile profile,
                         @Cached ConditionProfile isPointerProfile) {
@@ -232,7 +229,7 @@ public class HPyArrayWrappers {
             for (int i = 0; i < n; i++) {
                 Object element = wrapper.delegate[i];
                 if (profile.profile(element instanceof GraalHPyHandle)) {
-                    closeHandleNode.execute(hpyContext, element);
+                    closeHandleNode.execute(element);
                 }
             }
             if (isPointerProfile.profile(wrapper.isPointer())) {

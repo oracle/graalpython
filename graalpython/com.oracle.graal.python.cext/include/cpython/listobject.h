@@ -10,7 +10,7 @@
 typedef struct {
     PyObject_VAR_HEAD
     /* Vector of pointers to list elements.  list[0] is ob_item[0], etc. */
-    PyObject **ob_item;
+    PyObject **Py_HIDE_IMPL_FIELD(ob_item);
 
     /* ob_item contains space for 'allocated' elements.  The number
      * currently in use is ob_size.
@@ -34,6 +34,6 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE *out);
 /* Cast argument to PyListObject* type. */
 #define _PyList_CAST(op) (assert(PyList_Check(op)), (PyListObject *)(op))
 
-#define PyList_GET_ITEM(op, i) (_PyList_CAST(op)->ob_item[i])
-#define PyList_SET_ITEM(op, i, v) ((void)(_PyList_CAST(op)->ob_item[i] = (v)))
+#define PyList_GET_ITEM(op, i) (PyList_GetItem((PyObject *)(op), (i)))
+#define PyList_SET_ITEM(op, i, v) (PyList_SetItem((PyObject *)(op), (i), (v)))
 #define PyList_GET_SIZE(op)    Py_SIZE(_PyList_CAST(op))

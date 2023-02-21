@@ -286,6 +286,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_EXCEPTION_ON_THE_STACK = tsLiteral("expected exception on the stack");
     public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %p");
     public static final TruffleString EXPECTED_OBJ_TYPE_S_GOT_P = tsLiteral("expected object of type %s, got %p");
+    public static final TruffleString EXPECTED_OBJ_TYPE_P_GOT_P = tsLiteral("expected object of type %p, got %p");
     public static final TruffleString EXPECTED_S_GOT_P = tsLiteral("expected %s, got %p");
     public static final TruffleString EXPECTED_S_NOT_P = tsLiteral("expected %s, not %p");
     public static final TruffleString EXPECTED_S_P_FOUND = tsLiteral("expected %s, %p found");
@@ -1342,6 +1343,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNHANDLED_ERROR = tsLiteral("Unhandled Error!");
 
     // cext
+    public static final TruffleString CANNOT_MULTICONTEXT = tsLiteral("cannot execute multi-context code with native extensions");
     public static final TruffleString CREATION_FAILD_WITHOUT_EXCEPTION = tsLiteral("creation of module %s failed without setting an exception");
     public static final TruffleString CREATION_RAISED_EXCEPTION = tsLiteral("creation of module %s raised unreported exception");
     public static final TruffleString NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE = tsLiteral("module %s is not a module object, but requests module state");
@@ -1429,6 +1431,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ATTRIBUTE_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");
     public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
     public static final TruffleString TOKEN_ALREADY_USED = tsLiteral("%s has already been used once");
+
+    public static final TruffleString NULL_ARG_INTERNAL = tsLiteral("null argument to internal routine");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

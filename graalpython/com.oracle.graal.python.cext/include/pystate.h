@@ -49,6 +49,7 @@ PyAPI_FUNC(PyObject *) PyInterpreterState_GetDict(PyInterpreterState *);
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03070000
 /* New in 3.7 */
 PyAPI_FUNC(int64_t) PyInterpreterState_GetID(PyInterpreterState *);
+PyAPI_FUNC(int64_t) PyInterpreterState_GetIDFromThreadState(PyThreadState *);
 #endif
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
 

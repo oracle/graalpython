@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,34 +60,28 @@ int PyThread_tss_is_created(Py_tss_t *key) {
     return key->_is_initialized;
 }
 
-UPCALL_ID(PyTruffle_tss_create);
 int PyThread_tss_create(Py_tss_t *key)
 {
     if (key->_is_initialized) {
         return 0;
     }
-    key->_key = UPCALL_CEXT_L(_jls_PyTruffle_tss_create);
+    key->_key = GraalPyTruffle_tss_create();
     key->_is_initialized = 1;
     return 0;
 }
 
-UPCALL_ID(PyTruffle_tss_get);
 void* PyThread_tss_get(Py_tss_t *key) {
-    return UPCALL_CEXT_PTR(_jls_PyTruffle_tss_get, key->_key);
+    return GraalPyTruffle_tss_get(key->_key);
 }
 
-typedef void (*tss_set_fun)(int64_t, void *);
-UPCALL_TYPED_ID(PyTruffle_tss_set, tss_set_fun);
 int PyThread_tss_set(Py_tss_t *key, void *value) {
-    _jls_PyTruffle_tss_set(key->_key, value);
-    return 0;
+    return GraalPyTruffle_tss_set(key->_key, value);
 }
 
-UPCALL_ID(PyTruffle_tss_delete)
 void PyThread_tss_delete(Py_tss_t *key){
     if (!key->_is_initialized) {
         return;
     }
-    UPCALL_CEXT_VOID(_jls_PyTruffle_tss_delete, key->_key);
+    GraalPyTruffle_tss_delete(key->_key);
     key->_is_initialized = 0;
 }

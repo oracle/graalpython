@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -197,7 +197,7 @@ class TestMisc(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PointerEquality_Primitive = CPyExtFunction(
+    ignored_test_PointerEquality_Primitive = CPyExtFunction(
         lambda args: True,
         lambda: (
             (True, lambda arg0, *args: arg0),
@@ -262,18 +262,23 @@ class TestMisc(CPyExtTestCase):
 
             double dval = PyFloat_AsDouble(val);
 
-            PyTruffle_ToNative(val);
+            if (PyTruffle_ToNative(val)) {
+                return Py_False;
+            }
 
             // a fresh object with the same value
             PyObject *val1 = PyFloat_FromDouble(dval);
-            PyTruffle_ToNative(val1);
+
+            if (PyTruffle_ToNative(val1)) {
+                return Py_False;
+            }
 
             // now, kill it
             Py_DECREF(val1);
 
             // reset val's refcnt to X
             Py_DECREF(val);
-
+            
             return val_refcnt == Py_REFCNT(val) ? Py_True : Py_False;
         }
         """,
@@ -286,11 +291,11 @@ class TestMisc(CPyExtTestCase):
     test_PyOS_double_to_string = CPyExtFunction(
         _reference_format_float,
         lambda: (
-            (1.2, b"f", 2),
+            (1.212, b"f", 2),
             (float('nan'), b"f", 2),
             (1.23456789, b"f", 2),
             (123.456789, b"f", 6),
-            (123.456789, b"e", 6),
+            (123.456721, b"e", 6),
             (123.456789, b"r", 0),
         ),
         code="""

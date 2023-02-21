@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -80,6 +81,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -145,14 +147,34 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static boolean eq(PMethod self, PMethod other) {
-            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
+
+        @Child private InteropLibrary identicalLib = InteropLibrary.getFactory().createDispatched(3);
+        @Child private InteropLibrary identicalLib2 = InteropLibrary.getFactory().createDispatched(3);
+
+        private boolean eq(Object function1, Object function2, Object self1, Object self2) {
+            if (function1 != function2) {
+                return false;
+            }
+            if (self1 != self2) {
+                // CPython compares PyObject* pointers:
+                if (self1 instanceof PythonAbstractNativeObject && self2 instanceof PythonAbstractNativeObject) {
+                    if (identicalLib.isIdentical(((PythonAbstractNativeObject) self1).getPtr(), ((PythonAbstractNativeObject) self2).getPtr(), identicalLib2)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return true;
         }
 
         @Specialization
-        static boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
-            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
+        boolean eq(PMethod self, PMethod other) {
+            return eq(self.getFunction(), other.getFunction(), self.getSelf(), other.getSelf());
+        }
+
+        @Specialization
+        boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
+            return eq(self.getFunction(), other.getFunction(), self.getSelf(), other.getSelf());
         }
 
         @Fallback

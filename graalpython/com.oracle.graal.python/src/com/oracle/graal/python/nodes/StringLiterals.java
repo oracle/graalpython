@@ -200,4 +200,12 @@ public abstract class StringLiterals {
 
     public static final TruffleString T_REF = tsLiteral("ref");
 
+    public static final TruffleString T_NULL_RESULT = tsLiteral("<NULL>");
+
+    public static final TruffleString T_SINGLE = tsLiteral("single");
+
+    public static final TruffleString T_EXEC = tsLiteral("exec");
+
+    public static final TruffleString T_EVAL = tsLiteral("eval");
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,90 +40,78 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi15BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi16BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextCodeBuiltins extends PythonBuiltins {
+public final class PythonCextCodeBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextCodeBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyCode_New", takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class PyCodeNewNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
+    public abstract static class PyCode_New extends CApi15BuiltinNode {
         @Specialization
-        public Object codeNew(VirtualFrame frame, Object[] arguments,
-                        @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object[] args = new Object[arguments.length + 1];
-                // Add posonlyargcount (2nd arg)
-                args[0] = arguments[0];
-                args[1] = 0;
-                PythonUtils.arraycopy(arguments, 1, args, 2, arguments.length - 1);
-                return callNode.execute(frame, PythonBuiltinClassType.PCode, args);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        @TruffleBoundary
+        public Object codeNew(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
+                        Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, int firstlineno, Object lnotab,
+                        @Cached CallNode callNode) {
+            /*
+             * This rearranges the arguments (freevars, cellvars).
+             */
+            Object[] args = new Object[]{
+                            argcount,
+                            0, // posonlyargcount
+                            kwonlyargcount, nlocals, stacksize, flags,
+                            code, consts, names, varnames, filename, name, firstlineno, lnotab,
+                            freevars, cellvars
+            };
+            return callNode.execute(PythonBuiltinClassType.PCode, args);
         }
     }
 
-    @Builtin(name = "PyCode_NewWithPosOnlyArgs", takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class PyCodeNewWithPosOnlyArgsNode extends PythonBuiltinNode {
+    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
+    public abstract static class PyCode_NewWithPosOnlyArgs extends CApi16BuiltinNode {
         @Specialization
-        public Object codeNew(VirtualFrame frame, Object[] arguments,
-                        @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return callNode.execute(frame, PythonBuiltinClassType.PCode, arguments);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        @TruffleBoundary
+        public Object codeNew(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
+                        Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, int firstlineno, Object lnotab,
+                        @Cached CallNode callNode) {
+            /*
+             * This rearranges the arguments (freevars, cellvars).
+             */
+            Object[] args = new Object[]{
+                            argcount,
+                            posonlyargcount,
+                            kwonlyargcount, nlocals, stacksize, flags,
+                            code, consts, names, varnames, filename, name, firstlineno, lnotab,
+                            freevars, cellvars
+            };
+            return callNode.execute(PythonBuiltinClassType.PCode, args);
         }
     }
 
-    @Builtin(name = "PyCode_NewEmpty", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyCodeNewEmpty extends PythonTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyCodeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Direct)
+    abstract static class PyCode_NewEmpty extends CApiTernaryBuiltinNode {
         public abstract PCode execute(TruffleString filename, TruffleString funcname, int lineno);
 
         @Specialization
+        @TruffleBoundary
         static PCode newEmpty(TruffleString filename, TruffleString funcname, int lineno,
                         @Cached CodeNodes.CreateCodeNode createCodeNode) {
             return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,

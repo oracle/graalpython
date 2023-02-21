@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,7 @@ import com.oracle.graal.python.test.PythonTests;
 public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultithreadingTestBase {
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
-        try (Engine engine = Engine.newBuilder().build()) {
+        try (Engine engine = Engine.newBuilder().allowExperimentalOptions(true).option("python.NativeModules", "").build()) {
             File richards = PythonTests.getBenchFile(Paths.get("meso", "richards3.py"));
             Source richardsSource = getSource(richards);
             Task[] tasks = new Task[THREADS_COUNT];
@@ -66,7 +66,7 @@ public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultith
                     log("Running %s in thread %d", richards, id);
                     StdStreams result = run(id, engine, new String[]{richards.toString(), "2"}, ctx -> ctx.eval(richardsSource));
                     assertEquals("", result.err);
-                    assertTrue(result.out, result.out.matches("finished\\.\\s+[a-zA-Z0-9/.]*\\s+took\\s+[0-9.]*\\s+s\\s+"));
+                    assertTrue("unexpected output" + result.out, result.out.matches("finished\\.\\s+[a-zA-Z0-9/.\\-]*\\s+took\\s+[0-9.]*\\s+s\\s+"));
                     return null;
                 };
             }

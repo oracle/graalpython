@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,20 +40,14 @@
  */
 #include "capi.h"
 
-PyTypeObject PyGen_Type = PY_TRUFFLE_TYPE("generator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGenObject));
 
 PyObject *
-PyGen_New(struct _frame *frame)
-{
+PyGen_New(struct _frame *frame) {
 	return NULL;
 }
 
 PyObject * PyGen_NewWithQualName(struct _frame *frame, PyObject *name, PyObject *qualname) {
 	return NULL;
-}
-
-int PyGen_NeedsFinalizing(PyGenObject *gen) {
-	return -1;
 }
 
 int _PyGen_SetStopIterationValue(PyObject *gen) {

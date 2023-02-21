@@ -23,23 +23,9 @@ typedef struct {
     PyObject *md_name;
 } PyModuleObject;
 
-static inline PyModuleDef* _PyModule_GetDef(PyObject *mod) {
-    assert(PyModule_Check(mod));
-    return ((PyModuleObject *)mod)->md_def;
-}
-
-static inline void* _PyModule_GetState(PyObject* mod) {
-    assert(PyModule_Check(mod));
-    return ((PyModuleObject *)mod)->md_state;
-}
-
-static inline PyObject* _PyModule_GetDict(PyObject *mod) {
-    assert(PyModule_Check(mod));
-    PyObject *dict = ((PyModuleObject *)mod) -> md_dict;
-    // _PyModule_GetDict(mod) must not be used after calling module_clear(mod)
-    assert(dict != NULL);
-    return dict;
-}
+PyAPI_FUNC(PyModuleDef*) _PyModule_GetDef(PyObject *mod);
+PyAPI_FUNC(void*) _PyModule_GetState(PyObject* mod);
+PyAPI_FUNC(PyObject*) _PyModule_GetDict(PyObject *mod);
 
 #ifdef __cplusplus
 }

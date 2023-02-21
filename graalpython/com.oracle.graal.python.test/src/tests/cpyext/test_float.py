@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -58,13 +58,7 @@ def _reference_asdouble(args):
     n = args[0]
     if isinstance(n, float):
         return n
-    try:
-        return float(n)
-    except:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1.0
+    return float(n)
 
 
 class DummyNonFloat():

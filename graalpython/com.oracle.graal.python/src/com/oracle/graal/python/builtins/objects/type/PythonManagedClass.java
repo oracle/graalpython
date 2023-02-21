@@ -37,6 +37,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -75,6 +76,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private final boolean needsNativeAllocation;
     @CompilationFinal private Object sulongType;
     @CompilationFinal private boolean mroInitialized = false;
+
+    public PTuple mroStore;
 
     @TruffleBoundary
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, PythonAbstractClass... baseClasses) {

@@ -7,7 +7,6 @@
 #include "capi.h"
 
 
-PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyFloatObject));
 
 typedef enum {
     unknown_format, ieee_big_endian_format, ieee_little_endian_format
@@ -48,16 +47,6 @@ static void init_formats(void) {
 
     double_format = detected_double_format;
     float_format = detected_float_format;
-}
-
-UPCALL_ID(PyFloat_AsDouble);
-double PyFloat_AsDouble(PyObject *op) {
-    return ((double (*)(void*))_jls_PyFloat_AsDouble)(native_to_java(op));
-}
-
-UPCALL_ID(PyFloat_FromDouble);
-PyObject* PyFloat_FromDouble(double fval) {
-    return UPCALL_CEXT_O(_jls_PyFloat_FromDouble, fval);
 }
 
 // not quite as in CPython, this assumes that x is already a double. The rest of

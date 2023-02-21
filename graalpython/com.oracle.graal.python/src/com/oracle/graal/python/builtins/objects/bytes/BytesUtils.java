@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -38,6 +38,9 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 public final class BytesUtils {
 
     @CompilationFinal(dimensions = 1) public static final byte[] HEXDIGITS = "0123456789abcdef".getBytes();
+
+    /** Bytes of ASCII string {@code "<NULL>"} */
+    @CompilationFinal(dimensions = 1) public static final byte[] NULL_STRING = {60, 78, 85, 76, 76, 62};
 
     // tables are copied from CPython/Python/pyctype.c
     static final byte PY_CTF_LOWER = 0x01;

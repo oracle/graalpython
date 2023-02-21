@@ -13,7 +13,7 @@ typedef struct {
        Items must normally not be NULL, except during construction when
        the tuple is not yet visible outside the function that builds it. */
     // Truffle change: PyObject *ob_item[1] doesn't work for us in Sulong
-    PyObject **ob_item;
+    PyObject **Py_HIDE_IMPL_FIELD(ob_item);
 } PyTupleObject;
 
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject **, Py_ssize_t);
@@ -26,9 +26,10 @@ PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject *);
 
 #define PyTuple_GET_SIZE(op)    Py_SIZE(_PyTuple_CAST(op))
 
-#define PyTuple_GET_ITEM(op, i) (_PyTuple_CAST(op)->ob_item[i])
+#define PyTuple_GET_ITEM(op, i) PyTuple_GetItem(_PyObject_CAST(op), (i))
 
 /* Macro, *only* to be used to fill in brand new tuples */
-#define PyTuple_SET_ITEM(op, i, v) ((void)(_PyTuple_CAST(op)->ob_item[i] = v))
+// LS: Py_SetItem behaves differently wrt. the existing element...
+#define PyTuple_SET_ITEM(op, i, v) PyTuple_SetItem(_PyObject_CAST(op), (i), (v))
 
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);

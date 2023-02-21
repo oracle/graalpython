@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeOtherNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -76,7 +77,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -138,12 +138,11 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached ReadFieldNode readFieldNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return readFieldNode.execute(lib.getDelegate(this), member);
+            return readFieldNode.execute(getDelegate(), member);
         } finally {
             gil.release(mustRelease);
         }
@@ -210,7 +209,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                     return kwDefaults[i].getValue();
                 }
             }
-            return toSulongNode.execute(object);
+            return createFunctionWrapper(object, toSulongNode);
         }
 
         @Specialization(guards = {"eq(J_ML_METH, key)"}, replaces = {"getMethFromBuiltinMethod", "getMethFromBuiltinFunction"})
@@ -265,12 +264,11 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached WriteFieldNode writeFieldNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            writeFieldNode.execute(lib.getDelegate(this), member, value);
+            writeFieldNode.execute(getDelegate(), member, value);
         } finally {
             gil.release(mustRelease);
         }
@@ -317,6 +315,22 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
             writeAttrToDynamicObjectNode.execute(object, T___DOC__, fromCharPointerNode.execute(value));
             writeAttrToDynamicObjectNode.execute(object, __C_DOC__, value);
         }
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    long asPointer() {
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    protected void toNative(
+                    @Cached ToNativeOtherNode toNativeNode) {
+        toNativeNode.execute(this, NativeCAPISymbol.FUN_PYTRUFFLE_ALLOCATE_METHOD_DEF);
     }
 
     @ExportMessage
