@@ -150,7 +150,8 @@ public final class PythonCextDictBuiltins {
             Object promotedValue = promoteValueNode.execute(value);
             if (promotedKey != null) {
                 key = promotedKey;
-                // TODO: replace key with promoted value
+                // TODO: replace key with promoted value (also, re-enable
+                // 'test_capi.py::test_dict_iteration' once fixed)
             }
             if (promotedValue != null) {
                 setItemNode.execute(null, dict, key, value = promotedValue);

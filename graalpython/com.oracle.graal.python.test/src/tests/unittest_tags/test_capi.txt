@@ -36,7 +36,6 @@
 *graalpython.lib-python.3.test.test_capi.Test_testcapi.test_config
 *graalpython.lib-python.3.test.test_capi.Test_testcapi.test_datetime_capi
 *graalpython.lib-python.3.test.test_capi.Test_testcapi.test_decref_doesnt_leak
-*graalpython.lib-python.3.test.test_capi.Test_testcapi.test_dict_iteration
 *graalpython.lib-python.3.test.test_capi.Test_testcapi.test_empty_argparse
 *graalpython.lib-python.3.test.test_capi.Test_testcapi.test_incref_decref_API
 *graalpython.lib-python.3.test.test_capi.Test_testcapi.test_incref_doesnt_leak
