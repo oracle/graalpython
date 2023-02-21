@@ -233,10 +233,10 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             }
 
             @Override
-            public abstract NSReprState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, NSReprState state);
+            public abstract NSReprState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, NSReprState state);
 
             @Specialization
-            public static NSReprState doPStringKey(HashingStorage storage, HashingStorageIterator it, NSReprState state,
+            public static NSReprState doPStringKey(@SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, NSReprState state,
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStrKey,
                             @Cached CastToTruffleStringNode castStrValue,

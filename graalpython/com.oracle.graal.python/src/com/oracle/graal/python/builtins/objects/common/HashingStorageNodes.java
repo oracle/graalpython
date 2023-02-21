@@ -67,6 +67,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -873,6 +875,7 @@ public class HashingStorageNodes {
         }
     }
 
+    // TODO: DSL inlining: inline this other nodes in this file
     @GenerateUncached
     @ImportStatic({PGuards.class})
     public abstract static class HashingStorageIteratorKey extends Node {
@@ -1003,7 +1006,7 @@ public class HashingStorageNodes {
     }
 
     public abstract static class HashingStorageForEachCallback<T> extends Node {
-        public abstract T execute(Frame frame, HashingStorage storage, HashingStorageIterator it, T accumulator);
+        public abstract T execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, T accumulator);
     }
 
     @GenerateUncached
@@ -1012,13 +1015,19 @@ public class HashingStorageNodes {
         @SuppressWarnings("unchecked")
         public final <T> T execute(Frame frame, HashingStorage storage, HashingStorageForEachCallback<T> callback, T accumulator) {
             CompilerAsserts.partialEvaluationConstant(callback);
-            return (T) executeUntyped(frame, storage, (HashingStorageForEachCallback<Object>) callback, accumulator);
+            return (T) executeUntyped(frame, null, storage, (HashingStorageForEachCallback<Object>) callback, accumulator);
         }
 
-        abstract Object executeUntyped(Frame frame, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulator);
+        @SuppressWarnings("unchecked")
+        public final <T> T execute(Frame frame, Node callbackInliningTarget, HashingStorage storage, HashingStorageForEachCallback<T> callback, T accumulator) {
+            CompilerAsserts.partialEvaluationConstant(callback);
+            return (T) executeUntyped(frame, callbackInliningTarget, storage, (HashingStorageForEachCallback<Object>) callback, accumulator);
+        }
+
+        abstract Object executeUntyped(Frame frame, Node callbackInliningTarget, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulator);
 
         @Specialization
-        static Object doIt(Frame frame, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulatorIn,
+        static Object doIt(Frame frame, Node callbackInliningTarget, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulatorIn,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached LoopConditionProfile loopProfile) {
@@ -1030,7 +1039,7 @@ public class HashingStorageNodes {
                     if (CompilerDirectives.hasNextTier()) {
                         index++;
                     }
-                    accumulator = callback.execute(frame, storage, aIter, accumulator);
+                    accumulator = callback.execute(frame, callbackInliningTarget, storage, aIter, accumulator);
                 }
             } finally {
                 if (index != 0) {
@@ -1053,19 +1062,21 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PGuards.class})
     public abstract static class HashingStorageXorCallback extends HashingStorageForEachCallback<ResultAndOther> {
 
         @Override
-        public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
+        public abstract ResultAndOther execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
 
         @Specialization
-        static ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
-                        @Cached ObjectHashMap.PutNode putResultNode,
-                        @Cached HashingStorageGetItemWithHash getFromOther,
-                        @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageIteratorValue iterValue,
-                        @Cached HashingStorageIteratorKeyHash iterHash) {
+        static ResultAndOther doGeneric(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
+                        @Cached(inline = false) ObjectHashMap.PutNode putResultNode,
+                        @Cached(inline = false) HashingStorageGetItemWithHash getFromOther,
+                        @Cached(inline = false) HashingStorageIteratorKey iterKey,
+                        @Cached(inline = false) HashingStorageIteratorValue iterValue,
+                        @Cached(inline = false) HashingStorageIteratorKeyHash iterHash) {
             Object key = iterKey.execute(storage, it);
             long hash = iterHash.execute(storage, it);
             Object otherValue = getFromOther.execute(frame, acc.other, key, hash);
@@ -1083,6 +1094,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageForEach forEachA,
                         @Cached HashingStorageForEach forEachB,
                         @Cached HashingStorageXorCallback callbackA,
@@ -1091,28 +1103,30 @@ public class HashingStorageNodes {
             ObjectHashMap resultMap = result.map;
 
             ResultAndOther accA = new ResultAndOther(resultMap, bStorage);
-            forEachA.execute(frame, aStorage, callbackA, accA);
+            forEachA.execute(frame, inliningTarget, aStorage, callbackA, accA);
 
             ResultAndOther accB = new ResultAndOther(resultMap, aStorage);
-            forEachB.execute(frame, bStorage, callbackB, accB);
+            forEachB.execute(frame, inliningTarget, bStorage, callbackB, accB);
 
             return result;
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PGuards.class})
     public abstract static class HashingStorageIntersectCallback extends HashingStorageForEachCallback<ResultAndOther> {
 
         @Override
-        public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
+        public abstract ResultAndOther execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
 
         @Specialization
         static ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
-                        @Cached ObjectHashMap.PutNode putResultNode,
-                        @Cached HashingStorageGetItemWithHash getFromOther,
-                        @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageIteratorKeyHash iterHash) {
+                        @Cached(inline = false) ObjectHashMap.PutNode putResultNode,
+                        @Cached(inline = false) HashingStorageGetItemWithHash getFromOther,
+                        @Cached(inline = false) HashingStorageIteratorKey iterKey,
+                        @Cached(inline = false) HashingStorageIteratorKeyHash iterHash) {
             Object key = iterKey.execute(storage, it);
             long hash = iterHash.execute(storage, it);
             Object otherValue = getFromOther.execute(frame, acc.other, key, hash);
@@ -1133,11 +1147,12 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageForEach forEachA,
                         @Cached HashingStorageIntersectCallback callback) {
             final EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
             ResultAndOther acc = new ResultAndOther(result.map, bStorage);
-            forEachA.execute(frame, aStorage, callback, acc);
+            forEachA.execute(frame, inliningTarget, aStorage, callback, acc);
             return result;
         }
     }
@@ -1147,10 +1162,10 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageDiffCallback extends HashingStorageForEachCallback<ResultAndOther> {
 
         @Override
-        public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
+        public abstract ResultAndOther execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
 
         @Specialization
-        static ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
+        static ResultAndOther doGeneric(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
                         @Cached ObjectHashMap.PutNode putResultNode,
                         @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
@@ -1193,10 +1208,10 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageCompareKeysCallback extends HashingStorageForEachCallback<HashingStorage> {
 
         @Override
-        public abstract HashingStorage execute(Frame frame, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage);
+        public abstract HashingStorage execute(Frame frame, Node inliningTarget, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage);
 
         @Specialization
-        static HashingStorage doGeneric(Frame frame, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage,
+        static HashingStorage doGeneric(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage,
                         @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
@@ -1253,10 +1268,10 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageAreDisjointCallback extends HashingStorageForEachCallback<HashingStorage> {
 
         @Override
-        public abstract HashingStorage execute(Frame frame, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage);
+        public abstract HashingStorage execute(Frame frame, Node inliningTarget, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage);
 
         @Specialization
-        static HashingStorage doGeneric(Frame frame, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage,
+        static HashingStorage doGeneric(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage,
                         @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
@@ -1299,10 +1314,10 @@ public class HashingStorageNodes {
     @GenerateUncached
     public abstract static class HashingStorageTransferItem extends HashingStorageForEachCallback<HashingStorage> {
         @Override
-        public abstract HashingStorage execute(Frame frame, HashingStorage src, HashingStorageIterator it, HashingStorage destStorage);
+        public abstract HashingStorage execute(Frame frame, Node inliningTarget, HashingStorage src, HashingStorageIterator it, HashingStorage destStorage);
 
         @Specialization
-        static EconomicMapStorage economic2Economic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, EconomicMapStorage destStorage,
+        static EconomicMapStorage economic2Economic(Frame frame, @SuppressWarnings("unused") Node inliningTarget, EconomicMapStorage src, HashingStorageIterator it, EconomicMapStorage destStorage,
                         @Cached PutNode putNode) {
             ObjectHashMap srcMap = src.map;
             putNode.put(frame, destStorage.map, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
@@ -1310,7 +1325,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization(replaces = "economic2Economic")
-        static HashingStorage economic2Generic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, HashingStorage destStorage,
+        static HashingStorage economic2Generic(Frame frame, @SuppressWarnings("unused") Node inliningTarget, EconomicMapStorage src, HashingStorageIterator it, HashingStorage destStorage,
                         @Cached HashingStorageSetItemWithHash setItemWithHash) {
             // Note that the point is to avoid side-effecting __hash__ call. Since the source is
             // economic map, the key may be an arbitrary object.
@@ -1319,7 +1334,7 @@ public class HashingStorageNodes {
         }
 
         @Fallback
-        static HashingStorage generic2Generic(Frame frame, HashingStorage src, HashingStorageIterator it, HashingStorage destStorage,
+        static HashingStorage generic2Generic(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage src, HashingStorageIterator it, HashingStorage destStorage,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorValue iterValue,
                         @Cached HashingStorageSetItem setItem) {

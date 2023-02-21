@@ -70,6 +70,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
@@ -296,7 +297,7 @@ public class ObjectHashMapTests {
         int[] size = new int[]{0};
         HashingStorageForEachNodeGen.getUncached().execute(null, storage, new HashingStorageForEachCallback<>() {
             @Override
-            public Object execute(Frame frame, HashingStorage s, HashingStorageIterator cbIt, Object accumulator) {
+            public Object execute(Frame frame, Node inliningTarget, HashingStorage s, HashingStorageIterator cbIt, Object accumulator) {
                 Object key = HashingStorageIteratorKey.executeUncached(s, cbIt);
                 assertTrue(key.toString(), expected.containsKey(key));
                 size[0]++;

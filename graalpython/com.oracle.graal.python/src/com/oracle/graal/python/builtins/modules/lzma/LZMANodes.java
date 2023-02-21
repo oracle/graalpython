@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -266,10 +266,10 @@ public class LZMANodes {
         }
 
         @Override
-        public abstract OptionsState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, OptionsState s);
+        public abstract OptionsState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, OptionsState s);
 
         @Specialization
-        OptionsState doit(Frame frame, HashingStorage storage, HashingStorageIterator it, OptionsState s,
+        OptionsState doit(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, OptionsState s,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached CastToJavaLongLossyNode toLong,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -102,6 +102,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -496,10 +497,10 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @ImportStatic(PGuards.class)
         abstract static class ForEachKW extends HashingStorageForEachCallback<ExcState> {
             @Override
-            public abstract ExcState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ExcState state);
+            public abstract ExcState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ExcState state);
 
             @Specialization
-            public static ExcState doIt(Frame frame, HashingStorage storage, HashingStorageIterator it, ExcState state,
+            public static ExcState doIt(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ExcState state,
                             @Cached PyObjectSetAttr setAttr,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorKeyHash itKeyHash,

@@ -289,6 +289,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -1859,10 +1860,10 @@ public final class PythonCextSlotBuiltins {
         abstract static class EachSubclassAdd extends HashingStorageForEachCallback<Set<PythonAbstractClass>> {
 
             @Override
-            public abstract Set<PythonAbstractClass> execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses);
+            public abstract Set<PythonAbstractClass> execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses);
 
             @Specialization
-            public Set<PythonAbstractClass> doIt(Frame frame, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses,
+            public Set<PythonAbstractClass> doIt(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorKeyHash itKeyHash,
                             @Cached HashingStorageGetItemWithHash getItemNode) {

@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
@@ -100,10 +102,10 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
     @ImportStatic(PythonOptions.class)
     abstract static class AddKeywordNode extends HashingStorageNodes.HashingStorageForEachCallback<CopyKeywordsState> {
         @Override
-        public abstract CopyKeywordsState execute(Frame frame, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState accumulator);
+        public abstract CopyKeywordsState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, CopyKeywordsState accumulator);
 
         @Specialization
-        public CopyKeywordsState add(HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState state,
+        public CopyKeywordsState add(@SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState state,
                         @Cached PRaiseNode raiseNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached HashingStorageNodes.HashingStorageIteratorKey itKey,
