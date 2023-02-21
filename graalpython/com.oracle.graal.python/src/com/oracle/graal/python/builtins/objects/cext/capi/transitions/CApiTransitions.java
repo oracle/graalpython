@@ -125,7 +125,7 @@ public class CApiTransitions {
             super(referent);
             this.pointer = pointer;
             this.strongReference = referent.getRefCount() > PythonNativeWrapper.MANAGED_REFCNT ? referent : null;
-            LOGGER.finer(() -> PythonUtils.formatJString("new %s PythonObjectReference to %s", (strongReference == null ? "weak" : "strong"), referent));
+            LOGGER.finer(() -> PythonUtils.formatJString("new %s PythonObjectReference<%s> to %s", (strongReference == null ? "weak" : "strong"), Long.toHexString(pointer), referent));
             referent.ref = this;
         }
 
