@@ -159,6 +159,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -313,6 +314,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"})
+        @SuppressWarnings("truffle-static-method")// raise etc.
         void doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -537,6 +539,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size >= 0"})
+        @SuppressWarnings("truffle-static-method") // raise
         Object read(VirtualFrame frame, PFileIO self, int size,
                         @Bind("this") Node inliningTarget,
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
@@ -889,7 +892,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isCloseFD()")
         Object simple(VirtualFrame frame, PFileIO self,
-                        @Cached PyObjectCallMethodObjArgs callClose) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callClose) {
             try {
                 callClose.execute(frame, getContext().lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {
@@ -903,7 +906,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isCloseFD()", "!self.isFinalizing()"})
         Object common(VirtualFrame frame, PFileIO self,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
-                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
+                        @Exclusive @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
             try {
                 callSuperClose.execute(frame, getContext().lookupType(PRawIOBase), T_CLOSE, self);
             } catch (PException e) {

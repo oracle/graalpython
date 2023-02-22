@@ -102,6 +102,10 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -215,6 +219,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "!isNothingTodo(encodingObj, errorsObj, newline_changed)")
         static void changeEncoding(VirtualFrame frame, PTextIO self, Object encodingObj, Object errorsObj, @SuppressWarnings("unused") boolean newline_changed,
+                        @Bind("this") Node inliningTarget,
                         @Cached IONodes.ToTruffleStringNode asString,
                         @Cached CodecsTruffleModuleBuiltins.LookupTextEncoding lookupTextEncoding,
                         @Cached SetDecoderNode setDecoderNode,
@@ -240,11 +245,13 @@ public abstract class TextIOWrapperNodes {
             self.setEncoding(encoding);
             self.setErrors(errors);
 
-            fixEncoderStateNode.execute(frame, self);
+            fixEncoderStateNode.execute(frame, inliningTarget, self);
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class FindLineEndingNode extends Node {
         /**
          * Finds the line ending in {@code line}, starting at code-point index {@code start}. If it
@@ -257,12 +264,12 @@ public abstract class TextIOWrapperNodes {
          * the code point index of the beginning of the incomplete line ending, relative to
          * {@code start}).
          */
-        public abstract int execute(PTextIOBase self, TruffleString line, int start, int[] consumed);
+        public abstract int execute(Node inliningTarget, PTextIOBase self, TruffleString line, int start, int[] consumed);
 
         @Specialization(guards = "self.isReadTranslate()")
-        int doTranslated(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+        static int doTranslated(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
+                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
             /* Newlines are already translated, only search for \n */
             int len = codePointLengthNode.execute(line, TS_ENCODING);
             int pos = indexOfCodePointNode.execute(line, '\n', start, len, TS_ENCODING);
@@ -274,9 +281,9 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = {"!self.isReadTranslate()", "self.isReadUniversal()"})
-        int doUniversal(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+        static int doUniversal(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
+                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
             /*
              * Universal newline search. Find any of \r, \r\n, \n The decoder ensures that \r\n are
              * not split in two pieces
@@ -304,11 +311,11 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = {"!self.isReadTranslate()", "!self.isReadUniversal()"})
-        int doNonUniversal(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.IndexOfStringNode indexOfStringNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        static int doNonUniversal(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
+                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached(inline = false) TruffleString.IndexOfStringNode indexOfStringNode,
+                        @Shared @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             int len = codePointLengthNode.execute(line, TS_ENCODING);
             TruffleString readNl = self.getReadNewline();
             int nlLen = codePointLengthNode.execute(readNl, TS_ENCODING);
@@ -346,6 +353,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         static TruffleString readline(VirtualFrame frame, PTextIO self, int limit,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadChunkNode readChunkNode,
                         @Cached WriteFlushNode writeFlushNode,
                         @Cached FindLineEndingNode findLineEndingNode,
@@ -397,7 +405,7 @@ public abstract class TextIOWrapperNodes {
                     // TODO: PyUnicode_READY(line)?
                 }
 
-                endpos = findLineEndingNode.execute(self, line, start, consumed);
+                endpos = findLineEndingNode.execute(inliningTarget, self, line, start, consumed);
                 /*
                  * ptr = PyUnicode_DATA(line); kind = PyUnicode_KIND(line); endpos =
                  * _PyIO_find_line_ending( self.readtranslate, self.readuniversal, self.getReadnl(),
@@ -624,13 +632,13 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.hasDecoder()", "isAtInit(cookie)"})
         static void atInit(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @Cached PyObjectCallMethodObjArgs callMethodReset) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReset) {
             callMethodReset.execute(frame, self.getDecoder(), T_RESET);
         }
 
         @Specialization(guards = {"self.hasDecoder()", "!isAtInit(cookie)"})
         static void decoderSetstate(VirtualFrame frame, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
-                        @Cached PyObjectCallMethodObjArgs callMethodSetState) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
             PTuple tuple = factory.createTuple(new Object[]{factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY), cookie.decFlags});
             callMethodSetState.execute(frame, self.getDecoder(), T_SETSTATE, tuple);
 
@@ -659,14 +667,14 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "startOfStream")
         static void encoderResetStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @Cached PyObjectCallMethodObjArgs callMethodReset) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReset) {
             callMethodReset.execute(frame, self.getEncoder(), T_RESET);
             self.setEncodingStartOfStream(true);
         }
 
         @Specialization(guards = "!startOfStream")
         static void encoderResetNotStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @Cached PyObjectCallMethodObjArgs callMethodSetState) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
             callMethodSetState.execute(frame, self.getEncoder(), T_SETSTATE, 0);
             self.setEncodingStartOfStream(false);
 
@@ -676,10 +684,12 @@ public abstract class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:_textiowrapper_fix_encoder_state
      */
+    @GenerateInline
     @GenerateUncached
+    @GenerateCached(false)
     protected abstract static class FixEncoderStateNode extends PNodeWithContext {
 
-        public abstract void execute(Frame frame, PTextIO self);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self);
 
         @Specialization(guards = {"!self.isSeekable() || !self.hasEncoder()"})
         void nothing(@SuppressWarnings("unused") PTextIO self) {
@@ -687,10 +697,10 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = {"self.isSeekable()", "self.hasEncoder()"})
-        static void fixEncoderState(VirtualFrame frame, PTextIO self,
-                        @Cached PyObjectCallMethodObjArgs callMethodTell,
-                        @Cached PyObjectCallMethodObjArgs callMethodSetState,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+        static void fixEncoderState(VirtualFrame frame, @SuppressWarnings("unused") Node inliningTarget, PTextIO self,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodTell,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodSetState,
+                        @Cached(inline = false) PyObjectRichCompareBool.EqNode eqNode) {
             self.setEncodingStartOfStream(true);
             Object cookieObj = callMethodTell.execute(frame, self.getBuffer(), T_TELL);
             if (!eqNode.execute(frame, cookieObj, 0)) {
@@ -766,6 +776,7 @@ public abstract class TextIOWrapperNodes {
         @Specialization
         void init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
                         TruffleString errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsTruffleModuleBuiltins.GetPreferredEncoding getPreferredEncoding,
                         @Cached CodecsTruffleModuleBuiltins.LookupTextEncoding lookupTextEncoding,
                         @Cached SetEncoderNode setEncoderNode,
@@ -855,7 +866,7 @@ public abstract class TextIOWrapperNodes {
             self.setHasRead1(lookup.execute(frame, buffer, T_READ1) != PNone.NO_VALUE);
 
             self.setEncodingStartOfStream(false);
-            fixEncoderStateNode.execute(frame, self);
+            fixEncoderStateNode.execute(frame, inliningTarget, self);
 
             self.setOK(true);
         }

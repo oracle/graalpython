@@ -86,7 +86,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -196,15 +195,18 @@ public class BufferedIONodes {
         }
     }
 
-    abstract static class RawTellNode extends PNodeWithRaise {
-
-        protected final boolean ignore;
-
-        public RawTellNode(boolean ignore) {
-            this.ignore = ignore;
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class RawTellNode extends PNodeWithContext {
+        final long executeIgnoreError(VirtualFrame frame, Node inliningTarget, PBuffered self) {
+            return execute(frame, inliningTarget, self, true);
         }
 
-        public abstract long execute(VirtualFrame frame, PBuffered self);
+        final long execute(VirtualFrame frame, Node inliningTarget, PBuffered self) {
+            return execute(frame, inliningTarget, self, false);
+        }
+
+        abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self, boolean ignore);
 
         private static long tell(VirtualFrame frame, Node inliningTarget, Object raw,
                         PyObjectCallMethodObjArgs callMethod,
@@ -217,22 +219,21 @@ public class BufferedIONodes {
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_raw_tell
          */
         @Specialization(guards = "!ignore")
-        long bufferedRawTell(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod,
+        static long bufferedRawTell(VirtualFrame frame, Node inliningTarget, PBuffered self, @SuppressWarnings("unused") boolean ignore,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode,
+                        @Shared("callMethod") @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
                         @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
             long n = tell(frame, inliningTarget, self.getRaw(), callMethod, asOffNumberNode);
             if (n < 0) {
-                throw raise(OSError, IO_STREAM_INVALID_POS, n);
+                throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_STREAM_INVALID_POS, n);
             }
             self.setAbsPos(n);
             return n;
         }
 
         @Specialization(guards = "ignore")
-        static long bufferedRawTellIgnoreException(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod,
+        static long bufferedRawTellIgnoreException(VirtualFrame frame, Node inliningTarget, PBuffered self, @SuppressWarnings("unused") boolean ignore,
+                        @Shared("callMethod") @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
                         @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
             long n;
             try {
@@ -245,12 +246,6 @@ public class BufferedIONodes {
             self.setAbsPos(n);
             return n;
         }
-
-        @NeverDefault
-        public static RawTellNode create() {
-            return BufferedIONodesFactory.RawTellNodeGen.create(false);
-        }
-
     }
 
     /**
@@ -323,13 +318,14 @@ public class BufferedIONodes {
      * implementation of cpython/Modules/_io/bufferedio.c:_io__Buffered_seek_impl
      */
     @GenerateInline
-    @GenerateCached(false)
+    @GenerateCached
     abstract static class SeekNode extends PNodeWithContext {
 
         public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self, long off, int whence);
 
         @Specialization
-        static long seek(VirtualFrame frame, Node inliningTarget, PBuffered self, long off, int whence,
+        static long seek(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, long off, int whence,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
                         @Cached RawSeekNode rawSeekNode,
@@ -355,7 +351,8 @@ public class BufferedIONodes {
                  * possible. Also, we needn't take the lock in this fast path. Don't know how to do
                  * that when whence == 2, though.
                  */
-                long current = self.getAbsPos() != -1 ? self.getAbsPos() : rawTellNode.execute(frame, self);
+                long current = self.getAbsPos() != -1 ? self.getAbsPos()
+                                : rawTellNode.execute(frame, inliningTarget, self);
                 int avail = readahead(self);
                 if (isAvail.profile(inliningTarget, avail > 0)) {
                     long offset = target;

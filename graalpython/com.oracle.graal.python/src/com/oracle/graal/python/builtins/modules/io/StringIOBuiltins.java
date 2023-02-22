@@ -369,7 +369,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    static TruffleString stringioReadline(PStringIO self, int lim, FindLineEndingNode findLineEndingNode, TruffleString.SubstringNode substringNode) {
+    static TruffleString stringioReadline(Node inliningTarget, PStringIO self, int lim, FindLineEndingNode findLineEndingNode, TruffleString.SubstringNode substringNode) {
         /* In case of overseek, return the empty string */
         if (self.getPos() >= self.getStringSize()) {
             return T_EMPTY_STRING;
@@ -382,7 +382,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         int[] consumed = new int[1];
-        int len = findLineEndingNode.execute(self, self.getBuf(), start, consumed);
+        int len = findLineEndingNode.execute(inliningTarget, self, self.getBuf(), start, consumed);
         /*
          * If we haven't found any line ending, we just return everything (`consumed` is ignored).
          */
@@ -405,11 +405,12 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
         static TruffleString readline(PStringIO self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             self.realize(toStringNode);
-            return stringioReadline(self, size, findLineEndingNode, substringNode);
+            return stringioReadline(inliningTarget, self, size, findLineEndingNode, substringNode);
         }
     }
 
@@ -763,6 +764,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method") // raise
         Object builtin(PStringIO self,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
@@ -770,7 +772,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             self.realize(toStringNode);
-            TruffleString line = stringioReadline(self, -1, findLineEndingNode, substringNode);
+            TruffleString line = stringioReadline(inliningTarget, self, -1, findLineEndingNode, substringNode);
             if (line.isEmpty()) {
                 throw raiseStopIteration();
             }

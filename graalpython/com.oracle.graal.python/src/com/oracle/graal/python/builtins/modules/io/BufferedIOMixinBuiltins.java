@@ -264,7 +264,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached("create(T_SEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.CheckIsSeekabledNode checkIsSeekabledNode,
                         @Cached BufferedIONodes.AsOffNumberNode asOffNumberNode,
-                        @Cached BufferedIONodes.SeekNode seekNode) {
+                        @Cached(inline = true) BufferedIONodes.SeekNode seekNode) {
             checkIsClosedNode.execute(frame, self);
             checkIsSeekabledNode.execute(frame, self);
             long pos = asOffNumberNode.execute(frame, inliningTarget, off, TypeError);
@@ -291,8 +291,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class TellNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static long doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached RawTellNode rawTellNode) {
-            long pos = rawTellNode.execute(frame, self);
+            long pos = rawTellNode.execute(frame, inliningTarget, self);
             pos -= rawOffset(self);
             /* TODO: sanity check (pos >= 0) */
             return pos;
@@ -323,7 +324,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 Object res = callMethodTruncate.execute(frame, self.getRaw(), T_TRUNCATE, pos);
                 /* Reset cached position */
-                rawTellNode.execute(frame, self);
+                rawTellNode.execute(frame, inliningTarget, self);
                 return res;
             } finally {
                 EnterBufferedNode.leave(self);

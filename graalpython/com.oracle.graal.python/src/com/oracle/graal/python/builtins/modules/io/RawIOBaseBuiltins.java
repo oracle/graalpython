@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -110,14 +111,14 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "size < 0")
         static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, self, T_READALL);
         }
 
         @Specialization(guards = "size >= 0")
         Object read(VirtualFrame frame, Object self, int size,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached PyObjectCallMethodObjArgs callMethodReadInto,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PByteArray b = factory().createByteArray(new byte[size]);
             Object res = callMethodReadInto.execute(frame, self, T_READINTO, b);

@@ -236,7 +236,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doIt(VirtualFrame frame, Node inliningTarget, Object self, TruffleString method, TruffleString errorMessage,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
                         @Cached(inline = false) IsNode isNode,
                         @Cached PRaiseNode.Lazy lazyRaiseNode) {
             CompilerAsserts.partialEvaluationConstant(method);

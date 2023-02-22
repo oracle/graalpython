@@ -436,6 +436,7 @@ public class IONodes {
         }
 
         @Specialization(guards = "!isInteger(nameobj)")
+        @SuppressWarnings("truffle-static-method") // raise
         Object generic(VirtualFrame frame, Object nameobj,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,

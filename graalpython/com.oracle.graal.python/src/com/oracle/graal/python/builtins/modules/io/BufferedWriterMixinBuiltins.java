@@ -94,6 +94,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class WriteNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method") // IndirectCallNode
         Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,

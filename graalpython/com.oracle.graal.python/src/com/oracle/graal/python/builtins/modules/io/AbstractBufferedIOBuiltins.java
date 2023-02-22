@@ -51,7 +51,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
-import com.oracle.graal.python.builtins.modules.io.BufferedIONodesFactory.RawTellNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
@@ -72,7 +71,9 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -85,14 +86,14 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
     public abstract static class BufferedInitNode extends PNodeWithRaise {
 
-        @Child private RawTellNode rawTellNode = RawTellNodeGen.create(true);
-
         public abstract void execute(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory);
 
         @Specialization(guards = "bufferSize > 0")
-        void bufferedInit(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory) {
+        void bufferedInit(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
+                        @Cached RawTellNode rawTellNode) {
             init(self, bufferSize, factory);
-            rawTellNode.execute(frame, self);
+            rawTellNode.executeIgnoreError(frame, inliningTarget, self);
         }
 
         @SuppressWarnings("unused")
@@ -239,6 +240,8 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class LazyRaiseBlockingIOError extends Node {
         public final RaiseBlockingIOError get(Node inliningTarget) {
             return execute(inliningTarget);

@@ -99,6 +99,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -269,9 +270,10 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_read_generic
          */
         @Specialization(guards = {"self.isOK()", "size > 0", "!isReadFast(self, size)"})
+        @SuppressWarnings("truffle-static-method") // factory
         Object bufferedreaderReadGeneric(VirtualFrame frame, PBuffered self, int size,
                         @Bind("this") Node inliningTarget,
-                        @Cached EnterBufferedNode lock,
+                        @Shared @Cached EnterBufferedNode lock,
                         @Cached RawReadNode rawReadNode,
                         @Cached FillBufferNode fillBufferNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
@@ -367,9 +369,10 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_read_all
          */
         @Specialization(guards = {"self.isOK()", "isReadAll(size)"})
+        @SuppressWarnings("truffle-static-method") // factory
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Cached EnterBufferedNode lock,
+                        @Shared @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached("create(T_READALL)") LookupAttributeInMRONode readallAttr,
                         @Cached InlinedConditionProfile hasReadallProfile,
@@ -470,6 +473,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method") // factory
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
                         @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
