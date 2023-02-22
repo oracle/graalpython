@@ -47,6 +47,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ImportCAPISymbolNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -56,16 +60,19 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -100,19 +107,30 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    double doBoolean(boolean object) {
+    static double doBoolean(boolean object) {
         return object ? 1.0 : 0.0;
     }
 
-    // TODO When we implement casting native floats, this should cast them directly instead of
-    // calling their __float__
-    @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)"})
+    @Specialization(guards = "isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)", limit = "1")
+    static double doNative(PythonAbstractNativeObject object,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                    @Cached ToSulongNode toSulongNode,
+                    @Cached ImportCAPISymbolNode importSymNode) {
+        return FromNativeSubclassNode.readObFval(object, toSulongNode, interopLibrary, importSymNode);
+    }
+
+    @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)",
+                    "!isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)"})
     static double doObject(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
-                    @Cached GetClassNode getClassNode,
+                    @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
                     @Cached(parameters = "Float") LookupSpecialMethodSlotNode lookup,
                     @Cached CallUnaryMethodNode call,
-                    @Cached GetClassNode resultClassNode,
+                    @Cached InlinedGetClassNode resultClassNode,
                     @Cached InlineIsBuiltinClassProfile resultProfile,
                     @Cached IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
@@ -120,11 +138,11 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                     @Cached CastToJavaDoubleNode cast,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode) {
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         Object floatDescr = lookup.execute(frame, type, object);
         if (floatDescr != PNone.NO_VALUE) {
             Object result = call.executeObject(frame, floatDescr, object);
-            Object resultType = resultClassNode.execute(result);
+            Object resultType = resultClassNode.execute(inliningTarget, result);
             if (!resultProfile.profileClass(inliningTarget, resultType, PythonBuiltinClassType.PFloat)) {
                 if (!resultSubtypeNode.execute(resultType, PythonBuiltinClassType.PFloat)) {
                     throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
@@ -140,6 +158,10 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
             return cast.execute(index);
         }
         throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
+    }
+
+    static boolean isFloatSubtype(Node inliningTarget, Object object, InlinedGetClassNode getClass, IsSubtypeNode isSubtype) {
+        return FromNativeSubclassNode.isFloatSubtype(null, inliningTarget, object, getClass, isSubtype);
     }
 
     @NeverDefault

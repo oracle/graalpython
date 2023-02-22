@@ -112,7 +112,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
@@ -138,6 +138,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -149,6 +150,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -163,6 +165,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -170,7 +173,7 @@ import com.oracle.truffle.api.profiles.IntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
-public class IntBuiltins extends PythonBuiltins {
+public final class IntBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -2117,6 +2120,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(FromNativeSubclassNode.class)
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean doII(int left, int right) {
@@ -2151,28 +2155,31 @@ public class IntBuiltins extends PythonBuiltins {
             return left.compareTo(right) < 0;
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype)", limit = "1")
-        static boolean doDN(VirtualFrame frame, long x, PythonNativeObject y,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)", limit = "1")
+        static boolean doDN(VirtualFrame frame, long x, PythonAbstractNativeObject y,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
             return x < fromNativeNode.execute(frame, y);
         }
 
         @Specialization(guards = {
-                        "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype)",
-                        "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype)"}, limit = "1")
-        static boolean doDN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)",
+                        "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)"}, limit = "1")
+        static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, PythonAbstractNativeObject y,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode nativeLeft,
                         @Cached FromNativeSubclassNode nativeRight) {
             return nativeLeft.execute(frame, x) < nativeRight.execute(frame, y);
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype)", limit = "1")
-        static boolean doDN(VirtualFrame frame, PythonNativeObject x, double y,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+        @Specialization(guards = "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)", limit = "1")
+        static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, double y,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(frame, x) < y;
