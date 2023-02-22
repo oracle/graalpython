@@ -1137,7 +1137,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyGC_Disable", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyGC_Enable", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyGC_IsEnabled", ret = Int, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyHash_GetFuncDef", ret = PYHASH_FUNCDEF_PTR, args = {}, call = Ignored, comment = "removed from our pyhash.h")
     @CApiBuiltin(name = "PyImport_AppendInittab", ret = Int, args = {ConstCharPtr, func_objvoid}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_ExecCodeModule", ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
