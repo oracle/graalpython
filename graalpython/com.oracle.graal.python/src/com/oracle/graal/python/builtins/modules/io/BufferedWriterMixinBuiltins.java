@@ -103,7 +103,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
             try {
                 lock.enter(inliningTarget, self);
                 checkIsClosedNode.execute(frame, self);
-                return writeNode.execute(frame, self, buffer);
+                return writeNode.execute(frame, inliningTarget, self, buffer);
             } finally {
                 bufferLib.release(buffer, frame, this);
                 EnterBufferedNode.leave(self);
@@ -130,7 +130,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(inliningTarget, self);
-                flushAndRewindUnlockedNode.execute(frame, self);
+                flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
             } finally {
                 EnterBufferedNode.leave(self);
             }

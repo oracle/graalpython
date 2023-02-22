@@ -294,7 +294,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 }
                 /* Flush the write buffer if necessary */
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
                 self.resetRead(); // _bufferedreader_reset_buf
                 while (remaining > 0) {
@@ -391,7 +391,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
                 /* We're going past the buffer's bounds, flush it */
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
 
                 self.resetRead(); // _bufferedreader_reset_buf
@@ -542,7 +542,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 }
 
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
 
                 self.resetRead(); // _bufferedreader_reset_buf
@@ -675,7 +675,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                     }
                 }
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
 
                 while (true) {
@@ -780,7 +780,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             try {
                 lock.enter(inliningTarget, self);
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
                 return factory().createBytes(bufferedreaderPeekUnlocked(frame, self, fillBufferNode));
             } finally {

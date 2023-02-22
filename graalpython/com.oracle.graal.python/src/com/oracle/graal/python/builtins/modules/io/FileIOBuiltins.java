@@ -383,7 +383,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     try {
                         posixLib.setInheritable(ctxt.getPosixSupport(), self.getFD(), false);
                     } catch (PosixException e) {
-                        exceptionProfile.enter(inliningTarget);
+                        exceptionProfile1.enter(inliningTarget);
                         throw raiseOSErrorFromPosixException(frame, e, fromJavaStringNode);
                     }
                     fdIsOwn = true;
@@ -411,7 +411,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                      * self.setBlksize(fstatResult[8]); }
                      */
                 } catch (PosixException e) {
-                    exceptionProfile.enter(inliningTarget);
+                    exceptionProfile2.enter(inliningTarget);
                     /*
                      * Tolerate fstat() errors other than EBADF. See Issue #25717, where an
                      * anonymous file on a Virtual Box shared folder filesystem would raise ENOENT.
@@ -437,7 +437,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                             gil.acquire();
                         }
                     } catch (PosixException e) {
-                        exceptionProfile.enter(inliningTarget);
+                        exceptionProfile3.enter(inliningTarget);
                         if (self.getSeekable() < 0) {
                             self.setSeekable(0);
                         }

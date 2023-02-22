@@ -73,6 +73,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -204,6 +205,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline(false)
     public abstract static class RaiseBlockingIOError extends Node {
         protected abstract PException execute(Node node, Object errno, TruffleString message, int written);
 
@@ -235,6 +237,18 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             exception.setExceptionAttributes(attrs);
             return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
         }
+    }
 
+    public abstract static class LazyRaiseBlockingIOError extends Node {
+        public final RaiseBlockingIOError get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        protected abstract RaiseBlockingIOError execute(Node inliningTarget);
+
+        @Specialization
+        static RaiseBlockingIOError doIt(@Cached(inline = false) RaiseBlockingIOError node) {
+            return node;
+        }
     }
 }

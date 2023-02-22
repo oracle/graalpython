@@ -56,13 +56,17 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -79,16 +83,16 @@ public class BufferedWriterNodes {
 
     abstract static class WriteNode extends PNodeWithRaise {
 
-        public abstract int execute(VirtualFrame frame, PBuffered self, Object buffer);
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object buffer);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_io_BufferedWriter_write_impl
          */
         @Specialization
-        static int bufferedWriterWrite(VirtualFrame frame, PBuffered self, Object buffer,
+        static int bufferedWriterWrite(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, Object buffer,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached AbstractBufferedIOBuiltins.RaiseBlockingIOError raiseBlockingIOError,
+                        @Cached AbstractBufferedIOBuiltins.LazyRaiseBlockingIOError raiseBlockingIOError,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode,
                         @Cached RawWriteNode rawWriteNode,
@@ -118,7 +122,7 @@ public class BufferedWriterNodes {
 
             /* First write the current buffer */
             try {
-                flushUnlockedNode.execute(frame, self);
+                flushUnlockedNode.execute(frame, inliningTarget, self);
             } catch (PException e) {
                 e.expect(inliningTarget, BlockingIOError, isBuiltinClassProfile);
                 if (self.isReadable()) {
@@ -150,7 +154,7 @@ public class BufferedWriterNodes {
                  * error.
                  */
                 Object errno = e.getUnreifiedException().getArgs().getSequenceStorage().getItemNormalized(0);
-                throw raiseBlockingIOError.raise(errno, WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, avail);
+                throw raiseBlockingIOError.get(inliningTarget).raise(errno, WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, avail);
             }
             /*
              * Adjust the raw stream position if it is away from the logical stream position. This
@@ -171,7 +175,7 @@ public class BufferedWriterNodes {
                 // TODO use memoryview
                 byte[] buf = new byte[bufLen];
                 bufferLib.readIntoByteArray(buffer, written, buf, 0, bufLen - written);
-                int n = rawWriteNode.execute(frame, self, buf, bufLen - written);
+                int n = rawWriteNode.execute(frame, inliningTarget, self, buf, bufLen - written);
                 if (n == -2) {
                     if (remaining > self.getBufferSize()) {
                         bufferLib.readIntoByteArray(buffer, written, self.getBuffer(), 0, self.getBufferSize());
@@ -179,7 +183,7 @@ public class BufferedWriterNodes {
                         adjustPosition(self, self.getBufferSize());
                         self.setWriteEnd(self.getBufferSize());
                         written += self.getBufferSize();
-                        throw raiseBlockingIOError.raiseEWOULDBLOCK(WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, written);
+                        throw raiseBlockingIOError.get(inliningTarget).raiseEWOULDBLOCK(WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, written);
                     }
                     break;
                 }
@@ -205,18 +209,21 @@ public class BufferedWriterNodes {
         }
     }
 
-    abstract static class RawWriteNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class RawWriteNode extends PNodeWithContext {
 
-        public abstract int execute(VirtualFrame frame, PBuffered self, byte[] buf, int len);
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, PBuffered self, byte[] buf, int len);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedwriter_raw_write
          */
         @Specialization
-        int bufferedwriterRawWrite(VirtualFrame frame, PBuffered self, byte[] buf, int len,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+        static int bufferedwriterRawWrite(VirtualFrame frame, Node inliningTarget, PBuffered self, byte[] buf, int len,
+                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
+                        @Cached(inline = false) PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
             PBytes memobj = factory.createBytes(buf, len);
             Object res = callMethod.execute(frame, self.getRaw(), T_WRITE, memobj);
             if (res == PNone.NONE) {
@@ -227,7 +234,7 @@ public class BufferedWriterNodes {
             }
             int n = asSizeNode.executeExact(frame, res, ValueError);
             if (n < 0 || n > len) {
-                throw raise(OSError, IO_S_INVALID_LENGTH, "write()", n, len);
+                throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_S_INVALID_LENGTH, "write()", n, len);
             }
             if (n > 0 && self.getAbsPos() != -1) {
                 self.incAbsPos(n);
@@ -236,17 +243,18 @@ public class BufferedWriterNodes {
         }
     }
 
-    abstract static class FlushUnlockedNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class FlushUnlockedNode extends PNodeWithContext {
 
-        public abstract void execute(VirtualFrame frame, PBuffered self);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedwriter_flush_unlocked
          */
         @Specialization
-        protected static void bufferedwriterFlushUnlocked(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached AbstractBufferedIOBuiltins.RaiseBlockingIOError raiseBlockingIOError,
+        protected static void bufferedwriterFlushUnlocked(VirtualFrame frame, Node inliningTarget, PBuffered self,
+                        @Cached AbstractBufferedIOBuiltins.LazyRaiseBlockingIOError raiseBlockingIOError,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode) {
             if (!isValidWriteBuffer(self) || self.getWritePos() == self.getWriteEnd()) {
@@ -261,9 +269,9 @@ public class BufferedWriterNodes {
             }
             while (self.getWritePos() < self.getWriteEnd()) {
                 byte[] buf = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getWritePos(), self.getWriteEnd());
-                int n = rawWriteNode.execute(frame, self, buf, buf.length);
+                int n = rawWriteNode.execute(frame, inliningTarget, self, buf, buf.length);
                 if (n == -2) {
-                    throw raiseBlockingIOError.raiseEAGAIN(WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, 0);
+                    throw raiseBlockingIOError.get(inliningTarget).raiseEAGAIN(WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, 0);
                 }
                 self.incWritePos(n);
                 self.setRawPos(self.getWritePos());

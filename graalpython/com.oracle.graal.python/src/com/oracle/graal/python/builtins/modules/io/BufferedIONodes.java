@@ -280,14 +280,15 @@ public class BufferedIONodes {
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:buffered_flush_and_rewind_unlocked
      */
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class FlushAndRewindUnlockedNode extends PNodeWithContext {
 
-        public abstract void execute(VirtualFrame frame, PBuffered self);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
 
         @Specialization(guards = {"self.isReadable()", "!self.isWritable()"})
-        protected static void readOnly(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached RawSeekNode rawSeekNode) {
+        protected static void readOnly(VirtualFrame frame, Node inliningTarget, PBuffered self,
+                        @Shared @Cached RawSeekNode rawSeekNode) {
             /*
              * Rewind the raw stream so that its position corresponds to the current logical
              * position.
@@ -298,17 +299,16 @@ public class BufferedIONodes {
         }
 
         @Specialization(guards = {"!self.isReadable()", "self.isWritable()"})
-        protected static void writeOnly(VirtualFrame frame, PBuffered self,
-                        @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode) {
-            flushUnlockedNode.execute(frame, self);
+        protected static void writeOnly(VirtualFrame frame, Node inliningTarget, PBuffered self,
+                        @Shared @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode) {
+            flushUnlockedNode.execute(frame, inliningTarget, self);
         }
 
         @Specialization(guards = {"self.isReadable()", "self.isWritable()"})
-        protected static void readWrite(VirtualFrame frame, PBuffered self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
-                        @Cached RawSeekNode rawSeekNode) {
-            flushUnlockedNode.execute(frame, self);
+        protected static void readWrite(VirtualFrame frame, Node inliningTarget, PBuffered self,
+                        @Shared @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
+                        @Shared @Cached RawSeekNode rawSeekNode) {
+            flushUnlockedNode.execute(frame, inliningTarget, self);
             /*
              * Rewind the raw stream so that its position corresponds to the current logical
              * position.
@@ -322,13 +322,14 @@ public class BufferedIONodes {
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:_io__Buffered_seek_impl
      */
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class SeekNode extends PNodeWithContext {
 
-        public abstract long execute(VirtualFrame frame, PBuffered self, long off, int whence);
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self, long off, int whence);
 
         @Specialization
-        static long seek(VirtualFrame frame, PBuffered self, long off, int whence,
-                        @Bind("this") Node inliningTarget,
+        static long seek(VirtualFrame frame, Node inliningTarget, PBuffered self, long off, int whence,
                         @Cached EnterBufferedNode lock,
                         @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
                         @Cached RawSeekNode rawSeekNode,
@@ -372,7 +373,7 @@ public class BufferedIONodes {
             try {
                 /* Fallback: invoke raw seek() method and clear buffer */
                 if (isWriteableProfile.profile(inliningTarget, self.isWritable())) {
-                    flushUnlockedNode.execute(frame, self);
+                    flushUnlockedNode.execute(frame, inliningTarget, self);
                 }
 
                 if (whenceSeekCur) {

@@ -268,7 +268,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             checkIsClosedNode.execute(frame, self);
             checkIsSeekabledNode.execute(frame, self);
             long pos = asOffNumberNode.execute(frame, inliningTarget, off, TypeError);
-            return seekNode.execute(frame, self, pos, whence);
+            return seekNode.execute(frame, inliningTarget, self, pos, whence);
         }
 
         @Specialization(guards = {"self.isOK()", "!isSupportedWhence(whence)"})
@@ -320,7 +320,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(inliningTarget, self);
-                flushAndRewindUnlockedNode.execute(frame, self);
+                flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 Object res = callMethodTruncate.execute(frame, self.getRaw(), T_TRUNCATE, pos);
                 /* Reset cached position */
                 rawTellNode.execute(frame, self);
