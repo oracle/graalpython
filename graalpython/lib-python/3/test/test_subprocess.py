@@ -788,7 +788,7 @@ class ProcessTestCase(BaseTestCase):
                     n == 'LD_PRELOAD' or n.startswith('SANDBOX') or # Gentoo
                     n == 'PWD' or n == 'SHLVL' or # Graalpython bash launcher
                     n.startswith('JAVA_MAIN_CLASS') or # JVM on MacOS
-                    n == 'LD_LIBRARY_PATH' or # Added by graalpy launcher
+                    n == 'LD_LIBRARY_PATH' or n == 'DYLD_LIBRARY_PATH' or # Added by graalpy launcher
                     n == 'LC_CTYPE') # Locale coercion triggered
 
         with subprocess.Popen([sys.executable, "-c",
