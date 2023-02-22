@@ -151,9 +151,9 @@ public abstract class InlinedGetClassNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline
     public abstract static class GetPythonObjectClassNode extends PNodeWithContext {
-        abstract Object execute(Node inliningTarget, PythonObject object);
+        public abstract Object execute(Node inliningTarget, PythonObject object);
 
-        abstract Object execute(Node inliningTarget, PythonAbstractNativeObject object);
+        public abstract Object execute(Node inliningTarget, PythonAbstractNativeObject object);
 
         @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")
         static Object getPythonObjectConstantClass(@SuppressWarnings("unused") PythonObject object,
