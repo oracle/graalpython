@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -85,6 +86,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLZMADecompressor)
 public class LZMADecompressorBuiltins extends PythonBuiltins {
@@ -192,21 +194,23 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doBytes(LZMADecompressor self, PBytesLike data, int maxLength,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
             byte[] bytes = toBytes.execute(data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
-            return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
+            return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
 
         }
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doObject(VirtualFrame frame, LZMADecompressor self, Object data, int maxLength,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
-            return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
+            return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
         }
 
         @SuppressWarnings("unused")
