@@ -159,6 +159,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupA
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -179,6 +181,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -214,14 +217,14 @@ public abstract class CExtNodes {
     private static final String J_SUBTYPE_NEW = "_subtype_new";
 
     @GenerateUncached
-    abstract static class ImportCAPISymbolNode extends PNodeWithContext {
+    public abstract static class ImportCAPISymbolNode extends PNodeWithContext {
 
         public abstract Object execute(NativeCAPISymbol symbol);
 
         @Specialization
-        Object doGeneric(NativeCAPISymbol name,
+        static Object doGeneric(NativeCAPISymbol name,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode) {
-            return importCExtSymbolNode.execute(PythonContext.get(this).getCApiContext(), name);
+            return importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name);
         }
     }
 
@@ -339,29 +342,47 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     public abstract static class FromNativeSubclassNode extends Node {
 
-        public abstract Double execute(VirtualFrame frame, PythonNativeObject object);
+        public abstract Double execute(VirtualFrame frame, PythonAbstractNativeObject object);
 
         @Specialization
-        @SuppressWarnings("unchecked")
-        public Double doDouble(VirtualFrame frame, PythonNativeObject object,
-                        @Exclusive @Cached GetClassNode getClass,
-                        @Exclusive @Cached IsSubtypeNode isSubtype,
+        static Double doDouble(VirtualFrame frame, PythonAbstractNativeObject object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetPythonObjectClassNode getClass,
+                        @Cached IsSubtypeNode isSubtype,
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            if (isFloatSubtype(frame, object, getClass, isSubtype)) {
-                try {
-                    return (Double) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
-                } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("C object conversion function failed", e);
-                }
+            if (isFloatSubtype(frame, inliningTarget, object, getClass, isSubtype)) {
+                return readObFval(object, toSulongNode, interopLibrary, importCAPISymbolNode);
             }
             return null;
         }
 
-        public boolean isFloatSubtype(VirtualFrame frame, PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype) {
-            return isSubtype.execute(frame, getClass.execute(object), PythonContext.get(this).lookupType(PythonBuiltinClassType.PFloat));
+        public static Double readObFval(PythonAbstractNativeObject object, ToSulongNode toSulongNode, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
+            Object res;
+            try {
+                res = interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+
+            if (res instanceof Double) {
+                return (Double) res;
+            }
+            /*
+             * In case we want to be very correct, we would need to use
+             * InteropLibrary.fitsInDouble/asDouble here.
+             */
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere(String.format("%s cannot be interpreted as Java double", object));
+        }
+
+        public static boolean isFloatSubtype(VirtualFrame frame, Node inliningTarget, Object object, InlinedGetClassNode getClass, IsSubtypeNode isSubtype) {
+            return isSubtype.execute(frame, getClass.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
+        }
+
+        public static boolean isFloatSubtype(VirtualFrame frame, Node inliningTarget, PythonAbstractNativeObject object, GetPythonObjectClassNode getClass, IsSubtypeNode isSubtype) {
+            return isSubtype.execute(frame, getClass.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
         }
 
         @NeverDefault

@@ -42,19 +42,25 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ImportCAPISymbolNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Casts a Python "number" to a Java double without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -68,28 +74,31 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     public abstract double execute(Object x);
 
     @Specialization
-    public static double toDouble(long x) {
+    static double toDouble(long x) {
         return x;
     }
 
     @Specialization
-    public static double toDouble(double x) {
+    static double toDouble(double x) {
         return x;
     }
 
     @Specialization
-    public static double toDouble(PInt x,
+    static double toDouble(PInt x,
                     @Cached PRaiseNode raise) {
         return x.doubleValueWithOverflow(raise);
     }
 
     @Specialization
-    static double doNativeObject(PythonNativeObject x,
-                    @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PFloat)) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("casting a native float object to a Java double is not implemented yet");
+    static double doNativeObject(PythonAbstractNativeObject x,
+                    @Bind("this") Node node,
+                    @Cached GetPythonObjectClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                    @Cached ToSulongNode toSulongNode,
+                    @Cached ImportCAPISymbolNode importSymNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(node, x), PythonBuiltinClassType.PFloat)) {
+            return FromNativeSubclassNode.readObFval(x, toSulongNode, interopLibrary, importSymNode);
         }
         // the object's type is not a subclass of 'float'
         throw CannotCastException.INSTANCE;
