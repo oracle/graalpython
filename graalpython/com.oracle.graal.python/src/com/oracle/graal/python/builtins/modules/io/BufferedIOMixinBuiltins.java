@@ -129,11 +129,11 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryWithInitErrorBuiltinNode {
 
-        private static Object close(VirtualFrame frame, PBuffered self,
+        private static Object close(VirtualFrame frame, Node inliningTarget, PBuffered self,
                         EnterBufferedNode lock,
                         PyObjectCallMethodObjArgs callMethodClose) {
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 Object res = callMethodClose.execute(frame, self.getRaw(), T_CLOSE);
                 if (self.getBuffer() != null) {
                     self.setBuffer(null);
@@ -154,7 +154,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached EnterBufferedNode lock,
                         @Cached InlinedConditionProfile profile) {
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 if (profile.profile(inliningTarget, isClosedNode.execute(frame, inliningTarget, self))) {
                     return PNone.NONE;
                 }
@@ -171,13 +171,13 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 callMethodFlush.execute(frame, self, T_FLUSH);
             } catch (PException e) {
                 try {
-                    close(frame, self, lock, callMethodClose);
+                    close(frame, inliningTarget, self, lock, callMethodClose);
                 } catch (PException ee) {
                     throw ee.chainException(e);
                 }
                 throw e;
             }
-            return close(frame, self, lock, callMethodClose);
+            return close(frame, inliningTarget, self, lock, callMethodClose);
         }
     }
 
@@ -260,13 +260,14 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "isSupportedWhence(whence)"})
         static long doit(VirtualFrame frame, PBuffered self, Object off, int whence,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(T_SEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.CheckIsSeekabledNode checkIsSeekabledNode,
                         @Cached BufferedIONodes.AsOffNumberNode asOffNumberNode,
                         @Cached BufferedIONodes.SeekNode seekNode) {
             checkIsClosedNode.execute(frame, self);
             checkIsSeekabledNode.execute(frame, self);
-            long pos = asOffNumberNode.execute(frame, off, TypeError);
+            long pos = asOffNumberNode.execute(frame, inliningTarget, off, TypeError);
             return seekNode.execute(frame, self, pos, whence);
         }
 
@@ -310,6 +311,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "self.isWritable()"})
         static Object doit(VirtualFrame frame, PBuffered self, Object pos,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_TRUNCATE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached RawTellNode rawTellNode,
@@ -317,7 +319,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodTruncate) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 flushAndRewindUnlockedNode.execute(frame, self);
                 Object res = callMethodTruncate.execute(frame, self.getRaw(), T_TRUNCATE, pos);
                 /* Reset cached position */

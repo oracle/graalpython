@@ -160,7 +160,7 @@ public class BufferedWriterNodes {
              */
             long offset = rawOffset(self);
             if (offset != 0) {
-                rawSeekNode.execute(frame, self, -offset, 1);
+                rawSeekNode.execute(frame, inliningTarget, self, -offset, 1);
                 self.setRawPos(self.getRawPos() - offset);
             }
 
@@ -245,6 +245,7 @@ public class BufferedWriterNodes {
          */
         @Specialization
         protected static void bufferedwriterFlushUnlocked(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached AbstractBufferedIOBuiltins.RaiseBlockingIOError raiseBlockingIOError,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode) {
@@ -255,7 +256,7 @@ public class BufferedWriterNodes {
             /* First, rewind */
             long rewind = rawOffset(self) + (self.getPos() - self.getWritePos());
             if (rewind != 0) {
-                rawSeekNode.execute(frame, self, -rewind, SEEK_CUR);
+                rawSeekNode.execute(frame, inliningTarget, self, -rewind, SEEK_CUR);
                 self.incRawPos(-rewind);
             }
             while (self.getWritePos() < self.getWriteEnd()) {
@@ -281,12 +282,12 @@ public class BufferedWriterNodes {
             /*-
                This ensures that after return from this function,
                VALID_WRITE_BUFFER(self) returns false.
-
+            
                This is a required condition because when a tell() is called
                after flushing and if VALID_READ_BUFFER(self) is false, we need
                VALID_WRITE_BUFFER(self) to be false to have
                RAW_OFFSET(self) == 0.
-
+            
                Issue: https://bugs.python.org/issue32228
             */
             self.resetWrite(); // _bufferedwriter_reset_buf

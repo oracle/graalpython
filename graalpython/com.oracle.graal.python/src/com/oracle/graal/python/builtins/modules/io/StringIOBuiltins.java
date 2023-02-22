@@ -426,15 +426,15 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
         static Object truncate(PStringIO self, @SuppressWarnings("unused") PNone size,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             return truncate(self, self.getPos(), substringNode, toStringNode);
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "size >= 0", "size < self.getStringSize()"})
         static Object truncate(PStringIO self, int size,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             self.realize(toStringNode);
             self.setBuf(substringNode.execute(self.getBuf(), 0, size, TS_ENCODING, false));
             self.setStringsize(size);
@@ -450,8 +450,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
         Object obj(VirtualFrame frame, PStringIO self, Object arg,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             int size = asSizeNode.executeExact(frame, indexNode.execute(frame, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
@@ -780,6 +780,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         /*
          * This path is rarely executed.
          */
+        @SuppressWarnings("truffle-static-method")
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"}, limit = "1")
         Object slowpath(VirtualFrame frame, PStringIO self,
                         @Bind("this") Node inliningTarget,

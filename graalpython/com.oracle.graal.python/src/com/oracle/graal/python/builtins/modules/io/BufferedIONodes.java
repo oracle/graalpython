@@ -166,10 +166,12 @@ public class BufferedIONodes {
 
     @ImportStatic(PGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateInline
+    @GenerateCached(false)
     // PyNumber_AsOff_t
     abstract static class AsOffNumberNode extends PNodeWithContext {
 
-        public abstract long execute(VirtualFrame frame, Object number, PythonBuiltinClassType err);
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, Object number, PythonBuiltinClassType err);
 
         @Specialization
         static long doInt(long number, @SuppressWarnings("unused") PythonBuiltinClassType err) {
@@ -177,18 +179,17 @@ public class BufferedIONodes {
         }
 
         @Specialization
-        static long toLong(VirtualFrame frame, Object number, PythonBuiltinClassType err,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached CastToJavaLongExactNode cast,
+        static long toLong(VirtualFrame frame, Node inliningTarget, Object number, PythonBuiltinClassType err,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached(inline = false) PyNumberIndexNode indexNode,
+                        @Cached(inline = false) CastToJavaLongExactNode cast,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             Object index = indexNode.execute(frame, number);
             try {
                 return cast.execute(index);
             } catch (PException e) {
                 e.expect(inliningTarget, OverflowError, errorProfile);
-                throw raiseNode.raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
+                throw raiseNode.get(inliningTarget).raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -205,11 +206,11 @@ public class BufferedIONodes {
 
         public abstract long execute(VirtualFrame frame, PBuffered self);
 
-        private static long tell(VirtualFrame frame, Object raw,
+        private static long tell(VirtualFrame frame, Node inliningTarget, Object raw,
                         PyObjectCallMethodObjArgs callMethod,
                         AsOffNumberNode asOffNumberNode) {
             Object res = callMethod.execute(frame, raw, T_TELL);
-            return asOffNumberNode.execute(frame, res, ValueError);
+            return asOffNumberNode.execute(frame, inliningTarget, res, ValueError);
         }
 
         /**
@@ -220,7 +221,7 @@ public class BufferedIONodes {
                         @Bind("this") Node inliningTarget,
                         @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod,
                         @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
-            long n = tell(frame, self.getRaw(), callMethod, asOffNumberNode);
+            long n = tell(frame, inliningTarget, self.getRaw(), callMethod, asOffNumberNode);
             if (n < 0) {
                 throw raise(OSError, IO_STREAM_INVALID_POS, n);
             }
@@ -230,11 +231,12 @@ public class BufferedIONodes {
 
         @Specialization(guards = "ignore")
         static long bufferedRawTellIgnoreException(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod,
                         @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
             long n;
             try {
-                n = tell(frame, self.getRaw(), callMethod, asOffNumberNode);
+                n = tell(frame, inliningTarget, self.getRaw(), callMethod, asOffNumberNode);
             } catch (PException e) {
                 n = -1;
                 // ignore
@@ -254,19 +256,21 @@ public class BufferedIONodes {
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:_buffered_raw_seek
      */
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class RawSeekNode extends PNodeWithContext {
 
-        public abstract long execute(VirtualFrame frame, PBuffered self, long target, int whence);
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self, long target, int whence);
 
         @Specialization
-        static long bufferedRawSeek(VirtualFrame frame, PBuffered self, long target, int whence,
-                        @Cached PRaiseNode raise,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
+        static long bufferedRawSeek(VirtualFrame frame, Node inliningTarget, PBuffered self, long target, int whence,
+                        @Cached PRaiseNode.Lazy raise,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
                         @Cached AsOffNumberNode asOffNumberNode) {
             Object res = callMethod.execute(frame, self.getRaw(), T_SEEK, target, whence);
-            long n = asOffNumberNode.execute(frame, res, ValueError);
+            long n = asOffNumberNode.execute(frame, inliningTarget, res, ValueError);
             if (n < 0) {
-                raise.raise(OSError, IO_STREAM_INVALID_POS, n);
+                raise.get(inliningTarget).raise(OSError, IO_STREAM_INVALID_POS, n);
             }
             self.setAbsPos(n);
             return n;
@@ -282,12 +286,13 @@ public class BufferedIONodes {
 
         @Specialization(guards = {"self.isReadable()", "!self.isWritable()"})
         protected static void readOnly(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached RawSeekNode rawSeekNode) {
             /*
              * Rewind the raw stream so that its position corresponds to the current logical
              * position.
              */
-            long n = rawSeekNode.execute(frame, self, -rawOffset(self), 1);
+            long n = rawSeekNode.execute(frame, inliningTarget, self, -rawOffset(self), 1);
             self.resetRead(); // _bufferedreader_reset_buf
             assert n != -1;
         }
@@ -300,6 +305,7 @@ public class BufferedIONodes {
 
         @Specialization(guards = {"self.isReadable()", "self.isWritable()"})
         protected static void readWrite(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
                         @Cached RawSeekNode rawSeekNode) {
             flushUnlockedNode.execute(frame, self);
@@ -307,7 +313,7 @@ public class BufferedIONodes {
              * Rewind the raw stream so that its position corresponds to the current logical
              * position.
              */
-            long n = rawSeekNode.execute(frame, self, -rawOffset(self), 1);
+            long n = rawSeekNode.execute(frame, inliningTarget, self, -rawOffset(self), 1);
             self.resetRead(); // _bufferedreader_reset_buf
             assert n != -1;
         }
@@ -362,7 +368,7 @@ public class BufferedIONodes {
                 }
             }
 
-            lock.enter(self);
+            lock.enter(inliningTarget, self);
             try {
                 /* Fallback: invoke raw seek() method and clear buffer */
                 if (isWriteableProfile.profile(inliningTarget, self.isWritable())) {
@@ -372,7 +378,7 @@ public class BufferedIONodes {
                 if (whenceSeekCur) {
                     target -= rawOffset(self);
                 }
-                long n = rawSeekNode.execute(frame, self, target, whence);
+                long n = rawSeekNode.execute(frame, inliningTarget, self, target, whence);
                 self.setRawPos(-1);
                 if (selfIsReadable) {
                     self.resetRead(); // _bufferedreader_reset_buf
@@ -385,23 +391,24 @@ public class BufferedIONodes {
     }
 
     // TODO: experiment with threads count to avoid locking.
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class EnterBufferedNode extends Node {
 
-        public abstract void execute(PBuffered self);
+        public abstract void execute(Node inliningTarget, PBuffered self);
 
         @Specialization
-        static void doEnter(PBuffered self,
-                        @Bind("this") Node inliningTarget,
+        static void doEnter(Node inliningTarget, PBuffered self,
                         @Cached EnterBufferedBusyNode enterBufferedBusyNode,
                         @Cached InlinedConditionProfile isBusy) {
             if (isBusy.profile(inliningTarget, !self.getLock().acquireNonBlocking())) {
-                enterBufferedBusyNode.execute(self);
+                enterBufferedBusyNode.execute(inliningTarget, self);
             }
             self.setOwner(ThreadModuleBuiltins.GetCurrentThreadIdNode.getId());
         }
 
-        void enter(PBuffered self) {
-            execute(self);
+        void enter(Node inliningTarget, PBuffered self) {
+            execute(inliningTarget, self);
         }
 
         static void leave(PBuffered self) {
@@ -413,37 +420,41 @@ public class BufferedIONodes {
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:_enter_buffered_busy
      */
-    abstract static class EnterBufferedBusyNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class EnterBufferedBusyNode extends PNodeWithContext {
 
-        public abstract void execute(PBuffered self);
+        public abstract void execute(Node inliningTarget, PBuffered self);
 
         @Specialization(guards = {"!self.isOwn()", "!getContext().isFinalizing()"})
-        void normal(PBuffered self,
-                        @Cached GilNode gil) {
+        static void normal(Node inliningTarget, PBuffered self,
+                        @Cached(inline = false) GilNode gil) {
             gil.release(true);
             try {
-                self.getLock().acquireBlocking(this);
+                self.getLock().acquireBlocking(inliningTarget);
             } finally {
                 gil.acquire();
             }
         }
 
         @Specialization(guards = {"!self.isOwn()", "getContext().isFinalizing()"})
-        void finalizing(PBuffered self) {
+        static void finalizing(Node inliningTarget, PBuffered self,
+                        @Shared @Cached PRaiseNode.Lazy lazyRaise) {
             /*
              * When finalizing, we don't want a deadlock to happen with daemon threads abruptly shut
              * down while they owned the lock. Therefore, only wait for a grace period (1 s.). Note
              * that non-daemon threads have already exited here, so this shouldn't affect carefully
              * written threaded I/O code.
              */
-            if (!self.getLock().acquireTimeout(this, (long) 1e3)) {
-                throw raise(SystemError, SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS);
+            if (!self.getLock().acquireTimeout(inliningTarget, (long) 1e3)) {
+                throw lazyRaise.get(inliningTarget).raise(SystemError, SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS);
             }
         }
 
         @Specialization(guards = "self.isOwn()")
-        void error(PBuffered self) {
-            throw raise(RuntimeError, REENTRANT_CALL_INSIDE_P, self);
+        static void error(Node inliningTarget, PBuffered self,
+                        @Shared @Cached PRaiseNode.Lazy lazyRaise) {
+            throw lazyRaise.get(inliningTarget).raise(RuntimeError, REENTRANT_CALL_INSIDE_P, self);
         }
     }
 }

@@ -270,13 +270,14 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          */
         @Specialization(guards = {"self.isOK()", "size > 0", "!isReadFast(self, size)"})
         Object bufferedreaderReadGeneric(VirtualFrame frame, PBuffered self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached RawReadNode rawReadNode,
                         @Cached FillBufferNode fillBufferNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 int currentSize = safeDowncast(self);
                 if (size <= currentSize) {
                     return factory().createBytes(bufferedreaderReadFast(self, size));
@@ -379,7 +380,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 byte[] data = PythonUtils.EMPTY_BYTE_ARRAY;
                 /* First copy what we have in the current buffer. */
                 int currentSize = safeDowncast(self);
@@ -470,6 +471,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_READ)") CheckIsClosedNode checkIsClosedNode,
                         @Cached RawReadNode rawReadNode) {
@@ -492,7 +494,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 return factory().createBytes(b);
             }
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 self.resetRead(); // _bufferedreader_reset_buf
                 byte[] fill = rawReadNode.execute(frame, self, n);
                 return factory().createBytes(fill == BLOCKED ? PythonUtils.EMPTY_BYTE_ARRAY : fill);
@@ -514,6 +516,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          */
         @Specialization(guards = "self.isOK()", limit = "3")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -521,7 +524,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Cached FillBufferNode fillBufferNode) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 int bufLen = bufferLib.getBufferLength(buffer);
                 int written = 0;
                 int n = safeDowncast(self);
@@ -660,7 +663,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 return res;
             }
 
-            lock.enter(self);
+            lock.enter(inliningTarget, self);
             try {
                 /* Now we try to get some more from the raw stream */
                 ByteArrayOutputStream chunks = createOutputStream();
@@ -768,13 +771,14 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_PEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached FillBufferNode fillBufferNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 if (self.isWritable()) {
                     flushAndRewindUnlockedNode.execute(frame, self);
                 }
