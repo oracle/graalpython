@@ -90,13 +90,13 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class ZlibNodes {
@@ -127,12 +127,11 @@ public class ZlibNodes {
         byte[] nativeCompress(ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len,
                         @Cached NativeLibrary.InvokeNativeFunction compressObj,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             self.lastInput = context.getEnv().asGuestValue(bytes);
             int err = zlibSupport.compressObj(self.getZst(), self.lastInput, len, DEF_BUF_SIZE, compressObj);
-            if (errProfile.profile(err != Z_OK)) {
+            if (err != Z_OK) {
                 errorHandling.execute(self.getZst(), err, zlibSupport, false);
             }
             return getBuffer.getOutputBuffer(self.getZst(), context);
@@ -150,13 +149,12 @@ public class ZlibNodes {
                         @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Cached NativeLibrary.InvokeNativeFunction deflateOffHeap,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object in = context.getEnv().asGuestValue(bytes);
             Object zst = zlibSupport.createStream(createStream);
             int err = zlibSupport.deflateOffHeap(zst, in, len, DEF_BUF_SIZE, level, deflateOffHeap);
-            if (errProfile.profile(err != Z_OK)) {
+            if (err != Z_OK) {
                 errorHandling.execute(zst, err, zlibSupport, true);
             }
             byte[] resultArray = getBuffer.getOutputBuffer(zst, context);
@@ -173,12 +171,11 @@ public class ZlibNodes {
         byte[] nativeDecompress(ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObj,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object in = context.getEnv().asGuestValue(bytes);
             int err = zlibSupport.decompressObj(self.getZst(), in, len, DEF_BUF_SIZE, maxLength, decompressObj);
-            if (errProfile.profile(err != Z_OK)) {
+            if (err != Z_OK) {
                 errorHandling.execute(self.getZst(), err, zlibSupport, false);
             }
             return getBuffer.getOutputBuffer(self.getZst(), context);
@@ -196,13 +193,12 @@ public class ZlibNodes {
                         @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Cached NativeLibrary.InvokeNativeFunction inflateOffHeap,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object zst = zlibSupport.createStream(createStream);
             Object in = context.getEnv().asGuestValue(bytes);
             int err = zlibSupport.inflateOffHeap(zst, in, len, bufsize, wbits, inflateOffHeap);
-            if (errProfile.profile(err != Z_OK)) {
+            if (err != Z_OK) {
                 errorHandling.execute(zst, err, zlibSupport, true);
             }
             byte[] resultArray = getBuffer.getOutputBuffer(zst, context);
@@ -247,8 +243,8 @@ public class ZlibNodes {
         static void doError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
-                        @Cached NativeLibrary.InvokeNativeFunction hasStreamErrorMsg,
-                        @Cached NativeLibrary.InvokeNativeFunction getStreamErrorMsg) {
+                        @Exclusive @Cached NativeLibrary.InvokeNativeFunction hasStreamErrorMsg,
+                        @Exclusive @Cached NativeLibrary.InvokeNativeFunction getStreamErrorMsg) {
             TruffleString zmsg = null;
             if (zlibSupport.hasStreamErrorMsg(zst, hasStreamErrorMsg) == 1) {
                 zmsg = zlibSupport.getStreamErrorMsg(zst, getStreamErrorMsg);

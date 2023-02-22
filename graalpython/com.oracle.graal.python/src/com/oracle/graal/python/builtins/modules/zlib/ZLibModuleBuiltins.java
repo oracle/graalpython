@@ -92,6 +92,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -104,7 +105,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = ZLibModuleBuiltins.J_ZLIB)
@@ -330,7 +332,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         long doitNone(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
-                        @Cached ToBytesNode toBytesNode) {
+                        @Shared("bb") @Cached ToBytesNode toBytesNode) {
             return doCRC32(toBytesNode.execute(frame, data));
         }
 
@@ -344,7 +346,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
-                        @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytes.execute(data);
             int len = data.getSequenceStorage().length();
             return nativeCrc32(bytes, len, value, invoke);
@@ -353,7 +355,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"useNative()", "!isBytes(data)"})
         long doNativeObject(VirtualFrame frame, Object data, int value,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytesNode.execute(frame, data);
             return nativeCrc32(bytes, bytes.length, value, invoke);
         }
@@ -421,7 +423,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
-                        @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytes.execute(data);
             int len = data.getSequenceStorage().length();
             return nativeAdler32(bytes, len, value, PythonContext.get(this), invoke);
@@ -430,7 +432,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"useNative()", "!isBytes(data)"})
         long doNativeObject(VirtualFrame frame, Object data, int value,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytesNode.execute(frame, data);
             return nativeAdler32(bytes, bytes.length, value, PythonContext.get(this), invoke);
         }
@@ -494,7 +496,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"useNative()"})
         PBytes doNativeBytes(PBytesLike data, int level,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
-                        @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
+                        @Shared @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toByte.execute(data);
             int len = data.getSequenceStorage().length();
             byte[] resultArray = nativeCompress.execute(bytes, len, level, getContext());
@@ -504,16 +506,17 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"useNative()", "!isBytes(data)"})
         PBytes doNativeObject(VirtualFrame frame, Object data, int level,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
+                        @Shared @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toBytesNode.execute(frame, data);
             return factory().createBytes(nativeCompress.execute(bytes, bytes.length, level, getContext()));
         }
 
         @Specialization(guards = {"!useNative()"})
         PBytes doJava(VirtualFrame frame, Object data, int level,
+                        @Bind("this") Node inliningTarget,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Cached ConditionProfile wrongLevelProfile) {
-            if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
+                        @Cached InlinedConditionProfile wrongLevelProfile) {
+            if (wrongLevelProfile.profile(inliningTarget, level < -1 || 9 < level)) {
                 throw raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
             }
             byte[] array = toBytesNode.execute(frame, data);
@@ -562,7 +565,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"bufsize >= 0", "useNative()"})
         PBytes doNativeBytes(PBytesLike data, int wbits, int bufsize,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
-                        @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
+                        @Shared @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toByte.execute(data);
             int len = data.getSequenceStorage().length();
             return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, PythonContext.get(this)));
@@ -571,7 +574,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"bufsize >= 0", "useNative()", "!isBytes(data)"})
         PBytes doNativeObject(VirtualFrame frame, Object data, int wbits, int bufsize,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
+                        @Shared @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toBytesNode.execute(frame, data);
             int len = bytes.length;
             return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, PythonContext.get(this)));

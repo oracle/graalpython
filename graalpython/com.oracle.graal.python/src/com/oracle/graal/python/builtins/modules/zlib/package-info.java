@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@SuppressPackageWarnings({"truffle-inlining", "truffle-sharing", "truffle-limit", "deprecated", "truffle-static-method"})
+@SuppressPackageWarnings({"truffle-inlining"})
 package com.oracle.graal.python.builtins.modules.zlib;
 
 import com.oracle.truffle.api.dsl.SuppressPackageWarnings;
