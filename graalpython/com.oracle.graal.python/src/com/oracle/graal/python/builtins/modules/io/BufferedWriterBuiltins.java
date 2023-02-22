@@ -47,15 +47,18 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltinsFactory.BufferedWriterInitNodeGen;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.CheckBoolMethodHelperNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -69,12 +72,14 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
         return BufferedWriterBuiltinsFactory.getFactories();
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class BufferedWriterInit extends Node {
 
-        public abstract void execute(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
 
         @Specialization
-        static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
+        static void doInit(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
@@ -84,7 +89,7 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
             self.setDetached(false);
             checkWritableNode.checkWriteable(frame, inliningTarget, raw);
             self.setRaw(raw, isFileIO(self, raw, PBufferedWriter, inliningTarget, getSelfClass, getRawClass));
-            bufferedInitNode.execute(frame, self, bufferSize, factory);
+            bufferedInitNode.execute(frame, inliningTarget, self, bufferSize, factory);
             self.resetWrite();
             self.setPos(0);
             self.setOK(true);
@@ -106,13 +111,16 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
     // BufferedWriter(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedWriter")
     @GenerateNodeFactory
-    public abstract static class InitNode extends BaseInitNode {
-
-        @Child private BufferedWriterInit init = BufferedWriterInitNodeGen.create();
-
-        @Override
-        protected final void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
-            init.execute(frame, self, raw, bufferSize, factory());
+    public abstract static class InitNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("truffle-static-method") // factory
+        final Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InitBufferSizeNode initBufferSizeNode,
+                        @Cached BufferedWriterInit init) {
+            int size = initBufferSizeNode.execute(frame, inliningTarget, bufferSize);
+            init.execute(frame, inliningTarget, self, raw, size, factory());
+            return PNone.NONE;
         }
     }
 }

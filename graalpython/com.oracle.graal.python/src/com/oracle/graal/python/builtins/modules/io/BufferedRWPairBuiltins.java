@@ -128,9 +128,9 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
             checkReadableNode.checkReadable(frame, inliningTarget, reader);
             checkWritableNode.checkWriteable(frame, inliningTarget, writer);
             self.setReader(factory().createBufferedReader(PBufferedReader));
-            initReaderNode.execute(frame, self.getReader(), reader, bufferSize, factory());
+            initReaderNode.execute(frame, inliningTarget, self.getReader(), reader, bufferSize, factory());
             self.setWriter(factory().createBufferedWriter(PBufferedWriter));
-            initWriterNode.execute(frame, self.getWriter(), writer, bufferSize, factory());
+            initWriterNode.execute(frame, inliningTarget, self.getWriter(), writer, bufferSize, factory());
             return PNone.NONE;
         }
     }

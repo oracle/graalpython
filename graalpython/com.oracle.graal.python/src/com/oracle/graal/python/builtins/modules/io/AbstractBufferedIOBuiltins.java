@@ -56,9 +56,8 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -71,8 +70,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -84,13 +83,14 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
     public static final int DEFAULT_BUFFER_SIZE = IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
 
-    public abstract static class BufferedInitNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class BufferedInitNode extends PNodeWithContext {
 
-        public abstract void execute(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize, PythonObjectFactory factory);
 
         @Specialization(guards = "bufferSize > 0")
-        void bufferedInit(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory,
-                        @Bind("this") Node inliningTarget,
+        static void bufferedInit(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize, PythonObjectFactory factory,
                         @Cached RawTellNode rawTellNode) {
             init(self, bufferSize, factory);
             rawTellNode.executeIgnoreError(frame, inliningTarget, self);
@@ -98,8 +98,9 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "bufferSize <= 0")
-        void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory) {
-            throw raise(ValueError, BUF_SIZE_POS);
+        static void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, BUF_SIZE_POS);
         }
 
         private static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
@@ -132,35 +133,25 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
                         getRawClass.execute(inliningTarget, raw) == PythonBuiltinClassType.PFileIO;
     }
 
-    public abstract static class BaseInitNode extends PythonBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class InitBufferSizeNode extends Node {
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, Object bufferSize);
 
         @Specialization
-        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, @SuppressWarnings("unused") PNone bufferSize) {
-            init(frame, self, raw, DEFAULT_BUFFER_SIZE);
-            return PNone.NONE;
+        static int doInit(@SuppressWarnings("unused") PNone bufferSize) {
+            return DEFAULT_BUFFER_SIZE;
         }
 
         @Specialization
-        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
-            init(frame, self, raw, bufferSize);
-            return PNone.NONE;
+        static int doInt(int bufferSize) {
+            return bufferSize;
         }
 
-        @Specialization(guards = "!isInt(bufferSizeObj)")
-        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, Object bufferSizeObj,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            int bufferSize = asSizeNode.executeExact(frame, bufferSizeObj, ValueError);
-            init(frame, self, raw, bufferSize);
-            return PNone.NONE;
-        }
-
-        protected static boolean isInt(Object obj) {
-            return obj instanceof Integer;
-        }
-
-        @SuppressWarnings("unused")
-        protected void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
-            throw CompilerDirectives.shouldNotReachHere("Abstract buffered init");
+        @Fallback
+        static int doOther(VirtualFrame frame, Object bufferSizeObj,
+                        @Cached(inline = false) PyNumberAsSizeNode asSizeNode) {
+            return asSizeNode.executeExact(frame, bufferSizeObj, ValueError);
         }
     }
 

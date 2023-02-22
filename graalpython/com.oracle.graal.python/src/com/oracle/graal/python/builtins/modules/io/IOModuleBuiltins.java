@@ -101,6 +101,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -110,6 +111,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_io")
@@ -288,6 +290,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "!isBinary(mode)", "bufferingValue != 0"})
         protected Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Bind("this") Node inliningTarget,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
@@ -332,7 +335,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 /* wraps into a buffered file */
 
-                PBuffered buffer = createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
+                PBuffered buffer = createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory(), mode);
                 result = buffer;
 
                 /* wraps into a TextIOWrapper */
@@ -367,13 +370,14 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
+                        @Bind("this") Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, callClose);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
@@ -382,6 +386,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
+                        @Bind("this") Node inliningTarget,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -420,7 +425,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 /* wraps into a buffered file */
 
                 /* if binary, returns the buffered file */
-                return createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
+                return createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory(), mode);
             } catch (PException e) {
                 callClose.execute(frame, fileIO, T_CLOSE);
                 throw e;

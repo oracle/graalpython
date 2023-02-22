@@ -72,6 +72,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -471,8 +473,10 @@ public class IONodes {
         }
     }
 
+    @GenerateCached(false)
+    @GenerateInline
     public abstract static class CreateBufferedIONode extends Node {
-        public abstract PBuffered execute(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, IONodes.IOMode mode);
+        public abstract PBuffered execute(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, IONodes.IOMode mode);
 
         protected static boolean isRandom(IONodes.IOMode mode) {
             return mode.updating;
@@ -487,26 +491,26 @@ public class IONodes {
         }
 
         @Specialization(guards = "isRandom(mode)")
-        static PBuffered createRandom(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
+        static PBuffered createRandom(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
                         @Cached BufferedRandomBuiltins.BufferedRandomInit initBuffered) {
             PBuffered buffer = factory.createBufferedRandom(PBufferedRandom);
-            initBuffered.execute(frame, buffer, fileIO, buffering, factory);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
             return buffer;
         }
 
         @Specialization(guards = {"!isRandom(mode)", "isWriting(mode)"})
-        static PBuffered createWriter(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
+        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
                         @Cached BufferedWriterBuiltins.BufferedWriterInit initBuffered) {
             PBuffered buffer = factory.createBufferedWriter(PBufferedWriter);
-            initBuffered.execute(frame, buffer, fileIO, buffering, factory);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
             return buffer;
         }
 
         @Specialization(guards = {"!isRandom(mode)", "!isWriting(mode)", "isReading(mode)"})
-        static PBuffered createWriter(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
+        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
                         @Cached BufferedReaderBuiltins.BufferedReaderInit initBuffered) {
             PBuffered buffer = factory.createBufferedReader(PBufferedReader);
-            initBuffered.execute(frame, buffer, fileIO, buffering, factory);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
             return buffer;
         }
     }
