@@ -120,14 +120,15 @@ public abstract class TextIOWrapperNodes {
 
     public static final TruffleString T_CODECS_OPEN = tsLiteral("codecs.open()");
 
-    protected static void validateNewline(TruffleString str, PRaiseNode raise, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+    protected static void validateNewline(TruffleString str, Node inliningTarget, PRaiseNode.Lazy raise, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         int len = codePointLengthNode.execute(str, TS_ENCODING);
         int c = len == 0 ? '\0' : codePointAtIndexNode.execute(str, 0, TS_ENCODING);
         if (c != '\0' &&
                         !(c == '\n' && len == 1) &&
                         !(c == '\r' && len == 1) &&
                         !(c == '\r' && len == 2 && codePointAtIndexNode.execute(str, 1, TS_ENCODING) == '\n')) {
-            throw raise.raise(ValueError, ILLEGAL_NEWLINE_VALUE_S, str);
+            throw raise.get(inliningTarget).raise(ValueError, ILLEGAL_NEWLINE_VALUE_S, str);
         }
     }
 
@@ -240,8 +241,8 @@ public abstract class TextIOWrapperNodes {
 
             // Create new encoder & decoder
             Object codecInfo = lookupTextEncoding.execute(frame, encoding, T_CODECS_OPEN);
-            setDecoderNode.execute(frame, self, codecInfo, errors);
-            setEncoderNode.execute(frame, self, codecInfo, errors);
+            setDecoderNode.execute(frame, inliningTarget, self, codecInfo, errors);
+            setEncoderNode.execute(frame, inliningTarget, self, codecInfo, errors);
             self.setEncoding(encoding);
             self.setErrors(errors);
 
@@ -714,17 +715,18 @@ public abstract class TextIOWrapperNodes {
      * cpython/Modules/_io/textio.c:_textiowrapper_set_decoder
      */
     @GenerateUncached
+    @GenerateCached(false)
+    @GenerateInline
     protected abstract static class SetDecoderNode extends PNodeWithContext {
-        public abstract void execute(Frame frame, PTextIO self, Object codecInfo, TruffleString errors);
+        public abstract void execute(Frame frame, Node inliningTarget, PTextIO self, Object codecInfo, TruffleString errors);
 
         @Specialization
-        static void setDecoder(VirtualFrame frame, PTextIO self, Object codecInfo, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
+        static void setDecoder(VirtualFrame frame, Node inliningTarget, PTextIO self, Object codecInfo, TruffleString errors,
+                        @Cached(inline = false) CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
                         @Cached InlinedConditionProfile isTrueProfile,
-                        @Cached PyObjectCallMethodObjArgs callMethodReadable,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodReadable,
+                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
+                        @Cached(inline = false) PythonObjectFactory factory) {
             Object res = callMethodReadable.execute(frame, self.getBuffer(), T_READABLE);
             if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
                 return;
@@ -744,16 +746,17 @@ public abstract class TextIOWrapperNodes {
      * cpython/Modules/_io/textio.c:_textiowrapper_set_encoder
      */
     @GenerateUncached
+    @GenerateCached(false)
+    @GenerateInline
     protected abstract static class SetEncoderNode extends PNodeWithContext {
-        public abstract void execute(Frame frame, PTextIO self, Object codecInfo, TruffleString errors);
+        public abstract void execute(Frame frame, Node inliningTarget, PTextIO self, Object codecInfo, TruffleString errors);
 
         @Specialization
-        static void setEncoder(VirtualFrame frame, PTextIO self, Object codecInfo, TruffleString errors,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CodecsTruffleModuleBuiltins.GetIncrementalEncoderNode getIncrementalEncoderNode,
+        static void setEncoder(VirtualFrame frame, Node inliningTarget, PTextIO self, Object codecInfo, TruffleString errors,
+                        @Cached(inline = false) CodecsTruffleModuleBuiltins.GetIncrementalEncoderNode getIncrementalEncoderNode,
                         @Cached InlinedConditionProfile isTrueProfile,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached PyObjectCallMethodObjArgs callMethodWritable) {
+                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodWritable) {
             Object res = callMethodWritable.execute(frame, self.getBuffer(), T_WRITABLE);
             if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
                 return;
@@ -768,51 +771,52 @@ public abstract class TextIOWrapperNodes {
     }
 
     @GenerateUncached
+    @GenerateCached(false)
+    @GenerateInline
     public abstract static class TextIOWrapperInitNode extends PNodeWithContext {
 
-        public abstract void execute(Frame frame, PTextIO self, Object buffer, Object encodingArg,
+        public abstract void execute(Frame frame, Node inliningTarget, PTextIO self, Object buffer, Object encodingArg,
                         TruffleString errors, Object newlineArg, boolean lineBuffering, boolean writeThrough);
 
         @Specialization
-        void init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
+        static void init(VirtualFrame frame, Node inliningTarget, PTextIO self, Object buffer, Object encodingArg,
                         TruffleString errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CodecsTruffleModuleBuiltins.GetPreferredEncoding getPreferredEncoding,
-                        @Cached CodecsTruffleModuleBuiltins.LookupTextEncoding lookupTextEncoding,
+                        @Cached(inline = false) CodecsTruffleModuleBuiltins.GetPreferredEncoding getPreferredEncoding,
+                        @Cached(inline = false) CodecsTruffleModuleBuiltins.LookupTextEncoding lookupTextEncoding,
                         @Cached SetEncoderNode setEncoderNode,
                         @Cached SetDecoderNode setDecoderNode,
                         @Cached FixEncoderStateNode fixEncoderStateNode,
-                        @Cached PyObjectCallMethodObjArgs callMethodSeekable,
-                        @Cached PyObjectLookupAttr lookup,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodSeekable,
+                        @Cached(inline = false) PyObjectLookupAttr lookup,
+                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
+                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached(inline = false) TruffleString.EqualNode equalNode,
+                        @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             self.setOK(false);
             self.setDetached(false);
             // encoding and newline are processed through arguments clinic and safe to cast.
             TruffleString encoding = encodingArg == PNone.NONE ? null : (TruffleString) encodingArg;
             TruffleString newline = newlineArg == PNone.NONE ? null : (TruffleString) newlineArg;
             if (encoding == null) {
-                if (PythonContext.get(this).getOption(PythonOptions.WarnDefaultEncodingFlag)) {
+                if (PythonContext.get(inliningTarget).getOption(PythonOptions.WarnDefaultEncodingFlag)) {
                     warnNode.warnEx(frame, EncodingWarning, ErrorMessages.WARN_ENCODING_ARGUMENT_NOT_SPECIFIED, 1);
                 }
             } else if (equalNode.execute(T_LOCALE, encoding, TS_ENCODING)) {
                 encoding = null;
             } else {
                 if (indexOfCodePointNode.execute(encoding, 0, 0, codePointLengthNode.execute(encoding, TS_ENCODING), TS_ENCODING) != -1) {
-                    throw raiseNode.raise(ValueError, EMBEDDED_NULL_CHARACTER);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, EMBEDDED_NULL_CHARACTER);
                 }
             }
 
             if (newline != null) {
                 if (indexOfCodePointNode.execute(newline, 0, 0, codePointLengthNode.execute(newline, TS_ENCODING), TS_ENCODING) != -1) {
-                    throw raiseNode.raise(ValueError, EMBEDDED_NULL_CHARACTER);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, EMBEDDED_NULL_CHARACTER);
                 }
-                validateNewline(newline, raiseNode, codePointLengthNode, codePointAtIndexNode);
+                validateNewline(newline, inliningTarget, raiseNode, codePointLengthNode, codePointAtIndexNode);
             }
 
             self.clearAll();
@@ -830,7 +834,7 @@ public abstract class TextIOWrapperNodes {
             } else if (encoding != null) {
                 self.setEncoding(encoding);
             } else {
-                throw raiseNode.raise(OSError, COULD_NOT_DETERMINE_DEFAULT_ENCODING);
+                throw raiseNode.get(inliningTarget).raise(OSError, COULD_NOT_DETERMINE_DEFAULT_ENCODING);
             }
 
             /* Check we have been asked for a real text encoding */
@@ -845,10 +849,10 @@ public abstract class TextIOWrapperNodes {
             self.setBuffer(buffer);
 
             /* Build the decoder object */
-            setDecoderNode.execute(frame, self, codecInfo, errors);
+            setDecoderNode.execute(frame, inliningTarget, self, codecInfo, errors);
 
             /* Build the encoder object */
-            setEncoderNode.execute(frame, self, codecInfo, errors);
+            setEncoderNode.execute(frame, inliningTarget, self, codecInfo, errors);
 
             if (buffer instanceof PBuffered) {
                 /* Cache the raw FileIO object to speed up 'closed' checks */

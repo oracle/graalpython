@@ -158,7 +158,6 @@ import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.modules.io.PTextIO;
-import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -708,7 +707,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     public void initStd(Python3Core core) {
-        TextIOWrapperInitNode textIOWrapperInitNode = TextIOWrapperInitNodeGen.getUncached();
         PythonObjectFactory factory = core.factory();
 
         // wrap std in/out/err
@@ -722,17 +720,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
         PBuffered reader = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
         BufferedReaderBuiltins.BufferedReaderInit.internalInit(reader, (PFileIO) getBuiltinConstant(T_STDIN), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, reader, sysModule, textIOWrapperInitNode, factory);
+        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, reader, sysModule, factory);
 
         PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDOUT), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stdout = setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, writer, sysModule, textIOWrapperInitNode, factory);
+        PTextIO stdout = setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, writer, sysModule, factory);
 
         writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDERR), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stderr = setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, writer, sysModule, textIOWrapperInitNode, factory);
+        PTextIO stderr = setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, writer, sysModule, factory);
 
         // register atexit close std out/err
         core.getContext().registerAtexitHook((ctx) -> {
@@ -742,9 +740,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, PBuffered buffered, PythonModule sysModule,
-                    TextIOWrapperInitNode textIOWrapperInitNode, PythonObjectFactory factory) {
+                    PythonObjectFactory factory) {
         PTextIO textIOWrapper = factory.createTextIO(PythonBuiltinClassType.PTextIOWrapper);
-        textIOWrapperInitNode.execute(null, textIOWrapper, buffered, encoding, error, PNone.NONE, true, true);
+        TextIOWrapperInitNodeGen.getUncached().execute(null, null, textIOWrapper, buffered, encoding, error, PNone.NONE, true, true);
 
         setAttribute(textIOWrapper, T_MODE, mode);
         setAttribute(sysModule, name, textIOWrapper);

@@ -81,13 +81,11 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
 
         @Specialization
-        static void doInit(VirtualFrame frame, @SuppressWarnings("unused") Node ignored, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
-                        /* @Bind("this") Node inliningTarget, */
+        static void doInit(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
                         @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
                         @Cached BufferedInitNode bufferedInitNode,
-                        @Cached(inline = true) GetPythonObjectClassNode getSelfClass,
+                        @Cached GetPythonObjectClassNode getSelfClass,
                         @Cached InlinedGetClassNode getRawClass) {
-            Node inliningTarget = ignored;
             self.setOK(false);
             self.setDetached(false);
             checkReadableNode.checkReadable(frame, inliningTarget, raw);

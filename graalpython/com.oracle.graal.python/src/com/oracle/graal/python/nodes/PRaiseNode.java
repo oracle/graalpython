@@ -104,6 +104,10 @@ public abstract class PRaiseNode extends Node {
         throw execute(this, type, null, cause, format, arguments);
     }
 
+    public final PException raise(PythonBuiltinClassType errorType, PException e, TruffleString message, Object... arguments) {
+        return raise(errorType, e.getEscapedException(), message, arguments);
+    }
+
     public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType) {
         throw PRaiseNodeGen.getUncached().execute(raisingNode, exceptionType, null, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
@@ -246,7 +250,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     @GenerateInline
-    @GenerateUncached(false)
+    @GenerateUncached
     @GenerateCached(false)
     public abstract static class Lazy extends Node {
         public final PRaiseNode get(Node inliningTarget) {

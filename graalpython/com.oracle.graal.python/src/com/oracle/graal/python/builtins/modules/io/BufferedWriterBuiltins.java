@@ -83,7 +83,7 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
-                        @Cached(inline = true) GetPythonObjectClassNode getSelfClass,
+                        @Cached GetPythonObjectClassNode getSelfClass,
                         @Cached InlinedGetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);

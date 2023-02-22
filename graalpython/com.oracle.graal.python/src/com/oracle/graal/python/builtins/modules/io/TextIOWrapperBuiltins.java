@@ -148,6 +148,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -263,10 +264,10 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
+        Object init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
                         TruffleString errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initNode) {
-            initNode.execute(frame, self, buffer, encodingArg, errors, newlineArg, lineBuffering, writeThrough);
+            initNode.execute(frame, this, self, buffer, encodingArg, errors, newlineArg, lineBuffering, writeThrough);
             return PNone.NONE;
         }
     }
@@ -300,6 +301,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         Object reconfigure(VirtualFrame frame, PTextIO self, Object encodingObj,
                         Object errorsObj, Object newlineObj,
                         Object lineBufferingObj, Object writeThroughObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode,
                         @Cached IONodes.ToTruffleStringNode toStringNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
@@ -310,7 +313,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             TruffleString newline = null;
             if (!isPNone(newlineObj)) {
                 newline = toStringNode.execute(newlineObj);
-                validateNewline(newline, getRaiseNode(), codePointLengthNode, codePointAtIndexNode);
+                validateNewline(newline, inliningTarget, lazyRaiseNode, codePointLengthNode, codePointAtIndexNode);
             }
 
             boolean lineBuffering, writeThrough;

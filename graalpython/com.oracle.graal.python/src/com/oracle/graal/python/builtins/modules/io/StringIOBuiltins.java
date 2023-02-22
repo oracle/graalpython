@@ -261,6 +261,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone init(VirtualFrame frame, PStringIO self, TruffleString initialValue, Object newlineArg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode,
                         @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
                         @Cached IncrementalNewlineDecoderBuiltins.InitNode initNode,
                         @Cached StringReplaceNode replaceNode,
@@ -282,7 +284,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
 
             if (newline != null) {
-                validateNewline(newline, getRaiseNode(), codePointLengthNode, codePointAtIndexNode);
+                validateNewline(newline, inliningTarget, lazyRaiseNode, codePointLengthNode, codePointAtIndexNode);
             }
             self.setOK(false);
             self.clearAll();

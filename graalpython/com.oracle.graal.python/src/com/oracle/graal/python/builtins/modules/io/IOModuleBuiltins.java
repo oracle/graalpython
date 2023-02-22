@@ -289,6 +289,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "!isBinary(mode)", "bufferingValue != 0"})
+        @SuppressWarnings("truffle-static-method")
         protected Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
@@ -340,7 +341,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 /* wraps into a TextIOWrapper */
                 PTextIO wrapper = factory().createTextIO(PTextIOWrapper);
-                initTextIO.execute(frame, wrapper, buffer, encoding,
+                initTextIO.execute(frame, inliningTarget, wrapper, buffer, encoding,
                                 errors == PNone.NONE ? T_STRICT : (TruffleString) errors,
                                 newline, line_buffering, false);
 
@@ -355,6 +356,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 0"})
+        @SuppressWarnings("truffle-static-method")
         protected PFileIO openBinaryNoBuf(VirtualFrame frame, Object file, IONodes.IOMode mode, @SuppressWarnings("unused") int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
@@ -365,6 +367,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 1"})
+        @SuppressWarnings("truffle-static-method")
         protected Object openBinaryB1(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
@@ -381,6 +384,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
+        @SuppressWarnings("truffle-static-method")
         protected Object openBinary(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
