@@ -88,6 +88,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32;
 
 import java.io.IOException;
@@ -102,6 +103,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
@@ -147,16 +149,15 @@ import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectHashNodeGen;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -171,7 +172,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -205,8 +205,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.CodePointAtIndexNode;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -1533,20 +1533,29 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     /*
      * Convert a single Python object into a PyCArgObject and return it.
      */
-    protected abstract static class ConvParamNode extends PNodeWithRaiseAndIndirectCall {
+    protected abstract static class ConvParamNode extends PNodeWithRaise {
 
-        abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context);
+        final void execute(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context) {
+            execute(frame, obj, index, pa, factory, context, true);
+        }
+
+        protected abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context, boolean allowRecursion);
 
         @Specialization
-        void ConvParam(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context,
+        void convParam(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context, boolean allowRecursion,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyLongCheckNode longCheckNode,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached CastToTruffleStringNode toString,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached IsBuiltinObjectProfile profile,
                         @Cached PyNumberAsSizeNode asInt,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached ConvParamNode recursive) {
             pa.keep = null; /* so we cannot forget it later */
 
             StgDictObject dict = pyObjectStgDictNode.execute(obj);
@@ -1595,44 +1604,38 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (obj instanceof PBytes) {
                 // pa.ffi_type = FFIType.ffi_type_pointer;
                 pa.ffi_type = FFIType.ffi_type_sint8_array;
-                pa.value = bufferLib.getCopiedByteArray(obj); // PyBytes_AsString(obj);
+                int len = bufferLib.getBufferLength(obj);
+                byte[] bytes = new byte[len + 1];
+                bufferLib.readIntoByteArray(obj, 0, bytes, 0, len);
+                pa.value = bytes;
                 pa.keep = obj;
                 return;
             }
 
-            /*-
-            if (PyUnicode_Check(obj)) { // CTYPES_UNICODE
-            pa.ffi_type = ffi_type_pointer;
-            pa.value = PyUnicode_AsWideCharString(obj, NULL);
-            pa.keep = PyCapsule_New(pa.value.p, CTYPES_CAPSULE_NAME_PYMEM, pymem_destructor);
-            return 0;
+            if (unicodeCheckNode.execute(obj)) {
+                // TODO determine this better
+                Encoding wCharTEncoding = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? UTF_16 : UTF_32;
+                TruffleString string = switchEncodingNode.execute(toString.execute(obj), wCharTEncoding);
+                int len = string.byteLength(wCharTEncoding);
+                byte[] bytes = new byte[len + (wCharTEncoding == UTF_16 ? 2 : 4)];
+                copyToByteArrayNode.execute(string, 0, bytes, 0, len, wCharTEncoding);
+                pa.ffi_type = FFIType.ffi_type_sint8_array;
+                pa.value = bytes;
+                // pa.keep = PyCapsule_New(pa.value.p, CTYPES_CAPSULE_NAME_PYMEM, pymem_destructor);
+                return;
             }
-            */
 
-            Object arg = lookupAttr.execute(obj, CDataTypeBuiltins.T__AS_PARAMETER_);
+            Object arg = lookupAttr.execute(frame, obj, CDataTypeBuiltins.T__AS_PARAMETER_);
 
             /*
              * Which types should we exactly allow here? integers are required for using Python
              * classes as parameters (they have to expose the '_as_parameter_' attribute)
              */
-            if (arg != null) {
-                Object state = IndirectCallContext.enter(frame, this);
-                try {
-                    ConvParamBoundary(arg, index, pa, context);
-                } finally {
-                    IndirectCallContext.exit(frame, this, state);
-                }
+            if (arg != null && allowRecursion) {
+                recursive.execute(frame, arg, index, pa, factory, context, false);
                 return;
             }
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
-        }
-
-        @TruffleBoundary
-        void ConvParamBoundary(Object obj, int index, argument pa, PythonContext context) {
-            ConvParam(null, obj, index, pa, context.factory(), context, null,
-                            PythonBufferAccessLibrary.getUncached(), PyLongCheckNode.getUncached(),
-                            IsBuiltinObjectProfile.getUncached(), PyNumberAsSizeNode.getUncached(),
-                            Dynamic.getUncached(), PyObjectStgDictNode.getUncached(), CodePointAtIndexNode.getUncached());
         }
     }
 
