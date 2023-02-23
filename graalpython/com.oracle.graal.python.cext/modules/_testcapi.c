@@ -973,6 +973,10 @@ test_L_code(PyObject *self, PyObject *Py_UNUSED(ignored))
     if (num == NULL)
         return NULL;
 
+    // GraalPy change: for explanation, see similar comment in 'test_k_code'
+#ifdef GRAALVM_PYTHON
+    Py_INCREF(num);
+#endif
     PyTuple_SET_ITEM(tuple, 0, num);
 
     value = -1;
@@ -1362,6 +1366,15 @@ test_k_code(PyObject *self, PyObject *Py_UNUSED(ignored))
         return raiseTestError("test_k_code",
             "PyLong_AsUnsignedLongMask() returned wrong value for long 0xFFF...FFF");
 
+    /*
+     * GraalPy change: CPython's tuple is stealing the reference to 'num' which
+     * means it just does nothing. In our case, we are internally decref'ing
+     * since it is then reference managed. This makes 'num' invalid for the
+     * later usage in Py_DECREF. We therefore incref once here.
+     */
+#ifdef GRAALVM_PYTHON
+    Py_INCREF(num);
+#endif
     PyTuple_SET_ITEM(tuple, 0, num);
 
     value = 0;

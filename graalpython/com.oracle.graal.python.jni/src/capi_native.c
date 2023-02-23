@@ -215,39 +215,35 @@ OBJECT(_PyBytesIOBuffer_Type, _BytesIOBuffer) \
 #define TYPE_OBJECTS \
 TYPE_OBJECT(PyTypeObject*, PyCapsule_Type, capsule, _object) \
 
-#define CONSTANTS \
-CONSTANT(struct _longobject*, _Py_FalseStructReference, Py_False) \
-CONSTANT(struct _longobject*, _Py_TrueStructReference, Py_True) \
-CONSTANT(PyObject*, _Py_EllipsisObjectReference, Py_Ellipsis) \
-CONSTANT(PyObject*, _Py_NoneStructReference, Py_None) \
-CONSTANT(PyObject*, _Py_NotImplementedStructReference, Py_NotImplemented) \
-CONSTANT(PyObject*, _PyTruffle_Zero, _PyTruffle_Zero) \
-CONSTANT(PyObject*, _PyTruffle_One, _PyTruffle_One) \
-CONSTANT(PyObject*, _PyLong_Zero, PyLong_Zero) \
-CONSTANT(PyObject*, _PyLong_One, PyLong_One) \
+#define GLOBAL_VARS \
+GLOBAL_VAR(struct _longobject*, _Py_FalseStructReference, Py_False) \
+GLOBAL_VAR(struct _longobject*, _Py_TrueStructReference, Py_True) \
+GLOBAL_VAR(PyObject*, _Py_EllipsisObjectReference, Py_Ellipsis) \
+GLOBAL_VAR(PyObject*, _Py_NoneStructReference, Py_None) \
+GLOBAL_VAR(PyObject*, _Py_NotImplementedStructReference, Py_NotImplemented) \
+GLOBAL_VAR(PyObject*, _PyTruffle_Zero, _PyTruffle_Zero) \
+GLOBAL_VAR(PyObject*, _PyTruffle_One, _PyTruffle_One) \
+GLOBAL_VAR(PyObject*, _PyLong_Zero, PyLong_Zero) \
+GLOBAL_VAR(PyObject*, _PyLong_One, PyLong_One) \
 
-#define CONSTANT_COPIES \
-CONSTANT_ARRAY(const unsigned char, _Py_ascii_whitespace, 256) \
-CONSTANT_ARRAY(const unsigned int, _Py_ctype_table, 256) \
-CONSTANT_ARRAY(const unsigned char, _Py_ctype_tolower, 256) \
-CONSTANT_ARRAY(const unsigned char, _Py_ctype_toupper, 256) \
-CONSTANT(struct _PyTraceMalloc_Config, _Py_tracemalloc_config) \
-CONSTANT(_Py_HashSecret_t, _Py_HashSecret) \
-CONSTANT(int, Py_DebugFlag) \
-CONSTANT(int, Py_VerboseFlag) \
-CONSTANT(int, Py_QuietFlag) \
-CONSTANT(int, Py_InteractiveFlag) \
-CONSTANT(int, Py_InspectFlag) \
-CONSTANT(int, Py_OptimizeFlag) \
-CONSTANT(int, Py_NoSiteFlag) \
-CONSTANT(int, Py_BytesWarningFlag) \
-CONSTANT(int, Py_FrozenFlag) \
-CONSTANT(int, Py_IgnoreEnvironmentFlag) \
-CONSTANT(int, Py_DontWriteBytecodeFlag) \
-CONSTANT(int, Py_NoUserSiteDirectory) \
-CONSTANT(int, Py_UnbufferedStdioFlag) \
-CONSTANT(int, Py_HashRandomizationFlag) \
-CONSTANT(int, Py_IsolatedFlag) \
+#define GLOBAL_VAR_COPIES \
+GLOBAL_VAR(struct _PyTraceMalloc_Config, _Py_tracemalloc_config) \
+GLOBAL_VAR(_Py_HashSecret_t, _Py_HashSecret) \
+GLOBAL_VAR(int, Py_DebugFlag) \
+GLOBAL_VAR(int, Py_VerboseFlag) \
+GLOBAL_VAR(int, Py_QuietFlag) \
+GLOBAL_VAR(int, Py_InteractiveFlag) \
+GLOBAL_VAR(int, Py_InspectFlag) \
+GLOBAL_VAR(int, Py_OptimizeFlag) \
+GLOBAL_VAR(int, Py_NoSiteFlag) \
+GLOBAL_VAR(int, Py_BytesWarningFlag) \
+GLOBAL_VAR(int, Py_FrozenFlag) \
+GLOBAL_VAR(int, Py_IgnoreEnvironmentFlag) \
+GLOBAL_VAR(int, Py_DontWriteBytecodeFlag) \
+GLOBAL_VAR(int, Py_NoUserSiteDirectory) \
+GLOBAL_VAR(int, Py_UnbufferedStdioFlag) \
+GLOBAL_VAR(int, Py_HashRandomizationFlag) \
+GLOBAL_VAR(int, Py_IsolatedFlag) \
 
 #define EXCEPTIONS \
 EXCEPTION(ArithmeticError) \
@@ -327,15 +323,13 @@ PY_TYPE_OBJECTS(DEFINE_TYPE_OBJECT)
 TYPE_OBJECTS
 #undef TYPE_OBJECT
 
-#define CONSTANT(TYPE, NAME, INTERNAL_NAME) TYPE NAME;
-CONSTANTS
-#undef CONSTANT
+#define GLOBAL_VAR(TYPE, NAME, INTERNAL_NAME) TYPE NAME;
+GLOBAL_VARS
+#undef GLOBAL_VAR
 
-#define CONSTANT(TYPE, NAME) TYPE NAME;
-#define CONSTANT_ARRAY(TYPE, NAME, SIZE) TYPE NAME [SIZE];
-CONSTANT_COPIES
-#undef CONSTANT
-#undef CONSTANT_ARRAY
+#define GLOBAL_VAR(TYPE, NAME) TYPE NAME;
+GLOBAL_VAR_COPIES
+#undef GLOBAL_VAR
 
 #define EXCEPTION(NAME) PyObject* PyExc_##NAME;
 EXCEPTIONS
@@ -373,15 +367,13 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
     TYPE_OBJECTS
 #undef TYPE_OBJECT
 
-#define CONSTANT(TYPE, NAME, INTERNAL_NAME) NAME = (TYPE) getType(#INTERNAL_NAME);
-    CONSTANTS
-#undef CONSTANT
-    
-#define CONSTANT(TYPE, NAME) memcpy((void*) &NAME, getType(#NAME), sizeof(NAME));
-#define CONSTANT_ARRAY(TYPE, NAME, SIZE) memcpy((void*) NAME, getType(#NAME), sizeof(NAME));
-    CONSTANT_COPIES
-#undef CONSTANT
-#undef CONSTANT_ARRAY
+#define GLOBAL_VAR(TYPE, NAME, INTERNAL_NAME) NAME = (TYPE) getType(#INTERNAL_NAME);
+    GLOBAL_VARS
+#undef GLOBAL_VAR
+
+#define GLOBAL_VAR(TYPE, NAME) memcpy((void*) &NAME, getType(#NAME), sizeof(NAME));
+    GLOBAL_VAR_COPIES
+#undef GLOBAL_VAR
 
 #define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) getType(#NAME);
     EXCEPTIONS
@@ -395,7 +387,7 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
     }
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
 #undef SET_TYPE_OBJECT_STORE
-    
+
     int id = 0;
 #define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
 CAPI_BUILTINS
@@ -415,6 +407,12 @@ CAPI_BUILTINS
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     return 1;
 }
+
+/*
+ * This header includes definitions for constant arrays like:
+ * _Py_ascii_whitespace, _Py_ctype_table, _Py_ctype_tolower, _Py_ctype_toupper.
+ */
+#include "const_arrays.h"
 
 /* Private types are defined here because we need to declare the type cast. */
 
