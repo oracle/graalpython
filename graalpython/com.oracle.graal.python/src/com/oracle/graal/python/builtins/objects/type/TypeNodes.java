@@ -1884,6 +1884,9 @@ public abstract class TypeNodes {
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
 
+                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
+                newType.initializeMroShape(language);
+
                 HashingStorage storage = namespace.getDictStorage();
                 HashingStorageIterator it = getIterator.execute(storage);
                 while (itNext.execute(storage, it)) {
@@ -1940,11 +1943,7 @@ public abstract class TypeNodes {
                     newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
                 }
 
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
-                newType.initializeMroShape(language);
                 return newType;
-            } catch (PException e) {
-                throw e;
             } finally {
                 assert SpecialMethodSlot.popInitializedType();
             }
