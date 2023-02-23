@@ -495,20 +495,22 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"useNative()"})
         PBytes doNativeBytes(PBytesLike data, int level,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
                         @Shared @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toByte.execute(data);
             int len = data.getSequenceStorage().length();
-            byte[] resultArray = nativeCompress.execute(bytes, len, level, getContext());
+            byte[] resultArray = nativeCompress.execute(inliningTarget, bytes, len, level, getContext());
             return factory().createBytes(resultArray);
         }
 
         @Specialization(guards = {"useNative()", "!isBytes(data)"})
         PBytes doNativeObject(VirtualFrame frame, Object data, int level,
+                        @Bind("this") Node inliningTarget,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Shared @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toBytesNode.execute(frame, data);
-            return factory().createBytes(nativeCompress.execute(bytes, bytes.length, level, getContext()));
+            return factory().createBytes(nativeCompress.execute(inliningTarget, bytes, bytes.length, level, getContext()));
         }
 
         @Specialization(guards = {"!useNative()"})
@@ -564,20 +566,22 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"bufsize >= 0", "useNative()"})
         PBytes doNativeBytes(PBytesLike data, int wbits, int bufsize,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
                         @Shared @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toByte.execute(data);
             int len = data.getSequenceStorage().length();
-            return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, PythonContext.get(this)));
+            return factory().createBytes(nativeDecompress.execute(inliningTarget, bytes, len, wbits, bufsize, PythonContext.get(this)));
         }
 
         @Specialization(guards = {"bufsize >= 0", "useNative()", "!isBytes(data)"})
         PBytes doNativeObject(VirtualFrame frame, Object data, int wbits, int bufsize,
+                        @Bind("this") Node inliningTarget,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Shared @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toBytesNode.execute(frame, data);
             int len = bytes.length;
-            return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, PythonContext.get(this)));
+            return factory().createBytes(nativeDecompress.execute(inliningTarget, bytes, len, wbits, bufsize, PythonContext.get(this)));
         }
 
         @Specialization(guards = {"bufsize >= 0", "!useNative()"})
@@ -653,6 +657,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"method == DEFLATED", "useNative()"})
         Object doNative(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
+                        @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction compressObjInit,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
@@ -667,7 +672,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 err = zlibSupport.compressObjInit(zst, level, method, wbits, memLevel, strategy, compressObjInit);
             }
             if (err != Z_OK) {
-                errorHandling.execute(zst, err, zlibSupport, true);
+                errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
             }
             return factory().createNativeZLibCompObject(ZlibCompress, zst, zlibSupport);
         }
@@ -725,6 +730,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"useNative()"})
         Object doNative(int wbits, byte[] zdict,
+                        @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjInit,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
@@ -738,7 +744,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 err = zlibSupport.decompressObjInit(zst, wbits, decompressObjInit);
             }
             if (err != Z_OK) {
-                errorHandling.execute(zst, err, zlibSupport, true);
+                errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
             }
             return factory().createNativeZLibCompObject(ZlibDecompress, zst, zlibSupport);
         }
