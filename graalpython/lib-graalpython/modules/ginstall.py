@@ -636,6 +636,7 @@ def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_error
         build_cmd = user_build_cmd.split(" ")
 
     bare_name = _download_with_curl_and_extract(tempdir, url, quiet=quiet)
+    extracted_dir = os.path.join(tempdir, bare_name, "")
 
     file_realpath = os.path.dirname(os.path.realpath(__file__))
     patches_dir = os.path.join(Path(file_realpath).parent, 'patches', package)
@@ -643,9 +644,17 @@ def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_error
     # unlike with pip, the version number may not be available at all
     versions = re.search("()(\\d+)?(.\\d+)?(.\\d+)?", "" if version is None else version)
 
+    if "--no-autopatch" not in extra_opts:
+        # run autopatch_capi
+        spec = importlib.util.spec_from_file_location("autopatch_capi", os.path.join(file_realpath, "autopatch_capi.py"))
+        autopatch_capi = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(autopatch_capi)
+        info("auto-patching {}", extracted_dir)
+        autopatch_capi.auto_patch_tree(extracted_dir)
+
     patch_file_path = first_existing(package, versions, os.path.join(patches_dir, "sdist"), ".patch")
     if patch_file_path:
-        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, ""), "-p1", "-i", patch_file_path], quiet=quiet)
+        run_cmd(["patch", "-d", extracted_dir, "-p1", "-i", patch_file_path], quiet=quiet)
 
     whl_patches_dir = os.path.join(patches_dir, "whl")
     patch_file_path = first_existing(package, versions, whl_patches_dir, ".patch")
@@ -816,6 +825,7 @@ def main(argv):
     install_parser.add_argument("--prefix", help="user-site path prefix")
     install_parser.add_argument("--user", action='store_true', help="install into user site")
     install_parser.add_argument("--debug-build", action="store_true", help="Enable debug options when building")
+    install_parser.add_argument("--no-autopatch", action="store_true", help="Do not autopatch C extensions.")
 
     uninstall_parser = subparsers.add_parser(
         "uninstall", help="remove installation folder of a local package", )
@@ -865,6 +875,8 @@ def main(argv):
             extra_opts += ["--prefix", args.prefix]
         if args.user:
             extra_opts += ["--user"]
+        if args.no_autopatch:
+            extra_opts += ["--no-autopatch"]
 
         for pkg in args.package.split(","):
             if os.path.isfile(pkg):
