@@ -186,6 +186,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, false)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWoKw(Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
@@ -207,6 +208,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "!withKeywords(keywords)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWKw(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
@@ -220,6 +222,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWKwKw(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
@@ -240,6 +243,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,

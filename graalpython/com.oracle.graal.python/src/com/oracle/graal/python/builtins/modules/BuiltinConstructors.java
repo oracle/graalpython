@@ -293,6 +293,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(source)")
+        @SuppressWarnings("truffle-static-method")
         PBytes doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
@@ -892,6 +893,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
+        @SuppressWarnings("truffle-static-method")
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
@@ -980,6 +982,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "!isNoValue(obj)"}, //
                         replaces = "floatFromString", limit = "1")
+        @SuppressWarnings("truffle-static-method")
         double floatFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
@@ -1499,6 +1502,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
+        @SuppressWarnings("truffle-static-method")
         @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
@@ -2058,6 +2062,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
+        @SuppressWarnings("truffle-static-method")
         Object doBuffer(VirtualFrame frame, Object strClass, Object obj, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
                         @Shared("isPrimitive") @Cached InlineIsBuiltinClassProfile isPrimitiveProfile,
@@ -2332,6 +2337,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isString(wName)")
+        @SuppressWarnings("truffle-static-method")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,

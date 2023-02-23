@@ -660,9 +660,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 writeByte(TYPE_NONE);
             } else if (v == PNone.NO_VALUE) {
                 writeByte(TYPE_NOVALUE);
-            } else if (TypeNodes.IsSameTypeNode.getUncached().execute(v, PythonBuiltinClassType.StopIteration)) {
+            } else if (TypeNodes.InlinedIsSameTypeNode.executeUncached(v, PythonBuiltinClassType.StopIteration)) {
                 writeByte(TYPE_STOPITER);
-            } else if (TypeNodes.IsSameTypeNode.getUncached().execute(v, PythonBuiltinClassType.PEllipsis)) {
+            } else if (TypeNodes.InlinedIsSameTypeNode.executeUncached(v, PythonBuiltinClassType.PEllipsis)) {
                 writeByte(TYPE_ELLIPSIS);
             } else if (v == Boolean.TRUE || v == pyTrue) {
                 writeByte(TYPE_TRUE);

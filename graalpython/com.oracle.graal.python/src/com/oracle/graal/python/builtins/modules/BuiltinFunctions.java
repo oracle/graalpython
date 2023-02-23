@@ -227,7 +227,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
@@ -486,6 +485,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
@@ -543,6 +543,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
@@ -639,6 +640,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
+        @SuppressWarnings("truffle-static-method")
         TruffleString doO(VirtualFrame frame, Object x,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile isMinLong,
@@ -1305,7 +1307,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract Object executeWithArgs(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue);
 
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "truffle-static-method"})
         @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, TruffleString name, PNone defaultValue,
                         @Bind("this") Node inliningTarget,
@@ -1316,7 +1318,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return getAttributeNode.executeObject(frame, primary);
         }
 
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "truffle-static-method"})
         @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
@@ -1340,6 +1342,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
+        @SuppressWarnings("truffle-static-method")
         Object getAttrFromObject(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached GetAnyAttributeNode getAttributeNode,
@@ -1509,13 +1512,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isPythonClass(cls)")
         static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
+                        @Bind("this") Node inliningTarget,
                         @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
                         @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
-            Object instanceClass = getClassNode.execute(instance);
-            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
+            Object instanceClass = getClassNode.execute(inliningTarget, instance);
+            return isSameTypeNode.execute(inliningTarget, instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
                             || isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode) == TriState.TRUE;
         }
 
@@ -2165,9 +2169,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntNone(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
             return sumIntInternal(frame, arg1, 0, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
@@ -2175,9 +2179,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntInt(VirtualFrame frame, Object arg1, int start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
             return sumIntInternal(frame, arg1, start, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
@@ -2209,9 +2213,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
             return sumDoubleInternal(frame, arg1, start, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
@@ -2243,7 +2247,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached InlinedConditionProfile hasStart) {
             if (PGuards.isString(start)) {
@@ -2407,7 +2411,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         /* Determine the most derived metatype. */
         @Specialization
         Object calculate(Object metatype, PTuple bases,
-                        @Cached GetClassNode getClass,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClass,
                         @Cached IsSubtypeNode isSubType,
                         @Cached IsSubtypeNode isSubTypeReverse) {
             CompilerAsserts.neverPartOfCompilation();
@@ -2422,7 +2427,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object winner = metatype;
             for (int i = 0; i < nbases; i++) {
                 Object tmp = storage.getItemNormalized(i);
-                Object tmpType = getClass.execute(tmp);
+                Object tmpType = getClass.execute(inliningTarget, tmp);
                 if (isSubType.execute(winner, tmpType)) {
                     // nothing to do
                 } else if (isSubTypeReverse.execute(tmpType, winner)) {

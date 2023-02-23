@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -125,9 +125,9 @@ public class CtypesNodes {
          * otherwise FALSE also for subclasses of c_int and such.
          */
         // corresponds to _ctypes_simple_instance
-        boolean ctypesSimpleInstance(Object type, GetBaseClassNode getBaseClassNode, IsSameTypeNode isSameTypeNode) {
+        boolean ctypesSimpleInstance(Node inliningTarget, Object type, GetBaseClassNode getBaseClassNode, InlinedIsSameTypeNode isSameTypeNode) {
             if (isPyCSimpleTypeObject(type)) {
-                return !isSameTypeNode.execute(getBaseClassNode.execute(type), SimpleCData);
+                return !isSameTypeNode.execute(inliningTarget, getBaseClassNode.execute(type), SimpleCData);
             }
             return false;
         }

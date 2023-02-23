@@ -154,9 +154,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStor
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.InlinedIsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -1388,6 +1389,10 @@ public abstract class TypeNodes {
     @GenerateCached(false)
     public abstract static class InlinedIsSameTypeNode extends PNodeWithContext {
         public abstract boolean execute(Node inliningTarget, Object left, Object right);
+
+        public static boolean executeUncached(Object left, Object right) {
+            return InlinedIsSameTypeNodeGen.getUncached().execute(null, left, right);
+        }
 
         @Specialization
         static boolean doManaged(PythonManagedClass left, PythonManagedClass right) {

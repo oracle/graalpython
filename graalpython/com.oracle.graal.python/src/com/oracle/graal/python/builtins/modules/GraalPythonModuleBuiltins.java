@@ -116,7 +116,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -342,7 +342,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                             importer = CallNode.getUncached().execute(hooks[i], inputFilePath);
                             break;
                         } catch (PException e) {
-                            if (!IsSubtypeNode.getUncached().execute(GetClassNode.getUncached().execute(e.getUnreifiedException()), ImportError)) {
+                            if (!IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {
                                 throw e;
                             }
                         }

@@ -141,7 +141,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -150,11 +150,13 @@ import com.oracle.graal.python.lib.PyObjectHashNodeGen;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -165,10 +167,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -202,6 +205,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodePointAtIndexNode;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -1421,13 +1425,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-
+        
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-
+        
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;
@@ -1491,12 +1495,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker,
                         PythonObjectFactory factory,
                         PRaiseNode raiseNode,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached GetFuncNode getFuncNode) {
             Object retval;
             PtrValue r;
@@ -1507,7 +1512,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 r = PtrValue.nil();
                 r.toPrimitive(rtype, result);
             }
-            if (dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(restype, getBaseClassNode, isSameTypeNode)) {
+            if (dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, restype, getBaseClassNode, isSameTypeNode)) {
                 retval = getFuncNode.execute(dict.getfunc, r, dict.size, factory);
             } else {
                 retval = PyCData_FromBaseObj(restype, null, 0, r,
@@ -1528,15 +1533,16 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     /*
      * Convert a single Python object into a PyCArgObject and return it.
      */
-    protected abstract static class ConvParamNode extends PNodeWithRaise {
+    protected abstract static class ConvParamNode extends PNodeWithRaiseAndIndirectCall {
 
         abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context);
 
         @Specialization
         void ConvParam(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached IsBuiltinClassProfile profile,
+                        @Cached IsBuiltinObjectProfile profile,
                         @Cached PyNumberAsSizeNode asInt,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -1580,7 +1586,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 try {
                     pa.value = asInt.executeExact(frame, obj);
                 } catch (PException e) {
-                    e.expectOverflowError(profile);
+                    e.expectOverflowError(inliningTarget, profile);
                     throw raise(OverflowError, INT_TOO_LONG_TO_CONVERT);
                 }
                 return;
@@ -1610,10 +1616,23 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
              * classes as parameters (they have to expose the '_as_parameter_' attribute)
              */
             if (arg != null) {
-                ConvParam(frame, arg, index, pa, factory, context, bufferLib, longCheckNode, profile, asInt, lookupAttr, pyObjectStgDictNode, codePointAtIndexNode);
+                Object state = IndirectCallContext.enter(frame, this);
+                try {
+                    ConvParamBoundary(arg, index, pa, context);
+                } finally {
+                    IndirectCallContext.exit(frame, this, state);
+                }
                 return;
             }
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
+        }
+
+        @TruffleBoundary
+        void ConvParamBoundary(Object obj, int index, argument pa, PythonContext context) {
+            ConvParam(null, obj, index, pa, context.factory(), context, null,
+                            PythonBufferAccessLibrary.getUncached(), PyLongCheckNode.getUncached(),
+                            IsBuiltinObjectProfile.getUncached(), PyNumberAsSizeNode.getUncached(),
+                            Dynamic.getUncached(), PyObjectStgDictNode.getUncached(), CodePointAtIndexNode.getUncached());
         }
     }
 

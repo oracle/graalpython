@@ -272,6 +272,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)", "!isPSequence(initializer)"})
+            @SuppressWarnings("truffle-static-method")
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer,
                             @Bind("this") Node inliningTarget,
                             @Cached PyObjectGetIter getIter,

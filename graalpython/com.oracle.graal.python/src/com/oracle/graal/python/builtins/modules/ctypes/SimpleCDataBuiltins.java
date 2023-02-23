@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,20 +69,22 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = SimpleCData)
@@ -170,13 +172,14 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Simple_from_outparm(CDataObject self,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached(inline = true) GetPythonObjectClassNode getClassNode,
+                        @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
-            if (pyTypeCheck.ctypesSimpleInstance(getClassNode.execute(self), getBaseClassNode, isSameTypeNode)) {
+            if (pyTypeCheck.ctypesSimpleInstance(inliningTarget, getClassNode.execute(inliningTarget, self), getBaseClassNode, isSameTypeNode)) {
                 return self;
             }
             /* call stgdict.getfunc */
@@ -215,16 +218,17 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString Simple_repr(CDataObject self,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached(inline = true) GetPythonObjectClassNode getClassNode,
+                        @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached GetNameNode getNameNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            Object clazz = getClassNode.execute(self);
-            if (!isSameTypeNode.execute(clazz, SimpleCData)) {
-                return simpleTruffleStringFormatNode.format("<%s object at %s>", getNameNode.execute(clazz), getNameNode.execute(getClassNode.execute(self)));
+            Object clazz = getClassNode.execute(inliningTarget, self);
+            if (!isSameTypeNode.execute(inliningTarget, clazz, SimpleCData)) {
+                return simpleTruffleStringFormatNode.format("<%s object at %s>", getNameNode.execute(clazz), getNameNode.execute(getClassNode.execute(inliningTarget, self)));
             }
 
             StgDictObject dict = pyObjectStgDictNode.execute(self);

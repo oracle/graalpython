@@ -505,6 +505,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "n > 0")
+        @SuppressWarnings("truffle-static-method")
         protected Object tee(VirtualFrame frame, Object iterable, int n,
                         @Bind("this") Node inliningTarget,
                         @Cached IterNode iterNode,
@@ -576,6 +577,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(rArg)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object construct(VirtualFrame frame, Object cls, Object iterable, Object rArg,
                         @Bind("this") Node inliningTarget,
                         @Cached ToArrayNode toArrayNode,

@@ -150,6 +150,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         protected Source doGeneric(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options,
                         @Bind("this") Node inliningTarget,
                         @Shared("nonEmptyOptions") @Cached InlinedConditionProfile nonEmptyOptionsProfile,

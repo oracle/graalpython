@@ -94,7 +94,7 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
@@ -115,18 +115,21 @@ import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -666,10 +669,11 @@ public final class PythonCextAbstractBuiltins {
         // cant use PySequence_Size: PySequence_Size returns the __len__ value also for
         // subclasses of types not accepted by PySequence_Check as long they have an overriden
         // __len__ method
-        @Specialization(guards = {"!isNativeObject(obj)", "!isDictOrMappingProxy(obj, isSameType, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"!isNativeObject(obj)", "!isDictOrMappingProxy(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
         static Object doSequence(Object obj,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode) {
             return sizeNode.execute(null, obj);
         }
@@ -686,15 +690,16 @@ public final class PythonCextAbstractBuiltins {
             }
         }
 
-        @Specialization(guards = {"isDictOrMappingProxy(obj, isSameType, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"isDictOrMappingProxy(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
         Object notSequence(Object obj,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
         }
 
-        protected static boolean isDictOrMappingProxy(Object obj, IsSameTypeNode isSameType, GetClassNode getClassNode) {
-            return obj instanceof PMappingproxy || isSameType.execute(getClassNode.execute(obj), PythonBuiltinClassType.PDict);
+        protected static boolean isDictOrMappingProxy(Node inliningTarget, Object obj, InlinedIsSameTypeNode isSameType, InlinedGetClassNode getClassNode) {
+            return obj instanceof PMappingproxy || isSameType.execute(inliningTarget, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PDict);
         }
     }
 
@@ -836,11 +841,12 @@ public final class PythonCextAbstractBuiltins {
         // cant use PyMapping_Check: PyMapping_Size returns the __len__ value also for
         // subclasses of types not accepted by PyMapping_Check as long they have an overriden
         // __len__ method
-        @Specialization(guards = {"!isNativeObject(obj)", "!isSetOrDeque(obj, isSameType, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"!isNativeObject(obj)", "!isSetOrDeque(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
         static int doMapping(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode) {
             return sizeNode.execute(null, obj);
         }
 
@@ -851,18 +857,19 @@ public final class PythonCextAbstractBuiltins {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
         }
 
-        @Specialization(guards = {"isSetOrDeque(obj, isSameType, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"isSetOrDeque(inliningTarget, obj, isSameType, getClassNode)"}, limit = "1")
         Object notMapping(Object obj,
-                        @Shared("isSameType") @SuppressWarnings("unused") @Cached IsSameTypeNode isSameType,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isSameType") @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameType,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode) {
             throw raise(TypeError, OBJ_ISNT_MAPPING, obj);
         }
 
-        protected static boolean isSetOrDeque(Object obj, IsSameTypeNode isSameType, GetClassNode getClassNode) {
-            Object cls = getClassNode.execute(obj);
-            return isSameType.execute(cls, PythonBuiltinClassType.PSet) ||
-                            isSameType.execute(cls, PythonBuiltinClassType.PFrozenSet) ||
-                            isSameType.execute(cls, PythonBuiltinClassType.PDeque);
+        protected static boolean isSetOrDeque(Node inliningTarget, Object obj, InlinedIsSameTypeNode isSameType, InlinedGetClassNode getClassNode) {
+            Object cls = getClassNode.execute(inliningTarget, obj);
+            return isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PSet) ||
+                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PFrozenSet) ||
+                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PDeque);
         }
     }
 
@@ -872,13 +879,14 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyIter_Next extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached NextNode nextNode,
                         @Cached PyErr_Restore restoreNode,
-                        @Cached IsBuiltinClassProfile isClassProfile) {
+                        @Cached IsBuiltinObjectProfile isClassProfile) {
             try {
                 return nextNode.execute(null, object, PNone.NO_VALUE);
             } catch (PException e) {
-                if (isClassProfile.profileException(e, PythonBuiltinClassType.StopIteration)) {
+                if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
                     restoreNode.execute(PNone.NONE, PNone.NONE, PNone.NONE);
                     return getNativeNull();
                 } else {

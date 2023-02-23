@@ -730,6 +730,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,

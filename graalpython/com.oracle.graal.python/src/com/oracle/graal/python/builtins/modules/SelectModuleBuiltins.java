@@ -133,6 +133,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doWithoutTimeout")
+        @SuppressWarnings("truffle-static-method")
         PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,

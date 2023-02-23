@@ -99,13 +99,15 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
@@ -159,16 +161,17 @@ public final class PythonCextDictBuiltins {
             return factory().createTuple(new Object[]{key, value, itKeyHash.execute(storage, it)});
         }
 
-        @Specialization(guards = "isGreaterPosOrNative( pos, dict, sizeNode, getClassNode, isSubtypeNode)", limit = "1")
+        @Specialization(guards = "isGreaterPosOrNative(inliningTarget, pos, dict, sizeNode, getClassNode, isSubtypeNode)", limit = "1")
         Object run(@SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") long pos,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             return getNativeNull();
         }
 
-        protected boolean isGreaterPosOrNative(long pos, Object obj, PyObjectSizeNode sizeNode, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return (isDict(obj) && pos >= size(obj, sizeNode)) || (!isDict(obj) && !isDictSubtype(obj, getClassNode, isSubtypeNode));
+        protected boolean isGreaterPosOrNative(Node inliningTarget, long pos, Object obj, PyObjectSizeNode sizeNode, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return (isDict(obj) && pos >= size(obj, sizeNode)) || (!isDict(obj) && !isDictSubtype(inliningTarget, obj, getClassNode, isSubtypeNode));
         }
 
         protected boolean isDict(Object obj) {
@@ -179,8 +182,8 @@ public final class PythonCextDictBuiltins {
             return sizeNode.execute(null, dict);
         }
 
-        protected boolean isDictSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PDict);
+        protected boolean isDictSubtype(Node inliningTarget, Object obj, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PDict);
         }
     }
 
