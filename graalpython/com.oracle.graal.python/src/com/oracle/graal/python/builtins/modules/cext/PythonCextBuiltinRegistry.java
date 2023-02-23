@@ -159,6 +159,7 @@ public abstract class PythonCextBuiltinRegistry {
     // GENERATED CODE - see CApiCodeGen
     // This can be re-generated using the 'mx python-capi-forwards' command or
     // by executing the main class CApiCodeGen
+
     public static final CApiBuiltinExecutable[] builtins = {
                     new CApiBuiltinExecutable("PyByteArray_Resize", Direct, Int,
                                     new ArgDescriptor[]{PyObject, Py_ssize_t}, 0),

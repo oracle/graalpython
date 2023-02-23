@@ -101,6 +101,7 @@ typedef struct {
 // GENERATED CODE - see CApiCodeGen
 // This can be re-generated using the 'mx python-capi-forwards' command or
 // by executing the main class CApiCodeGen
+
 #define CAPI_BUILTINS \
     BUILTIN(PyByteArray_Resize, int, PyObject*, Py_ssize_t) \
     BUILTIN(PyBytes_FromObject, PyObject*, PyObject*) \

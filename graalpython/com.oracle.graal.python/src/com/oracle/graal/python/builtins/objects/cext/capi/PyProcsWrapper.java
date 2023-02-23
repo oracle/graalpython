@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -83,8 +84,11 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
+    protected final CApiTiming timing;
+
     public PyProcsWrapper(Object delegate) {
         super(delegate);
+        this.timing = CApiTiming.create(true, delegate);
     }
 
     @ExportMessage
@@ -149,6 +153,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 if (arguments.length != 2) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -163,6 +168,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return PythonContext.get(gil).getNativeNull().getPtr();
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -188,6 +194,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 if (arguments.length != 2) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -202,6 +209,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return PythonContext.get(gil).getNativeNull().getPtr();
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -227,6 +235,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 /*
                  * Accept a second argumenthere, since these functions are sometimes called using
@@ -245,6 +254,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return PythonContext.get(gil).getNativeNull().getPtr();
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -269,6 +279,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 if (arguments.length != 1) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -283,6 +294,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return -1;
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -308,6 +320,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 if (arityProfile.profile(arguments.length != 3)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -323,6 +336,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return -1;
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -352,6 +366,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
+                CApiTiming.enter();
                 try {
                     try {
                         // convert args
@@ -371,6 +386,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     transformExceptionToNativeNode.execute(null, e);
                     return -1;
                 } finally {
+                    CApiTiming.exit(self.timing);
                     gil.release(mustRelease);
                 }
             }
@@ -407,6 +423,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
+                CApiTiming.enter();
                 try {
                     try {
                         // convert args
@@ -423,6 +440,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     transformExceptionToNativeNode.execute(null, e);
                     return PythonContext.get(gil).getNativeNull().getPtr();
                 } finally {
+                    CApiTiming.exit(self.timing);
                     gil.release(mustRelease);
                 }
             }
@@ -460,6 +478,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
+                CApiTiming.enter();
                 try {
                     try {
                         // convert args
@@ -478,6 +497,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     transformExceptionToNativeNode.execute(null, e);
                     return PythonContext.get(gil).getNativeNull().getPtr();
                 } finally {
+                    CApiTiming.exit(self.timing);
                     gil.release(mustRelease);
                 }
             }
@@ -515,6 +535,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
+                CApiTiming.enter();
                 try {
                     try {
                         // convert args
@@ -534,6 +555,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     transformExceptionToNativeNode.execute(null, e);
                     return PythonContext.get(gil).getNativeNull().getPtr();
                 } finally {
+                    CApiTiming.exit(self.timing);
                     gil.release(mustRelease);
                 }
             }
@@ -566,6 +588,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 if (arguments.length != 3) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -586,6 +609,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return PythonContext.get(gil).getNativeNull().getPtr();
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -611,6 +635,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 if (arguments.length != 2) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -627,6 +652,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return PythonContext.get(toJavaNode).getNativeNull().getPtr();
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -655,6 +681,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 if (arguments.length != 1) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -671,6 +698,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return PythonContext.get(toJavaNode).getNativeNull().getPtr();
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }
@@ -695,6 +723,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
             try {
                 /*
                  * Accept a second argumenthere, since these functions are sometimes called using
@@ -713,6 +742,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 transformExceptionToNativeNode.execute(null, e);
                 return PythonContext.get(gil).getNativeNull().getPtr();
             } finally {
+                CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
         }

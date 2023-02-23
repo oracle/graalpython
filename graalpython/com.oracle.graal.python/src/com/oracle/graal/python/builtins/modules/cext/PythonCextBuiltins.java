@@ -77,6 +77,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -106,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
@@ -512,14 +514,16 @@ public final class PythonCextBuiltins {
     @ExportLibrary(InteropLibrary.class)
     public static final class CApiBuiltinExecutable implements TruffleObject {
 
-        final ArgDescriptor ret;
-        final ArgDescriptor[] args;
+        private final CApiTiming timing;
+        private final ArgDescriptor ret;
+        private final ArgDescriptor[] args;
         @CompilationFinal private CallTarget callTarget;
         private final CApiCallPath call;
         private final String name;
         private final int id;
 
         public CApiBuiltinExecutable(String name, CApiCallPath call, ArgDescriptor ret, ArgDescriptor[] args, int id) {
+            this.timing = CApiTiming.create(false, name);
             this.name = name;
             this.call = call;
             this.ret = ret;
@@ -578,6 +582,7 @@ public final class PythonCextBuiltins {
             public static Object doExecute(@SuppressWarnings("unused") CApiBuiltinExecutable self, Object[] arguments,
                             @Cached("self") CApiBuiltinExecutable cachedSelf,
                             @Cached(parameters = "cachedSelf") ExecuteCApiBuiltinNode call) {
+
                 try {
                     return call.execute(cachedSelf, arguments);
                 } catch (Throwable t) {
@@ -706,8 +711,12 @@ public final class PythonCextBuiltins {
 
         @Override
         Object execute(CApiBuiltinExecutable self, Object[] arguments) {
+            CApiTiming.enter();
             try {
                 try {
+                    if (LOGGER.isLoggable(Level.FINEST)) {
+                        LOGGER.finest(() -> "CAPI-" + self.name + "(" + Arrays.stream(arguments).map(Object::toString).collect(Collectors.joining(", ")) + ")");
+                    }
                     assert cachedSelf == self;
                     assert arguments.length == argNodes.length;
 
@@ -743,6 +752,8 @@ public final class PythonCextBuiltins {
                     CompilerDirectives.transferToInterpreter();
                     throw CompilerDirectives.shouldNotReachHere("return type while handling PException: " + cachedSelf.getRetDescriptor() + " in " + self.name);
                 }
+            } finally {
+                CApiTiming.exit(self.timing);
             }
         }
     }

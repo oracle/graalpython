@@ -1278,6 +1278,7 @@ PyAPI_FUNC(void) initialize_graal_capi(ptr_cache_t _pythonToNative, void_ptr_cac
 // GENERATED CODE - see CApiCodeGen
 // This can be re-generated using the 'mx python-capi-forwards' command or
 // by executing the main class CApiCodeGen
+
 #undef PyByteArray_Resize
 PyAPI_FUNC(int) PyByteArray_Resize(PyObject* a, Py_ssize_t b) {
     return GraalPyByteArray_Resize(a, b);

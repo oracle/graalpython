@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VARARGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VoidNoReturn;
@@ -81,10 +80,6 @@ public final class CApiCodeGen {
 
     private static final String START_CAPI_BUILTINS = "{{start CAPI_BUILTINS}}";
     private static final String END_CAPI_BUILTINS = "{{end CAPI_BUILTINS}}";
-    /**
-     * Used to create a linked list of all stats elements.
-     */
-    private static String lastStatsName = null;
 
     public static final class CApiBuiltinDesc {
         public final String name;
@@ -118,37 +113,20 @@ public final class CApiCodeGen {
         }
 
         void generateC(List<String> lines) {
-            if (lastStatsName == null) {
-                lines.add("FIRST_STATS_CONTAINER(" + name + ")");
-            } else {
-                lines.add("STATS_CONTAINER(" + name + ", " + lastStatsName + ")");
-            }
-            lastStatsName = name;
             lines.add(returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;");
             lines.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
                             "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
-            if (arguments.length == 0) {
-                lines.add("    LOGS(\"\");");
-            } else {
-                lines.add("    LOG(\"" + mapArgs(i -> isStringArg(i) ? "'%s'(0x%lx)" : "0x%lx", " ") + "\", " +
-                                mapArgs(i -> (isStringArg(i) ? argName(i) + "?" + argName(i) + ":\"<null>\", " : "") + "(unsigned long) " + argName(i), ", ") +
-                                ");");
-            }
-            lines.add("    STATS_BEFORE(" + name + ")");
             String line = "    ";
             if (!returnType.isVoid()) {
                 line += returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ";
             }
             lines.add(line + targetName() + "(" + mapArgs(i -> argName(i), ", ") + ");");
-            lines.add("    STATS_AFTER(" + name + ")");
 
             if (returnType.isVoid()) {
-                lines.add("    LOG_AFTER_VOID");
                 if (returnType == VoidNoReturn) {
                     lines.add("    abort();");
                 }
             } else {
-                lines.add("    LOG_AFTER");
                 lines.add("    return result;");
             }
             lines.add("}");
@@ -187,11 +165,6 @@ public final class CApiCodeGen {
             } else {
                 return arg.getCSignature() + " " + argName(i);
             }
-        }
-
-        private boolean isStringArg(int i) {
-            ArgDescriptor arg = arguments[i];
-            return arg == ConstCharPtr || arg == ConstCharPtrAsTruffleString;
         }
 
         private String mapArgs(IntFunction<String> fun, String delim) {
@@ -247,6 +220,7 @@ public final class CApiCodeGen {
         result.add(prefix + "GENERATED CODE - see " + CApiCodeGen.class.getSimpleName());
         result.add(prefix + "This can be re-generated using the 'mx python-capi-forwards' command or");
         result.add(prefix + "by executing the main class " + CApiCodeGen.class.getSimpleName());
+        result.add("");
         result.addAll(contents);
         result.addAll(lines.subList(end, lines.size()));
         if (result.equals(lines)) {
@@ -348,10 +322,6 @@ public final class CApiCodeGen {
                             """);
             System.out.println("    " + missingVarargForwards.stream().collect(Collectors.joining(", ")));
         }
-
-        lines.add("#ifdef STATS");
-        lines.add("CAPIStats* getStatsList() { return &__stats__" + lastStatsName + "; }");
-        lines.add("#endif");
 
         lines.add("void initializeCAPIForwards(void* (*getAPI)(const char*)) {");
         for (CApiBuiltinDesc function2 : toBeResolved) {

@@ -1072,7 +1072,7 @@ public final class CApiContext extends CExtContext {
                     assert builtin.call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name()) : "name clash in builtin vs. CAPI library: " +
                                     builtin.name();
                 }
-                LOGGER.finer("getBuiltin " + id + " / " + builtin.name());
+                LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
                 return builtin;
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -1167,7 +1167,7 @@ public final class CApiContext extends CExtContext {
                         InteropLibrary.getUncached().toNative(result);
                         l = InteropLibrary.getUncached().asPointer(result);
                     }
-                    LOGGER.finer("getType " + typename + " -> " + java.lang.Long.toHexString(l));
+                    LOGGER.finer("CApiContext.GetType " + typename + " -> " + java.lang.Long.toHexString(l));
                     return l;
                 }
                 throw new RuntimeException("type " + typename + " not found");
@@ -1195,6 +1195,7 @@ public final class CApiContext extends CExtContext {
             String typename = (String) arguments[0];
             long ptr = (long) arguments[1];
 
+            LOGGER.finer("CApiContext.SetTypeStore " + typename + " -> " + java.lang.Long.toHexString(ptr));
             if (!"unimplemented".equals(typename)) {
                 CApiContext context = PythonContext.get(null).getCApiContext();
                 assert !context.typeStorePointers.containsKey(typename) : typename;
