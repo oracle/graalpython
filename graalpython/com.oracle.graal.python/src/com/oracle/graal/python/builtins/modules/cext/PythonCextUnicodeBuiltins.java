@@ -860,7 +860,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffle_Unicode_AsUnicodeAndSize extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffle_Unicode_AsUnicodeAndSize extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         Object doUnicode(PString s,
