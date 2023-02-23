@@ -22,36 +22,7 @@ static PyObject *unicode_empty = NULL;
         return unicode_empty;                           \
     } while (0)
 
-// partially taken from CPython "Objects/unicodeobject.c"
-const unsigned char _Py_ascii_whitespace[] = {
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x0009: * CHARACTER TABULATION */
-/*     case 0x000A: * LINE FEED */
-/*     case 0x000B: * LINE TABULATION */
-/*     case 0x000C: * FORM FEED */
-/*     case 0x000D: * CARRIAGE RETURN */
-    0, 1, 1, 1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x001C: * FILE SEPARATOR */
-/*     case 0x001D: * GROUP SEPARATOR */
-/*     case 0x001E: * RECORD SEPARATOR */
-/*     case 0x001F: * UNIT SEPARATOR */
-    0, 0, 0, 0, 1, 1, 1, 1,
-/*     case 0x0020: * SPACE */
-    1, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
-};
+// '_Py_ascii_whitespace' was moved to 'const_arrays.h'
 
 static PyObject * _PyUnicode_FromUCS1(const Py_UCS1 *s, Py_ssize_t size);
 static PyObject * _PyUnicode_FromUCS2(const Py_UCS2 *s, Py_ssize_t size);
@@ -410,7 +381,7 @@ PyObject * PyUnicode_DecodeUTF8(const char *s, Py_ssize_t size, const char *erro
 
 PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const char *errors, Py_ssize_t *consumed) {
 	PyObject* result = GraalPyTruffleUnicode_DecodeUTF8Stateful(
-                                                polyglot_from_i8_array(s, size), 
+                                                polyglot_from_i8_array(s, size),
                                                 convert_errors(errors),
                                                 consumed != NULL ? 1 : 0);
 	if (result != NULL) {
@@ -429,9 +400,9 @@ PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const ch
 // partially taken from CPython "Python/Objects/unicodeobject.c"
 PyObject * _PyUnicode_FromId(_Py_Identifier *id) {
     if (!id->object) {
-        id->object = PyUnicode_DecodeUTF8Stateful(id->string, 
-                                                        strlen(id->string), 
-                                                        "strict", 
+        id->object = PyUnicode_DecodeUTF8Stateful(id->string,
+                                                        strlen(id->string),
+                                                        "strict",
                                                         NULL);
         if (!id->object) {
             return NULL;

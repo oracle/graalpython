@@ -412,6 +412,12 @@ CAPI_BUILTINS
     return 1;
 }
 
+/*
+ * This header includes definitions for constant arrays like:
+ * _Py_ascii_whitespace, _Py_ctype_table, _Py_ctype_tolower, _Py_ctype_toupper.
+ */
+#include "const_arrays.h"
+
 /* Private types are defined here because we need to declare the type cast. */
 
 typedef struct mmap_object mmap_object;
