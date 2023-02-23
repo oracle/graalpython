@@ -227,10 +227,6 @@ CONSTANT(PyObject*, _PyLong_Zero, PyLong_Zero) \
 CONSTANT(PyObject*, _PyLong_One, PyLong_One) \
 
 #define CONSTANT_COPIES \
-CONSTANT_ARRAY(const unsigned char, _Py_ascii_whitespace, 256) \
-CONSTANT_ARRAY(const unsigned int, _Py_ctype_table, 256) \
-CONSTANT_ARRAY(const unsigned char, _Py_ctype_tolower, 256) \
-CONSTANT_ARRAY(const unsigned char, _Py_ctype_toupper, 256) \
 CONSTANT(struct _PyTraceMalloc_Config, _Py_tracemalloc_config) \
 CONSTANT(_Py_HashSecret_t, _Py_HashSecret) \
 CONSTANT(int, Py_DebugFlag) \
@@ -376,7 +372,7 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
 #define CONSTANT(TYPE, NAME, INTERNAL_NAME) NAME = (TYPE) getType(#INTERNAL_NAME);
     CONSTANTS
 #undef CONSTANT
-    
+
 #define CONSTANT(TYPE, NAME) memcpy((void*) &NAME, getType(#NAME), sizeof(NAME));
 #define CONSTANT_ARRAY(TYPE, NAME, SIZE) memcpy((void*) NAME, getType(#NAME), sizeof(NAME));
     CONSTANT_COPIES
@@ -395,7 +391,7 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
     }
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
 #undef SET_TYPE_OBJECT_STORE
-    
+
     int id = 0;
 #define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
 CAPI_BUILTINS
