@@ -55,7 +55,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
@@ -519,11 +518,15 @@ public final class CApiCodeGen {
         return messages.isEmpty();
     }
 
-    private static final HashSet<String> OUTSIDE = new HashSet<>(
-                    Arrays.asList("Py_DecRef", "Py_IncRef", "PyTuple_Pack", "PyArg_UnpackTuple", "PyOS_snprintf", "PyErr_WarnFormat", "PyCapsule_TypeReference", "_Py_TrueStructReference",
-                                    "_Py_REFCNT", "_Py_SET_REFCNT", "_Py_NoneStructReference", "_Py_FalseStructReference", "Py_OptimizeFlag", "PyUnicode_FromFormat",
-                                    "PyThreadState_Get", "PyErr_Format", "_Py_BuildValue_SizeT", "_PyObject_GetDictPtr", "_PyObject_CallFunction_SizeT",
-                                    "PyObject_CallFunctionObjArgs", "_PyByteArray_empty_string", "_Py_tracemalloc_config"));
+    /**
+     * These are functions that are introduced by GraalPy, mostly auxiliary functions that we added
+     * to avoid direct fields accesses:
+     */
+    private static final String[] ADDITIONAL = new String[]{"PyCFunction_GetClass", "PyDescrObject_GetName", "PyDescrObject_GetType", "PyInterpreterState_GetIDFromThreadState",
+                    "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyASCIIObject_LENGTH", "_PyASCIIObject_STATE_ASCII",
+                    "_PyASCIIObject_STATE_COMPACT", "_PyASCIIObject_STATE_KIND", "_PyASCIIObject_STATE_READY", "_PyASCIIObject_WSTR", "_PyByteArray_Start", "_PyEval_SetCoroutineOriginTrackingDepth",
+                    "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer", "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_get_wstr_length", "_Py_REFCNT",
+                    "_Py_SET_REFCNT", "_Py_SET_SIZE", "_Py_SET_TYPE", "_Py_SIZE", "_Py_TYPE"};
 
     /**
      * Check the list of implemented and unimplemented builtins against the list of CPython exported
@@ -546,14 +549,12 @@ public final class CApiCodeGen {
             String[] argSplit = s[2].isBlank() || "void".equals(s[2]) ? new String[0] : s[2].trim().split("\\|");
             ArgDescriptor[] args = Arrays.stream(argSplit).map(ArgDescriptor::resolve).toArray(ArgDescriptor[]::new);
 
-            if (!name.endsWith("_Type") && !name.startsWith("PyExc_") && !OUTSIDE.contains(name)) {
-                Optional<CApiBuiltinDesc> existing = findBuiltin(builtins, name);
-                if (existing.isPresent()) {
-                    compareFunction(name, existing.get().returnType, ret, existing.get().arguments, args);
-                } else {
-                    String argString = Arrays.stream(args).map(t -> String.valueOf(t)).collect(Collectors.joining(", "));
-                    newBuiltins.add("    @CApiBuiltin(name = \"" + name + "\", ret = " + ret + ", args = {" + argString + "}, call = NotImplemented)");
-                }
+            Optional<CApiBuiltinDesc> existing = findBuiltin(builtins, name);
+            if (existing.isPresent()) {
+                compareFunction(name, existing.get().returnType, ret, existing.get().arguments, args);
+            } else {
+                String argString = Arrays.stream(args).map(t -> String.valueOf(t)).collect(Collectors.joining(", "));
+                newBuiltins.add("    @CApiBuiltin(name = \"" + name + "\", ret = " + ret + ", args = {" + argString + "}, call = NotImplemented)");
             }
         }
         if (!newBuiltins.isEmpty()) {
@@ -566,8 +567,12 @@ public final class CApiCodeGen {
         names.removeIf(n -> n.startsWith("Py_set_"));
         names.removeIf(n -> n.startsWith("PyTruffle"));
         names.removeIf(n -> n.startsWith("_PyTruffle"));
-        System.out.println("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");
-        System.out.println("    " + names.stream().collect(Collectors.joining(", ")));
+        names.removeAll(Arrays.asList(ADDITIONAL));
+        if (!names.isEmpty()) {
+            System.out.println("extra builtins (defined in GraalPy, but not in CPython - some of these are necessary for internal modules like 'math'):");
+            System.out.println("    " + names.stream().collect(Collectors.joining(", ")));
+            result = true;
+        }
         return result;
     }
 }

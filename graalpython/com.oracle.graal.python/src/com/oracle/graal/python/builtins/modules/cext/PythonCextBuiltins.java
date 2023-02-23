@@ -77,7 +77,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -174,7 +173,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -715,7 +713,7 @@ public final class PythonCextBuiltins {
             try {
                 try {
                     if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(() -> "CAPI-" + self.name + "(" + Arrays.stream(arguments).map(Object::toString).collect(Collectors.joining(", ")) + ")");
+                        LOGGER.finest(() -> "CAPI-" + self.name + " " + Arrays.toString(arguments));
                     }
                     assert cachedSelf == self;
                     assert arguments.length == argNodes.length;
@@ -877,7 +875,6 @@ public final class PythonCextBuiltins {
      * Called from C when they actually want a {@code const char*} for a Python string
      */
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleToCharPointer extends CApiUnaryBuiltinNode {
 
         @Specialization(guards = "isString(str)")
@@ -893,7 +890,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_FileSystemDefaultEncoding extends CApiNullaryBuiltinNode {
         @Specialization
         static TruffleString encoding() {
@@ -902,7 +898,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = PyTypeObject, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Type extends CApiUnaryBuiltinNode {
 
         private static final TruffleString[] LOOKUP_MODULES = new TruffleString[]{
@@ -1051,7 +1046,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Set_Native_Slots extends CApiTernaryBuiltinNode {
         static final HiddenKey NATIVE_SLOTS = new HiddenKey("__native_slots__");
 
@@ -1064,7 +1058,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Get_Inherited_Native_Slots extends CApiBinaryBuiltinNode {
         private static final int INDEX_GETSETS = 0;
         private static final int INDEX_MEMBERS = 1;
@@ -1113,7 +1106,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Bytes_AsString extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doBytes(PBytes bytes) {
@@ -1140,7 +1132,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyFrame_New extends CApiQuaternaryBuiltinNode {
         @Specialization
         Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
@@ -1155,7 +1146,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyTypeObject, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Set_SulongType extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -1166,7 +1156,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Pointer, Pointer, Pointer, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_MemoryViewFromBuffer extends CApi11BuiltinNode {
 
         @Specialization
@@ -1229,7 +1218,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Register_NULL extends CApiUnaryBuiltinNode {
         @Specialization
         Object doIt(Object object) {
@@ -1276,7 +1264,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Arg_ParseTupleAndKeywords extends CApi5BuiltinNode {
 
         @Specialization
@@ -1315,7 +1302,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer, ArgDescriptor.Long}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_Object_Alloc extends CApiBinaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Alloc.class);
 
@@ -1360,7 +1346,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
-    @GenerateNodeFactory
     @ImportStatic(CApiGuards.class)
     public abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Free.class);
@@ -1424,7 +1409,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {UNSIGNED_INT, UINTPTR_T, SIZE_T}, call = Direct)
-    @GenerateNodeFactory
     @ImportStatic(CApiGuards.class)
     abstract static class PyTraceMalloc_Track extends CApiTernaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTraceMalloc_Track.class);
@@ -1461,7 +1445,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {UNSIGNED_INT, UINTPTR_T}, call = Direct)
-    @GenerateNodeFactory
     @ImportStatic(CApiGuards.class)
     abstract static class PyTraceMalloc_Untrack extends CApiBinaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTraceMalloc_Untrack.class);
@@ -1491,7 +1474,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    @GenerateNodeFactory
     abstract static class _PyTraceMalloc_NewReference extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -1544,7 +1526,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_GC_UnTrack extends PyTruffleGcTracingNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyObject_GC_UnTrack.class);
 
@@ -1556,7 +1537,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyObject_GC_Track extends PyTruffleGcTracingNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyObject_GC_Track.class);
 
@@ -1575,7 +1555,6 @@ public final class PythonCextBuiltins {
     private static final int LOG_FINEST = 0x20;
 
     @CApiBuiltin(ret = Int, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Native_Options extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -1604,7 +1583,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_LogString extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -1638,7 +1616,6 @@ public final class PythonCextBuiltins {
      * This will be called right before the call to stdlib's {@code free} function.
      */
     @CApiBuiltin(ret = Int, args = {Pointer, Py_ssize_t}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class _PyTruffle_Trace_Free extends CApiBinaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(_PyTruffle_Trace_Free.class);
 
@@ -1709,7 +1686,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {}, call = Direct)
-    @GenerateNodeFactory
     abstract static class PyTruffle_DebugTrace extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -1741,7 +1717,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_Debug extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -1753,7 +1728,6 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_ToNative extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary

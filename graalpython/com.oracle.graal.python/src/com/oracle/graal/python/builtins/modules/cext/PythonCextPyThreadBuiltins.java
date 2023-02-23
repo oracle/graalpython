@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockN
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextPyThreadBuiltins {
@@ -113,7 +112,6 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Long, args = {}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_tss_create extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -123,7 +121,6 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {ArgDescriptor.Long}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_tss_get extends CApiUnaryBuiltinNode {
         @Specialization
         Object tssGet(long key) {
@@ -136,7 +133,6 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {ArgDescriptor.Long, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_tss_set extends CApiBinaryBuiltinNode {
         @Specialization
         int tssSet(long key, Object value) {
@@ -146,7 +142,6 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {ArgDescriptor.Long}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_tss_delete extends CApiUnaryBuiltinNode {
         @Specialization
         Object tssDelete(long key) {

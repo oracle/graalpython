@@ -113,7 +113,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -185,7 +184,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_Compute_Mro extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -197,7 +195,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_NewTypeDict extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -211,7 +208,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_Type_Modified extends CApiTernaryBuiltinNode {
 
         @TruffleBoundary
@@ -246,7 +242,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffle_Trace_Type extends CApiBinaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Trace_Type.class);
 
@@ -315,7 +310,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleType_AddFunctionToType extends CApi8BuiltinNode {
 
         @Specialization
@@ -332,7 +326,6 @@ public final class PythonCextTypeBuiltins {
      * Signature: {@code (primary, tpDict, name", cfunc, flags, wrapper, doc)}
      */
     @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleType_AddSlot extends CApi7BuiltinNode {
 
         @Specialization
@@ -352,7 +345,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Int, Py_ssize_t, Int, Pointer}, call = CApiCallPath.Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffleType_AddMember extends CApi7BuiltinNode {
 
         @Specialization
@@ -426,7 +418,6 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Pointer, Pointer, Pointer}, call = Ignored)
-    @GenerateNodeFactory
     abstract static class PyTruffleType_AddGetSet extends CApi7BuiltinNode {
 
         @Specialization

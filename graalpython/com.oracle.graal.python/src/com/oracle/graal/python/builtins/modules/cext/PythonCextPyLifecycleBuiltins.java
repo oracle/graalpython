@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -86,7 +85,6 @@ public final class PythonCextPyLifecycleBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Ignored)
-    @GenerateNodeFactory
     public abstract static class PyTruffle_FatalErrorFunc extends CApiTernaryBuiltinNode {
 
         @Specialization

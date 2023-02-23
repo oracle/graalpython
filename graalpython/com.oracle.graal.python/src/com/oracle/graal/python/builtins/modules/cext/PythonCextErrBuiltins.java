@@ -244,7 +244,7 @@ public final class PythonCextErrBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
-    abstract static class _PyErr_CreateAndSetException extends CApiBinaryBuiltinNode {
+    abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(type, isTypeNode, isSubClassNode)")
         Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,

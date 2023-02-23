@@ -798,7 +798,6 @@ void unimplemented(const char* name) {
 #undef PyType_FromModuleAndSpec
 #undef PyType_FromSpec
 #undef PyType_FromSpecWithBases
-#undef PyType_FromSpecWithBasesAndMeta
 #undef PyType_GenericAlloc
 #undef PyType_GenericNew
 #undef PyType_GetFlags
@@ -1226,8 +1225,6 @@ void unimplemented(const char* name) {
 #undef _PyBytes_FromHex
 #undef _PyBytes_Join
 #undef _PyBytes_Resize
-#undef _PyCFunction_DebugMallocStats
-#undef _PyCFunction_FastCallDict
 #undef _PyCode_CheckLineNumber
 #undef _PyCode_ConstantKey
 #undef _PyCode_GetExtra
@@ -1258,7 +1255,6 @@ void unimplemented(const char* name) {
 #undef _PyDict_DelItem_KnownHash
 #undef _PyDict_FromKeys
 #undef _PyDict_GetItemHint
-#undef _PyDict_GetItemId
 #undef _PyDict_GetItemIdWithError
 #undef _PyDict_GetItemStringWithError
 #undef _PyDict_GetItem_KnownHash
@@ -1278,7 +1274,6 @@ void unimplemented(const char* name) {
 #undef _PyErr_BadInternalCall
 #undef _PyErr_ChainExceptions
 #undef _PyErr_CheckSignals
-#undef _PyErr_CreateAndSetException
 #undef _PyErr_FormatFromCause
 #undef _PyErr_GetExcInfo
 #undef _PyErr_GetTopmostException
@@ -1314,18 +1309,14 @@ void unimplemented(const char* name) {
 #undef _PyFrame_DebugMallocStats
 #undef _PyFrame_New_NoTrack
 #undef _PyFrame_SetLineNumber
-#undef _PyFunction_FastCallDict
 #undef _PyFunction_Vectorcall
 #undef _PyGILState_GetInterpreterStateUnsafe
 #undef _PyGen_FetchStopIterationValue
 #undef _PyGen_Finalize
-#undef _PyGen_Send
 #undef _PyGen_SetStopIterationValue
 #undef _PyGen_yf
 #undef _PyImport_AcquireLock
-#undef _PyImport_FindBuiltin
 #undef _PyImport_FindExtensionObject
-#undef _PyImport_FindExtensionObjectEx
 #undef _PyImport_FixupBuiltin
 #undef _PyImport_FixupExtensionObject
 #undef _PyImport_GetModuleAttr
@@ -1336,7 +1327,6 @@ void unimplemented(const char* name) {
 #undef _PyImport_ReleaseLock
 #undef _PyImport_SetModule
 #undef _PyImport_SetModuleString
-#undef _PyInterpreterState_Get
 #undef _PyInterpreterState_GetConfig
 #undef _PyInterpreterState_GetConfigCopy
 #undef _PyInterpreterState_GetEvalFrameFunc
@@ -1377,9 +1367,6 @@ void unimplemented(const char* name) {
 #undef _PyMem_RawWcsdup
 #undef _PyMem_Strdup
 #undef _PyMemoryView_GetBuffer
-#undef _PyMethodDef_RawFastCallDict
-#undef _PyMethodDef_RawFastCallKeywords
-#undef _PyMethod_DebugMallocStats
 #undef _PyModuleSpec_IsInitializing
 #undef _PyModule_Clear
 #undef _PyModule_ClearDict
@@ -1394,9 +1381,7 @@ void unimplemented(const char* name) {
 #undef _PyOS_URandomNonblock
 #undef _PyObjectDict_SetItem
 #undef _PyObject_AssertFailed
-#undef _PyObject_Call1
 #undef _PyObject_CallFunction_SizeT
-#undef _PyObject_CallMethod1
 #undef _PyObject_CallMethodId
 #undef _PyObject_CallMethodIdObjArgs
 #undef _PyObject_CallMethodId_SizeT
@@ -1407,8 +1392,6 @@ void unimplemented(const char* name) {
 #undef _PyObject_DebugMallocStats
 #undef _PyObject_DebugTypeStats
 #undef _PyObject_Dump
-#undef _PyObject_FastCallDict
-#undef _PyObject_FastCall_Prepend
 #undef _PyObject_FunctionStr
 #undef _PyObject_GC_Calloc
 #undef _PyObject_GC_Malloc
@@ -1421,7 +1404,6 @@ void unimplemented(const char* name) {
 #undef _PyObject_GetCrossInterpreterData
 #undef _PyObject_GetDictPtr
 #undef _PyObject_GetMethod
-#undef _PyObject_HasAttrId
 #undef _PyObject_HasLen
 #undef _PyObject_IsAbstract
 #undef _PyObject_IsFreed
@@ -1448,7 +1430,6 @@ void unimplemented(const char* name) {
 #undef _PySlice_FromIndices
 #undef _PySlice_GetLongIndices
 #undef _PyStack_AsDict
-#undef _PyStack_UnpackDict
 #undef _PyState_AddModule
 #undef _PySys_GetObjectId
 #undef _PySys_GetSizeOf
@@ -1497,10 +1478,13 @@ void unimplemented(const char* name) {
 #undef _PyTrash_thread_deposit_object
 #undef _PyTrash_thread_destroy_chain
 #undef _PyTruffleBytes_Resize
+#undef _PyTruffleErr_CreateAndSetException
 #undef _PyTruffleErr_Warn
 #undef _PyTruffleEval_EvalCodeEx
 #undef _PyTruffleModule_CreateInitialized_PyModule_New
 #undef _PyTruffleModule_GetAndIncMaxModuleNumber
+#undef _PyTruffleObject_Call1
+#undef _PyTruffleObject_CallMethod1
 #undef _PyTruffleObject_MakeTpCall
 #undef _PyTruffleSet_NextEntry
 #undef _PyTruffle_HashBytes
@@ -1528,7 +1512,6 @@ void unimplemented(const char* name) {
 #undef _PyUnicodeWriter_WriteStr
 #undef _PyUnicodeWriter_WriteSubstring
 #undef _PyUnicode_AsASCIIString
-#undef _PyUnicode_AsKind
 #undef _PyUnicode_AsLatin1String
 #undef _PyUnicode_AsUTF8String
 #undef _PyUnicode_AsUnicode
@@ -1648,7 +1631,6 @@ void unimplemented(const char* name) {
 #undef _Py_dg_stdnan
 #undef _Py_dg_strtod
 #undef _Py_dup
-#undef _Py_fopen
 #undef _Py_fopen_obj
 #undef _Py_fstat
 #undef _Py_fstat_noraise
@@ -4301,9 +4283,6 @@ PyAPI_FUNC(PyObject*) PyType_FromSpecWithBases(PyType_Spec* a, PyObject* b) {
     PyObject* result = (PyObject*) __target__PyType_FromSpecWithBases(a, b);
     return result;
 }
-PyAPI_FUNC(PyObject*) PyType_FromSpecWithBasesAndMeta(PyType_Spec* a, PyObject* b, PyTypeObject* c) {
-    unimplemented("PyType_FromSpecWithBasesAndMeta"); exit(-1);
-}
 PyObject* (*__target__PyType_GenericAlloc)(PyTypeObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyType_GenericAlloc(PyTypeObject* a, Py_ssize_t b) {
     PyObject* result = (PyObject*) __target__PyType_GenericAlloc(a, b);
@@ -5173,12 +5152,6 @@ PyAPI_FUNC(int) _PyBytes_Resize(PyObject** a, Py_ssize_t b) {
     int result = (int) __target___PyBytes_Resize(a, b);
     return result;
 }
-PyAPI_FUNC(void) _PyCFunction_DebugMallocStats(FILE* a) {
-    unimplemented("_PyCFunction_DebugMallocStats"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyCFunction_FastCallDict(PyObject* a, PyObject*const* b, Py_ssize_t c, PyObject* d) {
-    unimplemented("_PyCFunction_FastCallDict"); exit(-1);
-}
 PyAPI_FUNC(int) _PyCode_CheckLineNumber(int a, PyCodeAddressRange* b) {
     unimplemented("_PyCode_CheckLineNumber"); exit(-1);
 }
@@ -5310,10 +5283,6 @@ PyAPI_FUNC(void) _PyErr_ChainExceptions(PyObject* a, PyObject* b, PyObject* c) {
 PyAPI_FUNC(int) _PyErr_CheckSignals() {
     unimplemented("_PyErr_CheckSignals"); exit(-1);
 }
-void (*__target___PyErr_CreateAndSetException)(PyObject*, PyObject*) = NULL;
-PyAPI_FUNC(void) _PyErr_CreateAndSetException(PyObject* a, PyObject* b) {
-    __target___PyErr_CreateAndSetException(a, b);
-}
 PyAPI_FUNC(PyObject*) _PyErr_FormatFromCause(PyObject* a, const char* b, ...) {
     unimplemented("_PyErr_FormatFromCause"); exit(-1);
 }
@@ -5435,9 +5404,6 @@ void (*__target___PyFrame_SetLineNumber)(PyFrameObject*, int) = NULL;
 PyAPI_FUNC(void) _PyFrame_SetLineNumber(PyFrameObject* a, int b) {
     __target___PyFrame_SetLineNumber(a, b);
 }
-PyAPI_FUNC(PyObject*) _PyFunction_FastCallDict(PyObject* a, PyObject*const* b, Py_ssize_t c, PyObject* d) {
-    unimplemented("_PyFunction_FastCallDict"); exit(-1);
-}
 PyAPI_FUNC(PyObject*) _PyFunction_Vectorcall(PyObject* a, PyObject*const* b, size_t c, PyObject* d) {
     unimplemented("_PyFunction_Vectorcall"); exit(-1);
 }
@@ -5453,11 +5419,6 @@ void (*__target___PyGen_Finalize)(PyObject*) = NULL;
 PyAPI_FUNC(void) _PyGen_Finalize(PyObject* a) {
     __target___PyGen_Finalize(a);
 }
-PyObject* (*__target___PyGen_Send)(PyGenObject*, PyObject*) = NULL;
-PyAPI_FUNC(PyObject*) _PyGen_Send(PyGenObject* a, PyObject* b) {
-    PyObject* result = (PyObject*) __target___PyGen_Send(a, b);
-    return result;
-}
 int (*__target___PyGen_SetStopIterationValue)(PyObject*) = NULL;
 PyAPI_FUNC(int) _PyGen_SetStopIterationValue(PyObject* a) {
     int result = (int) __target___PyGen_SetStopIterationValue(a);
@@ -5471,14 +5432,8 @@ PyAPI_FUNC(PyObject*) _PyGen_yf(PyGenObject* a) {
 PyAPI_FUNC(void) _PyImport_AcquireLock() {
     unimplemented("_PyImport_AcquireLock"); exit(-1);
 }
-PyAPI_FUNC(PyObject*) _PyImport_FindBuiltin(const char* a, PyObject* b) {
-    unimplemented("_PyImport_FindBuiltin"); exit(-1);
-}
 PyAPI_FUNC(PyObject*) _PyImport_FindExtensionObject(PyObject* a, PyObject* b) {
     unimplemented("_PyImport_FindExtensionObject"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyImport_FindExtensionObjectEx(PyObject* a, PyObject* b, PyObject* c) {
-    unimplemented("_PyImport_FindExtensionObjectEx"); exit(-1);
 }
 PyAPI_FUNC(int) _PyImport_FixupBuiltin(PyObject* a, const char* b, PyObject* c) {
     unimplemented("_PyImport_FixupBuiltin"); exit(-1);
@@ -5498,7 +5453,7 @@ PyAPI_FUNC(PyObject*) _PyImport_GetModuleId(struct _Py_Identifier* a) {
 PyAPI_FUNC(int) _PyImport_IsInitialized(PyInterpreterState* a) {
     unimplemented("_PyImport_IsInitialized"); exit(-1);
 }
-PyAPI_FUNC(void) _PyImport_ReInitLock() {
+PyAPI_FUNC(PyStatus) _PyImport_ReInitLock() {
     unimplemented("_PyImport_ReInitLock"); exit(-1);
 }
 PyAPI_FUNC(int) _PyImport_ReleaseLock() {
@@ -5511,9 +5466,6 @@ PyAPI_FUNC(int) _PyImport_SetModule(PyObject* a, PyObject* b) {
 }
 PyAPI_FUNC(int) _PyImport_SetModuleString(const char* a, PyObject* b) {
     unimplemented("_PyImport_SetModuleString"); exit(-1);
-}
-PyAPI_FUNC(PyInterpreterState*) _PyInterpreterState_Get() {
-    unimplemented("_PyInterpreterState_Get"); exit(-1);
 }
 PyAPI_FUNC(const PyConfig*) _PyInterpreterState_GetConfig(PyInterpreterState* a) {
     unimplemented("_PyInterpreterState_GetConfig"); exit(-1);
@@ -5647,15 +5599,6 @@ PyAPI_FUNC(Py_buffer*) _PyMemoryView_GetBuffer(PyObject* a) {
     Py_buffer* result = (Py_buffer*) __target___PyMemoryView_GetBuffer(a);
     return result;
 }
-PyAPI_FUNC(PyObject*) _PyMethodDef_RawFastCallDict(PyMethodDef* a, PyObject* b, PyObject*const* c, Py_ssize_t d, PyObject* e) {
-    unimplemented("_PyMethodDef_RawFastCallDict"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyMethodDef_RawFastCallKeywords(PyMethodDef* a, PyObject* b, PyObject*const* c, Py_ssize_t d, PyObject* e) {
-    unimplemented("_PyMethodDef_RawFastCallKeywords"); exit(-1);
-}
-PyAPI_FUNC(void) _PyMethod_DebugMallocStats(FILE* a) {
-    unimplemented("_PyMethod_DebugMallocStats"); exit(-1);
-}
 PyAPI_FUNC(int) _PyModuleSpec_IsInitializing(PyObject* a) {
     unimplemented("_PyModuleSpec_IsInitializing"); exit(-1);
 }
@@ -5710,16 +5653,6 @@ PyAPI_FUNC(int) _PyObjectDict_SetItem(PyTypeObject* a, PyObject** b, PyObject* c
 PyAPI_FUNC(void) _PyObject_AssertFailed(PyObject* a, const char* b, const char* c, const char* d, int e, const char* f) {
     unimplemented("_PyObject_AssertFailed"); exit(-1);
 }
-PyObject* (*__target___PyObject_Call1)(PyObject*, PyObject*, PyObject*, int) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_Call1(PyObject* a, PyObject* b, PyObject* c, int d) {
-    PyObject* result = (PyObject*) __target___PyObject_Call1(a, b, c, d);
-    return result;
-}
-PyObject* (*__target___PyObject_CallMethod1)(PyObject*, const char*, PyObject*, int) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
-    PyObject* result = (PyObject*) __target___PyObject_CallMethod1(a, b, c, d);
-    return result;
-}
 PyAPI_FUNC(PyObject*) _PyObject_CallMethodId(PyObject* a, _Py_Identifier* b, const char* c, ...) {
     unimplemented("_PyObject_CallMethodId"); exit(-1);
 }
@@ -5729,7 +5662,7 @@ PyAPI_FUNC(PyObject*) _PyObject_CallMethodIdObjArgs(PyObject* a, struct _Py_Iden
 PyAPI_FUNC(PyObject*) _PyObject_CallMethodId_SizeT(PyObject* a, _Py_Identifier* b, const char* c, ...) {
     unimplemented("_PyObject_CallMethodId_SizeT"); exit(-1);
 }
-PyAPI_FUNC(PyObject*) _PyObject_Call_Prepend(PyObject* a, PyObject* b, PyObject* c, PyObject* d) {
+PyAPI_FUNC(PyObject*) _PyObject_Call_Prepend(PyThreadState* a, PyObject* b, PyObject* c, PyObject* d, PyObject* e) {
     unimplemented("_PyObject_Call_Prepend"); exit(-1);
 }
 PyAPI_FUNC(int) _PyObject_CheckConsistency(PyObject* a, int b) {
@@ -5747,12 +5680,6 @@ PyAPI_FUNC(void) _PyObject_DebugTypeStats(FILE* a) {
 void (*__target___PyObject_Dump)(PyObject*) = NULL;
 PyAPI_FUNC(void) _PyObject_Dump(PyObject* a) {
     __target___PyObject_Dump(a);
-}
-PyAPI_FUNC(PyObject*) _PyObject_FastCallDict(PyObject* a, PyObject*const* b, size_t c, PyObject* d) {
-    unimplemented("_PyObject_FastCallDict"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyObject_FastCall_Prepend(PyObject* a, PyObject* b, PyObject*const* c, Py_ssize_t d) {
-    unimplemented("_PyObject_FastCall_Prepend"); exit(-1);
 }
 PyAPI_FUNC(PyObject*) _PyObject_FunctionStr(PyObject* a) {
     unimplemented("_PyObject_FunctionStr"); exit(-1);
@@ -5796,9 +5723,6 @@ PyAPI_FUNC(int) _PyObject_GetCrossInterpreterData(PyObject* a, _PyCrossInterpret
 }
 PyAPI_FUNC(int) _PyObject_GetMethod(PyObject* a, PyObject* b, PyObject** c) {
     unimplemented("_PyObject_GetMethod"); exit(-1);
-}
-PyAPI_FUNC(int) _PyObject_HasAttrId(PyObject* a, struct _Py_Identifier* b) {
-    unimplemented("_PyObject_HasAttrId"); exit(-1);
 }
 PyAPI_FUNC(int) _PyObject_HasLen(PyObject* a) {
     unimplemented("_PyObject_HasLen"); exit(-1);
@@ -5898,12 +5822,7 @@ PyAPI_FUNC(int) _PySlice_GetLongIndices(PySliceObject* a, PyObject* b, PyObject*
 PyAPI_FUNC(PyObject*) _PyStack_AsDict(PyObject*const* a, PyObject* b) {
     unimplemented("_PyStack_AsDict"); exit(-1);
 }
-int (*__target___PyStack_UnpackDict)(PyObject*const*, Py_ssize_t, PyObject*, PyObject*const**, PyObject**) = NULL;
-PyAPI_FUNC(int) _PyStack_UnpackDict(PyObject*const* a, Py_ssize_t b, PyObject* c, PyObject*const** d, PyObject** e) {
-    int result = (int) __target___PyStack_UnpackDict(a, b, c, d, e);
-    return result;
-}
-PyAPI_FUNC(int) _PyState_AddModule(PyObject* a, struct PyModuleDef* b) {
+PyAPI_FUNC(int) _PyState_AddModule(PyThreadState* a, PyObject* b, struct PyModuleDef* c) {
     unimplemented("_PyState_AddModule"); exit(-1);
 }
 PyAPI_FUNC(PyObject*) _PySys_GetObjectId(_Py_Identifier* a) {
@@ -6049,6 +5968,20 @@ PyAPI_FUNC(void) _PyTrash_thread_deposit_object(PyObject* a) {
 PyAPI_FUNC(void) _PyTrash_thread_destroy_chain() {
     unimplemented("_PyTrash_thread_destroy_chain"); exit(-1);
 }
+void (*__target___PyTruffleErr_CreateAndSetException)(PyObject*, PyObject*) = NULL;
+PyAPI_FUNC(void) _PyTruffleErr_CreateAndSetException(PyObject* a, PyObject* b) {
+    __target___PyTruffleErr_CreateAndSetException(a, b);
+}
+PyObject* (*__target___PyTruffleObject_Call1)(PyObject*, PyObject*, PyObject*, int) = NULL;
+PyAPI_FUNC(PyObject*) _PyTruffleObject_Call1(PyObject* a, PyObject* b, PyObject* c, int d) {
+    PyObject* result = (PyObject*) __target___PyTruffleObject_Call1(a, b, c, d);
+    return result;
+}
+PyObject* (*__target___PyTruffleObject_CallMethod1)(PyObject*, const char*, PyObject*, int) = NULL;
+PyAPI_FUNC(PyObject*) _PyTruffleObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
+    PyObject* result = (PyObject*) __target___PyTruffleObject_CallMethod1(a, b, c, d);
+    return result;
+}
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE* a) {
     unimplemented("_PyTuple_DebugMallocStats"); exit(-1);
 }
@@ -6127,9 +6060,6 @@ PyObject* (*__target___PyUnicode_AsASCIIString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) _PyUnicode_AsASCIIString(PyObject* a, const char* b) {
     PyObject* result = (PyObject*) __target___PyUnicode_AsASCIIString(a, b);
     return result;
-}
-PyAPI_FUNC(void*) _PyUnicode_AsKind(PyObject* a, unsigned int b) {
-    unimplemented("_PyUnicode_AsKind"); exit(-1);
 }
 PyObject* (*__target___PyUnicode_AsLatin1String)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) _PyUnicode_AsLatin1String(PyObject* a, const char* b) {
@@ -6373,7 +6303,7 @@ PyAPI_FUNC(void) _Py_BreakPoint() {
 PyAPI_FUNC(PyObject*) _Py_CheckFunctionResult(PyThreadState* a, PyObject* b, PyObject* c, const char* d) {
     unimplemented("_Py_CheckFunctionResult"); exit(-1);
 }
-PyAPI_FUNC(int) _Py_CheckRecursiveCall(const char* a) {
+PyAPI_FUNC(int) _Py_CheckRecursiveCall(PyThreadState* a, const char* b) {
     unimplemented("_Py_CheckRecursiveCall"); exit(-1);
 }
 PyAPI_FUNC(int) _Py_CoerceLegacyLocale(int a) {
@@ -6540,9 +6470,6 @@ PyAPI_FUNC(double) _Py_dg_strtod(const char* a, char** b) {
 }
 PyAPI_FUNC(int) _Py_dup(int a) {
     unimplemented("_Py_dup"); exit(-1);
-}
-PyAPI_FUNC(FILE*) _Py_fopen(const char* a, const char* b) {
-    unimplemented("_Py_fopen"); exit(-1);
 }
 PyAPI_FUNC(FILE*) _Py_fopen_obj(PyObject* a, const char* b) {
     unimplemented("_Py_fopen_obj"); exit(-1);
@@ -7172,7 +7099,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyDict_Pop = getAPI("_PyDict_Pop");
     __target___PyDict_SetItem_KnownHash = getAPI("_PyDict_SetItem_KnownHash");
     __target___PyErr_BadInternalCall = getAPI("_PyErr_BadInternalCall");
-    __target___PyErr_CreateAndSetException = getAPI("_PyErr_CreateAndSetException");
     __target___PyErr_WriteUnraisableMsg = getAPI("_PyErr_WriteUnraisableMsg");
     __target___PyEval_SliceIndex = getAPI("_PyEval_SliceIndex");
     __target___PyFloat_Pack2 = getAPI("_PyFloat_Pack2");
@@ -7184,7 +7110,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyFrame_SetLineNumber = getAPI("_PyFrame_SetLineNumber");
     __target___PyGen_FetchStopIterationValue = getAPI("_PyGen_FetchStopIterationValue");
     __target___PyGen_Finalize = getAPI("_PyGen_Finalize");
-    __target___PyGen_Send = getAPI("_PyGen_Send");
     __target___PyGen_SetStopIterationValue = getAPI("_PyGen_SetStopIterationValue");
     __target___PyGen_yf = getAPI("_PyGen_yf");
     __target___PyImport_SetModule = getAPI("_PyImport_SetModule");
@@ -7200,8 +7125,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyModule_GetState = getAPI("_PyModule_GetState");
     __target___PyNamespace_New = getAPI("_PyNamespace_New");
     __target___PyNumber_Index = getAPI("_PyNumber_Index");
-    __target___PyObject_Call1 = getAPI("_PyObject_Call1");
-    __target___PyObject_CallMethod1 = getAPI("_PyObject_CallMethod1");
     __target___PyObject_Dump = getAPI("_PyObject_Dump");
     __target___PyObject_GC_Calloc = getAPI("_PyObject_GC_Calloc");
     __target___PyObject_GC_Malloc = getAPI("_PyObject_GC_Malloc");
@@ -7218,10 +7141,12 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PySequence_Fast_ITEMS = getAPI("_PySequence_Fast_ITEMS");
     __target___PySequence_ITEM = getAPI("_PySequence_ITEM");
     __target___PySet_NextEntry = getAPI("_PySet_NextEntry");
-    __target___PyStack_UnpackDict = getAPI("_PyStack_UnpackDict");
     __target___PyThreadState_UncheckedGet = getAPI("_PyThreadState_UncheckedGet");
     __target___PyTraceMalloc_NewReference = getAPI("_PyTraceMalloc_NewReference");
     __target___PyTraceback_Add = getAPI("_PyTraceback_Add");
+    __target___PyTruffleErr_CreateAndSetException = getAPI("_PyTruffleErr_CreateAndSetException");
+    __target___PyTruffleObject_Call1 = getAPI("_PyTruffleObject_Call1");
+    __target___PyTruffleObject_CallMethod1 = getAPI("_PyTruffleObject_CallMethod1");
     __target___PyType_GetModuleByDef = getAPI("_PyType_GetModuleByDef");
     __target___PyType_Lookup = getAPI("_PyType_Lookup");
     __target___PyType_Name = getAPI("_PyType_Name");

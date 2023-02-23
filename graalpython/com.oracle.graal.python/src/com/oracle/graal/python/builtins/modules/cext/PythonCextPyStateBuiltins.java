@@ -60,13 +60,11 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextPyStateBuiltins {
 
     @CApiBuiltin(ret = PY_GIL_STATE_STATE, args = {}, acquiresGIL = false, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyGILState_Ensure extends CApiNullaryBuiltinNode {
 
         @Specialization
@@ -78,7 +76,6 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PY_GIL_STATE_STATE}, acquiresGIL = false, call = Direct)
-    @GenerateNodeFactory
     public abstract static class PyGILState_Release extends CApiUnaryBuiltinNode {
 
         @Specialization

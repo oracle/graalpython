@@ -470,49 +470,49 @@ PyAPI_FUNC(PyObject *) PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 #undef PyObject_CallFunction
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_Call1(callable, NULL, NULL, 0);
+        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     PyObject* args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
 }
 
 PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_Call1(callable, NULL, NULL, 0);
+        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     PyObject* args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
 }
 
 
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallMethod1(object, method, NULL, 0);
+        return _PyTruffleObject_CallMethod1(object, method, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
 }
 
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallMethod1(object, method, NULL, 0);
+        return _PyTruffleObject_CallMethod1(object, method, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
 }
 
 PyObject * PyObject_CallMethodObjArgs(PyObject *a, PyObject *b, ...)  {

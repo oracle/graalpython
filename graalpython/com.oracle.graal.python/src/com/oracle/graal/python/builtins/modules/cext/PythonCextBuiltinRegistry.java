@@ -1099,38 +1099,38 @@ public abstract class PythonCextBuiltinRegistry {
                                     new ArgDescriptor[]{PyObject, PyObject, PyObject, Py_hash_t}, 467),
                     new CApiBuiltinExecutable("_PyErr_BadInternalCall", Direct, Void,
                                     new ArgDescriptor[]{ConstCharPtrAsTruffleString, Int}, 468),
-                    new CApiBuiltinExecutable("_PyErr_CreateAndSetException", Direct, Void,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 469),
                     new CApiBuiltinExecutable("_PyErr_WriteUnraisableMsg", Direct, Void,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, PyObject}, 470),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, PyObject}, 469),
                     new CApiBuiltinExecutable("_PyList_Extend", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyListObject, PyObject}, 471),
+                                    new ArgDescriptor[]{PyListObject, PyObject}, 470),
                     new CApiBuiltinExecutable("_PyLong_Sign", Direct, Int,
-                                    new ArgDescriptor[]{PyObject}, 472),
+                                    new ArgDescriptor[]{PyObject}, 471),
                     new CApiBuiltinExecutable("_PyNamespace_New", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 473),
+                                    new ArgDescriptor[]{PyObject}, 472),
                     new CApiBuiltinExecutable("_PyNumber_Index", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 474),
-                    new CApiBuiltinExecutable("_PyObject_Call1", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Int}, 475),
-                    new CApiBuiltinExecutable("_PyObject_CallMethod1", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, 476),
+                                    new ArgDescriptor[]{PyObject}, 473),
                     new CApiBuiltinExecutable("_PyObject_Dump", Direct, Void,
-                                    new ArgDescriptor[]{PyObjectWrapper}, 477),
+                                    new ArgDescriptor[]{PyObjectWrapper}, 474),
                     new CApiBuiltinExecutable("_PyTraceMalloc_NewReference", Direct, Int,
-                                    new ArgDescriptor[]{PyObject}, 478),
+                                    new ArgDescriptor[]{PyObject}, 475),
                     new CApiBuiltinExecutable("_PyTraceback_Add", Direct, Void,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, 479),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, 476),
                     new CApiBuiltinExecutable("_PyTruffleBytes_Resize", Ignored, Int,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 480),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 477),
+                    new CApiBuiltinExecutable("_PyTruffleErr_CreateAndSetException", Direct, Void,
+                                    new ArgDescriptor[]{PyObject, PyObject}, 478),
                     new CApiBuiltinExecutable("_PyTruffleErr_Warn", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t, PyObject}, 481),
+                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t, PyObject}, 479),
                     new CApiBuiltinExecutable("_PyTruffleEval_EvalCodeEx", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, 482),
+                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, 480),
                     new CApiBuiltinExecutable("_PyTruffleModule_CreateInitialized_PyModule_New", Ignored, PyModuleObjectTransfer,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 483),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 481),
                     new CApiBuiltinExecutable("_PyTruffleModule_GetAndIncMaxModuleNumber", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{}, 484),
+                                    new ArgDescriptor[]{}, 482),
+                    new CApiBuiltinExecutable("_PyTruffleObject_Call1", Direct, PyObjectTransfer,
+                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Int}, 483),
+                    new CApiBuiltinExecutable("_PyTruffleObject_CallMethod1", Direct, PyObjectTransfer,
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, 484),
                     new CApiBuiltinExecutable("_PyTruffleObject_MakeTpCall", Ignored, PyObjectTransfer,
                                     new ArgDescriptor[]{PyObject, Pointer, Int, Pointer, Pointer}, 485),
                     new CApiBuiltinExecutable("_PyTruffleSet_NextEntry", Ignored, PyObjectTransfer,
@@ -1254,9 +1254,9 @@ public abstract class PythonCextBuiltinRegistry {
             case 48:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_GetBuiltinsNodeGen.create();
             case 49:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_RestoreThreadFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_RestoreThreadNodeGen.create();
             case 50:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_SaveThreadFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_SaveThreadNodeGen.create();
             case 51:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory.PyException_GetContextNodeGen.create();
             case 52:
@@ -1272,13 +1272,13 @@ public abstract class PythonCextBuiltinRegistry {
             case 57:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltinsFactory.PyFloat_FromDoubleNodeGen.create();
             case 58:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyFrame_NewFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyFrame_NewNodeGen.create();
             case 59:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PyFrozenSet_NewNodeGen.create();
             case 60:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyGILState_EnsureFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyGILState_EnsureNodeGen.create();
             case 61:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyGILState_ReleaseFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyGILState_ReleaseNodeGen.create();
             case 62:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltinsFactory.PyImport_GetModuleDictNodeGen.create();
             case 63:
@@ -1396,9 +1396,9 @@ public abstract class PythonCextBuiltinRegistry {
             case 119:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_FormatNodeGen.create();
             case 120:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_TrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_TrackNodeGen.create();
             case 121:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_UnTrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_UnTrackNodeGen.create();
             case 122:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyObject_GetDocNodeGen.create();
             case 123:
@@ -1502,9 +1502,9 @@ public abstract class PythonCextBuiltinRegistry {
             case 172:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTracebackBuiltinsFactory.PyTraceBack_HereNodeGen.create();
             case 173:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_TrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_TrackNodeGen.create();
             case 174:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_UntrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_UntrackNodeGen.create();
             case 175:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffleByteArray_FromStringAndSizeNodeGen.create();
             case 176:
@@ -1540,7 +1540,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 191:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyTruffleLong_ZeroNodeGen.create();
             case 192:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory.PyTruffleModule_AddFunctionToModuleFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory.PyTruffleModule_AddFunctionToModuleNodeGen.create();
             case 193:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyTruffleNumber_BinOpNodeGen.create();
             case 194:
@@ -1564,15 +1564,15 @@ public abstract class PythonCextBuiltinRegistry {
             case 203:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextStructSeqBuiltinsFactory.PyTruffleStructSequence_NewTypeNodeGen.create();
             case 204:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleToCharPointerFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleToCharPointerNodeGen.create();
             case 205:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddFunctionToTypeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddFunctionToTypeNodeGen.create();
             case 206:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddGetSetFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddGetSetNodeGen.create();
             case 207:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddMemberFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddMemberNodeGen.create();
             case 208:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddSlotFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddSlotNodeGen.create();
             case 209:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffleUnicode_DecodeNodeGen.create();
             case 210:
@@ -1584,41 +1584,41 @@ public abstract class PythonCextBuiltinRegistry {
             case 213:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffleUnicode_NewNodeGen.create();
             case 214:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Arg_ParseTupleAndKeywordsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Arg_ParseTupleAndKeywordsNodeGen.create();
             case 215:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_ByteArray_EmptyWithCapacityFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_ByteArray_EmptyWithCapacityNodeGen.create();
             case 216:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Bytes_AsStringFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Bytes_AsStringNodeGen.create();
             case 217:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_CheckEmbeddedNullFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_CheckEmbeddedNullNodeGen.create();
             case 218:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_EmptyWithCapacityFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_EmptyWithCapacityNodeGen.create();
             case 219:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Compute_MroFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Compute_MroNodeGen.create();
             case 220:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugNodeGen.create();
             case 221:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugTraceFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugTraceNodeGen.create();
             case 222:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltinsFactory.PyTruffle_EllipsisNodeGen.create();
             case 223:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBoolBuiltinsFactory.PyTruffle_FalseNodeGen.create();
             case 224:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyLifecycleBuiltinsFactory.PyTruffle_FatalErrorFuncFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyLifecycleBuiltinsFactory.PyTruffle_FatalErrorFuncNodeGen.create();
             case 225:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_FileSystemDefaultEncodingFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_FileSystemDefaultEncodingNodeGen.create();
             case 226:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Get_Inherited_Native_SlotsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Get_Inherited_Native_SlotsNodeGen.create();
             case 227:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory.PyTruffle_HashConstantNodeGen.create();
             case 228:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_LogStringFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_LogStringNodeGen.create();
             case 229:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_MemoryViewFromBufferFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_MemoryViewFromBufferNodeGen.create();
             case 230:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Native_OptionsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Native_OptionsNodeGen.create();
             case 231:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_NewTypeDictFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_NewTypeDictNodeGen.create();
             case 232:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NoValueNodeGen.create();
             case 233:
@@ -1626,25 +1626,25 @@ public abstract class PythonCextBuiltinRegistry {
             case 234:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NotImplementedNodeGen.create();
             case 235:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_AllocFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_AllocNodeGen.create();
             case 236:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_FreeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_FreeNodeGen.create();
             case 237:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Register_NULLFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Register_NULLNodeGen.create();
             case 238:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_Native_SlotsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_Native_SlotsNodeGen.create();
             case 239:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_SulongTypeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_SulongTypeNodeGen.create();
             case 240:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_ToNativeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_ToNativeNodeGen.create();
             case 241:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Trace_TypeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Trace_TypeNodeGen.create();
             case 242:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBoolBuiltinsFactory.PyTruffle_TrueNodeGen.create();
             case 243:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_TypeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_TypeNodeGen.create();
             case 244:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Type_ModifiedFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Type_ModifiedNodeGen.create();
             case 245:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_AsUnicodeAndSizeNodeGen.create();
             case 246:
@@ -1652,17 +1652,17 @@ public abstract class PythonCextBuiltinRegistry {
             case 247:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_DecodeUTF32NodeGen.create();
             case 248:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_FromFormatFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_FromFormatNodeGen.create();
             case 249:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_FromWcharNodeGen.create();
             case 250:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_createFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_createNodeGen.create();
             case 251:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_deleteFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_deleteNodeGen.create();
             case 252:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_getFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_getNodeGen.create();
             case 253:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_setFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_setNodeGen.create();
             case 254:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory.PyTuple_GetItemNodeGen.create();
             case 255:
@@ -2094,37 +2094,37 @@ public abstract class PythonCextBuiltinRegistry {
             case 468:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyErr_BadInternalCallNodeGen.create();
             case 469:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyErr_CreateAndSetExceptionNodeGen.create();
-            case 470:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyErr_WriteUnraisableMsgNodeGen.create();
-            case 471:
+            case 470:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltinsFactory._PyList_ExtendNodeGen.create();
-            case 472:
+            case 471:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory._PyLong_SignNodeGen.create();
-            case 473:
+            case 472:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltinsFactory._PyNamespace_NewNodeGen.create();
-            case 474:
+            case 473:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyNumber_IndexNodeGen.create();
-            case 475:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyObject_Call1NodeGen.create();
-            case 476:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyObject_CallMethod1NodeGen.create();
-            case 477:
+            case 474:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyObject_DumpNodeGen.create();
-            case 478:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTraceMalloc_NewReferenceFactory.create();
-            case 479:
+            case 475:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTraceMalloc_NewReferenceNodeGen.create();
+            case 476:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTracebackBuiltinsFactory._PyTraceback_AddNodeGen.create();
-            case 480:
+            case 477:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory._PyTruffleBytes_ResizeNodeGen.create();
-            case 481:
+            case 478:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyTruffleErr_CreateAndSetExceptionNodeGen.create();
+            case 479:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextWarnBuiltinsFactory._PyTruffleErr_WarnNodeGen.create();
-            case 482:
+            case 480:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory._PyTruffleEval_EvalCodeExNodeGen.create();
-            case 483:
+            case 481:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory._PyTruffleModule_CreateInitialized_PyModule_NewNodeGen.create();
-            case 484:
+            case 482:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory._PyTruffleModule_GetAndIncMaxModuleNumberNodeGen.create();
+            case 483:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyTruffleObject_Call1NodeGen.create();
+            case 484:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyTruffleObject_CallMethod1NodeGen.create();
             case 485:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyTruffleObject_MakeTpCallNodeGen.create();
             case 486:
@@ -2132,7 +2132,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 487:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory._PyTruffle_HashBytesNodeGen.create();
             case 488:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTruffle_Trace_FreeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTruffle_Trace_FreeNodeGen.create();
             case 489:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory._PyType_LookupNodeGen.create();
             case 490:

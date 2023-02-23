@@ -1,3 +1,18 @@
+_Py_dg_strtod;double;const char*|char**
+_Py_dg_dtoa;char*;double|int|int|int*|int*|char**
+_Py_dg_freedtoa;void;char*
+_Py_dg_stdnan;double;int
+_Py_dg_infinity;double;int
+_Py_Mangle;PyObject*;PyObject*|PyObject*
+_Py_CheckRecursiveCall;int;PyThreadState*|const char*
+_PyTraceMalloc_NewReference;int;PyObject*
+_PyState_AddModule;int;PyThreadState*|PyObject*|struct PyModuleDef*
+_PySignal_AfterFork;void;void
+_PyObject_Call_Prepend;PyObject*;PyThreadState*|PyObject*|PyObject*|PyObject*|PyObject*
+_PyModule_GetState;void*;PyObject*
+_PyModule_GetDict;PyObject*;PyObject*
+_PyModule_GetDef;PyModuleDef*;PyObject*
+_PyImport_ReInitLock;PyStatus;void
 _Py_abspath;int;const wchar_t*|wchar_t**
 _Py_add_one_to_index_C;void;int|Py_ssize_t*|const Py_ssize_t*
 _Py_add_one_to_index_F;void;int|Py_ssize_t*|const Py_ssize_t*
