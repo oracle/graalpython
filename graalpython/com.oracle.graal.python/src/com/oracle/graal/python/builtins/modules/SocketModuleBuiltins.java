@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,8 +39,6 @@
  * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.modules;
-
-import com.oracle.truffle.api.dsl.NeverDefault;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
@@ -126,6 +124,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -368,11 +367,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object getServByName(TruffleString serviceName, TruffleString protocolName,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
+                        @Shared @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @Shared @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @Cached GilNode gil) {
             /*
              * TODO this uses getaddrinfo to emulate the legacy getservbyname. We might want to use
              * the legacy API in the future
@@ -406,11 +405,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(protocolName)")
         Object getServByName(TruffleString serviceName, @SuppressWarnings("unused") PNone protocolName,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
+                        @Shared @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @Shared @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @Cached GilNode gil) {
             return getServByName(serviceName, (TruffleString) null, posixLib, addrInfoCursorLib, sockAddrLibrary, toJavaStringNode, auditNode, gil);
         }
 
@@ -432,8 +431,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         Object getServByPort(int port, TruffleString protocolName,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @Cached GilNode gil) {
             /*
              * TODO this uses getnameinfo to emulate the legacy getservbyport. We might want to use
              * the legacy API in the future
@@ -467,8 +466,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         Object getServByPort(int port, @SuppressWarnings("unused") PNone protocolName,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @Cached GilNode gil) {
             return getServByPort(port, (TruffleString) null, posixLib, equalNode, auditNode, gil);
         }
 

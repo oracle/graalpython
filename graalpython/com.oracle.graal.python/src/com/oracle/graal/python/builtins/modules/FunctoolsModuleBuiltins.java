@@ -185,7 +185,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return args.length >= 1;
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, false)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, false)"}, limit = "1")
         Object createFromPartialWoDictWoKw(Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
@@ -206,7 +206,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, funcKwDict);
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "!withKeywords(keywords)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "!withKeywords(keywords)"}, limit = "1")
         Object createFromPartialWoDictWKw(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
@@ -219,7 +219,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(factory(), copyNode));
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"}, limit = "1")
         Object createFromPartialWoDictWKwKw(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
@@ -239,7 +239,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, result);
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"}, limit = "1")
         Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,

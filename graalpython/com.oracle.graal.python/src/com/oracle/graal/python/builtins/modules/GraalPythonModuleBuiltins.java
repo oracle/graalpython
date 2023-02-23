@@ -135,6 +135,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -366,7 +367,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
         @Specialization
         public PBytes doString(VirtualFrame frame, TruffleString filename,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Shared @Cached TruffleString.EqualNode eqNode) {
             try {
                 TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
@@ -380,7 +381,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object filename,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Shared @Cached TruffleString.EqualNode eqNode) {
             return doString(frame, castToTruffleStringNode.execute(filename), eqNode);
         }
     }

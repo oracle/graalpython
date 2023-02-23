@@ -105,6 +105,7 @@ import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -827,20 +828,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "create_dynamic", minNumOfPositionalArgs = 1, parameterNames = {"moduleSpec", "fileName"})
     @GenerateNodeFactory
     public abstract static class CreateDynamicNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(fileName)")
-        Object runNoFileName(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") PNone fileName,
+        @Specialization
+        Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileNameIn,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile fileNameIsNoValueProfile,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStrAsTruffleStringNode asStringNode,
                         @Cached CreateDynamic createDynamicNode) {
-            return run(frame, moduleSpec, PNone.NONE, asStringNode, createDynamicNode);
-        }
-
-        @Specialization(guards = "!isNoValue(fileName)")
-        Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileName,
-                        @Cached PyObjectStrAsTruffleStringNode asStringNode,
-                        @Cached CreateDynamic createDynamicNode) {
+            Object fileName = fileNameIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(fileNameIn)) ? PNone.NONE : fileNameIn;
             PythonContext ctx = getContext();
             TruffleString oldPackageContext = ctx.getPyPackageContext();
-            ctx.setPyPackageContext(asStringNode.execute(frame, PyObjectLookupAttr.getUncached().execute(frame, moduleSpec, T_NAME)));
+            ctx.setPyPackageContext(asStringNode.execute(frame, lookupAttr.execute(frame, moduleSpec, T_NAME)));
             try {
                 return createDynamicNode.execute(frame, moduleSpec, fileName);
             } finally {

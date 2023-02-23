@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,13 +96,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -112,6 +113,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CODECS_TRUFFLE)
@@ -320,13 +322,14 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     protected abstract static class CodecInitNode extends PythonVarargsBuiltinNode {
         @Specialization
         Object init(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached("createSetAttr()") SetAttributeNode setAttrNode,
-                        @Cached GetClassNode getClass,
+                        @Cached(inline = true) GetPythonObjectClassNode getClass,
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Cached CallNode callNode) {
             assert args.length > 0;
-            Object superClass = getSuperClassNode.execute(getClass.execute(self));
+            Object superClass = getSuperClassNode.execute(getClass.execute(inliningTarget, self));
             Object superInit = getAttrNode.execute(frame, superClass, T___INIT__);
             Object[] callArgs = new Object[args.length];
             callArgs[0] = self;

@@ -217,7 +217,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -785,7 +785,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PTuple run(VirtualFrame frame,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
@@ -799,7 +800,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 if (lazyTraceback != null) {
                     traceback = getTracebackNode.execute(lazyTraceback);
                 }
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
+                return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback == null ? PNone.NONE : traceback});
             }
         }
 

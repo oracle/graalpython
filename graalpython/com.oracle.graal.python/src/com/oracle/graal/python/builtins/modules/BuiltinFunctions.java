@@ -230,6 +230,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
@@ -265,6 +266,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -285,6 +288,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -354,65 +358,71 @@ public final class BuiltinFunctions extends PythonBuiltins {
     /**
      * Common class for all() and any() operations, as their logic and behaviors are very similar.
      */
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class AllOrAnySequenceStorageNode extends PNodeWithContext {
-        @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
-
-        private final LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
-
-        abstract boolean execute(Frame frame, SequenceStorage storageObj, AnyOrAllNodeType nodeType);
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, SequenceStorage storageObj, AnyOrAllNodeType nodeType);
 
         @Specialization
-        boolean doBoolSequence(VirtualFrame frame,
-                        BoolSequenceStorage sequenceStorage,
-                        AnyOrAllNodeType nodeType) {
+        static boolean doBoolSequence(VirtualFrame frame, Node inliningTarget, BoolSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
+                        @Shared @Cached(inline = false) PyObjectIsTrueNode isTrueNode) {
             boolean[] internalArray = sequenceStorage.getInternalBoolArray();
             int seqLength = sequenceStorage.length();
 
-            loopConditionProfile.profileCounted(seqLength);
-            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+            for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
-
+            LoopNode.reportLoopCount(inliningTarget, seqLength);
             return nodeType == AnyOrAllNodeType.ALL;
         }
 
         @Specialization
-        boolean doIntSequence(VirtualFrame frame,
-                        IntSequenceStorage sequenceStorage,
-                        AnyOrAllNodeType nodeType) {
+        static boolean doIntSequence(VirtualFrame frame, Node inliningTarget, IntSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
+                        @Shared @Cached(inline = false) PyObjectIsTrueNode isTrueNode) {
             int[] internalArray = sequenceStorage.getInternalIntArray();
             int seqLength = sequenceStorage.length();
 
-            loopConditionProfile.profileCounted(seqLength);
-            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+            for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
-
+            LoopNode.reportLoopCount(inliningTarget, seqLength);
             return nodeType == AnyOrAllNodeType.ALL;
         }
 
         @Specialization
-        boolean doGenericSequence(VirtualFrame frame, SequenceStorage sequenceStorage, AnyOrAllNodeType nodeType) {
+        static boolean doGenericSequence(VirtualFrame frame, Node inliningTarget, SequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
+                        @Shared @Cached(inline = false) PyObjectIsTrueNode isTrueNode) {
             Object[] internalArray = sequenceStorage.getInternalArray();
             int seqLength = sequenceStorage.length();
 
-            loopConditionProfile.profileCounted(seqLength);
-            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+            for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
-
+            LoopNode.reportLoopCount(inliningTarget, seqLength);
             return nodeType == AnyOrAllNodeType.ALL;
         }
     }
@@ -451,26 +461,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doList(VirtualFrame frame,
-                        PList object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doList(VirtualFrame frame, PList object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doTuple(VirtualFrame frame,
-                        PTuple object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doTuple(VirtualFrame frame, PTuple object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doHashColl(VirtualFrame frame,
-                        PHashingCollection object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ALL);
         }
@@ -508,26 +518,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AnyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doList(VirtualFrame frame,
-                        PList object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doList(VirtualFrame frame, PList object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doTuple(VirtualFrame frame,
-                        PTuple object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doTuple(VirtualFrame frame, PTuple object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doHashColl(VirtualFrame frame,
-                        PHashingCollection object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ANY);
         }

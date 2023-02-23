@@ -495,7 +495,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)", limit = "1")
         Object sleep(PythonModule self, long seconds,
-                        @Cached GilNode gil,
+                        @Shared @Cached GilNode gil,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             long t = nanoTime();
             long deadline = (long) timeSeconds() + seconds;
@@ -518,7 +518,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)", limit = "1")
         Object sleep(PythonModule self, double seconds,
-                        @Cached GilNode gil,
+                        @Shared @Cached GilNode gil,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             long t = nanoTime();
             double deadline = timeSeconds() + seconds;
