@@ -240,8 +240,11 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -252,7 +255,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1065,14 +1067,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = J_INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonTernaryBuiltinNode {
-
-        private final ConditionProfile invalidBase = ConditionProfile.create();
-        private final BranchProfile invalidValueProfile = BranchProfile.create();
-        private final BranchProfile bigIntegerProfile = BranchProfile.create();
-        private final BranchProfile primitiveIntProfile = BranchProfile.create();
-        private final BranchProfile fullIntProfile = BranchProfile.create();
-        private final BranchProfile notSimpleDecimalLiteralProfile = BranchProfile.create();
-
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
         @Child private LookupAndCallUnaryNode callIndexNode;
         @Child private LookupAndCallUnaryNode callTruncNode;
@@ -1106,17 +1100,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+        private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj,
+                        Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        InlinedBranchProfile notSimpleDecimalLiteralProfile, InlinedBranchProfile invalidValueProfile,
+                        InlinedBranchProfile bigIntegerProfile, InlinedBranchProfile primitiveIntProfile, InlinedBranchProfile fullIntProfile) {
             if (base == 0 || base == 10) {
                 Object value = parseSimpleDecimalLiteral(number, 0, number.length());
                 if (value != null) {
-                    return createInt(cls, value, inliningTarget, isPrimitiveIntProfile);
+                    return createInt(cls, value, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
                 }
             }
-            notSimpleDecimalLiteralProfile.enter();
+            notSimpleDecimalLiteralProfile.enter(inliningTarget);
             Object value = stringToIntInternal(number, base, getContext());
             if (value == null) {
-                invalidValueProfile.enter();
+                invalidValueProfile.enter(inliningTarget);
                 if (callReprNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     callReprNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Repr));
@@ -1132,18 +1129,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(ValueError);
                 }
             }
-            return createInt(cls, value, inliningTarget, isPrimitiveIntProfile);
+            return createInt(cls, value, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
-        private Object createInt(Object cls, Object value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
+        private Object createInt(Object cls, Object value, Node inliningTarget, InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        InlinedBranchProfile bigIntegerProfile, InlinedBranchProfile primitiveIntProfile, InlinedBranchProfile fullIntProfile) {
             if (value instanceof BigInteger) {
-                bigIntegerProfile.enter();
+                bigIntegerProfile.enter(inliningTarget);
                 return factory().createInt(cls, (BigInteger) value);
             } else if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
-                primitiveIntProfile.enter();
+                primitiveIntProfile.enter(inliningTarget);
                 return value;
             } else {
-                fullIntProfile.enter();
+                fullIntProfile.enter(inliningTarget);
                 if (value instanceof Integer) {
                     return factory().createInt(cls, (Integer) value);
                 } else if (value instanceof Long) {
@@ -1158,13 +1156,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw new IllegalStateException("Unexpected type");
         }
 
-        private void checkBase(int base) {
-            if (invalidBase.profile((base < 2 || base > 36) && base != 0)) {
+        private void checkBase(int base, Node inliningTarget, InlinedConditionProfile invalidBase) {
+            if (invalidBase.profile(inliningTarget, (base < 2 || base > 36) && base != 0)) {
                 throw raise(ValueError, ErrorMessages.BASE_OUT_OF_RANGE_FOR_INT);
             }
         }
 
-        private void checkBase(PInt base) {
+        private void checkBase(PInt base, Node inliningTarget, InlinedConditionProfile invalidBase) {
             int ibase;
             try {
                 ibase = base.intValueExact();
@@ -1172,7 +1170,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // this should just trigger the error
                 ibase = 1;
             }
-            checkBase(ibase);
+            checkBase(ibase, inliningTarget, invalidBase);
         }
 
         // Adapted from Jython
@@ -1357,7 +1355,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object createInt(Object cls, long arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Cached InlinedConditionProfile isIntProfile) {
+                        @Exclusive @Cached InlinedConditionProfile isIntProfile) {
             if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
                 int intValue = (int) arg;
                 if (isIntProfile.profile(inliningTarget, intValue == arg)) {
@@ -1373,9 +1371,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object createInt(Object cls, double arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Cached("createFloatInt()") FloatBuiltins.IntNode floatToIntNode) {
+                        @Cached("createFloatInt()") FloatBuiltins.IntNode floatToIntNode,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
             Object result = floatToIntNode.executeWithDouble(arg);
-            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile);
+            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         // String
@@ -1385,8 +1386,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object createInt(VirtualFrame frame, Object cls, TruffleString arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return stringToInt(frame, cls, toJavaStringNode.execute(arg), 10, arg, inliningTarget, isPrimitiveIntProfile);
+                        @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
+            return stringToInt(frame, cls, toJavaStringNode.execute(arg), 10, arg, inliningTarget, isPrimitiveIntProfile,
+                            notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         @Specialization
@@ -1394,9 +1401,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object parsePIntError(VirtualFrame frame, Object cls, TruffleString number, int base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            checkBase(base);
-            return stringToInt(frame, cls, toJavaStringNode.execute(number), base, number, inliningTarget, isPrimitiveIntProfile);
+                        @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Shared @Cached InlinedConditionProfile invalidBase,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
+            checkBase(base, inliningTarget, invalidBase);
+            return stringToInt(frame, cls, toJavaStringNode.execute(number), base, number,
+                            inliningTarget, isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile,
+                            bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         @Specialization(guards = "!isNoValue(base)")
@@ -1405,10 +1420,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Shared @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Shared @Cached InlinedConditionProfile invalidBase,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
             int intBase = asSizeNode.executeLossy(frame, base);
-            checkBase(intBase);
-            return stringToInt(frame, cls, toJavaStringNode.execute(number), intBase, number, inliningTarget, isPrimitiveIntProfile);
+            checkBase(intBase, inliningTarget, invalidBase);
+            return stringToInt(frame, cls, toJavaStringNode.execute(number), intBase, number,
+                            inliningTarget, isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile,
+                            bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         // PIBytesLike
@@ -1416,17 +1439,32 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, int base,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
-            checkBase(base);
-            return stringToInt(frame, cls, toString(arg), base, arg, inliningTarget, isPrimitiveIntProfile);
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Shared @Cached InlinedConditionProfile invalidBase,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
+            checkBase(base, inliningTarget, invalidBase);
+            return stringToInt(frame, cls, toString(arg), base, arg, inliningTarget,
+                            isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile,
+                            primitiveIntProfile, fullIntProfile);
         }
 
         @Specialization(guards = "isNoValue(base)")
         @Megamorphic
         Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile) {
-            return parseBytesError(frame, cls, arg, 10, inliningTarget, isPrimitiveIntProfile);
+                        @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
+                        @Shared @Cached InlinedConditionProfile invalidBase,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
+            return parseBytesError(frame, cls, arg, 10, inliningTarget, isPrimitiveIntProfile, invalidBase,
+                            notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         // PString
@@ -1435,12 +1473,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode) {
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            return stringToInt(frame, cls, castToStringNode.execute(arg), 10, arg, inliningTarget, isPrimitiveIntProfile);
+            return stringToInt(frame, cls, castToStringNode.execute(arg), 10, arg, inliningTarget, isPrimitiveIntProfile,
+                            notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         @Specialization
@@ -1448,13 +1492,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, int base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode) {
-            checkBase(base);
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode,
+                        @Shared @Cached InlinedConditionProfile invalidBase,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
+            checkBase(base, inliningTarget, invalidBase);
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            return stringToInt(frame, cls, castToStringNode.execute(arg), base, arg, inliningTarget, isPrimitiveIntProfile);
+            return stringToInt(frame, cls, castToStringNode.execute(arg), base, arg, inliningTarget,
+                            isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile,
+                            bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         @Specialization
@@ -1462,13 +1514,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, PInt base,
                         @Bind("this") Node inliningTarget,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode) {
-            checkBase(base);
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToStringNode,
+                        @Shared @Cached InlinedConditionProfile invalidBase,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
+            checkBase(base, inliningTarget, invalidBase);
             Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
-            return stringToInt(frame, cls, castToStringNode.execute(arg), base.intValue(), arg, inliningTarget, isPrimitiveIntProfile);
+            return stringToInt(frame, cls, castToStringNode.execute(arg), base.intValue(), arg, inliningTarget,
+                            isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile,
+                            primitiveIntProfile, fullIntProfile);
         }
 
         // other
@@ -1509,7 +1569,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isPrimitiveIntObjectProfile,
                         @Shared("primitiveInt") @Cached InlineIsBuiltinClassProfile isPrimitiveIntProfile,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
+                        @Shared @Cached InlinedBranchProfile invalidValueProfile,
+                        @Shared @Cached InlinedBranchProfile bigIntegerProfile,
+                        @Shared @Cached InlinedBranchProfile primitiveIntProfile,
+                        @Shared @Cached InlinedBranchProfile fullIntProfile) {
             /*
              * This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
              * in CPython. We don't use PythonObjectLibrary here since the original CPython function
@@ -1535,7 +1600,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         }
                         try {
                             String number = newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
-                            return stringToInt(frame, cls, number, 10, obj, inliningTarget, isPrimitiveIntProfile);
+                            return stringToInt(frame, cls, number, 10, obj, inliningTarget, isPrimitiveIntProfile,
+                                            notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
                         } finally {
                             bufferLib.release(buffer, frame, this);
                         }
@@ -1566,7 +1632,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     result = (boolean) result ? 1 : 0;
                 }
             }
-            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile);
+            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile);
         }
 
         protected static boolean isIntegerType(Object obj) {
@@ -1699,27 +1765,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @CompilationFinal private ValueProfile profileInitFactory;
         @CompilationFinal private ValueProfile profileNewFactory;
 
+        @GenerateCached(false)
+        @GenerateInline
         abstract static class ReportAbstractClassNode extends PNodeWithContext {
-            public abstract PException execute(VirtualFrame frame, Object type);
+            public abstract PException execute(VirtualFrame frame, Node inliningTarget, Object type);
 
             @Specialization
             static PException report(VirtualFrame frame, Object type,
-                            @Cached PyObjectCallMethodObjArgs callSort,
-                            @Cached PyObjectCallMethodObjArgs callJoin,
-                            @Cached PyObjectSizeNode sizeNode,
-                            @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                            @Cached CastToTruffleStringNode cast,
-                            @Cached ListNodes.ConstructListNode constructListNode,
-                            @Cached PRaiseNode raiseNode) {
+                            @Cached(inline = false) PyObjectCallMethodObjArgs callSort,
+                            @Cached(inline = false) PyObjectCallMethodObjArgs callJoin,
+                            @Cached(inline = false) PyObjectSizeNode sizeNode,
+                            @Cached(inline = false) ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                            @Cached(inline = false) CastToTruffleStringNode cast,
+                            @Cached(inline = false) ListNodes.ConstructListNode constructListNode,
+                            @Cached(inline = false) PRaiseNode raiseNode) {
                 PList list = constructListNode.execute(frame, readAttributeFromObjectNode.execute(type, T___ABSTRACTMETHODS__));
                 int methodCount = sizeNode.execute(frame, list);
                 callSort.execute(frame, list, T_SORT);
                 TruffleString joined = cast.execute(callJoin.execute(frame, T_COMMA_SPACE, T_JOIN, list));
                 throw raiseNode.raise(TypeError, ErrorMessages.CANT_INSTANTIATE_ABSTRACT_CLASS_WITH_ABSTRACT_METHODS, type, methodCount > 1 ? "s" : "", joined);
-            }
-
-            public static ReportAbstractClassNode create() {
-                return BuiltinConstructorsFactory.ObjectNodeFactory.ReportAbstractClassNodeGen.create();
             }
         }
 
@@ -1733,15 +1797,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.needsNativeAllocation()"})
-        Object doManagedObject(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
+        Object doManagedObject(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ReportAbstractClassNode reportAbstractClassNode) {
             checkExcessArgs(self, varargs, kwargs);
             if (self.isAbstractClass()) {
-                throw getReportAbstractClassNode().execute(frame, self);
+                throw reportAbstractClassNode.execute(frame, inliningTarget, self);
             }
             return factory().createPythonObject(self);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs) {
             checkExcessArgs(self, varargs, kwargs);
             return factory().createPythonObject(self);
@@ -1749,21 +1816,26 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "self.needsNativeAllocation()")
         Object doNativeObjectIndirect(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
-                        @Cached GetMroNode getMroNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetMroNode getMroNode,
+                        @Shared @Cached ReportAbstractClassNode reportAbstractClassNode) {
             checkExcessArgs(self, varargs, kwargs);
             if (self.isAbstractClass()) {
-                throw getReportAbstractClassNode().execute(frame, self);
+                throw reportAbstractClassNode.execute(frame, inliningTarget, self);
             }
             Object nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
             return callNativeGenericNewNode(self, nativeBaseClass, varargs, kwargs);
         }
 
         @Specialization(guards = "isNativeClass(self)")
+        @SuppressWarnings("truffle-static-method")
         Object doNativeObjectDirect(VirtualFrame frame, Object self, Object[] varargs, PKeyword[] kwargs,
-                        @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
+                        @Shared @Cached ReportAbstractClassNode reportAbstractClassNode) {
             checkExcessArgs(self, varargs, kwargs);
             if ((getTypeFlagsNode.execute(self) & TypeFlags.IS_ABSTRACT) != 0) {
-                throw getReportAbstractClassNode().execute(frame, self);
+                throw reportAbstractClassNode.execute(frame, inliningTarget, self);
             }
             return callNativeGenericNewNode(self, self, varargs, kwargs);
         }
@@ -1842,14 +1914,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }
-        }
-
-        private ReportAbstractClassNode getReportAbstractClassNode() {
-            if (reportAbstractClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportAbstractClassNode = insert(ReportAbstractClassNode.create());
-            }
-            return reportAbstractClassNode;
         }
     }
 
