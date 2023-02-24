@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,6 +24,7 @@ import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -215,8 +216,11 @@ public class JSONModuleBuiltins extends PythonBuiltins {
             }
 
             FastEncode fastEncode = FastEncode.None;
-            if (encoder instanceof PBuiltinFunction) {
-                PBuiltinFunction function = (PBuiltinFunction) encoder;
+            Object encoderAsFun = encoder;
+            if (encoder instanceof PBuiltinMethod encoderMethod) {
+                encoderAsFun = encoderMethod.getFunction();
+            }
+            if (encoderAsFun instanceof PBuiltinFunction function) {
                 Class<? extends PythonBuiltinBaseNode> nodeClass = function.getNodeClass();
                 if (nodeClass != null) {
                     if (JSONModuleBuiltins.EncodeBaseString.class.isAssignableFrom(nodeClass)) {

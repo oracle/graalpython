@@ -68,7 +68,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -99,27 +98,11 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "_current_indent_level", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CallEncoderNode extends PythonTernaryClinicBuiltinNode {
-
-        // TODO: should all these be replaced with uncached nodes?
-        @Child private CallUnaryMethodNode callEncode = CallUnaryMethodNode.create();
-        @Child private CallUnaryMethodNode callDefaultFn = CallUnaryMethodNode.create();
-        @Child private CastToTruffleStringNode castEncodeResult = CastToTruffleStringNode.create();
         @Child private LookupAndCallUnaryNode callGetItems = LookupAndCallUnaryNode.create(SpecialMethodNames.T_ITEMS);
         @Child private LookupAndCallUnaryNode callGetDictIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
-        @Child private GetNextNode callDictNext = GetNextNode.create();
-        @Child private ListSortNode sortList = ListSortNode.create();
         @Child private LookupAndCallUnaryNode callGetListIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
-        @Child private GetNextNode callListNext = GetNextNode.create();
-        @Child private ConstructListNode constructList = ConstructListNode.create();
-        @Child private StringNodes.StringMaterializeNode stringMaterializeNode = StringNodes.StringMaterializeNode.create();
-        @Child private TruffleString.FromJavaStringNode fromJavaStringNode = TruffleString.FromJavaStringNode.create();
-        @Child private TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode = TruffleString.CreateCodePointIteratorNode.create();
-        @Child private TruffleStringIterator.NextNode nextNode = TruffleStringIterator.NextNode.create();
-        @Child private TruffleStringBuilder.AppendCodePointNode appendCodePointNode = TruffleStringBuilder.AppendCodePointNode.create();
-        @Child private TruffleStringBuilder.AppendStringNode appendStringNode = TruffleStringBuilder.AppendStringNode.create();
-        @Child private TruffleStringBuilder.AppendLongNumberNode appendLongNumberNode = TruffleStringBuilder.AppendLongNumberNode.create();
-
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+        @Child private ListSortNode sortList = ListSortNode.create();
+        private static final TruffleStringBuilder.AppendStringNode appendStringNode = TruffleStringBuilder.AppendStringNode.getUncached();
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -127,12 +110,11 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
             appendListObj(self, builder, obj);
-            return factory.createTuple(new Object[]{toStringNode.execute(builder)});
+            return factory().createTuple(new Object[]{toStringNode.execute(builder)});
         }
 
         private void appendConst(TruffleStringBuilder builder, Object obj) {
@@ -172,22 +154,27 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         private void appendString(PJSONEncoder encoder, TruffleStringBuilder builder, TruffleString obj) {
             switch (encoder.fastEncode) {
                 case FastEncode:
-                    JSONModuleBuiltins.appendString(createCodePointIteratorNode.execute(obj, TS_ENCODING), builder, false, nextNode, appendCodePointNode);
+                    appendString(obj, builder, false);
                     break;
                 case FastEncodeAscii:
-                    JSONModuleBuiltins.appendString(createCodePointIteratorNode.execute(obj, TS_ENCODING), builder, true, nextNode, appendCodePointNode);
+                    appendString(obj, builder, true);
                     break;
                 case None:
-                    Object result = callEncode.executeObject(encoder.encoder, obj);
+                    Object result = CallUnaryMethodNode.getUncached().executeObject(encoder.encoder, obj);
                     if (!isString(result)) {
                         throw raise(TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
                     }
-                    appendStringNode.execute(builder, castEncodeResult.execute(result));
+                    appendStringNode.execute(builder, CastToTruffleStringNode.getUncached().execute(result));
                     break;
                 default:
                     assert false;
                     break;
             }
+        }
+
+        private static void appendString(TruffleString obj, TruffleStringBuilder builder, boolean asciiOnly) {
+            JSONModuleBuiltins.appendString(TruffleString.CreateCodePointIteratorNode.getUncached().execute(obj, TS_ENCODING), builder, asciiOnly,
+                            TruffleStringIterator.NextNode.getUncached(), TruffleStringBuilder.AppendCodePointNode.getUncached());
         }
 
         private static boolean isSimpleObj(Object obj) {
@@ -202,13 +189,13 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             } else if (obj instanceof TruffleString) {
                 appendString(encoder, builder, (TruffleString) obj);
             } else if (obj instanceof PString) {
-                appendString(encoder, builder, stringMaterializeNode.execute((PString) obj));
+                appendString(encoder, builder, StringNodes.StringMaterializeNode.executeUncached((PString) obj));
             } else if (obj instanceof Integer) {
-                appendLongNumberNode.execute(builder, (int) obj);
+                TruffleStringBuilder.AppendLongNumberNode.getUncached().execute(builder, (int) obj);
             } else if (obj instanceof Long) {
-                appendLongNumberNode.execute(builder, (long) obj);
+                TruffleStringBuilder.AppendLongNumberNode.getUncached().execute(builder, (long) obj);
             } else if (obj instanceof PInt) {
-                appendStringNode.execute(builder, fromJavaStringNode.execute(castExact(obj, PInt.class).toString(), TS_ENCODING));
+                appendStringNode.execute(builder, TruffleString.FromJavaStringNode.getUncached().execute(castExact(obj, PInt.class).toString(), TS_ENCODING));
             } else if (obj instanceof Float) {
                 appendFloat(encoder, builder, (float) obj);
             } else if (obj instanceof Double) {
@@ -221,6 +208,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             return true;
         }
 
+        @TruffleBoundary
         private void appendListObj(PJSONEncoder encoder, TruffleStringBuilder builder, Object obj) {
             if (appendSimpleObj(encoder, builder, obj)) {
                 // done
@@ -230,7 +218,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                 appendDict(encoder, builder, (PDict) obj);
             } else {
                 startRecursion(encoder, obj);
-                Object newObj = callDefaultFn.executeObject(encoder.defaultFn, obj);
+                Object newObj = CallUnaryMethodNode.getUncached().executeObject(encoder.defaultFn, obj);
                 appendListObj(encoder, builder, newObj);
                 endRecursion(encoder, obj);
             }
@@ -268,32 +256,36 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                         first = appendDictEntry(encoder, builder, first, key, value);
                     }
                 } else {
-                    PList items = constructList.execute(null, callGetItems.executeObject(null, dict));
-                    if (encoder.sortKeys) {
-                        sortList.execute(null, items);
-                    }
-                    Object iter = callGetDictIter.executeObject(null, items);
-                    boolean first = true;
-                    while (true) {
-                        Object item;
-                        try {
-                            item = callDictNext.execute(null, iter);
-                        } catch (PException e) {
-                            e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
-                            break;
-                        }
-                        if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
-                            throw raise(ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
-                        }
-                        SequenceStorage sequenceStorage = ((PTuple) item).getSequenceStorage();
-                        Object key = sequenceStorage.getItemNormalized(0);
-                        Object value = sequenceStorage.getItemNormalized(1);
-                        first = appendDictEntry(encoder, builder, first, key, value);
-                    }
+                    appendDictSlowPath(encoder, builder, dict);
                 }
 
                 appendStringNode.execute(builder, T_RBRACE);
                 endRecursion(encoder, dict);
+            }
+        }
+
+        private void appendDictSlowPath(PJSONEncoder encoder, TruffleStringBuilder builder, com.oracle.graal.python.builtins.objects.dict.PDict dict) {
+            PList items = ConstructListNode.getUncached().execute(null, callGetItems.executeObject(null, dict));
+            if (encoder.sortKeys) {
+                sortList.execute(null, items);
+            }
+            Object iter = callGetDictIter.executeObject(null, items);
+            boolean first = true;
+            while (true) {
+                Object item;
+                try {
+                    item = GetNextNode.getUncached().execute(null, iter);
+                } catch (PException e) {
+                    e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
+                    break;
+                }
+                if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
+                    throw raise(ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
+                }
+                SequenceStorage sequenceStorage = ((PTuple) item).getSequenceStorage();
+                Object key = sequenceStorage.getItemNormalized(0);
+                Object value = sequenceStorage.getItemNormalized(1);
+                first = appendDictEntry(encoder, builder, first, key, value);
             }
         }
 
@@ -336,26 +328,30 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                         appendListObj(encoder, builder, storage.getItemNormalized(i));
                     }
                 } else {
-                    Object iter = callGetListIter.executeObject(null, list);
-                    boolean first = true;
-                    while (true) {
-                        Object item;
-                        try {
-                            item = callListNext.execute(null, iter);
-                        } catch (PException e) {
-                            e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
-                            break;
-                        }
-                        if (!first) {
-                            appendStringNode.execute(builder, encoder.itemSeparator);
-                        }
-                        first = false;
-                        appendListObj(encoder, builder, item);
-                    }
+                    appendListSlowPath(encoder, builder, list);
                 }
 
                 appendStringNode.execute(builder, T_RBRACKET);
                 endRecursion(encoder, list);
+            }
+        }
+
+        private void appendListSlowPath(PJSONEncoder encoder, TruffleStringBuilder builder, PSequence list) {
+            Object iter = callGetListIter.executeObject(null, list);
+            boolean first = true;
+            while (true) {
+                Object item;
+                try {
+                    item = GetNextNode.getUncached().execute(null, iter);
+                } catch (PException e) {
+                    e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
+                    break;
+                }
+                if (!first) {
+                    appendStringNode.execute(builder, encoder.itemSeparator);
+                }
+                first = false;
+                appendListObj(encoder, builder, item);
             }
         }
     }
