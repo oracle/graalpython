@@ -160,10 +160,10 @@ public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         @Specialization
         Object ts(VirtualFrame frame, MultibyteStatefulEncoderContext ctx, TruffleString ucvt, int end,
                         PythonObjectFactory factory,
-                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
-                        @Cached @Shared("c") TruffleString.ConcatNode concatNode,
-                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared("s") TruffleString.SubstringNode substringNode) {
+                        @Cached @Shared MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Cached @Shared TruffleString.ConcatNode concatNode,
+                        @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared TruffleString.SubstringNode substringNode) {
             TruffleString inbuf = ucvt;
             TruffleString origpending = null;
             if (ctx.pending != null) {
@@ -204,10 +204,10 @@ public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached @Shared("e") MultibyteCodecUtil.EncodeNode encodeNode,
-                        @Cached @Shared("c") TruffleString.ConcatNode concatNode,
-                        @Cached @Shared("p") TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared("s") TruffleString.SubstringNode substringNode) {
+                        @Cached @Shared MultibyteCodecUtil.EncodeNode encodeNode,
+                        @Cached @Shared TruffleString.ConcatNode concatNode,
+                        @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared TruffleString.SubstringNode substringNode) {
             Object ucvt = unistr;
             if (!unicodeCheckNode.execute(unistr)) {
                 ucvt = strNode.execute(frame, unistr);
