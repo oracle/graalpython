@@ -1,2 +1,3 @@
 CHANGELOG.md merge=union
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/ErrorMessages.java merge=union
+graalpython/lib-graalpython/patches/**/*.patch merge=binary
