@@ -1058,7 +1058,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
              * passthrough. If the string contains surrogates, we mark it and emit it as UTF-32.
              */
             Encoding encoding;
-            if (v.isCompatibleTo(Encoding.UTF_8)) {
+            if (v.isValidUncached(TS_ENCODING)) {
                 encoding = Encoding.UTF_8;
             } else {
                 encoding = Encoding.UTF_32LE;
