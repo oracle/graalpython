@@ -98,6 +98,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -239,6 +240,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateInline
+    @GenerateCached(false)
     protected abstract static class ToLongTime extends PNodeWithContext {
 
         private static final long MIN_TIME = Instant.MIN.getEpochSecond();
