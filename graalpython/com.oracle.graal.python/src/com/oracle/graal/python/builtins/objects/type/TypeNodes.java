@@ -1884,29 +1884,6 @@ public abstract class TypeNodes {
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
 
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
-                newType.initializeMroShape(language);
-
-                HashingStorage storage = namespace.getDictStorage();
-                HashingStorageIterator it = getIterator.execute(storage);
-                while (itNext.execute(storage, it)) {
-                    Object value = itValue.execute(storage, it);
-                    Object setName = getSetNameNode.execute(value);
-                    if (setName != PNone.NO_VALUE) {
-                        Object key = itKey.execute(storage, it);
-                        try {
-                            callSetNameNode.execute(frame, setName, value, newType, key);
-                        } catch (PException e) {
-                            throw raise.raise(PythonBuiltinClassType.RuntimeError, e.getEscapedException(), ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
-                        }
-                    }
-                }
-
-                // Call __init_subclass__ on the parent of a newly generated type
-                SuperObject superObject = factory.createSuperObject(PythonBuiltinClassType.Super);
-                superObject.init(newType, newType, newType);
-                callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
-
                 // set '__module__' attribute
                 Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
@@ -1928,6 +1905,11 @@ public abstract class TypeNodes {
                 // delete __qualname__ from namespace
                 delItemNamespace.execute(namespace, T___QUALNAME__);
 
+                // initialize '__doc__' attribute
+                if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
+                    newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
+                }
+
                 // set __class__ cell contents
                 Object classcell = getItemNamespace.execute(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
                 if (classcell != null) {
@@ -1939,9 +1921,29 @@ public abstract class TypeNodes {
                     delItemNamespace.execute(namespace, SpecialAttributeNames.T___CLASSCELL__);
                 }
 
-                if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
-                    newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
+                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
+
+                HashingStorage storage = namespace.getDictStorage();
+                HashingStorageIterator it = getIterator.execute(storage);
+                while (itNext.execute(storage, it)) {
+                    Object value = itValue.execute(storage, it);
+                    Object setName = getSetNameNode.execute(value);
+                    if (setName != PNone.NO_VALUE) {
+                        Object key = itKey.execute(storage, it);
+                        try {
+                            callSetNameNode.execute(frame, setName, value, newType, key);
+                        } catch (PException e) {
+                            throw raise.raise(PythonBuiltinClassType.RuntimeError, e.getEscapedException(), ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
+                        }
+                    }
                 }
+
+                // Call __init_subclass__ on the parent of a newly generated type
+                SuperObject superObject = factory.createSuperObject(PythonBuiltinClassType.Super);
+                superObject.init(newType, newType, newType);
+                callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
+
+                newType.initializeMroShape(language);
 
                 return newType;
             } finally {
