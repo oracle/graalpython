@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -266,12 +266,20 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
                 if (PythonContext.get(this).getOption(PythonOptions.OverallocateLiteralLists)) {
                     if (newStore.getCapacity() > initialCapacity.estimate()) {
                         initialCapacity.updateFrom(newStore.getCapacity());
-                        LOGGER.finest(() -> String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection(), newStore.getCapacity(),
-                                        initialCapacity.estimate()));
+                        LOGGER.finest(() -> {
+                            SourceSection encapsulatingSourceSection = getEncapsulatingSourceSection();
+                            String sourceSection = encapsulatingSourceSection == null ? "<unavailable source>" : encapsulatingSourceSection.toString();
+                            return String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", sourceSection, newStore.getCapacity(),
+                                            initialCapacity.estimate());
+                        });
                     }
                     if (newStore.getElementType().generalizesFrom(type)) {
                         type = newStore.getElementType();
-                        LOGGER.finest(() -> String.format("Updating list type estimate at %s. New type: %s", getSourceSection(), type.name()));
+                        LOGGER.finest(() -> {
+                            SourceSection encapsulatingSourceSection = getEncapsulatingSourceSection();
+                            String sourceSection = encapsulatingSourceSection == null ? "<unavailable source>" : encapsulatingSourceSection.toString();
+                            return String.format("Updating list type estimate at %s. New type: %s", sourceSection, type.name());
+                        });
                     }
                 }
             }
