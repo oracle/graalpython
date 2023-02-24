@@ -88,7 +88,9 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -133,18 +135,19 @@ public class MultibyteCodecUtil {
         }
     }
 
-    @GenerateInline(false)
+    @GenerateInline
+    @GenerateCached(alwaysInlineCached = true)
     abstract static class CallErrorCallbackNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, Object errors, Object exc);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object errors, Object exc);
 
         // call_error_callback
         @Specialization
         static Object callErrorCallback(VirtualFrame frame, Object errors, Object exc,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached PyUnicodeCheckNode unicodeCheckNode,
-                        @Cached CodecsModuleBuiltins.LookupErrorNode lookupErrorNode,
-                        @Cached CallNode callNode) {
+                        @Cached(inline = false) CastToTruffleStringNode castToStringNode,
+                        @Cached(inline = false) PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached(inline = false) CodecsModuleBuiltins.LookupErrorNode lookupErrorNode,
+                        @Cached(inline = false) CallNode callNode) {
             assert (unicodeCheckNode.execute(errors));
             TruffleString str = castToStringNode.execute(errors);
             Object cb = lookupErrorNode.execute(frame, str);
@@ -166,6 +169,7 @@ public class MultibyteCodecUtil {
         int encerror(VirtualFrame frame, MultibyteCodec codec,
                         MultibyteCodecState state,
                         MultibyteEncodeBuffer buf, Object errors, int e,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
@@ -175,7 +179,7 @@ public class MultibyteCodecUtil {
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyBytesCheckNode bytesCheckNode,
                         @Cached PyLongAsIntNode asSizeNode,
-                        @Cached CallErrorCallbackNode callErrorCallbackNode,
+                        @Cached(inline = true) CallErrorCallbackNode callErrorCallbackNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached EncodeNode encodeNode) {
 
@@ -244,7 +248,7 @@ public class MultibyteCodecUtil {
                 // PyCodec_StrictErrors(buf.excobj);
             }
 
-            Object retobj = callErrorCallbackNode.execute(frame, errors, buf.excobj);
+            Object retobj = callErrorCallbackNode.execute(frame, inliningTarget, errors, buf.excobj);
 
             boolean isError = !(retobj instanceof PTuple);
             Object tobj = null;
@@ -318,6 +322,7 @@ public class MultibyteCodecUtil {
         void decerror(VirtualFrame frame, MultibyteCodec codec,
                         // MultibyteCodecState state,
                         MultibyteDecodeBuffer buf, TruffleString errors, int e,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
@@ -325,7 +330,7 @@ public class MultibyteCodecUtil {
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyLongAsIntNode asSizeNode,
                         @Cached CastToJavaStringNode toString,
-                        @Cached CallErrorCallbackNode callErrorCallbackNode) {
+                        @Cached(inline = true) CallErrorCallbackNode callErrorCallbackNode) {
 
             TruffleString reason = ILLEGAL_MULTIBYTE_SEQUENCE;
             int esize = e;
@@ -376,7 +381,7 @@ public class MultibyteCodecUtil {
                 // PyCodec_StrictErrors(buf.excobj);
             }
 
-            Object retobj = callErrorCallbackNode.execute(frame, errors, buf.excobj);
+            Object retobj = callErrorCallbackNode.execute(frame, inliningTarget, errors, buf.excobj);
 
             boolean isError = !(retobj instanceof PTuple);
             Object retuni = null;
