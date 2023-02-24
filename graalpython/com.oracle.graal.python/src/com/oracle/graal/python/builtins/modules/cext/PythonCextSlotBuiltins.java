@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.METHOD_DEF_PTR;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEALLOC;
@@ -425,7 +424,7 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static Object get(PythonObject object,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            Object methodDefPtr = dylib.getOrDefault(object, METHOD_DEF_PTR, null);
+            Object methodDefPtr = dylib.getOrDefault(object, PythonCextMethodBuiltins.METHOD_DEF_PTR, null);
             if (methodDefPtr != null) {
                 return methodDefPtr;
             }

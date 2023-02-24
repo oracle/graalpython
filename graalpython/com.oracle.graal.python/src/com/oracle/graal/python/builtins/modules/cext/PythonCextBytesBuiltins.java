@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -60,36 +61,48 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextBytesBuiltins {
@@ -149,36 +162,29 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     public abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
-        @Specialization(guards = {"isPBytes(obj) || isBytesSubtype(obj, getClassNode, isSubtypeNode)"})
-        public static Object fromObject(@SuppressWarnings("unused") Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-            return obj;
-        }
-
-        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(obj, getClassNode, isSubtypeNode)", "isAcceptedSubtype(obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
+        @Specialization
         public Object fromObject(Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
                         @Cached BytesNode bytesNode,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode) {
-            return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
+                        @Cached PyObjectLookupAttr lookupAttrNode) {
+
+            if (PGuards.isPBytes(obj)) {
+                return obj;
+            } else {
+                Object klass = getClassNode.execute(inliningTarget, obj);
+                if (isSubtypeNode.execute(klass, PythonBuiltinClassType.PBytes)) {
+                    return obj;
+                } else if (isAcceptedSubtype(obj, klass, isSubtypeNode, lookupAttrNode)) {
+                    return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
+                } else {
+                    throw raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
+                }
+            }
         }
 
-        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(obj, getClassNode, isSubtypeNode)", "!isAcceptedSubtype(obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
-        public Object fromObject(Object obj,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode) {
-            throw raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
-        }
-
-        protected static boolean isBytesSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
-        }
-
-        protected static boolean isAcceptedSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
-            Object klass = getClassNode.execute(obj);
+        private static boolean isAcceptedSubtype(Object obj, Object klass, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
             return isSubtypeNode.execute(klass, PythonBuiltinClassType.PList) ||
                             isSubtypeNode.execute(klass, PythonBuiltinClassType.PTuple) ||
                             isSubtypeNode.execute(klass, PythonBuiltinClassType.PMemoryView) ||
@@ -274,6 +280,106 @@ public final class PythonCextBytesBuiltins {
         @Fallback
         int fallback(Object self, @SuppressWarnings("unused") Object o) {
             throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Ignored)
+    abstract static class PyTruffle_Bytes_EmptyWithCapacity extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        PBytes doInt(int size) {
+            return factory().createBytes(new byte[size]);
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        PBytes doLong(long size) throws OverflowException {
+            return doInt(PInt.intValueExact(size));
+        }
+
+        @Specialization(replaces = "doLong")
+        PBytes doLongOvf(long size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return doInt(PInt.intValueExact(size));
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+            }
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        PBytes doPInt(PInt size) throws OverflowException {
+            return doInt(size.intValueExact());
+        }
+
+        @Specialization(replaces = "doPInt")
+        PBytes doPIntOvf(PInt size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return doInt(size.intValueExact());
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Ignored)
+    abstract static class PyTruffle_ByteArray_EmptyWithCapacity extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        PByteArray doInt(int size) {
+            return factory().createByteArray(new byte[size]);
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        PByteArray doLong(long size) throws OverflowException {
+            return doInt(PInt.intValueExact(size));
+        }
+
+        @Specialization(replaces = "doLong")
+        PByteArray doLongOvf(long size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return doInt(PInt.intValueExact(size));
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+            }
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        PByteArray doPInt(PInt size) throws OverflowException {
+            return doInt(size.intValueExact());
+        }
+
+        @Specialization(replaces = "doPInt")
+        PByteArray doPIntOvf(PInt size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return doInt(size.intValueExact());
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = CApiCallPath.Ignored)
+    abstract static class PyTruffle_Bytes_CheckEmbeddedNull extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int doBytes(PBytes bytes,
+                        @Cached GetItemScalarNode getItemScalarNode) {
+
+            SequenceStorage sequenceStorage = bytes.getSequenceStorage();
+            int len = sequenceStorage.length();
+            try {
+                for (int i = 0; i < len; i++) {
+                    if (getItemScalarNode.executeInt(sequenceStorage, i) == 0) {
+                        return -1;
+                    }
+                }
+            } catch (UnexpectedResultException e) {
+                throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
+            }
+            return 0;
         }
     }
 }

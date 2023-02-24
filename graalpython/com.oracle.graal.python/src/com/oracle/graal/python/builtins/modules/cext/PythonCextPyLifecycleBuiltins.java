@@ -41,11 +41,17 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_voidvoid;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -54,6 +60,7 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextPyLifecycleBuiltins {
 
@@ -74,6 +81,25 @@ public final class PythonCextPyLifecycleBuiltins {
                 }
             });
             return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Ignored)
+    public abstract static class PyTruffle_FatalErrorFunc extends CApiTernaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object doStrings(TruffleString func, TruffleString msg, int status) {
+            CExtCommonNodes.fatalError(this, getContext(), func, msg, status);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object doGeneric(Object funcObj, Object msgObj, int status) {
+            TruffleString func = funcObj == PNone.NO_VALUE ? null : (TruffleString) funcObj;
+            TruffleString msg = msgObj == PNone.NO_VALUE ? null : (TruffleString) msgObj;
+            return doStrings(func, msg, status);
         }
     }
 }

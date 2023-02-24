@@ -101,6 +101,7 @@ typedef struct {
 // GENERATED CODE - see CApiCodeGen
 // This can be re-generated using the 'mx python-capi-forwards' command or
 // by executing the main class CApiCodeGen
+
 #define CAPI_BUILTINS \
     BUILTIN(PyByteArray_Resize, int, PyObject*, Py_ssize_t) \
     BUILTIN(PyBytes_FromObject, PyObject*, PyObject*) \
@@ -337,8 +338,6 @@ typedef struct {
     BUILTIN(PyTruffle_NoValue, PyObject*) \
     BUILTIN(PyTruffle_None, PyObject*) \
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
-    BUILTIN(PyTruffle_OS_DoubleToString, PyObject*, double, int, int, int) \
-    BUILTIN(PyTruffle_OS_StringToDouble, PyObject*, const char*, int) \
     BUILTIN(PyTruffle_Object_Alloc, int, void*, long) \
     BUILTIN(PyTruffle_Object_Free, int, void*) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \
@@ -573,22 +572,22 @@ typedef struct {
     BUILTIN(_PyDict_Pop, PyObject*, PyObject*, PyObject*, PyObject*) \
     BUILTIN(_PyDict_SetItem_KnownHash, int, PyObject*, PyObject*, PyObject*, Py_hash_t) \
     BUILTIN(_PyErr_BadInternalCall, void, const char*, int) \
-    BUILTIN(_PyErr_CreateAndSetException, void, PyObject*, PyObject*) \
     BUILTIN(_PyErr_WriteUnraisableMsg, void, const char*, PyObject*) \
     BUILTIN(_PyList_Extend, PyObject*, PyListObject*, PyObject*) \
     BUILTIN(_PyLong_Sign, int, PyObject*) \
     BUILTIN(_PyNamespace_New, PyObject*, PyObject*) \
     BUILTIN(_PyNumber_Index, PyObject*, PyObject*) \
-    BUILTIN(_PyObject_Call1, PyObject*, PyObject*, PyObject*, PyObject*, int) \
-    BUILTIN(_PyObject_CallMethod1, PyObject*, PyObject*, const char*, PyObject*, int) \
     BUILTIN(_PyObject_Dump, void, PyObject*) \
     BUILTIN(_PyTraceMalloc_NewReference, int, PyObject*) \
     BUILTIN(_PyTraceback_Add, void, const char*, const char*, int) \
     BUILTIN(_PyTruffleBytes_Resize, int, PyObject*, Py_ssize_t) \
+    BUILTIN(_PyTruffleErr_CreateAndSetException, void, PyObject*, PyObject*) \
     BUILTIN(_PyTruffleErr_Warn, PyObject*, PyObject*, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(_PyTruffleEval_EvalCodeEx, PyObject*, PyObject*, PyObject*, PyObject*, void*, void*, void*, PyObject*, PyObject*) \
     BUILTIN(_PyTruffleModule_CreateInitialized_PyModule_New, PyModuleObject*, const char*) \
     BUILTIN(_PyTruffleModule_GetAndIncMaxModuleNumber, Py_ssize_t) \
+    BUILTIN(_PyTruffleObject_Call1, PyObject*, PyObject*, PyObject*, PyObject*, int) \
+    BUILTIN(_PyTruffleObject_CallMethod1, PyObject*, PyObject*, const char*, PyObject*, int) \
     BUILTIN(_PyTruffleObject_MakeTpCall, PyObject*, PyObject*, void*, int, void*, void*) \
     BUILTIN(_PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(_PyTruffle_HashBytes, Py_hash_t, const char*) \

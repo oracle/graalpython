@@ -924,17 +924,6 @@ public abstract class CExtNodes {
                         @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
             return callByteArrayToNativeNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, PythonContext.get(this).getEnv().asGuestValue(arr), arr.length);
         }
-
-        // TODO(fa): Workaround for DSL bug: did not import factory at users
-        @NeverDefault
-        public static AsCharPointerNode create() {
-            return CExtNodesFactory.AsCharPointerNodeGen.create();
-        }
-
-        // TODO(fa): Workaround for DSL bug: did not import factory at users
-        public static AsCharPointerNode getUncached() {
-            return CExtNodesFactory.AsCharPointerNodeGen.getUncached();
-        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------

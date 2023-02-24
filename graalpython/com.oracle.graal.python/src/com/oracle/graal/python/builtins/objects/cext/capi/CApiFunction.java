@@ -85,7 +85,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYMEMALLOCATOREX_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYMODULEDEF_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYOBJECTARENAALLOCATOR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYOBJECT_CONST_PTR_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYPRECONFIG_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYSTATUS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYUNICODE_KIND;
@@ -219,6 +218,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPosixmoduleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPyLifecycleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextPythonRunBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltins;
@@ -234,9 +234,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextWeakrefBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen.CApiBuiltinDesc;
 
 /**
- * This file contains the specification of all CAPI builtins that aren't explicitly imlpemented in
- * the {@link PythonCextBuiltins}, i.e., all builtins that are implemented in C code or that are not
- * implemented at all at the moment.
+ * This file contains the specification of all CAPI builtins that aren't explicitly implemented in
+ * {@link PythonCextBuiltins}, etc. I.e., all builtins that are implemented in C code or that are
+ * not implemented at all at the moment.
  */
 public final class CApiFunction {
 
@@ -260,7 +260,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyArg_NoPositional", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_UnpackKeywords", ret = PyObjectConstPtr, args = {PyObjectConstPtr, Py_ssize_t, PyObject, PyObject, _PYARG_PARSER_PTR, Int, Int, Int, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_UnpackStack", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, VARARGS}, call = CImpl)
-    @CApiBuiltin(name = "_PyDict_GetItemId", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemIdWithError", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemStringWithError", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_NewPresized", ret = PyObject, args = {Py_ssize_t}, call = CImpl)
@@ -349,7 +348,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyFrame_SetLineNumber", ret = Void, args = {PyFrameObject, Int}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyGen_FetchStopIterationValue", ret = Int, args = {PyObjectPtr}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyGen_Finalize", ret = Void, args = {PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyGen_Send", ret = PyObject, args = {PY_GEN_OBJECT, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyGen_SetStopIterationValue", ret = Int, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyGen_yf", ret = PyObject, args = {PY_GEN_OBJECT}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyImport_SetModule", ret = Int, args = {PyObject, PyObject}, call = PolyglotImpl)
@@ -378,7 +376,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PySequence_Fast_ITEMS", ret = PyObjectPtr, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PySequence_ITEM", ret = PyObject, args = {PyObject, Py_ssize_t}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PySet_NextEntry", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PY_HASH_T_PTR}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyStack_UnpackDict", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, PyObject, PYOBJECT_CONST_PTR_LIST, PyObjectPtr}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyThreadState_UncheckedGet", ret = PyThreadState, args = {}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyType_GetModuleByDef", ret = PyObject, args = {PyTypeObject, PYMODULEDEF_PTR}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyType_Name", ret = ConstCharPtrAsTruffleString, args = {PyTypeObject}, call = PolyglotImpl)
@@ -665,7 +662,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_add_one_to_index_F", ret = Void, args = {Int, PY_SSIZE_T_PTR, CONST_PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_BreakPoint", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_CheckFunctionResult", ret = PyObject, args = {PyThreadState, PyObject, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_CheckRecursiveCall", ret = Int, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
+    @CApiBuiltin(name = "_Py_CheckRecursiveCall", ret = Int, args = {PyThreadState, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_CoerceLegacyLocale", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_convert_optional_to_ssize_t", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_DecodeLocaleEx", ret = Int, args = {ConstCharPtrAsTruffleString, WCHAR_T_PTR_LIST, SIZE_T_PTR, CONST_CHAR_PTR_LIST, Int, _PY_ERROR_HANDLER}, call = NotImplemented)
@@ -682,7 +679,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_FatalErrorFormat", ret = Void, args = {ConstCharPtr, ConstCharPtr, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_FdIsInteractive", ret = Int, args = {FILE_PTR, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_fopen_obj", ret = FILE_PTR, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_fopen", ret = FILE_PTR, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_FreeCharPArray", ret = Void, args = {CHAR_CONST_ARRAY}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_fstat_noraise", ret = Int, args = {Int, STAT_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_fstat", ret = Int, args = {Int, STAT_PTR}, call = NotImplemented)
@@ -724,8 +720,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, CONST_CHAR_PTR_LIST}, call = NotImplemented)
     @CApiBuiltin(name = "_PyBytes_FormatEx", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyBytes_FromHex", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyCFunction_DebugMallocStats", ret = Void, args = {FILE_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyCFunction_FastCallDict", ret = PyObject, args = {PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyCode_CheckLineNumber", ret = Int, args = {Int, PyCodeAddressRange}, call = NotImplemented)
     @CApiBuiltin(name = "_PyCode_ConstantKey", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyCode_GetExtra", ret = Int, args = {PyObject, Py_ssize_t, VOID_PTR_LIST}, call = NotImplemented)
@@ -791,23 +785,19 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyFloat_FormatAdvancedWriter", ret = Int, args = {_PYUNICODEWRITER_PTR, PyObject, PyObject, Py_ssize_t, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyFrame_DebugMallocStats", ret = Void, args = {FILE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyFrame_New_NoTrack", ret = PyFrameObject, args = {PyThreadState, PyFrameConstructor, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyFunction_FastCallDict", ret = PyObject, args = {PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyFunction_Vectorcall", ret = PyObject, args = {PyObject, PyObjectConstPtr, SIZE_T, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyGILState_GetInterpreterStateUnsafe", ret = PyInterpreterState, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_AcquireLock", ret = Void, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyImport_FindBuiltin", ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_FindExtensionObject", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyImport_FindExtensionObjectEx", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_FixupBuiltin", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_FixupExtensionObject", ret = Int, args = {PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_GetModuleAttr", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_GetModuleAttrString", ret = PyObject, args = {ConstCharPtr, ConstCharPtr}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_GetModuleId", ret = PyObject, args = {_PY_IDENTIFIER_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_IsInitialized", ret = Int, args = {PyInterpreterState}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyImport_ReInitLock", ret = Void, args = {}, call = NotImplemented, comment = "depends on HAVE_FORK")
+    @CApiBuiltin(name = "_PyImport_ReInitLock", ret = PYSTATUS, args = {}, call = NotImplemented, comment = "depends on HAVE_FORK")
     @CApiBuiltin(name = "_PyImport_ReleaseLock", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_SetModuleString", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyInterpreterState_Get", ret = PyInterpreterState, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_PyInterpreterState_GetConfig", ret = CONST_PYCONFIG_PTR, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "_PyInterpreterState_GetConfigCopy", ret = Int, args = {PYCONFIG_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyInterpreterState_GetEvalFrameFunc", ret = _PyFrameEvalFunction, args = {PyInterpreterState}, call = NotImplemented)
@@ -842,15 +832,12 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyMem_RawStrdup", ret = CHAR_PTR, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_PyMem_RawWcsdup", ret = WCHAR_T_PTR, args = {CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyMem_Strdup", ret = CHAR_PTR, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyMethod_DebugMallocStats", ret = Void, args = {FILE_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyMethodDef_RawFastCallDict", ret = PyObject, args = {PyMethodDef, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyMethodDef_RawFastCallKeywords", ret = PyObject, args = {PyMethodDef, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyModule_Clear", ret = Void, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyModule_ClearDict", ret = Void, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyModuleSpec_IsInitializing", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_AssertFailed", ret = VoidNoReturn, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int,
                     ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyObject_Call_Prepend", ret = PyObject, args = {PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyObject_Call_Prepend", ret = PyObject, args = {PyThreadState, PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethodId_SizeT", ret = PyObject, args = {PyObject, PY_IDENTIFIER, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethodId", ret = PyObject, args = {PyObject, PY_IDENTIFIER, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = NotImplemented)
@@ -858,15 +845,12 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyObject_CheckCrossInterpreterData", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_DebugMallocStats", ret = Int, args = {FILE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_DebugTypeStats", ret = Void, args = {FILE_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyObject_FastCall_Prepend", ret = PyObject, args = {PyObject, PyObject, PyObjectConstPtr, Py_ssize_t}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyObject_FastCallDict", ret = PyObject, args = {PyObject, PyObjectConstPtr, SIZE_T, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_FunctionStr", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_GC_Resize", ret = PyVarObject, args = {PyVarObject, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_GenericGetAttrWithDict", ret = PyObject, args = {PyObject, PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_GenericSetAttrWithDict", ret = Int, args = {PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_GetCrossInterpreterData", ret = Int, args = {PyObject, _PYCROSSINTERPRETERDATA_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_GetMethod", ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyObject_HasAttrId", ret = Int, args = {PyObject, _PY_IDENTIFIER_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_HasLen", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_IsAbstract", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_IsFreed", ret = Int, args = {PyObject}, call = NotImplemented)
@@ -887,7 +871,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PySlice_FromIndices", ret = PyObject, args = {Py_ssize_t, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PySlice_GetLongIndices", ret = Int, args = {PySliceObject, PyObject, PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "_PyStack_AsDict", ret = PyObject, args = {PyObjectConstPtr, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyState_AddModule", ret = Int, args = {PyObject, PYMODULEDEF_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyState_AddModule", ret = Int, args = {PyThreadState, PyObject, PYMODULEDEF_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PySys_GetObjectId", ret = PyObject, args = {PY_IDENTIFIER}, call = NotImplemented)
     @CApiBuiltin(name = "_PySys_GetSizeOf", ret = SIZE_T, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PySys_SetObjectId", ret = Int, args = {PY_IDENTIFIER, PyObject}, call = NotImplemented)
@@ -938,7 +922,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyType_GetDocFromInternalDoc", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_PyType_GetTextSignatureFromInternalDoc", ret = PyObject, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_PyType_LookupId", ret = PyObject, args = {PyTypeObject, PY_IDENTIFIER}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyUnicode_AsKind", ret = Pointer, args = {PyObject, UNSIGNED_INT}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_AsUnicode", ret = CONST_PY_UNICODE, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_CheckConsistency", ret = Int, args = {PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_Copy", ret = PyObject, args = {PyObject}, call = NotImplemented)
@@ -1310,7 +1293,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyTruffle_SeqIter_New", ret = PyObjectTransfer, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyTruffleFrame_New", ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyType_FromSpecWithBasesAndMeta", ret = PyObject, args = {PY_TYPE_SPEC, PyObject, PyTypeObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_AsCharmapString", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_AsDecodedObject", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_AsDecodedUnicode", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
@@ -1442,6 +1424,7 @@ public final class CApiFunction {
         addCApiBuiltins(result, PythonCextPosixmoduleBuiltins.class);
         addCApiBuiltins(result, PythonCextPyLifecycleBuiltins.class);
         addCApiBuiltins(result, PythonCextPyStateBuiltins.class);
+        addCApiBuiltins(result, PythonCextPyThreadBuiltins.class);
         addCApiBuiltins(result, PythonCextPythonRunBuiltins.class);
         addCApiBuiltins(result, PythonCextSetBuiltins.class);
         addCApiBuiltins(result, PythonCextSliceBuiltins.class);
@@ -1491,6 +1474,7 @@ public final class CApiFunction {
                             gen = Class.forName(container.getName() + "Factory$" + clazz.getSimpleName() + "NodeGen");
                         } catch (ClassNotFoundException e) {
                             try {
+                                // in case this uses GenerateNodeFactory:
                                 gen = Class.forName(container.getName() + "Factory$" + clazz.getSimpleName() + "Factory");
                             } catch (ClassNotFoundException e2) {
                                 throw new RuntimeException(e2);

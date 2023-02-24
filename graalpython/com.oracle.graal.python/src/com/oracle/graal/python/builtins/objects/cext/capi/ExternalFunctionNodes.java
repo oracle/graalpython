@@ -68,12 +68,14 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -683,6 +685,7 @@ public abstract class ExternalFunctionNodes {
      * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
      */
     static final class ExternalFunctionInvokeNode extends PNodeWithContext implements IndirectCallNode {
+        private final CApiTiming timing;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
@@ -722,6 +725,7 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         ExternalFunctionInvokeNode(PExternalFunctionWrapper provider) {
+            this.timing = CApiTiming.create(true, provider.name());
             CheckFunctionResultNode node = provider.createCheckFunctionResultNode();
             this.checkResultNode = node != null ? node : DefaultCheckFunctionResultNodeGen.create();
             this.provider = provider;
@@ -745,6 +749,7 @@ public abstract class ExternalFunctionNodes {
             // it to the context since we cannot propagate it through the native frames.
             Object state = IndirectCallContext.enter(frame, threadState, this);
 
+            CApiTiming.enter();
             try {
 
                 Object result;
@@ -769,6 +774,7 @@ public abstract class ExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
+                CApiTiming.exit(timing);
                 /*
                  * Always re-acquire the GIL here. This is necessary because it could happen that C
                  * extensions are releasing the GIL and if then an LLVM exception occurs, C code
@@ -1309,7 +1315,7 @@ public abstract class ExternalFunctionNodes {
         GetAttrFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
-            this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
+            this.asCharPointerNode = AsCharPointerNodeGen.create();
         }
 
         @Override
@@ -1359,7 +1365,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
-            this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
+            this.asCharPointerNode = AsCharPointerNodeGen.create();
         }
 
         @Override

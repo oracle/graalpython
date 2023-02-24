@@ -135,7 +135,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class PythonCextObjectBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Direct)
-    abstract static class _PyObject_Call1 extends CApiQuaternaryBuiltinNode {
+    abstract static class _PyTruffleObject_Call1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object callable, Object argsObj, Object kwargsObj, int singleArg,
                         @Cached CastArgsNode castArgsNode,
@@ -215,7 +215,7 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, call = Direct)
-    abstract static class _PyObject_CallMethod1 extends CApiQuaternaryBuiltinNode {
+    abstract static class _PyTruffleObject_CallMethod1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object receiver, TruffleString methodName, Object argsObj, int singleArg,
                         @Cached PyObjectCallMethodObjArgs callMethod,

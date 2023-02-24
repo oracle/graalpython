@@ -55,57 +55,6 @@
 
 #define MUST_INLINE __attribute__((always_inline)) inline
 
-//#undef NDEBUG
-
-
-#ifdef NDEBUG
-#define LOG(FORMAT, ...)
-#define LOGV(FORMAT, ...)
-#define LOGS(FORMAT)
-#else
-#define LOG(FORMAT, ...) printf("\e[32m%s:%d " FORMAT "\e[0m\n", __FUNCTION__, __LINE__, __VA_ARGS__);
-#define LOGV(FORMAT, ...) printf("\e[32m%s:%d %s " FORMAT "\e[0m\n", __FUNCTION__, __LINE__, #__VA_ARGS__, __VA_ARGS__);
-#define LOGS(FORMAT) printf("\e[32m%s:%d " FORMAT "\e[0m\n", __FUNCTION__, __LINE__);
-#endif
-
-//#define STATS
-
-#ifdef STATS
-long t() {
-    struct timespec spec;
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &spec);
-    return spec.tv_sec * 1000000000L + spec.tv_nsec;
-}
-
-typedef struct CAPIStats {
-    struct CAPIStats* next;
-    const char* name;
-    long count;
-    long time;
-} CAPIStats;
-
-long totalCount = 0;
-long totalTime = 0;
-
-CAPIStats* getStatsList();
-
-void printAllStats() {
-    CAPIStats* current = getStatsList();
-    printf("\e[35m");
-    printf("  %30s - count: %7li / %7lims\n", "TOTAL", totalCount, totalTime / 1000000);
-    printf("  ===========================================================\n");
-    long percentDelta = totalTime / 200;
-    while (current != NULL) {
-        if (current->count > 0 && current->time > (totalTime / 1000))
-        printf("  %40s - count: %7li / %7lims  (%li%%)\n", current->name, current->count, current->time / 1000000, (current->time * 100 + percentDelta) / totalTime);
-        current = current->next;
-    }
-    printf("\e[0m\n");
-}
-
-
-#endif
-
 #define PY_TYPE_OBJECTS(OBJECT) \
 OBJECT(PyAsyncGen_Type, async_generator) \
 OBJECT(PyBaseObject_Type, object) \
@@ -351,7 +300,6 @@ int initNativeForwardCalled = 0;
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
 PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
-    LOG("%s", "capi_native.c:initNativeForward\n");
     if (initNativeForwardCalled) {
     	return 0;
     }
@@ -382,7 +330,6 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
     // now force all classes toNative:
 #define SET_TYPE_OBJECT_STORE(NAME, TYPENAME) \
     if (strcmp(#TYPENAME, "unimplemented") != 0) { \
-        LOG("initializing toNative: %s %s %lx", #NAME, #TYPENAME, (unsigned long) (void*) &NAME); \
         getType(#TYPENAME); \
     }
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
@@ -395,15 +342,6 @@ CAPI_BUILTINS
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
     initializeCAPIForwards(getAPI);
 
-#ifdef TIMING
-    long total = 0;
-    for (int i = 0; i < 1000; i++) {
-        long t1 = t();
-        long t2 = t();
-        total += t2-t1;
-    }
-    printf("TIME: ns per query = %li\n", total / 1000);
-#endif // TIMING
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     return 1;
 }
@@ -435,6 +373,7 @@ inline void assertHandleOrPointer(PyObject* o) {
     }
 #endif
 }
+
 /*
 PyAPI_FUNC(struct _typeobject*) _Py_TYPE(PyObject* a) {
     assertHandleOrPointer(a);
@@ -531,49 +470,49 @@ PyAPI_FUNC(PyObject *) PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 #undef PyObject_CallFunction
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_Call1(callable, NULL, NULL, 0);
+        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     PyObject* args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
 }
 
 PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_Call1(callable, NULL, NULL, 0);
+        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     PyObject* args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
 }
 
 
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallMethod1(object, method, NULL, 0);
+        return _PyTruffleObject_CallMethod1(object, method, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
 }
 
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallMethod1(object, method, NULL, 0);
+        return _PyTruffleObject_CallMethod1(object, method, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     args = Py_VaBuildValue(fmt, va);
     va_end(va);
-    return _PyObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
+    return _PyTruffleObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
 }
 
 PyObject * PyObject_CallMethodObjArgs(PyObject *a, PyObject *b, ...)  {

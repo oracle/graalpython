@@ -159,6 +159,7 @@ public abstract class PythonCextBuiltinRegistry {
     // GENERATED CODE - see CApiCodeGen
     // This can be re-generated using the 'mx python-capi-forwards' command or
     // by executing the main class CApiCodeGen
+
     public static final CApiBuiltinExecutable[] builtins = {
                     new CApiBuiltinExecutable("PyByteArray_Resize", Direct, Int,
                                     new ArgDescriptor[]{PyObject, Py_ssize_t}, 0),
@@ -496,7 +497,7 @@ public abstract class PythonCextBuiltinRegistry {
                                     new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 166),
                     new CApiBuiltinExecutable("PyThreadState_Get", Direct, PyThreadState,
                                     new ArgDescriptor[]{}, 167),
-                    new CApiBuiltinExecutable("PyThreadState_GetDict", Direct, PyObject,
+                    new CApiBuiltinExecutable("PyThreadState_GetDict", Direct, PyObjectBorrowed,
                                     new ArgDescriptor[]{}, 168),
                     new CApiBuiltinExecutable("PyThread_acquire_lock", Direct, Int,
                                     new ArgDescriptor[]{PY_THREAD_TYPE_LOCK, Int}, 169),
@@ -630,530 +631,526 @@ public abstract class PythonCextBuiltinRegistry {
                                     new ArgDescriptor[]{}, 233),
                     new CApiBuiltinExecutable("PyTruffle_NotImplemented", Ignored, PyObjectTransfer,
                                     new ArgDescriptor[]{}, 234),
-                    new CApiBuiltinExecutable("PyTruffle_OS_DoubleToString", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{Double, Int, Int, Int}, 235),
-                    new CApiBuiltinExecutable("PyTruffle_OS_StringToDouble", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, Int}, 236),
                     new CApiBuiltinExecutable("PyTruffle_Object_Alloc", Ignored, Int,
-                                    new ArgDescriptor[]{Pointer, Long}, 237),
+                                    new ArgDescriptor[]{Pointer, Long}, 235),
                     new CApiBuiltinExecutable("PyTruffle_Object_Free", Ignored, Int,
-                                    new ArgDescriptor[]{Pointer}, 238),
+                                    new ArgDescriptor[]{Pointer}, 236),
                     new CApiBuiltinExecutable("PyTruffle_Register_NULL", Ignored, Void,
-                                    new ArgDescriptor[]{Pointer}, 239),
+                                    new ArgDescriptor[]{Pointer}, 237),
                     new CApiBuiltinExecutable("PyTruffle_Set_Native_Slots", Ignored, Int,
-                                    new ArgDescriptor[]{PyTypeObject, Pointer, Pointer}, 240),
+                                    new ArgDescriptor[]{PyTypeObject, Pointer, Pointer}, 238),
                     new CApiBuiltinExecutable("PyTruffle_Set_SulongType", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyTypeObject, Pointer}, 241),
+                                    new ArgDescriptor[]{PyTypeObject, Pointer}, 239),
                     new CApiBuiltinExecutable("PyTruffle_ToNative", Direct, Int,
-                                    new ArgDescriptor[]{Pointer}, 242),
+                                    new ArgDescriptor[]{Pointer}, 240),
                     new CApiBuiltinExecutable("PyTruffle_Trace_Type", Ignored, Int,
-                                    new ArgDescriptor[]{Pointer, Pointer}, 243),
+                                    new ArgDescriptor[]{Pointer, Pointer}, 241),
                     new CApiBuiltinExecutable("PyTruffle_True", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{}, 244),
+                                    new ArgDescriptor[]{}, 242),
                     new CApiBuiltinExecutable("PyTruffle_Type", Ignored, PyTypeObject,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 245),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 243),
                     new CApiBuiltinExecutable("PyTruffle_Type_Modified", Ignored, Int,
-                                    new ArgDescriptor[]{PyTypeObject, ConstCharPtrAsTruffleString, PyObject}, 246),
+                                    new ArgDescriptor[]{PyTypeObject, ConstCharPtrAsTruffleString, PyObject}, 244),
                     new CApiBuiltinExecutable("PyTruffle_Unicode_AsUnicodeAndSize", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 247),
+                                    new ArgDescriptor[]{PyObject}, 245),
                     new CApiBuiltinExecutable("PyTruffle_Unicode_AsWideChar", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, Int}, 248),
+                                    new ArgDescriptor[]{PyObject, Int}, 246),
                     new CApiBuiltinExecutable("PyTruffle_Unicode_DecodeUTF32", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, 249),
+                                    new ArgDescriptor[]{Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, 247),
                     new CApiBuiltinExecutable("PyTruffle_Unicode_FromFormat", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, VA_LIST_PTR}, 250),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, VA_LIST_PTR}, 248),
                     new CApiBuiltinExecutable("PyTruffle_Unicode_FromWchar", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{Pointer, SIZE_T}, 251),
+                                    new ArgDescriptor[]{Pointer, SIZE_T}, 249),
                     new CApiBuiltinExecutable("PyTruffle_tss_create", Ignored, Long,
-                                    new ArgDescriptor[]{}, 252),
+                                    new ArgDescriptor[]{}, 250),
                     new CApiBuiltinExecutable("PyTruffle_tss_delete", Ignored, Void,
-                                    new ArgDescriptor[]{Long}, 253),
+                                    new ArgDescriptor[]{Long}, 251),
                     new CApiBuiltinExecutable("PyTruffle_tss_get", Ignored, Pointer,
-                                    new ArgDescriptor[]{Long}, 254),
+                                    new ArgDescriptor[]{Long}, 252),
                     new CApiBuiltinExecutable("PyTruffle_tss_set", Ignored, Int,
-                                    new ArgDescriptor[]{Long, Pointer}, 255),
+                                    new ArgDescriptor[]{Long, Pointer}, 253),
                     new CApiBuiltinExecutable("PyTuple_GetItem", Direct, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 256),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 254),
                     new CApiBuiltinExecutable("PyTuple_GetSlice", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t, Py_ssize_t}, 257),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t, Py_ssize_t}, 255),
                     new CApiBuiltinExecutable("PyTuple_New", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{Py_ssize_t}, 258),
+                                    new ArgDescriptor[]{Py_ssize_t}, 256),
                     new CApiBuiltinExecutable("PyTuple_SetItem", Direct, Int,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t, PyObjectTransfer}, 259),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t, PyObjectTransfer}, 257),
                     new CApiBuiltinExecutable("PyTuple_Size", Direct, Py_ssize_t,
-                                    new ArgDescriptor[]{PyObject}, 260),
+                                    new ArgDescriptor[]{PyObject}, 258),
                     new CApiBuiltinExecutable("PyType_IsSubtype", Direct, Int,
-                                    new ArgDescriptor[]{PyTypeObject, PyTypeObject}, 261),
+                                    new ArgDescriptor[]{PyTypeObject, PyTypeObject}, 259),
                     new CApiBuiltinExecutable("PyUnicode_AsEncodedString", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, 262),
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, 260),
                     new CApiBuiltinExecutable("PyUnicode_AsUnicodeEscapeString", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 263),
+                                    new ArgDescriptor[]{PyObject}, 261),
                     new CApiBuiltinExecutable("PyUnicode_Compare", Direct, Int,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 264),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 262),
                     new CApiBuiltinExecutable("PyUnicode_Concat", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 265),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 263),
                     new CApiBuiltinExecutable("PyUnicode_Contains", Direct, Int,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 266),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 264),
                     new CApiBuiltinExecutable("PyUnicode_DecodeFSDefault", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 267),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 265),
                     new CApiBuiltinExecutable("PyUnicode_EncodeFSDefault", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 268),
+                                    new ArgDescriptor[]{PyObject}, 266),
                     new CApiBuiltinExecutable("PyUnicode_FindChar", Direct, Py_ssize_t,
-                                    new ArgDescriptor[]{PyObject, PY_UCS4, Py_ssize_t, Py_ssize_t, Int}, 269),
+                                    new ArgDescriptor[]{PyObject, PY_UCS4, Py_ssize_t, Py_ssize_t, Int}, 267),
                     new CApiBuiltinExecutable("PyUnicode_Format", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 270),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 268),
                     new CApiBuiltinExecutable("PyUnicode_FromEncodedObject", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, 271),
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, 269),
                     new CApiBuiltinExecutable("PyUnicode_FromObject", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 272),
+                                    new ArgDescriptor[]{PyObject}, 270),
                     new CApiBuiltinExecutable("PyUnicode_FromOrdinal", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{Int}, 273),
+                                    new ArgDescriptor[]{Int}, 271),
                     new CApiBuiltinExecutable("PyUnicode_FromString", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 274),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 272),
                     new CApiBuiltinExecutable("PyUnicode_Join", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 275),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 273),
                     new CApiBuiltinExecutable("PyUnicode_ReadChar", Direct, PY_UCS4,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 276),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 274),
                     new CApiBuiltinExecutable("PyUnicode_Replace", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Py_ssize_t}, 277),
+                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Py_ssize_t}, 275),
                     new CApiBuiltinExecutable("PyUnicode_Split", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t}, 278),
+                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t}, 276),
                     new CApiBuiltinExecutable("PyUnicode_Substring", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t, Py_ssize_t}, 279),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t, Py_ssize_t}, 277),
                     new CApiBuiltinExecutable("PyUnicode_Tailmatch", Direct, Py_ssize_t,
-                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t, Py_ssize_t, Int}, 280),
+                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t, Py_ssize_t, Int}, 278),
                     new CApiBuiltinExecutable("PyWeakref_GetObject", Direct, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyObject}, 281),
+                                    new ArgDescriptor[]{PyObject}, 279),
                     new CApiBuiltinExecutable("PyWeakref_NewRef", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 282),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 280),
                     new CApiBuiltinExecutable("Py_AtExit", Direct, Int,
-                                    new ArgDescriptor[]{func_voidvoid}, 283),
+                                    new ArgDescriptor[]{func_voidvoid}, 281),
                     new CApiBuiltinExecutable("Py_GenericAlias", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 284),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 282),
                     new CApiBuiltinExecutable("Py_get_PyASCIIObject_length", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyASCIIObject}, 285),
+                                    new ArgDescriptor[]{PyASCIIObject}, 283),
                     new CApiBuiltinExecutable("Py_get_PyASCIIObject_state_ascii", Ignored, UNSIGNED_INT,
-                                    new ArgDescriptor[]{PyASCIIObject}, 286),
+                                    new ArgDescriptor[]{PyASCIIObject}, 284),
                     new CApiBuiltinExecutable("Py_get_PyASCIIObject_state_compact", Ignored, UNSIGNED_INT,
-                                    new ArgDescriptor[]{PyASCIIObject}, 287),
+                                    new ArgDescriptor[]{PyASCIIObject}, 285),
                     new CApiBuiltinExecutable("Py_get_PyASCIIObject_state_kind", Ignored, UNSIGNED_INT,
-                                    new ArgDescriptor[]{PyASCIIObject}, 288),
+                                    new ArgDescriptor[]{PyASCIIObject}, 286),
                     new CApiBuiltinExecutable("Py_get_PyASCIIObject_state_ready", Ignored, UNSIGNED_INT,
-                                    new ArgDescriptor[]{PyASCIIObject}, 289),
+                                    new ArgDescriptor[]{PyASCIIObject}, 287),
                     new CApiBuiltinExecutable("Py_get_PyASCIIObject_wstr", Ignored, WCHAR_T_PTR,
-                                    new ArgDescriptor[]{PyASCIIObject}, 290),
+                                    new ArgDescriptor[]{PyASCIIObject}, 288),
                     new CApiBuiltinExecutable("Py_get_PyAsyncMethods_am_aiter", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyAsyncMethods}, 291),
+                                    new ArgDescriptor[]{PyAsyncMethods}, 289),
                     new CApiBuiltinExecutable("Py_get_PyAsyncMethods_am_anext", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyAsyncMethods}, 292),
+                                    new ArgDescriptor[]{PyAsyncMethods}, 290),
                     new CApiBuiltinExecutable("Py_get_PyAsyncMethods_am_await", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyAsyncMethods}, 293),
+                                    new ArgDescriptor[]{PyAsyncMethods}, 291),
                     new CApiBuiltinExecutable("Py_get_PyBufferProcs_bf_getbuffer", Ignored, getbufferproc,
-                                    new ArgDescriptor[]{PyBufferProcs}, 294),
+                                    new ArgDescriptor[]{PyBufferProcs}, 292),
                     new CApiBuiltinExecutable("Py_get_PyBufferProcs_bf_releasebuffer", Ignored, releasebufferproc,
-                                    new ArgDescriptor[]{PyBufferProcs}, 295),
+                                    new ArgDescriptor[]{PyBufferProcs}, 293),
                     new CApiBuiltinExecutable("Py_get_PyByteArrayObject_ob_exports", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyByteArrayObject}, 296),
+                                    new ArgDescriptor[]{PyByteArrayObject}, 294),
                     new CApiBuiltinExecutable("Py_get_PyByteArrayObject_ob_start", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyByteArrayObject}, 297),
+                                    new ArgDescriptor[]{PyByteArrayObject}, 295),
                     new CApiBuiltinExecutable("Py_get_PyCFunctionObject_m_ml", Ignored, PyMethodDef,
-                                    new ArgDescriptor[]{PyCFunctionObject}, 298),
+                                    new ArgDescriptor[]{PyCFunctionObject}, 296),
                     new CApiBuiltinExecutable("Py_get_PyCFunctionObject_m_module", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyCFunctionObject}, 299),
+                                    new ArgDescriptor[]{PyCFunctionObject}, 297),
                     new CApiBuiltinExecutable("Py_get_PyCFunctionObject_m_self", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyCFunctionObject}, 300),
+                                    new ArgDescriptor[]{PyCFunctionObject}, 298),
                     new CApiBuiltinExecutable("Py_get_PyCFunctionObject_m_weakreflist", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyCFunctionObject}, 301),
+                                    new ArgDescriptor[]{PyCFunctionObject}, 299),
                     new CApiBuiltinExecutable("Py_get_PyCFunctionObject_vectorcall", Ignored, vectorcallfunc,
-                                    new ArgDescriptor[]{PyCFunctionObject}, 302),
+                                    new ArgDescriptor[]{PyCFunctionObject}, 300),
                     new CApiBuiltinExecutable("Py_get_PyCMethodObject_mm_class", Ignored, PyTypeObject,
-                                    new ArgDescriptor[]{PyCMethodObject}, 303),
+                                    new ArgDescriptor[]{PyCMethodObject}, 301),
                     new CApiBuiltinExecutable("Py_get_PyCompactUnicodeObject_wstr_length", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyCompactUnicodeObject}, 304),
+                                    new ArgDescriptor[]{PyCompactUnicodeObject}, 302),
                     new CApiBuiltinExecutable("Py_get_PyDescrObject_d_name", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyDescrObject}, 305),
+                                    new ArgDescriptor[]{PyDescrObject}, 303),
                     new CApiBuiltinExecutable("Py_get_PyDescrObject_d_type", Ignored, PyTypeObject,
-                                    new ArgDescriptor[]{PyDescrObject}, 306),
+                                    new ArgDescriptor[]{PyDescrObject}, 304),
                     new CApiBuiltinExecutable("Py_get_PyFrameObject_f_lineno", Ignored, Int,
-                                    new ArgDescriptor[]{PyFrameObject}, 307),
+                                    new ArgDescriptor[]{PyFrameObject}, 305),
                     new CApiBuiltinExecutable("Py_get_PyGetSetDef_closure", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyGetSetDef}, 308),
+                                    new ArgDescriptor[]{PyGetSetDef}, 306),
                     new CApiBuiltinExecutable("Py_get_PyGetSetDef_doc", Ignored, ConstCharPtrAsTruffleString,
-                                    new ArgDescriptor[]{PyGetSetDef}, 309),
+                                    new ArgDescriptor[]{PyGetSetDef}, 307),
                     new CApiBuiltinExecutable("Py_get_PyGetSetDef_get", Ignored, getter,
-                                    new ArgDescriptor[]{PyGetSetDef}, 310),
+                                    new ArgDescriptor[]{PyGetSetDef}, 308),
                     new CApiBuiltinExecutable("Py_get_PyGetSetDef_name", Ignored, ConstCharPtrAsTruffleString,
-                                    new ArgDescriptor[]{PyGetSetDef}, 311),
+                                    new ArgDescriptor[]{PyGetSetDef}, 309),
                     new CApiBuiltinExecutable("Py_get_PyGetSetDef_set", Ignored, setter,
-                                    new ArgDescriptor[]{PyGetSetDef}, 312),
+                                    new ArgDescriptor[]{PyGetSetDef}, 310),
                     new CApiBuiltinExecutable("Py_get_PyInstanceMethodObject_func", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyInstanceMethodObject}, 313),
+                                    new ArgDescriptor[]{PyInstanceMethodObject}, 311),
                     new CApiBuiltinExecutable("Py_get_PyListObject_ob_item", Ignored, PyObjectPtr,
-                                    new ArgDescriptor[]{PyListObject}, 314),
+                                    new ArgDescriptor[]{PyListObject}, 312),
                     new CApiBuiltinExecutable("Py_get_PyLongObject_ob_digit", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyLongObject}, 315),
+                                    new ArgDescriptor[]{PyLongObject}, 313),
                     new CApiBuiltinExecutable("Py_get_PyMappingMethods_mp_ass_subscript", Ignored, objobjargproc,
-                                    new ArgDescriptor[]{PyMappingMethods}, 316),
+                                    new ArgDescriptor[]{PyMappingMethods}, 314),
                     new CApiBuiltinExecutable("Py_get_PyMappingMethods_mp_length", Ignored, lenfunc,
-                                    new ArgDescriptor[]{PyMappingMethods}, 317),
+                                    new ArgDescriptor[]{PyMappingMethods}, 315),
                     new CApiBuiltinExecutable("Py_get_PyMappingMethods_mp_subscript", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyMappingMethods}, 318),
+                                    new ArgDescriptor[]{PyMappingMethods}, 316),
                     new CApiBuiltinExecutable("Py_get_PyMethodDef_ml_doc", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyMethodDef}, 319),
+                                    new ArgDescriptor[]{PyMethodDef}, 317),
                     new CApiBuiltinExecutable("Py_get_PyMethodDef_ml_flags", Ignored, Int,
-                                    new ArgDescriptor[]{PyMethodDef}, 320),
+                                    new ArgDescriptor[]{PyMethodDef}, 318),
                     new CApiBuiltinExecutable("Py_get_PyMethodDef_ml_meth", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyMethodDef}, 321),
+                                    new ArgDescriptor[]{PyMethodDef}, 319),
                     new CApiBuiltinExecutable("Py_get_PyMethodDef_ml_name", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyMethodDef}, 322),
+                                    new ArgDescriptor[]{PyMethodDef}, 320),
                     new CApiBuiltinExecutable("Py_get_PyMethodDescrObject_d_method", Ignored, PyMethodDef,
-                                    new ArgDescriptor[]{PyMethodDescrObject}, 323),
+                                    new ArgDescriptor[]{PyMethodDescrObject}, 321),
                     new CApiBuiltinExecutable("Py_get_PyMethodObject_im_func", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyMethodObject}, 324),
+                                    new ArgDescriptor[]{PyMethodObject}, 322),
                     new CApiBuiltinExecutable("Py_get_PyMethodObject_im_self", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyMethodObject}, 325),
+                                    new ArgDescriptor[]{PyMethodObject}, 323),
                     new CApiBuiltinExecutable("Py_get_PyModuleDef_m_doc", Ignored, ConstCharPtrAsTruffleString,
-                                    new ArgDescriptor[]{PyModuleDef}, 326),
+                                    new ArgDescriptor[]{PyModuleDef}, 324),
                     new CApiBuiltinExecutable("Py_get_PyModuleDef_m_methods", Ignored, PyMethodDef,
-                                    new ArgDescriptor[]{PyModuleDef}, 327),
+                                    new ArgDescriptor[]{PyModuleDef}, 325),
                     new CApiBuiltinExecutable("Py_get_PyModuleDef_m_name", Ignored, ConstCharPtrAsTruffleString,
-                                    new ArgDescriptor[]{PyModuleDef}, 328),
+                                    new ArgDescriptor[]{PyModuleDef}, 326),
                     new CApiBuiltinExecutable("Py_get_PyModuleDef_m_size", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyModuleDef}, 329),
+                                    new ArgDescriptor[]{PyModuleDef}, 327),
                     new CApiBuiltinExecutable("Py_get_PyModuleObject_md_def", Ignored, PyModuleDef,
-                                    new ArgDescriptor[]{PyModuleObject}, 330),
+                                    new ArgDescriptor[]{PyModuleObject}, 328),
                     new CApiBuiltinExecutable("Py_get_PyModuleObject_md_dict", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyModuleObject}, 331),
+                                    new ArgDescriptor[]{PyModuleObject}, 329),
                     new CApiBuiltinExecutable("Py_get_PyModuleObject_md_state", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyModuleObject}, 332),
+                                    new ArgDescriptor[]{PyModuleObject}, 330),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_absolute", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 333),
+                                    new ArgDescriptor[]{PyNumberMethods}, 331),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_add", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 334),
+                                    new ArgDescriptor[]{PyNumberMethods}, 332),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_and", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 335),
+                                    new ArgDescriptor[]{PyNumberMethods}, 333),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_bool", Ignored, inquiry,
-                                    new ArgDescriptor[]{PyNumberMethods}, 336),
+                                    new ArgDescriptor[]{PyNumberMethods}, 334),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_divmod", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 337),
+                                    new ArgDescriptor[]{PyNumberMethods}, 335),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_float", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 338),
+                                    new ArgDescriptor[]{PyNumberMethods}, 336),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_floor_divide", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 339),
+                                    new ArgDescriptor[]{PyNumberMethods}, 337),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_index", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 340),
+                                    new ArgDescriptor[]{PyNumberMethods}, 338),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_add", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 341),
+                                    new ArgDescriptor[]{PyNumberMethods}, 339),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_and", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 342),
+                                    new ArgDescriptor[]{PyNumberMethods}, 340),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_floor_divide", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 343),
+                                    new ArgDescriptor[]{PyNumberMethods}, 341),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_lshift", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 344),
+                                    new ArgDescriptor[]{PyNumberMethods}, 342),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_matrix_multiply", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 345),
+                                    new ArgDescriptor[]{PyNumberMethods}, 343),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_multiply", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 346),
+                                    new ArgDescriptor[]{PyNumberMethods}, 344),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_or", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 347),
+                                    new ArgDescriptor[]{PyNumberMethods}, 345),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_power", Ignored, ternaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 348),
+                                    new ArgDescriptor[]{PyNumberMethods}, 346),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_remainder", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 349),
+                                    new ArgDescriptor[]{PyNumberMethods}, 347),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_rshift", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 350),
+                                    new ArgDescriptor[]{PyNumberMethods}, 348),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_subtract", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 351),
+                                    new ArgDescriptor[]{PyNumberMethods}, 349),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_true_divide", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 352),
+                                    new ArgDescriptor[]{PyNumberMethods}, 350),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_inplace_xor", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 353),
+                                    new ArgDescriptor[]{PyNumberMethods}, 351),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_int", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 354),
+                                    new ArgDescriptor[]{PyNumberMethods}, 352),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_invert", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 355),
+                                    new ArgDescriptor[]{PyNumberMethods}, 353),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_lshift", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 356),
+                                    new ArgDescriptor[]{PyNumberMethods}, 354),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_matrix_multiply", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 357),
+                                    new ArgDescriptor[]{PyNumberMethods}, 355),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_multiply", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 358),
+                                    new ArgDescriptor[]{PyNumberMethods}, 356),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_negative", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 359),
+                                    new ArgDescriptor[]{PyNumberMethods}, 357),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_or", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 360),
+                                    new ArgDescriptor[]{PyNumberMethods}, 358),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_positive", Ignored, unaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 361),
+                                    new ArgDescriptor[]{PyNumberMethods}, 359),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_power", Ignored, ternaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 362),
+                                    new ArgDescriptor[]{PyNumberMethods}, 360),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_remainder", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 363),
+                                    new ArgDescriptor[]{PyNumberMethods}, 361),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_rshift", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 364),
+                                    new ArgDescriptor[]{PyNumberMethods}, 362),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_subtract", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 365),
+                                    new ArgDescriptor[]{PyNumberMethods}, 363),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_true_divide", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 366),
+                                    new ArgDescriptor[]{PyNumberMethods}, 364),
                     new CApiBuiltinExecutable("Py_get_PyNumberMethods_nb_xor", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PyNumberMethods}, 367),
+                                    new ArgDescriptor[]{PyNumberMethods}, 365),
                     new CApiBuiltinExecutable("Py_get_PyObject_ob_refcnt", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyObjectWrapper}, 368),
+                                    new ArgDescriptor[]{PyObjectWrapper}, 366),
                     new CApiBuiltinExecutable("Py_get_PyObject_ob_type", Ignored, PyTypeObject,
-                                    new ArgDescriptor[]{PyObject}, 369),
+                                    new ArgDescriptor[]{PyObject}, 367),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_ass_item", Ignored, ssizeobjargproc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 370),
+                                    new ArgDescriptor[]{PySequenceMethods}, 368),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_concat", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 371),
+                                    new ArgDescriptor[]{PySequenceMethods}, 369),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_contains", Ignored, objobjproc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 372),
+                                    new ArgDescriptor[]{PySequenceMethods}, 370),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_inplace_concat", Ignored, binaryfunc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 373),
+                                    new ArgDescriptor[]{PySequenceMethods}, 371),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_inplace_repeat", Ignored, ssizeargfunc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 374),
+                                    new ArgDescriptor[]{PySequenceMethods}, 372),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_item", Ignored, ssizeargfunc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 375),
+                                    new ArgDescriptor[]{PySequenceMethods}, 373),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_length", Ignored, lenfunc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 376),
+                                    new ArgDescriptor[]{PySequenceMethods}, 374),
                     new CApiBuiltinExecutable("Py_get_PySequenceMethods_sq_repeat", Ignored, ssizeargfunc,
-                                    new ArgDescriptor[]{PySequenceMethods}, 377),
+                                    new ArgDescriptor[]{PySequenceMethods}, 375),
                     new CApiBuiltinExecutable("Py_get_PySetObject_used", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PySetObject}, 378),
+                                    new ArgDescriptor[]{PySetObject}, 376),
                     new CApiBuiltinExecutable("Py_get_PySliceObject_start", Ignored, PyObject,
-                                    new ArgDescriptor[]{PySliceObject}, 379),
+                                    new ArgDescriptor[]{PySliceObject}, 377),
                     new CApiBuiltinExecutable("Py_get_PySliceObject_step", Ignored, PyObject,
-                                    new ArgDescriptor[]{PySliceObject}, 380),
+                                    new ArgDescriptor[]{PySliceObject}, 378),
                     new CApiBuiltinExecutable("Py_get_PySliceObject_stop", Ignored, PyObject,
-                                    new ArgDescriptor[]{PySliceObject}, 381),
+                                    new ArgDescriptor[]{PySliceObject}, 379),
                     new CApiBuiltinExecutable("Py_get_PyThreadState_dict", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyThreadState}, 382),
+                                    new ArgDescriptor[]{PyThreadState}, 380),
                     new CApiBuiltinExecutable("Py_get_PyTupleObject_ob_item", Ignored, PyObjectPtr,
-                                    new ArgDescriptor[]{PyTupleObject}, 383),
+                                    new ArgDescriptor[]{PyTupleObject}, 381),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_alloc", Ignored, allocfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 384),
+                                    new ArgDescriptor[]{PyTypeObject}, 382),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_as_async", Ignored, PyAsyncMethods,
-                                    new ArgDescriptor[]{PyTypeObject}, 385),
+                                    new ArgDescriptor[]{PyTypeObject}, 383),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_as_buffer", Ignored, PyBufferProcs,
-                                    new ArgDescriptor[]{PyTypeObject}, 386),
+                                    new ArgDescriptor[]{PyTypeObject}, 384),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_as_mapping", Ignored, PyMappingMethods,
-                                    new ArgDescriptor[]{PyTypeObject}, 387),
+                                    new ArgDescriptor[]{PyTypeObject}, 385),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_as_number", Ignored, PyNumberMethods,
-                                    new ArgDescriptor[]{PyTypeObject}, 388),
+                                    new ArgDescriptor[]{PyTypeObject}, 386),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_as_sequence", Ignored, PySequenceMethods,
-                                    new ArgDescriptor[]{PyTypeObject}, 389),
+                                    new ArgDescriptor[]{PyTypeObject}, 387),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_base", Ignored, PyTypeObject,
-                                    new ArgDescriptor[]{PyTypeObject}, 390),
+                                    new ArgDescriptor[]{PyTypeObject}, 388),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_bases", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyTypeObject}, 391),
+                                    new ArgDescriptor[]{PyTypeObject}, 389),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_basicsize", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyTypeObject}, 392),
+                                    new ArgDescriptor[]{PyTypeObject}, 390),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_cache", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyTypeObject}, 393),
+                                    new ArgDescriptor[]{PyTypeObject}, 391),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_call", Ignored, ternaryfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 394),
+                                    new ArgDescriptor[]{PyTypeObject}, 392),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_clear", Ignored, inquiry,
-                                    new ArgDescriptor[]{PyTypeObject}, 395),
+                                    new ArgDescriptor[]{PyTypeObject}, 393),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_dealloc", Ignored, destructor,
-                                    new ArgDescriptor[]{PyTypeObject}, 396),
+                                    new ArgDescriptor[]{PyTypeObject}, 394),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_del", Ignored, destructor,
-                                    new ArgDescriptor[]{PyTypeObject}, 397),
+                                    new ArgDescriptor[]{PyTypeObject}, 395),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_descr_get", Ignored, descrgetfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 398),
+                                    new ArgDescriptor[]{PyTypeObject}, 396),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_descr_set", Ignored, descrsetfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 399),
+                                    new ArgDescriptor[]{PyTypeObject}, 397),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_dict", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyTypeObject}, 400),
+                                    new ArgDescriptor[]{PyTypeObject}, 398),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_dictoffset", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyTypeObject}, 401),
+                                    new ArgDescriptor[]{PyTypeObject}, 399),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_doc", Ignored, ConstCharPtrAsTruffleString,
-                                    new ArgDescriptor[]{PyTypeObject}, 402),
+                                    new ArgDescriptor[]{PyTypeObject}, 400),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_finalize", Ignored, destructor,
-                                    new ArgDescriptor[]{PyTypeObject}, 403),
+                                    new ArgDescriptor[]{PyTypeObject}, 401),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_flags", Ignored, UNSIGNED_LONG,
-                                    new ArgDescriptor[]{PyTypeObject}, 404),
+                                    new ArgDescriptor[]{PyTypeObject}, 402),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_free", Ignored, freefunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 405),
+                                    new ArgDescriptor[]{PyTypeObject}, 403),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_getattr", Ignored, getattrfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 406),
+                                    new ArgDescriptor[]{PyTypeObject}, 404),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_getattro", Ignored, getattrofunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 407),
+                                    new ArgDescriptor[]{PyTypeObject}, 405),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_getset", Ignored, PyGetSetDef,
-                                    new ArgDescriptor[]{PyTypeObject}, 408),
+                                    new ArgDescriptor[]{PyTypeObject}, 406),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_hash", Ignored, hashfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 409),
+                                    new ArgDescriptor[]{PyTypeObject}, 407),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_init", Ignored, initproc,
-                                    new ArgDescriptor[]{PyTypeObject}, 410),
+                                    new ArgDescriptor[]{PyTypeObject}, 408),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_is_gc", Ignored, inquiry,
-                                    new ArgDescriptor[]{PyTypeObject}, 411),
+                                    new ArgDescriptor[]{PyTypeObject}, 409),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_itemsize", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyTypeObject}, 412),
+                                    new ArgDescriptor[]{PyTypeObject}, 410),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_iter", Ignored, getiterfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 413),
+                                    new ArgDescriptor[]{PyTypeObject}, 411),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_iternext", Ignored, iternextfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 414),
+                                    new ArgDescriptor[]{PyTypeObject}, 412),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_members", Ignored, PyMemberDef,
-                                    new ArgDescriptor[]{PyTypeObject}, 415),
+                                    new ArgDescriptor[]{PyTypeObject}, 413),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_methods", Ignored, PyMethodDef,
-                                    new ArgDescriptor[]{PyTypeObject}, 416),
+                                    new ArgDescriptor[]{PyTypeObject}, 414),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_mro", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyTypeObject}, 417),
+                                    new ArgDescriptor[]{PyTypeObject}, 415),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_name", Ignored, ConstCharPtrAsTruffleString,
-                                    new ArgDescriptor[]{PyTypeObject}, 418),
+                                    new ArgDescriptor[]{PyTypeObject}, 416),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_new", Ignored, newfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 419),
+                                    new ArgDescriptor[]{PyTypeObject}, 417),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_repr", Ignored, reprfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 420),
+                                    new ArgDescriptor[]{PyTypeObject}, 418),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_richcompare", Ignored, richcmpfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 421),
+                                    new ArgDescriptor[]{PyTypeObject}, 419),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_setattr", Ignored, setattrfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 422),
+                                    new ArgDescriptor[]{PyTypeObject}, 420),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_setattro", Ignored, setattrofunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 423),
+                                    new ArgDescriptor[]{PyTypeObject}, 421),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_str", Ignored, reprfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 424),
+                                    new ArgDescriptor[]{PyTypeObject}, 422),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_subclasses", Ignored, PyObject,
-                                    new ArgDescriptor[]{PyTypeObject}, 425),
+                                    new ArgDescriptor[]{PyTypeObject}, 423),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_traverse", Ignored, traverseproc,
-                                    new ArgDescriptor[]{PyTypeObject}, 426),
+                                    new ArgDescriptor[]{PyTypeObject}, 424),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_vectorcall", Ignored, vectorcallfunc,
-                                    new ArgDescriptor[]{PyTypeObject}, 427),
+                                    new ArgDescriptor[]{PyTypeObject}, 425),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_vectorcall_offset", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyTypeObject}, 428),
+                                    new ArgDescriptor[]{PyTypeObject}, 426),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_version_tag", Ignored, UNSIGNED_INT,
-                                    new ArgDescriptor[]{PyTypeObject}, 429),
+                                    new ArgDescriptor[]{PyTypeObject}, 427),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_weaklist", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyTypeObject}, 430),
+                                    new ArgDescriptor[]{PyTypeObject}, 428),
                     new CApiBuiltinExecutable("Py_get_PyTypeObject_tp_weaklistoffset", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyTypeObject}, 431),
+                                    new ArgDescriptor[]{PyTypeObject}, 429),
                     new CApiBuiltinExecutable("Py_get_PyUnicodeObject_data", Ignored, Pointer,
-                                    new ArgDescriptor[]{PyUnicodeObject}, 432),
+                                    new ArgDescriptor[]{PyUnicodeObject}, 430),
                     new CApiBuiltinExecutable("Py_get_PyVarObject_ob_size", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{PyVarObject}, 433),
+                                    new ArgDescriptor[]{PyVarObject}, 431),
                     new CApiBuiltinExecutable("Py_get_dummy", Ignored, Pointer,
-                                    new ArgDescriptor[]{Pointer}, 434),
+                                    new ArgDescriptor[]{Pointer}, 432),
                     new CApiBuiltinExecutable("Py_get_mmap_object_data", Ignored, CHAR_PTR,
-                                    new ArgDescriptor[]{mmap_object}, 435),
+                                    new ArgDescriptor[]{mmap_object}, 433),
                     new CApiBuiltinExecutable("Py_set_PyByteArrayObject_ob_exports", Ignored, Void,
-                                    new ArgDescriptor[]{PyByteArrayObject, Int}, 436),
+                                    new ArgDescriptor[]{PyByteArrayObject, Int}, 434),
                     new CApiBuiltinExecutable("Py_set_PyFrameObject_f_lineno", Ignored, Void,
-                                    new ArgDescriptor[]{PyFrameObject, Int}, 437),
+                                    new ArgDescriptor[]{PyFrameObject, Int}, 435),
                     new CApiBuiltinExecutable("Py_set_PyModuleObject_md_def", Ignored, Void,
-                                    new ArgDescriptor[]{PyModuleObject, PyModuleDef}, 438),
+                                    new ArgDescriptor[]{PyModuleObject, PyModuleDef}, 436),
                     new CApiBuiltinExecutable("Py_set_PyModuleObject_md_state", Ignored, Void,
-                                    new ArgDescriptor[]{PyModuleObject, Pointer}, 439),
+                                    new ArgDescriptor[]{PyModuleObject, Pointer}, 437),
                     new CApiBuiltinExecutable("Py_set_PyObject_ob_refcnt", Ignored, Void,
-                                    new ArgDescriptor[]{PyObjectWrapper, Py_ssize_t}, 440),
+                                    new ArgDescriptor[]{PyObjectWrapper, Py_ssize_t}, 438),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_alloc", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, allocfunc}, 441),
+                                    new ArgDescriptor[]{PyTypeObject, allocfunc}, 439),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_as_buffer", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, PyBufferProcs}, 442),
+                                    new ArgDescriptor[]{PyTypeObject, PyBufferProcs}, 440),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_base", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, PyTypeObject}, 443),
+                                    new ArgDescriptor[]{PyTypeObject, PyTypeObject}, 441),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_bases", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 444),
+                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 442),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_basicsize", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 445),
+                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 443),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_clear", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, inquiry}, 446),
+                                    new ArgDescriptor[]{PyTypeObject, inquiry}, 444),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_dealloc", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, destructor}, 447),
+                                    new ArgDescriptor[]{PyTypeObject, destructor}, 445),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_dict", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 448),
+                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 446),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_dictoffset", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 449),
+                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 447),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_finalize", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, destructor}, 450),
+                                    new ArgDescriptor[]{PyTypeObject, destructor}, 448),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_flags", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, UNSIGNED_LONG}, 451),
+                                    new ArgDescriptor[]{PyTypeObject, UNSIGNED_LONG}, 449),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_free", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, freefunc}, 452),
+                                    new ArgDescriptor[]{PyTypeObject, freefunc}, 450),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_getattr", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, getattrfunc}, 453),
+                                    new ArgDescriptor[]{PyTypeObject, getattrfunc}, 451),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_getattro", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, getattrofunc}, 454),
+                                    new ArgDescriptor[]{PyTypeObject, getattrofunc}, 452),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_itemsize", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 455),
+                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 453),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_iter", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, getiterfunc}, 456),
+                                    new ArgDescriptor[]{PyTypeObject, getiterfunc}, 454),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_iternext", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, iternextfunc}, 457),
+                                    new ArgDescriptor[]{PyTypeObject, iternextfunc}, 455),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_mro", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 458),
+                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 456),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_new", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, newfunc}, 459),
+                                    new ArgDescriptor[]{PyTypeObject, newfunc}, 457),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_setattr", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, setattrfunc}, 460),
+                                    new ArgDescriptor[]{PyTypeObject, setattrfunc}, 458),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_setattro", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, setattrofunc}, 461),
+                                    new ArgDescriptor[]{PyTypeObject, setattrofunc}, 459),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_subclasses", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 462),
+                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 460),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_traverse", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, traverseproc}, 463),
+                                    new ArgDescriptor[]{PyTypeObject, traverseproc}, 461),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_vectorcall_offset", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 464),
+                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 462),
                     new CApiBuiltinExecutable("Py_set_PyTypeObject_tp_weaklistoffset", Ignored, Void,
-                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 465),
+                                    new ArgDescriptor[]{PyTypeObject, Py_ssize_t}, 463),
                     new CApiBuiltinExecutable("Py_set_PyVarObject_ob_size", Ignored, Void,
-                                    new ArgDescriptor[]{PyVarObject, Py_ssize_t}, 466),
+                                    new ArgDescriptor[]{PyVarObject, Py_ssize_t}, 464),
                     new CApiBuiltinExecutable("_PyBytes_Join", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 467),
+                                    new ArgDescriptor[]{PyObject, PyObject}, 465),
                     new CApiBuiltinExecutable("_PyDict_Pop", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, PyObject}, 468),
+                                    new ArgDescriptor[]{PyObject, PyObject, PyObject}, 466),
                     new CApiBuiltinExecutable("_PyDict_SetItem_KnownHash", Direct, Int,
-                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Py_hash_t}, 469),
+                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Py_hash_t}, 467),
                     new CApiBuiltinExecutable("_PyErr_BadInternalCall", Direct, Void,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, Int}, 470),
-                    new CApiBuiltinExecutable("_PyErr_CreateAndSetException", Direct, Void,
-                                    new ArgDescriptor[]{PyObject, PyObject}, 471),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, Int}, 468),
                     new CApiBuiltinExecutable("_PyErr_WriteUnraisableMsg", Direct, Void,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, PyObject}, 472),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, PyObject}, 469),
                     new CApiBuiltinExecutable("_PyList_Extend", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyListObject, PyObject}, 473),
+                                    new ArgDescriptor[]{PyListObject, PyObject}, 470),
                     new CApiBuiltinExecutable("_PyLong_Sign", Direct, Int,
-                                    new ArgDescriptor[]{PyObject}, 474),
+                                    new ArgDescriptor[]{PyObject}, 471),
                     new CApiBuiltinExecutable("_PyNamespace_New", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 475),
+                                    new ArgDescriptor[]{PyObject}, 472),
                     new CApiBuiltinExecutable("_PyNumber_Index", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject}, 476),
-                    new CApiBuiltinExecutable("_PyObject_Call1", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Int}, 477),
-                    new CApiBuiltinExecutable("_PyObject_CallMethod1", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, 478),
+                                    new ArgDescriptor[]{PyObject}, 473),
                     new CApiBuiltinExecutable("_PyObject_Dump", Direct, Void,
-                                    new ArgDescriptor[]{PyObjectWrapper}, 479),
+                                    new ArgDescriptor[]{PyObjectWrapper}, 474),
                     new CApiBuiltinExecutable("_PyTraceMalloc_NewReference", Direct, Int,
-                                    new ArgDescriptor[]{PyObject}, 480),
+                                    new ArgDescriptor[]{PyObject}, 475),
                     new CApiBuiltinExecutable("_PyTraceback_Add", Direct, Void,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, 481),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, 476),
                     new CApiBuiltinExecutable("_PyTruffleBytes_Resize", Ignored, Int,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 482),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 477),
+                    new CApiBuiltinExecutable("_PyTruffleErr_CreateAndSetException", Direct, Void,
+                                    new ArgDescriptor[]{PyObject, PyObject}, 478),
                     new CApiBuiltinExecutable("_PyTruffleErr_Warn", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t, PyObject}, 483),
+                                    new ArgDescriptor[]{PyObject, PyObject, Py_ssize_t, PyObject}, 479),
                     new CApiBuiltinExecutable("_PyTruffleEval_EvalCodeEx", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, 484),
+                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, 480),
                     new CApiBuiltinExecutable("_PyTruffleModule_CreateInitialized_PyModule_New", Ignored, PyModuleObjectTransfer,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 485),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 481),
                     new CApiBuiltinExecutable("_PyTruffleModule_GetAndIncMaxModuleNumber", Ignored, Py_ssize_t,
-                                    new ArgDescriptor[]{}, 486),
+                                    new ArgDescriptor[]{}, 482),
+                    new CApiBuiltinExecutable("_PyTruffleObject_Call1", Direct, PyObjectTransfer,
+                                    new ArgDescriptor[]{PyObject, PyObject, PyObject, Int}, 483),
+                    new CApiBuiltinExecutable("_PyTruffleObject_CallMethod1", Direct, PyObjectTransfer,
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString, PyObject, Int}, 484),
                     new CApiBuiltinExecutable("_PyTruffleObject_MakeTpCall", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, Pointer, Int, Pointer, Pointer}, 487),
+                                    new ArgDescriptor[]{PyObject, Pointer, Int, Pointer, Pointer}, 485),
                     new CApiBuiltinExecutable("_PyTruffleSet_NextEntry", Ignored, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 488),
+                                    new ArgDescriptor[]{PyObject, Py_ssize_t}, 486),
                     new CApiBuiltinExecutable("_PyTruffle_HashBytes", Ignored, Py_hash_t,
-                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 489),
+                                    new ArgDescriptor[]{ConstCharPtrAsTruffleString}, 487),
                     new CApiBuiltinExecutable("_PyTruffle_Trace_Free", Ignored, Int,
-                                    new ArgDescriptor[]{Pointer, Py_ssize_t}, 490),
+                                    new ArgDescriptor[]{Pointer, Py_ssize_t}, 488),
                     new CApiBuiltinExecutable("_PyType_Lookup", Direct, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 491),
+                                    new ArgDescriptor[]{PyTypeObject, PyObject}, 489),
                     new CApiBuiltinExecutable("_PyUnicode_AsASCIIString", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 492),
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 490),
                     new CApiBuiltinExecutable("_PyUnicode_AsLatin1String", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 493),
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 491),
                     new CApiBuiltinExecutable("_PyUnicode_AsUTF8String", Direct, PyObjectTransfer,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 494),
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 492),
                     new CApiBuiltinExecutable("_PyUnicode_EqualToASCIIString", Direct, Int,
-                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 495),
+                                    new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 493),
                     new CApiBuiltinExecutable("_Py_HashDouble", Direct, Py_hash_t,
-                                    new ArgDescriptor[]{PyObject, Double}, 496),
+                                    new ArgDescriptor[]{PyObject, Double}, 494),
     };
 
     static CApiBuiltinNode createBuiltinNode(int id) {
@@ -1257,9 +1254,9 @@ public abstract class PythonCextBuiltinRegistry {
             case 48:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_GetBuiltinsNodeGen.create();
             case 49:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyEval_RestoreThreadFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_RestoreThreadNodeGen.create();
             case 50:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyEval_SaveThreadFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyEval_SaveThreadNodeGen.create();
             case 51:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory.PyException_GetContextNodeGen.create();
             case 52:
@@ -1275,13 +1272,13 @@ public abstract class PythonCextBuiltinRegistry {
             case 57:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltinsFactory.PyFloat_FromDoubleNodeGen.create();
             case 58:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyFrame_NewFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyFrame_NewNodeGen.create();
             case 59:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory.PyFrozenSet_NewNodeGen.create();
             case 60:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyGILState_EnsureFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyGILState_EnsureNodeGen.create();
             case 61:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyGILState_ReleaseFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyGILState_ReleaseNodeGen.create();
             case 62:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltinsFactory.PyImport_GetModuleDictNodeGen.create();
             case 63:
@@ -1399,9 +1396,9 @@ public abstract class PythonCextBuiltinRegistry {
             case 119:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyObject_FormatNodeGen.create();
             case 120:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_TrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_TrackNodeGen.create();
             case 121:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_UnTrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyObject_GC_UnTrackNodeGen.create();
             case 122:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyObject_GetDocNodeGen.create();
             case 123:
@@ -1497,17 +1494,17 @@ public abstract class PythonCextBuiltinRegistry {
             case 168:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyStateBuiltinsFactory.PyThreadState_GetDictNodeGen.create();
             case 169:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyThread_acquire_lockNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyThread_acquire_lockNodeGen.create();
             case 170:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyThread_allocate_lockNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyThread_allocate_lockNodeGen.create();
             case 171:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory.PyThread_release_lockNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyThread_release_lockNodeGen.create();
             case 172:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTracebackBuiltinsFactory.PyTraceBack_HereNodeGen.create();
             case 173:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_TrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_TrackNodeGen.create();
             case 174:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_UntrackFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTraceMalloc_UntrackNodeGen.create();
             case 175:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffleByteArray_FromStringAndSizeNodeGen.create();
             case 176:
@@ -1543,7 +1540,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 191:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory.PyTruffleLong_ZeroNodeGen.create();
             case 192:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleModule_AddFunctionToModuleFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory.PyTruffleModule_AddFunctionToModuleNodeGen.create();
             case 193:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyTruffleNumber_BinOpNodeGen.create();
             case 194:
@@ -1567,15 +1564,15 @@ public abstract class PythonCextBuiltinRegistry {
             case 203:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextStructSeqBuiltinsFactory.PyTruffleStructSequence_NewTypeNodeGen.create();
             case 204:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleToCharPointerFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleToCharPointerNodeGen.create();
             case 205:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleType_AddFunctionToTypeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddFunctionToTypeNodeGen.create();
             case 206:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleType_AddGetSetFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddGetSetNodeGen.create();
             case 207:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleType_AddMemberFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddMemberNodeGen.create();
             case 208:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffleType_AddSlotFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffleType_AddSlotNodeGen.create();
             case 209:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffleUnicode_DecodeNodeGen.create();
             case 210:
@@ -1587,41 +1584,41 @@ public abstract class PythonCextBuiltinRegistry {
             case 213:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffleUnicode_NewNodeGen.create();
             case 214:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Arg_ParseTupleAndKeywordsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Arg_ParseTupleAndKeywordsNodeGen.create();
             case 215:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_ByteArray_EmptyWithCapacityFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_ByteArray_EmptyWithCapacityNodeGen.create();
             case 216:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Bytes_AsStringFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Bytes_AsStringNodeGen.create();
             case 217:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Bytes_CheckEmbeddedNullFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_CheckEmbeddedNullNodeGen.create();
             case 218:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Bytes_EmptyWithCapacityFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_EmptyWithCapacityNodeGen.create();
             case 219:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Compute_MroFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Compute_MroNodeGen.create();
             case 220:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugNodeGen.create();
             case 221:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugTraceFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_DebugTraceNodeGen.create();
             case 222:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSliceBuiltinsFactory.PyTruffle_EllipsisNodeGen.create();
             case 223:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBoolBuiltinsFactory.PyTruffle_FalseNodeGen.create();
             case 224:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_FatalErrorFuncFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyLifecycleBuiltinsFactory.PyTruffle_FatalErrorFuncNodeGen.create();
             case 225:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_FileSystemDefaultEncodingFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_FileSystemDefaultEncodingNodeGen.create();
             case 226:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Get_Inherited_Native_SlotsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Get_Inherited_Native_SlotsNodeGen.create();
             case 227:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory.PyTruffle_HashConstantNodeGen.create();
             case 228:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_LogStringFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_LogStringNodeGen.create();
             case 229:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_MemoryViewFromBufferFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_MemoryViewFromBufferNodeGen.create();
             case 230:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Native_OptionsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Native_OptionsNodeGen.create();
             case 231:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_NewTypeDictFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_NewTypeDictNodeGen.create();
             case 232:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NoValueNodeGen.create();
             case 233:
@@ -1629,117 +1626,117 @@ public abstract class PythonCextBuiltinRegistry {
             case 234:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory.PyTruffle_NotImplementedNodeGen.create();
             case 235:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_OS_DoubleToStringFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_AllocNodeGen.create();
             case 236:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_OS_StringToDoubleFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_FreeNodeGen.create();
             case 237:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_AllocFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Register_NULLNodeGen.create();
             case 238:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Object_FreeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_Native_SlotsNodeGen.create();
             case 239:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Register_NULLFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_SulongTypeNodeGen.create();
             case 240:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_Native_SlotsFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_ToNativeNodeGen.create();
             case 241:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Set_SulongTypeFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Trace_TypeNodeGen.create();
             case 242:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_ToNativeFactory.create();
-            case 243:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Trace_TypeFactory.create();
-            case 244:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBoolBuiltinsFactory.PyTruffle_TrueNodeGen.create();
+            case 243:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_TypeNodeGen.create();
+            case 244:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyTruffle_Type_ModifiedNodeGen.create();
             case 245:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_TypeFactory.create();
-            case 246:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Type_ModifiedFactory.create();
-            case 247:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_AsUnicodeAndSizeNodeGen.create();
-            case 248:
+            case 246:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_AsWideCharNodeGen.create();
-            case 249:
+            case 247:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_DecodeUTF32NodeGen.create();
-            case 250:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Unicode_FromFormatFactory.create();
-            case 251:
+            case 248:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_FromFormatNodeGen.create();
+            case 249:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyTruffle_Unicode_FromWcharNodeGen.create();
+            case 250:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_createNodeGen.create();
+            case 251:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_deleteNodeGen.create();
             case 252:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_tss_createFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_getNodeGen.create();
             case 253:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_tss_deleteFactory.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextPyThreadBuiltinsFactory.PyTruffle_tss_setNodeGen.create();
             case 254:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_tss_getFactory.create();
-            case 255:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_tss_setFactory.create();
-            case 256:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory.PyTuple_GetItemNodeGen.create();
-            case 257:
+            case 255:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory.PyTuple_GetSliceNodeGen.create();
-            case 258:
+            case 256:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory.PyTuple_NewNodeGen.create();
-            case 259:
+            case 257:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory.PyTuple_SetItemNodeGen.create();
-            case 260:
+            case 258:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltinsFactory.PyTuple_SizeNodeGen.create();
-            case 261:
+            case 259:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory.PyType_IsSubtypeNodeGen.create();
-            case 262:
+            case 260:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_AsEncodedStringNodeGen.create();
-            case 263:
+            case 261:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_AsUnicodeEscapeStringNodeGen.create();
-            case 264:
+            case 262:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_CompareNodeGen.create();
-            case 265:
+            case 263:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_ConcatNodeGen.create();
-            case 266:
+            case 264:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_ContainsNodeGen.create();
-            case 267:
+            case 265:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_DecodeFSDefaultNodeGen.create();
-            case 268:
+            case 266:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_EncodeFSDefaultNodeGen.create();
-            case 269:
+            case 267:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_FindCharNodeGen.create();
-            case 270:
+            case 268:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_FormatNodeGen.create();
-            case 271:
+            case 269:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_FromEncodedObjectNodeGen.create();
-            case 272:
+            case 270:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_FromObjectNodeGen.create();
-            case 273:
+            case 271:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_FromOrdinalNodeGen.create();
-            case 274:
+            case 272:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_FromStringNodeGen.create();
-            case 275:
+            case 273:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_JoinNodeGen.create();
-            case 276:
+            case 274:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_ReadCharNodeGen.create();
-            case 277:
+            case 275:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_ReplaceNodeGen.create();
-            case 278:
+            case 276:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_SplitNodeGen.create();
-            case 279:
+            case 277:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_SubstringNodeGen.create();
-            case 280:
+            case 278:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory.PyUnicode_TailmatchNodeGen.create();
-            case 281:
+            case 279:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextWeakrefBuiltinsFactory.PyWeakref_GetObjectNodeGen.create();
-            case 282:
+            case 280:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextWeakrefBuiltinsFactory.PyWeakref_NewRefNodeGen.create();
-            case 283:
+            case 281:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextPyLifecycleBuiltinsFactory.Py_AtExitNodeGen.create();
-            case 284:
+            case 282:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextGenericAliasBuiltinsFactory.Py_GenericAliasNodeGen.create();
-            case 285:
+            case 283:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyASCIIObject_lengthNodeGen.create();
-            case 286:
+            case 284:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyASCIIObject_state_asciiNodeGen.create();
-            case 287:
+            case 285:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyASCIIObject_state_compactNodeGen.create();
-            case 288:
+            case 286:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyASCIIObject_state_kindNodeGen.create();
-            case 289:
+            case 287:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyASCIIObject_state_readyNodeGen.create();
-            case 290:
+            case 288:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyASCIIObject_wstrNodeGen.create();
+            case 289:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
+            case 290:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 291:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 292:
@@ -1747,329 +1744,329 @@ public abstract class PythonCextBuiltinRegistry {
             case 293:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 294:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 295:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 296:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyByteArrayObject_ob_exportsNodeGen.create();
-            case 297:
+            case 295:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyByteArrayObject_ob_startNodeGen.create();
-            case 298:
+            case 296:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyCFunctionObject_m_mlNodeGen.create();
-            case 299:
+            case 297:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyCFunctionObject_m_moduleNodeGen.create();
-            case 300:
+            case 298:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyCFunctionObject_m_selfNodeGen.create();
-            case 301:
+            case 299:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyCFunctionObject_m_weakreflistNodeGen.create();
-            case 302:
+            case 300:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyCFunctionObject_vectorcallNodeGen.create();
-            case 303:
+            case 301:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyCMethodObject_mm_classNodeGen.create();
-            case 304:
+            case 302:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyCompactUnicodeObject_wstr_lengthNodeGen.create();
-            case 305:
+            case 303:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyDescrObject_d_nameNodeGen.create();
-            case 306:
+            case 304:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyDescrObject_d_typeNodeGen.create();
-            case 307:
+            case 305:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyFrameObject_f_linenoNodeGen.create();
-            case 308:
+            case 306:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyGetSetDef_closureNodeGen.create();
-            case 309:
+            case 307:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyGetSetDef_docNodeGen.create();
-            case 310:
+            case 308:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyGetSetDef_getNodeGen.create();
-            case 311:
+            case 309:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyGetSetDef_nameNodeGen.create();
-            case 312:
+            case 310:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyGetSetDef_setNodeGen.create();
-            case 313:
+            case 311:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyInstanceMethodObject_funcNodeGen.create();
-            case 314:
+            case 312:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PSequence_ob_itemNodeGen.create();
-            case 315:
+            case 313:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyLongObject_ob_digitNodeGen.create();
-            case 316:
+            case 314:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMappingMethods_mp_ass_subscriptNodeGen.create();
-            case 317:
+            case 315:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMappingMethods_mp_lengthNodeGen.create();
-            case 318:
+            case 316:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMappingMethods_mp_subscriptNodeGen.create();
-            case 319:
+            case 317:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMethodDef_ml_docNodeGen.create();
-            case 320:
+            case 318:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMethodDef_ml_flagsNodeGen.create();
-            case 321:
+            case 319:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMethodDef_ml_methNodeGen.create();
-            case 322:
+            case 320:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMethodDef_ml_nameNodeGen.create();
-            case 323:
+            case 321:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMethodDescrObject_d_methodNodeGen.create();
-            case 324:
+            case 322:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMethodObject_im_funcNodeGen.create();
-            case 325:
+            case 323:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyMethodObject_im_selfNodeGen.create();
-            case 326:
+            case 324:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyModuleDef_m_docNodeGen.create();
-            case 327:
+            case 325:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyModuleDef_m_methodsNodeGen.create();
-            case 328:
+            case 326:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyModuleDef_m_nameNodeGen.create();
-            case 329:
+            case 327:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyModuleDef_m_sizeNodeGen.create();
-            case 330:
+            case 328:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyModuleObject_md_defNodeGen.create();
-            case 331:
+            case 329:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyModuleObject_md_dictNodeGen.create();
-            case 332:
+            case 330:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyModuleObject_md_stateNodeGen.create();
-            case 333:
+            case 331:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_absoluteNodeGen.create();
-            case 334:
+            case 332:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_addNodeGen.create();
-            case 335:
+            case 333:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_andNodeGen.create();
-            case 336:
+            case 334:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_boolNodeGen.create();
-            case 337:
+            case 335:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_divmodNodeGen.create();
-            case 338:
+            case 336:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_floatNodeGen.create();
-            case 339:
+            case 337:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_floor_divideNodeGen.create();
-            case 340:
+            case 338:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_indexNodeGen.create();
-            case 341:
+            case 339:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_addNodeGen.create();
-            case 342:
+            case 340:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_andNodeGen.create();
-            case 343:
+            case 341:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_floor_divideNodeGen.create();
-            case 344:
+            case 342:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_lshiftNodeGen.create();
-            case 345:
+            case 343:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 346:
+            case 344:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_multiplyNodeGen.create();
-            case 347:
+            case 345:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_orNodeGen.create();
-            case 348:
+            case 346:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_powerNodeGen.create();
-            case 349:
+            case 347:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_remainderNodeGen.create();
-            case 350:
+            case 348:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_rshiftNodeGen.create();
-            case 351:
+            case 349:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_subtractNodeGen.create();
-            case 352:
+            case 350:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_true_divideNodeGen.create();
-            case 353:
+            case 351:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_inplace_xorNodeGen.create();
-            case 354:
+            case 352:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_intNodeGen.create();
-            case 355:
+            case 353:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_invertNodeGen.create();
-            case 356:
+            case 354:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_lshiftNodeGen.create();
-            case 357:
+            case 355:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 358:
+            case 356:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_multiplyNodeGen.create();
-            case 359:
+            case 357:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_negativeNodeGen.create();
-            case 360:
+            case 358:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_orNodeGen.create();
-            case 361:
+            case 359:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_positiveNodeGen.create();
-            case 362:
+            case 360:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_powerNodeGen.create();
-            case 363:
+            case 361:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_remainderNodeGen.create();
-            case 364:
+            case 362:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_rshiftNodeGen.create();
-            case 365:
+            case 363:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_subtractNodeGen.create();
-            case 366:
+            case 364:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_true_divideNodeGen.create();
-            case 367:
+            case 365:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyNumberMethods_nb_xorNodeGen.create();
-            case 368:
+            case 366:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyObject_ob_refcntNodeGen.create();
-            case 369:
+            case 367:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyObject_ob_typeNodeGen.create();
+            case 368:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
+            case 369:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_concatNodeGen.create();
             case 370:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 371:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_concatNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 372:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 373:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_itemNodeGen.create();
             case 374:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 375:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_itemNodeGen.create();
-            case 376:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 377:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_repeatNodeGen.create();
-            case 378:
+            case 376:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySetObject_usedNodeGen.create();
-            case 379:
+            case 377:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySliceObject_startNodeGen.create();
-            case 380:
+            case 378:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySliceObject_stepNodeGen.create();
-            case 381:
+            case 379:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySliceObject_stopNodeGen.create();
-            case 382:
+            case 380:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyThreadState_dictNodeGen.create();
-            case 383:
+            case 381:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PSequence_ob_itemNodeGen.create();
-            case 384:
+            case 382:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_allocNodeGen.create();
-            case 385:
+            case 383:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_as_asyncNodeGen.create();
-            case 386:
+            case 384:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_as_bufferNodeGen.create();
-            case 387:
+            case 385:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_as_mappingNodeGen.create();
-            case 388:
+            case 386:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_as_numberNodeGen.create();
-            case 389:
+            case 387:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_as_sequenceNodeGen.create();
-            case 390:
+            case 388:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_baseNodeGen.create();
+            case 389:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPyPtrNodeGen.create();
+            case 390:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_basicsizeNodeGen.create();
             case 391:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPyPtrNodeGen.create();
             case 392:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_basicsizeNodeGen.create();
-            case 393:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPyPtrNodeGen.create();
-            case 394:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_callNodeGen.create();
-            case 395:
+            case 393:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_TraverseClearNodeGen.create();
-            case 396:
+            case 394:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_deallocNodeGen.create();
-            case 397:
+            case 395:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_delNodeGen.create();
+            case 396:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
+            case 397:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 398:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 399:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 400:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_dictNodeGen.create();
-            case 401:
+            case 399:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_dictoffsetNodeGen.create();
-            case 402:
+            case 400:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_docNodeGen.create();
-            case 403:
+            case 401:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 404:
+            case 402:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_flagsNodeGen.create();
-            case 405:
+            case 403:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_freeNodeGen.create();
+            case 404:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
+            case 405:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_getattroNodeGen.create();
             case 406:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 407:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_getattroNodeGen.create();
-            case 408:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 409:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_hashNodeGen.create();
-            case 410:
+            case 408:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_initNodeGen.create();
-            case 411:
+            case 409:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 412:
+            case 410:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_itemsizeNodeGen.create();
-            case 413:
+            case 411:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_iterNodeGen.create();
-            case 414:
+            case 412:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_iternextNodeGen.create();
+            case 413:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
+            case 414:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
             case 415:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 416:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 417:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_mroNodeGen.create();
-            case 418:
+            case 416:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_nameNodeGen.create();
-            case 419:
+            case 417:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_newNodeGen.create();
-            case 420:
+            case 418:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_reprNodeGen.create();
-            case 421:
+            case 419:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_richcompareNodeGen.create();
-            case 422:
+            case 420:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 423:
+            case 421:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_setattroNodeGen.create();
-            case 424:
+            case 422:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_strNodeGen.create();
-            case 425:
+            case 423:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_subclassesNodeGen.create();
-            case 426:
+            case 424:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_TraverseClearNodeGen.create();
-            case 427:
+            case 425:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 428:
+            case 426:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_vectorcall_offsetNodeGen.create();
-            case 429:
+            case 427:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_version_tagNodeGen.create();
-            case 430:
+            case 428:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPyPtrNodeGen.create();
-            case 431:
+            case 429:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyTypeObject_tp_weaklistoffsetNodeGen.create();
-            case 432:
+            case 430:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyUnicodeObject_dataNodeGen.create();
-            case 433:
+            case 431:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PyVarObject_ob_sizeNodeGen.create();
-            case 434:
+            case 432:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
-            case 435:
+            case 433:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_mmap_object_dataNodeGen.create();
-            case 436:
+            case 434:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyByteArrayObject_ob_exportsNodeGen.create();
-            case 437:
+            case 435:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyFrameObject_f_linenoNodeGen.create();
-            case 438:
+            case 436:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyModuleObject_md_defNodeGen.create();
-            case 439:
+            case 437:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyModuleObject_md_stateNodeGen.create();
-            case 440:
+            case 438:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyObject_ob_refcntNodeGen.create();
-            case 441:
+            case 439:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_allocNodeGen.create();
-            case 442:
+            case 440:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_as_bufferNodeGen.create();
-            case 443:
+            case 441:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
+            case 442:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
+            case 443:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_basicsizeNodeGen.create();
             case 444:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 445:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_basicsizeNodeGen.create();
-            case 446:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
-            case 447:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_deallocNodeGen.create();
-            case 448:
+            case 446:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_dictNodeGen.create();
-            case 449:
+            case 447:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_dictoffsetNodeGen.create();
-            case 450:
+            case 448:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
-            case 451:
+            case 449:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_flagsNodeGen.create();
-            case 452:
+            case 450:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_freeNodeGen.create();
-            case 453:
+            case 451:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
+            case 452:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
+            case 453:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_itemsizeNodeGen.create();
             case 454:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 455:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_itemsizeNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 456:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 457:
@@ -2079,78 +2076,74 @@ public abstract class PythonCextBuiltinRegistry {
             case 459:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 460:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_subclassesNodeGen.create();
             case 461:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 462:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_subclassesNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_vectorcall_offsetNodeGen.create();
             case 463:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 464:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_set_PyTypeObject_tp_vectorcall_offsetNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
             case 465:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
-            case 466:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PySetSlotDummyPtrNodeGen.create();
-            case 467:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory._PyBytes_JoinNodeGen.create();
-            case 468:
+            case 466:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltinsFactory._PyDict_PopNodeGen.create();
-            case 469:
+            case 467:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltinsFactory._PyDict_SetItem_KnownHashNodeGen.create();
-            case 470:
+            case 468:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyErr_BadInternalCallNodeGen.create();
-            case 471:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyErr_CreateAndSetExceptionNodeGen.create();
-            case 472:
+            case 469:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyErr_WriteUnraisableMsgNodeGen.create();
-            case 473:
+            case 470:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltinsFactory._PyList_ExtendNodeGen.create();
-            case 474:
+            case 471:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltinsFactory._PyLong_SignNodeGen.create();
-            case 475:
+            case 472:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextNamespaceBuiltinsFactory._PyNamespace_NewNodeGen.create();
-            case 476:
+            case 473:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltinsFactory.PyNumber_IndexNodeGen.create();
-            case 477:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyObject_Call1NodeGen.create();
-            case 478:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyObject_CallMethod1NodeGen.create();
-            case 479:
+            case 474:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyObject_DumpNodeGen.create();
-            case 480:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTraceMalloc_NewReferenceFactory.create();
-            case 481:
+            case 475:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTraceMalloc_NewReferenceNodeGen.create();
+            case 476:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTracebackBuiltinsFactory._PyTraceback_AddNodeGen.create();
-            case 482:
+            case 477:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory._PyTruffleBytes_ResizeNodeGen.create();
-            case 483:
+            case 478:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltinsFactory._PyTruffleErr_CreateAndSetExceptionNodeGen.create();
+            case 479:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextWarnBuiltinsFactory._PyTruffleErr_WarnNodeGen.create();
-            case 484:
+            case 480:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltinsFactory._PyTruffleEval_EvalCodeExNodeGen.create();
-            case 485:
+            case 481:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory._PyTruffleModule_CreateInitialized_PyModule_NewNodeGen.create();
-            case 486:
+            case 482:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltinsFactory._PyTruffleModule_GetAndIncMaxModuleNumberNodeGen.create();
-            case 487:
+            case 483:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyTruffleObject_Call1NodeGen.create();
+            case 484:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyTruffleObject_CallMethod1NodeGen.create();
+            case 485:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextObjectBuiltinsFactory._PyTruffleObject_MakeTpCallNodeGen.create();
-            case 488:
+            case 486:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSetBuiltinsFactory._PyTruffleSet_NextEntryNodeGen.create();
-            case 489:
+            case 487:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory._PyTruffle_HashBytesNodeGen.create();
-            case 490:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTruffle_Trace_FreeFactory.create();
-            case 491:
+            case 488:
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory._PyTruffle_Trace_FreeNodeGen.create();
+            case 489:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltinsFactory._PyType_LookupNodeGen.create();
-            case 492:
+            case 490:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory._PyUnicode_AsASCIIStringNodeGen.create();
-            case 493:
+            case 491:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory._PyUnicode_AsLatin1StringNodeGen.create();
-            case 494:
+            case 492:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory._PyUnicode_AsUTF8StringNodeGen.create();
-            case 495:
+            case 493:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextUnicodeBuiltinsFactory._PyUnicode_EqualToASCIIStringNodeGen.create();
-            case 496:
+            case 494:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltinsFactory._Py_HashDoubleNodeGen.create();
         }
         return null;
@@ -2159,307 +2152,307 @@ public abstract class PythonCextBuiltinRegistry {
     public static CApiBuiltinExecutable getSlot(String key) {
         switch (key) {
             case "PyASCIIObject_length":
-                return builtins[285];
+                return builtins[283];
             case "PyASCIIObject_state_ascii":
-                return builtins[286];
+                return builtins[284];
             case "PyASCIIObject_state_compact":
-                return builtins[287];
+                return builtins[285];
             case "PyASCIIObject_state_kind":
-                return builtins[288];
+                return builtins[286];
             case "PyASCIIObject_state_ready":
-                return builtins[289];
+                return builtins[287];
             case "PyASCIIObject_wstr":
-                return builtins[290];
+                return builtins[288];
             case "PyAsyncMethods_am_aiter":
-                return builtins[291];
+                return builtins[289];
             case "PyAsyncMethods_am_anext":
-                return builtins[292];
+                return builtins[290];
             case "PyAsyncMethods_am_await":
-                return builtins[293];
+                return builtins[291];
             case "PyBufferProcs_bf_getbuffer":
-                return builtins[294];
+                return builtins[292];
             case "PyBufferProcs_bf_releasebuffer":
-                return builtins[295];
+                return builtins[293];
             case "PyByteArrayObject_ob_exports":
-                return builtins[296];
+                return builtins[294];
             case "PyByteArrayObject_ob_start":
-                return builtins[297];
+                return builtins[295];
             case "PyCFunctionObject_m_ml":
-                return builtins[298];
+                return builtins[296];
             case "PyCFunctionObject_m_module":
-                return builtins[299];
+                return builtins[297];
             case "PyCFunctionObject_m_self":
-                return builtins[300];
+                return builtins[298];
             case "PyCFunctionObject_m_weakreflist":
-                return builtins[301];
+                return builtins[299];
             case "PyCFunctionObject_vectorcall":
-                return builtins[302];
+                return builtins[300];
             case "PyCMethodObject_mm_class":
-                return builtins[303];
+                return builtins[301];
             case "PyCompactUnicodeObject_wstr_length":
-                return builtins[304];
+                return builtins[302];
             case "PyDescrObject_d_name":
-                return builtins[305];
+                return builtins[303];
             case "PyDescrObject_d_type":
-                return builtins[306];
+                return builtins[304];
             case "PyFrameObject_f_lineno":
-                return builtins[307];
+                return builtins[305];
             case "PyGetSetDef_closure":
-                return builtins[308];
+                return builtins[306];
             case "PyGetSetDef_doc":
-                return builtins[309];
+                return builtins[307];
             case "PyGetSetDef_get":
-                return builtins[310];
+                return builtins[308];
             case "PyGetSetDef_name":
-                return builtins[311];
+                return builtins[309];
             case "PyGetSetDef_set":
-                return builtins[312];
+                return builtins[310];
             case "PyInstanceMethodObject_func":
-                return builtins[313];
+                return builtins[311];
             case "PyListObject_ob_item":
-                return builtins[314];
+                return builtins[312];
             case "PyLongObject_ob_digit":
-                return builtins[315];
+                return builtins[313];
             case "PyMappingMethods_mp_ass_subscript":
-                return builtins[316];
+                return builtins[314];
             case "PyMappingMethods_mp_length":
-                return builtins[317];
+                return builtins[315];
             case "PyMappingMethods_mp_subscript":
-                return builtins[318];
+                return builtins[316];
             case "PyMethodDef_ml_doc":
-                return builtins[319];
+                return builtins[317];
             case "PyMethodDef_ml_flags":
-                return builtins[320];
+                return builtins[318];
             case "PyMethodDef_ml_meth":
-                return builtins[321];
+                return builtins[319];
             case "PyMethodDef_ml_name":
-                return builtins[322];
+                return builtins[320];
             case "PyMethodDescrObject_d_method":
-                return builtins[323];
+                return builtins[321];
             case "PyMethodObject_im_func":
-                return builtins[324];
+                return builtins[322];
             case "PyMethodObject_im_self":
-                return builtins[325];
+                return builtins[323];
             case "PyModuleDef_m_doc":
-                return builtins[326];
+                return builtins[324];
             case "PyModuleDef_m_methods":
-                return builtins[327];
+                return builtins[325];
             case "PyModuleDef_m_name":
-                return builtins[328];
+                return builtins[326];
             case "PyModuleDef_m_size":
-                return builtins[329];
+                return builtins[327];
             case "PyModuleObject_md_def":
-                return builtins[330];
+                return builtins[328];
             case "PyModuleObject_md_dict":
-                return builtins[331];
+                return builtins[329];
             case "PyModuleObject_md_state":
-                return builtins[332];
+                return builtins[330];
             case "PyNumberMethods_nb_absolute":
-                return builtins[333];
+                return builtins[331];
             case "PyNumberMethods_nb_add":
-                return builtins[334];
+                return builtins[332];
             case "PyNumberMethods_nb_and":
-                return builtins[335];
+                return builtins[333];
             case "PyNumberMethods_nb_bool":
-                return builtins[336];
+                return builtins[334];
             case "PyNumberMethods_nb_divmod":
-                return builtins[337];
+                return builtins[335];
             case "PyNumberMethods_nb_float":
-                return builtins[338];
+                return builtins[336];
             case "PyNumberMethods_nb_floor_divide":
-                return builtins[339];
+                return builtins[337];
             case "PyNumberMethods_nb_index":
-                return builtins[340];
+                return builtins[338];
             case "PyNumberMethods_nb_inplace_add":
-                return builtins[341];
+                return builtins[339];
             case "PyNumberMethods_nb_inplace_and":
-                return builtins[342];
+                return builtins[340];
             case "PyNumberMethods_nb_inplace_floor_divide":
-                return builtins[343];
+                return builtins[341];
             case "PyNumberMethods_nb_inplace_lshift":
-                return builtins[344];
+                return builtins[342];
             case "PyNumberMethods_nb_inplace_matrix_multiply":
-                return builtins[345];
+                return builtins[343];
             case "PyNumberMethods_nb_inplace_multiply":
-                return builtins[346];
+                return builtins[344];
             case "PyNumberMethods_nb_inplace_or":
-                return builtins[347];
+                return builtins[345];
             case "PyNumberMethods_nb_inplace_power":
-                return builtins[348];
+                return builtins[346];
             case "PyNumberMethods_nb_inplace_remainder":
-                return builtins[349];
+                return builtins[347];
             case "PyNumberMethods_nb_inplace_rshift":
-                return builtins[350];
+                return builtins[348];
             case "PyNumberMethods_nb_inplace_subtract":
-                return builtins[351];
+                return builtins[349];
             case "PyNumberMethods_nb_inplace_true_divide":
-                return builtins[352];
+                return builtins[350];
             case "PyNumberMethods_nb_inplace_xor":
-                return builtins[353];
+                return builtins[351];
             case "PyNumberMethods_nb_int":
-                return builtins[354];
+                return builtins[352];
             case "PyNumberMethods_nb_invert":
-                return builtins[355];
+                return builtins[353];
             case "PyNumberMethods_nb_lshift":
-                return builtins[356];
+                return builtins[354];
             case "PyNumberMethods_nb_matrix_multiply":
-                return builtins[357];
+                return builtins[355];
             case "PyNumberMethods_nb_multiply":
-                return builtins[358];
+                return builtins[356];
             case "PyNumberMethods_nb_negative":
-                return builtins[359];
+                return builtins[357];
             case "PyNumberMethods_nb_or":
-                return builtins[360];
+                return builtins[358];
             case "PyNumberMethods_nb_positive":
-                return builtins[361];
+                return builtins[359];
             case "PyNumberMethods_nb_power":
-                return builtins[362];
+                return builtins[360];
             case "PyNumberMethods_nb_remainder":
-                return builtins[363];
+                return builtins[361];
             case "PyNumberMethods_nb_rshift":
-                return builtins[364];
+                return builtins[362];
             case "PyNumberMethods_nb_subtract":
-                return builtins[365];
+                return builtins[363];
             case "PyNumberMethods_nb_true_divide":
-                return builtins[366];
+                return builtins[364];
             case "PyNumberMethods_nb_xor":
-                return builtins[367];
+                return builtins[365];
             case "PyObject_ob_refcnt":
-                return builtins[368];
+                return builtins[366];
             case "PyObject_ob_type":
-                return builtins[369];
+                return builtins[367];
             case "PySequenceMethods_sq_ass_item":
-                return builtins[370];
+                return builtins[368];
             case "PySequenceMethods_sq_concat":
-                return builtins[371];
+                return builtins[369];
             case "PySequenceMethods_sq_contains":
-                return builtins[372];
+                return builtins[370];
             case "PySequenceMethods_sq_inplace_concat":
-                return builtins[373];
+                return builtins[371];
             case "PySequenceMethods_sq_inplace_repeat":
-                return builtins[374];
+                return builtins[372];
             case "PySequenceMethods_sq_item":
-                return builtins[375];
+                return builtins[373];
             case "PySequenceMethods_sq_length":
-                return builtins[376];
+                return builtins[374];
             case "PySequenceMethods_sq_repeat":
-                return builtins[377];
+                return builtins[375];
             case "PySetObject_used":
-                return builtins[378];
+                return builtins[376];
             case "PySliceObject_start":
-                return builtins[379];
+                return builtins[377];
             case "PySliceObject_step":
-                return builtins[380];
+                return builtins[378];
             case "PySliceObject_stop":
-                return builtins[381];
+                return builtins[379];
             case "PyThreadState_dict":
-                return builtins[382];
+                return builtins[380];
             case "PyTupleObject_ob_item":
-                return builtins[383];
+                return builtins[381];
             case "PyTypeObject_tp_alloc":
-                return builtins[384];
+                return builtins[382];
             case "PyTypeObject_tp_as_async":
-                return builtins[385];
+                return builtins[383];
             case "PyTypeObject_tp_as_buffer":
-                return builtins[386];
+                return builtins[384];
             case "PyTypeObject_tp_as_mapping":
-                return builtins[387];
+                return builtins[385];
             case "PyTypeObject_tp_as_number":
-                return builtins[388];
+                return builtins[386];
             case "PyTypeObject_tp_as_sequence":
-                return builtins[389];
+                return builtins[387];
             case "PyTypeObject_tp_base":
-                return builtins[390];
+                return builtins[388];
             case "PyTypeObject_tp_bases":
-                return builtins[391];
+                return builtins[389];
             case "PyTypeObject_tp_basicsize":
-                return builtins[392];
+                return builtins[390];
             case "PyTypeObject_tp_cache":
-                return builtins[393];
+                return builtins[391];
             case "PyTypeObject_tp_call":
-                return builtins[394];
+                return builtins[392];
             case "PyTypeObject_tp_clear":
-                return builtins[395];
+                return builtins[393];
             case "PyTypeObject_tp_dealloc":
-                return builtins[396];
+                return builtins[394];
             case "PyTypeObject_tp_del":
-                return builtins[397];
+                return builtins[395];
             case "PyTypeObject_tp_descr_get":
-                return builtins[398];
+                return builtins[396];
             case "PyTypeObject_tp_descr_set":
-                return builtins[399];
+                return builtins[397];
             case "PyTypeObject_tp_dict":
-                return builtins[400];
+                return builtins[398];
             case "PyTypeObject_tp_dictoffset":
-                return builtins[401];
+                return builtins[399];
             case "PyTypeObject_tp_doc":
-                return builtins[402];
+                return builtins[400];
             case "PyTypeObject_tp_finalize":
-                return builtins[403];
+                return builtins[401];
             case "PyTypeObject_tp_flags":
-                return builtins[404];
+                return builtins[402];
             case "PyTypeObject_tp_free":
-                return builtins[405];
+                return builtins[403];
             case "PyTypeObject_tp_getattr":
-                return builtins[406];
+                return builtins[404];
             case "PyTypeObject_tp_getattro":
-                return builtins[407];
+                return builtins[405];
             case "PyTypeObject_tp_getset":
-                return builtins[408];
+                return builtins[406];
             case "PyTypeObject_tp_hash":
-                return builtins[409];
+                return builtins[407];
             case "PyTypeObject_tp_init":
-                return builtins[410];
+                return builtins[408];
             case "PyTypeObject_tp_is_gc":
-                return builtins[411];
+                return builtins[409];
             case "PyTypeObject_tp_itemsize":
-                return builtins[412];
+                return builtins[410];
             case "PyTypeObject_tp_iter":
-                return builtins[413];
+                return builtins[411];
             case "PyTypeObject_tp_iternext":
-                return builtins[414];
+                return builtins[412];
             case "PyTypeObject_tp_members":
-                return builtins[415];
+                return builtins[413];
             case "PyTypeObject_tp_methods":
-                return builtins[416];
+                return builtins[414];
             case "PyTypeObject_tp_mro":
-                return builtins[417];
+                return builtins[415];
             case "PyTypeObject_tp_name":
-                return builtins[418];
+                return builtins[416];
             case "PyTypeObject_tp_new":
-                return builtins[419];
+                return builtins[417];
             case "PyTypeObject_tp_repr":
-                return builtins[420];
+                return builtins[418];
             case "PyTypeObject_tp_richcompare":
-                return builtins[421];
+                return builtins[419];
             case "PyTypeObject_tp_setattr":
-                return builtins[422];
+                return builtins[420];
             case "PyTypeObject_tp_setattro":
-                return builtins[423];
+                return builtins[421];
             case "PyTypeObject_tp_str":
-                return builtins[424];
+                return builtins[422];
             case "PyTypeObject_tp_subclasses":
-                return builtins[425];
+                return builtins[423];
             case "PyTypeObject_tp_traverse":
-                return builtins[426];
+                return builtins[424];
             case "PyTypeObject_tp_vectorcall":
-                return builtins[427];
+                return builtins[425];
             case "PyTypeObject_tp_vectorcall_offset":
-                return builtins[428];
+                return builtins[426];
             case "PyTypeObject_tp_version_tag":
-                return builtins[429];
+                return builtins[427];
             case "PyTypeObject_tp_weaklist":
-                return builtins[430];
+                return builtins[428];
             case "PyTypeObject_tp_weaklistoffset":
-                return builtins[431];
+                return builtins[429];
             case "PyUnicodeObject_data":
-                return builtins[432];
+                return builtins[430];
             case "PyVarObject_ob_size":
-                return builtins[433];
+                return builtins[431];
             case "dummy":
-                return builtins[434];
+                return builtins[432];
             case "mmap_object_data":
-                return builtins[435];
+                return builtins[433];
         }
         return null;
     }

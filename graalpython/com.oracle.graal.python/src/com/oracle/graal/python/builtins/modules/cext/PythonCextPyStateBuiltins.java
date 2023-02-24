@@ -43,9 +43,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYMODULEDEF_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_GIL_STATE_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -61,6 +63,28 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public final class PythonCextPyStateBuiltins {
+
+    @CApiBuiltin(ret = PY_GIL_STATE_STATE, args = {}, acquiresGIL = false, call = Direct)
+    public abstract static class PyGILState_Ensure extends CApiNullaryBuiltinNode {
+
+        @Specialization
+        Object save(@Cached GilNode gil) {
+            // TODO allow acquiring from foreign thread
+            boolean acquired = gil.acquire();
+            return acquired ? 1 : 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PY_GIL_STATE_STATE}, acquiresGIL = false, call = Direct)
+    public abstract static class PyGILState_Release extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object restore(int state,
+                        @Cached GilNode gil) {
+            gil.release(state == 1);
+            return 0;
+        }
+    }
 
     @CApiBuiltin(ret = PyThreadState, args = {}, call = Direct, inlined = true)
     abstract static class PyThreadState_Get extends CApiNullaryBuiltinNode {
@@ -71,7 +95,7 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObject, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
     abstract static class PyThreadState_GetDict extends CApiNullaryBuiltinNode {
 
         @Specialization

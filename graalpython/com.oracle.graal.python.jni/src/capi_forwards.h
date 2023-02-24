@@ -43,35 +43,11 @@ void unimplemented(const char* name) {
 	printf("Function not implemented in GraalPy: %s\n", name);
 }
 
-#ifdef STATS
-long totalTime;
-long totalCount;
-#define FIRST_STATS_CONTAINER(NAME) CAPIStats __stats__##NAME = { NULL, #NAME, 0, 0};
-#define STATS_CONTAINER(NAME, LAST) CAPIStats __stats__##NAME = { &__stats__##LAST, #NAME, 0, 0};
-#define STATS_BEFORE(NAME) \
-    totalCount++; \
-    __stats__##NAME.count++;\
-    if ((totalCount) % 100000 == 0)\
-        printAllStats();\
-    long t1 = t();
-#define STATS_AFTER(NAME) \
-    long delta = t() - t1;\
-    __stats__##NAME.time += delta;\
-    totalTime += delta;
-#else
-#define FIRST_STATS_CONTAINER(NAME)
-#define STATS_CONTAINER(NAME, LAST)
-#define STATS_BEFORE(NAME)
-#define STATS_AFTER(NAME)
-#endif // STATS
-
-#define LOG_AFTER LOG("-> 0x%lx", (unsigned long) result);
-#define LOG_AFTER_VOID LOGS("finished");
-
 // {{start CAPI_BUILTINS}}
 // GENERATED CODE - see CApiCodeGen
 // This can be re-generated using the 'mx python-capi-forwards' command or
 // by executing the main class CApiCodeGen
+
 // explicit #undef, some existing functions are redefined by macros and we need to export precise names:
 #undef PyAIter_Check
 #undef PyArg_Parse
@@ -792,8 +768,6 @@ long totalCount;
 #undef PyTruffle_NoValue
 #undef PyTruffle_None
 #undef PyTruffle_NotImplemented
-#undef PyTruffle_OS_DoubleToString
-#undef PyTruffle_OS_StringToDouble
 #undef PyTruffle_Object_Alloc
 #undef PyTruffle_Object_Free
 #undef PyTruffle_Register_NULL
@@ -824,7 +798,6 @@ long totalCount;
 #undef PyType_FromModuleAndSpec
 #undef PyType_FromSpec
 #undef PyType_FromSpecWithBases
-#undef PyType_FromSpecWithBasesAndMeta
 #undef PyType_GenericAlloc
 #undef PyType_GenericNew
 #undef PyType_GetFlags
@@ -1252,8 +1225,6 @@ long totalCount;
 #undef _PyBytes_FromHex
 #undef _PyBytes_Join
 #undef _PyBytes_Resize
-#undef _PyCFunction_DebugMallocStats
-#undef _PyCFunction_FastCallDict
 #undef _PyCode_CheckLineNumber
 #undef _PyCode_ConstantKey
 #undef _PyCode_GetExtra
@@ -1284,7 +1255,6 @@ long totalCount;
 #undef _PyDict_DelItem_KnownHash
 #undef _PyDict_FromKeys
 #undef _PyDict_GetItemHint
-#undef _PyDict_GetItemId
 #undef _PyDict_GetItemIdWithError
 #undef _PyDict_GetItemStringWithError
 #undef _PyDict_GetItem_KnownHash
@@ -1304,7 +1274,6 @@ long totalCount;
 #undef _PyErr_BadInternalCall
 #undef _PyErr_ChainExceptions
 #undef _PyErr_CheckSignals
-#undef _PyErr_CreateAndSetException
 #undef _PyErr_FormatFromCause
 #undef _PyErr_GetExcInfo
 #undef _PyErr_GetTopmostException
@@ -1340,18 +1309,14 @@ long totalCount;
 #undef _PyFrame_DebugMallocStats
 #undef _PyFrame_New_NoTrack
 #undef _PyFrame_SetLineNumber
-#undef _PyFunction_FastCallDict
 #undef _PyFunction_Vectorcall
 #undef _PyGILState_GetInterpreterStateUnsafe
 #undef _PyGen_FetchStopIterationValue
 #undef _PyGen_Finalize
-#undef _PyGen_Send
 #undef _PyGen_SetStopIterationValue
 #undef _PyGen_yf
 #undef _PyImport_AcquireLock
-#undef _PyImport_FindBuiltin
 #undef _PyImport_FindExtensionObject
-#undef _PyImport_FindExtensionObjectEx
 #undef _PyImport_FixupBuiltin
 #undef _PyImport_FixupExtensionObject
 #undef _PyImport_GetModuleAttr
@@ -1362,7 +1327,6 @@ long totalCount;
 #undef _PyImport_ReleaseLock
 #undef _PyImport_SetModule
 #undef _PyImport_SetModuleString
-#undef _PyInterpreterState_Get
 #undef _PyInterpreterState_GetConfig
 #undef _PyInterpreterState_GetConfigCopy
 #undef _PyInterpreterState_GetEvalFrameFunc
@@ -1403,9 +1367,6 @@ long totalCount;
 #undef _PyMem_RawWcsdup
 #undef _PyMem_Strdup
 #undef _PyMemoryView_GetBuffer
-#undef _PyMethodDef_RawFastCallDict
-#undef _PyMethodDef_RawFastCallKeywords
-#undef _PyMethod_DebugMallocStats
 #undef _PyModuleSpec_IsInitializing
 #undef _PyModule_Clear
 #undef _PyModule_ClearDict
@@ -1420,9 +1381,7 @@ long totalCount;
 #undef _PyOS_URandomNonblock
 #undef _PyObjectDict_SetItem
 #undef _PyObject_AssertFailed
-#undef _PyObject_Call1
 #undef _PyObject_CallFunction_SizeT
-#undef _PyObject_CallMethod1
 #undef _PyObject_CallMethodId
 #undef _PyObject_CallMethodIdObjArgs
 #undef _PyObject_CallMethodId_SizeT
@@ -1433,8 +1392,6 @@ long totalCount;
 #undef _PyObject_DebugMallocStats
 #undef _PyObject_DebugTypeStats
 #undef _PyObject_Dump
-#undef _PyObject_FastCallDict
-#undef _PyObject_FastCall_Prepend
 #undef _PyObject_FunctionStr
 #undef _PyObject_GC_Calloc
 #undef _PyObject_GC_Malloc
@@ -1447,7 +1404,6 @@ long totalCount;
 #undef _PyObject_GetCrossInterpreterData
 #undef _PyObject_GetDictPtr
 #undef _PyObject_GetMethod
-#undef _PyObject_HasAttrId
 #undef _PyObject_HasLen
 #undef _PyObject_IsAbstract
 #undef _PyObject_IsFreed
@@ -1474,7 +1430,6 @@ long totalCount;
 #undef _PySlice_FromIndices
 #undef _PySlice_GetLongIndices
 #undef _PyStack_AsDict
-#undef _PyStack_UnpackDict
 #undef _PyState_AddModule
 #undef _PySys_GetObjectId
 #undef _PySys_GetSizeOf
@@ -1523,10 +1478,13 @@ long totalCount;
 #undef _PyTrash_thread_deposit_object
 #undef _PyTrash_thread_destroy_chain
 #undef _PyTruffleBytes_Resize
+#undef _PyTruffleErr_CreateAndSetException
 #undef _PyTruffleErr_Warn
 #undef _PyTruffleEval_EvalCodeEx
 #undef _PyTruffleModule_CreateInitialized_PyModule_New
 #undef _PyTruffleModule_GetAndIncMaxModuleNumber
+#undef _PyTruffleObject_Call1
+#undef _PyTruffleObject_CallMethod1
 #undef _PyTruffleObject_MakeTpCall
 #undef _PyTruffleSet_NextEntry
 #undef _PyTruffle_HashBytes
@@ -1554,7 +1512,6 @@ long totalCount;
 #undef _PyUnicodeWriter_WriteStr
 #undef _PyUnicodeWriter_WriteSubstring
 #undef _PyUnicode_AsASCIIString
-#undef _PyUnicode_AsKind
 #undef _PyUnicode_AsLatin1String
 #undef _PyUnicode_AsUTF8String
 #undef _PyUnicode_AsUnicode
@@ -1674,7 +1631,6 @@ long totalCount;
 #undef _Py_dg_stdnan
 #undef _Py_dg_strtod
 #undef _Py_dup
-#undef _Py_fopen
 #undef _Py_fopen_obj
 #undef _Py_fstat
 #undef _Py_fstat_noraise
@@ -1705,24 +1661,14 @@ long totalCount;
 PyAPI_FUNC(int) PyAIter_Check(PyObject* a) {
     unimplemented("PyAIter_Check"); exit(-1);
 }
-FIRST_STATS_CONTAINER(PyArg_VaParse)
 int (*__target__PyArg_VaParse)(PyObject*, const char*, va_list) = NULL;
 PyAPI_FUNC(int) PyArg_VaParse(PyObject* a, const char* b, va_list c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyArg_VaParse)
     int result = (int) __target__PyArg_VaParse(a, b, c);
-    STATS_AFTER(PyArg_VaParse)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyArg_VaParseTupleAndKeywords, PyArg_VaParse)
 int (*__target__PyArg_VaParseTupleAndKeywords)(PyObject*, PyObject*, const char*, char**, va_list) = NULL;
 PyAPI_FUNC(int) PyArg_VaParseTupleAndKeywords(PyObject* a, PyObject* b, const char* c, char** d, va_list e) {
-    LOG("0x%lx 0x%lx '%s'(0x%lx) 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(PyArg_VaParseTupleAndKeywords)
     int result = (int) __target__PyArg_VaParseTupleAndKeywords(a, b, c, d, e);
-    STATS_AFTER(PyArg_VaParseTupleAndKeywords)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyArg_ValidateKeywordArguments(PyObject* a) {
@@ -1734,14 +1680,9 @@ PyAPI_FUNC(PyObject*) PyAsyncGen_New(PyFrameObject* a, PyObject* b, PyObject* c)
 PyAPI_FUNC(void) PyBuffer_FillContiguousStrides(int a, Py_ssize_t* b, Py_ssize_t* c, int d, char e) {
     unimplemented("PyBuffer_FillContiguousStrides"); exit(-1);
 }
-STATS_CONTAINER(PyBuffer_FillInfo, PyArg_VaParseTupleAndKeywords)
 int (*__target__PyBuffer_FillInfo)(Py_buffer*, PyObject*, void*, Py_ssize_t, int, int) = NULL;
 PyAPI_FUNC(int) PyBuffer_FillInfo(Py_buffer* a, PyObject* b, void* c, Py_ssize_t d, int e, int f) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e, (unsigned long) f);
-    STATS_BEFORE(PyBuffer_FillInfo)
     int result = (int) __target__PyBuffer_FillInfo(a, b, c, d, e, f);
-    STATS_AFTER(PyBuffer_FillInfo)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyBuffer_FromContiguous(Py_buffer* a, void* b, Py_ssize_t c, char d) {
@@ -1750,24 +1691,14 @@ PyAPI_FUNC(int) PyBuffer_FromContiguous(Py_buffer* a, void* b, Py_ssize_t c, cha
 PyAPI_FUNC(void*) PyBuffer_GetPointer(Py_buffer* a, Py_ssize_t* b) {
     unimplemented("PyBuffer_GetPointer"); exit(-1);
 }
-STATS_CONTAINER(PyBuffer_IsContiguous, PyBuffer_FillInfo)
 int (*__target__PyBuffer_IsContiguous)(const Py_buffer*, char) = NULL;
 PyAPI_FUNC(int) PyBuffer_IsContiguous(const Py_buffer* a, char b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyBuffer_IsContiguous)
     int result = (int) __target__PyBuffer_IsContiguous(a, b);
-    STATS_AFTER(PyBuffer_IsContiguous)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyBuffer_Release, PyBuffer_IsContiguous)
 void (*__target__PyBuffer_Release)(Py_buffer*) = NULL;
 PyAPI_FUNC(void) PyBuffer_Release(Py_buffer* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyBuffer_Release)
     __target__PyBuffer_Release(a);
-    STATS_AFTER(PyBuffer_Release)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(Py_ssize_t) PyBuffer_SizeFromFormat(const char* a) {
     unimplemented("PyBuffer_SizeFromFormat"); exit(-1);
@@ -1784,324 +1715,169 @@ PyAPI_FUNC(PyObject*) PyByteArray_Concat(PyObject* a, PyObject* b) {
 PyAPI_FUNC(PyObject*) PyByteArray_FromObject(PyObject* a) {
     unimplemented("PyByteArray_FromObject"); exit(-1);
 }
-STATS_CONTAINER(PyByteArray_FromStringAndSize, PyBuffer_Release)
 PyObject* (*__target__PyByteArray_FromStringAndSize)(const char*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyByteArray_FromStringAndSize(const char* a, Py_ssize_t b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyByteArray_FromStringAndSize)
     PyObject* result = (PyObject*) __target__PyByteArray_FromStringAndSize(a, b);
-    STATS_AFTER(PyByteArray_FromStringAndSize)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyByteArray_Resize, PyByteArray_FromStringAndSize)
 int (*__target__PyByteArray_Resize)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(int) PyByteArray_Resize(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyByteArray_Resize)
     int result = (int) __target__PyByteArray_Resize(a, b);
-    STATS_AFTER(PyByteArray_Resize)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PyByteArray_Size(PyObject* a) {
     unimplemented("PyByteArray_Size"); exit(-1);
 }
-STATS_CONTAINER(PyBytes_AsString, PyByteArray_Resize)
 char* (*__target__PyBytes_AsString)(PyObject*) = NULL;
 PyAPI_FUNC(char*) PyBytes_AsString(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyBytes_AsString)
     char* result = (char*) __target__PyBytes_AsString(a);
-    STATS_AFTER(PyBytes_AsString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyBytes_AsStringAndSize, PyBytes_AsString)
 int (*__target__PyBytes_AsStringAndSize)(PyObject*, char**, Py_ssize_t*) = NULL;
 PyAPI_FUNC(int) PyBytes_AsStringAndSize(PyObject* a, char** b, Py_ssize_t* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyBytes_AsStringAndSize)
     int result = (int) __target__PyBytes_AsStringAndSize(a, b, c);
-    STATS_AFTER(PyBytes_AsStringAndSize)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyBytes_Concat, PyBytes_AsStringAndSize)
 void (*__target__PyBytes_Concat)(PyObject**, PyObject*) = NULL;
 PyAPI_FUNC(void) PyBytes_Concat(PyObject** a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyBytes_Concat)
     __target__PyBytes_Concat(a, b);
-    STATS_AFTER(PyBytes_Concat)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyBytes_ConcatAndDel, PyBytes_Concat)
 void (*__target__PyBytes_ConcatAndDel)(PyObject**, PyObject*) = NULL;
 PyAPI_FUNC(void) PyBytes_ConcatAndDel(PyObject** a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyBytes_ConcatAndDel)
     __target__PyBytes_ConcatAndDel(a, b);
-    STATS_AFTER(PyBytes_ConcatAndDel)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(PyObject*) PyBytes_DecodeEscape(const char* a, Py_ssize_t b, const char* c, Py_ssize_t d, const char* e) {
     unimplemented("PyBytes_DecodeEscape"); exit(-1);
 }
-STATS_CONTAINER(PyBytes_FromFormatV, PyBytes_ConcatAndDel)
 PyObject* (*__target__PyBytes_FromFormatV)(const char*, va_list) = NULL;
 PyAPI_FUNC(PyObject*) PyBytes_FromFormatV(const char* a, va_list b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyBytes_FromFormatV)
     PyObject* result = (PyObject*) __target__PyBytes_FromFormatV(a, b);
-    STATS_AFTER(PyBytes_FromFormatV)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyBytes_FromObject, PyBytes_FromFormatV)
 PyObject* (*__target__PyBytes_FromObject)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyBytes_FromObject(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyBytes_FromObject)
     PyObject* result = (PyObject*) __target__PyBytes_FromObject(a);
-    STATS_AFTER(PyBytes_FromObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyBytes_FromString, PyBytes_FromObject)
 PyObject* (*__target__PyBytes_FromString)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyBytes_FromString(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyBytes_FromString)
     PyObject* result = (PyObject*) __target__PyBytes_FromString(a);
-    STATS_AFTER(PyBytes_FromString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyBytes_FromStringAndSize, PyBytes_FromString)
 PyObject* (*__target__PyBytes_FromStringAndSize)(const char*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyBytes_FromStringAndSize(const char* a, Py_ssize_t b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyBytes_FromStringAndSize)
     PyObject* result = (PyObject*) __target__PyBytes_FromStringAndSize(a, b);
-    STATS_AFTER(PyBytes_FromStringAndSize)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyBytes_Repr(PyObject* a, int b) {
     unimplemented("PyBytes_Repr"); exit(-1);
 }
-STATS_CONTAINER(PyBytes_Size, PyBytes_FromStringAndSize)
 Py_ssize_t (*__target__PyBytes_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyBytes_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyBytes_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PyBytes_Size(a);
-    STATS_AFTER(PyBytes_Size)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyCFunction_Call(PyObject* a, PyObject* b, PyObject* c) {
     unimplemented("PyCFunction_Call"); exit(-1);
 }
-STATS_CONTAINER(PyCFunction_GetClass, PyBytes_Size)
 PyTypeObject* (*__target__PyCFunction_GetClass)(PyObject*) = NULL;
 PyAPI_FUNC(PyTypeObject*) PyCFunction_GetClass(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCFunction_GetClass)
     PyTypeObject* result = (PyTypeObject*) __target__PyCFunction_GetClass(a);
-    STATS_AFTER(PyCFunction_GetClass)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCFunction_GetFlags, PyCFunction_GetClass)
 int (*__target__PyCFunction_GetFlags)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyCFunction_GetFlags(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCFunction_GetFlags)
     int result = (int) __target__PyCFunction_GetFlags(a);
-    STATS_AFTER(PyCFunction_GetFlags)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCFunction_GetFunction, PyCFunction_GetFlags)
 PyCFunction (*__target__PyCFunction_GetFunction)(PyObject*) = NULL;
 PyAPI_FUNC(PyCFunction) PyCFunction_GetFunction(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCFunction_GetFunction)
     PyCFunction result = (PyCFunction) __target__PyCFunction_GetFunction(a);
-    STATS_AFTER(PyCFunction_GetFunction)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCFunction_GetSelf, PyCFunction_GetFunction)
 PyObject* (*__target__PyCFunction_GetSelf)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyCFunction_GetSelf(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCFunction_GetSelf)
     PyObject* result = (PyObject*) __target__PyCFunction_GetSelf(a);
-    STATS_AFTER(PyCFunction_GetSelf)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCFunction_New, PyCFunction_GetSelf)
 PyObject* (*__target__PyCFunction_New)(PyMethodDef*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyCFunction_New(PyMethodDef* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyCFunction_New)
     PyObject* result = (PyObject*) __target__PyCFunction_New(a, b);
-    STATS_AFTER(PyCFunction_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCFunction_NewEx, PyCFunction_New)
 PyObject* (*__target__PyCFunction_NewEx)(PyMethodDef*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyCFunction_NewEx(PyMethodDef* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyCFunction_NewEx)
     PyObject* result = (PyObject*) __target__PyCFunction_NewEx(a, b, c);
-    STATS_AFTER(PyCFunction_NewEx)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCMethod_New, PyCFunction_NewEx)
 PyObject* (*__target__PyCMethod_New)(PyMethodDef*, PyObject*, PyObject*, PyTypeObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyCMethod_New(PyMethodDef* a, PyObject* b, PyObject* c, PyTypeObject* d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyCMethod_New)
     PyObject* result = (PyObject*) __target__PyCMethod_New(a, b, c, d);
-    STATS_AFTER(PyCMethod_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCallIter_New, PyCMethod_New)
 PyObject* (*__target__PyCallIter_New)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyCallIter_New(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyCallIter_New)
     PyObject* result = (PyObject*) __target__PyCallIter_New(a, b);
-    STATS_AFTER(PyCallIter_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCallable_Check, PyCallIter_New)
 int (*__target__PyCallable_Check)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyCallable_Check(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCallable_Check)
     int result = (int) __target__PyCallable_Check(a);
-    STATS_AFTER(PyCallable_Check)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_GetContext, PyCallable_Check)
 void* (*__target__PyCapsule_GetContext)(PyObject*) = NULL;
 PyAPI_FUNC(void*) PyCapsule_GetContext(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCapsule_GetContext)
     void* result = (void*) __target__PyCapsule_GetContext(a);
-    STATS_AFTER(PyCapsule_GetContext)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_GetDestructor, PyCapsule_GetContext)
 PyCapsule_Destructor (*__target__PyCapsule_GetDestructor)(PyObject*) = NULL;
 PyAPI_FUNC(PyCapsule_Destructor) PyCapsule_GetDestructor(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCapsule_GetDestructor)
     PyCapsule_Destructor result = (PyCapsule_Destructor) __target__PyCapsule_GetDestructor(a);
-    STATS_AFTER(PyCapsule_GetDestructor)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_GetName, PyCapsule_GetDestructor)
 const char* (*__target__PyCapsule_GetName)(PyObject*) = NULL;
 PyAPI_FUNC(const char*) PyCapsule_GetName(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyCapsule_GetName)
     const char* result = (const char*) __target__PyCapsule_GetName(a);
-    STATS_AFTER(PyCapsule_GetName)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_GetPointer, PyCapsule_GetName)
 void* (*__target__PyCapsule_GetPointer)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(void*) PyCapsule_GetPointer(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyCapsule_GetPointer)
     void* result = (void*) __target__PyCapsule_GetPointer(a, b);
-    STATS_AFTER(PyCapsule_GetPointer)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_Import, PyCapsule_GetPointer)
 void* (*__target__PyCapsule_Import)(const char*, int) = NULL;
 PyAPI_FUNC(void*) PyCapsule_Import(const char* a, int b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyCapsule_Import)
     void* result = (void*) __target__PyCapsule_Import(a, b);
-    STATS_AFTER(PyCapsule_Import)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_IsValid, PyCapsule_Import)
 int (*__target__PyCapsule_IsValid)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(int) PyCapsule_IsValid(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyCapsule_IsValid)
     int result = (int) __target__PyCapsule_IsValid(a, b);
-    STATS_AFTER(PyCapsule_IsValid)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_New, PyCapsule_IsValid)
 PyObject* (*__target__PyCapsule_New)(void*, const char*, PyCapsule_Destructor) = NULL;
 PyAPI_FUNC(PyObject*) PyCapsule_New(void* a, const char* b, PyCapsule_Destructor c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyCapsule_New)
     PyObject* result = (PyObject*) __target__PyCapsule_New(a, b, c);
-    STATS_AFTER(PyCapsule_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_SetContext, PyCapsule_New)
 int (*__target__PyCapsule_SetContext)(PyObject*, void*) = NULL;
 PyAPI_FUNC(int) PyCapsule_SetContext(PyObject* a, void* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyCapsule_SetContext)
     int result = (int) __target__PyCapsule_SetContext(a, b);
-    STATS_AFTER(PyCapsule_SetContext)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_SetDestructor, PyCapsule_SetContext)
 int (*__target__PyCapsule_SetDestructor)(PyObject*, PyCapsule_Destructor) = NULL;
 PyAPI_FUNC(int) PyCapsule_SetDestructor(PyObject* a, PyCapsule_Destructor b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyCapsule_SetDestructor)
     int result = (int) __target__PyCapsule_SetDestructor(a, b);
-    STATS_AFTER(PyCapsule_SetDestructor)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_SetName, PyCapsule_SetDestructor)
 int (*__target__PyCapsule_SetName)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(int) PyCapsule_SetName(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyCapsule_SetName)
     int result = (int) __target__PyCapsule_SetName(a, b);
-    STATS_AFTER(PyCapsule_SetName)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCapsule_SetPointer, PyCapsule_SetName)
 int (*__target__PyCapsule_SetPointer)(PyObject*, void*) = NULL;
 PyAPI_FUNC(int) PyCapsule_SetPointer(PyObject* a, void* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyCapsule_SetPointer)
     int result = (int) __target__PyCapsule_SetPointer(a, b);
-    STATS_AFTER(PyCapsule_SetPointer)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyCell_Get(PyObject* a) {
@@ -2113,47 +1889,27 @@ PyAPI_FUNC(PyObject*) PyCell_New(PyObject* a) {
 PyAPI_FUNC(int) PyCell_Set(PyObject* a, PyObject* b) {
     unimplemented("PyCell_Set"); exit(-1);
 }
-STATS_CONTAINER(PyClassMethod_New, PyCapsule_SetPointer)
 PyObject* (*__target__PyClassMethod_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyClassMethod_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyClassMethod_New)
     PyObject* result = (PyObject*) __target__PyClassMethod_New(a);
-    STATS_AFTER(PyClassMethod_New)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyCode_Addr2Line(PyCodeObject* a, int b) {
     unimplemented("PyCode_Addr2Line"); exit(-1);
 }
-STATS_CONTAINER(PyCode_New, PyClassMethod_New)
 PyCodeObject* (*__target__PyCode_New)(int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) = NULL;
 PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, int n, PyObject* o) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e, (unsigned long) f, (unsigned long) g, (unsigned long) h, (unsigned long) i, (unsigned long) j, (unsigned long) k, (unsigned long) l, (unsigned long) m, (unsigned long) n, (unsigned long) o);
-    STATS_BEFORE(PyCode_New)
     PyCodeObject* result = (PyCodeObject*) __target__PyCode_New(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o);
-    STATS_AFTER(PyCode_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCode_NewEmpty, PyCode_New)
 PyCodeObject* (*__target__PyCode_NewEmpty)(const char*, const char*, int) = NULL;
 PyAPI_FUNC(PyCodeObject*) PyCode_NewEmpty(const char* a, const char* b, int c) {
-    LOG("'%s'(0x%lx) '%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyCode_NewEmpty)
     PyCodeObject* result = (PyCodeObject*) __target__PyCode_NewEmpty(a, b, c);
-    STATS_AFTER(PyCode_NewEmpty)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyCode_NewWithPosOnlyArgs, PyCode_NewEmpty)
 PyCodeObject* (*__target__PyCode_NewWithPosOnlyArgs)(int, int, int, int, int, int, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, int, PyObject*) = NULL;
 PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, int o, PyObject* p) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e, (unsigned long) f, (unsigned long) g, (unsigned long) h, (unsigned long) i, (unsigned long) j, (unsigned long) k, (unsigned long) l, (unsigned long) m, (unsigned long) n, (unsigned long) o, (unsigned long) p);
-    STATS_BEFORE(PyCode_NewWithPosOnlyArgs)
     PyCodeObject* result = (PyCodeObject*) __target__PyCode_NewWithPosOnlyArgs(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
-    STATS_AFTER(PyCode_NewWithPosOnlyArgs)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyCode_Optimize(PyObject* a, PyObject* b, PyObject* c, PyObject* d) {
@@ -2222,34 +1978,19 @@ PyAPI_FUNC(int) PyCompile_OpcodeStackEffect(int a, int b) {
 PyAPI_FUNC(int) PyCompile_OpcodeStackEffectWithJump(int a, int b, int c) {
     unimplemented("PyCompile_OpcodeStackEffectWithJump"); exit(-1);
 }
-STATS_CONTAINER(PyComplex_FromDoubles, PyCode_NewWithPosOnlyArgs)
 PyObject* (*__target__PyComplex_FromDoubles)(double, double) = NULL;
 PyAPI_FUNC(PyObject*) PyComplex_FromDoubles(double a, double b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyComplex_FromDoubles)
     PyObject* result = (PyObject*) __target__PyComplex_FromDoubles(a, b);
-    STATS_AFTER(PyComplex_FromDoubles)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyComplex_ImagAsDouble, PyComplex_FromDoubles)
 double (*__target__PyComplex_ImagAsDouble)(PyObject*) = NULL;
 PyAPI_FUNC(double) PyComplex_ImagAsDouble(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyComplex_ImagAsDouble)
     double result = (double) __target__PyComplex_ImagAsDouble(a);
-    STATS_AFTER(PyComplex_ImagAsDouble)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyComplex_RealAsDouble, PyComplex_ImagAsDouble)
 double (*__target__PyComplex_RealAsDouble)(PyObject*) = NULL;
 PyAPI_FUNC(double) PyComplex_RealAsDouble(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyComplex_RealAsDouble)
     double result = (double) __target__PyComplex_RealAsDouble(a);
-    STATS_AFTER(PyComplex_RealAsDouble)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyConfig_Clear(PyConfig* a) {
@@ -2279,37 +2020,22 @@ PyAPI_FUNC(PyStatus) PyConfig_SetString(PyConfig* a, wchar_t** b, const wchar_t*
 PyAPI_FUNC(PyStatus) PyConfig_SetWideStringList(PyConfig* a, PyWideStringList* b, Py_ssize_t c, wchar_t** d) {
     unimplemented("PyConfig_SetWideStringList"); exit(-1);
 }
-STATS_CONTAINER(PyContextVar_Get, PyComplex_RealAsDouble)
 int (*__target__PyContextVar_Get)(PyObject*, PyObject*, PyObject**) = NULL;
 PyAPI_FUNC(int) PyContextVar_Get(PyObject* a, PyObject* b, PyObject** c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyContextVar_Get)
     int result = (int) __target__PyContextVar_Get(a, b, c);
-    STATS_AFTER(PyContextVar_Get)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyContextVar_New, PyContextVar_Get)
 PyObject* (*__target__PyContextVar_New)(const char*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyContextVar_New(const char* a, PyObject* b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyContextVar_New)
     PyObject* result = (PyObject*) __target__PyContextVar_New(a, b);
-    STATS_AFTER(PyContextVar_New)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyContextVar_Reset(PyObject* a, PyObject* b) {
     unimplemented("PyContextVar_Reset"); exit(-1);
 }
-STATS_CONTAINER(PyContextVar_Set, PyContextVar_New)
 PyObject* (*__target__PyContextVar_Set)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyContextVar_Set(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyContextVar_Set)
     PyObject* result = (PyObject*) __target__PyContextVar_Set(a, b);
-    STATS_AFTER(PyContextVar_Set)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyContext_Copy(PyObject* a) {
@@ -2330,47 +2056,27 @@ PyAPI_FUNC(PyObject*) PyContext_New() {
 PyAPI_FUNC(PyObject*) PyCoro_New(PyFrameObject* a, PyObject* b, PyObject* c) {
     unimplemented("PyCoro_New"); exit(-1);
 }
-STATS_CONTAINER(PyDescrObject_GetName, PyContextVar_Set)
 PyObject* (*__target__PyDescrObject_GetName)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDescrObject_GetName(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDescrObject_GetName)
     PyObject* result = (PyObject*) __target__PyDescrObject_GetName(a);
-    STATS_AFTER(PyDescrObject_GetName)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDescrObject_GetType, PyDescrObject_GetName)
 PyTypeObject* (*__target__PyDescrObject_GetType)(PyObject*) = NULL;
 PyAPI_FUNC(PyTypeObject*) PyDescrObject_GetType(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDescrObject_GetType)
     PyTypeObject* result = (PyTypeObject*) __target__PyDescrObject_GetType(a);
-    STATS_AFTER(PyDescrObject_GetType)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyDescr_IsData(PyObject* a) {
     unimplemented("PyDescr_IsData"); exit(-1);
 }
-STATS_CONTAINER(PyDescr_NewClassMethod, PyDescrObject_GetType)
 PyObject* (*__target__PyDescr_NewClassMethod)(PyTypeObject*, PyMethodDef*) = NULL;
 PyAPI_FUNC(PyObject*) PyDescr_NewClassMethod(PyTypeObject* a, PyMethodDef* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyDescr_NewClassMethod)
     PyObject* result = (PyObject*) __target__PyDescr_NewClassMethod(a, b);
-    STATS_AFTER(PyDescr_NewClassMethod)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDescr_NewGetSet, PyDescr_NewClassMethod)
 PyObject* (*__target__PyDescr_NewGetSet)(PyTypeObject*, PyGetSetDef*) = NULL;
 PyAPI_FUNC(PyObject*) PyDescr_NewGetSet(PyTypeObject* a, PyGetSetDef* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyDescr_NewGetSet)
     PyObject* result = (PyObject*) __target__PyDescr_NewGetSet(a, b);
-    STATS_AFTER(PyDescr_NewGetSet)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyDescr_NewMember(PyTypeObject* a, struct PyMemberDef* b) {
@@ -2382,322 +2088,162 @@ PyAPI_FUNC(PyObject*) PyDescr_NewMethod(PyTypeObject* a, PyMethodDef* b) {
 PyAPI_FUNC(PyObject*) PyDescr_NewWrapper(PyTypeObject* a, struct wrapperbase* b, void* c) {
     unimplemented("PyDescr_NewWrapper"); exit(-1);
 }
-STATS_CONTAINER(PyDictProxy_New, PyDescr_NewGetSet)
 PyObject* (*__target__PyDictProxy_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDictProxy_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDictProxy_New)
     PyObject* result = (PyObject*) __target__PyDictProxy_New(a);
-    STATS_AFTER(PyDictProxy_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_Clear, PyDictProxy_New)
 void (*__target__PyDict_Clear)(PyObject*) = NULL;
 PyAPI_FUNC(void) PyDict_Clear(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDict_Clear)
     __target__PyDict_Clear(a);
-    STATS_AFTER(PyDict_Clear)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyDict_Contains, PyDict_Clear)
 int (*__target__PyDict_Contains)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyDict_Contains(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyDict_Contains)
     int result = (int) __target__PyDict_Contains(a, b);
-    STATS_AFTER(PyDict_Contains)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_Copy, PyDict_Contains)
 PyObject* (*__target__PyDict_Copy)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDict_Copy(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDict_Copy)
     PyObject* result = (PyObject*) __target__PyDict_Copy(a);
-    STATS_AFTER(PyDict_Copy)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_DelItem, PyDict_Copy)
 int (*__target__PyDict_DelItem)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyDict_DelItem(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyDict_DelItem)
     int result = (int) __target__PyDict_DelItem(a, b);
-    STATS_AFTER(PyDict_DelItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_GetItem, PyDict_DelItem)
 PyObject* (*__target__PyDict_GetItem)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDict_GetItem(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyDict_GetItem)
     PyObject* result = (PyObject*) __target__PyDict_GetItem(a, b);
-    STATS_AFTER(PyDict_GetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_GetItemWithError, PyDict_GetItem)
 PyObject* (*__target__PyDict_GetItemWithError)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDict_GetItemWithError(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyDict_GetItemWithError)
     PyObject* result = (PyObject*) __target__PyDict_GetItemWithError(a, b);
-    STATS_AFTER(PyDict_GetItemWithError)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyDict_Items(PyObject* a) {
     unimplemented("PyDict_Items"); exit(-1);
 }
-STATS_CONTAINER(PyDict_Keys, PyDict_GetItemWithError)
 PyObject* (*__target__PyDict_Keys)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDict_Keys(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDict_Keys)
     PyObject* result = (PyObject*) __target__PyDict_Keys(a);
-    STATS_AFTER(PyDict_Keys)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_Merge, PyDict_Keys)
 int (*__target__PyDict_Merge)(PyObject*, PyObject*, int) = NULL;
 PyAPI_FUNC(int) PyDict_Merge(PyObject* a, PyObject* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyDict_Merge)
     int result = (int) __target__PyDict_Merge(a, b, c);
-    STATS_AFTER(PyDict_Merge)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyDict_MergeFromSeq2(PyObject* a, PyObject* b, int c) {
     unimplemented("PyDict_MergeFromSeq2"); exit(-1);
 }
-STATS_CONTAINER(PyDict_New, PyDict_Merge)
 PyObject* (*__target__PyDict_New)() = NULL;
 PyAPI_FUNC(PyObject*) PyDict_New() {
-    LOGS("");
-    STATS_BEFORE(PyDict_New)
     PyObject* result = (PyObject*) __target__PyDict_New();
-    STATS_AFTER(PyDict_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_SetDefault, PyDict_New)
 PyObject* (*__target__PyDict_SetDefault)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDict_SetDefault(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyDict_SetDefault)
     PyObject* result = (PyObject*) __target__PyDict_SetDefault(a, b, c);
-    STATS_AFTER(PyDict_SetDefault)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_SetItem, PyDict_SetDefault)
 int (*__target__PyDict_SetItem)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyDict_SetItem(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyDict_SetItem)
     int result = (int) __target__PyDict_SetItem(a, b, c);
-    STATS_AFTER(PyDict_SetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_Size, PyDict_SetItem)
 Py_ssize_t (*__target__PyDict_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyDict_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDict_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PyDict_Size(a);
-    STATS_AFTER(PyDict_Size)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_Update, PyDict_Size)
 int (*__target__PyDict_Update)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyDict_Update(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyDict_Update)
     int result = (int) __target__PyDict_Update(a, b);
-    STATS_AFTER(PyDict_Update)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyDict_Values, PyDict_Update)
 PyObject* (*__target__PyDict_Values)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyDict_Values(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyDict_Values)
     PyObject* result = (PyObject*) __target__PyDict_Values(a);
-    STATS_AFTER(PyDict_Values)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_BadArgument, PyDict_Values)
 int (*__target__PyErr_BadArgument)() = NULL;
 PyAPI_FUNC(int) PyErr_BadArgument() {
-    LOGS("");
-    STATS_BEFORE(PyErr_BadArgument)
     int result = (int) __target__PyErr_BadArgument();
-    STATS_AFTER(PyErr_BadArgument)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_BadInternalCall, PyErr_BadArgument)
 void (*__target__PyErr_BadInternalCall)() = NULL;
 PyAPI_FUNC(void) PyErr_BadInternalCall() {
-    LOGS("");
-    STATS_BEFORE(PyErr_BadInternalCall)
     __target__PyErr_BadInternalCall();
-    STATS_AFTER(PyErr_BadInternalCall)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_CheckSignals, PyErr_BadInternalCall)
 int (*__target__PyErr_CheckSignals)() = NULL;
 PyAPI_FUNC(int) PyErr_CheckSignals() {
-    LOGS("");
-    STATS_BEFORE(PyErr_CheckSignals)
     int result = (int) __target__PyErr_CheckSignals();
-    STATS_AFTER(PyErr_CheckSignals)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_Clear, PyErr_CheckSignals)
 void (*__target__PyErr_Clear)() = NULL;
 PyAPI_FUNC(void) PyErr_Clear() {
-    LOGS("");
-    STATS_BEFORE(PyErr_Clear)
     __target__PyErr_Clear();
-    STATS_AFTER(PyErr_Clear)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_Display, PyErr_Clear)
 void (*__target__PyErr_Display)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(void) PyErr_Display(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_Display)
     __target__PyErr_Display(a, b, c);
-    STATS_AFTER(PyErr_Display)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_ExceptionMatches, PyErr_Display)
 int (*__target__PyErr_ExceptionMatches)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyErr_ExceptionMatches(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyErr_ExceptionMatches)
     int result = (int) __target__PyErr_ExceptionMatches(a);
-    STATS_AFTER(PyErr_ExceptionMatches)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_Fetch, PyErr_ExceptionMatches)
 void (*__target__PyErr_Fetch)(PyObject**, PyObject**, PyObject**) = NULL;
 PyAPI_FUNC(void) PyErr_Fetch(PyObject** a, PyObject** b, PyObject** c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_Fetch)
     __target__PyErr_Fetch(a, b, c);
-    STATS_AFTER(PyErr_Fetch)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_FormatV, PyErr_Fetch)
 PyObject* (*__target__PyErr_FormatV)(PyObject*, const char*, va_list) = NULL;
 PyAPI_FUNC(PyObject*) PyErr_FormatV(PyObject* a, const char* b, va_list c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_FormatV)
     PyObject* result = (PyObject*) __target__PyErr_FormatV(a, b, c);
-    STATS_AFTER(PyErr_FormatV)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_GetExcInfo, PyErr_FormatV)
 void (*__target__PyErr_GetExcInfo)(PyObject**, PyObject**, PyObject**) = NULL;
 PyAPI_FUNC(void) PyErr_GetExcInfo(PyObject** a, PyObject** b, PyObject** c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_GetExcInfo)
     __target__PyErr_GetExcInfo(a, b, c);
-    STATS_AFTER(PyErr_GetExcInfo)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_GivenExceptionMatches, PyErr_GetExcInfo)
 int (*__target__PyErr_GivenExceptionMatches)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyErr_GivenExceptionMatches(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyErr_GivenExceptionMatches)
     int result = (int) __target__PyErr_GivenExceptionMatches(a, b);
-    STATS_AFTER(PyErr_GivenExceptionMatches)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_NewException, PyErr_GivenExceptionMatches)
 PyObject* (*__target__PyErr_NewException)(const char*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyErr_NewException(const char* a, PyObject* b, PyObject* c) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_NewException)
     PyObject* result = (PyObject*) __target__PyErr_NewException(a, b, c);
-    STATS_AFTER(PyErr_NewException)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_NewExceptionWithDoc, PyErr_NewException)
 PyObject* (*__target__PyErr_NewExceptionWithDoc)(const char*, const char*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyErr_NewExceptionWithDoc(const char* a, const char* b, PyObject* c, PyObject* d) {
-    LOG("'%s'(0x%lx) '%s'(0x%lx) 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyErr_NewExceptionWithDoc)
     PyObject* result = (PyObject*) __target__PyErr_NewExceptionWithDoc(a, b, c, d);
-    STATS_AFTER(PyErr_NewExceptionWithDoc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_NoMemory, PyErr_NewExceptionWithDoc)
 PyObject* (*__target__PyErr_NoMemory)() = NULL;
 PyAPI_FUNC(PyObject*) PyErr_NoMemory() {
-    LOGS("");
-    STATS_BEFORE(PyErr_NoMemory)
     PyObject* result = (PyObject*) __target__PyErr_NoMemory();
-    STATS_AFTER(PyErr_NoMemory)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_NormalizeException, PyErr_NoMemory)
 void (*__target__PyErr_NormalizeException)(PyObject**, PyObject**, PyObject**) = NULL;
 PyAPI_FUNC(void) PyErr_NormalizeException(PyObject** a, PyObject** b, PyObject** c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_NormalizeException)
     __target__PyErr_NormalizeException(a, b, c);
-    STATS_AFTER(PyErr_NormalizeException)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_Occurred, PyErr_NormalizeException)
 PyObject* (*__target__PyErr_Occurred)() = NULL;
 PyAPI_FUNC(PyObject*) PyErr_Occurred() {
-    LOGS("");
-    STATS_BEFORE(PyErr_Occurred)
     PyObject* result = (PyObject*) __target__PyErr_Occurred();
-    STATS_AFTER(PyErr_Occurred)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_Print, PyErr_Occurred)
 void (*__target__PyErr_Print)() = NULL;
 PyAPI_FUNC(void) PyErr_Print() {
-    LOGS("");
-    STATS_BEFORE(PyErr_Print)
     __target__PyErr_Print();
-    STATS_AFTER(PyErr_Print)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_PrintEx, PyErr_Print)
 void (*__target__PyErr_PrintEx)(int) = NULL;
 PyAPI_FUNC(void) PyErr_PrintEx(int a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyErr_PrintEx)
     __target__PyErr_PrintEx(a);
-    STATS_AFTER(PyErr_PrintEx)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(PyObject*) PyErr_ProgramText(const char* a, int b) {
     unimplemented("PyErr_ProgramText"); exit(-1);
@@ -2708,62 +2254,32 @@ PyAPI_FUNC(PyObject*) PyErr_ProgramTextObject(PyObject* a, int b) {
 PyAPI_FUNC(void) PyErr_RangedSyntaxLocationObject(PyObject* a, int b, int c, int d, int e) {
     unimplemented("PyErr_RangedSyntaxLocationObject"); exit(-1);
 }
-STATS_CONTAINER(PyErr_Restore, PyErr_PrintEx)
 void (*__target__PyErr_Restore)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(void) PyErr_Restore(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_Restore)
     __target__PyErr_Restore(a, b, c);
-    STATS_AFTER(PyErr_Restore)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_SetExcInfo, PyErr_Restore)
 void (*__target__PyErr_SetExcInfo)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(void) PyErr_SetExcInfo(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_SetExcInfo)
     __target__PyErr_SetExcInfo(a, b, c);
-    STATS_AFTER(PyErr_SetExcInfo)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_SetFromErrno, PyErr_SetExcInfo)
 PyObject* (*__target__PyErr_SetFromErrno)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyErr_SetFromErrno(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyErr_SetFromErrno)
     PyObject* result = (PyObject*) __target__PyErr_SetFromErrno(a);
-    STATS_AFTER(PyErr_SetFromErrno)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_SetFromErrnoWithFilename, PyErr_SetFromErrno)
 PyObject* (*__target__PyErr_SetFromErrnoWithFilename)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyErr_SetFromErrnoWithFilename(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyErr_SetFromErrnoWithFilename)
     PyObject* result = (PyObject*) __target__PyErr_SetFromErrnoWithFilename(a, b);
-    STATS_AFTER(PyErr_SetFromErrnoWithFilename)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_SetFromErrnoWithFilenameObject, PyErr_SetFromErrnoWithFilename)
 PyObject* (*__target__PyErr_SetFromErrnoWithFilenameObject)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyErr_SetFromErrnoWithFilenameObject(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyErr_SetFromErrnoWithFilenameObject)
     PyObject* result = (PyObject*) __target__PyErr_SetFromErrnoWithFilenameObject(a, b);
-    STATS_AFTER(PyErr_SetFromErrnoWithFilenameObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyErr_SetFromErrnoWithFilenameObjects, PyErr_SetFromErrnoWithFilenameObject)
 PyObject* (*__target__PyErr_SetFromErrnoWithFilenameObjects)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyErr_SetFromErrnoWithFilenameObjects(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyErr_SetFromErrnoWithFilenameObjects)
     PyObject* result = (PyObject*) __target__PyErr_SetFromErrnoWithFilenameObjects(a, b, c);
-    STATS_AFTER(PyErr_SetFromErrnoWithFilenameObjects)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyErr_SetImportError(PyObject* a, PyObject* b, PyObject* c) {
@@ -2778,32 +2294,17 @@ PyAPI_FUNC(void) PyErr_SetInterrupt() {
 PyAPI_FUNC(int) PyErr_SetInterruptEx(int a) {
     unimplemented("PyErr_SetInterruptEx"); exit(-1);
 }
-STATS_CONTAINER(PyErr_SetNone, PyErr_SetFromErrnoWithFilenameObjects)
 void (*__target__PyErr_SetNone)(PyObject*) = NULL;
 PyAPI_FUNC(void) PyErr_SetNone(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyErr_SetNone)
     __target__PyErr_SetNone(a);
-    STATS_AFTER(PyErr_SetNone)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_SetObject, PyErr_SetNone)
 void (*__target__PyErr_SetObject)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(void) PyErr_SetObject(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyErr_SetObject)
     __target__PyErr_SetObject(a, b);
-    STATS_AFTER(PyErr_SetObject)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyErr_SetString, PyErr_SetObject)
 void (*__target__PyErr_SetString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(void) PyErr_SetString(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyErr_SetString)
     __target__PyErr_SetString(a, b);
-    STATS_AFTER(PyErr_SetString)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void) PyErr_SyntaxLocation(const char* a, int b) {
     unimplemented("PyErr_SyntaxLocation"); exit(-1);
@@ -2823,14 +2324,9 @@ PyAPI_FUNC(int) PyErr_WarnExplicitFormat(PyObject* a, const char* b, int c, cons
 PyAPI_FUNC(int) PyErr_WarnExplicitObject(PyObject* a, PyObject* b, PyObject* c, int d, PyObject* e, PyObject* f) {
     unimplemented("PyErr_WarnExplicitObject"); exit(-1);
 }
-STATS_CONTAINER(PyErr_WriteUnraisable, PyErr_SetString)
 void (*__target__PyErr_WriteUnraisable)(PyObject*) = NULL;
 PyAPI_FUNC(void) PyErr_WriteUnraisable(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyErr_WriteUnraisable)
     __target__PyErr_WriteUnraisable(a);
-    STATS_AFTER(PyErr_WriteUnraisable)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void) PyEval_AcquireLock() {
     unimplemented("PyEval_AcquireLock"); exit(-1);
@@ -2844,34 +2340,19 @@ PyAPI_FUNC(PyObject*) PyEval_CallFunction(PyObject* a, const char* b, ...) {
 PyAPI_FUNC(PyObject*) PyEval_CallMethod(PyObject* a, const char* b, const char* c, ...) {
     unimplemented("PyEval_CallMethod"); exit(-1);
 }
-STATS_CONTAINER(PyEval_CallObjectWithKeywords, PyErr_WriteUnraisable)
 PyObject* (*__target__PyEval_CallObjectWithKeywords)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyEval_CallObjectWithKeywords(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyEval_CallObjectWithKeywords)
     PyObject* result = (PyObject*) __target__PyEval_CallObjectWithKeywords(a, b, c);
-    STATS_AFTER(PyEval_CallObjectWithKeywords)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyEval_EvalCode, PyEval_CallObjectWithKeywords)
 PyObject* (*__target__PyEval_EvalCode)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyEval_EvalCode(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyEval_EvalCode)
     PyObject* result = (PyObject*) __target__PyEval_EvalCode(a, b, c);
-    STATS_AFTER(PyEval_EvalCode)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyEval_EvalCodeEx, PyEval_EvalCode)
 PyObject* (*__target__PyEval_EvalCodeEx)(PyObject*, PyObject*, PyObject*, PyObject*const*, int, PyObject*const*, int, PyObject*const*, int, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyEval_EvalCodeEx(PyObject* a, PyObject* b, PyObject* c, PyObject*const* d, int e, PyObject*const* f, int g, PyObject*const* h, int i, PyObject* j, PyObject* k) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e, (unsigned long) f, (unsigned long) g, (unsigned long) h, (unsigned long) i, (unsigned long) j, (unsigned long) k);
-    STATS_BEFORE(PyEval_EvalCodeEx)
     PyObject* result = (PyObject*) __target__PyEval_EvalCodeEx(a, b, c, d, e, f, g, h, i, j, k);
-    STATS_AFTER(PyEval_EvalCodeEx)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyEval_EvalFrame(PyFrameObject* a) {
@@ -2880,14 +2361,9 @@ PyAPI_FUNC(PyObject*) PyEval_EvalFrame(PyFrameObject* a) {
 PyAPI_FUNC(PyObject*) PyEval_EvalFrameEx(PyFrameObject* a, int b) {
     unimplemented("PyEval_EvalFrameEx"); exit(-1);
 }
-STATS_CONTAINER(PyEval_GetBuiltins, PyEval_EvalCodeEx)
 PyObject* (*__target__PyEval_GetBuiltins)() = NULL;
 PyAPI_FUNC(PyObject*) PyEval_GetBuiltins() {
-    LOGS("");
-    STATS_BEFORE(PyEval_GetBuiltins)
     PyObject* result = (PyObject*) __target__PyEval_GetBuiltins();
-    STATS_AFTER(PyEval_GetBuiltins)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyFrameObject*) PyEval_GetFrame() {
@@ -2905,23 +2381,13 @@ PyAPI_FUNC(PyObject*) PyEval_GetGlobals() {
 PyAPI_FUNC(PyObject*) PyEval_GetLocals() {
     unimplemented("PyEval_GetLocals"); exit(-1);
 }
-STATS_CONTAINER(PyEval_InitThreads, PyEval_GetBuiltins)
 void (*__target__PyEval_InitThreads)() = NULL;
 PyAPI_FUNC(void) PyEval_InitThreads() {
-    LOGS("");
-    STATS_BEFORE(PyEval_InitThreads)
     __target__PyEval_InitThreads();
-    STATS_AFTER(PyEval_InitThreads)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyEval_MergeCompilerFlags, PyEval_InitThreads)
 int (*__target__PyEval_MergeCompilerFlags)(PyCompilerFlags*) = NULL;
 PyAPI_FUNC(int) PyEval_MergeCompilerFlags(PyCompilerFlags* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyEval_MergeCompilerFlags)
     int result = (int) __target__PyEval_MergeCompilerFlags(a);
-    STATS_AFTER(PyEval_MergeCompilerFlags)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyEval_ReleaseLock() {
@@ -2930,23 +2396,13 @@ PyAPI_FUNC(void) PyEval_ReleaseLock() {
 PyAPI_FUNC(void) PyEval_ReleaseThread(PyThreadState* a) {
     unimplemented("PyEval_ReleaseThread"); exit(-1);
 }
-STATS_CONTAINER(PyEval_RestoreThread, PyEval_MergeCompilerFlags)
 void (*__target__PyEval_RestoreThread)(PyThreadState*) = NULL;
 PyAPI_FUNC(void) PyEval_RestoreThread(PyThreadState* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyEval_RestoreThread)
     __target__PyEval_RestoreThread(a);
-    STATS_AFTER(PyEval_RestoreThread)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyEval_SaveThread, PyEval_RestoreThread)
 PyThreadState* (*__target__PyEval_SaveThread)() = NULL;
 PyAPI_FUNC(PyThreadState*) PyEval_SaveThread() {
-    LOGS("");
-    STATS_BEFORE(PyEval_SaveThread)
     PyThreadState* result = (PyThreadState*) __target__PyEval_SaveThread();
-    STATS_AFTER(PyEval_SaveThread)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyEval_SetProfile(Py_tracefunc a, PyObject* b) {
@@ -2955,14 +2411,9 @@ PyAPI_FUNC(void) PyEval_SetProfile(Py_tracefunc a, PyObject* b) {
 PyAPI_FUNC(void) PyEval_SetTrace(Py_tracefunc a, PyObject* b) {
     unimplemented("PyEval_SetTrace"); exit(-1);
 }
-STATS_CONTAINER(PyEval_ThreadsInitialized, PyEval_SaveThread)
 int (*__target__PyEval_ThreadsInitialized)() = NULL;
 PyAPI_FUNC(int) PyEval_ThreadsInitialized() {
-    LOGS("");
-    STATS_BEFORE(PyEval_ThreadsInitialized)
     int result = (int) __target__PyEval_ThreadsInitialized();
-    STATS_AFTER(PyEval_ThreadsInitialized)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(const char*) PyExceptionClass_Name(PyObject* a) {
@@ -2971,45 +2422,25 @@ PyAPI_FUNC(const char*) PyExceptionClass_Name(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyException_GetCause(PyObject* a) {
     unimplemented("PyException_GetCause"); exit(-1);
 }
-STATS_CONTAINER(PyException_GetContext, PyEval_ThreadsInitialized)
 PyObject* (*__target__PyException_GetContext)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyException_GetContext)
     PyObject* result = (PyObject*) __target__PyException_GetContext(a);
-    STATS_AFTER(PyException_GetContext)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyException_GetTraceback(PyObject* a) {
     unimplemented("PyException_GetTraceback"); exit(-1);
 }
-STATS_CONTAINER(PyException_SetCause, PyException_GetContext)
 void (*__target__PyException_SetCause)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(void) PyException_SetCause(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyException_SetCause)
     __target__PyException_SetCause(a, b);
-    STATS_AFTER(PyException_SetCause)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyException_SetContext, PyException_SetCause)
 void (*__target__PyException_SetContext)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(void) PyException_SetContext(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyException_SetContext)
     __target__PyException_SetContext(a, b);
-    STATS_AFTER(PyException_SetContext)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyException_SetTraceback, PyException_SetContext)
 int (*__target__PyException_SetTraceback)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyException_SetTraceback(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyException_SetTraceback)
     int result = (int) __target__PyException_SetTraceback(a, b);
-    STATS_AFTER(PyException_SetTraceback)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyFile_FromFd(int a, const char* b, const char* c, int d, const char* e, const char* f, const char* g, int h) {
@@ -3030,44 +2461,24 @@ PyAPI_FUNC(PyObject*) PyFile_OpenCodeObject(PyObject* a) {
 PyAPI_FUNC(int) PyFile_SetOpenCodeHook(Py_OpenCodeHookFunction a, void* b) {
     unimplemented("PyFile_SetOpenCodeHook"); exit(-1);
 }
-STATS_CONTAINER(PyFile_WriteObject, PyException_SetTraceback)
 int (*__target__PyFile_WriteObject)(PyObject*, PyObject*, int) = NULL;
 PyAPI_FUNC(int) PyFile_WriteObject(PyObject* a, PyObject* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyFile_WriteObject)
     int result = (int) __target__PyFile_WriteObject(a, b, c);
-    STATS_AFTER(PyFile_WriteObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyFile_WriteString, PyFile_WriteObject)
 int (*__target__PyFile_WriteString)(const char*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyFile_WriteString(const char* a, PyObject* b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyFile_WriteString)
     int result = (int) __target__PyFile_WriteString(a, b);
-    STATS_AFTER(PyFile_WriteString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyFloat_AsDouble, PyFile_WriteString)
 double (*__target__PyFloat_AsDouble)(PyObject*) = NULL;
 PyAPI_FUNC(double) PyFloat_AsDouble(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyFloat_AsDouble)
     double result = (double) __target__PyFloat_AsDouble(a);
-    STATS_AFTER(PyFloat_AsDouble)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyFloat_FromDouble, PyFloat_AsDouble)
 PyObject* (*__target__PyFloat_FromDouble)(double) = NULL;
 PyAPI_FUNC(PyObject*) PyFloat_FromDouble(double a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyFloat_FromDouble)
     PyObject* result = (PyObject*) __target__PyFloat_FromDouble(a);
-    STATS_AFTER(PyFloat_FromDouble)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyFloat_FromString(PyObject* a) {
@@ -3106,24 +2517,14 @@ PyAPI_FUNC(int) PyFrame_GetLineNumber(PyFrameObject* a) {
 PyAPI_FUNC(void) PyFrame_LocalsToFast(PyFrameObject* a, int b) {
     unimplemented("PyFrame_LocalsToFast"); exit(-1);
 }
-STATS_CONTAINER(PyFrame_New, PyFloat_FromDouble)
 PyFrameObject* (*__target__PyFrame_New)(PyThreadState*, PyCodeObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyFrameObject*) PyFrame_New(PyThreadState* a, PyCodeObject* b, PyObject* c, PyObject* d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyFrame_New)
     PyFrameObject* result = (PyFrameObject*) __target__PyFrame_New(a, b, c, d);
-    STATS_AFTER(PyFrame_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyFrozenSet_New, PyFrame_New)
 PyObject* (*__target__PyFrozenSet_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyFrozenSet_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyFrozenSet_New)
     PyObject* result = (PyObject*) __target__PyFrozenSet_New(a);
-    STATS_AFTER(PyFrozenSet_New)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyFunction_GetAnnotations(PyObject* a) {
@@ -3180,73 +2581,38 @@ PyAPI_FUNC(int) PyGC_IsEnabled() {
 PyAPI_FUNC(int) PyGILState_Check() {
     unimplemented("PyGILState_Check"); exit(-1);
 }
-STATS_CONTAINER(PyGILState_Ensure, PyFrozenSet_New)
 PyGILState_STATE (*__target__PyGILState_Ensure)() = NULL;
 PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
-    LOGS("");
-    STATS_BEFORE(PyGILState_Ensure)
     PyGILState_STATE result = (PyGILState_STATE) __target__PyGILState_Ensure();
-    STATS_AFTER(PyGILState_Ensure)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyGILState_GetThisThreadState, PyGILState_Ensure)
 PyThreadState* (*__target__PyGILState_GetThisThreadState)() = NULL;
 PyAPI_FUNC(PyThreadState*) PyGILState_GetThisThreadState() {
-    LOGS("");
-    STATS_BEFORE(PyGILState_GetThisThreadState)
     PyThreadState* result = (PyThreadState*) __target__PyGILState_GetThisThreadState();
-    STATS_AFTER(PyGILState_GetThisThreadState)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyGILState_Release, PyGILState_GetThisThreadState)
 void (*__target__PyGILState_Release)(PyGILState_STATE) = NULL;
 PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyGILState_Release)
     __target__PyGILState_Release(a);
-    STATS_AFTER(PyGILState_Release)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyGen_New, PyGILState_Release)
 PyObject* (*__target__PyGen_New)(PyFrameObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyGen_New(PyFrameObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyGen_New)
     PyObject* result = (PyObject*) __target__PyGen_New(a);
-    STATS_AFTER(PyGen_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyGen_NewWithQualName, PyGen_New)
 PyObject* (*__target__PyGen_NewWithQualName)(PyFrameObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyGen_NewWithQualName(PyFrameObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyGen_NewWithQualName)
     PyObject* result = (PyObject*) __target__PyGen_NewWithQualName(a, b, c);
-    STATS_AFTER(PyGen_NewWithQualName)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyImport_AddModule, PyGen_NewWithQualName)
 PyObject* (*__target__PyImport_AddModule)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyImport_AddModule(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyImport_AddModule)
     PyObject* result = (PyObject*) __target__PyImport_AddModule(a);
-    STATS_AFTER(PyImport_AddModule)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyImport_AddModuleObject, PyImport_AddModule)
 PyObject* (*__target__PyImport_AddModuleObject)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyImport_AddModuleObject(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyImport_AddModuleObject)
     PyObject* result = (PyObject*) __target__PyImport_AddModuleObject(a);
-    STATS_AFTER(PyImport_AddModuleObject)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyImport_AppendInittab(const char* a, PyObject*(*b)(void)) {
@@ -3279,24 +2645,14 @@ PyAPI_FUNC(const char*) PyImport_GetMagicTag() {
 PyAPI_FUNC(PyObject*) PyImport_GetModule(PyObject* a) {
     unimplemented("PyImport_GetModule"); exit(-1);
 }
-STATS_CONTAINER(PyImport_GetModuleDict, PyImport_AddModuleObject)
 PyObject* (*__target__PyImport_GetModuleDict)() = NULL;
 PyAPI_FUNC(PyObject*) PyImport_GetModuleDict() {
-    LOGS("");
-    STATS_BEFORE(PyImport_GetModuleDict)
     PyObject* result = (PyObject*) __target__PyImport_GetModuleDict();
-    STATS_AFTER(PyImport_GetModuleDict)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyImport_Import, PyImport_GetModuleDict)
 PyObject* (*__target__PyImport_Import)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyImport_Import(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyImport_Import)
     PyObject* result = (PyObject*) __target__PyImport_Import(a);
-    STATS_AFTER(PyImport_Import)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyImport_ImportFrozenModule(const char* a) {
@@ -3305,80 +2661,45 @@ PyAPI_FUNC(int) PyImport_ImportFrozenModule(const char* a) {
 PyAPI_FUNC(int) PyImport_ImportFrozenModuleObject(PyObject* a) {
     unimplemented("PyImport_ImportFrozenModuleObject"); exit(-1);
 }
-STATS_CONTAINER(PyImport_ImportModule, PyImport_Import)
 PyObject* (*__target__PyImport_ImportModule)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyImport_ImportModule(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyImport_ImportModule)
     PyObject* result = (PyObject*) __target__PyImport_ImportModule(a);
-    STATS_AFTER(PyImport_ImportModule)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyImport_ImportModuleLevel, PyImport_ImportModule)
 PyObject* (*__target__PyImport_ImportModuleLevel)(const char*, PyObject*, PyObject*, PyObject*, int) = NULL;
 PyAPI_FUNC(PyObject*) PyImport_ImportModuleLevel(const char* a, PyObject* b, PyObject* c, PyObject* d, int e) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(PyImport_ImportModuleLevel)
     PyObject* result = (PyObject*) __target__PyImport_ImportModuleLevel(a, b, c, d, e);
-    STATS_AFTER(PyImport_ImportModuleLevel)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyImport_ImportModuleLevelObject, PyImport_ImportModuleLevel)
 PyObject* (*__target__PyImport_ImportModuleLevelObject)(PyObject*, PyObject*, PyObject*, PyObject*, int) = NULL;
 PyAPI_FUNC(PyObject*) PyImport_ImportModuleLevelObject(PyObject* a, PyObject* b, PyObject* c, PyObject* d, int e) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(PyImport_ImportModuleLevelObject)
     PyObject* result = (PyObject*) __target__PyImport_ImportModuleLevelObject(a, b, c, d, e);
-    STATS_AFTER(PyImport_ImportModuleLevelObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyImport_ImportModuleNoBlock, PyImport_ImportModuleLevelObject)
 PyObject* (*__target__PyImport_ImportModuleNoBlock)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyImport_ImportModuleNoBlock(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyImport_ImportModuleNoBlock)
     PyObject* result = (PyObject*) __target__PyImport_ImportModuleNoBlock(a);
-    STATS_AFTER(PyImport_ImportModuleNoBlock)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyImport_ReloadModule(PyObject* a) {
     unimplemented("PyImport_ReloadModule"); exit(-1);
 }
-STATS_CONTAINER(PyIndex_Check, PyImport_ImportModuleNoBlock)
 int (*__target__PyIndex_Check)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyIndex_Check(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyIndex_Check)
     int result = (int) __target__PyIndex_Check(a);
-    STATS_AFTER(PyIndex_Check)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyInit__imp() {
     unimplemented("PyInit__imp"); exit(-1);
 }
-STATS_CONTAINER(PyInstanceMethod_Function, PyIndex_Check)
 PyObject* (*__target__PyInstanceMethod_Function)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyInstanceMethod_Function(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyInstanceMethod_Function)
     PyObject* result = (PyObject*) __target__PyInstanceMethod_Function(a);
-    STATS_AFTER(PyInstanceMethod_Function)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyInstanceMethod_New, PyInstanceMethod_Function)
 PyObject* (*__target__PyInstanceMethod_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyInstanceMethod_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyInstanceMethod_New)
     PyObject* result = (PyObject*) __target__PyInstanceMethod_New(a);
-    STATS_AFTER(PyInstanceMethod_New)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyInterpreterState_Clear(PyInterpreterState* a) {
@@ -3393,37 +2714,22 @@ PyAPI_FUNC(PyInterpreterState*) PyInterpreterState_Get() {
 PyAPI_FUNC(PyObject*) PyInterpreterState_GetDict(PyInterpreterState* a) {
     unimplemented("PyInterpreterState_GetDict"); exit(-1);
 }
-STATS_CONTAINER(PyInterpreterState_GetID, PyInstanceMethod_New)
 int64_t (*__target__PyInterpreterState_GetID)(PyInterpreterState*) = NULL;
 PyAPI_FUNC(int64_t) PyInterpreterState_GetID(PyInterpreterState* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyInterpreterState_GetID)
     int64_t result = (int64_t) __target__PyInterpreterState_GetID(a);
-    STATS_AFTER(PyInterpreterState_GetID)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyInterpreterState_GetIDFromThreadState, PyInterpreterState_GetID)
 int64_t (*__target__PyInterpreterState_GetIDFromThreadState)(PyThreadState*) = NULL;
 PyAPI_FUNC(int64_t) PyInterpreterState_GetIDFromThreadState(PyThreadState* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyInterpreterState_GetIDFromThreadState)
     int64_t result = (int64_t) __target__PyInterpreterState_GetIDFromThreadState(a);
-    STATS_AFTER(PyInterpreterState_GetIDFromThreadState)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyInterpreterState*) PyInterpreterState_Head() {
     unimplemented("PyInterpreterState_Head"); exit(-1);
 }
-STATS_CONTAINER(PyInterpreterState_Main, PyInterpreterState_GetIDFromThreadState)
 PyInterpreterState* (*__target__PyInterpreterState_Main)() = NULL;
 PyAPI_FUNC(PyInterpreterState*) PyInterpreterState_Main() {
-    LOGS("");
-    STATS_BEFORE(PyInterpreterState_Main)
     PyInterpreterState* result = (PyInterpreterState*) __target__PyInterpreterState_Main();
-    STATS_AFTER(PyInterpreterState_Main)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyInterpreterState*) PyInterpreterState_New() {
@@ -3435,24 +2741,14 @@ PyAPI_FUNC(PyInterpreterState*) PyInterpreterState_Next(PyInterpreterState* a) {
 PyAPI_FUNC(PyThreadState*) PyInterpreterState_ThreadHead(PyInterpreterState* a) {
     unimplemented("PyInterpreterState_ThreadHead"); exit(-1);
 }
-STATS_CONTAINER(PyIter_Check, PyInterpreterState_Main)
 int (*__target__PyIter_Check)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyIter_Check(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyIter_Check)
     int result = (int) __target__PyIter_Check(a);
-    STATS_AFTER(PyIter_Check)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyIter_Next, PyIter_Check)
 PyObject* (*__target__PyIter_Next)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyIter_Next)
     PyObject* result = (PyObject*) __target__PyIter_Next(a);
-    STATS_AFTER(PyIter_Next)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PySendResult) PyIter_Send(PyObject* a, PyObject* b, PyObject** c) {
@@ -3467,350 +2763,180 @@ PyAPI_FUNC(int) PyLineTable_NextAddressRange(PyCodeAddressRange* a) {
 PyAPI_FUNC(int) PyLineTable_PreviousAddressRange(PyCodeAddressRange* a) {
     unimplemented("PyLineTable_PreviousAddressRange"); exit(-1);
 }
-STATS_CONTAINER(PyList_Append, PyIter_Next)
 int (*__target__PyList_Append)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyList_Append(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyList_Append)
     int result = (int) __target__PyList_Append(a, b);
-    STATS_AFTER(PyList_Append)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_AsTuple, PyList_Append)
 PyObject* (*__target__PyList_AsTuple)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyList_AsTuple(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyList_AsTuple)
     PyObject* result = (PyObject*) __target__PyList_AsTuple(a);
-    STATS_AFTER(PyList_AsTuple)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_GetItem, PyList_AsTuple)
 PyObject* (*__target__PyList_GetItem)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyList_GetItem(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyList_GetItem)
     PyObject* result = (PyObject*) __target__PyList_GetItem(a, b);
-    STATS_AFTER(PyList_GetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_GetSlice, PyList_GetItem)
 PyObject* (*__target__PyList_GetSlice)(PyObject*, Py_ssize_t, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyList_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyList_GetSlice)
     PyObject* result = (PyObject*) __target__PyList_GetSlice(a, b, c);
-    STATS_AFTER(PyList_GetSlice)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_Insert, PyList_GetSlice)
 int (*__target__PyList_Insert)(PyObject*, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(int) PyList_Insert(PyObject* a, Py_ssize_t b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyList_Insert)
     int result = (int) __target__PyList_Insert(a, b, c);
-    STATS_AFTER(PyList_Insert)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_New, PyList_Insert)
 PyObject* (*__target__PyList_New)(Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyList_New(Py_ssize_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyList_New)
     PyObject* result = (PyObject*) __target__PyList_New(a);
-    STATS_AFTER(PyList_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_Reverse, PyList_New)
 int (*__target__PyList_Reverse)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyList_Reverse(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyList_Reverse)
     int result = (int) __target__PyList_Reverse(a);
-    STATS_AFTER(PyList_Reverse)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_SetItem, PyList_Reverse)
 int (*__target__PyList_SetItem)(PyObject*, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(int) PyList_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyList_SetItem)
     int result = (int) __target__PyList_SetItem(a, b, c);
-    STATS_AFTER(PyList_SetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_SetSlice, PyList_SetItem)
 int (*__target__PyList_SetSlice)(PyObject*, Py_ssize_t, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(int) PyList_SetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c, PyObject* d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyList_SetSlice)
     int result = (int) __target__PyList_SetSlice(a, b, c, d);
-    STATS_AFTER(PyList_SetSlice)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_Size, PyList_SetSlice)
 Py_ssize_t (*__target__PyList_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyList_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyList_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PyList_Size(a);
-    STATS_AFTER(PyList_Size)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyList_Sort, PyList_Size)
 int (*__target__PyList_Sort)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyList_Sort(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyList_Sort)
     int result = (int) __target__PyList_Sort(a);
-    STATS_AFTER(PyList_Sort)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsDouble, PyList_Sort)
 double (*__target__PyLong_AsDouble)(PyObject*) = NULL;
 PyAPI_FUNC(double) PyLong_AsDouble(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsDouble)
     double result = (double) __target__PyLong_AsDouble(a);
-    STATS_AFTER(PyLong_AsDouble)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsLong, PyLong_AsDouble)
 long (*__target__PyLong_AsLong)(PyObject*) = NULL;
 PyAPI_FUNC(long) PyLong_AsLong(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsLong)
     long result = (long) __target__PyLong_AsLong(a);
-    STATS_AFTER(PyLong_AsLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsLongAndOverflow, PyLong_AsLong)
 long (*__target__PyLong_AsLongAndOverflow)(PyObject*, int*) = NULL;
 PyAPI_FUNC(long) PyLong_AsLongAndOverflow(PyObject* a, int* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyLong_AsLongAndOverflow)
     long result = (long) __target__PyLong_AsLongAndOverflow(a, b);
-    STATS_AFTER(PyLong_AsLongAndOverflow)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsLongLong, PyLong_AsLongAndOverflow)
 long long (*__target__PyLong_AsLongLong)(PyObject*) = NULL;
 PyAPI_FUNC(long long) PyLong_AsLongLong(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsLongLong)
     long long result = (long long) __target__PyLong_AsLongLong(a);
-    STATS_AFTER(PyLong_AsLongLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsLongLongAndOverflow, PyLong_AsLongLong)
 long long (*__target__PyLong_AsLongLongAndOverflow)(PyObject*, int*) = NULL;
 PyAPI_FUNC(long long) PyLong_AsLongLongAndOverflow(PyObject* a, int* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyLong_AsLongLongAndOverflow)
     long long result = (long long) __target__PyLong_AsLongLongAndOverflow(a, b);
-    STATS_AFTER(PyLong_AsLongLongAndOverflow)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsSize_t, PyLong_AsLongLongAndOverflow)
 size_t (*__target__PyLong_AsSize_t)(PyObject*) = NULL;
 PyAPI_FUNC(size_t) PyLong_AsSize_t(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsSize_t)
     size_t result = (size_t) __target__PyLong_AsSize_t(a);
-    STATS_AFTER(PyLong_AsSize_t)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsSsize_t, PyLong_AsSize_t)
 Py_ssize_t (*__target__PyLong_AsSsize_t)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyLong_AsSsize_t(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsSsize_t)
     Py_ssize_t result = (Py_ssize_t) __target__PyLong_AsSsize_t(a);
-    STATS_AFTER(PyLong_AsSsize_t)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsUnsignedLong, PyLong_AsSsize_t)
 unsigned long (*__target__PyLong_AsUnsignedLong)(PyObject*) = NULL;
 PyAPI_FUNC(unsigned long) PyLong_AsUnsignedLong(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsUnsignedLong)
     unsigned long result = (unsigned long) __target__PyLong_AsUnsignedLong(a);
-    STATS_AFTER(PyLong_AsUnsignedLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsUnsignedLongLong, PyLong_AsUnsignedLong)
 unsigned long long (*__target__PyLong_AsUnsignedLongLong)(PyObject*) = NULL;
 PyAPI_FUNC(unsigned long long) PyLong_AsUnsignedLongLong(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsUnsignedLongLong)
     unsigned long long result = (unsigned long long) __target__PyLong_AsUnsignedLongLong(a);
-    STATS_AFTER(PyLong_AsUnsignedLongLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsUnsignedLongLongMask, PyLong_AsUnsignedLongLong)
 unsigned long long (*__target__PyLong_AsUnsignedLongLongMask)(PyObject*) = NULL;
 PyAPI_FUNC(unsigned long long) PyLong_AsUnsignedLongLongMask(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsUnsignedLongLongMask)
     unsigned long long result = (unsigned long long) __target__PyLong_AsUnsignedLongLongMask(a);
-    STATS_AFTER(PyLong_AsUnsignedLongLongMask)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsUnsignedLongMask, PyLong_AsUnsignedLongLongMask)
 unsigned long (*__target__PyLong_AsUnsignedLongMask)(PyObject*) = NULL;
 PyAPI_FUNC(unsigned long) PyLong_AsUnsignedLongMask(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsUnsignedLongMask)
     unsigned long result = (unsigned long) __target__PyLong_AsUnsignedLongMask(a);
-    STATS_AFTER(PyLong_AsUnsignedLongMask)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_AsVoidPtr, PyLong_AsUnsignedLongMask)
 void* (*__target__PyLong_AsVoidPtr)(PyObject*) = NULL;
 PyAPI_FUNC(void*) PyLong_AsVoidPtr(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_AsVoidPtr)
     void* result = (void*) __target__PyLong_AsVoidPtr(a);
-    STATS_AFTER(PyLong_AsVoidPtr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromDouble, PyLong_AsVoidPtr)
 PyObject* (*__target__PyLong_FromDouble)(double) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromDouble(double a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromDouble)
     PyObject* result = (PyObject*) __target__PyLong_FromDouble(a);
-    STATS_AFTER(PyLong_FromDouble)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromLong, PyLong_FromDouble)
 PyObject* (*__target__PyLong_FromLong)(long) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromLong(long a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromLong)
     PyObject* result = (PyObject*) __target__PyLong_FromLong(a);
-    STATS_AFTER(PyLong_FromLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromLongLong, PyLong_FromLong)
 PyObject* (*__target__PyLong_FromLongLong)(long long) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromLongLong(long long a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromLongLong)
     PyObject* result = (PyObject*) __target__PyLong_FromLongLong(a);
-    STATS_AFTER(PyLong_FromLongLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromSize_t, PyLong_FromLongLong)
 PyObject* (*__target__PyLong_FromSize_t)(size_t) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromSize_t(size_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromSize_t)
     PyObject* result = (PyObject*) __target__PyLong_FromSize_t(a);
-    STATS_AFTER(PyLong_FromSize_t)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromSsize_t, PyLong_FromSize_t)
 PyObject* (*__target__PyLong_FromSsize_t)(Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromSsize_t(Py_ssize_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromSsize_t)
     PyObject* result = (PyObject*) __target__PyLong_FromSsize_t(a);
-    STATS_AFTER(PyLong_FromSsize_t)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromString, PyLong_FromSsize_t)
 PyObject* (*__target__PyLong_FromString)(const char*, char**, int) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromString(const char* a, char** b, int c) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyLong_FromString)
     PyObject* result = (PyObject*) __target__PyLong_FromString(a, b, c);
-    STATS_AFTER(PyLong_FromString)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyLong_FromUnicodeObject(PyObject* a, int b) {
     unimplemented("PyLong_FromUnicodeObject"); exit(-1);
 }
-STATS_CONTAINER(PyLong_FromUnsignedLong, PyLong_FromString)
 PyObject* (*__target__PyLong_FromUnsignedLong)(unsigned long) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromUnsignedLong(unsigned long a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromUnsignedLong)
     PyObject* result = (PyObject*) __target__PyLong_FromUnsignedLong(a);
-    STATS_AFTER(PyLong_FromUnsignedLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromUnsignedLongLong, PyLong_FromUnsignedLong)
 PyObject* (*__target__PyLong_FromUnsignedLongLong)(unsigned long long) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromUnsignedLongLong(unsigned long long a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromUnsignedLongLong)
     PyObject* result = (PyObject*) __target__PyLong_FromUnsignedLongLong(a);
-    STATS_AFTER(PyLong_FromUnsignedLongLong)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyLong_FromVoidPtr, PyLong_FromUnsignedLongLong)
 PyObject* (*__target__PyLong_FromVoidPtr)(void*) = NULL;
 PyAPI_FUNC(PyObject*) PyLong_FromVoidPtr(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyLong_FromVoidPtr)
     PyObject* result = (PyObject*) __target__PyLong_FromVoidPtr(a);
-    STATS_AFTER(PyLong_FromVoidPtr)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyLong_GetInfo() {
     unimplemented("PyLong_GetInfo"); exit(-1);
 }
-STATS_CONTAINER(PyMapping_Check, PyLong_FromVoidPtr)
 int (*__target__PyMapping_Check)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyMapping_Check(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMapping_Check)
     int result = (int) __target__PyMapping_Check(a);
-    STATS_AFTER(PyMapping_Check)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMapping_GetItemString, PyMapping_Check)
 PyObject* (*__target__PyMapping_GetItemString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyMapping_GetItemString(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyMapping_GetItemString)
     PyObject* result = (PyObject*) __target__PyMapping_GetItemString(a, b);
-    STATS_AFTER(PyMapping_GetItemString)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyMapping_HasKey(PyObject* a, PyObject* b) {
@@ -3819,24 +2945,14 @@ PyAPI_FUNC(int) PyMapping_HasKey(PyObject* a, PyObject* b) {
 PyAPI_FUNC(int) PyMapping_HasKeyString(PyObject* a, const char* b) {
     unimplemented("PyMapping_HasKeyString"); exit(-1);
 }
-STATS_CONTAINER(PyMapping_Items, PyMapping_GetItemString)
 PyObject* (*__target__PyMapping_Items)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyMapping_Items(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMapping_Items)
     PyObject* result = (PyObject*) __target__PyMapping_Items(a);
-    STATS_AFTER(PyMapping_Items)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMapping_Keys, PyMapping_Items)
 PyObject* (*__target__PyMapping_Keys)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyMapping_Keys(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMapping_Keys)
     PyObject* result = (PyObject*) __target__PyMapping_Keys(a);
-    STATS_AFTER(PyMapping_Keys)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PyMapping_Length(PyObject* a) {
@@ -3845,105 +2961,55 @@ PyAPI_FUNC(Py_ssize_t) PyMapping_Length(PyObject* a) {
 PyAPI_FUNC(int) PyMapping_SetItemString(PyObject* a, const char* b, PyObject* c) {
     unimplemented("PyMapping_SetItemString"); exit(-1);
 }
-STATS_CONTAINER(PyMapping_Size, PyMapping_Keys)
 Py_ssize_t (*__target__PyMapping_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyMapping_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMapping_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PyMapping_Size(a);
-    STATS_AFTER(PyMapping_Size)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMapping_Values, PyMapping_Size)
 PyObject* (*__target__PyMapping_Values)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyMapping_Values(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMapping_Values)
     PyObject* result = (PyObject*) __target__PyMapping_Values(a);
-    STATS_AFTER(PyMapping_Values)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMem_Calloc, PyMapping_Values)
 void* (*__target__PyMem_Calloc)(size_t, size_t) = NULL;
 PyAPI_FUNC(void*) PyMem_Calloc(size_t a, size_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyMem_Calloc)
     void* result = (void*) __target__PyMem_Calloc(a, b);
-    STATS_AFTER(PyMem_Calloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMem_Free, PyMem_Calloc)
 void (*__target__PyMem_Free)(void*) = NULL;
 PyAPI_FUNC(void) PyMem_Free(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMem_Free)
     __target__PyMem_Free(a);
-    STATS_AFTER(PyMem_Free)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void) PyMem_GetAllocator(PyMemAllocatorDomain a, PyMemAllocatorEx* b) {
     unimplemented("PyMem_GetAllocator"); exit(-1);
 }
-STATS_CONTAINER(PyMem_Malloc, PyMem_Free)
 void* (*__target__PyMem_Malloc)(size_t) = NULL;
 PyAPI_FUNC(void*) PyMem_Malloc(size_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMem_Malloc)
     void* result = (void*) __target__PyMem_Malloc(a);
-    STATS_AFTER(PyMem_Malloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMem_RawCalloc, PyMem_Malloc)
 void* (*__target__PyMem_RawCalloc)(size_t, size_t) = NULL;
 PyAPI_FUNC(void*) PyMem_RawCalloc(size_t a, size_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyMem_RawCalloc)
     void* result = (void*) __target__PyMem_RawCalloc(a, b);
-    STATS_AFTER(PyMem_RawCalloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMem_RawFree, PyMem_RawCalloc)
 void (*__target__PyMem_RawFree)(void*) = NULL;
 PyAPI_FUNC(void) PyMem_RawFree(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMem_RawFree)
     __target__PyMem_RawFree(a);
-    STATS_AFTER(PyMem_RawFree)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyMem_RawMalloc, PyMem_RawFree)
 void* (*__target__PyMem_RawMalloc)(size_t) = NULL;
 PyAPI_FUNC(void*) PyMem_RawMalloc(size_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMem_RawMalloc)
     void* result = (void*) __target__PyMem_RawMalloc(a);
-    STATS_AFTER(PyMem_RawMalloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMem_RawRealloc, PyMem_RawMalloc)
 void* (*__target__PyMem_RawRealloc)(void*, size_t) = NULL;
 PyAPI_FUNC(void*) PyMem_RawRealloc(void* a, size_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyMem_RawRealloc)
     void* result = (void*) __target__PyMem_RawRealloc(a, b);
-    STATS_AFTER(PyMem_RawRealloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMem_Realloc, PyMem_RawRealloc)
 void* (*__target__PyMem_Realloc)(void*, size_t) = NULL;
 PyAPI_FUNC(void*) PyMem_Realloc(void* a, size_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyMem_Realloc)
     void* result = (void*) __target__PyMem_Realloc(a, b);
-    STATS_AFTER(PyMem_Realloc)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyMem_SetAllocator(PyMemAllocatorDomain a, PyMemAllocatorEx* b) {
@@ -3958,134 +3024,69 @@ PyAPI_FUNC(PyObject*) PyMember_GetOne(const char* a, struct PyMemberDef* b) {
 PyAPI_FUNC(int) PyMember_SetOne(char* a, struct PyMemberDef* b, PyObject* c) {
     unimplemented("PyMember_SetOne"); exit(-1);
 }
-STATS_CONTAINER(PyMemoryView_FromBuffer, PyMem_Realloc)
 PyObject* (*__target__PyMemoryView_FromBuffer)(Py_buffer*) = NULL;
 PyAPI_FUNC(PyObject*) PyMemoryView_FromBuffer(Py_buffer* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMemoryView_FromBuffer)
     PyObject* result = (PyObject*) __target__PyMemoryView_FromBuffer(a);
-    STATS_AFTER(PyMemoryView_FromBuffer)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMemoryView_FromMemory, PyMemoryView_FromBuffer)
 PyObject* (*__target__PyMemoryView_FromMemory)(char*, Py_ssize_t, int) = NULL;
 PyAPI_FUNC(PyObject*) PyMemoryView_FromMemory(char* a, Py_ssize_t b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyMemoryView_FromMemory)
     PyObject* result = (PyObject*) __target__PyMemoryView_FromMemory(a, b, c);
-    STATS_AFTER(PyMemoryView_FromMemory)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMemoryView_FromObject, PyMemoryView_FromMemory)
 PyObject* (*__target__PyMemoryView_FromObject)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyMemoryView_FromObject(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMemoryView_FromObject)
     PyObject* result = (PyObject*) __target__PyMemoryView_FromObject(a);
-    STATS_AFTER(PyMemoryView_FromObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMemoryView_GetContiguous, PyMemoryView_FromObject)
 PyObject* (*__target__PyMemoryView_GetContiguous)(PyObject*, int, char) = NULL;
 PyAPI_FUNC(PyObject*) PyMemoryView_GetContiguous(PyObject* a, int b, char c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyMemoryView_GetContiguous)
     PyObject* result = (PyObject*) __target__PyMemoryView_GetContiguous(a, b, c);
-    STATS_AFTER(PyMemoryView_GetContiguous)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMethodDescrObject_GetMethod, PyMemoryView_GetContiguous)
 PyMethodDef* (*__target__PyMethodDescrObject_GetMethod)(PyObject*) = NULL;
 PyAPI_FUNC(PyMethodDef*) PyMethodDescrObject_GetMethod(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMethodDescrObject_GetMethod)
     PyMethodDef* result = (PyMethodDef*) __target__PyMethodDescrObject_GetMethod(a);
-    STATS_AFTER(PyMethodDescrObject_GetMethod)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMethod_Function, PyMethodDescrObject_GetMethod)
 PyObject* (*__target__PyMethod_Function)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyMethod_Function(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMethod_Function)
     PyObject* result = (PyObject*) __target__PyMethod_Function(a);
-    STATS_AFTER(PyMethod_Function)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMethod_New, PyMethod_Function)
 PyObject* (*__target__PyMethod_New)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyMethod_New(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyMethod_New)
     PyObject* result = (PyObject*) __target__PyMethod_New(a, b);
-    STATS_AFTER(PyMethod_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyMethod_Self, PyMethod_New)
 PyObject* (*__target__PyMethod_Self)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyMethod_Self(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyMethod_Self)
     PyObject* result = (PyObject*) __target__PyMethod_Self(a);
-    STATS_AFTER(PyMethod_Self)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModuleDef_Init, PyMethod_Self)
 PyObject* (*__target__PyModuleDef_Init)(struct PyModuleDef*) = NULL;
 PyAPI_FUNC(PyObject*) PyModuleDef_Init(struct PyModuleDef* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyModuleDef_Init)
     PyObject* result = (PyObject*) __target__PyModuleDef_Init(a);
-    STATS_AFTER(PyModuleDef_Init)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_AddFunctions, PyModuleDef_Init)
 int (*__target__PyModule_AddFunctions)(PyObject*, PyMethodDef*) = NULL;
 PyAPI_FUNC(int) PyModule_AddFunctions(PyObject* a, PyMethodDef* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyModule_AddFunctions)
     int result = (int) __target__PyModule_AddFunctions(a, b);
-    STATS_AFTER(PyModule_AddFunctions)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_AddIntConstant, PyModule_AddFunctions)
 int (*__target__PyModule_AddIntConstant)(PyObject*, const char*, long) = NULL;
 PyAPI_FUNC(int) PyModule_AddIntConstant(PyObject* a, const char* b, long c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyModule_AddIntConstant)
     int result = (int) __target__PyModule_AddIntConstant(a, b, c);
-    STATS_AFTER(PyModule_AddIntConstant)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_AddObjectRef, PyModule_AddIntConstant)
 int (*__target__PyModule_AddObjectRef)(PyObject*, const char*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyModule_AddObjectRef(PyObject* a, const char* b, PyObject* c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyModule_AddObjectRef)
     int result = (int) __target__PyModule_AddObjectRef(a, b, c);
-    STATS_AFTER(PyModule_AddObjectRef)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_Create2, PyModule_AddObjectRef)
 PyObject* (*__target__PyModule_Create2)(struct PyModuleDef*, int) = NULL;
 PyAPI_FUNC(PyObject*) PyModule_Create2(struct PyModuleDef* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyModule_Create2)
     PyObject* result = (PyObject*) __target__PyModule_Create2(a, b);
-    STATS_AFTER(PyModule_Create2)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyModule_ExecDef(PyObject* a, PyModuleDef* b) {
@@ -4094,24 +3095,14 @@ PyAPI_FUNC(int) PyModule_ExecDef(PyObject* a, PyModuleDef* b) {
 PyAPI_FUNC(PyObject*) PyModule_FromDefAndSpec2(PyModuleDef* a, PyObject* b, int c) {
     unimplemented("PyModule_FromDefAndSpec2"); exit(-1);
 }
-STATS_CONTAINER(PyModule_GetDef, PyModule_Create2)
 PyModuleDef* (*__target__PyModule_GetDef)(PyObject*) = NULL;
 PyAPI_FUNC(PyModuleDef*) PyModule_GetDef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyModule_GetDef)
     PyModuleDef* result = (PyModuleDef*) __target__PyModule_GetDef(a);
-    STATS_AFTER(PyModule_GetDef)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_GetDict, PyModule_GetDef)
 PyObject* (*__target__PyModule_GetDict)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyModule_GetDict(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyModule_GetDict)
     PyObject* result = (PyObject*) __target__PyModule_GetDict(a);
-    STATS_AFTER(PyModule_GetDict)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(const char*) PyModule_GetFilename(PyObject* a) {
@@ -4120,434 +3111,219 @@ PyAPI_FUNC(const char*) PyModule_GetFilename(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyModule_GetFilenameObject(PyObject* a) {
     unimplemented("PyModule_GetFilenameObject"); exit(-1);
 }
-STATS_CONTAINER(PyModule_GetName, PyModule_GetDict)
 const char* (*__target__PyModule_GetName)(PyObject*) = NULL;
 PyAPI_FUNC(const char*) PyModule_GetName(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyModule_GetName)
     const char* result = (const char*) __target__PyModule_GetName(a);
-    STATS_AFTER(PyModule_GetName)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_GetNameObject, PyModule_GetName)
 PyObject* (*__target__PyModule_GetNameObject)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyModule_GetNameObject(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyModule_GetNameObject)
     PyObject* result = (PyObject*) __target__PyModule_GetNameObject(a);
-    STATS_AFTER(PyModule_GetNameObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_GetState, PyModule_GetNameObject)
 void* (*__target__PyModule_GetState)(PyObject*) = NULL;
 PyAPI_FUNC(void*) PyModule_GetState(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyModule_GetState)
     void* result = (void*) __target__PyModule_GetState(a);
-    STATS_AFTER(PyModule_GetState)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_New, PyModule_GetState)
 PyObject* (*__target__PyModule_New)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyModule_New(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyModule_New)
     PyObject* result = (PyObject*) __target__PyModule_New(a);
-    STATS_AFTER(PyModule_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_NewObject, PyModule_New)
 PyObject* (*__target__PyModule_NewObject)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyModule_NewObject(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyModule_NewObject)
     PyObject* result = (PyObject*) __target__PyModule_NewObject(a);
-    STATS_AFTER(PyModule_NewObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyModule_SetDocString, PyModule_NewObject)
 int (*__target__PyModule_SetDocString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(int) PyModule_SetDocString(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyModule_SetDocString)
     int result = (int) __target__PyModule_SetDocString(a, b);
-    STATS_AFTER(PyModule_SetDocString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Absolute, PyModule_SetDocString)
 PyObject* (*__target__PyNumber_Absolute)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Absolute(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Absolute)
     PyObject* result = (PyObject*) __target__PyNumber_Absolute(a);
-    STATS_AFTER(PyNumber_Absolute)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Add, PyNumber_Absolute)
 PyObject* (*__target__PyNumber_Add)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Add(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Add)
     PyObject* result = (PyObject*) __target__PyNumber_Add(a, b);
-    STATS_AFTER(PyNumber_Add)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_And, PyNumber_Add)
 PyObject* (*__target__PyNumber_And)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_And(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_And)
     PyObject* result = (PyObject*) __target__PyNumber_And(a, b);
-    STATS_AFTER(PyNumber_And)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_AsSsize_t, PyNumber_And)
 Py_ssize_t (*__target__PyNumber_AsSsize_t)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyNumber_AsSsize_t(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_AsSsize_t)
     Py_ssize_t result = (Py_ssize_t) __target__PyNumber_AsSsize_t(a, b);
-    STATS_AFTER(PyNumber_AsSsize_t)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Check, PyNumber_AsSsize_t)
 int (*__target__PyNumber_Check)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyNumber_Check(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Check)
     int result = (int) __target__PyNumber_Check(a);
-    STATS_AFTER(PyNumber_Check)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Divmod, PyNumber_Check)
 PyObject* (*__target__PyNumber_Divmod)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Divmod(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Divmod)
     PyObject* result = (PyObject*) __target__PyNumber_Divmod(a, b);
-    STATS_AFTER(PyNumber_Divmod)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Float, PyNumber_Divmod)
 PyObject* (*__target__PyNumber_Float)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Float(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Float)
     PyObject* result = (PyObject*) __target__PyNumber_Float(a);
-    STATS_AFTER(PyNumber_Float)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_FloorDivide, PyNumber_Float)
 PyObject* (*__target__PyNumber_FloorDivide)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_FloorDivide(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_FloorDivide)
     PyObject* result = (PyObject*) __target__PyNumber_FloorDivide(a, b);
-    STATS_AFTER(PyNumber_FloorDivide)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceAdd, PyNumber_FloorDivide)
 PyObject* (*__target__PyNumber_InPlaceAdd)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceAdd(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceAdd)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceAdd(a, b);
-    STATS_AFTER(PyNumber_InPlaceAdd)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceAnd, PyNumber_InPlaceAdd)
 PyObject* (*__target__PyNumber_InPlaceAnd)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceAnd(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceAnd)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceAnd(a, b);
-    STATS_AFTER(PyNumber_InPlaceAnd)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceFloorDivide, PyNumber_InPlaceAnd)
 PyObject* (*__target__PyNumber_InPlaceFloorDivide)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceFloorDivide(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceFloorDivide)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceFloorDivide(a, b);
-    STATS_AFTER(PyNumber_InPlaceFloorDivide)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceLshift, PyNumber_InPlaceFloorDivide)
 PyObject* (*__target__PyNumber_InPlaceLshift)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceLshift(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceLshift)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceLshift(a, b);
-    STATS_AFTER(PyNumber_InPlaceLshift)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceMatrixMultiply, PyNumber_InPlaceLshift)
 PyObject* (*__target__PyNumber_InPlaceMatrixMultiply)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceMatrixMultiply(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceMatrixMultiply)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceMatrixMultiply(a, b);
-    STATS_AFTER(PyNumber_InPlaceMatrixMultiply)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceMultiply, PyNumber_InPlaceMatrixMultiply)
 PyObject* (*__target__PyNumber_InPlaceMultiply)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceMultiply(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceMultiply)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceMultiply(a, b);
-    STATS_AFTER(PyNumber_InPlaceMultiply)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceOr, PyNumber_InPlaceMultiply)
 PyObject* (*__target__PyNumber_InPlaceOr)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceOr(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceOr)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceOr(a, b);
-    STATS_AFTER(PyNumber_InPlaceOr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlacePower, PyNumber_InPlaceOr)
 PyObject* (*__target__PyNumber_InPlacePower)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlacePower(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyNumber_InPlacePower)
     PyObject* result = (PyObject*) __target__PyNumber_InPlacePower(a, b, c);
-    STATS_AFTER(PyNumber_InPlacePower)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceRemainder, PyNumber_InPlacePower)
 PyObject* (*__target__PyNumber_InPlaceRemainder)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceRemainder(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceRemainder)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceRemainder(a, b);
-    STATS_AFTER(PyNumber_InPlaceRemainder)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceRshift, PyNumber_InPlaceRemainder)
 PyObject* (*__target__PyNumber_InPlaceRshift)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceRshift(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceRshift)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceRshift(a, b);
-    STATS_AFTER(PyNumber_InPlaceRshift)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceSubtract, PyNumber_InPlaceRshift)
 PyObject* (*__target__PyNumber_InPlaceSubtract)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceSubtract(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceSubtract)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceSubtract(a, b);
-    STATS_AFTER(PyNumber_InPlaceSubtract)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceTrueDivide, PyNumber_InPlaceSubtract)
 PyObject* (*__target__PyNumber_InPlaceTrueDivide)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceTrueDivide(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceTrueDivide)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceTrueDivide(a, b);
-    STATS_AFTER(PyNumber_InPlaceTrueDivide)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_InPlaceXor, PyNumber_InPlaceTrueDivide)
 PyObject* (*__target__PyNumber_InPlaceXor)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_InPlaceXor(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_InPlaceXor)
     PyObject* result = (PyObject*) __target__PyNumber_InPlaceXor(a, b);
-    STATS_AFTER(PyNumber_InPlaceXor)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Index, PyNumber_InPlaceXor)
 PyObject* (*__target__PyNumber_Index)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Index(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Index)
     PyObject* result = (PyObject*) __target__PyNumber_Index(a);
-    STATS_AFTER(PyNumber_Index)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Invert, PyNumber_Index)
 PyObject* (*__target__PyNumber_Invert)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Invert(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Invert)
     PyObject* result = (PyObject*) __target__PyNumber_Invert(a);
-    STATS_AFTER(PyNumber_Invert)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Long, PyNumber_Invert)
 PyObject* (*__target__PyNumber_Long)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Long(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Long)
     PyObject* result = (PyObject*) __target__PyNumber_Long(a);
-    STATS_AFTER(PyNumber_Long)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Lshift, PyNumber_Long)
 PyObject* (*__target__PyNumber_Lshift)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Lshift(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Lshift)
     PyObject* result = (PyObject*) __target__PyNumber_Lshift(a, b);
-    STATS_AFTER(PyNumber_Lshift)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_MatrixMultiply, PyNumber_Lshift)
 PyObject* (*__target__PyNumber_MatrixMultiply)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_MatrixMultiply(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_MatrixMultiply)
     PyObject* result = (PyObject*) __target__PyNumber_MatrixMultiply(a, b);
-    STATS_AFTER(PyNumber_MatrixMultiply)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Multiply, PyNumber_MatrixMultiply)
 PyObject* (*__target__PyNumber_Multiply)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Multiply(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Multiply)
     PyObject* result = (PyObject*) __target__PyNumber_Multiply(a, b);
-    STATS_AFTER(PyNumber_Multiply)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Negative, PyNumber_Multiply)
 PyObject* (*__target__PyNumber_Negative)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Negative(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Negative)
     PyObject* result = (PyObject*) __target__PyNumber_Negative(a);
-    STATS_AFTER(PyNumber_Negative)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Or, PyNumber_Negative)
 PyObject* (*__target__PyNumber_Or)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Or(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Or)
     PyObject* result = (PyObject*) __target__PyNumber_Or(a, b);
-    STATS_AFTER(PyNumber_Or)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Positive, PyNumber_Or)
 PyObject* (*__target__PyNumber_Positive)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Positive(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyNumber_Positive)
     PyObject* result = (PyObject*) __target__PyNumber_Positive(a);
-    STATS_AFTER(PyNumber_Positive)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Power, PyNumber_Positive)
 PyObject* (*__target__PyNumber_Power)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Power(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyNumber_Power)
     PyObject* result = (PyObject*) __target__PyNumber_Power(a, b, c);
-    STATS_AFTER(PyNumber_Power)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Remainder, PyNumber_Power)
 PyObject* (*__target__PyNumber_Remainder)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Remainder(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Remainder)
     PyObject* result = (PyObject*) __target__PyNumber_Remainder(a, b);
-    STATS_AFTER(PyNumber_Remainder)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Rshift, PyNumber_Remainder)
 PyObject* (*__target__PyNumber_Rshift)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Rshift(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Rshift)
     PyObject* result = (PyObject*) __target__PyNumber_Rshift(a, b);
-    STATS_AFTER(PyNumber_Rshift)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Subtract, PyNumber_Rshift)
 PyObject* (*__target__PyNumber_Subtract)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Subtract(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Subtract)
     PyObject* result = (PyObject*) __target__PyNumber_Subtract(a, b);
-    STATS_AFTER(PyNumber_Subtract)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_ToBase, PyNumber_Subtract)
 PyObject* (*__target__PyNumber_ToBase)(PyObject*, int) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_ToBase(PyObject* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_ToBase)
     PyObject* result = (PyObject*) __target__PyNumber_ToBase(a, b);
-    STATS_AFTER(PyNumber_ToBase)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_TrueDivide, PyNumber_ToBase)
 PyObject* (*__target__PyNumber_TrueDivide)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_TrueDivide(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_TrueDivide)
     PyObject* result = (PyObject*) __target__PyNumber_TrueDivide(a, b);
-    STATS_AFTER(PyNumber_TrueDivide)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyNumber_Xor, PyNumber_TrueDivide)
 PyObject* (*__target__PyNumber_Xor)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyNumber_Xor(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyNumber_Xor)
     PyObject* result = (PyObject*) __target__PyNumber_Xor(a, b);
-    STATS_AFTER(PyNumber_Xor)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyODict_DelItem(PyObject* a, PyObject* b) {
@@ -4571,37 +3347,22 @@ PyAPI_FUNC(void) PyOS_AfterFork_Parent() {
 PyAPI_FUNC(void) PyOS_BeforeFork() {
     unimplemented("PyOS_BeforeFork"); exit(-1);
 }
-STATS_CONTAINER(PyOS_FSPath, PyNumber_Xor)
 PyObject* (*__target__PyOS_FSPath)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyOS_FSPath(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyOS_FSPath)
     PyObject* result = (PyObject*) __target__PyOS_FSPath(a);
-    STATS_AFTER(PyOS_FSPath)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyOS_InterruptOccurred, PyOS_FSPath)
 int (*__target__PyOS_InterruptOccurred)() = NULL;
 PyAPI_FUNC(int) PyOS_InterruptOccurred() {
-    LOGS("");
-    STATS_BEFORE(PyOS_InterruptOccurred)
     int result = (int) __target__PyOS_InterruptOccurred();
-    STATS_AFTER(PyOS_InterruptOccurred)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(char*) PyOS_Readline(FILE* a, FILE* b, const char* c) {
     unimplemented("PyOS_Readline"); exit(-1);
 }
-STATS_CONTAINER(PyOS_double_to_string, PyOS_InterruptOccurred)
 char* (*__target__PyOS_double_to_string)(double, char, int, int, int*) = NULL;
 PyAPI_FUNC(char*) PyOS_double_to_string(double a, char b, int c, int d, int* e) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(PyOS_double_to_string)
     char* result = (char*) __target__PyOS_double_to_string(a, b, c, d, e);
-    STATS_AFTER(PyOS_double_to_string)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyOS_sighandler_t) PyOS_getsig(int a) {
@@ -4613,77 +3374,42 @@ PyAPI_FUNC(int) PyOS_mystricmp(const char* a, const char* b) {
 PyAPI_FUNC(int) PyOS_mystrnicmp(const char* a, const char* b, Py_ssize_t c) {
     unimplemented("PyOS_mystrnicmp"); exit(-1);
 }
-STATS_CONTAINER(PyOS_setsig, PyOS_double_to_string)
 PyOS_sighandler_t (*__target__PyOS_setsig)(int, PyOS_sighandler_t) = NULL;
 PyAPI_FUNC(PyOS_sighandler_t) PyOS_setsig(int a, PyOS_sighandler_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyOS_setsig)
     PyOS_sighandler_t result = (PyOS_sighandler_t) __target__PyOS_setsig(a, b);
-    STATS_AFTER(PyOS_setsig)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyOS_string_to_double, PyOS_setsig)
 double (*__target__PyOS_string_to_double)(const char*, char**, PyObject*) = NULL;
 PyAPI_FUNC(double) PyOS_string_to_double(const char* a, char** b, PyObject* c) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyOS_string_to_double)
     double result = (double) __target__PyOS_string_to_double(a, b, c);
-    STATS_AFTER(PyOS_string_to_double)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyOS_strtol, PyOS_string_to_double)
 long (*__target__PyOS_strtol)(const char*, char**, int) = NULL;
 PyAPI_FUNC(long) PyOS_strtol(const char* a, char** b, int c) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyOS_strtol)
     long result = (long) __target__PyOS_strtol(a, b, c);
-    STATS_AFTER(PyOS_strtol)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyOS_strtoul, PyOS_strtol)
 unsigned long (*__target__PyOS_strtoul)(const char*, char**, int) = NULL;
 PyAPI_FUNC(unsigned long) PyOS_strtoul(const char* a, char** b, int c) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyOS_strtoul)
     unsigned long result = (unsigned long) __target__PyOS_strtoul(a, b, c);
-    STATS_AFTER(PyOS_strtoul)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyOS_vsnprintf, PyOS_strtoul)
 int (*__target__PyOS_vsnprintf)(char*, size_t, const char*, va_list) = NULL;
 PyAPI_FUNC(int) PyOS_vsnprintf(char* a, size_t b, const char* c, va_list d) {
-    LOG("0x%lx 0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyOS_vsnprintf)
     int result = (int) __target__PyOS_vsnprintf(a, b, c, d);
-    STATS_AFTER(PyOS_vsnprintf)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_ASCII, PyOS_vsnprintf)
 PyObject* (*__target__PyObject_ASCII)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_ASCII(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_ASCII)
     PyObject* result = (PyObject*) __target__PyObject_ASCII(a);
-    STATS_AFTER(PyObject_ASCII)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyObject_AsCharBuffer(PyObject* a, const char** b, Py_ssize_t* c) {
     unimplemented("PyObject_AsCharBuffer"); exit(-1);
 }
-STATS_CONTAINER(PyObject_AsFileDescriptor, PyObject_ASCII)
 int (*__target__PyObject_AsFileDescriptor)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_AsFileDescriptor(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_AsFileDescriptor)
     int result = (int) __target__PyObject_AsFileDescriptor(a);
-    STATS_AFTER(PyObject_AsFileDescriptor)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyObject_AsReadBuffer(PyObject* a, const void** b, Py_ssize_t* c) {
@@ -4692,24 +3418,14 @@ PyAPI_FUNC(int) PyObject_AsReadBuffer(PyObject* a, const void** b, Py_ssize_t* c
 PyAPI_FUNC(int) PyObject_AsWriteBuffer(PyObject* a, void** b, Py_ssize_t* c) {
     unimplemented("PyObject_AsWriteBuffer"); exit(-1);
 }
-STATS_CONTAINER(PyObject_Bytes, PyObject_AsFileDescriptor)
 PyObject* (*__target__PyObject_Bytes)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Bytes(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Bytes)
     PyObject* result = (PyObject*) __target__PyObject_Bytes(a);
-    STATS_AFTER(PyObject_Bytes)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Call, PyObject_Bytes)
 PyObject* (*__target__PyObject_Call)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Call(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_Call)
     PyObject* result = (PyObject*) __target__PyObject_Call(a, b, c);
-    STATS_AFTER(PyObject_Call)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyObject_CallFinalizer(PyObject* a) {
@@ -4721,94 +3437,54 @@ PyAPI_FUNC(int) PyObject_CallFinalizerFromDealloc(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyObject_CallNoArgs(PyObject* a) {
     unimplemented("PyObject_CallNoArgs"); exit(-1);
 }
-STATS_CONTAINER(PyObject_CallObject, PyObject_Call)
 PyObject* (*__target__PyObject_CallObject)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_CallObject(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_CallObject)
     PyObject* result = (PyObject*) __target__PyObject_CallObject(a, b);
-    STATS_AFTER(PyObject_CallObject)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void*) PyObject_Calloc(size_t a, size_t b) {
     unimplemented("PyObject_Calloc"); exit(-1);
 }
-STATS_CONTAINER(PyObject_CheckBuffer, PyObject_CallObject)
 int (*__target__PyObject_CheckBuffer)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_CheckBuffer(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_CheckBuffer)
     int result = (int) __target__PyObject_CheckBuffer(a);
-    STATS_AFTER(PyObject_CheckBuffer)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyObject_CheckReadBuffer(PyObject* a) {
     unimplemented("PyObject_CheckReadBuffer"); exit(-1);
 }
-STATS_CONTAINER(PyObject_ClearWeakRefs, PyObject_CheckBuffer)
 void (*__target__PyObject_ClearWeakRefs)(PyObject*) = NULL;
 PyAPI_FUNC(void) PyObject_ClearWeakRefs(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_ClearWeakRefs)
     __target__PyObject_ClearWeakRefs(a);
-    STATS_AFTER(PyObject_ClearWeakRefs)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) PyObject_CopyData(PyObject* a, PyObject* b) {
     unimplemented("PyObject_CopyData"); exit(-1);
 }
-STATS_CONTAINER(PyObject_DelItem, PyObject_ClearWeakRefs)
 int (*__target__PyObject_DelItem)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_DelItem(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_DelItem)
     int result = (int) __target__PyObject_DelItem(a, b);
-    STATS_AFTER(PyObject_DelItem)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyObject_DelItemString(PyObject* a, const char* b) {
     unimplemented("PyObject_DelItemString"); exit(-1);
 }
-STATS_CONTAINER(PyObject_Dir, PyObject_DelItem)
 PyObject* (*__target__PyObject_Dir)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Dir(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Dir)
     PyObject* result = (PyObject*) __target__PyObject_Dir(a);
-    STATS_AFTER(PyObject_Dir)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Format, PyObject_Dir)
 PyObject* (*__target__PyObject_Format)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Format(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_Format)
     PyObject* result = (PyObject*) __target__PyObject_Format(a, b);
-    STATS_AFTER(PyObject_Format)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Free, PyObject_Format)
 void (*__target__PyObject_Free)(void*) = NULL;
 PyAPI_FUNC(void) PyObject_Free(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Free)
     __target__PyObject_Free(a);
-    STATS_AFTER(PyObject_Free)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyObject_GC_Del, PyObject_Free)
 void (*__target__PyObject_GC_Del)(void*) = NULL;
 PyAPI_FUNC(void) PyObject_GC_Del(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_GC_Del)
     __target__PyObject_GC_Del(a);
-    STATS_AFTER(PyObject_GC_Del)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) PyObject_GC_IsFinalized(PyObject* a) {
     unimplemented("PyObject_GC_IsFinalized"); exit(-1);
@@ -4816,55 +3492,30 @@ PyAPI_FUNC(int) PyObject_GC_IsFinalized(PyObject* a) {
 PyAPI_FUNC(int) PyObject_GC_IsTracked(PyObject* a) {
     unimplemented("PyObject_GC_IsTracked"); exit(-1);
 }
-STATS_CONTAINER(PyObject_GC_Track, PyObject_GC_Del)
 void (*__target__PyObject_GC_Track)(void*) = NULL;
 PyAPI_FUNC(void) PyObject_GC_Track(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_GC_Track)
     __target__PyObject_GC_Track(a);
-    STATS_AFTER(PyObject_GC_Track)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyObject_GC_UnTrack, PyObject_GC_Track)
 void (*__target__PyObject_GC_UnTrack)(void*) = NULL;
 PyAPI_FUNC(void) PyObject_GC_UnTrack(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_GC_UnTrack)
     __target__PyObject_GC_UnTrack(a);
-    STATS_AFTER(PyObject_GC_UnTrack)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(PyObject**) PyObject_GET_WEAKREFS_LISTPTR(PyObject* a) {
     unimplemented("PyObject_GET_WEAKREFS_LISTPTR"); exit(-1);
 }
-STATS_CONTAINER(PyObject_GenericGetAttr, PyObject_GC_UnTrack)
 PyObject* (*__target__PyObject_GenericGetAttr)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_GenericGetAttr(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_GenericGetAttr)
     PyObject* result = (PyObject*) __target__PyObject_GenericGetAttr(a, b);
-    STATS_AFTER(PyObject_GenericGetAttr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_GenericSetAttr, PyObject_GenericGetAttr)
 int (*__target__PyObject_GenericSetAttr)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_GenericSetAttr(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_GenericSetAttr)
     int result = (int) __target__PyObject_GenericSetAttr(a, b, c);
-    STATS_AFTER(PyObject_GenericSetAttr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_GenericSetDict, PyObject_GenericSetAttr)
 int (*__target__PyObject_GenericSetDict)(PyObject*, PyObject*, void*) = NULL;
 PyAPI_FUNC(int) PyObject_GenericSetDict(PyObject* a, PyObject* b, void* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_GenericSetDict)
     int result = (int) __target__PyObject_GenericSetDict(a, b, c);
-    STATS_AFTER(PyObject_GenericSetDict)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyObject_GetAIter(PyObject* a) {
@@ -4873,333 +3524,173 @@ PyAPI_FUNC(PyObject*) PyObject_GetAIter(PyObject* a) {
 PyAPI_FUNC(void) PyObject_GetArenaAllocator(PyObjectArenaAllocator* a) {
     unimplemented("PyObject_GetArenaAllocator"); exit(-1);
 }
-STATS_CONTAINER(PyObject_GetAttr, PyObject_GenericSetDict)
 PyObject* (*__target__PyObject_GetAttr)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_GetAttr(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_GetAttr)
     PyObject* result = (PyObject*) __target__PyObject_GetAttr(a, b);
-    STATS_AFTER(PyObject_GetAttr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_GetAttrString, PyObject_GetAttr)
 PyObject* (*__target__PyObject_GetAttrString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_GetAttrString(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyObject_GetAttrString)
     PyObject* result = (PyObject*) __target__PyObject_GetAttrString(a, b);
-    STATS_AFTER(PyObject_GetAttrString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_GetBuffer, PyObject_GetAttrString)
 int (*__target__PyObject_GetBuffer)(PyObject*, Py_buffer*, int) = NULL;
 PyAPI_FUNC(int) PyObject_GetBuffer(PyObject* a, Py_buffer* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_GetBuffer)
     int result = (int) __target__PyObject_GetBuffer(a, b, c);
-    STATS_AFTER(PyObject_GetBuffer)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_GetDoc, PyObject_GetBuffer)
 const char* (*__target__PyObject_GetDoc)(PyObject*) = NULL;
 PyAPI_FUNC(const char*) PyObject_GetDoc(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_GetDoc)
     const char* result = (const char*) __target__PyObject_GetDoc(a);
-    STATS_AFTER(PyObject_GetDoc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_GetItem, PyObject_GetDoc)
 PyObject* (*__target__PyObject_GetItem)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_GetItem(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_GetItem)
     PyObject* result = (PyObject*) __target__PyObject_GetItem(a, b);
-    STATS_AFTER(PyObject_GetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_GetIter, PyObject_GetItem)
 PyObject* (*__target__PyObject_GetIter)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_GetIter(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_GetIter)
     PyObject* result = (PyObject*) __target__PyObject_GetIter(a);
-    STATS_AFTER(PyObject_GetIter)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_HasAttr, PyObject_GetIter)
 int (*__target__PyObject_HasAttr)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_HasAttr(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_HasAttr)
     int result = (int) __target__PyObject_HasAttr(a, b);
-    STATS_AFTER(PyObject_HasAttr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_HasAttrString, PyObject_HasAttr)
 int (*__target__PyObject_HasAttrString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(int) PyObject_HasAttrString(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyObject_HasAttrString)
     int result = (int) __target__PyObject_HasAttrString(a, b);
-    STATS_AFTER(PyObject_HasAttrString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Hash, PyObject_HasAttrString)
 Py_hash_t (*__target__PyObject_Hash)(PyObject*) = NULL;
 PyAPI_FUNC(Py_hash_t) PyObject_Hash(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Hash)
     Py_hash_t result = (Py_hash_t) __target__PyObject_Hash(a);
-    STATS_AFTER(PyObject_Hash)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_HashNotImplemented, PyObject_Hash)
 Py_hash_t (*__target__PyObject_HashNotImplemented)(PyObject*) = NULL;
 PyAPI_FUNC(Py_hash_t) PyObject_HashNotImplemented(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_HashNotImplemented)
     Py_hash_t result = (Py_hash_t) __target__PyObject_HashNotImplemented(a);
-    STATS_AFTER(PyObject_HashNotImplemented)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyObject_IS_GC(PyObject* a) {
     unimplemented("PyObject_IS_GC"); exit(-1);
 }
-STATS_CONTAINER(PyObject_Init, PyObject_HashNotImplemented)
 PyObject* (*__target__PyObject_Init)(PyObject*, PyTypeObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Init(PyObject* a, PyTypeObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_Init)
     PyObject* result = (PyObject*) __target__PyObject_Init(a, b);
-    STATS_AFTER(PyObject_Init)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_InitVar, PyObject_Init)
 PyVarObject* (*__target__PyObject_InitVar)(PyVarObject*, PyTypeObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyVarObject*) PyObject_InitVar(PyVarObject* a, PyTypeObject* b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_InitVar)
     PyVarObject* result = (PyVarObject*) __target__PyObject_InitVar(a, b, c);
-    STATS_AFTER(PyObject_InitVar)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_IsInstance, PyObject_InitVar)
 int (*__target__PyObject_IsInstance)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_IsInstance(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_IsInstance)
     int result = (int) __target__PyObject_IsInstance(a, b);
-    STATS_AFTER(PyObject_IsInstance)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_IsSubclass, PyObject_IsInstance)
 int (*__target__PyObject_IsSubclass)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_IsSubclass(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_IsSubclass)
     int result = (int) __target__PyObject_IsSubclass(a, b);
-    STATS_AFTER(PyObject_IsSubclass)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_IsTrue, PyObject_IsSubclass)
 int (*__target__PyObject_IsTrue)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_IsTrue(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_IsTrue)
     int result = (int) __target__PyObject_IsTrue(a);
-    STATS_AFTER(PyObject_IsTrue)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PyObject_Length(PyObject* a) {
     unimplemented("PyObject_Length"); exit(-1);
 }
-STATS_CONTAINER(PyObject_LengthHint, PyObject_IsTrue)
 Py_ssize_t (*__target__PyObject_LengthHint)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyObject_LengthHint(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_LengthHint)
     Py_ssize_t result = (Py_ssize_t) __target__PyObject_LengthHint(a, b);
-    STATS_AFTER(PyObject_LengthHint)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Malloc, PyObject_LengthHint)
 void* (*__target__PyObject_Malloc)(size_t) = NULL;
 PyAPI_FUNC(void*) PyObject_Malloc(size_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Malloc)
     void* result = (void*) __target__PyObject_Malloc(a);
-    STATS_AFTER(PyObject_Malloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Not, PyObject_Malloc)
 int (*__target__PyObject_Not)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_Not(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Not)
     int result = (int) __target__PyObject_Not(a);
-    STATS_AFTER(PyObject_Not)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Print, PyObject_Not)
 int (*__target__PyObject_Print)(PyObject*, FILE*, int) = NULL;
 PyAPI_FUNC(int) PyObject_Print(PyObject* a, FILE* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_Print)
     int result = (int) __target__PyObject_Print(a, b, c);
-    STATS_AFTER(PyObject_Print)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Realloc, PyObject_Print)
 void* (*__target__PyObject_Realloc)(void*, size_t) = NULL;
 PyAPI_FUNC(void*) PyObject_Realloc(void* a, size_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyObject_Realloc)
     void* result = (void*) __target__PyObject_Realloc(a, b);
-    STATS_AFTER(PyObject_Realloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Repr, PyObject_Realloc)
 PyObject* (*__target__PyObject_Repr)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Repr(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Repr)
     PyObject* result = (PyObject*) __target__PyObject_Repr(a);
-    STATS_AFTER(PyObject_Repr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_RichCompare, PyObject_Repr)
 PyObject* (*__target__PyObject_RichCompare)(PyObject*, PyObject*, int) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_RichCompare(PyObject* a, PyObject* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_RichCompare)
     PyObject* result = (PyObject*) __target__PyObject_RichCompare(a, b, c);
-    STATS_AFTER(PyObject_RichCompare)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_RichCompareBool, PyObject_RichCompare)
 int (*__target__PyObject_RichCompareBool)(PyObject*, PyObject*, int) = NULL;
 PyAPI_FUNC(int) PyObject_RichCompareBool(PyObject* a, PyObject* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_RichCompareBool)
     int result = (int) __target__PyObject_RichCompareBool(a, b, c);
-    STATS_AFTER(PyObject_RichCompareBool)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_SelfIter, PyObject_RichCompareBool)
 PyObject* (*__target__PyObject_SelfIter)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_SelfIter(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_SelfIter)
     PyObject* result = (PyObject*) __target__PyObject_SelfIter(a);
-    STATS_AFTER(PyObject_SelfIter)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyObject_SetArenaAllocator(PyObjectArenaAllocator* a) {
     unimplemented("PyObject_SetArenaAllocator"); exit(-1);
 }
-STATS_CONTAINER(PyObject_SetAttr, PyObject_SelfIter)
 int (*__target__PyObject_SetAttr)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_SetAttr(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_SetAttr)
     int result = (int) __target__PyObject_SetAttr(a, b, c);
-    STATS_AFTER(PyObject_SetAttr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_SetAttrString, PyObject_SetAttr)
 int (*__target__PyObject_SetAttrString)(PyObject*, const char*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_SetAttrString(PyObject* a, const char* b, PyObject* c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_SetAttrString)
     int result = (int) __target__PyObject_SetAttrString(a, b, c);
-    STATS_AFTER(PyObject_SetAttrString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_SetDoc, PyObject_SetAttrString)
 int (*__target__PyObject_SetDoc)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(int) PyObject_SetDoc(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PyObject_SetDoc)
     int result = (int) __target__PyObject_SetDoc(a, b);
-    STATS_AFTER(PyObject_SetDoc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_SetItem, PyObject_SetDoc)
 int (*__target__PyObject_SetItem)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_SetItem(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyObject_SetItem)
     int result = (int) __target__PyObject_SetItem(a, b, c);
-    STATS_AFTER(PyObject_SetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Size, PyObject_SetItem)
 Py_ssize_t (*__target__PyObject_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyObject_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PyObject_Size(a);
-    STATS_AFTER(PyObject_Size)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Str, PyObject_Size)
 PyObject* (*__target__PyObject_Str)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Str(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Str)
     PyObject* result = (PyObject*) __target__PyObject_Str(a);
-    STATS_AFTER(PyObject_Str)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_Type, PyObject_Str)
 PyObject* (*__target__PyObject_Type)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_Type(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyObject_Type)
     PyObject* result = (PyObject*) __target__PyObject_Type(a);
-    STATS_AFTER(PyObject_Type)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyObject_VectorcallDict, PyObject_Type)
 PyObject* (*__target__PyObject_VectorcallDict)(PyObject*, PyObject*const*, size_t, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_VectorcallDict(PyObject* a, PyObject*const* b, size_t c, PyObject* d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyObject_VectorcallDict)
     PyObject* result = (PyObject*) __target__PyObject_VectorcallDict(a, b, c, d);
-    STATS_AFTER(PyObject_VectorcallDict)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyObject_VectorcallMethod(PyObject* a, PyObject*const* b, size_t c, PyObject* d) {
@@ -5277,272 +3768,147 @@ PyAPI_FUNC(int) PyRun_SimpleStringFlags(const char* a, PyCompilerFlags* b) {
 PyAPI_FUNC(PyObject*) PyRun_String(const char* a, int b, PyObject* c, PyObject* d) {
     unimplemented("PyRun_String"); exit(-1);
 }
-STATS_CONTAINER(PyRun_StringFlags, PyObject_VectorcallDict)
 PyObject* (*__target__PyRun_StringFlags)(const char*, int, PyObject*, PyObject*, PyCompilerFlags*) = NULL;
 PyAPI_FUNC(PyObject*) PyRun_StringFlags(const char* a, int b, PyObject* c, PyObject* d, PyCompilerFlags* e) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(PyRun_StringFlags)
     PyObject* result = (PyObject*) __target__PyRun_StringFlags(a, b, c, d, e);
-    STATS_AFTER(PyRun_StringFlags)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySeqIter_New, PyRun_StringFlags)
 PyObject* (*__target__PySeqIter_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySeqIter_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySeqIter_New)
     PyObject* result = (PyObject*) __target__PySeqIter_New(a);
-    STATS_AFTER(PySeqIter_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_Check, PySeqIter_New)
 int (*__target__PySequence_Check)(PyObject*) = NULL;
 PyAPI_FUNC(int) PySequence_Check(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySequence_Check)
     int result = (int) __target__PySequence_Check(a);
-    STATS_AFTER(PySequence_Check)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_Concat, PySequence_Check)
 PyObject* (*__target__PySequence_Concat)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_Concat(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySequence_Concat)
     PyObject* result = (PyObject*) __target__PySequence_Concat(a, b);
-    STATS_AFTER(PySequence_Concat)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_Contains, PySequence_Concat)
 int (*__target__PySequence_Contains)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PySequence_Contains(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySequence_Contains)
     int result = (int) __target__PySequence_Contains(a, b);
-    STATS_AFTER(PySequence_Contains)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Count(PyObject* a, PyObject* b) {
     unimplemented("PySequence_Count"); exit(-1);
 }
-STATS_CONTAINER(PySequence_DelItem, PySequence_Contains)
 int (*__target__PySequence_DelItem)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(int) PySequence_DelItem(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySequence_DelItem)
     int result = (int) __target__PySequence_DelItem(a, b);
-    STATS_AFTER(PySequence_DelItem)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PySequence_DelSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
     unimplemented("PySequence_DelSlice"); exit(-1);
 }
-STATS_CONTAINER(PySequence_Fast, PySequence_DelItem)
 PyObject* (*__target__PySequence_Fast)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_Fast(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(PySequence_Fast)
     PyObject* result = (PyObject*) __target__PySequence_Fast(a, b);
-    STATS_AFTER(PySequence_Fast)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_GetItem, PySequence_Fast)
 PyObject* (*__target__PySequence_GetItem)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_GetItem(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySequence_GetItem)
     PyObject* result = (PyObject*) __target__PySequence_GetItem(a, b);
-    STATS_AFTER(PySequence_GetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_GetSlice, PySequence_GetItem)
 PyObject* (*__target__PySequence_GetSlice)(PyObject*, Py_ssize_t, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PySequence_GetSlice)
     PyObject* result = (PyObject*) __target__PySequence_GetSlice(a, b, c);
-    STATS_AFTER(PySequence_GetSlice)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PySequence_In(PyObject* a, PyObject* b) {
     unimplemented("PySequence_In"); exit(-1);
 }
-STATS_CONTAINER(PySequence_InPlaceConcat, PySequence_GetSlice)
 PyObject* (*__target__PySequence_InPlaceConcat)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_InPlaceConcat(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySequence_InPlaceConcat)
     PyObject* result = (PyObject*) __target__PySequence_InPlaceConcat(a, b);
-    STATS_AFTER(PySequence_InPlaceConcat)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_InPlaceRepeat, PySequence_InPlaceConcat)
 PyObject* (*__target__PySequence_InPlaceRepeat)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_InPlaceRepeat(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySequence_InPlaceRepeat)
     PyObject* result = (PyObject*) __target__PySequence_InPlaceRepeat(a, b);
-    STATS_AFTER(PySequence_InPlaceRepeat)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PySequence_Index(PyObject* a, PyObject* b) {
     unimplemented("PySequence_Index"); exit(-1);
 }
-STATS_CONTAINER(PySequence_Length, PySequence_InPlaceRepeat)
 Py_ssize_t (*__target__PySequence_Length)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PySequence_Length(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySequence_Length)
     Py_ssize_t result = (Py_ssize_t) __target__PySequence_Length(a);
-    STATS_AFTER(PySequence_Length)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_List, PySequence_Length)
 PyObject* (*__target__PySequence_List)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_List(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySequence_List)
     PyObject* result = (PyObject*) __target__PySequence_List(a);
-    STATS_AFTER(PySequence_List)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_Repeat, PySequence_List)
 PyObject* (*__target__PySequence_Repeat)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_Repeat(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySequence_Repeat)
     PyObject* result = (PyObject*) __target__PySequence_Repeat(a, b);
-    STATS_AFTER(PySequence_Repeat)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_SetItem, PySequence_Repeat)
 int (*__target__PySequence_SetItem)(PyObject*, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(int) PySequence_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PySequence_SetItem)
     int result = (int) __target__PySequence_SetItem(a, b, c);
-    STATS_AFTER(PySequence_SetItem)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PySequence_SetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c, PyObject* d) {
     unimplemented("PySequence_SetSlice"); exit(-1);
 }
-STATS_CONTAINER(PySequence_Size, PySequence_SetItem)
 Py_ssize_t (*__target__PySequence_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PySequence_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySequence_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PySequence_Size(a);
-    STATS_AFTER(PySequence_Size)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySequence_Tuple, PySequence_Size)
 PyObject* (*__target__PySequence_Tuple)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySequence_Tuple(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySequence_Tuple)
     PyObject* result = (PyObject*) __target__PySequence_Tuple(a);
-    STATS_AFTER(PySequence_Tuple)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySet_Add, PySequence_Tuple)
 int (*__target__PySet_Add)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PySet_Add(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySet_Add)
     int result = (int) __target__PySet_Add(a, b);
-    STATS_AFTER(PySet_Add)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySet_Clear, PySet_Add)
 int (*__target__PySet_Clear)(PyObject*) = NULL;
 PyAPI_FUNC(int) PySet_Clear(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySet_Clear)
     int result = (int) __target__PySet_Clear(a);
-    STATS_AFTER(PySet_Clear)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySet_Contains, PySet_Clear)
 int (*__target__PySet_Contains)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PySet_Contains(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySet_Contains)
     int result = (int) __target__PySet_Contains(a, b);
-    STATS_AFTER(PySet_Contains)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySet_Discard, PySet_Contains)
 int (*__target__PySet_Discard)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PySet_Discard(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PySet_Discard)
     int result = (int) __target__PySet_Discard(a, b);
-    STATS_AFTER(PySet_Discard)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySet_New, PySet_Discard)
 PyObject* (*__target__PySet_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySet_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySet_New)
     PyObject* result = (PyObject*) __target__PySet_New(a);
-    STATS_AFTER(PySet_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySet_Pop, PySet_New)
 PyObject* (*__target__PySet_Pop)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySet_Pop(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySet_Pop)
     PyObject* result = (PyObject*) __target__PySet_Pop(a);
-    STATS_AFTER(PySet_Pop)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySet_Size, PySet_Pop)
 Py_ssize_t (*__target__PySet_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PySet_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySet_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PySet_Size(a);
-    STATS_AFTER(PySet_Size)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PySignal_SetWakeupFd(int a) {
     unimplemented("PySignal_SetWakeupFd"); exit(-1);
 }
-STATS_CONTAINER(PySlice_AdjustIndices, PySet_Size)
 Py_ssize_t (*__target__PySlice_AdjustIndices)(Py_ssize_t, Py_ssize_t*, Py_ssize_t*, Py_ssize_t) = NULL;
 PyAPI_FUNC(Py_ssize_t) PySlice_AdjustIndices(Py_ssize_t a, Py_ssize_t* b, Py_ssize_t* c, Py_ssize_t d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PySlice_AdjustIndices)
     Py_ssize_t result = (Py_ssize_t) __target__PySlice_AdjustIndices(a, b, c, d);
-    STATS_AFTER(PySlice_AdjustIndices)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PySlice_GetIndices(PyObject* a, Py_ssize_t b, Py_ssize_t* c, Py_ssize_t* d, Py_ssize_t* e) {
@@ -5551,94 +3917,49 @@ PyAPI_FUNC(int) PySlice_GetIndices(PyObject* a, Py_ssize_t b, Py_ssize_t* c, Py_
 PyAPI_FUNC(int) PySlice_GetIndicesEx(PyObject* a, Py_ssize_t b, Py_ssize_t* c, Py_ssize_t* d, Py_ssize_t* e, Py_ssize_t* f) {
     unimplemented("PySlice_GetIndicesEx"); exit(-1);
 }
-STATS_CONTAINER(PySlice_New, PySlice_AdjustIndices)
 PyObject* (*__target__PySlice_New)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySlice_New(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PySlice_New)
     PyObject* result = (PyObject*) __target__PySlice_New(a, b, c);
-    STATS_AFTER(PySlice_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySlice_Start, PySlice_New)
 PyObject* (*__target__PySlice_Start)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySlice_Start(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySlice_Start)
     PyObject* result = (PyObject*) __target__PySlice_Start(a);
-    STATS_AFTER(PySlice_Start)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySlice_Step, PySlice_Start)
 PyObject* (*__target__PySlice_Step)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySlice_Step(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySlice_Step)
     PyObject* result = (PyObject*) __target__PySlice_Step(a);
-    STATS_AFTER(PySlice_Step)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySlice_Stop, PySlice_Step)
 PyObject* (*__target__PySlice_Stop)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PySlice_Stop(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PySlice_Stop)
     PyObject* result = (PyObject*) __target__PySlice_Stop(a);
-    STATS_AFTER(PySlice_Stop)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PySlice_Unpack, PySlice_Stop)
 int (*__target__PySlice_Unpack)(PyObject*, Py_ssize_t*, Py_ssize_t*, Py_ssize_t*) = NULL;
 PyAPI_FUNC(int) PySlice_Unpack(PyObject* a, Py_ssize_t* b, Py_ssize_t* c, Py_ssize_t* d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PySlice_Unpack)
     int result = (int) __target__PySlice_Unpack(a, b, c, d);
-    STATS_AFTER(PySlice_Unpack)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyState_AddModule, PySlice_Unpack)
 int (*__target__PyState_AddModule)(PyObject*, struct PyModuleDef*) = NULL;
 PyAPI_FUNC(int) PyState_AddModule(PyObject* a, struct PyModuleDef* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyState_AddModule)
     int result = (int) __target__PyState_AddModule(a, b);
-    STATS_AFTER(PyState_AddModule)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyState_FindModule, PyState_AddModule)
 PyObject* (*__target__PyState_FindModule)(struct PyModuleDef*) = NULL;
 PyAPI_FUNC(PyObject*) PyState_FindModule(struct PyModuleDef* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyState_FindModule)
     PyObject* result = (PyObject*) __target__PyState_FindModule(a);
-    STATS_AFTER(PyState_FindModule)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyState_RemoveModule, PyState_FindModule)
 int (*__target__PyState_RemoveModule)(struct PyModuleDef*) = NULL;
 PyAPI_FUNC(int) PyState_RemoveModule(struct PyModuleDef* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyState_RemoveModule)
     int result = (int) __target__PyState_RemoveModule(a);
-    STATS_AFTER(PyState_RemoveModule)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyStaticMethod_New, PyState_RemoveModule)
 PyObject* (*__target__PyStaticMethod_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyStaticMethod_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyStaticMethod_New)
     PyObject* result = (PyObject*) __target__PyStaticMethod_New(a);
-    STATS_AFTER(PyStaticMethod_New)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyStatus) PyStatus_Error(const char* a) {
@@ -5662,63 +3983,33 @@ PyAPI_FUNC(PyStatus) PyStatus_NoMemory() {
 PyAPI_FUNC(PyStatus) PyStatus_Ok() {
     unimplemented("PyStatus_Ok"); exit(-1);
 }
-STATS_CONTAINER(PyStructSequence_GetItem, PyStaticMethod_New)
 PyObject* (*__target__PyStructSequence_GetItem)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyStructSequence_GetItem(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyStructSequence_GetItem)
     PyObject* result = (PyObject*) __target__PyStructSequence_GetItem(a, b);
-    STATS_AFTER(PyStructSequence_GetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyStructSequence_InitType, PyStructSequence_GetItem)
 void (*__target__PyStructSequence_InitType)(PyTypeObject*, PyStructSequence_Desc*) = NULL;
 PyAPI_FUNC(void) PyStructSequence_InitType(PyTypeObject* a, PyStructSequence_Desc* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyStructSequence_InitType)
     __target__PyStructSequence_InitType(a, b);
-    STATS_AFTER(PyStructSequence_InitType)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyStructSequence_InitType2, PyStructSequence_InitType)
 int (*__target__PyStructSequence_InitType2)(PyTypeObject*, PyStructSequence_Desc*) = NULL;
 PyAPI_FUNC(int) PyStructSequence_InitType2(PyTypeObject* a, PyStructSequence_Desc* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyStructSequence_InitType2)
     int result = (int) __target__PyStructSequence_InitType2(a, b);
-    STATS_AFTER(PyStructSequence_InitType2)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyStructSequence_New, PyStructSequence_InitType2)
 PyObject* (*__target__PyStructSequence_New)(PyTypeObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyStructSequence_New(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyStructSequence_New)
     PyObject* result = (PyObject*) __target__PyStructSequence_New(a);
-    STATS_AFTER(PyStructSequence_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyStructSequence_NewType, PyStructSequence_New)
 PyTypeObject* (*__target__PyStructSequence_NewType)(PyStructSequence_Desc*) = NULL;
 PyAPI_FUNC(PyTypeObject*) PyStructSequence_NewType(PyStructSequence_Desc* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyStructSequence_NewType)
     PyTypeObject* result = (PyTypeObject*) __target__PyStructSequence_NewType(a);
-    STATS_AFTER(PyStructSequence_NewType)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyStructSequence_SetItem, PyStructSequence_NewType)
 void (*__target__PyStructSequence_SetItem)(PyObject*, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(void) PyStructSequence_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyStructSequence_SetItem)
     __target__PyStructSequence_SetItem(a, b, c);
-    STATS_AFTER(PyStructSequence_SetItem)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) PySys_AddAuditHook(Py_AuditHookFunction a, void* b) {
     unimplemented("PySys_AddAuditHook"); exit(-1);
@@ -5741,14 +4032,9 @@ PyAPI_FUNC(void) PySys_FormatStderr(const char* a, ...) {
 PyAPI_FUNC(void) PySys_FormatStdout(const char* a, ...) {
     unimplemented("PySys_FormatStdout"); exit(-1);
 }
-STATS_CONTAINER(PySys_GetObject, PyStructSequence_SetItem)
 PyObject* (*__target__PySys_GetObject)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PySys_GetObject(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PySys_GetObject)
     PyObject* result = (PyObject*) __target__PySys_GetObject(a);
-    STATS_AFTER(PySys_GetObject)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PySys_GetXOptions() {
@@ -5778,45 +4064,25 @@ PyAPI_FUNC(void) PySys_WriteStderr(const char* a, ...) {
 PyAPI_FUNC(void) PySys_WriteStdout(const char* a, ...) {
     unimplemented("PySys_WriteStdout"); exit(-1);
 }
-STATS_CONTAINER(PyThreadState_Clear, PySys_GetObject)
 void (*__target__PyThreadState_Clear)(PyThreadState*) = NULL;
 PyAPI_FUNC(void) PyThreadState_Clear(PyThreadState* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThreadState_Clear)
     __target__PyThreadState_Clear(a);
-    STATS_AFTER(PyThreadState_Clear)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void) PyThreadState_Delete(PyThreadState* a) {
     unimplemented("PyThreadState_Delete"); exit(-1);
 }
-STATS_CONTAINER(PyThreadState_DeleteCurrent, PyThreadState_Clear)
 void (*__target__PyThreadState_DeleteCurrent)() = NULL;
 PyAPI_FUNC(void) PyThreadState_DeleteCurrent() {
-    LOGS("");
-    STATS_BEFORE(PyThreadState_DeleteCurrent)
     __target__PyThreadState_DeleteCurrent();
-    STATS_AFTER(PyThreadState_DeleteCurrent)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyThreadState_Get, PyThreadState_DeleteCurrent)
 PyThreadState* (*__target__PyThreadState_Get)() = NULL;
 MUST_INLINE PyAPI_FUNC(PyThreadState*) PyThreadState_Get_Inlined() {
-    LOGS("");
-    STATS_BEFORE(PyThreadState_Get)
     PyThreadState* result = (PyThreadState*) __target__PyThreadState_Get();
-    STATS_AFTER(PyThreadState_Get)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyThreadState_GetDict, PyThreadState_Get)
 PyObject* (*__target__PyThreadState_GetDict)() = NULL;
 PyAPI_FUNC(PyObject*) PyThreadState_GetDict() {
-    LOGS("");
-    STATS_BEFORE(PyThreadState_GetDict)
     PyObject* result = (PyObject*) __target__PyThreadState_GetDict();
-    STATS_AFTER(PyThreadState_GetDict)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyFrameObject*) PyThreadState_GetFrame(PyThreadState* a) {
@@ -5846,27 +4112,17 @@ PyAPI_FUNC(PyObject*) PyThread_GetInfo() {
 PyAPI_FUNC(void) PyThread_ReInitTLS() {
     unimplemented("PyThread_ReInitTLS"); exit(-1);
 }
-STATS_CONTAINER(PyThread_acquire_lock, PyThreadState_GetDict)
 int (*__target__PyThread_acquire_lock)(PyThread_type_lock, int) = NULL;
 PyAPI_FUNC(int) PyThread_acquire_lock(PyThread_type_lock a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyThread_acquire_lock)
     int result = (int) __target__PyThread_acquire_lock(a, b);
-    STATS_AFTER(PyThread_acquire_lock)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyLockStatus) PyThread_acquire_lock_timed(PyThread_type_lock a, long long b, int c) {
     unimplemented("PyThread_acquire_lock_timed"); exit(-1);
 }
-STATS_CONTAINER(PyThread_allocate_lock, PyThread_acquire_lock)
 PyThread_type_lock (*__target__PyThread_allocate_lock)() = NULL;
 PyAPI_FUNC(PyThread_type_lock) PyThread_allocate_lock() {
-    LOGS("");
-    STATS_BEFORE(PyThread_allocate_lock)
     PyThread_type_lock result = (PyThread_type_lock) __target__PyThread_allocate_lock();
-    STATS_AFTER(PyThread_allocate_lock)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyThread_create_key() {
@@ -5881,14 +4137,9 @@ PyAPI_FUNC(void) PyThread_delete_key_value(int a) {
 PyAPI_FUNC(void) PyThread_exit_thread() {
     unimplemented("PyThread_exit_thread"); exit(-1);
 }
-STATS_CONTAINER(PyThread_free_lock, PyThread_allocate_lock)
 void (*__target__PyThread_free_lock)(PyThread_type_lock) = NULL;
 PyAPI_FUNC(void) PyThread_free_lock(PyThread_type_lock a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThread_free_lock)
     __target__PyThread_free_lock(a);
-    STATS_AFTER(PyThread_free_lock)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void*) PyThread_get_key_value(int a) {
     unimplemented("PyThread_get_key_value"); exit(-1);
@@ -5905,14 +4156,9 @@ PyAPI_FUNC(unsigned long) PyThread_get_thread_native_id() {
 PyAPI_FUNC(void) PyThread_init_thread() {
     unimplemented("PyThread_init_thread"); exit(-1);
 }
-STATS_CONTAINER(PyThread_release_lock, PyThread_free_lock)
 void (*__target__PyThread_release_lock)(PyThread_type_lock) = NULL;
 PyAPI_FUNC(void) PyThread_release_lock(PyThread_type_lock a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThread_release_lock)
     __target__PyThread_release_lock(a);
-    STATS_AFTER(PyThread_release_lock)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) PyThread_set_key_value(int a, void* b) {
     unimplemented("PyThread_set_key_value"); exit(-1);
@@ -5923,315 +4169,162 @@ PyAPI_FUNC(int) PyThread_set_stacksize(size_t a) {
 PyAPI_FUNC(unsigned long) PyThread_start_new_thread(void (*a)(void*), void* b) {
     unimplemented("PyThread_start_new_thread"); exit(-1);
 }
-STATS_CONTAINER(PyThread_tss_alloc, PyThread_release_lock)
 Py_tss_t* (*__target__PyThread_tss_alloc)() = NULL;
 PyAPI_FUNC(Py_tss_t*) PyThread_tss_alloc() {
-    LOGS("");
-    STATS_BEFORE(PyThread_tss_alloc)
     Py_tss_t* result = (Py_tss_t*) __target__PyThread_tss_alloc();
-    STATS_AFTER(PyThread_tss_alloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyThread_tss_create, PyThread_tss_alloc)
 int (*__target__PyThread_tss_create)(Py_tss_t*) = NULL;
 PyAPI_FUNC(int) PyThread_tss_create(Py_tss_t* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThread_tss_create)
     int result = (int) __target__PyThread_tss_create(a);
-    STATS_AFTER(PyThread_tss_create)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyThread_tss_delete, PyThread_tss_create)
 void (*__target__PyThread_tss_delete)(Py_tss_t*) = NULL;
 PyAPI_FUNC(void) PyThread_tss_delete(Py_tss_t* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThread_tss_delete)
     __target__PyThread_tss_delete(a);
-    STATS_AFTER(PyThread_tss_delete)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyThread_tss_free, PyThread_tss_delete)
 void (*__target__PyThread_tss_free)(Py_tss_t*) = NULL;
 PyAPI_FUNC(void) PyThread_tss_free(Py_tss_t* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThread_tss_free)
     __target__PyThread_tss_free(a);
-    STATS_AFTER(PyThread_tss_free)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyThread_tss_get, PyThread_tss_free)
 void* (*__target__PyThread_tss_get)(Py_tss_t*) = NULL;
 PyAPI_FUNC(void*) PyThread_tss_get(Py_tss_t* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThread_tss_get)
     void* result = (void*) __target__PyThread_tss_get(a);
-    STATS_AFTER(PyThread_tss_get)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyThread_tss_is_created, PyThread_tss_get)
 int (*__target__PyThread_tss_is_created)(Py_tss_t*) = NULL;
 PyAPI_FUNC(int) PyThread_tss_is_created(Py_tss_t* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyThread_tss_is_created)
     int result = (int) __target__PyThread_tss_is_created(a);
-    STATS_AFTER(PyThread_tss_is_created)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyThread_tss_set, PyThread_tss_is_created)
 int (*__target__PyThread_tss_set)(Py_tss_t*, void*) = NULL;
 PyAPI_FUNC(int) PyThread_tss_set(Py_tss_t* a, void* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyThread_tss_set)
     int result = (int) __target__PyThread_tss_set(a, b);
-    STATS_AFTER(PyThread_tss_set)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTraceBack_Here, PyThread_tss_set)
 int (*__target__PyTraceBack_Here)(PyFrameObject*) = NULL;
 PyAPI_FUNC(int) PyTraceBack_Here(PyFrameObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyTraceBack_Here)
     int result = (int) __target__PyTraceBack_Here(a);
-    STATS_AFTER(PyTraceBack_Here)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyTraceBack_Print(PyObject* a, PyObject* b) {
     unimplemented("PyTraceBack_Print"); exit(-1);
 }
-STATS_CONTAINER(PyTraceMalloc_Track, PyTraceBack_Here)
 int (*__target__PyTraceMalloc_Track)(unsigned int, uintptr_t, size_t) = NULL;
 PyAPI_FUNC(int) PyTraceMalloc_Track(unsigned int a, uintptr_t b, size_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyTraceMalloc_Track)
     int result = (int) __target__PyTraceMalloc_Track(a, b, c);
-    STATS_AFTER(PyTraceMalloc_Track)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTraceMalloc_Untrack, PyTraceMalloc_Track)
 int (*__target__PyTraceMalloc_Untrack)(unsigned int, uintptr_t) = NULL;
 PyAPI_FUNC(int) PyTraceMalloc_Untrack(unsigned int a, uintptr_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyTraceMalloc_Untrack)
     int result = (int) __target__PyTraceMalloc_Untrack(a, b);
-    STATS_AFTER(PyTraceMalloc_Untrack)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyFrameObject*) PyTruffleFrame_New(PyThreadState* a, PyCodeObject* b, PyObject* c, PyObject* d) {
     unimplemented("PyTruffleFrame_New"); exit(-1);
 }
-STATS_CONTAINER(PyTruffle_Debug, PyTraceMalloc_Untrack)
 int (*__target__PyTruffle_Debug)(void*) = NULL;
 PyAPI_FUNC(int) PyTruffle_Debug(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyTruffle_Debug)
     int result = (int) __target__PyTruffle_Debug(a);
-    STATS_AFTER(PyTruffle_Debug)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTruffle_DebugTrace, PyTruffle_Debug)
 void (*__target__PyTruffle_DebugTrace)() = NULL;
 PyAPI_FUNC(void) PyTruffle_DebugTrace() {
-    LOGS("");
-    STATS_BEFORE(PyTruffle_DebugTrace)
     __target__PyTruffle_DebugTrace();
-    STATS_AFTER(PyTruffle_DebugTrace)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(PyObject*) PyTruffle_SeqIter_New(PyObject* a) {
     unimplemented("PyTruffle_SeqIter_New"); exit(-1);
 }
-STATS_CONTAINER(PyTruffle_ToNative, PyTruffle_DebugTrace)
 int (*__target__PyTruffle_ToNative)(void*) = NULL;
 PyAPI_FUNC(int) PyTruffle_ToNative(void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyTruffle_ToNative)
     int result = (int) __target__PyTruffle_ToNative(a);
-    STATS_AFTER(PyTruffle_ToNative)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTuple_GetItem, PyTruffle_ToNative)
 PyObject* (*__target__PyTuple_GetItem)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyTuple_GetItem(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyTuple_GetItem)
     PyObject* result = (PyObject*) __target__PyTuple_GetItem(a, b);
-    STATS_AFTER(PyTuple_GetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTuple_GetSlice, PyTuple_GetItem)
 PyObject* (*__target__PyTuple_GetSlice)(PyObject*, Py_ssize_t, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyTuple_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyTuple_GetSlice)
     PyObject* result = (PyObject*) __target__PyTuple_GetSlice(a, b, c);
-    STATS_AFTER(PyTuple_GetSlice)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTuple_New, PyTuple_GetSlice)
 PyObject* (*__target__PyTuple_New)(Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyTuple_New(Py_ssize_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyTuple_New)
     PyObject* result = (PyObject*) __target__PyTuple_New(a);
-    STATS_AFTER(PyTuple_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTuple_SetItem, PyTuple_New)
 int (*__target__PyTuple_SetItem)(PyObject*, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(int) PyTuple_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyTuple_SetItem)
     int result = (int) __target__PyTuple_SetItem(a, b, c);
-    STATS_AFTER(PyTuple_SetItem)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyTuple_Size, PyTuple_SetItem)
 Py_ssize_t (*__target__PyTuple_Size)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyTuple_Size)
     Py_ssize_t result = (Py_ssize_t) __target__PyTuple_Size(a);
-    STATS_AFTER(PyTuple_Size)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(unsigned int) PyType_ClearCache() {
     unimplemented("PyType_ClearCache"); exit(-1);
 }
-STATS_CONTAINER(PyType_FromModuleAndSpec, PyTuple_Size)
 PyObject* (*__target__PyType_FromModuleAndSpec)(PyObject*, PyType_Spec*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyType_FromModuleAndSpec(PyObject* a, PyType_Spec* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyType_FromModuleAndSpec)
     PyObject* result = (PyObject*) __target__PyType_FromModuleAndSpec(a, b, c);
-    STATS_AFTER(PyType_FromModuleAndSpec)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_FromSpec, PyType_FromModuleAndSpec)
 PyObject* (*__target__PyType_FromSpec)(PyType_Spec*) = NULL;
 PyAPI_FUNC(PyObject*) PyType_FromSpec(PyType_Spec* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyType_FromSpec)
     PyObject* result = (PyObject*) __target__PyType_FromSpec(a);
-    STATS_AFTER(PyType_FromSpec)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_FromSpecWithBases, PyType_FromSpec)
 PyObject* (*__target__PyType_FromSpecWithBases)(PyType_Spec*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyType_FromSpecWithBases(PyType_Spec* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyType_FromSpecWithBases)
     PyObject* result = (PyObject*) __target__PyType_FromSpecWithBases(a, b);
-    STATS_AFTER(PyType_FromSpecWithBases)
-    LOG_AFTER
     return result;
 }
-PyAPI_FUNC(PyObject*) PyType_FromSpecWithBasesAndMeta(PyType_Spec* a, PyObject* b, PyTypeObject* c) {
-    unimplemented("PyType_FromSpecWithBasesAndMeta"); exit(-1);
-}
-STATS_CONTAINER(PyType_GenericAlloc, PyType_FromSpecWithBases)
 PyObject* (*__target__PyType_GenericAlloc)(PyTypeObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyType_GenericAlloc(PyTypeObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyType_GenericAlloc)
     PyObject* result = (PyObject*) __target__PyType_GenericAlloc(a, b);
-    STATS_AFTER(PyType_GenericAlloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_GenericNew, PyType_GenericAlloc)
 PyObject* (*__target__PyType_GenericNew)(PyTypeObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyType_GenericNew(PyTypeObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyType_GenericNew)
     PyObject* result = (PyObject*) __target__PyType_GenericNew(a, b, c);
-    STATS_AFTER(PyType_GenericNew)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_GetFlags, PyType_GenericNew)
 unsigned long (*__target__PyType_GetFlags)(PyTypeObject*) = NULL;
 PyAPI_FUNC(unsigned long) PyType_GetFlags(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyType_GetFlags)
     unsigned long result = (unsigned long) __target__PyType_GetFlags(a);
-    STATS_AFTER(PyType_GetFlags)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_GetModule, PyType_GetFlags)
 PyObject* (*__target__PyType_GetModule)(PyTypeObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyType_GetModule(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyType_GetModule)
     PyObject* result = (PyObject*) __target__PyType_GetModule(a);
-    STATS_AFTER(PyType_GetModule)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_GetModuleState, PyType_GetModule)
 void* (*__target__PyType_GetModuleState)(PyTypeObject*) = NULL;
 PyAPI_FUNC(void*) PyType_GetModuleState(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyType_GetModuleState)
     void* result = (void*) __target__PyType_GetModuleState(a);
-    STATS_AFTER(PyType_GetModuleState)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_GetSlot, PyType_GetModuleState)
 void* (*__target__PyType_GetSlot)(PyTypeObject*, int) = NULL;
 PyAPI_FUNC(void*) PyType_GetSlot(PyTypeObject* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyType_GetSlot)
     void* result = (void*) __target__PyType_GetSlot(a, b);
-    STATS_AFTER(PyType_GetSlot)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_IsSubtype, PyType_GetSlot)
 int (*__target__PyType_IsSubtype)(PyTypeObject*, PyTypeObject*) = NULL;
 PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyType_IsSubtype)
     int result = (int) __target__PyType_IsSubtype(a, b);
-    STATS_AFTER(PyType_IsSubtype)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyType_Modified, PyType_IsSubtype)
 void (*__target__PyType_Modified)(PyTypeObject*) = NULL;
 PyAPI_FUNC(void) PyType_Modified(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyType_Modified)
     __target__PyType_Modified(a);
-    STATS_AFTER(PyType_Modified)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyType_Ready, PyType_Modified)
 int (*__target__PyType_Ready)(PyTypeObject*) = NULL;
 PyAPI_FUNC(int) PyType_Ready(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyType_Ready)
     int result = (int) __target__PyType_Ready(a);
-    STATS_AFTER(PyType_Ready)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
@@ -6312,32 +4405,17 @@ PyAPI_FUNC(int) PyUnicodeTranslateError_SetReason(PyObject* a, const char* b) {
 PyAPI_FUNC(int) PyUnicodeTranslateError_SetStart(PyObject* a, Py_ssize_t b) {
     unimplemented("PyUnicodeTranslateError_SetStart"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_Append, PyType_Ready)
 void (*__target__PyUnicode_Append)(PyObject**, PyObject*) = NULL;
 PyAPI_FUNC(void) PyUnicode_Append(PyObject** a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_Append)
     __target__PyUnicode_Append(a, b);
-    STATS_AFTER(PyUnicode_Append)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyUnicode_AppendAndDel, PyUnicode_Append)
 void (*__target__PyUnicode_AppendAndDel)(PyObject**, PyObject*) = NULL;
 PyAPI_FUNC(void) PyUnicode_AppendAndDel(PyObject** a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_AppendAndDel)
     __target__PyUnicode_AppendAndDel(a, b);
-    STATS_AFTER(PyUnicode_AppendAndDel)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(PyUnicode_AsASCIIString, PyUnicode_AppendAndDel)
 PyObject* (*__target__PyUnicode_AsASCIIString)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_AsASCIIString(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_AsASCIIString)
     PyObject* result = (PyObject*) __target__PyUnicode_AsASCIIString(a);
-    STATS_AFTER(PyUnicode_AsASCIIString)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_AsCharmapString(PyObject* a, PyObject* b) {
@@ -6352,50 +4430,30 @@ PyAPI_FUNC(PyObject*) PyUnicode_AsDecodedUnicode(PyObject* a, const char* b, con
 PyAPI_FUNC(PyObject*) PyUnicode_AsEncodedObject(PyObject* a, const char* b, const char* c) {
     unimplemented("PyUnicode_AsEncodedObject"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_AsEncodedString, PyUnicode_AsASCIIString)
 PyObject* (*__target__PyUnicode_AsEncodedString)(PyObject*, const char*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_AsEncodedString(PyObject* a, const char* b, const char* c) {
-    LOG("0x%lx '%s'(0x%lx) '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b, c?c:"<null>", (unsigned long) c);
-    STATS_BEFORE(PyUnicode_AsEncodedString)
     PyObject* result = (PyObject*) __target__PyUnicode_AsEncodedString(a, b, c);
-    STATS_AFTER(PyUnicode_AsEncodedString)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_AsEncodedUnicode(PyObject* a, const char* b, const char* c) {
     unimplemented("PyUnicode_AsEncodedUnicode"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_AsLatin1String, PyUnicode_AsEncodedString)
 PyObject* (*__target__PyUnicode_AsLatin1String)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_AsLatin1String(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_AsLatin1String)
     PyObject* result = (PyObject*) __target__PyUnicode_AsLatin1String(a);
-    STATS_AFTER(PyUnicode_AsLatin1String)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_AsRawUnicodeEscapeString(PyObject* a) {
     unimplemented("PyUnicode_AsRawUnicodeEscapeString"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_AsUCS4, PyUnicode_AsLatin1String)
 Py_UCS4* (*__target__PyUnicode_AsUCS4)(PyObject*, Py_UCS4*, Py_ssize_t, int) = NULL;
 PyAPI_FUNC(Py_UCS4*) PyUnicode_AsUCS4(PyObject* a, Py_UCS4* b, Py_ssize_t c, int d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyUnicode_AsUCS4)
     Py_UCS4* result = (Py_UCS4*) __target__PyUnicode_AsUCS4(a, b, c, d);
-    STATS_AFTER(PyUnicode_AsUCS4)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_AsUCS4Copy, PyUnicode_AsUCS4)
 Py_UCS4* (*__target__PyUnicode_AsUCS4Copy)(PyObject*) = NULL;
 PyAPI_FUNC(Py_UCS4*) PyUnicode_AsUCS4Copy(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_AsUCS4Copy)
     Py_UCS4* result = (Py_UCS4*) __target__PyUnicode_AsUCS4Copy(a);
-    STATS_AFTER(PyUnicode_AsUCS4Copy)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_AsUTF16String(PyObject* a) {
@@ -6404,74 +4462,39 @@ PyAPI_FUNC(PyObject*) PyUnicode_AsUTF16String(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyUnicode_AsUTF32String(PyObject* a) {
     unimplemented("PyUnicode_AsUTF32String"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_AsUTF8, PyUnicode_AsUCS4Copy)
 const char* (*__target__PyUnicode_AsUTF8)(PyObject*) = NULL;
 PyAPI_FUNC(const char*) PyUnicode_AsUTF8(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_AsUTF8)
     const char* result = (const char*) __target__PyUnicode_AsUTF8(a);
-    STATS_AFTER(PyUnicode_AsUTF8)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_AsUTF8AndSize, PyUnicode_AsUTF8)
 const char* (*__target__PyUnicode_AsUTF8AndSize)(PyObject*, Py_ssize_t*) = NULL;
 PyAPI_FUNC(const char*) PyUnicode_AsUTF8AndSize(PyObject* a, Py_ssize_t* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_AsUTF8AndSize)
     const char* result = (const char*) __target__PyUnicode_AsUTF8AndSize(a, b);
-    STATS_AFTER(PyUnicode_AsUTF8AndSize)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_AsUTF8String, PyUnicode_AsUTF8AndSize)
 PyObject* (*__target__PyUnicode_AsUTF8String)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_AsUTF8String(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_AsUTF8String)
     PyObject* result = (PyObject*) __target__PyUnicode_AsUTF8String(a);
-    STATS_AFTER(PyUnicode_AsUTF8String)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_AsUnicode, PyUnicode_AsUTF8String)
 Py_UNICODE* (*__target__PyUnicode_AsUnicode)(PyObject*) = NULL;
 PyAPI_FUNC(Py_UNICODE*) PyUnicode_AsUnicode(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_AsUnicode)
     Py_UNICODE* result = (Py_UNICODE*) __target__PyUnicode_AsUnicode(a);
-    STATS_AFTER(PyUnicode_AsUnicode)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_AsUnicodeAndSize, PyUnicode_AsUnicode)
 Py_UNICODE* (*__target__PyUnicode_AsUnicodeAndSize)(PyObject*, Py_ssize_t*) = NULL;
 PyAPI_FUNC(Py_UNICODE*) PyUnicode_AsUnicodeAndSize(PyObject* a, Py_ssize_t* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_AsUnicodeAndSize)
     Py_UNICODE* result = (Py_UNICODE*) __target__PyUnicode_AsUnicodeAndSize(a, b);
-    STATS_AFTER(PyUnicode_AsUnicodeAndSize)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_AsUnicodeEscapeString, PyUnicode_AsUnicodeAndSize)
 PyObject* (*__target__PyUnicode_AsUnicodeEscapeString)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_AsUnicodeEscapeString(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_AsUnicodeEscapeString)
     PyObject* result = (PyObject*) __target__PyUnicode_AsUnicodeEscapeString(a);
-    STATS_AFTER(PyUnicode_AsUnicodeEscapeString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_AsWideChar, PyUnicode_AsUnicodeEscapeString)
 Py_ssize_t (*__target__PyUnicode_AsWideChar)(PyObject*, wchar_t*, Py_ssize_t) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyUnicode_AsWideChar(PyObject* a, wchar_t* b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyUnicode_AsWideChar)
     Py_ssize_t result = (Py_ssize_t) __target__PyUnicode_AsWideChar(a, b, c);
-    STATS_AFTER(PyUnicode_AsWideChar)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(wchar_t*) PyUnicode_AsWideCharString(PyObject* a, Py_ssize_t* b) {
@@ -6480,37 +4503,22 @@ PyAPI_FUNC(wchar_t*) PyUnicode_AsWideCharString(PyObject* a, Py_ssize_t* b) {
 PyAPI_FUNC(PyObject*) PyUnicode_BuildEncodingMap(PyObject* a) {
     unimplemented("PyUnicode_BuildEncodingMap"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_Compare, PyUnicode_AsWideChar)
 int (*__target__PyUnicode_Compare)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyUnicode_Compare(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_Compare)
     int result = (int) __target__PyUnicode_Compare(a, b);
-    STATS_AFTER(PyUnicode_Compare)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyUnicode_CompareWithASCIIString(PyObject* a, const char* b) {
     unimplemented("PyUnicode_CompareWithASCIIString"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_Concat, PyUnicode_Compare)
 PyObject* (*__target__PyUnicode_Concat)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_Concat(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_Concat)
     PyObject* result = (PyObject*) __target__PyUnicode_Concat(a, b);
-    STATS_AFTER(PyUnicode_Concat)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_Contains, PyUnicode_Concat)
 int (*__target__PyUnicode_Contains)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) PyUnicode_Contains(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_Contains)
     int result = (int) __target__PyUnicode_Contains(a, b);
-    STATS_AFTER(PyUnicode_Contains)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PyUnicode_CopyCharacters(PyObject* a, Py_ssize_t b, PyObject* c, Py_ssize_t d, Py_ssize_t e) {
@@ -6519,57 +4527,32 @@ PyAPI_FUNC(Py_ssize_t) PyUnicode_CopyCharacters(PyObject* a, Py_ssize_t b, PyObj
 PyAPI_FUNC(Py_ssize_t) PyUnicode_Count(PyObject* a, PyObject* b, Py_ssize_t c, Py_ssize_t d) {
     unimplemented("PyUnicode_Count"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_Decode, PyUnicode_Contains)
 PyObject* (*__target__PyUnicode_Decode)(const char*, Py_ssize_t, const char*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_Decode(const char* a, Py_ssize_t b, const char* c, const char* d) {
-    LOG("'%s'(0x%lx) 0x%lx '%s'(0x%lx) '%s'(0x%lx)", a?a:"<null>", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, d?d:"<null>", (unsigned long) d);
-    STATS_BEFORE(PyUnicode_Decode)
     PyObject* result = (PyObject*) __target__PyUnicode_Decode(a, b, c, d);
-    STATS_AFTER(PyUnicode_Decode)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_DecodeASCII, PyUnicode_Decode)
 PyObject* (*__target__PyUnicode_DecodeASCII)(const char*, Py_ssize_t, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeASCII(const char* a, Py_ssize_t b, const char* c) {
-    LOG("'%s'(0x%lx) 0x%lx '%s'(0x%lx)", a?a:"<null>", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c);
-    STATS_BEFORE(PyUnicode_DecodeASCII)
     PyObject* result = (PyObject*) __target__PyUnicode_DecodeASCII(a, b, c);
-    STATS_AFTER(PyUnicode_DecodeASCII)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeCharmap(const char* a, Py_ssize_t b, PyObject* c, const char* d) {
     unimplemented("PyUnicode_DecodeCharmap"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_DecodeFSDefault, PyUnicode_DecodeASCII)
 PyObject* (*__target__PyUnicode_DecodeFSDefault)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeFSDefault(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_DecodeFSDefault)
     PyObject* result = (PyObject*) __target__PyUnicode_DecodeFSDefault(a);
-    STATS_AFTER(PyUnicode_DecodeFSDefault)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_DecodeFSDefaultAndSize, PyUnicode_DecodeFSDefault)
 PyObject* (*__target__PyUnicode_DecodeFSDefaultAndSize)(const char*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeFSDefaultAndSize(const char* a, Py_ssize_t b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_DecodeFSDefaultAndSize)
     PyObject* result = (PyObject*) __target__PyUnicode_DecodeFSDefaultAndSize(a, b);
-    STATS_AFTER(PyUnicode_DecodeFSDefaultAndSize)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_DecodeLatin1, PyUnicode_DecodeFSDefaultAndSize)
 PyObject* (*__target__PyUnicode_DecodeLatin1)(const char*, Py_ssize_t, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeLatin1(const char* a, Py_ssize_t b, const char* c) {
-    LOG("'%s'(0x%lx) 0x%lx '%s'(0x%lx)", a?a:"<null>", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c);
-    STATS_BEFORE(PyUnicode_DecodeLatin1)
     PyObject* result = (PyObject*) __target__PyUnicode_DecodeLatin1(a, b, c);
-    STATS_AFTER(PyUnicode_DecodeLatin1)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeLocale(const char* a, const char* b) {
@@ -6587,14 +4570,9 @@ PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF16(const char* a, Py_ssize_t b, const c
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF16Stateful(const char* a, Py_ssize_t b, const char* c, int* d, Py_ssize_t* e) {
     unimplemented("PyUnicode_DecodeUTF16Stateful"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_DecodeUTF32, PyUnicode_DecodeLatin1)
 PyObject* (*__target__PyUnicode_DecodeUTF32)(const char*, Py_ssize_t, const char*, int*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF32(const char* a, Py_ssize_t b, const char* c, int* d) {
-    LOG("'%s'(0x%lx) 0x%lx '%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyUnicode_DecodeUTF32)
     PyObject* result = (PyObject*) __target__PyUnicode_DecodeUTF32(a, b, c, d);
-    STATS_AFTER(PyUnicode_DecodeUTF32)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF32Stateful(const char* a, Py_ssize_t b, const char* c, int* d, Py_ssize_t* e) {
@@ -6606,24 +4584,14 @@ PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF7(const char* a, Py_ssize_t b, const ch
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF7Stateful(const char* a, Py_ssize_t b, const char* c, Py_ssize_t* d) {
     unimplemented("PyUnicode_DecodeUTF7Stateful"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_DecodeUTF8, PyUnicode_DecodeUTF32)
 PyObject* (*__target__PyUnicode_DecodeUTF8)(const char*, Py_ssize_t, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF8(const char* a, Py_ssize_t b, const char* c) {
-    LOG("'%s'(0x%lx) 0x%lx '%s'(0x%lx)", a?a:"<null>", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c);
-    STATS_BEFORE(PyUnicode_DecodeUTF8)
     PyObject* result = (PyObject*) __target__PyUnicode_DecodeUTF8(a, b, c);
-    STATS_AFTER(PyUnicode_DecodeUTF8)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_DecodeUTF8Stateful, PyUnicode_DecodeUTF8)
 PyObject* (*__target__PyUnicode_DecodeUTF8Stateful)(const char*, Py_ssize_t, const char*, Py_ssize_t*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF8Stateful(const char* a, Py_ssize_t b, const char* c, Py_ssize_t* d) {
-    LOG("'%s'(0x%lx) 0x%lx '%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyUnicode_DecodeUTF8Stateful)
     PyObject* result = (PyObject*) __target__PyUnicode_DecodeUTF8Stateful(a, b, c, d);
-    STATS_AFTER(PyUnicode_DecodeUTF8Stateful)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeUnicodeEscape(const char* a, Py_ssize_t b, const char* c) {
@@ -6641,14 +4609,9 @@ PyAPI_FUNC(PyObject*) PyUnicode_EncodeCharmap(const Py_UNICODE* a, Py_ssize_t b,
 PyAPI_FUNC(int) PyUnicode_EncodeDecimal(Py_UNICODE* a, Py_ssize_t b, char* c, const char* d) {
     unimplemented("PyUnicode_EncodeDecimal"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_EncodeFSDefault, PyUnicode_DecodeUTF8Stateful)
 PyObject* (*__target__PyUnicode_EncodeFSDefault)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_EncodeFSDefault(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_EncodeFSDefault)
     PyObject* result = (PyObject*) __target__PyUnicode_EncodeFSDefault(a);
-    STATS_AFTER(PyUnicode_EncodeFSDefault)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_EncodeLatin1(const Py_UNICODE* a, Py_ssize_t b, const char* c) {
@@ -6687,175 +4650,95 @@ PyAPI_FUNC(Py_ssize_t) PyUnicode_Fill(PyObject* a, Py_ssize_t b, Py_ssize_t c, P
 PyAPI_FUNC(Py_ssize_t) PyUnicode_Find(PyObject* a, PyObject* b, Py_ssize_t c, Py_ssize_t d, int e) {
     unimplemented("PyUnicode_Find"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_FindChar, PyUnicode_EncodeFSDefault)
 Py_ssize_t (*__target__PyUnicode_FindChar)(PyObject*, Py_UCS4, Py_ssize_t, Py_ssize_t, int) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyUnicode_FindChar(PyObject* a, Py_UCS4 b, Py_ssize_t c, Py_ssize_t d, int e) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(PyUnicode_FindChar)
     Py_ssize_t result = (Py_ssize_t) __target__PyUnicode_FindChar(a, b, c, d, e);
-    STATS_AFTER(PyUnicode_FindChar)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_Format, PyUnicode_FindChar)
 PyObject* (*__target__PyUnicode_Format)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_Format(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_Format)
     PyObject* result = (PyObject*) __target__PyUnicode_Format(a, b);
-    STATS_AFTER(PyUnicode_Format)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromEncodedObject, PyUnicode_Format)
 PyObject* (*__target__PyUnicode_FromEncodedObject)(PyObject*, const char*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromEncodedObject(PyObject* a, const char* b, const char* c) {
-    LOG("0x%lx '%s'(0x%lx) '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b, c?c:"<null>", (unsigned long) c);
-    STATS_BEFORE(PyUnicode_FromEncodedObject)
     PyObject* result = (PyObject*) __target__PyUnicode_FromEncodedObject(a, b, c);
-    STATS_AFTER(PyUnicode_FromEncodedObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromFormatV, PyUnicode_FromEncodedObject)
 PyObject* (*__target__PyUnicode_FromFormatV)(const char*, va_list) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromFormatV(const char* a, va_list b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_FromFormatV)
     PyObject* result = (PyObject*) __target__PyUnicode_FromFormatV(a, b);
-    STATS_AFTER(PyUnicode_FromFormatV)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromKindAndData, PyUnicode_FromFormatV)
 PyObject* (*__target__PyUnicode_FromKindAndData)(int, const void*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromKindAndData(int a, const void* b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyUnicode_FromKindAndData)
     PyObject* result = (PyObject*) __target__PyUnicode_FromKindAndData(a, b, c);
-    STATS_AFTER(PyUnicode_FromKindAndData)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromObject, PyUnicode_FromKindAndData)
 PyObject* (*__target__PyUnicode_FromObject)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromObject(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_FromObject)
     PyObject* result = (PyObject*) __target__PyUnicode_FromObject(a);
-    STATS_AFTER(PyUnicode_FromObject)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromOrdinal, PyUnicode_FromObject)
 PyObject* (*__target__PyUnicode_FromOrdinal)(int) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromOrdinal(int a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_FromOrdinal)
     PyObject* result = (PyObject*) __target__PyUnicode_FromOrdinal(a);
-    STATS_AFTER(PyUnicode_FromOrdinal)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromString, PyUnicode_FromOrdinal)
 PyObject* (*__target__PyUnicode_FromString)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromString(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_FromString)
     PyObject* result = (PyObject*) __target__PyUnicode_FromString(a);
-    STATS_AFTER(PyUnicode_FromString)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromStringAndSize, PyUnicode_FromString)
 PyObject* (*__target__PyUnicode_FromStringAndSize)(const char*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromStringAndSize(const char* a, Py_ssize_t b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_FromStringAndSize)
     PyObject* result = (PyObject*) __target__PyUnicode_FromStringAndSize(a, b);
-    STATS_AFTER(PyUnicode_FromStringAndSize)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromUnicode, PyUnicode_FromStringAndSize)
 PyObject* (*__target__PyUnicode_FromUnicode)(const Py_UNICODE*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromUnicode(const Py_UNICODE* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_FromUnicode)
     PyObject* result = (PyObject*) __target__PyUnicode_FromUnicode(a, b);
-    STATS_AFTER(PyUnicode_FromUnicode)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_FromWideChar, PyUnicode_FromUnicode)
 PyObject* (*__target__PyUnicode_FromWideChar)(const wchar_t*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_FromWideChar(const wchar_t* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_FromWideChar)
     PyObject* result = (PyObject*) __target__PyUnicode_FromWideChar(a, b);
-    STATS_AFTER(PyUnicode_FromWideChar)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(const char*) PyUnicode_GetDefaultEncoding() {
     unimplemented("PyUnicode_GetDefaultEncoding"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_GetLength, PyUnicode_FromWideChar)
 Py_ssize_t (*__target__PyUnicode_GetLength)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyUnicode_GetLength(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_GetLength)
     Py_ssize_t result = (Py_ssize_t) __target__PyUnicode_GetLength(a);
-    STATS_AFTER(PyUnicode_GetLength)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) PyUnicode_GetSize(PyObject* a) {
     unimplemented("PyUnicode_GetSize"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_InternFromString, PyUnicode_GetLength)
 PyObject* (*__target__PyUnicode_InternFromString)(const char*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_InternFromString(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_InternFromString)
     PyObject* result = (PyObject*) __target__PyUnicode_InternFromString(a);
-    STATS_AFTER(PyUnicode_InternFromString)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) PyUnicode_InternImmortal(PyObject** a) {
     unimplemented("PyUnicode_InternImmortal"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_InternInPlace, PyUnicode_InternFromString)
 void (*__target__PyUnicode_InternInPlace)(PyObject**) = NULL;
 PyAPI_FUNC(void) PyUnicode_InternInPlace(PyObject** a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyUnicode_InternInPlace)
     __target__PyUnicode_InternInPlace(a);
-    STATS_AFTER(PyUnicode_InternInPlace)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) PyUnicode_IsIdentifier(PyObject* a) {
     unimplemented("PyUnicode_IsIdentifier"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_Join, PyUnicode_InternInPlace)
 PyObject* (*__target__PyUnicode_Join)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_Join(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_Join)
     PyObject* result = (PyObject*) __target__PyUnicode_Join(a, b);
-    STATS_AFTER(PyUnicode_Join)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_New, PyUnicode_Join)
 PyObject* (*__target__PyUnicode_New)(Py_ssize_t, Py_UCS4) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_New(Py_ssize_t a, Py_UCS4 b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_New)
     PyObject* result = (PyObject*) __target__PyUnicode_New(a, b);
-    STATS_AFTER(PyUnicode_New)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_Partition(PyObject* a, PyObject* b) {
@@ -6867,24 +4750,14 @@ PyAPI_FUNC(PyObject*) PyUnicode_RPartition(PyObject* a, PyObject* b) {
 PyAPI_FUNC(PyObject*) PyUnicode_RSplit(PyObject* a, PyObject* b, Py_ssize_t c) {
     unimplemented("PyUnicode_RSplit"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_ReadChar, PyUnicode_New)
 Py_UCS4 (*__target__PyUnicode_ReadChar)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(Py_UCS4) PyUnicode_ReadChar(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyUnicode_ReadChar)
     Py_UCS4 result = (Py_UCS4) __target__PyUnicode_ReadChar(a, b);
-    STATS_AFTER(PyUnicode_ReadChar)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_Replace, PyUnicode_ReadChar)
 PyObject* (*__target__PyUnicode_Replace)(PyObject*, PyObject*, PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_Replace(PyObject* a, PyObject* b, PyObject* c, Py_ssize_t d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(PyUnicode_Replace)
     PyObject* result = (PyObject*) __target__PyUnicode_Replace(a, b, c, d);
-    STATS_AFTER(PyUnicode_Replace)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) PyUnicode_Resize(PyObject** a, Py_ssize_t b) {
@@ -6893,37 +4766,22 @@ PyAPI_FUNC(int) PyUnicode_Resize(PyObject** a, Py_ssize_t b) {
 PyAPI_FUNC(PyObject*) PyUnicode_RichCompare(PyObject* a, PyObject* b, int c) {
     unimplemented("PyUnicode_RichCompare"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_Split, PyUnicode_Replace)
 PyObject* (*__target__PyUnicode_Split)(PyObject*, PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_Split(PyObject* a, PyObject* b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyUnicode_Split)
     PyObject* result = (PyObject*) __target__PyUnicode_Split(a, b, c);
-    STATS_AFTER(PyUnicode_Split)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_Splitlines(PyObject* a, int b) {
     unimplemented("PyUnicode_Splitlines"); exit(-1);
 }
-STATS_CONTAINER(PyUnicode_Substring, PyUnicode_Split)
 PyObject* (*__target__PyUnicode_Substring)(PyObject*, Py_ssize_t, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) PyUnicode_Substring(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyUnicode_Substring)
     PyObject* result = (PyObject*) __target__PyUnicode_Substring(a, b, c);
-    STATS_AFTER(PyUnicode_Substring)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyUnicode_Tailmatch, PyUnicode_Substring)
 Py_ssize_t (*__target__PyUnicode_Tailmatch)(PyObject*, PyObject*, Py_ssize_t, Py_ssize_t, int) = NULL;
 PyAPI_FUNC(Py_ssize_t) PyUnicode_Tailmatch(PyObject* a, PyObject* b, Py_ssize_t c, Py_ssize_t d, int e) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(PyUnicode_Tailmatch)
     Py_ssize_t result = (Py_ssize_t) __target__PyUnicode_Tailmatch(a, b, c, d, e);
-    STATS_AFTER(PyUnicode_Tailmatch)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyUnicode_TransformDecimalToASCII(Py_UNICODE* a, Py_ssize_t b) {
@@ -6938,37 +4796,22 @@ PyAPI_FUNC(PyObject*) PyUnicode_TranslateCharmap(const Py_UNICODE* a, Py_ssize_t
 PyAPI_FUNC(int) PyUnicode_WriteChar(PyObject* a, Py_ssize_t b, Py_UCS4 c) {
     unimplemented("PyUnicode_WriteChar"); exit(-1);
 }
-STATS_CONTAINER(PyVectorcall_Call, PyUnicode_Tailmatch)
 PyObject* (*__target__PyVectorcall_Call)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyVectorcall_Call(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(PyVectorcall_Call)
     PyObject* result = (PyObject*) __target__PyVectorcall_Call(a, b, c);
-    STATS_AFTER(PyVectorcall_Call)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(PyWeakref_GetObject, PyVectorcall_Call)
 PyObject* (*__target__PyWeakref_GetObject)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyWeakref_GetObject(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(PyWeakref_GetObject)
     PyObject* result = (PyObject*) __target__PyWeakref_GetObject(a);
-    STATS_AFTER(PyWeakref_GetObject)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) PyWeakref_NewProxy(PyObject* a, PyObject* b) {
     unimplemented("PyWeakref_NewProxy"); exit(-1);
 }
-STATS_CONTAINER(PyWeakref_NewRef, PyWeakref_GetObject)
 PyObject* (*__target__PyWeakref_NewRef)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyWeakref_NewRef(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(PyWeakref_NewRef)
     PyObject* result = (PyObject*) __target__PyWeakref_NewRef(a, b);
-    STATS_AFTER(PyWeakref_NewRef)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyStatus) PyWideStringList_Append(PyWideStringList* a, const wchar_t* b) {
@@ -6983,14 +4826,9 @@ PyAPI_FUNC(PyObject*) PyWrapper_New(PyObject* a, PyObject* b) {
 PyAPI_FUNC(int) Py_AddPendingCall(int (*a)(void*), void* b) {
     unimplemented("Py_AddPendingCall"); exit(-1);
 }
-STATS_CONTAINER(Py_AtExit, PyWeakref_NewRef)
 int (*__target__Py_AtExit)(void (*)(void)) = NULL;
 PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_AtExit)
     int result = (int) __target__Py_AtExit(a);
-    STATS_AFTER(Py_AtExit)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) Py_BytesMain(int a, char** b) {
@@ -7005,14 +4843,9 @@ PyAPI_FUNC(PyObject*) Py_CompileStringExFlags(const char* a, const char* b, int 
 PyAPI_FUNC(PyObject*) Py_CompileStringObject(const char* a, PyObject* b, int c, PyCompilerFlags* d, int e) {
     unimplemented("Py_CompileStringObject"); exit(-1);
 }
-STATS_CONTAINER(Py_DecRef, Py_AtExit)
 void (*__target__Py_DecRef)(PyObject*) = NULL;
 PyAPI_FUNC(void) Py_DecRef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_DecRef)
     __target__Py_DecRef(a);
-    STATS_AFTER(Py_DecRef)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(wchar_t*) Py_DecodeLocale(const char* a, size_t* b) {
     unimplemented("Py_DecodeLocale"); exit(-1);
@@ -7023,14 +4856,9 @@ PyAPI_FUNC(char*) Py_EncodeLocale(const wchar_t* a, size_t* b) {
 PyAPI_FUNC(void) Py_EndInterpreter(PyThreadState* a) {
     unimplemented("Py_EndInterpreter"); exit(-1);
 }
-STATS_CONTAINER(Py_EnterRecursiveCall, Py_DecRef)
 int (*__target__Py_EnterRecursiveCall)(const char*) = NULL;
 PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {
-    LOG("'%s'(0x%lx)", a?a:"<null>", (unsigned long) a);
-    STATS_BEFORE(Py_EnterRecursiveCall)
     int result = (int) __target__Py_EnterRecursiveCall(a);
-    STATS_AFTER(Py_EnterRecursiveCall)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) Py_Exit(int a) {
@@ -7054,37 +4882,22 @@ PyAPI_FUNC(int) Py_FinalizeEx() {
 PyAPI_FUNC(int) Py_FrozenMain(int a, char** b) {
     unimplemented("Py_FrozenMain"); exit(-1);
 }
-STATS_CONTAINER(Py_GenericAlias, Py_EnterRecursiveCall)
 PyObject* (*__target__Py_GenericAlias)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) Py_GenericAlias(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(Py_GenericAlias)
     PyObject* result = (PyObject*) __target__Py_GenericAlias(a, b);
-    STATS_AFTER(Py_GenericAlias)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) Py_GetArgcArgv(int* a, wchar_t*** b) {
     unimplemented("Py_GetArgcArgv"); exit(-1);
 }
-STATS_CONTAINER(Py_GetBuildInfo, Py_GenericAlias)
 const char* (*__target__Py_GetBuildInfo)() = NULL;
 PyAPI_FUNC(const char*) Py_GetBuildInfo() {
-    LOGS("");
-    STATS_BEFORE(Py_GetBuildInfo)
     const char* result = (const char*) __target__Py_GetBuildInfo();
-    STATS_AFTER(Py_GetBuildInfo)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(Py_GetCompiler, Py_GetBuildInfo)
 const char* (*__target__Py_GetCompiler)() = NULL;
 PyAPI_FUNC(const char*) Py_GetCompiler() {
-    LOGS("");
-    STATS_BEFORE(Py_GetCompiler)
     const char* result = (const char*) __target__Py_GetCompiler();
-    STATS_AFTER(Py_GetCompiler)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(const char*) Py_GetCopyright() {
@@ -7114,24 +4927,14 @@ PyAPI_FUNC(wchar_t*) Py_GetPythonHome() {
 PyAPI_FUNC(int) Py_GetRecursionLimit() {
     unimplemented("Py_GetRecursionLimit"); exit(-1);
 }
-STATS_CONTAINER(Py_GetVersion, Py_GetCompiler)
 const char* (*__target__Py_GetVersion)() = NULL;
 PyAPI_FUNC(const char*) Py_GetVersion() {
-    LOGS("");
-    STATS_BEFORE(Py_GetVersion)
     const char* result = (const char*) __target__Py_GetVersion();
-    STATS_AFTER(Py_GetVersion)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(Py_IncRef, Py_GetVersion)
 void (*__target__Py_IncRef)(PyObject*) = NULL;
 PyAPI_FUNC(void) Py_IncRef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_IncRef)
     __target__Py_IncRef(a);
-    STATS_AFTER(Py_IncRef)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void) Py_Initialize() {
     unimplemented("Py_Initialize"); exit(-1);
@@ -7142,57 +4945,32 @@ PyAPI_FUNC(void) Py_InitializeEx(int a) {
 PyAPI_FUNC(PyStatus) Py_InitializeFromConfig(const PyConfig* a) {
     unimplemented("Py_InitializeFromConfig"); exit(-1);
 }
-STATS_CONTAINER(Py_Is, Py_IncRef)
 int (*__target__Py_Is)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) Py_Is(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(Py_Is)
     int result = (int) __target__Py_Is(a, b);
-    STATS_AFTER(Py_Is)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(Py_IsFalse, Py_Is)
 int (*__target__Py_IsFalse)(PyObject*) = NULL;
 PyAPI_FUNC(int) Py_IsFalse(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_IsFalse)
     int result = (int) __target__Py_IsFalse(a);
-    STATS_AFTER(Py_IsFalse)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) Py_IsInitialized() {
     unimplemented("Py_IsInitialized"); exit(-1);
 }
-STATS_CONTAINER(Py_IsNone, Py_IsFalse)
 int (*__target__Py_IsNone)(PyObject*) = NULL;
 PyAPI_FUNC(int) Py_IsNone(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_IsNone)
     int result = (int) __target__Py_IsNone(a);
-    STATS_AFTER(Py_IsNone)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(Py_IsTrue, Py_IsNone)
 int (*__target__Py_IsTrue)(PyObject*) = NULL;
 PyAPI_FUNC(int) Py_IsTrue(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_IsTrue)
     int result = (int) __target__Py_IsTrue(a);
-    STATS_AFTER(Py_IsTrue)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(Py_LeaveRecursiveCall, Py_IsTrue)
 void (*__target__Py_LeaveRecursiveCall)() = NULL;
 PyAPI_FUNC(void) Py_LeaveRecursiveCall() {
-    LOGS("");
-    STATS_BEFORE(Py_LeaveRecursiveCall)
     __target__Py_LeaveRecursiveCall();
-    STATS_AFTER(Py_LeaveRecursiveCall)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) Py_Main(int a, wchar_t** b) {
     unimplemented("Py_Main"); exit(-1);
@@ -7203,14 +4981,9 @@ PyAPI_FUNC(int) Py_MakePendingCalls() {
 PyAPI_FUNC(PyThreadState*) Py_NewInterpreter() {
     unimplemented("Py_NewInterpreter"); exit(-1);
 }
-STATS_CONTAINER(Py_NewRef, Py_LeaveRecursiveCall)
 PyObject* (*__target__Py_NewRef)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) Py_NewRef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_NewRef)
     PyObject* result = (PyObject*) __target__Py_NewRef(a);
-    STATS_AFTER(Py_NewRef)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyStatus) Py_PreInitialize(const PyPreConfig* a) {
@@ -7249,74 +5022,39 @@ PyAPI_FUNC(int) Py_SetStandardStreamEncoding(const char* a, const char* b) {
 PyAPI_FUNC(char*) Py_UniversalNewlineFgets(char* a, int b, FILE* c, PyObject* d) {
     unimplemented("Py_UniversalNewlineFgets"); exit(-1);
 }
-STATS_CONTAINER(Py_XNewRef, Py_NewRef)
 PyObject* (*__target__Py_XNewRef)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) Py_XNewRef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(Py_XNewRef)
     PyObject* result = (PyObject*) __target__Py_XNewRef(a);
-    STATS_AFTER(Py_XNewRef)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyASCIIObject_LENGTH, Py_XNewRef)
 Py_ssize_t (*__target___PyASCIIObject_LENGTH)(PyASCIIObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) _PyASCIIObject_LENGTH(PyASCIIObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyASCIIObject_LENGTH)
     Py_ssize_t result = (Py_ssize_t) __target___PyASCIIObject_LENGTH(a);
-    STATS_AFTER(_PyASCIIObject_LENGTH)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyASCIIObject_STATE_ASCII, _PyASCIIObject_LENGTH)
 unsigned int (*__target___PyASCIIObject_STATE_ASCII)(PyASCIIObject*) = NULL;
 PyAPI_FUNC(unsigned int) _PyASCIIObject_STATE_ASCII(PyASCIIObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyASCIIObject_STATE_ASCII)
     unsigned int result = (unsigned int) __target___PyASCIIObject_STATE_ASCII(a);
-    STATS_AFTER(_PyASCIIObject_STATE_ASCII)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyASCIIObject_STATE_COMPACT, _PyASCIIObject_STATE_ASCII)
 unsigned int (*__target___PyASCIIObject_STATE_COMPACT)(PyASCIIObject*) = NULL;
 PyAPI_FUNC(unsigned int) _PyASCIIObject_STATE_COMPACT(PyASCIIObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyASCIIObject_STATE_COMPACT)
     unsigned int result = (unsigned int) __target___PyASCIIObject_STATE_COMPACT(a);
-    STATS_AFTER(_PyASCIIObject_STATE_COMPACT)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyASCIIObject_STATE_KIND, _PyASCIIObject_STATE_COMPACT)
 unsigned int (*__target___PyASCIIObject_STATE_KIND)(PyASCIIObject*) = NULL;
 PyAPI_FUNC(unsigned int) _PyASCIIObject_STATE_KIND(PyASCIIObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyASCIIObject_STATE_KIND)
     unsigned int result = (unsigned int) __target___PyASCIIObject_STATE_KIND(a);
-    STATS_AFTER(_PyASCIIObject_STATE_KIND)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyASCIIObject_STATE_READY, _PyASCIIObject_STATE_KIND)
 unsigned int (*__target___PyASCIIObject_STATE_READY)(PyASCIIObject*) = NULL;
 PyAPI_FUNC(unsigned int) _PyASCIIObject_STATE_READY(PyASCIIObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyASCIIObject_STATE_READY)
     unsigned int result = (unsigned int) __target___PyASCIIObject_STATE_READY(a);
-    STATS_AFTER(_PyASCIIObject_STATE_READY)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyASCIIObject_WSTR, _PyASCIIObject_STATE_READY)
 wchar_t* (*__target___PyASCIIObject_WSTR)(PyASCIIObject*) = NULL;
 PyAPI_FUNC(wchar_t*) _PyASCIIObject_WSTR(PyASCIIObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyASCIIObject_WSTR)
     wchar_t* result = (wchar_t*) __target___PyASCIIObject_WSTR(a);
-    STATS_AFTER(_PyASCIIObject_WSTR)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) _PyArg_Fini() {
@@ -7334,125 +5072,65 @@ PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords(PyObject*const* a, Py_ssize_t b, Py
 PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords_SizeT(PyObject*const* a, Py_ssize_t b, PyObject* c, struct _PyArg_Parser* d, ...) {
     unimplemented("_PyArg_ParseStackAndKeywords_SizeT"); exit(-1);
 }
-STATS_CONTAINER(_PyArg_VaParseTupleAndKeywordsFast, _PyASCIIObject_WSTR)
 int (*__target___PyArg_VaParseTupleAndKeywordsFast)(PyObject*, PyObject*, struct _PyArg_Parser*, va_list) = NULL;
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywordsFast(PyObject* a, PyObject* b, struct _PyArg_Parser* c, va_list d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyArg_VaParseTupleAndKeywordsFast)
     int result = (int) __target___PyArg_VaParseTupleAndKeywordsFast(a, b, c, d);
-    STATS_AFTER(_PyArg_VaParseTupleAndKeywordsFast)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyArg_VaParseTupleAndKeywordsFast_SizeT, _PyArg_VaParseTupleAndKeywordsFast)
 int (*__target___PyArg_VaParseTupleAndKeywordsFast_SizeT)(PyObject*, PyObject*, struct _PyArg_Parser*, va_list) = NULL;
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject* a, PyObject* b, struct _PyArg_Parser* c, va_list d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyArg_VaParseTupleAndKeywordsFast_SizeT)
     int result = (int) __target___PyArg_VaParseTupleAndKeywordsFast_SizeT(a, b, c, d);
-    STATS_AFTER(_PyArg_VaParseTupleAndKeywordsFast_SizeT)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyArg_VaParseTupleAndKeywords_SizeT, _PyArg_VaParseTupleAndKeywordsFast_SizeT)
 int (*__target___PyArg_VaParseTupleAndKeywords_SizeT)(PyObject*, PyObject*, const char*, char**, va_list) = NULL;
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject* a, PyObject* b, const char* c, char** d, va_list e) {
-    LOG("0x%lx 0x%lx '%s'(0x%lx) 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(_PyArg_VaParseTupleAndKeywords_SizeT)
     int result = (int) __target___PyArg_VaParseTupleAndKeywords_SizeT(a, b, c, d, e);
-    STATS_AFTER(_PyArg_VaParseTupleAndKeywords_SizeT)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyArg_VaParse_SizeT, _PyArg_VaParseTupleAndKeywords_SizeT)
 int (*__target___PyArg_VaParse_SizeT)(PyObject*, const char*, va_list) = NULL;
 PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject* a, const char* b, va_list c) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyArg_VaParse_SizeT)
     int result = (int) __target___PyArg_VaParse_SizeT(a, b, c);
-    STATS_AFTER(_PyArg_VaParse_SizeT)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyAsyncGenValueWrapperNew(PyObject* a) {
     unimplemented("_PyAsyncGenValueWrapperNew"); exit(-1);
 }
-STATS_CONTAINER(_PyByteArray_Start, _PyArg_VaParse_SizeT)
 char* (*__target___PyByteArray_Start)(PyObject*) = NULL;
 PyAPI_FUNC(char*) _PyByteArray_Start(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyByteArray_Start)
     char* result = (char*) __target___PyByteArray_Start(a);
-    STATS_AFTER(_PyByteArray_Start)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyBytesWriter_Alloc, _PyByteArray_Start)
 void* (*__target___PyBytesWriter_Alloc)(_PyBytesWriter*, Py_ssize_t) = NULL;
 PyAPI_FUNC(void*) _PyBytesWriter_Alloc(_PyBytesWriter* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyBytesWriter_Alloc)
     void* result = (void*) __target___PyBytesWriter_Alloc(a, b);
-    STATS_AFTER(_PyBytesWriter_Alloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyBytesWriter_Dealloc, _PyBytesWriter_Alloc)
 void (*__target___PyBytesWriter_Dealloc)(_PyBytesWriter*) = NULL;
 PyAPI_FUNC(void) _PyBytesWriter_Dealloc(_PyBytesWriter* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyBytesWriter_Dealloc)
     __target___PyBytesWriter_Dealloc(a);
-    STATS_AFTER(_PyBytesWriter_Dealloc)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(_PyBytesWriter_Finish, _PyBytesWriter_Dealloc)
 PyObject* (*__target___PyBytesWriter_Finish)(_PyBytesWriter*, void*) = NULL;
 PyAPI_FUNC(PyObject*) _PyBytesWriter_Finish(_PyBytesWriter* a, void* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyBytesWriter_Finish)
     PyObject* result = (PyObject*) __target___PyBytesWriter_Finish(a, b);
-    STATS_AFTER(_PyBytesWriter_Finish)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyBytesWriter_Init, _PyBytesWriter_Finish)
 void (*__target___PyBytesWriter_Init)(_PyBytesWriter*) = NULL;
 PyAPI_FUNC(void) _PyBytesWriter_Init(_PyBytesWriter* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyBytesWriter_Init)
     __target___PyBytesWriter_Init(a);
-    STATS_AFTER(_PyBytesWriter_Init)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(_PyBytesWriter_Prepare, _PyBytesWriter_Init)
 void* (*__target___PyBytesWriter_Prepare)(_PyBytesWriter*, void*, Py_ssize_t) = NULL;
 PyAPI_FUNC(void*) _PyBytesWriter_Prepare(_PyBytesWriter* a, void* b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyBytesWriter_Prepare)
     void* result = (void*) __target___PyBytesWriter_Prepare(a, b, c);
-    STATS_AFTER(_PyBytesWriter_Prepare)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyBytesWriter_Resize, _PyBytesWriter_Prepare)
 void* (*__target___PyBytesWriter_Resize)(_PyBytesWriter*, void*, Py_ssize_t) = NULL;
 PyAPI_FUNC(void*) _PyBytesWriter_Resize(_PyBytesWriter* a, void* b, Py_ssize_t c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyBytesWriter_Resize)
     void* result = (void*) __target___PyBytesWriter_Resize(a, b, c);
-    STATS_AFTER(_PyBytesWriter_Resize)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyBytesWriter_WriteBytes, _PyBytesWriter_Resize)
 void* (*__target___PyBytesWriter_WriteBytes)(_PyBytesWriter*, void*, const void*, Py_ssize_t) = NULL;
 PyAPI_FUNC(void*) _PyBytesWriter_WriteBytes(_PyBytesWriter* a, void* b, const void* c, Py_ssize_t d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyBytesWriter_WriteBytes)
     void* result = (void*) __target___PyBytesWriter_WriteBytes(a, b, c, d);
-    STATS_AFTER(_PyBytesWriter_WriteBytes)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyBytes_DecodeEscape(const char* a, Py_ssize_t b, const char* c, const char** d) {
@@ -7464,31 +5142,15 @@ PyAPI_FUNC(PyObject*) _PyBytes_FormatEx(const char* a, Py_ssize_t b, PyObject* c
 PyAPI_FUNC(PyObject*) _PyBytes_FromHex(PyObject* a, int b) {
     unimplemented("_PyBytes_FromHex"); exit(-1);
 }
-STATS_CONTAINER(_PyBytes_Join, _PyBytesWriter_WriteBytes)
 PyObject* (*__target___PyBytes_Join)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyBytes_Join(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyBytes_Join)
     PyObject* result = (PyObject*) __target___PyBytes_Join(a, b);
-    STATS_AFTER(_PyBytes_Join)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyBytes_Resize, _PyBytes_Join)
 int (*__target___PyBytes_Resize)(PyObject**, Py_ssize_t) = NULL;
 PyAPI_FUNC(int) _PyBytes_Resize(PyObject** a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyBytes_Resize)
     int result = (int) __target___PyBytes_Resize(a, b);
-    STATS_AFTER(_PyBytes_Resize)
-    LOG_AFTER
     return result;
-}
-PyAPI_FUNC(void) _PyCFunction_DebugMallocStats(FILE* a) {
-    unimplemented("_PyCFunction_DebugMallocStats"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyCFunction_FastCallDict(PyObject* a, PyObject*const* b, Py_ssize_t c, PyObject* d) {
-    unimplemented("_PyCFunction_FastCallDict"); exit(-1);
 }
 PyAPI_FUNC(int) _PyCode_CheckLineNumber(int a, PyCodeAddressRange* b) {
     unimplemented("_PyCode_CheckLineNumber"); exit(-1);
@@ -7595,55 +5257,31 @@ PyAPI_FUNC(int) _PyDict_MergeEx(PyObject* a, PyObject* b, int c) {
 PyAPI_FUNC(PyDictKeysObject*) _PyDict_NewKeysForClass() {
     unimplemented("_PyDict_NewKeysForClass"); exit(-1);
 }
-STATS_CONTAINER(_PyDict_Pop, _PyBytes_Resize)
 PyObject* (*__target___PyDict_Pop)(PyObject*, PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyDict_Pop(PyObject* a, PyObject* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyDict_Pop)
     PyObject* result = (PyObject*) __target___PyDict_Pop(a, b, c);
-    STATS_AFTER(_PyDict_Pop)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyDict_Pop_KnownHash(PyObject* a, PyObject* b, Py_hash_t c, PyObject* d) {
     unimplemented("_PyDict_Pop_KnownHash"); exit(-1);
 }
-STATS_CONTAINER(_PyDict_SetItem_KnownHash, _PyDict_Pop)
 int (*__target___PyDict_SetItem_KnownHash)(PyObject*, PyObject*, PyObject*, Py_hash_t) = NULL;
 PyAPI_FUNC(int) _PyDict_SetItem_KnownHash(PyObject* a, PyObject* b, PyObject* c, Py_hash_t d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyDict_SetItem_KnownHash)
     int result = (int) __target___PyDict_SetItem_KnownHash(a, b, c, d);
-    STATS_AFTER(_PyDict_SetItem_KnownHash)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) _PyDict_SizeOf(PyDictObject* a) {
     unimplemented("_PyDict_SizeOf"); exit(-1);
 }
-STATS_CONTAINER(_PyErr_BadInternalCall, _PyDict_SetItem_KnownHash)
 void (*__target___PyErr_BadInternalCall)(const char*, int) = NULL;
 PyAPI_FUNC(void) _PyErr_BadInternalCall(const char* a, int b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyErr_BadInternalCall)
     __target___PyErr_BadInternalCall(a, b);
-    STATS_AFTER(_PyErr_BadInternalCall)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(void) _PyErr_ChainExceptions(PyObject* a, PyObject* b, PyObject* c) {
     unimplemented("_PyErr_ChainExceptions"); exit(-1);
 }
 PyAPI_FUNC(int) _PyErr_CheckSignals() {
     unimplemented("_PyErr_CheckSignals"); exit(-1);
-}
-STATS_CONTAINER(_PyErr_CreateAndSetException, _PyErr_BadInternalCall)
-void (*__target___PyErr_CreateAndSetException)(PyObject*, PyObject*) = NULL;
-PyAPI_FUNC(void) _PyErr_CreateAndSetException(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyErr_CreateAndSetException)
-    __target___PyErr_CreateAndSetException(a, b);
-    STATS_AFTER(_PyErr_CreateAndSetException)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(PyObject*) _PyErr_FormatFromCause(PyObject* a, const char* b, ...) {
     unimplemented("_PyErr_FormatFromCause"); exit(-1);
@@ -7666,14 +5304,9 @@ PyAPI_FUNC(PyObject*) _PyErr_TrySetFromCause(const char* a, ...) {
 PyAPI_FUNC(void) _PyErr_WarnUnawaitedCoroutine(PyObject* a) {
     unimplemented("_PyErr_WarnUnawaitedCoroutine"); exit(-1);
 }
-STATS_CONTAINER(_PyErr_WriteUnraisableMsg, _PyErr_CreateAndSetException)
 void (*__target___PyErr_WriteUnraisableMsg)(const char*, PyObject*) = NULL;
 PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyErr_WriteUnraisableMsg)
     __target___PyErr_WriteUnraisableMsg(a, b);
-    STATS_AFTER(_PyErr_WriteUnraisableMsg)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(PyObject*) _PyEval_CallTracing(PyObject* a, PyObject* b) {
     unimplemented("_PyEval_CallTracing"); exit(-1);
@@ -7717,14 +5350,9 @@ PyAPI_FUNC(void) _PyEval_SetSwitchInterval(unsigned long a) {
 PyAPI_FUNC(int) _PyEval_SetTrace(PyThreadState* a, Py_tracefunc b, PyObject* c) {
     unimplemented("_PyEval_SetTrace"); exit(-1);
 }
-STATS_CONTAINER(_PyEval_SliceIndex, _PyErr_WriteUnraisableMsg)
 int (*__target___PyEval_SliceIndex)(PyObject*, Py_ssize_t*) = NULL;
 PyAPI_FUNC(int) _PyEval_SliceIndex(PyObject* a, Py_ssize_t* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyEval_SliceIndex)
     int result = (int) __target___PyEval_SliceIndex(a, b);
-    STATS_AFTER(_PyEval_SliceIndex)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PyEval_SliceIndexNotNone(PyObject* a, Py_ssize_t* b) {
@@ -7736,64 +5364,34 @@ PyAPI_FUNC(void) _PyFloat_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(int) _PyFloat_FormatAdvancedWriter(_PyUnicodeWriter* a, PyObject* b, PyObject* c, Py_ssize_t d, Py_ssize_t e) {
     unimplemented("_PyFloat_FormatAdvancedWriter"); exit(-1);
 }
-STATS_CONTAINER(_PyFloat_Pack2, _PyEval_SliceIndex)
 int (*__target___PyFloat_Pack2)(double, unsigned char*, int) = NULL;
 PyAPI_FUNC(int) _PyFloat_Pack2(double a, unsigned char* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyFloat_Pack2)
     int result = (int) __target___PyFloat_Pack2(a, b, c);
-    STATS_AFTER(_PyFloat_Pack2)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyFloat_Pack4, _PyFloat_Pack2)
 int (*__target___PyFloat_Pack4)(double, unsigned char*, int) = NULL;
 PyAPI_FUNC(int) _PyFloat_Pack4(double a, unsigned char* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyFloat_Pack4)
     int result = (int) __target___PyFloat_Pack4(a, b, c);
-    STATS_AFTER(_PyFloat_Pack4)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyFloat_Pack8, _PyFloat_Pack4)
 int (*__target___PyFloat_Pack8)(double, unsigned char*, int) = NULL;
 PyAPI_FUNC(int) _PyFloat_Pack8(double a, unsigned char* b, int c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyFloat_Pack8)
     int result = (int) __target___PyFloat_Pack8(a, b, c);
-    STATS_AFTER(_PyFloat_Pack8)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyFloat_Unpack2, _PyFloat_Pack8)
 double (*__target___PyFloat_Unpack2)(const unsigned char*, int) = NULL;
 PyAPI_FUNC(double) _PyFloat_Unpack2(const unsigned char* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyFloat_Unpack2)
     double result = (double) __target___PyFloat_Unpack2(a, b);
-    STATS_AFTER(_PyFloat_Unpack2)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyFloat_Unpack4, _PyFloat_Unpack2)
 double (*__target___PyFloat_Unpack4)(const unsigned char*, int) = NULL;
 PyAPI_FUNC(double) _PyFloat_Unpack4(const unsigned char* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyFloat_Unpack4)
     double result = (double) __target___PyFloat_Unpack4(a, b);
-    STATS_AFTER(_PyFloat_Unpack4)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyFloat_Unpack8, _PyFloat_Unpack4)
 double (*__target___PyFloat_Unpack8)(const unsigned char*, int) = NULL;
 PyAPI_FUNC(double) _PyFloat_Unpack8(const unsigned char* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyFloat_Unpack8)
     double result = (double) __target___PyFloat_Unpack8(a, b);
-    STATS_AFTER(_PyFloat_Unpack8)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) _PyFrame_DebugMallocStats(FILE* a) {
@@ -7802,17 +5400,9 @@ PyAPI_FUNC(void) _PyFrame_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(PyFrameObject*) _PyFrame_New_NoTrack(PyThreadState* a, PyFrameConstructor* b, PyObject* c) {
     unimplemented("_PyFrame_New_NoTrack"); exit(-1);
 }
-STATS_CONTAINER(_PyFrame_SetLineNumber, _PyFloat_Unpack8)
 void (*__target___PyFrame_SetLineNumber)(PyFrameObject*, int) = NULL;
 PyAPI_FUNC(void) _PyFrame_SetLineNumber(PyFrameObject* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyFrame_SetLineNumber)
     __target___PyFrame_SetLineNumber(a, b);
-    STATS_AFTER(_PyFrame_SetLineNumber)
-    LOG_AFTER_VOID
-}
-PyAPI_FUNC(PyObject*) _PyFunction_FastCallDict(PyObject* a, PyObject*const* b, Py_ssize_t c, PyObject* d) {
-    unimplemented("_PyFunction_FastCallDict"); exit(-1);
 }
 PyAPI_FUNC(PyObject*) _PyFunction_Vectorcall(PyObject* a, PyObject*const* b, size_t c, PyObject* d) {
     unimplemented("_PyFunction_Vectorcall"); exit(-1);
@@ -7820,66 +5410,30 @@ PyAPI_FUNC(PyObject*) _PyFunction_Vectorcall(PyObject* a, PyObject*const* b, siz
 PyAPI_FUNC(PyInterpreterState*) _PyGILState_GetInterpreterStateUnsafe() {
     unimplemented("_PyGILState_GetInterpreterStateUnsafe"); exit(-1);
 }
-STATS_CONTAINER(_PyGen_FetchStopIterationValue, _PyFrame_SetLineNumber)
 int (*__target___PyGen_FetchStopIterationValue)(PyObject**) = NULL;
 PyAPI_FUNC(int) _PyGen_FetchStopIterationValue(PyObject** a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyGen_FetchStopIterationValue)
     int result = (int) __target___PyGen_FetchStopIterationValue(a);
-    STATS_AFTER(_PyGen_FetchStopIterationValue)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyGen_Finalize, _PyGen_FetchStopIterationValue)
 void (*__target___PyGen_Finalize)(PyObject*) = NULL;
 PyAPI_FUNC(void) _PyGen_Finalize(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyGen_Finalize)
     __target___PyGen_Finalize(a);
-    STATS_AFTER(_PyGen_Finalize)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(_PyGen_Send, _PyGen_Finalize)
-PyObject* (*__target___PyGen_Send)(PyGenObject*, PyObject*) = NULL;
-PyAPI_FUNC(PyObject*) _PyGen_Send(PyGenObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyGen_Send)
-    PyObject* result = (PyObject*) __target___PyGen_Send(a, b);
-    STATS_AFTER(_PyGen_Send)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(_PyGen_SetStopIterationValue, _PyGen_Send)
 int (*__target___PyGen_SetStopIterationValue)(PyObject*) = NULL;
 PyAPI_FUNC(int) _PyGen_SetStopIterationValue(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyGen_SetStopIterationValue)
     int result = (int) __target___PyGen_SetStopIterationValue(a);
-    STATS_AFTER(_PyGen_SetStopIterationValue)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyGen_yf, _PyGen_SetStopIterationValue)
 PyObject* (*__target___PyGen_yf)(PyGenObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyGen_yf(PyGenObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyGen_yf)
     PyObject* result = (PyObject*) __target___PyGen_yf(a);
-    STATS_AFTER(_PyGen_yf)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) _PyImport_AcquireLock() {
     unimplemented("_PyImport_AcquireLock"); exit(-1);
 }
-PyAPI_FUNC(PyObject*) _PyImport_FindBuiltin(const char* a, PyObject* b) {
-    unimplemented("_PyImport_FindBuiltin"); exit(-1);
-}
 PyAPI_FUNC(PyObject*) _PyImport_FindExtensionObject(PyObject* a, PyObject* b) {
     unimplemented("_PyImport_FindExtensionObject"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyImport_FindExtensionObjectEx(PyObject* a, PyObject* b, PyObject* c) {
-    unimplemented("_PyImport_FindExtensionObjectEx"); exit(-1);
 }
 PyAPI_FUNC(int) _PyImport_FixupBuiltin(PyObject* a, const char* b, PyObject* c) {
     unimplemented("_PyImport_FixupBuiltin"); exit(-1);
@@ -7899,27 +5453,19 @@ PyAPI_FUNC(PyObject*) _PyImport_GetModuleId(struct _Py_Identifier* a) {
 PyAPI_FUNC(int) _PyImport_IsInitialized(PyInterpreterState* a) {
     unimplemented("_PyImport_IsInitialized"); exit(-1);
 }
-PyAPI_FUNC(void) _PyImport_ReInitLock() {
+PyAPI_FUNC(PyStatus) _PyImport_ReInitLock() {
     unimplemented("_PyImport_ReInitLock"); exit(-1);
 }
 PyAPI_FUNC(int) _PyImport_ReleaseLock() {
     unimplemented("_PyImport_ReleaseLock"); exit(-1);
 }
-STATS_CONTAINER(_PyImport_SetModule, _PyGen_yf)
 int (*__target___PyImport_SetModule)(PyObject*, PyObject*) = NULL;
 PyAPI_FUNC(int) _PyImport_SetModule(PyObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyImport_SetModule)
     int result = (int) __target___PyImport_SetModule(a, b);
-    STATS_AFTER(_PyImport_SetModule)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PyImport_SetModuleString(const char* a, PyObject* b) {
     unimplemented("_PyImport_SetModuleString"); exit(-1);
-}
-PyAPI_FUNC(PyInterpreterState*) _PyInterpreterState_Get() {
-    unimplemented("_PyInterpreterState_Get"); exit(-1);
 }
 PyAPI_FUNC(const PyConfig*) _PyInterpreterState_GetConfig(PyInterpreterState* a) {
     unimplemented("_PyInterpreterState_GetConfig"); exit(-1);
@@ -7948,34 +5494,19 @@ PyAPI_FUNC(void) _PyInterpreterState_SetEvalFrameFunc(PyInterpreterState* a, _Py
 PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE* a) {
     unimplemented("_PyList_DebugMallocStats"); exit(-1);
 }
-STATS_CONTAINER(_PyList_Extend, _PyImport_SetModule)
 PyObject* (*__target___PyList_Extend)(PyListObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyList_Extend)
     PyObject* result = (PyObject*) __target___PyList_Extend(a, b);
-    STATS_AFTER(_PyList_Extend)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyLong_AsByteArray, _PyList_Extend)
 int (*__target___PyLong_AsByteArray)(PyLongObject*, unsigned char*, size_t, int, int) = NULL;
 PyAPI_FUNC(int) _PyLong_AsByteArray(PyLongObject* a, unsigned char* b, size_t c, int d, int e) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(_PyLong_AsByteArray)
     int result = (int) __target___PyLong_AsByteArray(a, b, c, d, e);
-    STATS_AFTER(_PyLong_AsByteArray)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyLong_AsInt, _PyLong_AsByteArray)
 int (*__target___PyLong_AsInt)(PyObject*) = NULL;
 PyAPI_FUNC(int) _PyLong_AsInt(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyLong_AsInt)
     int result = (int) __target___PyLong_AsInt(a);
-    STATS_AFTER(_PyLong_AsInt)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(time_t) _PyLong_AsTime_t(PyObject* a) {
@@ -8011,14 +5542,9 @@ PyAPI_FUNC(PyObject*) _PyLong_FromByteArray(const unsigned char* a, size_t b, in
 PyAPI_FUNC(PyObject*) _PyLong_FromBytes(const char* a, Py_ssize_t b, int c) {
     unimplemented("_PyLong_FromBytes"); exit(-1);
 }
-STATS_CONTAINER(_PyLong_FromTime_t, _PyLong_AsInt)
 PyObject* (*__target___PyLong_FromTime_t)(time_t) = NULL;
 PyAPI_FUNC(PyObject*) _PyLong_FromTime_t(time_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyLong_FromTime_t)
     PyObject* result = (PyObject*) __target___PyLong_FromTime_t(a);
-    STATS_AFTER(_PyLong_FromTime_t)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyLong_GCD(PyObject* a, PyObject* b) {
@@ -8036,14 +5562,9 @@ PyAPI_FUNC(size_t) _PyLong_NumBits(PyObject* a) {
 PyAPI_FUNC(PyObject*) _PyLong_Rshift(PyObject* a, size_t b) {
     unimplemented("_PyLong_Rshift"); exit(-1);
 }
-STATS_CONTAINER(_PyLong_Sign, _PyLong_FromTime_t)
 int (*__target___PyLong_Sign)(PyObject*) = NULL;
 PyAPI_FUNC(int) _PyLong_Sign(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyLong_Sign)
     int result = (int) __target___PyLong_Sign(a);
-    STATS_AFTER(_PyLong_Sign)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PyLong_Size_t_Converter(PyObject* a, void* b) {
@@ -8073,24 +5594,10 @@ PyAPI_FUNC(wchar_t*) _PyMem_RawWcsdup(const wchar_t* a) {
 PyAPI_FUNC(char*) _PyMem_Strdup(const char* a) {
     unimplemented("_PyMem_Strdup"); exit(-1);
 }
-STATS_CONTAINER(_PyMemoryView_GetBuffer, _PyLong_Sign)
 Py_buffer* (*__target___PyMemoryView_GetBuffer)(PyObject*) = NULL;
 PyAPI_FUNC(Py_buffer*) _PyMemoryView_GetBuffer(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyMemoryView_GetBuffer)
     Py_buffer* result = (Py_buffer*) __target___PyMemoryView_GetBuffer(a);
-    STATS_AFTER(_PyMemoryView_GetBuffer)
-    LOG_AFTER
     return result;
-}
-PyAPI_FUNC(PyObject*) _PyMethodDef_RawFastCallDict(PyMethodDef* a, PyObject* b, PyObject*const* c, Py_ssize_t d, PyObject* e) {
-    unimplemented("_PyMethodDef_RawFastCallDict"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyMethodDef_RawFastCallKeywords(PyMethodDef* a, PyObject* b, PyObject*const* c, Py_ssize_t d, PyObject* e) {
-    unimplemented("_PyMethodDef_RawFastCallKeywords"); exit(-1);
-}
-PyAPI_FUNC(void) _PyMethod_DebugMallocStats(FILE* a) {
-    unimplemented("_PyMethod_DebugMallocStats"); exit(-1);
 }
 PyAPI_FUNC(int) _PyModuleSpec_IsInitializing(PyObject* a) {
     unimplemented("_PyModuleSpec_IsInitializing"); exit(-1);
@@ -8101,64 +5608,34 @@ PyAPI_FUNC(void) _PyModule_Clear(PyObject* a) {
 PyAPI_FUNC(void) _PyModule_ClearDict(PyObject* a) {
     unimplemented("_PyModule_ClearDict"); exit(-1);
 }
-STATS_CONTAINER(_PyModule_CreateInitialized, _PyMemoryView_GetBuffer)
 PyObject* (*__target___PyModule_CreateInitialized)(struct PyModuleDef*, int) = NULL;
 PyAPI_FUNC(PyObject*) _PyModule_CreateInitialized(struct PyModuleDef* a, int b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyModule_CreateInitialized)
     PyObject* result = (PyObject*) __target___PyModule_CreateInitialized(a, b);
-    STATS_AFTER(_PyModule_CreateInitialized)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyModule_GetDef, _PyModule_CreateInitialized)
 PyModuleDef* (*__target___PyModule_GetDef)(PyObject*) = NULL;
 PyAPI_FUNC(PyModuleDef*) _PyModule_GetDef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyModule_GetDef)
     PyModuleDef* result = (PyModuleDef*) __target___PyModule_GetDef(a);
-    STATS_AFTER(_PyModule_GetDef)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyModule_GetDict, _PyModule_GetDef)
 PyObject* (*__target___PyModule_GetDict)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyModule_GetDict(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyModule_GetDict)
     PyObject* result = (PyObject*) __target___PyModule_GetDict(a);
-    STATS_AFTER(_PyModule_GetDict)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyModule_GetState, _PyModule_GetDict)
 void* (*__target___PyModule_GetState)(PyObject*) = NULL;
 PyAPI_FUNC(void*) _PyModule_GetState(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyModule_GetState)
     void* result = (void*) __target___PyModule_GetState(a);
-    STATS_AFTER(_PyModule_GetState)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyNamespace_New, _PyModule_GetState)
 PyObject* (*__target___PyNamespace_New)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyNamespace_New(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyNamespace_New)
     PyObject* result = (PyObject*) __target___PyNamespace_New(a);
-    STATS_AFTER(_PyNamespace_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyNumber_Index, _PyNamespace_New)
 PyObject* (*__target___PyNumber_Index)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyNumber_Index(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyNumber_Index)
     PyObject* result = (PyObject*) __target___PyNumber_Index(a);
-    STATS_AFTER(_PyNumber_Index)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PyOS_IsMainThread() {
@@ -8176,26 +5653,6 @@ PyAPI_FUNC(int) _PyObjectDict_SetItem(PyTypeObject* a, PyObject** b, PyObject* c
 PyAPI_FUNC(void) _PyObject_AssertFailed(PyObject* a, const char* b, const char* c, const char* d, int e, const char* f) {
     unimplemented("_PyObject_AssertFailed"); exit(-1);
 }
-STATS_CONTAINER(_PyObject_Call1, _PyNumber_Index)
-PyObject* (*__target___PyObject_Call1)(PyObject*, PyObject*, PyObject*, int) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_Call1(PyObject* a, PyObject* b, PyObject* c, int d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyObject_Call1)
-    PyObject* result = (PyObject*) __target___PyObject_Call1(a, b, c, d);
-    STATS_AFTER(_PyObject_Call1)
-    LOG_AFTER
-    return result;
-}
-STATS_CONTAINER(_PyObject_CallMethod1, _PyObject_Call1)
-PyObject* (*__target___PyObject_CallMethod1)(PyObject*, const char*, PyObject*, int) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
-    LOG("0x%lx '%s'(0x%lx) 0x%lx 0x%lx", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PyObject_CallMethod1)
-    PyObject* result = (PyObject*) __target___PyObject_CallMethod1(a, b, c, d);
-    STATS_AFTER(_PyObject_CallMethod1)
-    LOG_AFTER
-    return result;
-}
 PyAPI_FUNC(PyObject*) _PyObject_CallMethodId(PyObject* a, _Py_Identifier* b, const char* c, ...) {
     unimplemented("_PyObject_CallMethodId"); exit(-1);
 }
@@ -8205,7 +5662,7 @@ PyAPI_FUNC(PyObject*) _PyObject_CallMethodIdObjArgs(PyObject* a, struct _Py_Iden
 PyAPI_FUNC(PyObject*) _PyObject_CallMethodId_SizeT(PyObject* a, _Py_Identifier* b, const char* c, ...) {
     unimplemented("_PyObject_CallMethodId_SizeT"); exit(-1);
 }
-PyAPI_FUNC(PyObject*) _PyObject_Call_Prepend(PyObject* a, PyObject* b, PyObject* c, PyObject* d) {
+PyAPI_FUNC(PyObject*) _PyObject_Call_Prepend(PyThreadState* a, PyObject* b, PyObject* c, PyObject* d, PyObject* e) {
     unimplemented("_PyObject_Call_Prepend"); exit(-1);
 }
 PyAPI_FUNC(int) _PyObject_CheckConsistency(PyObject* a, int b) {
@@ -8220,62 +5677,31 @@ PyAPI_FUNC(int) _PyObject_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(void) _PyObject_DebugTypeStats(FILE* a) {
     unimplemented("_PyObject_DebugTypeStats"); exit(-1);
 }
-STATS_CONTAINER(_PyObject_Dump, _PyObject_CallMethod1)
 void (*__target___PyObject_Dump)(PyObject*) = NULL;
 PyAPI_FUNC(void) _PyObject_Dump(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyObject_Dump)
     __target___PyObject_Dump(a);
-    STATS_AFTER(_PyObject_Dump)
-    LOG_AFTER_VOID
-}
-PyAPI_FUNC(PyObject*) _PyObject_FastCallDict(PyObject* a, PyObject*const* b, size_t c, PyObject* d) {
-    unimplemented("_PyObject_FastCallDict"); exit(-1);
-}
-PyAPI_FUNC(PyObject*) _PyObject_FastCall_Prepend(PyObject* a, PyObject* b, PyObject*const* c, Py_ssize_t d) {
-    unimplemented("_PyObject_FastCall_Prepend"); exit(-1);
 }
 PyAPI_FUNC(PyObject*) _PyObject_FunctionStr(PyObject* a) {
     unimplemented("_PyObject_FunctionStr"); exit(-1);
 }
-STATS_CONTAINER(_PyObject_GC_Calloc, _PyObject_Dump)
 PyObject* (*__target___PyObject_GC_Calloc)(size_t) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_GC_Calloc(size_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyObject_GC_Calloc)
     PyObject* result = (PyObject*) __target___PyObject_GC_Calloc(a);
-    STATS_AFTER(_PyObject_GC_Calloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyObject_GC_Malloc, _PyObject_GC_Calloc)
 PyObject* (*__target___PyObject_GC_Malloc)(size_t) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_GC_Malloc(size_t a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyObject_GC_Malloc)
     PyObject* result = (PyObject*) __target___PyObject_GC_Malloc(a);
-    STATS_AFTER(_PyObject_GC_Malloc)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyObject_GC_New, _PyObject_GC_Malloc)
 PyObject* (*__target___PyObject_GC_New)(PyTypeObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_GC_New(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyObject_GC_New)
     PyObject* result = (PyObject*) __target___PyObject_GC_New(a);
-    STATS_AFTER(_PyObject_GC_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyObject_GC_NewVar, _PyObject_GC_New)
 PyVarObject* (*__target___PyObject_GC_NewVar)(PyTypeObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyVarObject*) _PyObject_GC_NewVar(PyTypeObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyObject_GC_NewVar)
     PyVarObject* result = (PyVarObject*) __target___PyObject_GC_NewVar(a, b);
-    STATS_AFTER(_PyObject_GC_NewVar)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyVarObject*) _PyObject_GC_Resize(PyVarObject* a, Py_ssize_t b) {
@@ -8287,14 +5713,9 @@ PyAPI_FUNC(PyObject*) _PyObject_GenericGetAttrWithDict(PyObject* a, PyObject* b,
 PyAPI_FUNC(int) _PyObject_GenericSetAttrWithDict(PyObject* a, PyObject* b, PyObject* c, PyObject* d) {
     unimplemented("_PyObject_GenericSetAttrWithDict"); exit(-1);
 }
-STATS_CONTAINER(_PyObject_GetAttrId, _PyObject_GC_NewVar)
 PyObject* (*__target___PyObject_GetAttrId)(PyObject*, struct _Py_Identifier*) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_GetAttrId(PyObject* a, struct _Py_Identifier* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyObject_GetAttrId)
     PyObject* result = (PyObject*) __target___PyObject_GetAttrId(a, b);
-    STATS_AFTER(_PyObject_GetAttrId)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PyObject_GetCrossInterpreterData(PyObject* a, _PyCrossInterpreterData* b) {
@@ -8302,9 +5723,6 @@ PyAPI_FUNC(int) _PyObject_GetCrossInterpreterData(PyObject* a, _PyCrossInterpret
 }
 PyAPI_FUNC(int) _PyObject_GetMethod(PyObject* a, PyObject* b, PyObject** c) {
     unimplemented("_PyObject_GetMethod"); exit(-1);
-}
-PyAPI_FUNC(int) _PyObject_HasAttrId(PyObject* a, struct _Py_Identifier* b) {
-    unimplemented("_PyObject_HasAttrId"); exit(-1);
 }
 PyAPI_FUNC(int) _PyObject_HasLen(PyObject* a) {
     unimplemented("_PyObject_HasLen"); exit(-1);
@@ -8315,67 +5733,37 @@ PyAPI_FUNC(int) _PyObject_IsAbstract(PyObject* a) {
 PyAPI_FUNC(int) _PyObject_IsFreed(PyObject* a) {
     unimplemented("_PyObject_IsFreed"); exit(-1);
 }
-STATS_CONTAINER(_PyObject_LookupAttr, _PyObject_GetAttrId)
 int (*__target___PyObject_LookupAttr)(PyObject*, PyObject*, PyObject**) = NULL;
 PyAPI_FUNC(int) _PyObject_LookupAttr(PyObject* a, PyObject* b, PyObject** c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyObject_LookupAttr)
     int result = (int) __target___PyObject_LookupAttr(a, b, c);
-    STATS_AFTER(_PyObject_LookupAttr)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyObject_LookupAttrId, _PyObject_LookupAttr)
 int (*__target___PyObject_LookupAttrId)(PyObject*, struct _Py_Identifier*, PyObject**) = NULL;
 PyAPI_FUNC(int) _PyObject_LookupAttrId(PyObject* a, struct _Py_Identifier* b, PyObject** c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyObject_LookupAttrId)
     int result = (int) __target___PyObject_LookupAttrId(a, b, c);
-    STATS_AFTER(_PyObject_LookupAttrId)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyObject_LookupSpecial(PyObject* a, _Py_Identifier* b) {
     unimplemented("_PyObject_LookupSpecial"); exit(-1);
 }
-STATS_CONTAINER(_PyObject_MakeTpCall, _PyObject_LookupAttrId)
 PyObject* (*__target___PyObject_MakeTpCall)(PyThreadState*, PyObject*, PyObject*const*, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_MakeTpCall(PyThreadState* a, PyObject* b, PyObject*const* c, Py_ssize_t d, PyObject* e) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(_PyObject_MakeTpCall)
     PyObject* result = (PyObject*) __target___PyObject_MakeTpCall(a, b, c, d, e);
-    STATS_AFTER(_PyObject_MakeTpCall)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyObject_New, _PyObject_MakeTpCall)
 PyObject* (*__target___PyObject_New)(PyTypeObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_New(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyObject_New)
     PyObject* result = (PyObject*) __target___PyObject_New(a);
-    STATS_AFTER(_PyObject_New)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyObject_NewVar, _PyObject_New)
 PyVarObject* (*__target___PyObject_NewVar)(PyTypeObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyVarObject*) _PyObject_NewVar(PyTypeObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyObject_NewVar)
     PyVarObject* result = (PyVarObject*) __target___PyObject_NewVar(a, b);
-    STATS_AFTER(_PyObject_NewVar)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyObject_NextNotImplemented, _PyObject_NewVar)
 PyObject* (*__target___PyObject_NextNotImplemented)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_NextNotImplemented(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyObject_NextNotImplemented)
     PyObject* result = (PyObject*) __target___PyObject_NextNotImplemented(a);
-    STATS_AFTER(_PyObject_NextNotImplemented)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PyObject_RealIsInstance(PyObject* a, PyObject* b) {
@@ -8384,14 +5772,9 @@ PyAPI_FUNC(int) _PyObject_RealIsInstance(PyObject* a, PyObject* b) {
 PyAPI_FUNC(int) _PyObject_RealIsSubclass(PyObject* a, PyObject* b) {
     unimplemented("_PyObject_RealIsSubclass"); exit(-1);
 }
-STATS_CONTAINER(_PyObject_SetAttrId, _PyObject_NextNotImplemented)
 int (*__target___PyObject_SetAttrId)(PyObject*, struct _Py_Identifier*, PyObject*) = NULL;
 PyAPI_FUNC(int) _PyObject_SetAttrId(PyObject* a, struct _Py_Identifier* b, PyObject* c) {
-    LOG("0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyObject_SetAttrId)
     int result = (int) __target___PyObject_SetAttrId(a, b, c);
-    STATS_AFTER(_PyObject_SetAttrId)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PyRun_AnyFileObject(FILE* a, PyObject* b, int c, PyCompilerFlags* d) {
@@ -8406,37 +5789,22 @@ PyAPI_FUNC(int) _PyRun_SimpleFileObject(FILE* a, PyObject* b, int c, PyCompilerF
 PyAPI_FUNC(char*const*) _PySequence_BytesToCharpArray(PyObject* a) {
     unimplemented("_PySequence_BytesToCharpArray"); exit(-1);
 }
-STATS_CONTAINER(_PySequence_Fast_ITEMS, _PyObject_SetAttrId)
 PyObject** (*__target___PySequence_Fast_ITEMS)(PyObject*) = NULL;
 PyAPI_FUNC(PyObject**) _PySequence_Fast_ITEMS(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PySequence_Fast_ITEMS)
     PyObject** result = (PyObject**) __target___PySequence_Fast_ITEMS(a);
-    STATS_AFTER(_PySequence_Fast_ITEMS)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PySequence_ITEM, _PySequence_Fast_ITEMS)
 PyObject* (*__target___PySequence_ITEM)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) _PySequence_ITEM(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PySequence_ITEM)
     PyObject* result = (PyObject*) __target___PySequence_ITEM(a, b);
-    STATS_AFTER(_PySequence_ITEM)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) _PySequence_IterSearch(PyObject* a, PyObject* b, int c) {
     unimplemented("_PySequence_IterSearch"); exit(-1);
 }
-STATS_CONTAINER(_PySet_NextEntry, _PySequence_ITEM)
 int (*__target___PySet_NextEntry)(PyObject*, Py_ssize_t*, PyObject**, Py_hash_t*) = NULL;
 PyAPI_FUNC(int) _PySet_NextEntry(PyObject* a, Py_ssize_t* b, PyObject** c, Py_hash_t* d) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_PySet_NextEntry)
     int result = (int) __target___PySet_NextEntry(a, b, c, d);
-    STATS_AFTER(_PySet_NextEntry)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _PySet_Update(PyObject* a, PyObject* b) {
@@ -8454,17 +5822,7 @@ PyAPI_FUNC(int) _PySlice_GetLongIndices(PySliceObject* a, PyObject* b, PyObject*
 PyAPI_FUNC(PyObject*) _PyStack_AsDict(PyObject*const* a, PyObject* b) {
     unimplemented("_PyStack_AsDict"); exit(-1);
 }
-STATS_CONTAINER(_PyStack_UnpackDict, _PySet_NextEntry)
-int (*__target___PyStack_UnpackDict)(PyObject*const*, Py_ssize_t, PyObject*, PyObject*const**, PyObject**) = NULL;
-PyAPI_FUNC(int) _PyStack_UnpackDict(PyObject*const* a, Py_ssize_t b, PyObject* c, PyObject*const** d, PyObject** e) {
-    LOG("0x%lx 0x%lx 0x%lx 0x%lx 0x%lx", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d, (unsigned long) e);
-    STATS_BEFORE(_PyStack_UnpackDict)
-    int result = (int) __target___PyStack_UnpackDict(a, b, c, d, e);
-    STATS_AFTER(_PyStack_UnpackDict)
-    LOG_AFTER
-    return result;
-}
-PyAPI_FUNC(int) _PyState_AddModule(PyObject* a, struct PyModuleDef* b) {
+PyAPI_FUNC(int) _PyState_AddModule(PyThreadState* a, PyObject* b, struct PyModuleDef* c) {
     unimplemented("_PyState_AddModule"); exit(-1);
 }
 PyAPI_FUNC(PyObject*) _PySys_GetObjectId(_Py_Identifier* a) {
@@ -8482,14 +5840,9 @@ PyAPI_FUNC(PyObject*) _PyThreadState_GetDict(PyThreadState* a) {
 PyAPI_FUNC(PyThreadState*) _PyThreadState_Prealloc(PyInterpreterState* a) {
     unimplemented("_PyThreadState_Prealloc"); exit(-1);
 }
-STATS_CONTAINER(_PyThreadState_UncheckedGet, _PyStack_UnpackDict)
 PyThreadState* (*__target___PyThreadState_UncheckedGet)() = NULL;
 PyAPI_FUNC(PyThreadState*) _PyThreadState_UncheckedGet() {
-    LOGS("");
-    STATS_BEFORE(_PyThreadState_UncheckedGet)
     PyThreadState* result = (PyThreadState*) __target___PyThreadState_UncheckedGet();
-    STATS_AFTER(_PyThreadState_UncheckedGet)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyThread_CurrentExceptions() {
@@ -8585,24 +5938,14 @@ PyAPI_FUNC(int) _PyTime_localtime(time_t a, struct tm* b) {
 PyAPI_FUNC(PyObject*) _PyTraceMalloc_GetTraceback(unsigned int a, uintptr_t b) {
     unimplemented("_PyTraceMalloc_GetTraceback"); exit(-1);
 }
-STATS_CONTAINER(_PyTraceMalloc_NewReference, _PyThreadState_UncheckedGet)
 int (*__target___PyTraceMalloc_NewReference)(PyObject*) = NULL;
 PyAPI_FUNC(int) _PyTraceMalloc_NewReference(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyTraceMalloc_NewReference)
     int result = (int) __target___PyTraceMalloc_NewReference(a);
-    STATS_AFTER(_PyTraceMalloc_NewReference)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyTraceback_Add, _PyTraceMalloc_NewReference)
 void (*__target___PyTraceback_Add)(const char*, const char*, int) = NULL;
 PyAPI_FUNC(void) _PyTraceback_Add(const char* a, const char* b, int c) {
-    LOG("'%s'(0x%lx) '%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, b?b:"<null>", (unsigned long) b, (unsigned long) c);
-    STATS_BEFORE(_PyTraceback_Add)
     __target___PyTraceback_Add(a, b, c);
-    STATS_AFTER(_PyTraceback_Add)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) _PyTrash_begin(struct _ts* a, PyObject* b) {
     unimplemented("_PyTrash_begin"); exit(-1);
@@ -8625,6 +5968,20 @@ PyAPI_FUNC(void) _PyTrash_thread_deposit_object(PyObject* a) {
 PyAPI_FUNC(void) _PyTrash_thread_destroy_chain() {
     unimplemented("_PyTrash_thread_destroy_chain"); exit(-1);
 }
+void (*__target___PyTruffleErr_CreateAndSetException)(PyObject*, PyObject*) = NULL;
+PyAPI_FUNC(void) _PyTruffleErr_CreateAndSetException(PyObject* a, PyObject* b) {
+    __target___PyTruffleErr_CreateAndSetException(a, b);
+}
+PyObject* (*__target___PyTruffleObject_Call1)(PyObject*, PyObject*, PyObject*, int) = NULL;
+PyAPI_FUNC(PyObject*) _PyTruffleObject_Call1(PyObject* a, PyObject* b, PyObject* c, int d) {
+    PyObject* result = (PyObject*) __target___PyTruffleObject_Call1(a, b, c, d);
+    return result;
+}
+PyObject* (*__target___PyTruffleObject_CallMethod1)(PyObject*, const char*, PyObject*, int) = NULL;
+PyAPI_FUNC(PyObject*) _PyTruffleObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
+    PyObject* result = (PyObject*) __target___PyTruffleObject_CallMethod1(a, b, c, d);
+    return result;
+}
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE* a) {
     unimplemented("_PyTuple_DebugMallocStats"); exit(-1);
 }
@@ -8640,50 +5997,30 @@ PyAPI_FUNC(PyTypeObject*) _PyType_CalculateMetaclass(PyTypeObject* a, PyObject* 
 PyAPI_FUNC(PyObject*) _PyType_GetDocFromInternalDoc(const char* a, const char* b) {
     unimplemented("_PyType_GetDocFromInternalDoc"); exit(-1);
 }
-STATS_CONTAINER(_PyType_GetModuleByDef, _PyTraceback_Add)
 PyObject* (*__target___PyType_GetModuleByDef)(PyTypeObject*, struct PyModuleDef*) = NULL;
 PyAPI_FUNC(PyObject*) _PyType_GetModuleByDef(PyTypeObject* a, struct PyModuleDef* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyType_GetModuleByDef)
     PyObject* result = (PyObject*) __target___PyType_GetModuleByDef(a, b);
-    STATS_AFTER(_PyType_GetModuleByDef)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyType_GetTextSignatureFromInternalDoc(const char* a, const char* b) {
     unimplemented("_PyType_GetTextSignatureFromInternalDoc"); exit(-1);
 }
-STATS_CONTAINER(_PyType_Lookup, _PyType_GetModuleByDef)
 PyObject* (*__target___PyType_Lookup)(PyTypeObject*, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyType_Lookup(PyTypeObject* a, PyObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyType_Lookup)
     PyObject* result = (PyObject*) __target___PyType_Lookup(a, b);
-    STATS_AFTER(_PyType_Lookup)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyType_LookupId(PyTypeObject* a, _Py_Identifier* b) {
     unimplemented("_PyType_LookupId"); exit(-1);
 }
-STATS_CONTAINER(_PyType_Name, _PyType_Lookup)
 const char* (*__target___PyType_Name)(PyTypeObject*) = NULL;
 PyAPI_FUNC(const char*) _PyType_Name(PyTypeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyType_Name)
     const char* result = (const char*) __target___PyType_Name(a);
-    STATS_AFTER(_PyType_Name)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicodeObject_DATA, _PyType_Name)
 void* (*__target___PyUnicodeObject_DATA)(PyUnicodeObject*) = NULL;
 PyAPI_FUNC(void*) _PyUnicodeObject_DATA(PyUnicodeObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicodeObject_DATA)
     void* result = (void*) __target___PyUnicodeObject_DATA(a);
-    STATS_AFTER(_PyUnicodeObject_DATA)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyUnicodeTranslateError_Create(PyObject* a, Py_ssize_t b, Py_ssize_t c, const char* d) {
@@ -8719,37 +6056,19 @@ PyAPI_FUNC(int) _PyUnicodeWriter_WriteStr(_PyUnicodeWriter* a, PyObject* b) {
 PyAPI_FUNC(int) _PyUnicodeWriter_WriteSubstring(_PyUnicodeWriter* a, PyObject* b, Py_ssize_t c, Py_ssize_t d) {
     unimplemented("_PyUnicodeWriter_WriteSubstring"); exit(-1);
 }
-STATS_CONTAINER(_PyUnicode_AsASCIIString, _PyUnicodeObject_DATA)
 PyObject* (*__target___PyUnicode_AsASCIIString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) _PyUnicode_AsASCIIString(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_AsASCIIString)
     PyObject* result = (PyObject*) __target___PyUnicode_AsASCIIString(a, b);
-    STATS_AFTER(_PyUnicode_AsASCIIString)
-    LOG_AFTER
     return result;
 }
-PyAPI_FUNC(void*) _PyUnicode_AsKind(PyObject* a, unsigned int b) {
-    unimplemented("_PyUnicode_AsKind"); exit(-1);
-}
-STATS_CONTAINER(_PyUnicode_AsLatin1String, _PyUnicode_AsASCIIString)
 PyObject* (*__target___PyUnicode_AsLatin1String)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) _PyUnicode_AsLatin1String(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_AsLatin1String)
     PyObject* result = (PyObject*) __target___PyUnicode_AsLatin1String(a, b);
-    STATS_AFTER(_PyUnicode_AsLatin1String)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_AsUTF8String, _PyUnicode_AsLatin1String)
 PyObject* (*__target___PyUnicode_AsUTF8String)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(PyObject*) _PyUnicode_AsUTF8String(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_AsUTF8String)
     PyObject* result = (PyObject*) __target___PyUnicode_AsUTF8String(a, b);
-    STATS_AFTER(_PyUnicode_AsUTF8String)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(const Py_UNICODE*) _PyUnicode_AsUnicode(PyObject* a) {
@@ -8785,24 +6104,14 @@ PyAPI_FUNC(PyObject*) _PyUnicode_EncodeUTF32(PyObject* a, const char* b, int c) 
 PyAPI_FUNC(PyObject*) _PyUnicode_EncodeUTF7(PyObject* a, int b, int c, const char* d) {
     unimplemented("_PyUnicode_EncodeUTF7"); exit(-1);
 }
-STATS_CONTAINER(_PyUnicode_EqualToASCIIId, _PyUnicode_AsUTF8String)
 int (*__target___PyUnicode_EqualToASCIIId)(PyObject*, _Py_Identifier*) = NULL;
 PyAPI_FUNC(int) _PyUnicode_EqualToASCIIId(PyObject* a, _Py_Identifier* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_EqualToASCIIId)
     int result = (int) __target___PyUnicode_EqualToASCIIId(a, b);
-    STATS_AFTER(_PyUnicode_EqualToASCIIId)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_EqualToASCIIString, _PyUnicode_EqualToASCIIId)
 int (*__target___PyUnicode_EqualToASCIIString)(PyObject*, const char*) = NULL;
 PyAPI_FUNC(int) _PyUnicode_EqualToASCIIString(PyObject* a, const char* b) {
-    LOG("0x%lx '%s'(0x%lx)", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_EqualToASCIIString)
     int result = (int) __target___PyUnicode_EqualToASCIIString(a, b);
-    STATS_AFTER(_PyUnicode_EqualToASCIIString)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) _PyUnicode_FastCopyCharacters(PyObject* a, Py_ssize_t b, PyObject* c, Py_ssize_t d, Py_ssize_t e) {
@@ -8823,273 +6132,143 @@ PyAPI_FUNC(PyObject*) _PyUnicode_FormatLong(PyObject* a, int b, int c, int d) {
 PyAPI_FUNC(PyObject*) _PyUnicode_FromASCII(const char* a, Py_ssize_t b) {
     unimplemented("_PyUnicode_FromASCII"); exit(-1);
 }
-STATS_CONTAINER(_PyUnicode_FromId, _PyUnicode_EqualToASCIIString)
 PyObject* (*__target___PyUnicode_FromId)(_Py_Identifier*) = NULL;
 PyAPI_FUNC(PyObject*) _PyUnicode_FromId(_Py_Identifier* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_FromId)
     PyObject* result = (PyObject*) __target___PyUnicode_FromId(a);
-    STATS_AFTER(_PyUnicode_FromId)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) _PyUnicode_InsertThousandsGrouping(_PyUnicodeWriter* a, Py_ssize_t b, PyObject* c, Py_ssize_t d, Py_ssize_t e, Py_ssize_t f, const char* g, PyObject* h, Py_UCS4* i) {
     unimplemented("_PyUnicode_InsertThousandsGrouping"); exit(-1);
 }
-STATS_CONTAINER(_PyUnicode_IsAlpha, _PyUnicode_FromId)
 int (*__target___PyUnicode_IsAlpha)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsAlpha(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsAlpha)
     int result = (int) __target___PyUnicode_IsAlpha(a);
-    STATS_AFTER(_PyUnicode_IsAlpha)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsCaseIgnorable, _PyUnicode_IsAlpha)
 int (*__target___PyUnicode_IsCaseIgnorable)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsCaseIgnorable(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsCaseIgnorable)
     int result = (int) __target___PyUnicode_IsCaseIgnorable(a);
-    STATS_AFTER(_PyUnicode_IsCaseIgnorable)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsCased, _PyUnicode_IsCaseIgnorable)
 int (*__target___PyUnicode_IsCased)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsCased(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsCased)
     int result = (int) __target___PyUnicode_IsCased(a);
-    STATS_AFTER(_PyUnicode_IsCased)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsDecimalDigit, _PyUnicode_IsCased)
 int (*__target___PyUnicode_IsDecimalDigit)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsDecimalDigit(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsDecimalDigit)
     int result = (int) __target___PyUnicode_IsDecimalDigit(a);
-    STATS_AFTER(_PyUnicode_IsDecimalDigit)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsDigit, _PyUnicode_IsDecimalDigit)
 int (*__target___PyUnicode_IsDigit)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsDigit(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsDigit)
     int result = (int) __target___PyUnicode_IsDigit(a);
-    STATS_AFTER(_PyUnicode_IsDigit)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsLinebreak, _PyUnicode_IsDigit)
 int (*__target___PyUnicode_IsLinebreak)(const Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsLinebreak(const Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsLinebreak)
     int result = (int) __target___PyUnicode_IsLinebreak(a);
-    STATS_AFTER(_PyUnicode_IsLinebreak)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsLowercase, _PyUnicode_IsLinebreak)
 int (*__target___PyUnicode_IsLowercase)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsLowercase(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsLowercase)
     int result = (int) __target___PyUnicode_IsLowercase(a);
-    STATS_AFTER(_PyUnicode_IsLowercase)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsNumeric, _PyUnicode_IsLowercase)
 int (*__target___PyUnicode_IsNumeric)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsNumeric(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsNumeric)
     int result = (int) __target___PyUnicode_IsNumeric(a);
-    STATS_AFTER(_PyUnicode_IsNumeric)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsPrintable, _PyUnicode_IsNumeric)
 int (*__target___PyUnicode_IsPrintable)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsPrintable(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsPrintable)
     int result = (int) __target___PyUnicode_IsPrintable(a);
-    STATS_AFTER(_PyUnicode_IsPrintable)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsTitlecase, _PyUnicode_IsPrintable)
 int (*__target___PyUnicode_IsTitlecase)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsTitlecase(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsTitlecase)
     int result = (int) __target___PyUnicode_IsTitlecase(a);
-    STATS_AFTER(_PyUnicode_IsTitlecase)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsUppercase, _PyUnicode_IsTitlecase)
 int (*__target___PyUnicode_IsUppercase)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsUppercase(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsUppercase)
     int result = (int) __target___PyUnicode_IsUppercase(a);
-    STATS_AFTER(_PyUnicode_IsUppercase)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsWhitespace, _PyUnicode_IsUppercase)
 int (*__target___PyUnicode_IsWhitespace)(const Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsWhitespace(const Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsWhitespace)
     int result = (int) __target___PyUnicode_IsWhitespace(a);
-    STATS_AFTER(_PyUnicode_IsWhitespace)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsXidContinue, _PyUnicode_IsWhitespace)
 int (*__target___PyUnicode_IsXidContinue)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsXidContinue(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsXidContinue)
     int result = (int) __target___PyUnicode_IsXidContinue(a);
-    STATS_AFTER(_PyUnicode_IsXidContinue)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_IsXidStart, _PyUnicode_IsXidContinue)
 int (*__target___PyUnicode_IsXidStart)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_IsXidStart(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_IsXidStart)
     int result = (int) __target___PyUnicode_IsXidStart(a);
-    STATS_AFTER(_PyUnicode_IsXidStart)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyUnicode_JoinArray(PyObject* a, PyObject*const* b, Py_ssize_t c) {
     unimplemented("_PyUnicode_JoinArray"); exit(-1);
 }
-STATS_CONTAINER(_PyUnicode_Ready, _PyUnicode_IsXidStart)
 int (*__target___PyUnicode_Ready)(PyObject*) = NULL;
 PyAPI_FUNC(int) _PyUnicode_Ready(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_Ready)
     int result = (int) __target___PyUnicode_Ready(a);
-    STATS_AFTER(_PyUnicode_Ready)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) _PyUnicode_ScanIdentifier(PyObject* a) {
     unimplemented("_PyUnicode_ScanIdentifier"); exit(-1);
 }
-STATS_CONTAINER(_PyUnicode_ToDecimalDigit, _PyUnicode_Ready)
 int (*__target___PyUnicode_ToDecimalDigit)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_ToDecimalDigit(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_ToDecimalDigit)
     int result = (int) __target___PyUnicode_ToDecimalDigit(a);
-    STATS_AFTER(_PyUnicode_ToDecimalDigit)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToDigit, _PyUnicode_ToDecimalDigit)
 int (*__target___PyUnicode_ToDigit)(Py_UCS4) = NULL;
 PyAPI_FUNC(int) _PyUnicode_ToDigit(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_ToDigit)
     int result = (int) __target___PyUnicode_ToDigit(a);
-    STATS_AFTER(_PyUnicode_ToDigit)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToFoldedFull, _PyUnicode_ToDigit)
 int (*__target___PyUnicode_ToFoldedFull)(Py_UCS4, Py_UCS4*) = NULL;
 PyAPI_FUNC(int) _PyUnicode_ToFoldedFull(Py_UCS4 a, Py_UCS4* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_ToFoldedFull)
     int result = (int) __target___PyUnicode_ToFoldedFull(a, b);
-    STATS_AFTER(_PyUnicode_ToFoldedFull)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToLowerFull, _PyUnicode_ToFoldedFull)
 int (*__target___PyUnicode_ToLowerFull)(Py_UCS4, Py_UCS4*) = NULL;
 PyAPI_FUNC(int) _PyUnicode_ToLowerFull(Py_UCS4 a, Py_UCS4* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_ToLowerFull)
     int result = (int) __target___PyUnicode_ToLowerFull(a, b);
-    STATS_AFTER(_PyUnicode_ToLowerFull)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToLowercase, _PyUnicode_ToLowerFull)
 Py_UCS4 (*__target___PyUnicode_ToLowercase)(Py_UCS4) = NULL;
 PyAPI_FUNC(Py_UCS4) _PyUnicode_ToLowercase(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_ToLowercase)
     Py_UCS4 result = (Py_UCS4) __target___PyUnicode_ToLowercase(a);
-    STATS_AFTER(_PyUnicode_ToLowercase)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToNumeric, _PyUnicode_ToLowercase)
 double (*__target___PyUnicode_ToNumeric)(Py_UCS4) = NULL;
 PyAPI_FUNC(double) _PyUnicode_ToNumeric(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_ToNumeric)
     double result = (double) __target___PyUnicode_ToNumeric(a);
-    STATS_AFTER(_PyUnicode_ToNumeric)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToTitleFull, _PyUnicode_ToNumeric)
 int (*__target___PyUnicode_ToTitleFull)(Py_UCS4, Py_UCS4*) = NULL;
 PyAPI_FUNC(int) _PyUnicode_ToTitleFull(Py_UCS4 a, Py_UCS4* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_ToTitleFull)
     int result = (int) __target___PyUnicode_ToTitleFull(a, b);
-    STATS_AFTER(_PyUnicode_ToTitleFull)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToTitlecase, _PyUnicode_ToTitleFull)
 Py_UCS4 (*__target___PyUnicode_ToTitlecase)(Py_UCS4) = NULL;
 PyAPI_FUNC(Py_UCS4) _PyUnicode_ToTitlecase(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_ToTitlecase)
     Py_UCS4 result = (Py_UCS4) __target___PyUnicode_ToTitlecase(a);
-    STATS_AFTER(_PyUnicode_ToTitlecase)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToUpperFull, _PyUnicode_ToTitlecase)
 int (*__target___PyUnicode_ToUpperFull)(Py_UCS4, Py_UCS4*) = NULL;
 PyAPI_FUNC(int) _PyUnicode_ToUpperFull(Py_UCS4 a, Py_UCS4* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_PyUnicode_ToUpperFull)
     int result = (int) __target___PyUnicode_ToUpperFull(a, b);
-    STATS_AFTER(_PyUnicode_ToUpperFull)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_PyUnicode_ToUppercase, _PyUnicode_ToUpperFull)
 Py_UCS4 (*__target___PyUnicode_ToUppercase)(Py_UCS4) = NULL;
 PyAPI_FUNC(Py_UCS4) _PyUnicode_ToUppercase(Py_UCS4 a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_ToUppercase)
     Py_UCS4 result = (Py_UCS4) __target___PyUnicode_ToUppercase(a);
-    STATS_AFTER(_PyUnicode_ToUppercase)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyUnicode_TransformDecimalAndSpaceToASCII(PyObject* a) {
@@ -9104,14 +6283,9 @@ PyAPI_FUNC(int) _PyUnicode_WideCharString_Opt_Converter(PyObject* a, void* b) {
 PyAPI_FUNC(PyObject*) _PyUnicode_XStrip(PyObject* a, int b, PyObject* c) {
     unimplemented("_PyUnicode_XStrip"); exit(-1);
 }
-STATS_CONTAINER(_PyUnicode_get_wstr_length, _PyUnicode_ToUppercase)
 Py_ssize_t (*__target___PyUnicode_get_wstr_length)(PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) _PyUnicode_get_wstr_length(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_PyUnicode_get_wstr_length)
     Py_ssize_t result = (Py_ssize_t) __target___PyUnicode_get_wstr_length(a);
-    STATS_AFTER(_PyUnicode_get_wstr_length)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(PyObject*) _PyWarnings_Init() {
@@ -9129,29 +6303,19 @@ PyAPI_FUNC(void) _Py_BreakPoint() {
 PyAPI_FUNC(PyObject*) _Py_CheckFunctionResult(PyThreadState* a, PyObject* b, PyObject* c, const char* d) {
     unimplemented("_Py_CheckFunctionResult"); exit(-1);
 }
-PyAPI_FUNC(int) _Py_CheckRecursiveCall(const char* a) {
+PyAPI_FUNC(int) _Py_CheckRecursiveCall(PyThreadState* a, const char* b) {
     unimplemented("_Py_CheckRecursiveCall"); exit(-1);
 }
 PyAPI_FUNC(int) _Py_CoerceLegacyLocale(int a) {
     unimplemented("_Py_CoerceLegacyLocale"); exit(-1);
 }
-STATS_CONTAINER(_Py_Dealloc, _PyUnicode_get_wstr_length)
 void (*__target___Py_Dealloc)(PyObject*) = NULL;
 PyAPI_FUNC(void) _Py_Dealloc(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_Dealloc)
     __target___Py_Dealloc(a);
-    STATS_AFTER(_Py_Dealloc)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(_Py_DecRef, _Py_Dealloc)
 void (*__target___Py_DecRef)(PyObject*) = NULL;
 PyAPI_FUNC(void) _Py_DecRef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_DecRef)
     __target___Py_DecRef(a);
-    STATS_AFTER(_Py_DecRef)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(int) _Py_DecodeLocaleEx(const char* a, wchar_t** b, size_t* c, const char** d, int e, _Py_error_handler f) {
     unimplemented("_Py_DecodeLocaleEx"); exit(-1);
@@ -9168,14 +6332,9 @@ PyAPI_FUNC(char*) _Py_EncodeLocaleRaw(const wchar_t* a, size_t* b) {
 PyAPI_FUNC(void) _Py_FatalErrorFormat(const char* a, const char* b, ...) {
     unimplemented("_Py_FatalErrorFormat"); exit(-1);
 }
-STATS_CONTAINER(_Py_FatalErrorFunc, _Py_DecRef)
 void (*__target___Py_FatalErrorFunc)(const char*, const char*) = NULL;
 PyAPI_FUNC(void) _Py_FatalErrorFunc(const char* a, const char* b) {
-    LOG("'%s'(0x%lx) '%s'(0x%lx)", a?a:"<null>", (unsigned long) a, b?b:"<null>", (unsigned long) b);
-    STATS_BEFORE(_Py_FatalErrorFunc)
     __target___Py_FatalErrorFunc(a, b);
-    STATS_AFTER(_Py_FatalErrorFunc)
-    LOG_AFTER_VOID
     abort();
 }
 PyAPI_FUNC(int) _Py_FdIsInteractive(FILE* a, PyObject* b) {
@@ -9193,54 +6352,29 @@ PyAPI_FUNC(const PyConfig*) _Py_GetConfig() {
 PyAPI_FUNC(_Py_error_handler) _Py_GetErrorHandler(const char* a) {
     unimplemented("_Py_GetErrorHandler"); exit(-1);
 }
-STATS_CONTAINER(_Py_HashBytes, _Py_FatalErrorFunc)
 Py_hash_t (*__target___Py_HashBytes)(const void*, Py_ssize_t) = NULL;
 PyAPI_FUNC(Py_hash_t) _Py_HashBytes(const void* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_HashBytes)
     Py_hash_t result = (Py_hash_t) __target___Py_HashBytes(a, b);
-    STATS_AFTER(_Py_HashBytes)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_HashDouble, _Py_HashBytes)
 Py_hash_t (*__target___Py_HashDouble)(PyObject*, double) = NULL;
 PyAPI_FUNC(Py_hash_t) _Py_HashDouble(PyObject* a, double b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_HashDouble)
     Py_hash_t result = (Py_hash_t) __target___Py_HashDouble(a, b);
-    STATS_AFTER(_Py_HashDouble)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_HashPointer, _Py_HashDouble)
 Py_hash_t (*__target___Py_HashPointer)(const void*) = NULL;
 PyAPI_FUNC(Py_hash_t) _Py_HashPointer(const void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_HashPointer)
     Py_hash_t result = (Py_hash_t) __target___Py_HashPointer(a);
-    STATS_AFTER(_Py_HashPointer)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_HashPointerRaw, _Py_HashPointer)
 Py_hash_t (*__target___Py_HashPointerRaw)(const void*) = NULL;
 PyAPI_FUNC(Py_hash_t) _Py_HashPointerRaw(const void* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_HashPointerRaw)
     Py_hash_t result = (Py_hash_t) __target___Py_HashPointerRaw(a);
-    STATS_AFTER(_Py_HashPointerRaw)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_IncRef, _Py_HashPointerRaw)
 void (*__target___Py_IncRef)(PyObject*) = NULL;
 PyAPI_FUNC(void) _Py_IncRef(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_IncRef)
     __target___Py_IncRef(a);
-    STATS_AFTER(_Py_IncRef)
-    LOG_AFTER_VOID
 }
 PyAPI_FUNC(PyStatus) _Py_InitializeMain() {
     unimplemented("_Py_InitializeMain"); exit(-1);
@@ -9260,64 +6394,34 @@ PyAPI_FUNC(PyObject*) _Py_Mangle(PyObject* a, PyObject* b) {
 PyAPI_FUNC(PyThreadState*) _Py_NewInterpreter(int a) {
     unimplemented("_Py_NewInterpreter"); exit(-1);
 }
-STATS_CONTAINER(_Py_NewReference, _Py_IncRef)
 void (*__target___Py_NewReference)(PyObject*) = NULL;
 PyAPI_FUNC(void) _Py_NewReference(PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_NewReference)
     __target___Py_NewReference(a);
-    STATS_AFTER(_Py_NewReference)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(_Py_REFCNT, _Py_NewReference)
 Py_ssize_t (*__target___Py_REFCNT)(const PyObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(const PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_REFCNT)
     Py_ssize_t result = (Py_ssize_t) __target___Py_REFCNT(a);
-    STATS_AFTER(_Py_REFCNT)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(void) _Py_RestoreSignals() {
     unimplemented("_Py_RestoreSignals"); exit(-1);
 }
-STATS_CONTAINER(_Py_SET_REFCNT, _Py_REFCNT)
 Py_ssize_t (*__target___Py_SET_REFCNT)(PyObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(Py_ssize_t) _Py_SET_REFCNT(PyObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_SET_REFCNT)
     Py_ssize_t result = (Py_ssize_t) __target___Py_SET_REFCNT(a, b);
-    STATS_AFTER(_Py_SET_REFCNT)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_SET_SIZE, _Py_SET_REFCNT)
 void (*__target___Py_SET_SIZE)(PyVarObject*, Py_ssize_t) = NULL;
 PyAPI_FUNC(void) _Py_SET_SIZE(PyVarObject* a, Py_ssize_t b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_SET_SIZE)
     __target___Py_SET_SIZE(a, b);
-    STATS_AFTER(_Py_SET_SIZE)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(_Py_SET_TYPE, _Py_SET_SIZE)
 void (*__target___Py_SET_TYPE)(PyObject*, PyTypeObject*) = NULL;
 PyAPI_FUNC(void) _Py_SET_TYPE(PyObject* a, PyTypeObject* b) {
-    LOG("0x%lx 0x%lx", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_SET_TYPE)
     __target___Py_SET_TYPE(a, b);
-    STATS_AFTER(_Py_SET_TYPE)
-    LOG_AFTER_VOID
 }
-STATS_CONTAINER(_Py_SIZE, _Py_SET_TYPE)
 Py_ssize_t (*__target___Py_SIZE)(const PyVarObject*) = NULL;
 PyAPI_FUNC(Py_ssize_t) _Py_SIZE(const PyVarObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_SIZE)
     Py_ssize_t result = (Py_ssize_t) __target___Py_SIZE(a);
-    STATS_AFTER(_Py_SIZE)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(char*) _Py_SetLocaleFromEnv(int a) {
@@ -9329,14 +6433,9 @@ PyAPI_FUNC(void) _Py_SetProgramFullPath(const wchar_t* a) {
 PyAPI_FUNC(const char*) _Py_SourceAsString(PyObject* a, const char* b, const char* c, PyCompilerFlags* d, PyObject** e) {
     unimplemented("_Py_SourceAsString"); exit(-1);
 }
-STATS_CONTAINER(_Py_TYPE, _Py_SIZE)
 PyTypeObject* (*__target___Py_TYPE)(const PyObject*) = NULL;
 PyAPI_FUNC(PyTypeObject*) _Py_TYPE(const PyObject* a) {
-    LOG("0x%lx", (unsigned long) a);
-    STATS_BEFORE(_Py_TYPE)
     PyTypeObject* result = (PyTypeObject*) __target___Py_TYPE(a);
-    STATS_AFTER(_Py_TYPE)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _Py_abspath(const wchar_t* a, wchar_t** b) {
@@ -9372,9 +6471,6 @@ PyAPI_FUNC(double) _Py_dg_strtod(const char* a, char** b) {
 PyAPI_FUNC(int) _Py_dup(int a) {
     unimplemented("_Py_dup"); exit(-1);
 }
-PyAPI_FUNC(FILE*) _Py_fopen(const char* a, const char* b) {
-    unimplemented("_Py_fopen"); exit(-1);
-}
 PyAPI_FUNC(FILE*) _Py_fopen_obj(PyObject* a, const char* b) {
     unimplemented("_Py_fopen_obj"); exit(-1);
 }
@@ -9390,24 +6486,14 @@ PyAPI_FUNC(int) _Py_get_blocking(int a) {
 PyAPI_FUNC(int) _Py_get_inheritable(int a) {
     unimplemented("_Py_get_inheritable"); exit(-1);
 }
-STATS_CONTAINER(_Py_gitidentifier, _Py_TYPE)
 const char* (*__target___Py_gitidentifier)() = NULL;
 PyAPI_FUNC(const char*) _Py_gitidentifier() {
-    LOGS("");
-    STATS_BEFORE(_Py_gitidentifier)
     const char* result = (const char*) __target___Py_gitidentifier();
-    STATS_AFTER(_Py_gitidentifier)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_gitversion, _Py_gitidentifier)
 const char* (*__target___Py_gitversion)() = NULL;
 PyAPI_FUNC(const char*) _Py_gitversion() {
-    LOGS("");
-    STATS_BEFORE(_Py_gitversion)
     const char* result = (const char*) __target___Py_gitversion();
-    STATS_AFTER(_Py_gitversion)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(int) _Py_isabs(const wchar_t* a) {
@@ -9419,14 +6505,9 @@ PyAPI_FUNC(int) _Py_open(const char* a, int b) {
 PyAPI_FUNC(int) _Py_open_noraise(const char* a, int b) {
     unimplemented("_Py_open_noraise"); exit(-1);
 }
-STATS_CONTAINER(_Py_parse_inf_or_nan, _Py_gitversion)
 double (*__target___Py_parse_inf_or_nan)(const char*, char**) = NULL;
 PyAPI_FUNC(double) _Py_parse_inf_or_nan(const char* a, char** b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_parse_inf_or_nan)
     double result = (double) __target___Py_parse_inf_or_nan(a, b);
-    STATS_AFTER(_Py_parse_inf_or_nan)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(Py_ssize_t) _Py_read(int a, void* b, size_t c) {
@@ -9444,54 +6525,29 @@ PyAPI_FUNC(int) _Py_set_inheritable_async_safe(int a, int b, int* c) {
 PyAPI_FUNC(int) _Py_stat(PyObject* a, struct stat* b) {
     unimplemented("_Py_stat"); exit(-1);
 }
-STATS_CONTAINER(_Py_strhex, _Py_parse_inf_or_nan)
 PyObject* (*__target___Py_strhex)(const char*, const Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) _Py_strhex(const char* a, const Py_ssize_t b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_strhex)
     PyObject* result = (PyObject*) __target___Py_strhex(a, b);
-    STATS_AFTER(_Py_strhex)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_strhex_bytes, _Py_strhex)
 PyObject* (*__target___Py_strhex_bytes)(const char*, const Py_ssize_t) = NULL;
 PyAPI_FUNC(PyObject*) _Py_strhex_bytes(const char* a, const Py_ssize_t b) {
-    LOG("'%s'(0x%lx) 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b);
-    STATS_BEFORE(_Py_strhex_bytes)
     PyObject* result = (PyObject*) __target___Py_strhex_bytes(a, b);
-    STATS_AFTER(_Py_strhex_bytes)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_strhex_bytes_with_sep, _Py_strhex_bytes)
 PyObject* (*__target___Py_strhex_bytes_with_sep)(const char*, const Py_ssize_t, const PyObject*, const int) = NULL;
 PyAPI_FUNC(PyObject*) _Py_strhex_bytes_with_sep(const char* a, const Py_ssize_t b, const PyObject* c, const int d) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_Py_strhex_bytes_with_sep)
     PyObject* result = (PyObject*) __target___Py_strhex_bytes_with_sep(a, b, c, d);
-    STATS_AFTER(_Py_strhex_bytes_with_sep)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_strhex_with_sep, _Py_strhex_bytes_with_sep)
 PyObject* (*__target___Py_strhex_with_sep)(const char*, const Py_ssize_t, const PyObject*, const int) = NULL;
 PyAPI_FUNC(PyObject*) _Py_strhex_with_sep(const char* a, const Py_ssize_t b, const PyObject* c, const int d) {
-    LOG("'%s'(0x%lx) 0x%lx 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, (unsigned long) c, (unsigned long) d);
-    STATS_BEFORE(_Py_strhex_with_sep)
     PyObject* result = (PyObject*) __target___Py_strhex_with_sep(a, b, c, d);
-    STATS_AFTER(_Py_strhex_with_sep)
-    LOG_AFTER
     return result;
 }
-STATS_CONTAINER(_Py_string_to_number_with_underscores, _Py_strhex_with_sep)
 PyObject* (*__target___Py_string_to_number_with_underscores)(const char*, Py_ssize_t, const char*, PyObject*, void*, PyObject*(*)(const char*, Py_ssize_t, void*)) = NULL;
 PyAPI_FUNC(PyObject*) _Py_string_to_number_with_underscores(const char* a, Py_ssize_t b, const char* c, PyObject* d, void* e, PyObject*(*f)(const char*, Py_ssize_t, void*)) {
-    LOG("'%s'(0x%lx) 0x%lx '%s'(0x%lx) 0x%lx 0x%lx 0x%lx", a?a:"<null>", (unsigned long) a, (unsigned long) b, c?c:"<null>", (unsigned long) c, (unsigned long) d, (unsigned long) e, (unsigned long) f);
-    STATS_BEFORE(_Py_string_to_number_with_underscores)
     PyObject* result = (PyObject*) __target___Py_string_to_number_with_underscores(a, b, c, d, e, f);
-    STATS_AFTER(_Py_string_to_number_with_underscores)
-    LOG_AFTER
     return result;
 }
 PyAPI_FUNC(FILE*) _Py_wfopen(const wchar_t* a, const wchar_t* b) {
@@ -9582,9 +6638,6 @@ PyAPI_FUNC(int) _PyArg_ParseTuple_SizeT(PyObject* a, const char* b, ...) {
     va_end(args);
     return result;
 }
-#ifdef STATS
-CAPIStats* getStatsList() { return &__stats___Py_string_to_number_with_underscores; }
-#endif
 void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyArg_VaParse = getAPI("PyArg_VaParse");
     __target__PyArg_VaParseTupleAndKeywords = getAPI("PyArg_VaParseTupleAndKeywords");
@@ -10046,7 +7099,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyDict_Pop = getAPI("_PyDict_Pop");
     __target___PyDict_SetItem_KnownHash = getAPI("_PyDict_SetItem_KnownHash");
     __target___PyErr_BadInternalCall = getAPI("_PyErr_BadInternalCall");
-    __target___PyErr_CreateAndSetException = getAPI("_PyErr_CreateAndSetException");
     __target___PyErr_WriteUnraisableMsg = getAPI("_PyErr_WriteUnraisableMsg");
     __target___PyEval_SliceIndex = getAPI("_PyEval_SliceIndex");
     __target___PyFloat_Pack2 = getAPI("_PyFloat_Pack2");
@@ -10058,7 +7110,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyFrame_SetLineNumber = getAPI("_PyFrame_SetLineNumber");
     __target___PyGen_FetchStopIterationValue = getAPI("_PyGen_FetchStopIterationValue");
     __target___PyGen_Finalize = getAPI("_PyGen_Finalize");
-    __target___PyGen_Send = getAPI("_PyGen_Send");
     __target___PyGen_SetStopIterationValue = getAPI("_PyGen_SetStopIterationValue");
     __target___PyGen_yf = getAPI("_PyGen_yf");
     __target___PyImport_SetModule = getAPI("_PyImport_SetModule");
@@ -10074,8 +7125,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyModule_GetState = getAPI("_PyModule_GetState");
     __target___PyNamespace_New = getAPI("_PyNamespace_New");
     __target___PyNumber_Index = getAPI("_PyNumber_Index");
-    __target___PyObject_Call1 = getAPI("_PyObject_Call1");
-    __target___PyObject_CallMethod1 = getAPI("_PyObject_CallMethod1");
     __target___PyObject_Dump = getAPI("_PyObject_Dump");
     __target___PyObject_GC_Calloc = getAPI("_PyObject_GC_Calloc");
     __target___PyObject_GC_Malloc = getAPI("_PyObject_GC_Malloc");
@@ -10092,10 +7141,12 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PySequence_Fast_ITEMS = getAPI("_PySequence_Fast_ITEMS");
     __target___PySequence_ITEM = getAPI("_PySequence_ITEM");
     __target___PySet_NextEntry = getAPI("_PySet_NextEntry");
-    __target___PyStack_UnpackDict = getAPI("_PyStack_UnpackDict");
     __target___PyThreadState_UncheckedGet = getAPI("_PyThreadState_UncheckedGet");
     __target___PyTraceMalloc_NewReference = getAPI("_PyTraceMalloc_NewReference");
     __target___PyTraceback_Add = getAPI("_PyTraceback_Add");
+    __target___PyTruffleErr_CreateAndSetException = getAPI("_PyTruffleErr_CreateAndSetException");
+    __target___PyTruffleObject_Call1 = getAPI("_PyTruffleObject_Call1");
+    __target___PyTruffleObject_CallMethod1 = getAPI("_PyTruffleObject_CallMethod1");
     __target___PyType_GetModuleByDef = getAPI("_PyType_GetModuleByDef");
     __target___PyType_Lookup = getAPI("_PyType_Lookup");
     __target___PyType_Name = getAPI("_PyType_Name");

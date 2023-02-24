@@ -107,7 +107,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNodeGen;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -983,7 +983,7 @@ public final class CApiContext extends CExtContext {
              * init function did this initialization by calling 'PyModuleDef_Init' on it. So, we
              * must do it here because 'CreateModuleNode' should just ignore this case.
              */
-            Object clazz = GetClassNode.getUncached().execute(result);
+            Object clazz = InlinedGetClassNodeGen.getUncached().execute(null, result);
             if (clazz == PNone.NO_VALUE) {
                 throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
@@ -1072,7 +1072,7 @@ public final class CApiContext extends CExtContext {
                     assert builtin.call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name()) : "name clash in builtin vs. CAPI library: " +
                                     builtin.name();
                 }
-                LOGGER.finer("getBuiltin " + id + " / " + builtin.name());
+                LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
                 return builtin;
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -1167,7 +1167,7 @@ public final class CApiContext extends CExtContext {
                         InteropLibrary.getUncached().toNative(result);
                         l = InteropLibrary.getUncached().asPointer(result);
                     }
-                    LOGGER.finer("getType " + typename + " -> " + java.lang.Long.toHexString(l));
+                    LOGGER.finer("CApiContext.GetType " + typename + " -> " + java.lang.Long.toHexString(l));
                     return l;
                 }
                 throw new RuntimeException("type " + typename + " not found");
@@ -1195,6 +1195,7 @@ public final class CApiContext extends CExtContext {
             String typename = (String) arguments[0];
             long ptr = (long) arguments[1];
 
+            LOGGER.finer("CApiContext.SetTypeStore " + typename + " -> " + java.lang.Long.toHexString(ptr));
             if (!"unimplemented".equals(typename)) {
                 CApiContext context = PythonContext.get(null).getCApiContext();
                 assert !context.typeStorePointers.containsKey(typename) : typename;
@@ -1228,6 +1229,7 @@ public final class CApiContext extends CExtContext {
 
             SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
             try {
+                LOGGER.config("loading native C API support library " + GraalHPyContext.getJNILibrary());
                 nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
                 /*-
                  * PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*))
@@ -1239,9 +1241,9 @@ public final class CApiContext extends CExtContext {
                 if (InteropLibrary.getUncached().asInt(result) == 0) {
                     // this is not the first context - native C API backend not supported
                     nativeLibrary = null;
-                    LOGGER.config("not loading native C API support library (only supported on initial context)");
+                    LOGGER.config("not using native C API support library (only supported on initial context)");
                 } else {
-                    LOGGER.config("loading native C API support library " + GraalHPyContext.getJNILibrary());
+                    LOGGER.config("using native C API support library");
                 }
             } catch (IOException | UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                 e.printStackTrace();

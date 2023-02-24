@@ -64,10 +64,6 @@ PyObject* _PyDict_GetItemIdWithError(PyObject *dp, struct _Py_Identifier *key)
     return PyDict_GetItemWithError(dp, kv);
 }
 
-PyObject* _PyDict_GetItemId(PyObject* d, _Py_Identifier* id) {
-    return PyDict_GetItemString(d, id->string);
-}
-
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
 	return _PyDict_Next(d, ppos, pkey, pvalue, NULL);
 }

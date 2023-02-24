@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@
 #undef PyErr_BadInternalCall
 void PyErr_BadInternalCall(void) {
     assert(0 && "bad argument to internal function");
-    Graal_PyErr_CreateAndSetException(PyExc_SystemError, truffleString("bad argument to internal function"));
+    Graal_PyTruffleErr_CreateAndSetException(PyExc_SystemError, truffleString("bad argument to internal function"));
 }
 #define PyErr_BadInternalCall() _PyErr_BadInternalCall(__FILE__, __LINE__)
 
@@ -54,7 +54,7 @@ void PyErr_SetString(PyObject *exception, const char *string) {
 }
 
 void PyErr_SetObject(PyObject *exception, PyObject *value) {
-    Graal_PyErr_CreateAndSetException(exception, value);
+	Graal_PyTruffleErr_CreateAndSetException(exception, value);
 }
 
 void PyErr_Clear(void) {
@@ -62,7 +62,7 @@ void PyErr_Clear(void) {
 }
 
 void PyErr_SetNone(PyObject *exception) {
-    Graal_PyErr_CreateAndSetException(exception, Py_None);
+	Graal_PyTruffleErr_CreateAndSetException(exception, Py_None);
 }
 
 void PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
@@ -127,7 +127,7 @@ PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
     va_start(args, fmt);
     PyObject* formatted_msg = PyUnicode_FromFormatV(fmt, args);
     va_end(args);
-    Graal_PyErr_CreateAndSetException(exception, formatted_msg);
+    Graal_PyTruffleErr_CreateAndSetException(exception, formatted_msg);
     return NULL;
 }
 
@@ -137,7 +137,7 @@ PyObject* PyErr_FormatV(PyObject* exception, const char* fmt, va_list va) {
     va_copy(args, va);
     PyObject* formatted_msg = PyUnicode_FromFormatV(fmt, args);
     va_end(args);
-    Graal_PyErr_CreateAndSetException(exception, formatted_msg);
+    Graal_PyTruffleErr_CreateAndSetException(exception, formatted_msg);
     return NULL;
 }
 

@@ -1271,13 +1271,14 @@ PyAPI_FUNC(void) initialize_graal_capi(ptr_cache_t _pythonToNative, void_ptr_cac
 	// TODO: initialize during cext initialization doesn't work at the moment
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
 
-    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_upcall_functions: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
 // {{start CAPI_BUILTINS}}
 // GENERATED CODE - see CApiCodeGen
 // This can be re-generated using the 'mx python-capi-forwards' command or
 // by executing the main class CApiCodeGen
+
 #undef PyByteArray_Resize
 PyAPI_FUNC(int) PyByteArray_Resize(PyObject* a, Py_ssize_t b) {
     return GraalPyByteArray_Resize(a, b);
@@ -2122,10 +2123,6 @@ PyAPI_FUNC(int) _PyDict_SetItem_KnownHash(PyObject* a, PyObject* b, PyObject* c,
 PyAPI_FUNC(void) _PyErr_BadInternalCall(const char* a, int b) {
     Graal_PyErr_BadInternalCall(truffleString(a), b);
 }
-#undef _PyErr_CreateAndSetException
-PyAPI_FUNC(void) _PyErr_CreateAndSetException(PyObject* a, PyObject* b) {
-    Graal_PyErr_CreateAndSetException(a, b);
-}
 #undef _PyErr_WriteUnraisableMsg
 PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
     Graal_PyErr_WriteUnraisableMsg(truffleString(a), b);
@@ -2146,14 +2143,6 @@ PyAPI_FUNC(PyObject*) _PyNamespace_New(PyObject* a) {
 PyAPI_FUNC(PyObject*) _PyNumber_Index(PyObject* a) {
     return Graal_PyNumber_Index(a);
 }
-#undef _PyObject_Call1
-PyAPI_FUNC(PyObject*) _PyObject_Call1(PyObject* a, PyObject* b, PyObject* c, int d) {
-    return Graal_PyObject_Call1(a, b, c, d);
-}
-#undef _PyObject_CallMethod1
-PyAPI_FUNC(PyObject*) _PyObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
-    return Graal_PyObject_CallMethod1(a, truffleString(b), c, d);
-}
 #undef _PyObject_Dump
 PyAPI_FUNC(void) _PyObject_Dump(PyObject* a) {
     Graal_PyObject_Dump(a);
@@ -2165,6 +2154,18 @@ PyAPI_FUNC(int) _PyTraceMalloc_NewReference(PyObject* a) {
 #undef _PyTraceback_Add
 PyAPI_FUNC(void) _PyTraceback_Add(const char* a, const char* b, int c) {
     Graal_PyTraceback_Add(truffleString(a), truffleString(b), c);
+}
+#undef _PyTruffleErr_CreateAndSetException
+PyAPI_FUNC(void) _PyTruffleErr_CreateAndSetException(PyObject* a, PyObject* b) {
+    Graal_PyTruffleErr_CreateAndSetException(a, b);
+}
+#undef _PyTruffleObject_Call1
+PyAPI_FUNC(PyObject*) _PyTruffleObject_Call1(PyObject* a, PyObject* b, PyObject* c, int d) {
+    return Graal_PyTruffleObject_Call1(a, b, c, d);
+}
+#undef _PyTruffleObject_CallMethod1
+PyAPI_FUNC(PyObject*) _PyTruffleObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
+    return Graal_PyTruffleObject_CallMethod1(a, truffleString(b), c, d);
 }
 #undef _PyType_Lookup
 PyAPI_FUNC(PyObject*) _PyType_Lookup(PyTypeObject* a, PyObject* b) {
