@@ -1156,7 +1156,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
     protected static final class argument {
         FFIType ffi_type;
-        Object keep;
         StgDictObject stgDict;
         Object value;
     }
@@ -1556,8 +1555,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached ConvParamNode recursive) {
-            pa.keep = null; /* so we cannot forget it later */
-
             StgDictObject dict = pyObjectStgDictNode.execute(obj);
             pa.stgDict = dict;
             if (dict != null) {
@@ -1568,14 +1565,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
                 assert carg.value.offset == 0 : "TODO";
                 pa.value = carg.value.ptr.getValue();
-                pa.keep = carg;
                 return;
             }
 
             if (PGuards.isPyCArg(obj)) {
                 PyCArgObject carg = (PyCArgObject) obj;
                 pa.ffi_type = carg.pffi_type;
-                pa.keep = obj;
                 pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
                 assert carg.value.offset == 0 : "TODO";
                 // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
@@ -1608,7 +1603,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = new byte[len + 1];
                 bufferLib.readIntoByteArray(obj, 0, bytes, 0, len);
                 pa.value = bytes;
-                pa.keep = obj;
                 return;
             }
 
@@ -1621,7 +1615,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 copyToByteArrayNode.execute(string, 0, bytes, 0, len, wCharTEncoding);
                 pa.ffi_type = FFIType.ffi_type_sint8_array;
                 pa.value = bytes;
-                // pa.keep = PyCapsule_New(pa.value.p, CTYPES_CAPSULE_NAME_PYMEM, pymem_destructor);
                 return;
             }
 
