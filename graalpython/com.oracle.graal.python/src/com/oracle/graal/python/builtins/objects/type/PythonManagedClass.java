@@ -78,6 +78,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private boolean mroInitialized = false;
 
     public PTuple mroStore;
+    public PTuple basesTuple;
 
     @TruffleBoundary
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, PythonAbstractClass... baseClasses) {

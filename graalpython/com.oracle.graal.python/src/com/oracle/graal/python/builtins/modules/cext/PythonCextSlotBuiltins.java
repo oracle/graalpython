@@ -1908,6 +1908,19 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
+    public abstract static class Py_get_PyTypeObject_tp_bases extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object doTpBases(PythonManagedClass type,
+                        @Cached TypeNodes.GetBaseClassesNode getBaseClassesNode) {
+            if (type.basesTuple == null) {
+                type.basesTuple = factory().createTuple(getBaseClassesNode.execute(type));
+            }
+            return type.basesTuple;
+        }
+    }
+
     @CApiBuiltin(name = "Py_get_dummy", ret = Pointer, args = {Pointer}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_setattr", ret = setattrfunc, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_getattr", ret = getattrfunc, args = {PyTypeObject}, call = Ignored)
@@ -1939,7 +1952,6 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "Py_get_PyTypeObject_tp_bases", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_cache", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_weaklist", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     public abstract static class PyGetSlotDummyPyPtr extends CApiUnaryBuiltinNode {
