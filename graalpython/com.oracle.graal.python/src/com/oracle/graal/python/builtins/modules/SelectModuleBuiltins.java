@@ -78,13 +78,15 @@ import com.oracle.graal.python.util.IntArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(defineModule = "select")
 public class SelectModuleBuiltins extends PythonBuiltins {
@@ -117,27 +119,30 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doWithoutTimeout(VirtualFrame frame, Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") PNone timeout,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptor,
-                        @Cached BranchProfile notSelectableBranch,
+                        @Cached InlinedBranchProfile notSelectableBranch,
                         @Cached GilNode gil) {
-            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, sizeNode,
+            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, inliningTarget, posixLib, sizeNode,
                             callGetItemNode, constructListNode, pyTimeFromObjectNode, asFileDescriptor, notSelectableBranch, gil);
         }
 
         @Specialization(replaces = "doWithoutTimeout")
+        @SuppressWarnings("truffle-static-method")
         PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptor,
-                        @Cached BranchProfile notSelectableBranch,
+                        @Cached InlinedBranchProfile notSelectableBranch,
                         @Cached GilNode gil) {
             ObjAndFDList readFDs = seq2set(frame, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
             ObjAndFDList writeFDs = seq2set(frame, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
@@ -164,7 +169,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             } catch (ChannelNotSelectableException e) {
                 // GraalPython hack: if one of the channels is not selectable (can happen only in
                 // the emulated mode), we just return everything.
-                notSelectableBranch.enter();
+                notSelectableBranch.enter(inliningTarget);
                 return factory().createTuple(new Object[]{rlist, wlist, xlist});
             }
             return factory().createTuple(new PList[]{

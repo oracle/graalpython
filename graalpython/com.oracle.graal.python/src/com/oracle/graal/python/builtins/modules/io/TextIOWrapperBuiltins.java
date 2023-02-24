@@ -148,6 +148,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -163,6 +164,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -171,7 +173,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -262,10 +264,10 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
+        Object init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
                         TruffleString errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initNode) {
-            initNode.execute(frame, self, buffer, encodingArg, errors, newlineArg, lineBuffering, writeThrough);
+            initNode.execute(frame, this, self, buffer, encodingArg, errors, newlineArg, lineBuffering, writeThrough);
             return PNone.NONE;
         }
     }
@@ -299,6 +301,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         Object reconfigure(VirtualFrame frame, PTextIO self, Object encodingObj,
                         Object errorsObj, Object newlineObj,
                         Object lineBufferingObj, Object writeThroughObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode,
                         @Cached IONodes.ToTruffleStringNode toStringNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
@@ -309,7 +313,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             TruffleString newline = null;
             if (!isPNone(newlineObj)) {
                 newline = toStringNode.execute(newlineObj);
-                validateNewline(newline, getRaiseNode(), codePointLengthNode, codePointAtIndexNode);
+                validateNewline(newline, inliningTarget, lazyRaiseNode, codePointLengthNode, codePointAtIndexNode);
             }
 
             boolean lineBuffering, writeThrough;
@@ -443,9 +447,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "self.hasDecoder()", "n < 0"})
         static TruffleString readAll(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") int n,
                         @Cached TextIOWrapperNodes.DecodeNode decodeNode,
-                        @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Shared @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.ConcatNode concatNode) {
             writeFlushNode.execute(frame, self);
 
@@ -462,9 +466,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "self.hasDecoder()", "n >= 0"})
         static TruffleString read(VirtualFrame frame, PTextIO self, int n,
                         @Cached TextIOWrapperNodes.ReadChunkNode readChunkNode,
-                        @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Shared @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             writeFlushNode.execute(frame, self);
@@ -630,8 +634,10 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "checkAttached(self)")
+        @SuppressWarnings("truffle-static-method") // raise
         Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
-                        @Cached ConditionProfile overflow,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
@@ -701,13 +707,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 if (((PInt) cookieLong).isNegative()) {
                     throw raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
                 }
-                cookie = PTextIO.CookieType.parse((PInt) cookieLong, overflow, getRaiseNode());
+                cookie = PTextIO.CookieType.parse((PInt) cookieLong, inliningTarget, overflow, getRaiseNode());
             } else {
                 long l = toLong.execute(cookieLong);
                 if (l < 0) {
                     throw raise(ValueError, NEGATIVE_SEEK_POSITION_D, cookieLong);
                 }
-                cookie = PTextIO.CookieType.parse(l, overflow, getRaiseNode());
+                cookie = PTextIO.CookieType.parse(l, inliningTarget, overflow, getRaiseNode());
             }
 
             callMethodFlush.execute(frame, self, T_FLUSH);
@@ -838,7 +844,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Shared("writeFlush") @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Shared("callTell") @Cached PyObjectCallMethodObjArgs callMethodTell,
-                        @Cached PyLongAsLongNode asLongNode) {
+                        @Shared @Cached PyLongAsLongNode asLongNode) {
             PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             /* We haven't moved from the snapshot point. */
             return PTextIO.CookieType.build(cookie, factory());
@@ -860,11 +866,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Shared("callTell") @Cached PyObjectCallMethodObjArgs callMethodTell,
-                        @Cached PyObjectCallMethodObjArgs callMethodDecode,
-                        @Cached PyObjectCallMethodObjArgs callMethodGetState,
-                        @Cached PyObjectCallMethodObjArgs callMethodSetState,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodDecode,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodGetState,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
             PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
@@ -1166,6 +1172,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends InitCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method") // raise
         Object doit(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,

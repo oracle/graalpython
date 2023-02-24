@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,8 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -100,6 +102,10 @@ public abstract class PRaiseNode extends Node {
 
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
         throw execute(this, type, null, cause, format, arguments);
+    }
+
+    public final PException raise(PythonBuiltinClassType errorType, PException e, TruffleString message, Object... arguments) {
+        return raise(errorType, e.getEscapedException(), message, arguments);
     }
 
     public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType) {
@@ -240,6 +246,22 @@ public abstract class PRaiseNode extends Node {
             if (arguments[i] instanceof String) {
                 arguments[i] = fromJavaStringNode.execute((String) arguments[i], TS_ENCODING);
             }
+        }
+    }
+
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    public abstract static class Lazy extends Node {
+        public final PRaiseNode get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        abstract PRaiseNode execute(Node inliningTarget);
+
+        @Specialization
+        static PRaiseNode doIt(@Cached(inline = false) PRaiseNode node) {
+            return node;
         }
     }
 }

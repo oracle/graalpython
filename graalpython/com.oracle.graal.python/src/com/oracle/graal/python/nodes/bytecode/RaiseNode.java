@@ -43,6 +43,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtException
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public abstract class RaiseNode extends PNodeWithContext {
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
@@ -72,13 +74,14 @@ public abstract class RaiseNode extends PNodeWithContext {
         // raise * from <class>
         @Specialization(guards = "isTypeNode.execute(causeClass)", limit = "1")
         static void setCause(VirtualFrame frame, PBaseException exception, Object causeClass,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached BranchProfile baseCheckFailedProfile,
+                        @Cached InlinedBranchProfile baseCheckFailedProfile,
                         @Cached ValidExceptionNode validException,
                         @Cached CallNode callConstructor,
                         @Cached PRaiseNode raise) {
             if (!validException.execute(frame, causeClass)) {
-                baseCheckFailedProfile.enter();
+                baseCheckFailedProfile.enter(inliningTarget);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
             Object cause = callConstructor.execute(frame, causeClass);
@@ -128,9 +131,10 @@ public abstract class RaiseNode extends PNodeWithContext {
     // raise <exception>
     @Specialization(guards = "isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") boolean rootNodeVisible,
-                    @Cached BranchProfile isReraise) {
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedBranchProfile isReraise) {
         if (exception.getException() != null) {
-            isReraise.enter();
+            isReraise.enter(inliningTarget);
             exception.ensureReified();
         }
         throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
@@ -139,10 +143,11 @@ public abstract class RaiseNode extends PNodeWithContext {
     // raise <exception> from *
     @Specialization(guards = "!isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause, @SuppressWarnings("unused") boolean rootNodeVisible,
-                    @Cached BranchProfile isReraise,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedBranchProfile isReraise,
                     @Cached SetExceptionCauseNode setExceptionCauseNode) {
         if (exception.getException() != null) {
-            isReraise.enter();
+            isReraise.enter(inliningTarget);
             exception.ensureReified();
         }
         setExceptionCauseNode.execute(frame, exception, cause);
@@ -159,16 +164,17 @@ public abstract class RaiseNode extends PNodeWithContext {
     // raise <class>
     @Specialization(guards = {"isPythonClass(pythonClass)", "isNoValue(cause)"})
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") boolean rootNodeVisible,
+                    @Bind("this") Node inliningTarget,
                     @Cached ValidExceptionNode validException,
                     @Cached CallNode callConstructor,
-                    @Cached BranchProfile constructorTypeErrorProfile,
+                    @Cached InlinedBranchProfile constructorTypeErrorProfile,
                     @Cached PRaiseNode raise) {
         checkBaseClass(frame, pythonClass, validException, raise);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (newException instanceof PBaseException) {
             throw raise.raiseExceptionObject((PBaseException) newException);
         } else {
-            constructorTypeErrorProfile.enter();
+            constructorTypeErrorProfile.enter(inliningTarget);
             throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
     }

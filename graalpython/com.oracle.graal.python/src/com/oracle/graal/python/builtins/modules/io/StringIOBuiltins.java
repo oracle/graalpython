@@ -261,6 +261,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone init(VirtualFrame frame, PStringIO self, TruffleString initialValue, Object newlineArg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode,
                         @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
                         @Cached IncrementalNewlineDecoderBuiltins.InitNode initNode,
                         @Cached StringReplaceNode replaceNode,
@@ -282,7 +284,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
 
             if (newline != null) {
-                validateNewline(newline, getRaiseNode(), codePointLengthNode, codePointAtIndexNode);
+                validateNewline(newline, inliningTarget, lazyRaiseNode, codePointLengthNode, codePointAtIndexNode);
             }
             self.setOK(false);
             self.clearAll();
@@ -369,7 +371,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    static TruffleString stringioReadline(PStringIO self, int lim, FindLineEndingNode findLineEndingNode, TruffleString.SubstringNode substringNode) {
+    static TruffleString stringioReadline(Node inliningTarget, PStringIO self, int lim, FindLineEndingNode findLineEndingNode, TruffleString.SubstringNode substringNode) {
         /* In case of overseek, return the empty string */
         if (self.getPos() >= self.getStringSize()) {
             return T_EMPTY_STRING;
@@ -382,7 +384,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         int[] consumed = new int[1];
-        int len = findLineEndingNode.execute(self, self.getBuf(), start, consumed);
+        int len = findLineEndingNode.execute(inliningTarget, self, self.getBuf(), start, consumed);
         /*
          * If we haven't found any line ending, we just return everything (`consumed` is ignored).
          */
@@ -405,11 +407,12 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
         static TruffleString readline(PStringIO self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             self.realize(toStringNode);
-            return stringioReadline(self, size, findLineEndingNode, substringNode);
+            return stringioReadline(inliningTarget, self, size, findLineEndingNode, substringNode);
         }
     }
 
@@ -426,15 +429,15 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
         static Object truncate(PStringIO self, @SuppressWarnings("unused") PNone size,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             return truncate(self, self.getPos(), substringNode, toStringNode);
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "size >= 0", "size < self.getStringSize()"})
         static Object truncate(PStringIO self, int size,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             self.realize(toStringNode);
             self.setBuf(substringNode.execute(self.getBuf(), 0, size, TS_ENCODING, false));
             self.setStringsize(size);
@@ -450,8 +453,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
         Object obj(VirtualFrame frame, PStringIO self, Object arg,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleString.SubstringNode substringNode,
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             int size = asSizeNode.executeExact(frame, indexNode.execute(frame, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
@@ -763,6 +766,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "isStringIO(inliningTarget, self, profile)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method") // raise
         Object builtin(PStringIO self,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
@@ -770,7 +774,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             self.realize(toStringNode);
-            TruffleString line = stringioReadline(self, -1, findLineEndingNode, substringNode);
+            TruffleString line = stringioReadline(inliningTarget, self, -1, findLineEndingNode, substringNode);
             if (line.isEmpty()) {
                 throw raiseStopIteration();
             }
@@ -780,6 +784,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         /*
          * This path is rarely executed.
          */
+        @SuppressWarnings("truffle-static-method")
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"}, limit = "1")
         Object slowpath(VirtualFrame frame, PStringIO self,
                         @Bind("this") Node inliningTarget,

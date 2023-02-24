@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,7 +69,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -90,13 +89,16 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class ZlibNodes {
@@ -119,113 +121,120 @@ public class ZlibNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ZlibNativeCompressObj extends PNodeWithContext {
 
-        public abstract byte[] execute(ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len);
+        public abstract byte[] execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len);
 
         @Specialization
-        byte[] nativeCompress(ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len,
-                        @Cached NativeLibrary.InvokeNativeFunction compressObj,
+        static byte[] nativeCompress(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction compressObj,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             self.lastInput = context.getEnv().asGuestValue(bytes);
             int err = zlibSupport.compressObj(self.getZst(), self.lastInput, len, DEF_BUF_SIZE, compressObj);
-            if (errProfile.profile(err != Z_OK)) {
-                errorHandling.execute(self.getZst(), err, zlibSupport, false);
+            if (err != Z_OK) {
+                errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
             }
-            return getBuffer.getOutputBuffer(self.getZst(), context);
+            return getBuffer.getOutputBuffer(inliningTarget, self.getZst(), context);
         }
 
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ZlibNativeCompress extends PNodeWithContext {
 
-        public abstract byte[] execute(byte[] bytes, int len, int level, PythonContext context);
+        public abstract byte[] execute(Node inliningTarget, byte[] bytes, int len, int level, PythonContext context);
 
         @Specialization
-        byte[] nativeCompress(byte[] bytes, int len, int level, PythonContext context,
-                        @Cached NativeLibrary.InvokeNativeFunction createStream,
-                        @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
-                        @Cached NativeLibrary.InvokeNativeFunction deflateOffHeap,
+        static byte[] nativeCompress(Node inliningTarget, byte[] bytes, int len, int level, PythonContext context,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction createStream,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction deflateOffHeap,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object in = context.getEnv().asGuestValue(bytes);
             Object zst = zlibSupport.createStream(createStream);
             int err = zlibSupport.deflateOffHeap(zst, in, len, DEF_BUF_SIZE, level, deflateOffHeap);
-            if (errProfile.profile(err != Z_OK)) {
-                errorHandling.execute(zst, err, zlibSupport, true);
+            if (err != Z_OK) {
+                errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
             }
-            byte[] resultArray = getBuffer.getOutputBuffer(zst, context);
+            byte[] resultArray = getBuffer.getOutputBuffer(inliningTarget, zst, context);
             zlibSupport.deallocateStream(zst, deallocateStream);
             return resultArray;
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ZlibNativeDecompressObj extends PNodeWithContext {
 
-        public abstract byte[] execute(ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength);
+        public abstract byte[] execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength);
 
         @Specialization
-        byte[] nativeDecompress(ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength,
-                        @Cached NativeLibrary.InvokeNativeFunction decompressObj,
+        static byte[] nativeDecompress(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, byte[] bytes, int len, int maxLength,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction decompressObj,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object in = context.getEnv().asGuestValue(bytes);
             int err = zlibSupport.decompressObj(self.getZst(), in, len, DEF_BUF_SIZE, maxLength, decompressObj);
-            if (errProfile.profile(err != Z_OK)) {
-                errorHandling.execute(self.getZst(), err, zlibSupport, false);
+            if (err != Z_OK) {
+                errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
             }
-            return getBuffer.getOutputBuffer(self.getZst(), context);
+            return getBuffer.getOutputBuffer(inliningTarget, self.getZst(), context);
         }
 
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ZlibNativeDecompress extends PNodeWithContext {
 
-        public abstract byte[] execute(byte[] bytes, int len, int wbits, int bufsize, PythonContext context);
+        public abstract byte[] execute(Node inliningTarget, byte[] bytes, int len, int wbits, int bufsize, PythonContext context);
 
         @Specialization
-        byte[] nativeCompress(byte[] bytes, int len, int wbits, int bufsize, PythonContext context,
-                        @Cached NativeLibrary.InvokeNativeFunction createStream,
-                        @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
-                        @Cached NativeLibrary.InvokeNativeFunction inflateOffHeap,
+        static byte[] nativeCompress(Node inliningTarget, byte[] bytes, int len, int wbits, int bufsize, PythonContext context,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction createStream,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction inflateOffHeap,
                         @Cached GetNativeBufferNode getBuffer,
-                        @Cached ZlibNativeErrorHandling errorHandling,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object zst = zlibSupport.createStream(createStream);
             Object in = context.getEnv().asGuestValue(bytes);
             int err = zlibSupport.inflateOffHeap(zst, in, len, bufsize, wbits, inflateOffHeap);
-            if (errProfile.profile(err != Z_OK)) {
-                errorHandling.execute(zst, err, zlibSupport, true);
+            if (err != Z_OK) {
+                errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
             }
-            byte[] resultArray = getBuffer.getOutputBuffer(zst, context);
+            byte[] resultArray = getBuffer.getOutputBuffer(inliningTarget, zst, context);
             zlibSupport.deallocateStream(zst, deallocateStream);
             return resultArray;
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ZlibNativeErrorHandling extends Node {
 
-        public abstract void execute(Object zst, int err, NFIZlibSupport zlibSupport, boolean deallocate);
+        public abstract void execute(Node inliningTarget, Object zst, int err, NFIZlibSupport zlibSupport, boolean deallocate);
 
         @Specialization
         static void doError(Object zst, int err, NFIZlibSupport zlibSupport, boolean deallocate,
-                        @Cached ZlibFunctionNativeErrorHandling errorHandling,
-                        @Cached NativeLibrary.InvokeNativeFunction getErrorFunction) {
+                        @Cached(inline = false) ZlibFunctionNativeErrorHandling errorHandling,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction getErrorFunction) {
             errorHandling.execute(zst, zlibSupport.getErrorFunction(zst, getErrorFunction), err, zlibSupport, deallocate);
         }
     }
 
     @ImportStatic(ZlibNodes.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ZlibNativeErrorMsg extends Node {
 
         public abstract void execute(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate);
@@ -247,8 +256,8 @@ public class ZlibNodes {
         static void doError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
-                        @Cached NativeLibrary.InvokeNativeFunction hasStreamErrorMsg,
-                        @Cached NativeLibrary.InvokeNativeFunction getStreamErrorMsg) {
+                        @Exclusive @Cached NativeLibrary.InvokeNativeFunction hasStreamErrorMsg,
+                        @Exclusive @Cached NativeLibrary.InvokeNativeFunction getStreamErrorMsg) {
             TruffleString zmsg = null;
             if (zlibSupport.hasStreamErrorMsg(zst, hasStreamErrorMsg) == 1) {
                 zmsg = zlibSupport.getStreamErrorMsg(zst, getStreamErrorMsg);
@@ -276,6 +285,7 @@ public class ZlibNodes {
 
     @ImportStatic({NFIZlibSupport.class, ZLibModuleBuiltins.class})
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ZlibFunctionNativeErrorHandling extends Node {
 
         public abstract void execute(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate);
@@ -455,26 +465,30 @@ public class ZlibNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class NativeDeallocation extends PNodeWithContext {
 
-        public abstract void execute(ZLibCompObject.NativeZlibCompObject self, PythonContext context, PythonObjectFactory factory, boolean isCompressObj);
+        public abstract void execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, PythonObjectFactory factory, boolean isCompressObj);
 
         @Specialization(guards = "isCompressObj")
-        void doCompressObj(ZLibCompObject.NativeZlibCompObject self, PythonContext context, @SuppressWarnings("unused") PythonObjectFactory factory, @SuppressWarnings("unused") boolean isCompressObj,
-                        @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream) {
+        static void doCompressObj(ZLibCompObject.NativeZlibCompObject self, PythonContext context, @SuppressWarnings("unused") PythonObjectFactory factory,
+                        @SuppressWarnings("unused") boolean isCompressObj,
+                        @Shared @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream) {
             context.getNFIZlibSupport().deallocateStream(self.getZst(), deallocateStream);
             self.setEof(true);
             self.markReleased();
         }
 
         @Specialization(guards = "!isCompressObj")
-        void doDecompressObj(ZLibCompObject.NativeZlibCompObject self, PythonContext context, PythonObjectFactory factory, @SuppressWarnings("unused") boolean isCompressObj,
+        static void doDecompressObj(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, PythonObjectFactory factory,
+                        @SuppressWarnings("unused") boolean isCompressObj,
                         @Cached GetNativeBufferNode getUnusedDataBuffer,
                         @Cached GetNativeBufferNode getUnconsumedBuffer,
-                        @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream) {
-            byte[] unusedData = getUnusedDataBuffer.getUnusedDataBuffer(self.getZst(), context);
+                        @Shared @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream) {
+            byte[] unusedData = getUnusedDataBuffer.getUnusedDataBuffer(inliningTarget, self.getZst(), context);
             self.setUnusedData(factory.createBytes(unusedData));
-            byte[] unconsumed = getUnconsumedBuffer.getUnconsumedTailBuffer(self.getZst(), context);
+            byte[] unconsumed = getUnconsumedBuffer.getUnconsumedTailBuffer(inliningTarget, self.getZst(), context);
             self.setUnconsumedTail(factory.createBytes(unconsumed));
             context.getNFIZlibSupport().deallocateStream(self.getZst(), deallocateStream);
             self.setEof(true);
@@ -483,26 +497,28 @@ public class ZlibNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetNativeBufferNode extends PNodeWithContext {
 
-        public abstract byte[] execute(Object zst, int option, PythonContext context);
+        public abstract byte[] execute(Node inliningTarget, Object zst, int option, PythonContext context);
 
-        public byte[] getOutputBuffer(Object zst, PythonContext context) {
-            return execute(zst, OUTPUT_OPTION, context);
+        public byte[] getOutputBuffer(Node inliningTarget, Object zst, PythonContext context) {
+            return execute(inliningTarget, zst, OUTPUT_OPTION, context);
         }
 
-        public byte[] getUnusedDataBuffer(Object zst, PythonContext context) {
-            return execute(zst, UNUSED_DATA_OPTION, context);
+        public byte[] getUnusedDataBuffer(Node inliningTarget, Object zst, PythonContext context) {
+            return execute(inliningTarget, zst, UNUSED_DATA_OPTION, context);
         }
 
-        public byte[] getUnconsumedTailBuffer(Object zst, PythonContext context) {
-            return execute(zst, UNCONSUMED_TAIL_OPTION, context);
+        public byte[] getUnconsumedTailBuffer(Node inliningTarget, Object zst, PythonContext context) {
+            return execute(inliningTarget, zst, UNCONSUMED_TAIL_OPTION, context);
         }
 
         @Specialization
         static byte[] getBuffer(Object zst, int option, PythonContext context,
-                        @Cached NativeLibrary.InvokeNativeFunction getBufferSize,
-                        @Cached NativeLibrary.InvokeNativeFunction getBuffer) {
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction getBufferSize,
+                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction getBuffer) {
             NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             int size = zlibSupport.getBufferSize(zst, option, getBufferSize);
             if (size == 0) {
@@ -515,13 +531,12 @@ public class ZlibNodes {
         }
     }
 
-    abstract static class JavaCompressNode extends PNodeWithContext {
-
-        public abstract PBytes execute(ZLibCompObject.JavaZlibCompObject self, int mode, PythonObjectFactory factory);
+    abstract static class JavaCompressNode {
+        private JavaCompressNode() {
+        }
 
         @TruffleBoundary
-        @Specialization
-        PBytes doit(ZLibCompObject.JavaZlibCompObject self, int mode, PythonObjectFactory factory) {
+        public static PBytes execute(ZLibCompObject.JavaZlibCompObject self, int mode, PythonObjectFactory factory) {
             byte[] result = new byte[DEF_BUF_SIZE];
             Deflater deflater = (Deflater) self.stream;
             int deflateMode = mode;
@@ -545,21 +560,14 @@ public class ZlibNodes {
         }
     }
 
-    abstract static class JavaDecompressNode extends PNodeWithContext {
-
-        public abstract byte[] execute(ZLibCompObject.JavaZlibCompObject self, Object data, int maxLength, int bufSize, PythonObjectFactory factory);
-
+    static final class JavaDecompressor {
         @TruffleBoundary
-        @Specialization
-        byte[] doit(ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int maxLength, int bufSize, PythonObjectFactory factory,
-                        @Cached PRaiseNode raise,
-                        @Cached BytesNodes.ToBytesNode toBytesNode) {
+        private static byte[] createByteArray(ZLibCompObject.JavaZlibCompObject self, Inflater inflater, byte[] bytes, int maxLength, int bufSize, Node nodeForRaise) {
             int maxLen = maxLength == 0 ? Integer.MAX_VALUE : maxLength;
             byte[] result = new byte[Math.min(maxLen, bufSize)];
             boolean zdictIsSet = false;
 
-            Inflater inflater = (Inflater) self.stream;
-            self.setInflaterInput(bytes, raise);
+            self.setInflaterInput(bytes, nodeForRaise);
 
             int bytesWritten = result.length;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -574,27 +582,33 @@ public class ZlibNodes {
                             // we inflate again with a dictionary
                             bytesWritten = inflater.inflate(result, 0, len);
                         } else {
-                            throw raise.raise(ZLibError, WHILE_SETTING_ZDICT);
+                            throw PRaiseNode.raiseUncached(nodeForRaise, ZLibError, WHILE_SETTING_ZDICT);
                         }
                     }
                 } catch (DataFormatException e) {
-                    throw raise.raise(ZLibError, e);
+                    throw PRaiseNode.raiseUncached(nodeForRaise, ZLibError, e);
                 }
                 baos.write(result, 0, bytesWritten);
             }
-            self.setEof(isFinished(inflater));
-            byte[] unusedDataBytes = toBytesNode.execute(self.getUnusedData());
-            int unconsumedTailLen = self.getUnconsumedTail().getSequenceStorage().length();
-            saveUnconsumedInput(self, bytes, unusedDataBytes, unconsumedTailLen, factory);
             return baos.toByteArray();
         }
 
-        @TruffleBoundary
+        public static byte[] execute(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int maxLength, int bufSize,
+                        Node nodeForRaise, PythonObjectFactory factory, BytesNodes.ToBytesNode toBytesNode) {
+            Inflater inflater = (Inflater) self.stream;
+            byte[] result = createByteArray(self, inflater, bytes, maxLength, bufSize, nodeForRaise);
+            self.setEof(isFinished(inflater));
+            byte[] unusedDataBytes = toBytesNode.execute(frame, self.getUnusedData());
+            int unconsumedTailLen = self.getUnconsumedTail().getSequenceStorage().length();
+            saveUnconsumedInput(self, bytes, unusedDataBytes, unconsumedTailLen, factory);
+            return result;
+        }
+
         private static void saveUnconsumedInput(ZLibCompObject.JavaZlibCompObject self, byte[] data,
                         byte[] unusedDataBytes, int unconsumedTailLen, PythonObjectFactory factory) {
             Inflater inflater = (Inflater) self.stream;
             int unusedLen = getRemaining(inflater);
-            byte[] tail = Arrays.copyOfRange(data, data.length - unusedLen, data.length);
+            byte[] tail = PythonUtils.arrayCopyOfRange(data, data.length - unusedLen, data.length);
             if (self.isEof()) {
                 if (unconsumedTailLen > 0) {
                     self.setUnconsumedTail(factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
@@ -610,11 +624,6 @@ public class ZlibNodes {
             } else {
                 self.setUnconsumedTail(factory.createBytes(tail));
             }
-        }
-
-        @TruffleBoundary
-        public static boolean needsInput(Inflater inflater) {
-            return inflater.needsInput();
         }
 
         @TruffleBoundary

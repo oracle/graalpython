@@ -244,6 +244,7 @@ public final class PList extends PSequence {
             @CompilerDirectives.CompilationFinal private int shiftedStorageSizeEstimate;
 
             public SizeEstimate(int storageSizeEstimate) {
+                assert storageSizeEstimate >= 0;
                 shiftedStorageSizeEstimate = storageSizeEstimate * NUM_DIGITS_POW2;
             }
 
@@ -252,7 +253,8 @@ public final class PList extends PSequence {
             }
 
             public int updateFrom(int newSizeEstimate) {
-                shiftedStorageSizeEstimate = shiftedStorageSizeEstimate + newSizeEstimate - estimate();
+                int newValue = shiftedStorageSizeEstimate + newSizeEstimate - estimate();
+                shiftedStorageSizeEstimate = Math.max(newValue, 0);
                 return shiftedStorageSizeEstimate;
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,10 +47,16 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,25 +70,27 @@ public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
         return BufferedRandomBuiltinsFactory.getFactories();
     }
 
+    @GenerateCached(false)
+    @GenerateInline
     public abstract static class BufferedRandomInit extends Node {
 
-        public abstract void execute(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
 
         @Specialization
-        static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
-                        @Cached IOBaseBuiltins.CheckSeekableNode checkSeekableNode,
-                        @Cached IOBaseBuiltins.CheckReadableNode checkReadableNode,
-                        @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
+        static void doInit(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkSeekableNode,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
-                        @Cached GetClassNode getSelfClass,
-                        @Cached GetClassNode getRawClass) {
+                        @Cached GetPythonObjectClassNode getSelfClass,
+                        @Cached InlinedGetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
-            checkSeekableNode.execute(frame, raw);
-            checkReadableNode.execute(frame, raw);
-            checkWritableNode.execute(frame, raw);
-            self.setRaw(raw, isFileIO(self, raw, PBufferedRandom, getSelfClass, getRawClass));
-            bufferedInitNode.execute(frame, self, bufferSize, factory);
+            checkSeekableNode.checkSeekable(frame, inliningTarget, raw);
+            checkReadableNode.checkReadable(frame, inliningTarget, raw);
+            checkWritableNode.checkWriteable(frame, inliningTarget, raw);
+            self.setRaw(raw, isFileIO(self, raw, PBufferedRandom, inliningTarget, getSelfClass, getRawClass));
+            bufferedInitNode.execute(frame, inliningTarget, self, bufferSize, factory);
             self.resetRead();
             self.resetWrite();
             self.setPos(0);
@@ -94,13 +102,16 @@ public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
     // BufferedRandom(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedRandom")
     @GenerateNodeFactory
-    public abstract static class InitNode extends BaseInitNode {
-
-        @Child private BufferedRandomInit init = BufferedRandomBuiltinsFactory.BufferedRandomInitNodeGen.create();
-
-        @Override
-        protected final void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
-            init.execute(frame, self, raw, bufferSize, factory());
+    public abstract static class InitNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("truffle-static-method") // factory
+        final Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InitBufferSizeNode initBufferSizeNode,
+                        @Cached BufferedRandomInit init) {
+            int size = initBufferSizeNode.execute(frame, inliningTarget, bufferSize);
+            init.execute(frame, inliningTarget, self, raw, size, factory());
+            return PNone.NONE;
         }
     }
 }

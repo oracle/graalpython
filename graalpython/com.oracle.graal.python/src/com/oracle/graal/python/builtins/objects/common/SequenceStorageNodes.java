@@ -176,8 +176,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -828,7 +828,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static SequenceStorage doScalarInt(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, int idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode) {
@@ -837,7 +838,7 @@ public abstract class SequenceStorageNodes {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
                 try {
                     setItemScalarNode.execute(generalized, normalized, value);
@@ -851,7 +852,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static SequenceStorage doScalarLong(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, long idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode) {
@@ -860,7 +862,7 @@ public abstract class SequenceStorageNodes {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
                 setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
@@ -869,7 +871,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static SequenceStorage doScalarPInt(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, PInt idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode) {
@@ -878,7 +881,7 @@ public abstract class SequenceStorageNodes {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
                 setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
@@ -887,7 +890,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "!isPSlice(idx)")
         protected static SequenceStorage doScalarGeneric(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, Object idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode) {
@@ -896,7 +900,7 @@ public abstract class SequenceStorageNodes {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
                 setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
@@ -905,7 +909,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static SequenceStorage doSlice(VirtualFrame frame, GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, PSlice slice, Object iterable,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
@@ -919,7 +924,7 @@ public abstract class SequenceStorageNodes {
                 setItemSliceNode.execute(frame, storage, info, values);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
                 setItemSliceNode.execute(frame, generalized, info, values);
                 return generalized;
@@ -1001,14 +1006,15 @@ public abstract class SequenceStorageNodes {
         @Specialization
         @InliningCutoff
         protected SequenceStorage doScalarInt(SequenceStorage storage, int idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
                 try {
                     setItemScalarNode.execute(generalized, normalized, value);
@@ -1023,14 +1029,15 @@ public abstract class SequenceStorageNodes {
         @Specialization
         @InliningCutoff
         protected SequenceStorage doScalarLong(VirtualFrame frame, SequenceStorage storage, long idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(frame, idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
                 setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
@@ -1040,14 +1047,15 @@ public abstract class SequenceStorageNodes {
         @Specialization
         @InliningCutoff
         protected SequenceStorage doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(frame, idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
                 setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
@@ -1057,14 +1065,15 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "!isPSlice(idx)")
         @InliningCutoff
         protected SequenceStorage doScalarGeneric(VirtualFrame frame, SequenceStorage storage, Object idx, Object value,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(frame, idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
                 setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
@@ -1073,7 +1082,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected SequenceStorage doSliceSequence(VirtualFrame frame, SequenceStorage storage, PSlice slice, PSequence sequence,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached SliceNodes.SliceUnpack unpack,
@@ -1085,7 +1095,7 @@ public abstract class SequenceStorageNodes {
                 setItemSliceNode.execute(frame, storage, info, sequence, true);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
                 setItemSliceNode.execute(frame, generalized, info, sequence, false);
                 return generalized;
@@ -1094,7 +1104,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(replaces = "doSliceSequence")
         protected SequenceStorage doSliceGeneric(VirtualFrame frame, SequenceStorage storage, PSlice slice, Object iterable,
-                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("generalizeProfile") @Cached InlinedBranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CoerceToIntSlice sliceCast,
@@ -1111,7 +1122,7 @@ public abstract class SequenceStorageNodes {
                 setItemSliceNode.execute(frame, storage, info, values, true);
                 return storage;
             } catch (SequenceStoreException e) {
-                generalizeProfile.enter();
+                generalizeProfile.enter(inliningTarget);
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
                 setItemSliceNode.execute(frame, generalized, info, values, false);
                 return generalized;

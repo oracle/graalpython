@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,10 +53,12 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -71,8 +73,9 @@ public abstract class PyImportImport extends PNodeWithState {
 
     @Specialization
     Object doGeneric(VirtualFrame frame, TruffleString moduleName,
-                    @Cached ConditionProfile noGlobalsProfile,
-                    @Cached ConditionProfile dictBuiltinsProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile noGlobalsProfile,
+                    @Cached InlinedConditionProfile dictBuiltinsProfile,
                     @Cached PyImportGetModule importGetModule,
                     @Cached PyObjectGetItem getItemNode,
                     @Cached PyObjectGetAttr getAttrNode,
@@ -83,7 +86,7 @@ public abstract class PyImportImport extends PNodeWithState {
         // Get the builtins from current globals
         Object globals = getGlobals.execute(frame);
         Object builtins;
-        if (noGlobalsProfile.profile(globals != null)) {
+        if (noGlobalsProfile.profile(inliningTarget, globals != null)) {
             builtins = getItemNode.execute(frame, getDictFromGlobals.execute(globals), T___BUILTINS__);
         } else {
             // No globals -- use standard builtins, and fake globals
@@ -93,7 +96,7 @@ public abstract class PyImportImport extends PNodeWithState {
 
         // Get the __import__ function from the builtins
         Object importFunc;
-        if (dictBuiltinsProfile.profile(builtins instanceof PDict)) {
+        if (dictBuiltinsProfile.profile(inliningTarget, builtins instanceof PDict)) {
             importFunc = getItemNode.execute(frame, builtins, T___IMPORT__);
         } else {
             importFunc = getAttrNode.execute(frame, builtins, T___IMPORT__);

@@ -49,11 +49,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_md5")
 public class Md5ModuleBuiltins extends PythonBuiltins {
@@ -67,8 +69,9 @@ public class Md5ModuleBuiltins extends PythonBuiltins {
     abstract static class Md5FunctionNode extends PythonBuiltinNode {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.MD5Type, "md5", "md5", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.MD5Type, "md5", "md5", buffer, this);
         }
     }
 

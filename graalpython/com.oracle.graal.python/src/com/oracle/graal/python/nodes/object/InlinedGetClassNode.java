@@ -63,6 +63,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -79,9 +80,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class})
 @GenerateUncached
 @GenerateInline
+@GenerateCached(false)
 public abstract class InlinedGetClassNode extends PNodeWithContext {
 
     public abstract Object execute(Node inliningTarget, Object object);
+
+    public static Object executeUncached(Object object) {
+        return InlinedGetClassNodeGen.getUncached().execute(null, object);
+    }
 
     @Specialization
     static Object getBoolean(@SuppressWarnings("unused") Boolean object) {
@@ -227,9 +233,5 @@ public abstract class InlinedGetClassNode extends PNodeWithContext {
     @Fallback
     static Object getForeign(@SuppressWarnings("unused") Object object) {
         return PythonBuiltinClassType.ForeignObject;
-    }
-
-    protected static boolean hasInitialClass(Shape shape) {
-        return (shape.getFlags() & PythonObject.CLASS_CHANGED_FLAG) == 0;
     }
 }

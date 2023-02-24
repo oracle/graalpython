@@ -116,7 +116,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -135,6 +135,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -341,7 +342,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                             importer = CallNode.getUncached().execute(hooks[i], inputFilePath);
                             break;
                         } catch (PException e) {
-                            if (!IsSubtypeNode.getUncached().execute(GetClassNode.getUncached().execute(e.getUnreifiedException()), ImportError)) {
+                            if (!IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {
                                 throw e;
                             }
                         }
@@ -366,7 +367,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
         @Specialization
         public PBytes doString(VirtualFrame frame, TruffleString filename,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Shared @Cached TruffleString.EqualNode eqNode) {
             try {
                 TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
@@ -380,7 +381,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object filename,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Shared @Cached TruffleString.EqualNode eqNode) {
             return doString(frame, castToTruffleStringNode.execute(filename), eqNode);
         }
     }

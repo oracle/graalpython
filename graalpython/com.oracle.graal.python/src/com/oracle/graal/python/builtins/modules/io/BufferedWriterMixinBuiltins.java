@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -67,6 +68,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = {PBufferedWriter, PBufferedRandom})
 public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
@@ -92,15 +94,17 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class WriteNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method") // IndirectCallNode
         Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_WRITE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedWriterNodes.WriteNode writeNode) {
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 checkIsClosedNode.execute(frame, self);
-                return writeNode.execute(frame, self, buffer);
+                return writeNode.execute(frame, inliningTarget, self, buffer);
             } finally {
                 bufferLib.release(buffer, frame, this);
                 EnterBufferedNode.leave(self);
@@ -120,13 +124,14 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_FLUSH)") CheckIsClosedNode checkIsClosedNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
-                flushAndRewindUnlockedNode.execute(frame, self);
+                lock.enter(inliningTarget, self);
+                flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
             } finally {
                 EnterBufferedNode.leave(self);
             }

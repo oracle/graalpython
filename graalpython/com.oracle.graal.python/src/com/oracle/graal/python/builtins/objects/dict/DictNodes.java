@@ -109,7 +109,7 @@ public abstract class DictNodes {
             int initialSize = otherLenNode.execute(otherStorage);
             HashingStorageIterator itOther = getOtherIter.execute(otherStorage);
             while (iterNext.execute(otherStorage, itOther)) {
-                selfStorage = transferItem.execute(frame, otherStorage, itOther, selfStorage);
+                selfStorage = transferItem.execute(frame, null, otherStorage, itOther, selfStorage);
                 if (initialSize != otherLenNode.execute(otherStorage)) {
                     throw raiseNode.raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                 }

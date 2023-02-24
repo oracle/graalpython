@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,8 +53,9 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -62,7 +63,8 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -89,14 +91,15 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
 
     @Specialization
     static Object repr(VirtualFrame frame, Object obj,
-                    @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "Repr") LookupSpecialMethodSlotNode lookupRepr,
                     @Cached CallUnaryMethodNode callRepr,
                     @Cached ObjectNodes.DefaultObjectReprNode defaultRepr,
-                    @Cached ConditionProfile isString,
-                    @Cached ConditionProfile isPString,
+                    @Cached InlinedConditionProfile isString,
+                    @Cached InlinedConditionProfile isPString,
                     @Cached PRaiseNode raiseNode) {
-        Object type = getClassNode.execute(obj);
+        Object type = getClassNode.execute(inliningTarget, obj);
         Object reprMethod;
         try {
             reprMethod = lookupRepr.execute(frame, type, obj);
@@ -106,7 +109,8 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
         if (reprMethod != PNone.NO_VALUE) {
             Object result = callRepr.executeObject(frame, reprMethod, obj);
             result = assertNoJavaString(result);
-            if (isString.profile(result instanceof TruffleString) || isPString.profile(result instanceof PString)) {
+            if (isString.profile(inliningTarget, result instanceof TruffleString) ||
+                            isPString.profile(inliningTarget, result instanceof PString)) {
                 return result;
             }
             if (result != PNone.NO_VALUE) {

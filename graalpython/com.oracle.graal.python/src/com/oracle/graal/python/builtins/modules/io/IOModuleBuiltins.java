@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,6 +101,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -110,7 +111,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_io")
@@ -288,14 +289,15 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "!isBinary(mode)", "bufferingValue != 0"})
+        @SuppressWarnings("truffle-static-method")
         protected Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Bind("this") Node inliningTarget,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached("create(T_MODE)") SetAttributeNode setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared("e") @Cached ConditionProfile profile) {
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             Object result = fileIO;
             try {
@@ -323,7 +325,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 if (buffering < 0) {
                     buffering = fileIO.getBlksize();
                 }
-                if (profile.profile(buffering < 0)) {
+                if (buffering < 0) {
                     throw raise(ValueError, INVALID_BUFFERING_SIZE);
                 }
 
@@ -334,12 +336,12 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 /* wraps into a buffered file */
 
-                PBuffered buffer = createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
+                PBuffered buffer = createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory(), mode);
                 result = buffer;
 
                 /* wraps into a TextIOWrapper */
                 PTextIO wrapper = factory().createTextIO(PTextIOWrapper);
-                initTextIO.execute(frame, wrapper, buffer, encoding,
+                initTextIO.execute(frame, inliningTarget, wrapper, buffer, encoding,
                                 errors == PNone.NONE ? T_STRICT : (TruffleString) errors,
                                 newline, line_buffering, false);
 
@@ -354,6 +356,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 0"})
+        @SuppressWarnings("truffle-static-method")
         protected PFileIO openBinaryNoBuf(VirtualFrame frame, Object file, IONodes.IOMode mode, @SuppressWarnings("unused") int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
@@ -364,32 +367,34 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 1"})
+        @SuppressWarnings("truffle-static-method")
         protected Object openBinaryB1(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
+                        @Bind("this") Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared("e") @Cached ConditionProfile profile) {
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, callClose, profile);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
+        @SuppressWarnings("truffle-static-method")
         protected Object openBinary(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
                         @SuppressWarnings("unused") PNone encoding,
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
+                        @Bind("this") Node inliningTarget,
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared("e") @Cached ConditionProfile profile) {
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             try {
                 /* buffering */
@@ -412,7 +417,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 if (buffering < 0) {
                     buffering = fileIO.getBlksize();
                 }
-                if (profile.profile(buffering < 0)) {
+                if (buffering < 0) {
                     throw raise(ValueError, INVALID_BUFFERING_SIZE);
                 }
 
@@ -424,7 +429,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 /* wraps into a buffered file */
 
                 /* if binary, returns the buffered file */
-                return createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
+                return createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory(), mode);
             } catch (PException e) {
                 callClose.execute(frame, fileIO, T_CLOSE);
                 throw e;

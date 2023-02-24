@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.call.ForeignMethod;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -73,7 +73,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -107,34 +107,35 @@ public abstract class PyObjectGetMethod extends Node {
 
     @Specialization(guards = {"isObjectGetAttribute(lazyClass)" /* Implies not foreign */, "name == cachedName"}, limit = "1")
     static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") TruffleString name,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
-                    @Bind("getClass.execute(receiver)") Object lazyClass,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClass,
+                    @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Cached("create(name)") LookupAttributeInMRONode lookupNode,
-                    @Shared("getDescrClass") @Cached GetClassNode getDescrClass,
+                    @Shared("getDescrClass") @Cached InlinedGetClassNode getDescrClass,
                     @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
                     @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
                     @Shared("callGet") @Cached CallTernaryMethodNode callGet,
                     @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                    @Cached BranchProfile hasDescr,
-                    @Cached BranchProfile returnDataDescr,
-                    @Cached BranchProfile returnAttr,
-                    @Cached BranchProfile returnUnboundMethod,
-                    @Cached BranchProfile returnBoundDescr) {
+                    @Cached InlinedBranchProfile hasDescr,
+                    @Cached InlinedBranchProfile returnDataDescr,
+                    @Cached InlinedBranchProfile returnAttr,
+                    @Cached InlinedBranchProfile returnUnboundMethod,
+                    @Cached InlinedBranchProfile returnBoundDescr) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass);
         Object getMethod = PNone.NO_VALUE;
         if (descr != PNone.NO_VALUE) {
-            hasDescr.enter();
+            hasDescr.enter(inliningTarget);
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
             } else {
                 // lookupGet acts as branch profile for this branch
-                Object descrType = getDescrClass.execute(descr);
+                Object descrType = getDescrClass.execute(inliningTarget, descr);
                 getMethod = lookupGet.execute(descrType);
                 if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
-                    returnDataDescr.enter();
+                    returnDataDescr.enter(inliningTarget);
                     return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
                 }
             }
@@ -143,17 +144,17 @@ public abstract class PyObjectGetMethod extends Node {
             // readAttr acts as branch profile here
             Object attr = readAttr.execute(receiver, name);
             if (attr != PNone.NO_VALUE) {
-                returnAttr.enter();
+                returnAttr.enter(inliningTarget);
                 return new BoundDescriptor(attr);
             }
         }
         if (methodFound) {
-            returnUnboundMethod.enter();
+            returnUnboundMethod.enter(inliningTarget);
             return descr;
         }
         if (getMethod != PNone.NO_VALUE) {
             // callGet is used twice, and cannot act as the profile here
-            returnBoundDescr.enter();
+            returnBoundDescr.enter(inliningTarget);
             return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
         }
         if (descr != PNone.NO_VALUE) {
@@ -165,10 +166,11 @@ public abstract class PyObjectGetMethod extends Node {
     // No explicit branch profiling when we're looking up multiple things
     @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr", limit = "1")
     static Object getDynamicAttr(Frame frame, Object receiver, TruffleString name,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
-                    @Bind("getClass.execute(receiver)") Object lazyClass,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClass,
+                    @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
                     @Cached LookupAttributeInMRONode.Dynamic lookupNode,
-                    @Shared("getDescrClass") @Cached GetClassNode getDescrClass,
+                    @Shared("getDescrClass") @Cached InlinedGetClassNode getDescrClass,
                     @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
                     @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
                     @Shared("callGet") @Cached CallTernaryMethodNode callGet,
@@ -181,7 +183,7 @@ public abstract class PyObjectGetMethod extends Node {
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
             } else {
-                Object descrType = getDescrClass.execute(descr);
+                Object descrType = getDescrClass.execute(inliningTarget, descr);
                 getMethod = lookupGet.execute(descrType);
                 if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
                     return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));

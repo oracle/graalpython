@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,20 +51,19 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
-import com.oracle.graal.python.builtins.modules.io.BufferedIONodesFactory.RawTellNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -72,6 +71,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -81,22 +83,24 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
     public static final int DEFAULT_BUFFER_SIZE = IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
 
-    public abstract static class BufferedInitNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class BufferedInitNode extends PNodeWithContext {
 
-        @Child private RawTellNode rawTellNode = RawTellNodeGen.create(true);
-
-        public abstract void execute(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize, PythonObjectFactory factory);
 
         @Specialization(guards = "bufferSize > 0")
-        void bufferedInit(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory) {
+        static void bufferedInit(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize, PythonObjectFactory factory,
+                        @Cached RawTellNode rawTellNode) {
             init(self, bufferSize, factory);
-            rawTellNode.execute(frame, self);
+            rawTellNode.executeIgnoreError(frame, inliningTarget, self);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "bufferSize <= 0")
-        void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory) {
-            throw raise(ValueError, BUF_SIZE_POS);
+        static void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(ValueError, BUF_SIZE_POS);
         }
 
         private static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
@@ -123,41 +127,31 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
     }
 
     protected static boolean isFileIO(PBuffered self, Object raw, PythonBuiltinClassType type,
-                    GetClassNode getSelfClass, GetClassNode getRawClass) {
+                    Node inliningTarget, GetPythonObjectClassNode getSelfClass, InlinedGetClassNode getRawClass) {
         return raw instanceof PFileIO &&
-                        getSelfClass.execute(self) == type &&
-                        getRawClass.execute(raw) == PythonBuiltinClassType.PFileIO;
+                        getSelfClass.execute(inliningTarget, self) == type &&
+                        getRawClass.execute(inliningTarget, raw) == PythonBuiltinClassType.PFileIO;
     }
 
-    public abstract static class BaseInitNode extends PythonBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class InitBufferSizeNode extends Node {
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, Object bufferSize);
 
         @Specialization
-        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, @SuppressWarnings("unused") PNone bufferSize) {
-            init(frame, self, raw, DEFAULT_BUFFER_SIZE);
-            return PNone.NONE;
+        static int doInit(@SuppressWarnings("unused") PNone bufferSize) {
+            return DEFAULT_BUFFER_SIZE;
         }
 
         @Specialization
-        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
-            init(frame, self, raw, bufferSize);
-            return PNone.NONE;
+        static int doInt(int bufferSize) {
+            return bufferSize;
         }
 
-        @Specialization(guards = "!isInt(bufferSizeObj)")
-        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, Object bufferSizeObj,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            int bufferSize = asSizeNode.executeExact(frame, bufferSizeObj, ValueError);
-            init(frame, self, raw, bufferSize);
-            return PNone.NONE;
-        }
-
-        protected static boolean isInt(Object obj) {
-            return obj instanceof Integer;
-        }
-
-        @SuppressWarnings("unused")
-        protected void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
-            throw CompilerDirectives.shouldNotReachHere("Abstract buffered init");
+        @Fallback
+        static int doOther(VirtualFrame frame, Object bufferSizeObj,
+                        @Cached(inline = false) PyNumberAsSizeNode asSizeNode) {
+            return asSizeNode.executeExact(frame, bufferSizeObj, ValueError);
         }
     }
 
@@ -203,6 +197,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline(false)
     public abstract static class RaiseBlockingIOError extends Node {
         protected abstract PException execute(Node node, Object errno, TruffleString message, int written);
 
@@ -234,6 +229,20 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             exception.setExceptionAttributes(attrs);
             return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
         }
+    }
 
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class LazyRaiseBlockingIOError extends Node {
+        public final RaiseBlockingIOError get(Node inliningTarget) {
+            return execute(inliningTarget);
+        }
+
+        protected abstract RaiseBlockingIOError execute(Node inliningTarget);
+
+        @Specialization
+        static RaiseBlockingIOError doIt(@Cached(inline = false) RaiseBlockingIOError node) {
+            return node;
+        }
     }
 }

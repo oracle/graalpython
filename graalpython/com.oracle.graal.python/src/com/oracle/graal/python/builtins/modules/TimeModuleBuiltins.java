@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -24,8 +24,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.oracle.graal.python.builtins.modules;
-
-import com.oracle.truffle.api.dsl.NeverDefault;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
@@ -96,20 +94,23 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "time")
@@ -237,56 +238,57 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         return timeStruct;
     }
 
+    @GenerateInline
     protected abstract static class ToLongTime extends PNodeWithContext {
 
         private static final long MIN_TIME = Instant.MIN.getEpochSecond();
         private static final long MAX_TIME = Instant.MAX.getEpochSecond();
 
-        @Child PRaiseNode raiseNode = PRaiseNode.create();
+        public abstract long execute(VirtualFrame frame, Node inliningTarget, Object secs);
 
-        public abstract long execute(VirtualFrame frame, Object secs);
-
+        @SuppressWarnings("unused")
         @Specialization
-        long doNone(@SuppressWarnings("unused") PNone none) {
+        static long doNone(VirtualFrame frame, Node inliningTarget, PNone none) {
             return (long) timeSeconds();
         }
 
         @Specialization
-        long doLong(long t,
-                        @Shared("e") @Cached ConditionProfile err) {
-            check(t, err);
+        static long doLong(Node inliningTarget, long t,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            check(inliningTarget, t, raiseNode);
             return t;
         }
 
         @Specialization
-        long doDouble(double t,
-                        @Shared("e") @Cached ConditionProfile err) {
-            check(t, err);
+        static long doDouble(Node inliningTarget, double t,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            check(inliningTarget, t, raiseNode);
             return (long) t;
         }
 
         @Specialization(guards = "!isPNone(obj)")
-        long doObject(VirtualFrame frame, Object obj,
-                        @Cached CastToJavaDoubleNode castToDouble,
-                        @Cached PyLongAsLongNode asLongNode,
-                        @Shared("e") @Cached ConditionProfile err) {
+        @SuppressWarnings("truffle-static-method")
+        static long doObject(VirtualFrame frame, Node inliningTarget, Object obj,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached(inline = false) CastToJavaDoubleNode castToDouble,
+                        @Cached(inline = false) PyLongAsLongNode asLongNode) {
             long t;
             try {
                 t = (long) castToDouble.execute(obj);
             } catch (CannotCastException e) {
                 t = asLongNode.execute(frame, obj);
             }
-            check(t, err);
+            check(inliningTarget, t, raiseNode);
             return t;
         }
 
-        protected static boolean isValidTime(double t) {
+        private static boolean isValidTime(double t) {
             return t >= MIN_TIME && t <= MAX_TIME;
         }
 
-        private void check(double time, ConditionProfile err) {
-            if (err.profile(!isValidTime(time))) {
-                throw raiseNode.raise(OverflowError, TIMESTAMP_OUT_OF_RANGE);
+        private static void check(Node inliningTarget, double time, PRaiseNode.Lazy raiseNode) {
+            if (!isValidTime(time)) {
+                throw raiseNode.get(inliningTarget).raise(OverflowError, TIMESTAMP_OUT_OF_RANGE);
             }
         }
     }
@@ -300,7 +302,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PTuple gmtime(VirtualFrame frame, Object seconds,
                         @Cached ToLongTime toLongTime) {
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, seconds)));
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, this, seconds)));
         }
     }
 
@@ -333,10 +335,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readZoneId,
                         @Cached ToLongTime toLongTime) {
             ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, seconds)));
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -491,7 +494,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)", limit = "1")
         Object sleep(PythonModule self, long seconds,
-                        @Cached GilNode gil,
+                        @Shared @Cached GilNode gil,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             long t = nanoTime();
             long deadline = (long) timeSeconds() + seconds;
@@ -514,7 +517,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)", limit = "1")
         Object sleep(PythonModule self, double seconds,
-                        @Cached GilNode gil,
+                        @Shared @Cached GilNode gil,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             long t = nanoTime();
             double deadline = timeSeconds() + seconds;
@@ -998,11 +1001,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public static TruffleString localtime(VirtualFrame frame, PythonModule module, Object seconds,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readZoneId,
                         @Cached ToLongTime toLongTime,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
-            int[] tm = getIntLocalTimeStruct(zoneId, toLongTime.execute(frame, seconds));
+            int[] tm = getIntLocalTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds));
             return format(tm, fromJavaStringNode);
         }
 

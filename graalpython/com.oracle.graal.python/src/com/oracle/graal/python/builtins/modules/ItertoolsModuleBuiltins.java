@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -95,6 +95,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -102,8 +103,9 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(defineModule = "itertools")
@@ -503,16 +505,18 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "n > 0")
+        @SuppressWarnings("truffle-static-method")
         protected Object tee(VirtualFrame frame, Object iterable, int n,
+                        @Bind("this") Node inliningTarget,
                         @Cached IterNode iterNode,
                         @Cached PyObjectLookupAttr getAttrNode,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached CallVarargsMethodNode callNode,
-                        @Cached BranchProfile notCallableProfile) {
+                        @Cached InlinedBranchProfile notCallableProfile) {
             Object it = iterNode.execute(frame, iterable, PNone.NO_VALUE);
             Object copyCallable = getAttrNode.execute(frame, it, T___COPY__);
             if (!callableCheckNode.execute(copyCallable)) {
-                notCallableProfile.enter();
+                notCallableProfile.enter(inliningTarget);
                 // as in Tee.__NEW__()
                 PTeeDataObject dataObj = factory().createTeeDataObject(it);
                 it = factory().createTee(dataObj, 0);
@@ -562,22 +566,25 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "isNone(r)"}, limit = "1")
         Object constructNoR(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone r,
+                        @Bind("this") Node inliningTarget,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached ConditionProfile nrProfile,
+                        @Cached InlinedConditionProfile nrProfile,
                         @Cached LoopConditionProfile indicesLoopProfile,
                         @Cached LoopConditionProfile cyclesLoopProfile,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             Object[] pool = toArrayNode.execute(frame, iterable);
-            return construct(cls, pool, pool.length, nrProfile, indicesLoopProfile, cyclesLoopProfile);
+            return construct(cls, pool, pool.length, inliningTarget, nrProfile, indicesLoopProfile, cyclesLoopProfile);
         }
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(rArg)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object construct(VirtualFrame frame, Object cls, Object iterable, Object rArg,
+                        @Bind("this") Node inliningTarget,
                         @Cached ToArrayNode toArrayNode,
                         @Cached CastToJavaIntExactNode castToInt,
-                        @Cached BranchProfile wrongRprofile,
-                        @Cached BranchProfile negRprofile,
-                        @Cached ConditionProfile nrProfile,
+                        @Cached InlinedBranchProfile wrongRprofile,
+                        @Cached InlinedBranchProfile negRprofile,
+                        @Cached InlinedConditionProfile nrProfile,
                         @Cached LoopConditionProfile indicesLoopProfile,
                         @Cached LoopConditionProfile cyclesLoopProfile,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
@@ -585,25 +592,26 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             try {
                 r = castToInt.execute(rArg);
             } catch (CannotCastException e) {
-                wrongRprofile.enter();
+                wrongRprofile.enter(inliningTarget);
                 throw raise(TypeError, EXPECTED_INT_AS_R);
             }
             if (r < 0) {
-                negRprofile.enter();
+                negRprofile.enter(inliningTarget);
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
             Object[] pool = toArrayNode.execute(frame, iterable);
-            return construct(cls, pool, r, nrProfile, indicesLoopProfile, cyclesLoopProfile);
+            return construct(cls, pool, r, inliningTarget, nrProfile, indicesLoopProfile, cyclesLoopProfile);
         }
 
-        public PPermutations construct(Object cls, Object[] pool, int r, ConditionProfile nrProfile, LoopConditionProfile indicesLoopProfile, LoopConditionProfile cyclesLoopProfile) {
+        public PPermutations construct(Object cls, Object[] pool, int r, Node inliningTarget, InlinedConditionProfile nrProfile,
+                        LoopConditionProfile indicesLoopProfile, LoopConditionProfile cyclesLoopProfile) {
             PPermutations self = factory().createPermutations(cls);
             self.setPool(pool);
             self.setR(r);
             int n = pool.length;
             self.setN(n);
             int nMinusR = n - r;
-            if (nrProfile.profile(nMinusR < 0)) {
+            if (nrProfile.profile(inliningTarget, nMinusR < 0)) {
                 self.setStopped(true);
                 self.setRaisedStopIteration(true);
             } else {
@@ -838,25 +846,26 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
         Object construct(VirtualFrame frame, Object cls, Object start, Object step,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectTypeCheck typeCheckNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached BranchProfile startNumberProfile,
-                        @Cached BranchProfile stepNumberProfile,
+                        @Cached InlinedBranchProfile startNumberProfile,
+                        @Cached InlinedBranchProfile stepNumberProfile,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             PCount self = factory().createCount(cls);
-            checkType(frame, start, typeCheckNode, lookupAttrNode, startNumberProfile);
-            checkType(frame, step, typeCheckNode, lookupAttrNode, stepNumberProfile);
+            checkType(frame, inliningTarget, start, typeCheckNode, lookupAttrNode, startNumberProfile);
+            checkType(frame, inliningTarget, step, typeCheckNode, lookupAttrNode, stepNumberProfile);
             self.setCnt(start);
             self.setStep(step);
             return self;
         }
 
-        private void checkType(VirtualFrame frame, Object obj, PyObjectTypeCheck typeCheckNode, PyObjectLookupAttr lookupAttrNode, BranchProfile isNumberProfile) {
+        private void checkType(VirtualFrame frame, Node inliningTarget, Object obj, PyObjectTypeCheck typeCheckNode, PyObjectLookupAttr lookupAttrNode, InlinedBranchProfile isNumberProfile) {
             if (typeCheckNode.execute(obj, PythonBuiltinClassType.PComplex) ||
                             lookupAttrNode.execute(frame, obj, T___INDEX__) != PNone.NO_VALUE ||
                             lookupAttrNode.execute(frame, obj, T___FLOAT__) != PNone.NO_VALUE ||
                             lookupAttrNode.execute(frame, obj, T___INT__) != PNone.NO_VALUE) {
-                isNumberProfile.enter();
+                isNumberProfile.enter(inliningTarget);
                 return;
             }
             throw raise(TypeError, NUMBER_IS_REQUIRED);
@@ -905,24 +914,25 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 1"}, limit = "1")
         Object constructOne(VirtualFrame frame, Object cls, Object iterable, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PyNumberAsSizeNode asIntNode,
-                        @Cached BranchProfile hasStop,
-                        @Cached BranchProfile stopNotInt,
-                        @Cached BranchProfile stopWrongValue,
+                        @Cached InlinedBranchProfile hasStop,
+                        @Cached InlinedBranchProfile stopNotInt,
+                        @Cached InlinedBranchProfile stopWrongValue,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             int stop = -1;
             if (args[0] != PNone.NONE) {
-                hasStop.enter();
+                hasStop.enter(inliningTarget);
                 try {
                     stop = asIntNode.executeExact(frame, args[0], OverflowError);
                 } catch (PException e) {
-                    stopNotInt.enter();
+                    stopNotInt.enter(inliningTarget);
                     throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                 }
             }
             if (stop < -1 || stop > SysModuleBuiltins.MAXSIZE) {
-                stopWrongValue.enter();
+                stopWrongValue.enter(inliningTarget);
                 throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
             }
             PIslice self = factory().createIslice(cls);
@@ -932,15 +942,16 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 2"}, limit = "1")
         Object constructTwo(VirtualFrame frame, Object cls, Object iterable, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PyNumberAsSizeNode asIntNode,
-                        @Cached BranchProfile hasStart,
-                        @Cached BranchProfile hasStop,
-                        @Cached BranchProfile startNotInt,
-                        @Cached BranchProfile stopNotInt,
-                        @Cached BranchProfile wrongValue,
+                        @Cached InlinedBranchProfile hasStart,
+                        @Cached InlinedBranchProfile hasStop,
+                        @Cached InlinedBranchProfile startNotInt,
+                        @Cached InlinedBranchProfile stopNotInt,
+                        @Cached InlinedBranchProfile wrongValue,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            StartStop ss = getStartStop(frame, args, asIntNode, hasStart, hasStop, startNotInt, stopNotInt, wrongValue);
+            StartStop ss = getStartStop(frame, args, inliningTarget, asIntNode, hasStart, hasStop, startNotInt, stopNotInt, wrongValue);
             PIslice self = factory().createIslice(cls);
             populateSelf(self, getIter, frame, iterable, ss.start, ss.stop, 1);
             return self;
@@ -948,29 +959,32 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "args.length == 3"}, limit = "1")
         Object constructThree(VirtualFrame frame, Object cls, Object iterable, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PyNumberAsSizeNode asIntNode,
-                        @Cached BranchProfile hasStart,
-                        @Cached BranchProfile hasStop,
-                        @Cached BranchProfile hasStep,
-                        @Cached BranchProfile startNotInt,
-                        @Cached BranchProfile stopNotInt,
-                        @Cached BranchProfile wrongValue,
-                        @Cached BranchProfile stepWrongValue,
+                        @Cached InlinedBranchProfile hasStart,
+                        @Cached InlinedBranchProfile hasStop,
+                        @Cached InlinedBranchProfile hasStep,
+                        @Cached InlinedBranchProfile startNotInt,
+                        @Cached InlinedBranchProfile stopNotInt,
+                        @Cached InlinedBranchProfile wrongValue,
+                        @Cached InlinedBranchProfile stepWrongValue,
+                        @Cached InlinedBranchProfile overflowBranch,
                         @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
-            StartStop ss = getStartStop(frame, args, asIntNode, hasStart, hasStop, startNotInt, stopNotInt, wrongValue);
+            StartStop ss = getStartStop(frame, args, inliningTarget, asIntNode, hasStart, hasStop, startNotInt, stopNotInt, wrongValue);
             int step = 1;
 
             if (args[2] != PNone.NONE) {
-                hasStep.enter();
+                hasStep.enter(inliningTarget);
                 try {
                     step = asIntNode.executeExact(frame, args[2], OverflowError);
                 } catch (PException e) {
+                    overflowBranch.enter(inliningTarget);
                     step = -1;
                 }
             }
             if (step < 1) {
-                stepWrongValue.enter();
+                stepWrongValue.enter(inliningTarget);
                 throw raise(ValueError, STEP_FOR_ISLICE_MUST_BE);
             }
             PIslice self = factory().createIslice(cls);
@@ -985,29 +999,30 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, ISLICE_WRONG_ARGS);
         }
 
-        private StartStop getStartStop(VirtualFrame frame, Object[] args, PyNumberAsSizeNode asIntNode, BranchProfile hasStart, BranchProfile hasStop, BranchProfile startNotInt,
-                        BranchProfile stopNotInt, BranchProfile wrongValue) {
+        private StartStop getStartStop(VirtualFrame frame, Object[] args, Node inliningTarget, PyNumberAsSizeNode asIntNode,
+                        InlinedBranchProfile hasStart, InlinedBranchProfile hasStop, InlinedBranchProfile startNotInt,
+                        InlinedBranchProfile stopNotInt, InlinedBranchProfile wrongValue) {
             StartStop ss = new StartStop();
             if (args[0] != PNone.NONE) {
-                hasStart.enter();
+                hasStart.enter(inliningTarget);
                 try {
                     ss.start = asIntNode.executeExact(frame, args[0], OverflowError);
                 } catch (PException e) {
-                    startNotInt.enter();
+                    startNotInt.enter(inliningTarget);
                     throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                 }
             }
             if (args[1] != PNone.NONE) {
-                hasStop.enter();
+                hasStop.enter(inliningTarget);
                 try {
                     ss.stop = asIntNode.executeExact(frame, args[1], OverflowError);
                 } catch (PException e) {
-                    stopNotInt.enter();
+                    stopNotInt.enter(inliningTarget);
                     throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Stop argument");
                 }
             }
             if (ss.start < 0 || ss.stop < -1 || ss.start > SysModuleBuiltins.MAXSIZE || ss.stop > SysModuleBuiltins.MAXSIZE) {
-                wrongValue.enter();
+                wrongValue.enter(inliningTarget);
                 throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
             }
             return ss;

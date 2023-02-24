@@ -88,23 +88,28 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedRandom})
@@ -120,18 +125,21 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
     private static final byte[] BLOCKED = new byte[0];
 
-    abstract static class RawReadNode extends PNodeWithRaise {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class RawReadNode extends PNodeWithContext {
 
-        public abstract byte[] execute(VirtualFrame frame, PBuffered self, int len);
+        public abstract byte[] execute(VirtualFrame frame, Node inliningTarget, PBuffered self, int len);
 
         // This is the spec way
         @Specialization
-        byte[] bufferedreaderRawRead(VirtualFrame frame, PBuffered self, int len,
-                        @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PyObjectCallMethodObjArgs callMethodReadInto,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached ConditionProfile osError) {
+        static byte[] bufferedreaderRawRead(VirtualFrame frame, Node inliningTarget, PBuffered self, int len,
+                        @Cached(inline = false) BytesNodes.ToBytesNode toBytes,
+                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodReadInto,
+                        @Cached(inline = false) PyNumberAsSizeNode asSizeNode,
+                        @Cached InlinedConditionProfile osError,
+                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
             PByteArray memobj = factory.createByteArray(new byte[len]);
             // TODO _PyIO_trap_eintr [GR-23297]
             Object res = callMethodReadInto.execute(frame, self.getRaw(), T_READINTO, memobj);
@@ -143,10 +151,10 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             try {
                 n = asSizeNode.executeExact(frame, res, ValueError);
             } catch (PException e) {
-                throw raise(OSError, e, ErrorMessages.RAW_READINTO_FAILED);
+                throw lazyRaiseNode.get(inliningTarget).raise(OSError, e, ErrorMessages.RAW_READINTO_FAILED);
             }
-            if (osError.profile(n < 0 || n > len)) {
-                throw raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
+            if (osError.profile(inliningTarget, n < 0 || n > len)) {
+                throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
             }
             if (n > 0 && self.getAbsPos() != -1) {
                 self.incAbsPos(n);
@@ -166,12 +174,14 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_fill_buffer
      */
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class FillBufferNode extends PNodeWithContext {
 
-        public abstract int execute(VirtualFrame frame, PBuffered self);
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
 
         @Specialization
-        static int bufferedreaderFillBuffer(VirtualFrame frame, PBuffered self,
+        static int bufferedreaderFillBuffer(VirtualFrame frame, Node inliningTarget, PBuffered self,
                         @Cached RawReadNode rawReadNode) {
             int start;
             if (isValidReadBuffer(self)) {
@@ -180,7 +190,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 start = 0;
             }
             int len = self.getBufferSize() - start;
-            byte[] fill = rawReadNode.execute(frame, self, len);
+            byte[] fill = rawReadNode.execute(frame, inliningTarget, self, len);
             if (fill == BLOCKED) {
                 return -2;
             }
@@ -266,14 +276,16 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_read_generic
          */
         @Specialization(guards = {"self.isOK()", "size > 0", "!isReadFast(self, size)"})
+        @SuppressWarnings("truffle-static-method") // factory
         Object bufferedreaderReadGeneric(VirtualFrame frame, PBuffered self, int size,
-                        @Cached EnterBufferedNode lock,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached EnterBufferedNode lock,
                         @Cached RawReadNode rawReadNode,
                         @Cached FillBufferNode fillBufferNode,
-                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
+                        @Shared @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 int currentSize = safeDowncast(self);
                 if (size <= currentSize) {
                     return factory().createBytes(bufferedreaderReadFast(self, size));
@@ -290,7 +302,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 }
                 /* Flush the write buffer if necessary */
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
                 self.resetRead(); // _bufferedreader_reset_buf
                 while (remaining > 0) {
@@ -300,7 +312,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                     if (r == 0) {
                         break;
                     }
-                    byte[] fill = rawReadNode.execute(frame, self, r);
+                    byte[] fill = rawReadNode.execute(frame, inliningTarget, self, r);
                     if (fill == BLOCKED) {
                         r = -2;
                     } else {
@@ -325,7 +337,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                    reads, which could block indefinitely (e.g. on a socket).
                    See issue #9550. */
                 while (remaining > 0 && self.getReadEnd() < self.getBufferSize()) {
-                    int r = fillBufferNode.execute(frame, self);
+                    int r = fillBufferNode.execute(frame, inliningTarget, self);
                     if (r == 0 || r == -2) {
                         /* EOF occurred */
                         if (r == 0 || written > 0) {
@@ -363,43 +375,44 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_read_all
          */
         @Specialization(guards = {"self.isOK()", "isReadAll(size)"})
+        @SuppressWarnings("truffle-static-method") // factory
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
-                        @Cached EnterBufferedNode lock,
-                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached EnterBufferedNode lock,
+                        @Shared @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached("create(T_READALL)") LookupAttributeInMRONode readallAttr,
-                        @Cached ConditionProfile hasReadallProfile,
+                        @Cached InlinedConditionProfile hasReadallProfile,
+                        @Cached InlinedConditionProfile currentSize0Profile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 byte[] data = PythonUtils.EMPTY_BYTE_ARRAY;
                 /* First copy what we have in the current buffer. */
                 int currentSize = safeDowncast(self);
-                if (currentSize != 0) {
+                if (currentSize0Profile.profile(inliningTarget, currentSize != 0)) {
                     data = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getPos(), self.getPos() + currentSize);
                     self.incPos(currentSize);
                 }
 
                 /* We're going past the buffer's bounds, flush it */
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
 
                 self.resetRead(); // _bufferedreader_reset_buf
 
-                Object clazz = getClassNode.execute(self.getRaw());
+                Object clazz = getClassNode.execute(inliningTarget, self.getRaw());
                 Object readall = readallAttr.execute(clazz);
-                if (hasReadallProfile.profile(readall != PNone.NO_VALUE)) {
+                if (hasReadallProfile.profile(inliningTarget, readall != PNone.NO_VALUE)) {
                     Object tmp = dispatchGetattribute.executeObject(frame, readall, self.getRaw());
                     if (tmp != PNone.NONE && !(tmp instanceof PBytes)) {
                         throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
                     }
-                    if (currentSize == 0) {
-                        return tmp;
-                    } else {
+                    if (currentSize0Profile.profile(inliningTarget, currentSize != 0)) {
                         if (tmp != PNone.NONE) {
                             int bytesLen = bufferLib.getBufferLength(tmp);
                             byte[] res = new byte[data.length + bytesLen];
@@ -408,6 +421,8 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                             return factory().createBytes(res);
                         }
                         return factory().createBytes(data);
+                    } else {
+                        return tmp;
                     }
                 }
 
@@ -464,7 +479,9 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method") // factory
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_READ)") CheckIsClosedNode checkIsClosedNode,
                         @Cached RawReadNode rawReadNode) {
@@ -487,9 +504,9 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 return factory().createBytes(b);
             }
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 self.resetRead(); // _bufferedreader_reset_buf
-                byte[] fill = rawReadNode.execute(frame, self, n);
+                byte[] fill = rawReadNode.execute(frame, inliningTarget, self, n);
                 return factory().createBytes(fill == BLOCKED ? PythonUtils.EMPTY_BYTE_ARRAY : fill);
             } finally {
                 EnterBufferedNode.leave(self);
@@ -508,7 +525,9 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readinto_generic
          */
         @Specialization(guards = "self.isOK()", limit = "3")
+        @SuppressWarnings("truffle-static-method")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -516,7 +535,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Cached FillBufferNode fillBufferNode) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 int bufLen = bufferLib.getBufferLength(buffer);
                 int written = 0;
                 int n = safeDowncast(self);
@@ -534,7 +553,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 }
 
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
 
                 self.resetRead(); // _bufferedreader_reset_buf
@@ -546,7 +565,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                      caller's buffer.
                      */
                     if (remaining > self.getBufferSize()) {
-                        byte[] fill = rawReadNode.execute(frame, self, remaining);
+                        byte[] fill = rawReadNode.execute(frame, inliningTarget, self, remaining);
                         if (fill == BLOCKED) {
                             n = -2;
                         } else {
@@ -558,7 +577,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         In readinto1 mode, we do not want to fill the internal buffer if we already have
                         some data to return
                         */
-                        n = fillBufferNode.execute(frame, self);
+                        n = fillBufferNode.execute(frame, inliningTarget, self);
                         if (n > 0) {
                             if (n > remaining) {
                                 n = remaining;
@@ -620,17 +639,19 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readline
      */
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class BufferedReadlineNode extends PNodeWithContext {
 
-        public abstract byte[] execute(VirtualFrame frame, PBuffered self, int size);
+        public abstract byte[] execute(VirtualFrame frame, Node inliningTarget, PBuffered self, int size);
 
         @Specialization
-        static byte[] readline(VirtualFrame frame, PBuffered self, int size,
+        static byte[] readline(VirtualFrame frame, Node inliningTarget, PBuffered self, int size,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached FillBufferNode fillBufferNode,
-                        @Cached ConditionProfile notFound,
-                        @Cached ConditionProfile reachedLimit) {
+                        @Cached InlinedConditionProfile notFound,
+                        @Cached InlinedConditionProfile reachedLimit) {
             int limit = size;
             /*-
                 First, try to find a line in the buffer. This can run unlocked because
@@ -642,19 +663,19 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 n = limit;
             }
             int idx = BytesUtils.memchr(self.getBuffer(), self.getPos(), (byte) '\n', n);
-            if (notFound.profile(idx != -1)) {
+            if (notFound.profile(inliningTarget, idx != -1)) {
                 byte[] res = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getPos(), idx + 1);
                 self.incPos(idx - self.getPos() + 1);
                 return res;
             }
-            if (reachedLimit.profile(n == limit)) {
+            if (reachedLimit.profile(inliningTarget, n == limit)) {
                 byte[] res = new byte[n];
                 PythonUtils.arraycopy(self.getBuffer(), self.getPos(), res, 0, n);
                 self.incPos(n);
                 return res;
             }
 
-            lock.enter(self);
+            lock.enter(inliningTarget, self);
             try {
                 /* Now we try to get some more from the raw stream */
                 ByteArrayOutputStream chunks = createOutputStream();
@@ -666,12 +687,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                     }
                 }
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
 
                 while (true) {
                     self.resetRead(); // _bufferedreader_reset_buf
-                    n = fillBufferNode.execute(frame, self);
+                    n = fillBufferNode.execute(frame, inliningTarget, self);
                     if (n <= 0) {
                         break;
                     }
@@ -715,11 +736,13 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method")
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);
-            byte[] res = readlineNode.execute(frame, self, size);
+            byte[] res = readlineNode.execute(frame, inliningTarget, self, size);
             return factory().createBytes(res);
         }
     }
@@ -737,7 +760,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_peek_unlocked
          */
-        static byte[] bufferedreaderPeekUnlocked(VirtualFrame frame, PBuffered self,
+        static byte[] bufferedreaderPeekUnlocked(VirtualFrame frame, Node inliningTarget, PBuffered self,
                         FillBufferNode fillBufferNode) {
             int have = safeDowncast(self);
             /*-
@@ -752,7 +775,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
             /* Fill the buffer from the raw stream, and copy it to the result. */
             self.resetRead(); // _bufferedreader_reset_buf
-            int r = fillBufferNode.execute(frame, self);
+            int r = fillBufferNode.execute(frame, inliningTarget, self);
             if (r == -2) {
                 r = 0;
             }
@@ -761,18 +784,20 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method")
         Object doit(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_PEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached FillBufferNode fillBufferNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 if (self.isWritable()) {
-                    flushAndRewindUnlockedNode.execute(frame, self);
+                    flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 }
-                return factory().createBytes(bufferedreaderPeekUnlocked(frame, self, fillBufferNode));
+                return factory().createBytes(bufferedreaderPeekUnlocked(frame, inliningTarget, self, fillBufferNode));
             } finally {
                 EnterBufferedNode.leave(self);
             }
@@ -785,11 +810,13 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
     abstract static class NextNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
+        @SuppressWarnings("truffle-static-method")
         PBytes doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);
-            byte[] line = readlineNode.execute(frame, self, -1);
+            byte[] line = readlineNode.execute(frame, inliningTarget, self, -1);
             if (line.length == 0) {
                 throw raiseStopIteration();
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,19 +55,23 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -82,6 +86,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 public abstract class PyObjectRichCompareBool {
     @SuppressWarnings("unused")
+    @GenerateCached(false)
+    @GenerateInline(false)
+    @GenerateUncached(false)
     protected abstract static class ComparisonBaseNode extends PNodeWithContext {
         public abstract boolean execute(Frame frame, Object a, Object b);
 
@@ -236,11 +243,12 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, Object a, Object b,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsNode isNode,
-                        @Cached GetClassNode getClassA,
-                        @Cached GetClassNode getClassB,
-                        @Cached ConditionProfile reversedFirst,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached InlinedGetClassNode getClassA,
+                        @Cached InlinedGetClassNode getClassB,
+                        @Cached InlinedConditionProfile reversedFirst,
+                        @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached(parameters = "getSlot()") LookupSpecialMethodSlotNode lookupMethod,
                         @Cached(parameters = "getReverseSlot()") LookupSpecialMethodSlotNode lookupReverseMethod,
@@ -254,9 +262,10 @@ public abstract class PyObjectRichCompareBool {
                 }
             }
             boolean checkedReverseOp = false;
-            Object aType = getClassA.execute(a);
-            Object bType = getClassB.execute(b);
-            if (reversedFirst.profile(!isSameTypeNode.execute(aType, bType) && isSubtypeNode.execute(bType, aType))) {
+            Object aType = getClassA.execute(inliningTarget, a);
+            Object bType = getClassB.execute(inliningTarget, b);
+            if (reversedFirst.profile(inliningTarget, !isSameTypeNode.execute(inliningTarget, aType, bType) &&
+                            isSubtypeNode.execute(bType, aType))) {
                 checkedReverseOp = true;
                 Object reverseMethod = lookupMethodIgnoreDescriptorError(frame, lookupReverseMethod, bType, b);
                 if (reverseMethod != PNone.NO_VALUE) {

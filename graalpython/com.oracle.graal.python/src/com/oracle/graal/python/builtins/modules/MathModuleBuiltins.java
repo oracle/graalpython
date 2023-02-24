@@ -99,6 +99,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(defineModule = "math")
@@ -576,10 +577,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double fmodDD(double left, double right,
-                        @Cached ConditionProfile infProfile,
-                        @Cached ConditionProfile zeroProfile) {
-            raiseMathDomainError(infProfile.profile(Double.isInfinite(left)));
-            raiseMathDomainError(zeroProfile.profile(right == 0));
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile infProfile,
+                        @Cached InlinedConditionProfile zeroProfile) {
+            raiseMathDomainError(infProfile.profile(inliningTarget, Double.isInfinite(left)));
+            raiseMathDomainError(zeroProfile.profile(inliningTarget, right == 0));
             return left % right;
         }
 
@@ -1114,12 +1116,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
         public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached LoopConditionProfile profile,
-                        @Cached PyNumberIndexNode indexNode,
+                        @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached Gcd2Node gcdNode,
                         @Cached IntBuiltins.FloorDivNode floorDivNode,
                         @Cached IntBuiltins.MulNode mulNode,
                         @Cached BinaryComparisonNode.EqNode eqNode,
-                        @Cached BuiltinFunctions.AbsNode absNode) {
+                        @Shared @Cached BuiltinFunctions.AbsNode absNode) {
             Object a = indexNode.execute(frame, args[0]);
             profile.profileCounted(args.length);
             for (int i = 1; profile.inject(i < args.length); i++) {
@@ -1137,8 +1139,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
         public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached BuiltinFunctions.AbsNode absNode) {
+                        @Shared @Cached PyNumberIndexNode indexNode,
+                        @Shared @Cached BuiltinFunctions.AbsNode absNode) {
             return indexNode.execute(frame, absNode.execute(frame, args[0]));
         }
 
@@ -1488,17 +1490,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return blex > 0 ? res + blex * LOG2 : res;
         }
 
-        private double countBase(double base, ConditionProfile divByZero) {
+        private double countBase(double base, Node inliningTarget, InlinedConditionProfile divByZero) {
             double logBase = Math.log(base);
-            if (divByZero.profile(logBase == 0)) {
+            if (divByZero.profile(inliningTarget, logBase == 0)) {
                 throw raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
             }
             return logBase;
         }
 
-        private double countBase(BigInteger base, ConditionProfile divByZero) {
+        private double countBase(BigInteger base, Node inliningTarget, InlinedConditionProfile divByZero) {
             double logBase = logBigInteger(base);
-            if (divByZero.profile(logBase == 0)) {
+            if (divByZero.profile(inliningTarget, logBase == 0)) {
                 throw raise(ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "float");
             }
             return logBase;
@@ -1506,105 +1508,117 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double log(long value, PNone novalue,
-                        @Cached ConditionProfile doNotFit) {
-            return logDN(value, novalue, doNotFit);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit) {
+            return logDN(value, novalue, inliningTarget, doNotFit);
         }
 
         @Specialization
         public double logDN(double value, @SuppressWarnings("unused") PNone novalue,
-                        @Cached ConditionProfile doNotFit) {
-            raiseMathError(doNotFit, value <= 0);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit) {
+            raiseMathError(inliningTarget, doNotFit, value <= 0);
             return Math.log(value);
         }
 
         @Specialization
         @TruffleBoundary
         public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
-                        @Cached ConditionProfile doNotFit) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit) {
             BigInteger bValue = value.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0);
             return logBigInteger(bValue);
         }
 
         @Specialization
         public double logLL(long value, long base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
-            return logDD(value, base, doNotFit, divByZero);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
+            return logDD(value, base, inliningTarget, doNotFit, divByZero);
         }
 
         @Specialization
         public double logDL(double value, long base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
-            return logDD(value, base, doNotFit, divByZero);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
+            return logDD(value, base, inliningTarget, doNotFit, divByZero);
         }
 
         @Specialization
         public double logLD(long value, double base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
-            return logDD(value, base, doNotFit, divByZero);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
+            return logDD(value, base, inliningTarget, doNotFit, divByZero);
         }
 
         @Specialization
         public double logDD(double value, double base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
-            raiseMathError(doNotFit, value < 0 || base <= 0);
-            double logBase = countBase(base, divByZero);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
+            raiseMathError(inliningTarget, doNotFit, value < 0 || base <= 0);
+            double logBase = countBase(base, inliningTarget, divByZero);
             return Math.log(value) / logBase;
         }
 
         @Specialization
         @TruffleBoundary
         public double logDPI(double value, PInt base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
             BigInteger bBase = base.getValue();
-            raiseMathError(doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
-            double logBase = countBase(bBase, divByZero);
+            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            double logBase = countBase(bBase, inliningTarget, divByZero);
             return Math.log(value) / logBase;
         }
 
         @Specialization
         public double logPIL(PInt value, long base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
-            return logPID(value, base, doNotFit, divByZero);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
+            return logPID(value, base, inliningTarget, doNotFit, divByZero);
         }
 
         @Specialization
         @TruffleBoundary
         public double logPID(PInt value, double base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0);
-            double logBase = countBase(base, divByZero);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0);
+            double logBase = countBase(base, inliningTarget, divByZero);
             return logBigInteger(bValue) / logBase;
         }
 
         @Specialization
         @TruffleBoundary
         public double logLPI(long value, PInt base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
             BigInteger bBase = base.getValue();
-            raiseMathError(doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
-            double logBase = countBase(bBase, divByZero);
+            raiseMathError(inliningTarget, doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            double logBase = countBase(bBase, inliningTarget, divByZero);
             return Math.log(value) / logBase;
         }
 
         @Specialization
         @TruffleBoundary
         public double logPIPI(PInt value, PInt base,
-                        @Cached ConditionProfile doNotFit,
-                        @Cached ConditionProfile divByZero) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile doNotFit,
+                        @Shared @Cached InlinedConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
             BigInteger bBase = base.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
-            double logBase = countBase(bBase, divByZero);
+            raiseMathError(inliningTarget, doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            double logBase = countBase(bBase, inliningTarget, divByZero);
             return logBigInteger(bValue) / logBase;
         }
 
@@ -1639,8 +1653,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return executeRecursiveLogNode(frame, value, asDoubleNode.execute(frame, base));
         }
 
-        private void raiseMathError(ConditionProfile doNotFit, boolean con) {
-            if (doNotFit.profile(con)) {
+        private void raiseMathError(Node inliningTarget, InlinedConditionProfile doNotFit, boolean con) {
+            if (doNotFit.profile(inliningTarget, con)) {
                 throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
         }
@@ -2347,14 +2361,15 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double doGeneric(VirtualFrame frame, Object p, Object q,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached TupleNodes.ConstructTupleNode tupleCtor,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArray,
-                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile1,
-                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile2,
-                        @Cached ConditionProfile infProfile,
-                        @Cached ConditionProfile nanProfile,
-                        @Cached ConditionProfile trivialProfile) {
+                        @Cached InlinedLoopConditionProfile loopProfile1,
+                        @Cached InlinedLoopConditionProfile loopProfile2,
+                        @Cached InlinedConditionProfile infProfile,
+                        @Cached InlinedConditionProfile nanProfile,
+                        @Cached InlinedConditionProfile trivialProfile) {
             // adapted from CPython math_dist_impl and vector_norm
             Object[] ps = getObjectArray.execute(tupleCtor.execute(frame, p));
             Object[] qs = getObjectArray.execute(tupleCtor.execute(frame, q));
@@ -2365,8 +2380,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
             double[] diffs = new double[len];
             double max = 0.0;
             boolean foundNan = false;
-            loopProfile1.profileCounted(len);
-            for (int i = 0; loopProfile1.inject(i < len); ++i) {
+            loopProfile1.profileCounted(inliningTarget, len);
+            for (int i = 0; loopProfile1.inject(inliningTarget, i < len); ++i) {
                 double a = asDoubleNode.execute(frame, ps[i]);
                 double b = asDoubleNode.execute(frame, qs[i]);
                 double x = Math.abs(a - b);
@@ -2376,20 +2391,20 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     max = x;
                 }
             }
-            if (infProfile.profile(Double.isInfinite(max))) {
+            if (infProfile.profile(inliningTarget, Double.isInfinite(max))) {
                 return max;
             }
-            if (nanProfile.profile(foundNan)) {
+            if (nanProfile.profile(inliningTarget, foundNan)) {
                 return Double.NaN;
             }
-            if (trivialProfile.profile(max == 0.0 || len <= 1)) {
+            if (trivialProfile.profile(inliningTarget, max == 0.0 || len <= 1)) {
                 return max;
             }
 
             double csum = 1.0;
             double frac = 0.0;
-            loopProfile2.profileCounted(len);
-            for (int i = 0; loopProfile2.inject(i < len); ++i) {
+            loopProfile2.profileCounted(inliningTarget, len);
+            for (int i = 0; loopProfile2.inject(inliningTarget, i < len); ++i) {
                 double x = diffs[i];
                 x /= max;
                 x = x * x;

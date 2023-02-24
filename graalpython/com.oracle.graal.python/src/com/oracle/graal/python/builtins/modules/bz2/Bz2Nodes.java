@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,11 +64,15 @@ import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public class Bz2Nodes {
 
@@ -105,13 +109,14 @@ public class Bz2Nodes {
 
         @Specialization
         byte[] nativeCompress(BZ2Object.BZ2Compressor self, PythonContext context, byte[] bytes, int len, int action,
+                        @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction compress,
                         @Cached GetOutputNativeBufferNode getBuffer,
-                        @Cached ConditionProfile errProfile) {
+                        @Cached InlinedConditionProfile errProfile) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             Object inGuest = context.getEnv().asGuestValue(bytes);
             int err = bz2Support.compress(self.getBzs(), inGuest, len, action, INITIAL_BUFFER_SIZE, compress);
-            if (errProfile.profile(err != BZ_OK)) {
+            if (errProfile.profile(inliningTarget, err != BZ_OK)) {
                 errorHandling(err, getRaiseNode());
             }
             return getBuffer.execute(self.getBzs(), context);
@@ -119,16 +124,23 @@ public class Bz2Nodes {
 
     }
 
+    @GenerateUncached(false)
+    @GenerateCached(false)
+    @GenerateInline
     public abstract static class Bz2NativeDecompress extends Node {
 
-        public abstract byte[] execute(BZ2Object.BZ2Decompressor self, byte[] data, int len, int maxLength);
+        public abstract byte[] execute(Node inliningTarget, BZ2Object.BZ2Decompressor self, byte[] data, int len, int maxLength);
 
         @Specialization
-        byte[] nativeDecompress(BZ2Object.BZ2Decompressor self, byte[] bytes, int len, int maxLength,
-                        @Cached Bz2NativeInternalDecompress decompress) {
+        static byte[] nativeDecompress(Node inliningTarget, BZ2Object.BZ2Decompressor self, byte[] bytes, int len, int maxLength,
+                        @Cached InlinedConditionProfile hasNextIntProfile,
+                        @Cached InlinedBranchProfile isEofProfile,
+                        @Cached InlinedBranchProfile bzsAvailProfile,
+                        @Cached InlinedBranchProfile noInputBufferInUseProfile,
+                        @Cached(inline = false) Bz2NativeInternalDecompress decompress) {
             boolean inputBufferInUse;
             /* Prepend unconsumed input if necessary */
-            if (self.getNextIn() != null) {
+            if (hasNextIntProfile.profile(inliningTarget, self.getNextIn() != null)) {
                 /* Number of bytes we can append to input buffer */
                 int availNow = self.getInputBufferSize() - (self.getNextInIndex() + self.getBzsAvailInReal());
 
@@ -165,11 +177,13 @@ public class Bz2Nodes {
             byte[] result = decompress.execute(self, maxLength);
 
             if (self.isEOF()) {
+                isEofProfile.enter(inliningTarget);
                 self.setNeedsInput(false);
                 if (self.getBzsAvailInReal() > 0) {
                     self.setUnusedData();
                 }
             } else if (self.getBzsAvailInReal() == 0) {
+                bzsAvailProfile.enter(inliningTarget);
                 self.clearNextIn();
                 self.setNextInIndex(0);
                 self.setNeedsInput(true);
@@ -181,6 +195,7 @@ public class Bz2Nodes {
                  * caller's buffer into the input buffer
                  */
                 if (!inputBufferInUse) {
+                    noInputBufferInUseProfile.enter(inliningTarget);
 
                     /*
                      * Discard buffer if it's too small (resizing it may needlessly copy the current
@@ -213,12 +228,13 @@ public class Bz2Nodes {
 
         @Specialization
         byte[] nativeInternalDecompress(BZ2Object.BZ2Decompressor self, int maxLength,
+                        @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction decompress,
                         @Cached NativeLibrary.InvokeNativeFunction getBzsAvailInReal,
                         @Cached NativeLibrary.InvokeNativeFunction getNextInIndex,
                         @Cached GetOutputNativeBufferNode getBuffer,
-                        @Cached ConditionProfile errProfile,
-                        @Cached BranchProfile ofProfile) {
+                        @Cached InlinedConditionProfile errProfile,
+                        @Cached InlinedBranchProfile ofProfile) {
             PythonContext context = PythonContext.get(this);
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             Object inGuest = self.getNextInGuest(context);
@@ -230,12 +246,12 @@ public class Bz2Nodes {
                 self.setNextInIndex(nextInIdx);
                 self.setBzsAvailInReal(bzsAvailInReal);
             } catch (OverflowException of) {
-                ofProfile.enter();
+                ofProfile.enter(inliningTarget);
                 throw raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (err == BZ_STREAM_END) {
                 self.setEOF();
-            } else if (errProfile.profile(err != BZ_OK)) {
+            } else if (errProfile.profile(inliningTarget, err != BZ_OK)) {
                 errorHandling(err, getRaiseNode());
             }
             return getBuffer.execute(self.getBzs(), context);
@@ -248,15 +264,16 @@ public class Bz2Nodes {
 
         @Specialization
         byte[] getBuffer(Object bzst, PythonContext context,
+                        @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction getBufferSize,
                         @Cached NativeLibrary.InvokeNativeFunction getBuffer,
-                        @Cached BranchProfile ofProfile) {
+                        @Cached InlinedBranchProfile ofProfile) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             int size;
             try {
                 size = PInt.intValueExact(bz2Support.getOutputBufferSize(bzst, getBufferSize));
             } catch (OverflowException of) {
-                ofProfile.enter();
+                ofProfile.enter(inliningTarget);
                 throw raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (size == 0) {

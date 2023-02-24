@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,16 +74,18 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCArrayType)
@@ -103,9 +105,10 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCArrayType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(T__TYPE_)") LookupAttributeInMRONode lookupAttrId,
                         @Cached("create(T__LENGTH_)") LookupAttributeInMRONode lookupAttrIdLength,
-                        @Cached IsBuiltinClassProfile profile,
+                        @Cached IsBuiltinObjectProfile profile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TypeNode typeNew,
                         @Cached GetDictIfExistsNode getDict,
@@ -125,7 +128,7 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
             try {
                 length = asSizeNode.executeExact(frame, length_attr);
             } catch (PException e) {
-                if (e.expectTypeOrOverflowError(profile)) {
+                if (e.expectTypeOrOverflowError(inliningTarget, profile)) {
                     throw raise(OverflowError, THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE);
                 } else {
                     throw raise(TypeError, THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER);

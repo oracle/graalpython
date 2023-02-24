@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,13 +69,18 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -367,18 +372,24 @@ public class IONodes {
 
         @Specialization
         IOMode string(VirtualFrame frame, TruffleString mode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached ConditionProfile errProfile,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached InlinedBranchProfile errProfile1,
+                        @Shared @Cached InlinedBranchProfile errProfile2,
+                        @Shared @Cached InlinedBranchProfile errProfile3,
+                        @Shared @Cached WarningsModuleBuiltins.WarnNode warnNode) {
             IOMode m = new IOMode(mode, createCodePointIteratorNode, nextNode);
-            if (errProfile.profile(m.hasNil)) {
+            if (m.hasNil) {
+                errProfile1.enter(inliningTarget);
                 throw raise(ValueError, EMBEDDED_NULL_CHARACTER);
             }
-            if (errProfile.profile(m.isInvalid)) {
+            if (m.isInvalid) {
+                errProfile2.enter(inliningTarget);
                 throw raise(ValueError, INVALID_MODE_S, mode);
             }
-            if (errProfile.profile(warnUniversal && m.universal)) {
+            if (warnUniversal && m.universal) {
+                errProfile3.enter(inliningTarget);
                 warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.U_MODE_DEPRACATED, 1);
             }
             return m;
@@ -386,13 +397,16 @@ public class IONodes {
 
         @Specialization(guards = "!isFast(mode)", replaces = "string")
         IOMode generic(VirtualFrame frame, Object mode,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached ConditionProfile errProfile,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached InlinedBranchProfile errProfile1,
+                        @Shared @Cached InlinedBranchProfile errProfile2,
+                        @Shared @Cached InlinedBranchProfile errProfile3,
+                        @Shared @Cached WarningsModuleBuiltins.WarnNode warnNode) {
             try {
-                return string(frame, toString.execute(mode), createCodePointIteratorNode, nextNode, errProfile, warnNode);
+                return string(frame, toString.execute(mode), inliningTarget, createCodePointIteratorNode, nextNode, errProfile1, errProfile2, errProfile3, warnNode);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
@@ -424,14 +438,16 @@ public class IONodes {
         }
 
         @Specialization(guards = "!isInteger(nameobj)")
+        @SuppressWarnings("truffle-static-method") // raise
         Object generic(VirtualFrame frame, Object nameobj,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
-                        @Cached ConditionProfile errorProfile,
+                        @Cached InlinedConditionProfile errorProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             if (indexCheckNode.execute(nameobj)) {
                 int fd = asSizeNode.executeExact(frame, nameobj);
-                if (errorProfile.profile(fd < 0)) {
+                if (errorProfile.profile(inliningTarget, fd < 0)) {
                     err(fd);
                 }
                 return fd;
@@ -457,8 +473,10 @@ public class IONodes {
         }
     }
 
+    @GenerateCached(false)
+    @GenerateInline
     public abstract static class CreateBufferedIONode extends Node {
-        public abstract PBuffered execute(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, IONodes.IOMode mode);
+        public abstract PBuffered execute(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, IONodes.IOMode mode);
 
         protected static boolean isRandom(IONodes.IOMode mode) {
             return mode.updating;
@@ -473,26 +491,26 @@ public class IONodes {
         }
 
         @Specialization(guards = "isRandom(mode)")
-        static PBuffered createRandom(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
+        static PBuffered createRandom(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
                         @Cached BufferedRandomBuiltins.BufferedRandomInit initBuffered) {
             PBuffered buffer = factory.createBufferedRandom(PBufferedRandom);
-            initBuffered.execute(frame, buffer, fileIO, buffering, factory);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
             return buffer;
         }
 
         @Specialization(guards = {"!isRandom(mode)", "isWriting(mode)"})
-        static PBuffered createWriter(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
+        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
                         @Cached BufferedWriterBuiltins.BufferedWriterInit initBuffered) {
             PBuffered buffer = factory.createBufferedWriter(PBufferedWriter);
-            initBuffered.execute(frame, buffer, fileIO, buffering, factory);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
             return buffer;
         }
 
         @Specialization(guards = {"!isRandom(mode)", "!isWriting(mode)", "isReading(mode)"})
-        static PBuffered createWriter(VirtualFrame frame, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
+        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
                         @Cached BufferedReaderBuiltins.BufferedReaderInit initBuffered) {
             PBuffered buffer = factory.createBufferedReader(PBufferedReader);
-            initBuffered.execute(frame, buffer, fileIO, buffering, factory);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
             return buffer;
         }
     }

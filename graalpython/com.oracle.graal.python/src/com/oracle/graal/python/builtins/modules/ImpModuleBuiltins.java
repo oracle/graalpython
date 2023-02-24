@@ -105,6 +105,7 @@ import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -125,6 +126,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -134,7 +136,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = ImpModuleBuiltins.J__IMP, isEager = true)
@@ -545,10 +548,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, TruffleString name, Object dataObj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile isCodeObjectProfile) {
+                        @Cached InlinedConditionProfile isCodeObjectProfile) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 try {
@@ -575,7 +579,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 raiseFrozenError(FROZEN_INVALID, name, raiseNode);
             }
 
-            if (!isCodeObjectProfile.profile(code instanceof PCode)) {
+            if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
                 throw raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
             }
 
@@ -824,20 +828,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "create_dynamic", minNumOfPositionalArgs = 1, parameterNames = {"moduleSpec", "fileName"})
     @GenerateNodeFactory
     public abstract static class CreateDynamicNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(fileName)")
-        Object runNoFileName(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") PNone fileName,
+        @Specialization
+        Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileNameIn,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile fileNameIsNoValueProfile,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStrAsTruffleStringNode asStringNode,
                         @Cached CreateDynamic createDynamicNode) {
-            return run(frame, moduleSpec, PNone.NONE, asStringNode, createDynamicNode);
-        }
-
-        @Specialization(guards = "!isNoValue(fileName)")
-        Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileName,
-                        @Cached PyObjectStrAsTruffleStringNode asStringNode,
-                        @Cached CreateDynamic createDynamicNode) {
+            Object fileName = fileNameIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(fileNameIn)) ? PNone.NONE : fileNameIn;
             PythonContext ctx = getContext();
             TruffleString oldPackageContext = ctx.getPyPackageContext();
-            ctx.setPyPackageContext(asStringNode.execute(frame, PyObjectLookupAttr.getUncached().execute(frame, moduleSpec, T_NAME)));
+            ctx.setPyPackageContext(asStringNode.execute(frame, lookupAttr.execute(frame, moduleSpec, T_NAME)));
             try {
                 return createDynamicNode.execute(frame, moduleSpec, fileName);
             } finally {

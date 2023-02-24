@@ -51,11 +51,13 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_sha3")
 public class Sha3ModuleBuiltins extends PythonBuiltins {
@@ -80,6 +82,7 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
     abstract static class ShaNode extends PythonBuiltinNode {
         @Specialization
         Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
             PythonBuiltinClassType resultType = null;
             if (type instanceof PythonBuiltinClass builtinType) {
@@ -89,7 +92,7 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
-            return createNode.execute(frame, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer, this);
+            return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer, this);
         }
 
         private static String javaNameFromType(PythonBuiltinClassType type) {

@@ -89,14 +89,16 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PBufferedRWPair)
 public class BufferedRWPairBuiltins extends PythonBuiltins {
@@ -118,16 +120,17 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone doInit(VirtualFrame frame, PRWPair self, Object reader, Object writer, int bufferSize,
-                        @Cached IOBaseBuiltins.CheckReadableNode checkReadableNode,
-                        @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
+                        @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedReaderBuiltins.BufferedReaderInit initReaderNode,
                         @Cached BufferedWriterBuiltins.BufferedWriterInit initWriterNode) {
-            checkReadableNode.execute(frame, reader);
-            checkWritableNode.execute(frame, writer);
+            checkReadableNode.checkReadable(frame, inliningTarget, reader);
+            checkWritableNode.checkWriteable(frame, inliningTarget, writer);
             self.setReader(factory().createBufferedReader(PBufferedReader));
-            initReaderNode.execute(frame, self.getReader(), reader, bufferSize, factory());
+            initReaderNode.execute(frame, inliningTarget, self.getReader(), reader, bufferSize, factory());
             self.setWriter(factory().createBufferedWriter(PBufferedWriter));
-            initWriterNode.execute(frame, self.getWriter(), writer, bufferSize, factory());
+            initWriterNode.execute(frame, inliningTarget, self.getWriter(), writer, bufferSize, factory());
             return PNone.NONE;
         }
     }
@@ -280,16 +283,17 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
 
         @Specialization
         Object close(VirtualFrame frame, PRWPair self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodReader,
                         @Cached PyObjectCallMethodObjArgs callMethodWriter,
-                        @Cached ConditionProfile gotException,
-                        @Cached BranchProfile hasException) {
+                        @Cached InlinedConditionProfile gotException,
+                        @Cached InlinedBranchProfile hasException) {
             PException writeEx = null;
             if (self.getWriter() != null) {
                 try {
                     callMethodWriter.execute(frame, self.getWriter(), T_CLOSE);
                 } catch (PException e) {
-                    hasException.enter();
+                    hasException.enter(inliningTarget);
                     writeEx = e;
                 }
             } else {
@@ -300,7 +304,7 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
             if (self.getReader() != null) {
                 try {
                     Object res = callMethodReader.execute(frame, self.getReader(), T_CLOSE);
-                    if (gotException.profile(writeEx != null)) {
+                    if (gotException.profile(inliningTarget, writeEx != null)) {
                         throw writeEx;
                     }
                     return res;
@@ -311,12 +315,12 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
                 readEx = getRaiseNode().raise(ValueError, IO_UNINIT);
             }
 
-            hasException.enter();
-            return chainedError(writeEx, readEx, gotException);
+            hasException.enter(inliningTarget);
+            return chainedError(writeEx, readEx, inliningTarget, gotException);
         }
 
-        static Object chainedError(PException first, PException second, ConditionProfile gotFirst) {
-            if (gotFirst.profile(first != null)) {
+        static Object chainedError(PException first, PException second, Node inliningTarget, InlinedConditionProfile gotFirst) {
+            if (gotFirst.profile(inliningTarget, first != null)) {
                 throw second.chainException(first);
             } else {
                 throw second;
@@ -329,12 +333,13 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class IsAttyNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(VirtualFrame frame, PRWPair self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodWriter,
                         @Cached PyObjectCallMethodObjArgs callMethodReader,
                         @Cached IsNode isNode,
-                        @Cached ConditionProfile isSameProfile) {
+                        @Cached InlinedConditionProfile isSameProfile) {
             Object res = callMethodWriter.execute(frame, self.getWriter(), T_ISATTY);
-            if (isSameProfile.profile(isNode.isTrue(res))) {
+            if (isSameProfile.profile(inliningTarget, isNode.isTrue(res))) {
                 /* either True or exception */
                 return res;
             }

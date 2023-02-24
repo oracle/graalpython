@@ -50,9 +50,10 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
@@ -233,11 +234,11 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
-    public void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
+    public void setDictHiddenProp(Node inliningTarget, DynamicObjectLibrary dylib, InlinedBranchProfile hasMroShapeProfile, Object value) {
         dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
         dylib.put(this, DICT, value);
         if (mroShapeSubTypes != null) {
-            hasMroShapeProfile.enter();
+            hasMroShapeProfile.enter(inliningTarget);
             invalidateMroShapeSubTypes();
         }
     }

@@ -158,7 +158,6 @@ import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.modules.io.PTextIO;
-import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -218,7 +217,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -247,7 +246,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
@@ -708,7 +707,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     public void initStd(Python3Core core) {
-        TextIOWrapperInitNode textIOWrapperInitNode = TextIOWrapperInitNodeGen.getUncached();
         PythonObjectFactory factory = core.factory();
 
         // wrap std in/out/err
@@ -722,17 +720,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
         PBuffered reader = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
         BufferedReaderBuiltins.BufferedReaderInit.internalInit(reader, (PFileIO) getBuiltinConstant(T_STDIN), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, reader, sysModule, textIOWrapperInitNode, factory);
+        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, reader, sysModule, factory);
 
         PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDOUT), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stdout = setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, writer, sysModule, textIOWrapperInitNode, factory);
+        PTextIO stdout = setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, writer, sysModule, factory);
 
         writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDERR), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stderr = setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, writer, sysModule, textIOWrapperInitNode, factory);
+        PTextIO stderr = setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, writer, sysModule, factory);
 
         // register atexit close std out/err
         core.getContext().registerAtexitHook((ctx) -> {
@@ -742,9 +740,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, PBuffered buffered, PythonModule sysModule,
-                    TextIOWrapperInitNode textIOWrapperInitNode, PythonObjectFactory factory) {
+                    PythonObjectFactory factory) {
         PTextIO textIOWrapper = factory.createTextIO(PythonBuiltinClassType.PTextIOWrapper);
-        textIOWrapperInitNode.execute(null, textIOWrapper, buffered, encoding, error, PNone.NONE, true, true);
+        TextIOWrapperInitNodeGen.getUncached().execute(null, null, textIOWrapper, buffered, encoding, error, PNone.NONE, true, true);
 
         setAttribute(textIOWrapper, T_MODE, mode);
         setAttribute(sysModule, name, textIOWrapper);
@@ -787,7 +785,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PTuple run(VirtualFrame frame,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
@@ -801,7 +800,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 if (lazyTraceback != null) {
                     traceback = getTracebackNode.execute(lazyTraceback);
                 }
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
+                return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback == null ? PNone.NONE : traceback});
             }
         }
 
@@ -826,10 +825,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PFrame counted(VirtualFrame frame, int num,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadCallerFrameNode readCallerNode,
-                        @Cached ConditionProfile callStackDepthProfile) {
+                        @Cached InlinedConditionProfile callStackDepthProfile) {
             PFrame requested = escapeFrame(frame, num, readCallerNode);
-            if (callStackDepthProfile.profile(requested == null)) {
+            if (callStackDepthProfile.profile(inliningTarget, requested == null)) {
                 throw raiseCallStackDepth();
             }
             return requested;

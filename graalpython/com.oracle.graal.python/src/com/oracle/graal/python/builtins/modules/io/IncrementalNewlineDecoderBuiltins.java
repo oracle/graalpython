@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -89,6 +90,9 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -141,8 +145,11 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             return IncrementalNewlineDecoderBuiltinsClinicProviders.DecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "!self.hasDecoder()")
-        static TruffleString noDecoder(PNLDecoder self, Object input, boolean isFinal,
+        @Specialization
+        static TruffleString noDecoder(VirtualFrame frame, PNLDecoder self, Object inputIn, boolean isFinal,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile hasDecoderProfile,
+                        @Cached InlinedConditionProfile len0Profile,
                         @Cached CastToTruffleStringNode toString,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -150,7 +157,14 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.ConcatNode concatNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            Object input = inputIn;
+            if (self.hasDecoder()) {
+                hasDecoderProfile.enter(inliningTarget);
+                input = callMethod.execute(frame, self.getDecoder(), T_DECODE, input, isFinal);
+            }
+
             TruffleString output = toString.execute(input);
             int outputLen = codePointLengthNode.execute(output, TS_ENCODING);
             if (self.isPendingCR() && (isFinal || outputLen > 0)) {
@@ -179,7 +193,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             int seenNewline = self.getSeenNewline();
             boolean onlyLF = false;
 
-            if (len == 0) {
+            if (len0Profile.profile(inliningTarget, len == 0)) {
                 return output;
             }
 
@@ -259,21 +273,6 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             self.setSeenNewline(self.getSeenNewline() | seenNewline);
 
             return output;
-        }
-
-        @Specialization(guards = "self.hasDecoder()")
-        static TruffleString withDecoder(VirtualFrame frame, PNLDecoder self, Object input, boolean isFinal,
-                        @Cached CastToTruffleStringNode toString,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleString.ConcatNode concatNode,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object res = callMethod.execute(frame, self.getDecoder(), T_DECODE, input, isFinal);
-            return noDecoder(self, res, isFinal, toString, codePointLengthNode, codePointAtIndexNode, indexOfCodePointNode, substringNode, concatNode, appendCodePointNode, toStringNode);
         }
     }
 

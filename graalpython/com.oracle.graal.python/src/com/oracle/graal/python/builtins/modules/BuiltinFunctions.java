@@ -227,9 +227,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
@@ -262,8 +262,11 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -281,9 +284,11 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -352,65 +357,71 @@ public final class BuiltinFunctions extends PythonBuiltins {
     /**
      * Common class for all() and any() operations, as their logic and behaviors are very similar.
      */
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class AllOrAnySequenceStorageNode extends PNodeWithContext {
-        @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
-
-        private final LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
-
-        abstract boolean execute(Frame frame, SequenceStorage storageObj, AnyOrAllNodeType nodeType);
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, SequenceStorage storageObj, AnyOrAllNodeType nodeType);
 
         @Specialization
-        boolean doBoolSequence(VirtualFrame frame,
-                        BoolSequenceStorage sequenceStorage,
-                        AnyOrAllNodeType nodeType) {
+        static boolean doBoolSequence(VirtualFrame frame, Node inliningTarget, BoolSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
+                        @Shared @Cached(inline = false) PyObjectIsTrueNode isTrueNode) {
             boolean[] internalArray = sequenceStorage.getInternalBoolArray();
             int seqLength = sequenceStorage.length();
 
-            loopConditionProfile.profileCounted(seqLength);
-            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+            for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
-
+            LoopNode.reportLoopCount(inliningTarget, seqLength);
             return nodeType == AnyOrAllNodeType.ALL;
         }
 
         @Specialization
-        boolean doIntSequence(VirtualFrame frame,
-                        IntSequenceStorage sequenceStorage,
-                        AnyOrAllNodeType nodeType) {
+        static boolean doIntSequence(VirtualFrame frame, Node inliningTarget, IntSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
+                        @Shared @Cached(inline = false) PyObjectIsTrueNode isTrueNode) {
             int[] internalArray = sequenceStorage.getInternalIntArray();
             int seqLength = sequenceStorage.length();
 
-            loopConditionProfile.profileCounted(seqLength);
-            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+            for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
-
+            LoopNode.reportLoopCount(inliningTarget, seqLength);
             return nodeType == AnyOrAllNodeType.ALL;
         }
 
         @Specialization
-        boolean doGenericSequence(VirtualFrame frame, SequenceStorage sequenceStorage, AnyOrAllNodeType nodeType) {
+        static boolean doGenericSequence(VirtualFrame frame, Node inliningTarget, SequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
+                        @Shared @Cached(inline = false) PyObjectIsTrueNode isTrueNode) {
             Object[] internalArray = sequenceStorage.getInternalArray();
             int seqLength = sequenceStorage.length();
 
-            loopConditionProfile.profileCounted(seqLength);
-            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+            for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, internalArray[i]))) {
+                    LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
             }
-
+            LoopNode.reportLoopCount(inliningTarget, seqLength);
             return nodeType == AnyOrAllNodeType.ALL;
         }
     }
@@ -449,31 +460,32 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doList(VirtualFrame frame,
-                        PList object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doList(VirtualFrame frame, PList object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doTuple(VirtualFrame frame,
-                        PTuple object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doTuple(VirtualFrame frame, PTuple object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doHashColl(VirtualFrame frame,
-                        PHashingCollection object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ALL);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
@@ -506,31 +518,32 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AnyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doList(VirtualFrame frame,
-                        PList object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doList(VirtualFrame frame, PList object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doTuple(VirtualFrame frame,
-                        PTuple object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doTuple(VirtualFrame frame, PTuple object,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
+            return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doHashColl(VirtualFrame frame,
-                        PHashingCollection object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                         @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ANY);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
@@ -600,11 +613,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         TruffleString doL(long x,
-                        @Cached ConditionProfile isMinLong,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isMinLong,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            if (isMinLong.profile(x == Long.MIN_VALUE)) {
+            if (isMinLong.profile(inliningTarget, x == Long.MIN_VALUE)) {
                 return buildString(true, fromJavaStringNode.execute(bigToString(bigAbs(PInt.longToBigInteger(x))), TS_ENCODING), appendStringNode, toStringNode);
             }
             return buildString(x < 0, fromJavaStringNode.execute(longToString(Math.abs(x)), TS_ENCODING), appendStringNode, toStringNode);
@@ -626,25 +640,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
+        @SuppressWarnings("truffle-static-method")
         TruffleString doO(VirtualFrame frame, Object x,
-                        @Cached ConditionProfile isMinLong,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isMinLong,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached BranchProfile isInt,
-                        @Cached BranchProfile isLong,
-                        @Cached BranchProfile isPInt,
+                        @Cached InlinedBranchProfile isInt,
+                        @Cached InlinedBranchProfile isLong,
+                        @Cached InlinedBranchProfile isPInt,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object index = indexNode.execute(frame, x);
             if (index instanceof Boolean || index instanceof Integer) {
-                isInt.enter();
-                return doL(asSizeNode.executeExact(frame, index), isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
+                isInt.enter(inliningTarget);
+                return doL(asSizeNode.executeExact(frame, index), inliningTarget, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
             } else if (index instanceof Long) {
-                isLong.enter();
-                return doL((long) index, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
+                isLong.enter(inliningTarget);
+                return doL((long) index, inliningTarget, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
             } else if (index instanceof PInt) {
-                isPInt.enter();
+                isPInt.enter(inliningTarget);
                 return doPI((PInt) index, fromJavaStringNode, appendStringNode, toStringNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
@@ -1291,21 +1307,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract Object executeWithArgs(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue);
 
-        @SuppressWarnings("unused")
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, stringProfile)", "isNoValue(defaultValue)"})
+        @SuppressWarnings({"unused", "truffle-static-method"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, TruffleString name, PNone defaultValue,
-                        @Cached ConditionProfile stringProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile stringProfile,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached("name") TruffleString cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, primary);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, stringProfile)", "!isNoValue(defaultValue)"})
+        @SuppressWarnings({"unused", "truffle-static-method"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, inliningTarget, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile stringProfile,
+                        @Cached InlinedConditionProfile stringProfile,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached("name") TruffleString cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode,
@@ -1325,6 +1342,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
+        @SuppressWarnings("truffle-static-method")
         Object getAttrFromObject(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached GetAnyAttributeNode getAttributeNode,
@@ -1494,13 +1512,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isPythonClass(cls)")
         static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
+                        @Bind("this") Node inliningTarget,
                         @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
                         @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
-            Object instanceClass = getClassNode.execute(instance);
-            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
+            Object instanceClass = getClassNode.execute(inliningTarget, instance);
+            return isSameTypeNode.execute(inliningTarget, instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
                             || isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode) == TriState.TRUE;
         }
 
@@ -1590,9 +1609,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     public abstract static class MinMaxNode extends PythonBuiltinNode {
-
-        @CompilationFinal private boolean seenNonBoolean = false;
-
         @NeverDefault
         protected final BinaryComparisonNode createComparison() {
             if (this instanceof MaxNode) {
@@ -1603,29 +1619,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone key, Object defaultVal,
+        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached InlinedConditionProfile hasDefaultProfile) {
-            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, inliningTarget, getIter, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
-        }
+                        @Shared @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Shared @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Shared @Cached CallNode.Lazy keyCall,
+                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
+                        @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
+                        @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Cached InlinedConditionProfile hasDefaultProfile) {
+            boolean kwArgsAreNone = keywordArgIsNone.profile(inliningTarget, PGuards.isPNone(keywordArgIn));
+            Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
-        @Specialization(guards = {"args.length == 0", "!isPNone(keywordArg)"})
-        Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg, Object defaultVal,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached CallNode keyCall,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached InlinedConditionProfile hasDefaultProfile) {
             Object iterator = getIter.execute(frame, arg1);
             Object currentValue;
             try {
@@ -1638,32 +1646,37 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return defaultVal;
                 }
             }
-            Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = nextNode.execute(frame, iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile2);
-                    break;
-                }
-                Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-                boolean isTrue;
-                if (!seenNonBoolean) {
+            Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
+            int loopCount = 0;
+            try {
+                while (true) {
+                    Object nextValue;
                     try {
-                        isTrue = compare.executeBool(frame, nextKey, currentKey);
-                    } catch (UnexpectedResultException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        seenNonBoolean = true;
-                        isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                        nextValue = nextNode.execute(frame, iterator);
+                    } catch (PException e) {
+                        e.expectStopIteration(inliningTarget, errorProfile2);
+                        break;
                     }
-                } else {
-                    isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
+                    Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
+                    boolean isTrue;
+                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
+                        try {
+                            isTrue = compare.executeBool(frame, nextKey, currentKey);
+                        } catch (UnexpectedResultException e) {
+                            seenNonBoolean.enter(inliningTarget);
+                            isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                        }
+                    } else {
+                        isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
+                    }
+                    if (isTrue) {
+                        currentKey = nextKey;
+                        currentValue = nextValue;
+                    }
+                    loopCount++;
                 }
-                if (isTrue) {
-                    currentKey = nextKey;
-                    currentValue = nextValue;
-                }
+            } finally {
+                LoopNode.reportLoopCount(this, loopCount < 0 ? Integer.MAX_VALUE : loopCount);
             }
             return currentValue;
         }
@@ -1672,52 +1685,54 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return this instanceof MaxNode ? "max" : "min";
         }
 
-        @Specialization(guards = "args.length != 0")
-        Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg, Object defaultVal,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Shared("hasDefaultProfile") @Cached ConditionProfile hasDefaultProfile) {
-            return minmaxBinaryWithKey(frame, arg1, args, null, defaultVal, compare, null, moreThanTwo, castToBooleanNode, hasDefaultProfile);
-        }
+        @Specialization(guards = {"args.length != 0"})
+        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArgIn, Object defaultVal,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Shared @Cached CallNode.Lazy keyCall,
+                        @Shared @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
+                        @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
+                        @Cached InlinedConditionProfile moreThanTwo,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedConditionProfile hasDefaultProfile) {
 
-        @Specialization(guards = {"args.length != 0", "!isPNone(keywordArg)"})
-        Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArg, Object defaultVal,
-                        @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached CallNode keyCall,
-                        @Cached ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Shared("hasDefaultProfile") @Cached ConditionProfile hasDefaultProfile) {
+            boolean kwArgsAreNone = keywordArgIsNone.profile(inliningTarget, PGuards.isPNone(keywordArgIn));
+            Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
-            if (!hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
+            if (!hasDefaultProfile.profile(inliningTarget, PGuards.isNoValue(defaultVal))) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_SPECIFY_DEFAULT_FOR_S, getName());
             }
             Object currentValue = arg1;
-            Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
+            Object currentKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
-            Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
+            Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
             boolean isTrue;
-            try {
-                isTrue = compare.executeBool(frame, nextKey, currentKey);
-            } catch (UnexpectedResultException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                seenNonBoolean = true;
-                isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+            if (!seenNonBoolean.wasEntered(inliningTarget)) {
+                try {
+                    isTrue = compare.executeBool(frame, nextKey, currentKey);
+                } catch (UnexpectedResultException e) {
+                    seenNonBoolean.enter(inliningTarget);
+                    isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                }
+            } else {
+                isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
             }
             if (isTrue) {
                 currentKey = nextKey;
                 currentValue = nextValue;
             }
-            if (moreThanTwo.profile(args.length > 1)) {
-                for (int i = 0; i < args.length; i++) {
+            if (moreThanTwo.profile(inliningTarget, args.length > 1)) {
+                loopProfile.profileCounted(inliningTarget, args.length);
+                LoopNode.reportLoopCount(this, args.length);
+                for (int i = 0; loopProfile.inject(inliningTarget, i < args.length); i++) {
                     nextValue = args[i];
-                    nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-                    if (!seenNonBoolean) {
+                    nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);
+                    if (!seenNonBoolean.wasEntered(inliningTarget)) {
                         try {
                             isTrue = compare.executeBool(frame, nextKey, currentKey);
                         } catch (UnexpectedResultException e) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            seenNonBoolean = true;
+                            seenNonBoolean.enter(inliningTarget);
                             isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
                         }
                     } else {
@@ -1732,8 +1747,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        private static Object applyKeyFunction(VirtualFrame frame, Object keywordArg, CallNode keyCall, Object currentValue) {
-            return keyCall == null ? currentValue : keyCall.execute(frame, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
+        private static Object applyKeyFunction(VirtualFrame frame, Node inliningTarget, Object keywordArg, CallNode.Lazy keyCall, Object currentValue) {
+            return keywordArg == null ? currentValue : keyCall.get(inliningTarget).execute(frame, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
         }
     }
 
@@ -2154,9 +2169,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntNone(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
             return sumIntInternal(frame, arg1, 0, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
@@ -2164,9 +2179,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntInt(VirtualFrame frame, Object arg1, int start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
             return sumIntInternal(frame, arg1, start, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
@@ -2198,9 +2213,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile2,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile3,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile2,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile3,
                         @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
             return sumDoubleInternal(frame, arg1, start, getIter, inliningTarget, errorProfile1, errorProfile2, errorProfile3);
         }
@@ -2232,7 +2247,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Bind("this") Node inliningTarget,
-                        /* @Shared */ @Cached IsBuiltinObjectProfile errorProfile1,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile1,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached InlinedConditionProfile hasStart) {
             if (PGuards.isString(start)) {
@@ -2396,7 +2411,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         /* Determine the most derived metatype. */
         @Specialization
         Object calculate(Object metatype, PTuple bases,
-                        @Cached GetClassNode getClass,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClass,
                         @Cached IsSubtypeNode isSubType,
                         @Cached IsSubtypeNode isSubTypeReverse) {
             CompilerAsserts.neverPartOfCompilation();
@@ -2411,7 +2427,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object winner = metatype;
             for (int i = 0; i < nbases; i++) {
                 Object tmp = storage.getItemNormalized(i);
-                Object tmpType = getClass.execute(tmp);
+                Object tmpType = getClass.execute(inliningTarget, tmp);
                 if (isSubType.execute(winner, tmpType)) {
                     // nothing to do
                 } else if (isSubTypeReverse.execute(tmpType, winner)) {

@@ -115,6 +115,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object[] doSequence(VirtualFrame frame, Object processArgs,
                         @Bind("this") Node inliningTarget,
                         @Cached FastConstructListNode fastConstructListNode,

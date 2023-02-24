@@ -74,19 +74,21 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = J__WEAKREF, isEager = true)
@@ -188,15 +190,17 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinClassProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached InlineIsBuiltinClassProfile profile,
                         @Cached GetMroNode getMroNode) {
             Object actualCallback = callback instanceof PNone ? null : callback;
-            Object clazz = getClassNode.execute(pythonObject);
+            Object clazz = getClassNode.execute(inliningTarget, pythonObject);
 
             // if the object is a type, a weak ref is allowed
-            if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {
+            if (profile.profileClass(inliningTarget, clazz, PythonBuiltinClassType.PythonClass)) {
                 return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
             }
 

@@ -45,12 +45,14 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 public abstract class KeywordsNode extends AbstractKwargsNode {
@@ -58,16 +60,18 @@ public abstract class KeywordsNode extends AbstractKwargsNode {
 
     @Specialization
     static PKeyword[] kwords(VirtualFrame frame, Object sourceCollection, int stackTop,
+                    @Bind("this") Node inliningTarget,
                     @Cached MappingToKeywordsNode expandKeywordStarargsNode,
-                    @Cached BranchProfile keywordsError,
+                    @Cached InlinedBranchProfile keywordsError1,
+                    @Cached InlinedBranchProfile keywordsError2,
                     @Cached PRaiseNode raise) {
         try {
             return expandKeywordStarargsNode.execute(frame, sourceCollection);
         } catch (SameDictKeyException e) {
-            keywordsError.enter();
+            keywordsError1.enter(inliningTarget);
             throw handleSameKey(frame, raise, stackTop, e);
         } catch (NonMappingException e) {
-            keywordsError.enter();
+            keywordsError2.enter(inliningTarget);
             throw handleNonMapping(frame, raise, stackTop, e);
         }
     }

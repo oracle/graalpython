@@ -115,7 +115,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedWriter, PBufferedRandom})
@@ -129,11 +129,11 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryWithInitErrorBuiltinNode {
 
-        private static Object close(VirtualFrame frame, PBuffered self,
+        private static Object close(VirtualFrame frame, Node inliningTarget, PBuffered self,
                         EnterBufferedNode lock,
                         PyObjectCallMethodObjArgs callMethodClose) {
             try {
-                lock.enter(self);
+                lock.enter(inliningTarget, self);
                 Object res = callMethodClose.execute(frame, self.getRaw(), T_CLOSE);
                 if (self.getBuffer() != null) {
                     self.setBuffer(null);
@@ -146,15 +146,16 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodClose,
                         @Cached PyObjectCallMethodObjArgs callMethodDeallocWarn,
                         @Cached EnterBufferedNode lock,
-                        @Cached ConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile) {
             try {
-                lock.enter(self);
-                if (profile.profile(isClosedNode.execute(frame, self))) {
+                lock.enter(inliningTarget, self);
+                if (profile.profile(inliningTarget, isClosedNode.execute(frame, inliningTarget, self))) {
                     return PNone.NONE;
                 }
                 if (self.isFinalizing()) {
@@ -170,13 +171,13 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 callMethodFlush.execute(frame, self, T_FLUSH);
             } catch (PException e) {
                 try {
-                    close(frame, self, lock, callMethodClose);
+                    close(frame, inliningTarget, self, lock, callMethodClose);
                 } catch (PException ee) {
                     throw ee.chainException(e);
                 }
                 throw e;
             }
-            return close(frame, self, lock, callMethodClose);
+            return close(frame, inliningTarget, self, lock, callMethodClose);
         }
     }
 
@@ -259,14 +260,15 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "isSupportedWhence(whence)"})
         static long doit(VirtualFrame frame, PBuffered self, Object off, int whence,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(T_SEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.CheckIsSeekabledNode checkIsSeekabledNode,
                         @Cached BufferedIONodes.AsOffNumberNode asOffNumberNode,
-                        @Cached BufferedIONodes.SeekNode seekNode) {
+                        @Cached(inline = true) BufferedIONodes.SeekNode seekNode) {
             checkIsClosedNode.execute(frame, self);
             checkIsSeekabledNode.execute(frame, self);
-            long pos = asOffNumberNode.execute(frame, off, TypeError);
-            return seekNode.execute(frame, self, pos, whence);
+            long pos = asOffNumberNode.execute(frame, inliningTarget, off, TypeError);
+            return seekNode.execute(frame, inliningTarget, self, pos, whence);
         }
 
         @Specialization(guards = {"self.isOK()", "!isSupportedWhence(whence)"})
@@ -289,8 +291,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class TellNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static long doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached RawTellNode rawTellNode) {
-            long pos = rawTellNode.execute(frame, self);
+            long pos = rawTellNode.execute(frame, inliningTarget, self);
             pos -= rawOffset(self);
             /* TODO: sanity check (pos >= 0) */
             return pos;
@@ -309,6 +312,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "self.isWritable()"})
         static Object doit(VirtualFrame frame, PBuffered self, Object pos,
+                        @Bind("this") Node inliningTarget,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_TRUNCATE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached RawTellNode rawTellNode,
@@ -316,11 +320,11 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodTruncate) {
             checkIsClosedNode.execute(frame, self);
             try {
-                lock.enter(self);
-                flushAndRewindUnlockedNode.execute(frame, self);
+                lock.enter(inliningTarget, self);
+                flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
                 Object res = callMethodTruncate.execute(frame, self.getRaw(), T_TRUNCATE, pos);
                 /* Reset cached position */
-                rawTellNode.execute(frame, self);
+                rawTellNode.execute(frame, inliningTarget, self);
                 return res;
             } finally {
                 EnterBufferedNode.leave(self);
@@ -356,8 +360,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ClosedNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode) {
-            return isClosedNode.execute(frame, self);
+            return isClosedNode.execute(frame, inliningTarget, self);
         }
     }
 

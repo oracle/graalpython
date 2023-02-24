@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -65,6 +66,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -72,8 +74,9 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
@@ -324,11 +327,12 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     ExceptionType getExceptionType(
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Bind("$node") Node inliningTarget,
+                    /* @Shared("getClass") */ @Cached InlinedGetClassNode getClassNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            Object clazz = getClassNode.execute(this);
+            Object clazz = getClassNode.execute(inliningTarget, this);
             if (clazz instanceof PythonBuiltinClass) {
                 clazz = ((PythonBuiltinClass) clazz).getType();
             }
@@ -371,13 +375,14 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     int getExceptionExitStatus(
                     @Cached CastToJavaIntExactNode castToInt,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Bind("$node") Node inliningTarget,
+                    /* @Shared("getClass") */ @Cached InlinedGetClassNode getClassNode,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("unsupportedProfile") @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            if (getExceptionType(getClassNode, gil) == ExceptionType.EXIT) {
+            if (getExceptionType(inliningTarget, getClassNode, gil) == ExceptionType.EXIT) {
                 try {
                     // Avoiding getattr because this message shouldn't have side-effects
                     Object code = readNode.execute(this, T_CODE);
@@ -394,7 +399,7 @@ public final class PBaseException extends PythonObject {
                     return 1;
                 }
             }
-            unsupportedProfile.enter();
+            unsupportedProfile.enter(inliningTarget);
             throw UnsupportedMessageException.create();
         } finally {
             gil.release(mustRelease);
@@ -413,7 +418,8 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     Object getExceptionCause(
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("unsupportedProfile") @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
@@ -423,7 +429,7 @@ public final class PBaseException extends PythonObject {
             if (!suppressContext && context != null) {
                 return context;
             }
-            unsupportedProfile.enter();
+            unsupportedProfile.enter(inliningTarget);
             throw UnsupportedMessageException.create();
         } finally {
             gil.release(mustRelease);

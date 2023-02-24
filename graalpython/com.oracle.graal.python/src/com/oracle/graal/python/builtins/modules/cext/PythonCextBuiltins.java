@@ -184,7 +184,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -464,7 +464,7 @@ public final class PythonCextBuiltins {
             if (obj == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
-            if (IsSubtypeNode.getUncached().execute(GetClassNode.getUncached().execute(obj), type)) {
+            if (IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(obj), type)) {
                 throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
             } else {
                 throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
@@ -476,7 +476,7 @@ public final class PythonCextBuiltins {
             if (obj == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
-            if (IsSubtypeNode.getUncached().execute(GetClassNode.getUncached().execute(obj), type1) || IsSubtypeNode.getUncached().execute(GetClassNode.getUncached().execute(obj), type2)) {
+            if (IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(obj), type1) || IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(obj), type2)) {
                 throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
             } else {
                 throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, type1.getName(), obj);

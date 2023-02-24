@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,6 +81,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -131,7 +132,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Override
-            public abstract ReprState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ReprState s);
+            public abstract ReprState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ReprState s);
 
             protected static TruffleString getReprString(Object obj, ReprState s,
                             LookupAndCallUnaryDynamicNode reprNode,
@@ -158,7 +159,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public static ReprState append(HashingStorage storage, HashingStorageIterator it, ReprState s,
+            public static ReprState append(@SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
@@ -177,7 +178,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public static ReprState dict(Frame frame, HashingStorage storage, HashingStorageIterator it, ReprState s,
+            public static ReprState dict(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
@@ -198,7 +199,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public static ReprState dict(Frame frame, HashingStorage storage, HashingStorageIterator it, ReprState s,
+            public static ReprState dict(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,
@@ -224,7 +225,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public static ReprState dict(Frame frame, HashingStorage storage, HashingStorageIterator it, ReprState s,
+            public static ReprState dict(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,

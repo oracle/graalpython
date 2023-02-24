@@ -42,27 +42,18 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyComplex_CheckExact}.
  */
-@GenerateUncached
 public abstract class PyComplexCheckExactNode extends Node {
-    public abstract boolean execute(Object object);
-
-    @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached IsBuiltinObjectProfile isBuiltin) {
-        return isBuiltin.profileObject(inliningTarget, object, PythonBuiltinClassType.PComplex);
+    private PyComplexCheckExactNode() {
+        // If this ever needs a cached version, make it public, add a specialization doing what
+        // executeUncached does
     }
 
-    public static PyComplexCheckExactNode getUncached() {
-        return PyComplexCheckExactNodeGen.getUncached();
+    public static boolean executeUncached(Object object) {
+        return IsBuiltinObjectProfile.profileObjectUncached(object, PythonBuiltinClassType.PComplex);
     }
 }

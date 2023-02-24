@@ -264,10 +264,11 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -280,6 +281,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -289,8 +291,10 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -1124,8 +1128,8 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         public Object get(Object object,
-                        @Cached GetClassNode getClassNode) {
-            return getClassNode.execute(object);
+                        @Cached InlinedGetClassNode getClassNode) {
+            return getClassNode.execute(this, object);
         }
     }
 
@@ -1570,11 +1574,12 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         public Object get(PythonManagedClass object,
-                        @Cached IsBuiltinClassProfile isTupleProfile,
-                        @Cached IsBuiltinClassProfile isDictProfile,
-                        @Cached IsBuiltinClassProfile isListProfile) {
-            if (isTupleProfile.profileClass(object, PythonBuiltinClassType.PTuple) || isDictProfile.profileClass(object, PythonBuiltinClassType.PDict) ||
-                            isListProfile.profileClass(object, PythonBuiltinClassType.PList)) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlineIsBuiltinClassProfile isTupleProfile,
+                        @Cached InlineIsBuiltinClassProfile isDictProfile,
+                        @Cached InlineIsBuiltinClassProfile isListProfile) {
+            if (isTupleProfile.profileClass(inliningTarget, object, PythonBuiltinClassType.PTuple) || isDictProfile.profileClass(inliningTarget, object, PythonBuiltinClassType.PDict) ||
+                            isListProfile.profileClass(inliningTarget, object, PythonBuiltinClassType.PList)) {
 
                 // TODO: return a proper traverse function, or at least a dummy
                 return getNULL();
@@ -1712,13 +1717,14 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization(guards = "isPythonClass(object)")
         static Object doTpBasicsize(Object object, long basicsize,
+                        @Bind("this") Node inliningTarget,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached WriteAttributeToBuiltinTypeNode writeAttrToBuiltinNode,
-                        @Cached ConditionProfile isBuiltinProfile,
-                        @Cached IsBuiltinClassProfile profile) {
-            if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
+                        @Cached InlinedConditionProfile isBuiltinProfile,
+                        @Cached InlineIsBuiltinClassProfile profile) {
+            if (profile.profileClass(inliningTarget, object, PythonBuiltinClassType.PythonClass)) {
                 writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
-            } else if (isBuiltinProfile.profile(object instanceof PythonBuiltinClass || object instanceof PythonBuiltinClassType)) {
+            } else if (isBuiltinProfile.profile(inliningTarget, object instanceof PythonBuiltinClass || object instanceof PythonBuiltinClassType)) {
                 writeAttrToBuiltinNode.execute(object, T___BASICSIZE__, basicsize);
             } else {
                 writeAttrNode.execute(object, T___BASICSIZE__, basicsize);
@@ -1743,6 +1749,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doTpDict(PythonManagedClass object, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
@@ -1750,8 +1757,9 @@ public final class PythonCextSlotBuiltins {
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
-                        @Cached IsBuiltinClassProfile isPrimitiveDictProfile) {
-            if (isBuiltinDict(isPrimitiveDictProfile, value)) {
+                        @Cached IsBuiltinObjectProfile isPrimitiveDictProfile1,
+                        @Cached IsBuiltinObjectProfile isPrimitiveDictProfile2) {
+            if (isBuiltinDict(inliningTarget, isPrimitiveDictProfile1, isPrimitiveDictProfile2, value)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 HashingStorage storage = d.getDictStorage();
@@ -1772,10 +1780,10 @@ public final class PythonCextSlotBuiltins {
             return PNone.NO_VALUE;
         }
 
-        private static boolean isBuiltinDict(IsBuiltinClassProfile isPrimitiveDictProfile, Object value) {
+        private static boolean isBuiltinDict(Node inliningTarget, IsBuiltinObjectProfile isPrimitiveDictProfile1, IsBuiltinObjectProfile isPrimitiveDictProfile2, Object value) {
             return value instanceof PDict &&
-                            (isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict) ||
-                                            isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.StgDict));
+                            (isPrimitiveDictProfile1.profileObject(inliningTarget, value, PythonBuiltinClassType.PDict) ||
+                                            isPrimitiveDictProfile2.profileObject(inliningTarget, value, PythonBuiltinClassType.StgDict));
         }
     }
 
@@ -1859,10 +1867,10 @@ public final class PythonCextSlotBuiltins {
         abstract static class EachSubclassAdd extends HashingStorageForEachCallback<Set<PythonAbstractClass>> {
 
             @Override
-            public abstract Set<PythonAbstractClass> execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses);
+            public abstract Set<PythonAbstractClass> execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses);
 
             @Specialization
-            public Set<PythonAbstractClass> doIt(Frame frame, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses,
+            public Set<PythonAbstractClass> doIt(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorKeyHash itKeyHash,
                             @Cached HashingStorageGetItemWithHash getItemNode) {

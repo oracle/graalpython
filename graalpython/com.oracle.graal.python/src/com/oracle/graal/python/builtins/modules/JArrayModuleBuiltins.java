@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -188,10 +189,10 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
     abstract static class ArrayNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object fromSequence(PSequence sequence, Object type,
-                        @CachedLibrary(limit = "5") InteropLibrary lib,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached ZerosNode zerosNode) {
+                        @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
+                        @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Shared @Cached ZerosNode zerosNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(sequence);
             int length = storage.length();
             Object array = zerosNode.execute(length, type);
@@ -211,10 +212,10 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPSequence(sequence)")
         Object fromIterable(VirtualFrame frame, Object sequence, Object type,
                         @Cached ListNodes.ConstructListNode constructListNode,
-                        @CachedLibrary(limit = "5") InteropLibrary lib,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached ZerosNode zerosNode) {
+                        @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
+                        @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Shared @Cached ZerosNode zerosNode) {
             PList list = constructListNode.execute(frame, sequence);
             return fromSequence(list, type, lib, getSequenceStorageNode, getItemScalarNode, zerosNode);
         }

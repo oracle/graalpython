@@ -441,6 +441,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteLinesNode extends ClosedCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
+        @SuppressWarnings("truffle-static-method") // raise
         Object writeLines(VirtualFrame frame, PBytesIO self, Object lines,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNextNode getNextNode,

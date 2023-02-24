@@ -39,7 +39,8 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PGenerator extends PythonBuiltinObject {
@@ -152,8 +153,8 @@ public final class PGenerator extends PythonBuiltinObject {
         return "<generator object " + name + " at " + hashCode() + ">";
     }
 
-    public PCode getOrCreateCode(ConditionProfile hasCodeProfile, PythonObjectFactory factory) {
-        if (hasCodeProfile.profile(code == null)) {
+    public PCode getOrCreateCode(Node inliningTarget, InlinedConditionProfile hasCodeProfile, PythonObjectFactory factory) {
+        if (hasCodeProfile.profile(inliningTarget, code == null)) {
             RootCallTarget callTarget;
             callTarget = bytecodeRootNode.getCallTarget();
             code = factory.createCode(callTarget);

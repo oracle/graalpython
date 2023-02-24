@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,12 +58,14 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
@@ -75,13 +77,14 @@ public abstract class ImportFromNode extends PNodeWithContext {
 
     @Specialization
     Object doImport(VirtualFrame frame, Object module, TruffleString name,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupAttr,
-                    @Cached BranchProfile maybeCircularProfile) {
+                    @Cached InlinedBranchProfile maybeCircularProfile) {
         Object result = lookupAttr.execute(frame, module, name);
         if (result != PNone.NO_VALUE) {
             return result;
         }
-        maybeCircularProfile.enter();
+        maybeCircularProfile.enter(inliningTarget);
         return tryResolveCircularImport(module, name);
     }
 

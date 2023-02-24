@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -59,7 +60,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -72,10 +74,11 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
 
     @Specialization
     Object doBytes(VirtualFrame frame, PBytes object, Object encoding, Object errors,
-                    @Cached ConditionProfile emptyStringProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile emptyStringProfile,
                     @Cached PyUnicodeDecode decode) {
         // Decoding bytes objects is the most common case and should be fast
-        if (emptyStringProfile.profile(object.getSequenceStorage().length() == 0)) {
+        if (emptyStringProfile.profile(inliningTarget, object.getSequenceStorage().length() == 0)) {
             return T_EMPTY_STRING;
         }
         return decode.execute(frame, object, encoding, errors);
@@ -97,14 +100,15 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
 
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
     Object doBuffer(VirtualFrame frame, Object object, Object encoding, Object errors,
-                    @Cached ConditionProfile emptyStringProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile emptyStringProfile,
                     @Cached PyUnicodeDecode decode,
                     @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
                     @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
         try {
             int len = bufferLib.getBufferLength(object);
-            if (emptyStringProfile.profile(len == 0)) {
+            if (emptyStringProfile.profile(inliningTarget, len == 0)) {
                 return T_EMPTY_STRING;
             }
             // TODO GR-37601: this is probably never executed

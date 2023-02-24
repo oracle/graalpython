@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,17 +98,19 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -207,6 +209,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("fallthrough")
         @Specialization
         void PyCStructUnionType_update_stgdict(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached PyCFieldFromDesc cFieldFromDesc,
@@ -219,7 +222,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached MakeAnonFieldsNode makeAnonFieldsNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SetAttributeNode.Dynamic setAttr,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached(parameters = "T__swappedbytes_") LookupAttributeInMRONode lookupSwappedbytes,
                         @Cached(parameters = "T__pack_") LookupAttributeInMRONode lookupPack,
                         @Cached(parameters = "T__use_broken_old_ctypes_structure_semantics_") LookupAttributeInMRONode lookupBrokenCtypes,
@@ -248,7 +251,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 try {
                     pack = asSizeNode.executeLossy(frame, tmp);
                 } catch (PException e) {
-                    e.expectTypeOrOverflowError(isBuiltinClassProfile);
+                    e.expectTypeOrOverflowError(inliningTarget, isBuiltinClassProfile);
                     throw raise(ValueError, PACK_MUST_BE_A_NON_NEGATIVE_INTEGER);
                 }
             }
@@ -258,7 +261,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 isSequenceNode.execute(fields);
                 len = sizeNode.execute(frame, fields);
             } catch (PException e) {
-                e.expectTypeError(isBuiltinClassProfile);
+                e.expectTypeError(inliningTarget, isBuiltinClassProfile);
                 throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS);
             }
 

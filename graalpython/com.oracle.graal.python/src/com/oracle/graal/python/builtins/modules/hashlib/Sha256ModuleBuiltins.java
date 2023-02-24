@@ -49,11 +49,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_sha256")
 public class Sha256ModuleBuiltins extends PythonBuiltins {
@@ -67,8 +69,9 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
     abstract static class Sha224FunctionNode extends PythonBuiltinNode {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.SHA224Type, "sha224", "sha224", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA224Type, "sha224", "sha224", buffer, this);
         }
     }
 
@@ -77,8 +80,9 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
     abstract static class Sha256FunctionNode extends PythonBuiltinNode {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.SHA256Type, "sha256", "sha256", buffer, this);
+            return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA256Type, "sha256", "sha256", buffer, this);
         }
     }
 

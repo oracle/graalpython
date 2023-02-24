@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T__CHUNK_SIZE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
@@ -56,6 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltinsFactory.DescriptorCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -69,13 +68,15 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -135,14 +136,11 @@ public class DescriptorBuiltins extends PythonBuiltins {
         }
     }
 
-    static final class DescriptorCheckNode extends Node {
+    abstract static class DescriptorCheckNode extends Node {
 
         @Child private IsSubtypeNode isSubtypeNode;
         @Child private GetNameNode getNameNode;
         @Child private PRaiseNode raiseNode;
-        @Child private GetClassNode getClassNode;
-
-        @Child private IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
 
         public boolean execute(Object descrType, TruffleString name, Object obj) {
             return executeInternal(descrType, name, obj);
@@ -152,15 +150,21 @@ public class DescriptorBuiltins extends PythonBuiltins {
             return executeInternal(descrType, name, obj);
         }
 
+        abstract boolean executeInternal(Object descrType, Object nameObj, Object obj);
+
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        private boolean executeInternal(Object descrType, Object nameObj, Object obj) {
+        @Specialization
+        boolean doIt(Object descrType, Object nameObj, Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached InlineIsBuiltinClassProfile isBuiltinPythonClassObject) {
             if (PGuards.isNone(obj)) {
                 // object's descriptors (__class__,...) need to work on every object including None
-                if (!isBuiltinPythonClassObject.profileClass(descrType, PythonBuiltinClassType.PythonObject)) {
+                if (!isBuiltinPythonClassObject.profileClass(inliningTarget, descrType, PythonBuiltinClassType.PythonObject)) {
                     return true;
                 }
             }
-            Object type = getPythonClass(obj);
+            Object type = getClassNode.execute(inliningTarget, obj);
             if (isSubtype(type, descrType)) {
                 return false;
             }
@@ -197,17 +201,9 @@ public class DescriptorBuiltins extends PythonBuiltins {
             return raiseNode;
         }
 
-        private Object getPythonClass(Object object) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(object);
-        }
-
         @NeverDefault
         public static DescriptorCheckNode create() {
-            return new DescriptorCheckNode();
+            return DescriptorCheckNodeGen.create();
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,13 +76,17 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRawIOBase)
 public final class RawIOBaseBuiltins extends PythonBuiltins {
@@ -107,14 +111,14 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "size < 0")
         static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethod) {
             return callMethod.execute(frame, self, T_READALL);
         }
 
         @Specialization(guards = "size >= 0")
         Object read(VirtualFrame frame, Object self, int size,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached PyObjectCallMethodObjArgs callMethodReadInto,
+                        @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PByteArray b = factory().createByteArray(new byte[size]);
             Object res = callMethodReadInto.execute(frame, self, T_READINTO, b);
@@ -142,25 +146,28 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object readall(VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
-                        @Cached ConditionProfile isBuffer,
+                        @Cached InlinedConditionProfile dataNoneProfile,
+                        @Cached InlinedConditionProfile chunksSize0Profile,
+                        @Cached InlinedCountingConditionProfile bytesLen0Profile,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
                 Object data = callMethodRead.execute(frame, self, T_READ, DEFAULT_BUFFER_SIZE);
                 // TODO _PyIO_trap_eintr [GR-23297]
-                if (data == PNone.NONE) {
-                    if (chunks.size() == 0) {
+                if (dataNoneProfile.profile(inliningTarget, data == PNone.NONE)) {
+                    if (chunksSize0Profile.profile(inliningTarget, chunks.size() == 0)) {
                         return data;
                     }
                     break;
                 }
-                if (isBuffer.profile(!(data instanceof PBytes))) {
+                if (!(data instanceof PBytes)) {
                     throw raise(TypeError, S_SHOULD_RETURN_BYTES, "read()");
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(data);
                 int bytesLen = bufferLib.getBufferLength(data);
-                if (bytesLen == 0) {
+                if (bytesLen0Profile.profile(inliningTarget, bytesLen == 0)) {
                     break;
                 }
                 append(chunks, bytes, bytesLen);

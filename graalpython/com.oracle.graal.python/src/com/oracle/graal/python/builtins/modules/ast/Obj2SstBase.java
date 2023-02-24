@@ -264,7 +264,7 @@ abstract class Obj2SstBase {
         if (obj instanceof PFloat && PyFloatCheckExactNode.getUncached().execute(obj)) {
             return ConstantValue.ofDouble(((PFloat) obj).getValue());
         }
-        if (obj instanceof PComplex && PyComplexCheckExactNode.getUncached().execute(obj)) {
+        if (obj instanceof PComplex && PyComplexCheckExactNode.executeUncached(obj)) {
             PComplex c = (PComplex) obj;
             return ConstantValue.ofComplex(c.getReal(), c.getImag());
         }

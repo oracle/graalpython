@@ -83,7 +83,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(defineModule = "_functools")
@@ -186,18 +185,20 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return args.length >= 1;
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, false)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, false)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWoKw(Object cls, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached ConditionProfile hasArgsProfile,
-                        @Cached ConditionProfile hasKeywordsProfile,
+                        @Cached InlinedConditionProfile hasArgsProfile,
+                        @Cached InlinedConditionProfile hasKeywordsProfile,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
-            Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
+            Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);
 
             PDict funcKwDict;
-            if (hasKeywordsProfile.profile(keywords.length > 0)) {
+            if (hasKeywordsProfile.profile(inliningTarget, keywords.length > 0)) {
                 funcKwDict = factory().createDict(keywords);
             } else {
                 funcKwDict = factory().createDict();
@@ -206,29 +207,33 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, funcKwDict);
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "!withKeywords(keywords)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "!withKeywords(keywords)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWKw(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached ConditionProfile hasArgsProfile,
+                        @Cached InlinedConditionProfile hasArgsProfile,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageCopy copyNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
-            Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
+            Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);
             return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(factory(), copyNode));
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createFromPartialWoDictWKwKw(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached ConditionProfile hasArgsProfile,
+                        @Cached InlinedConditionProfile hasArgsProfile,
                         @Cached HashingStorage.InitNode initNode,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageCopy copyHashingStorageNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
-            Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
+            Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);
 
             HashingStorage storage = copyHashingStorageNode.execute(function.getKw().getDictStorage());
             PDict result = factory().createDict(storage);
@@ -237,10 +242,12 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, result);
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"}, limit = "1")
+        @SuppressWarnings("truffle-static-method")
         Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                        @Cached ConditionProfile hasKeywordsProfile,
+                        @Cached InlinedConditionProfile hasKeywordsProfile,
                         @Cached PyCallableCheckNode callableCheckNode) {
             Object function = args[0];
             if (!callableCheckNode.execute(function)) {
@@ -249,7 +256,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
 
             final Object[] funcArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             PDict funcKwDict;
-            if (hasKeywordsProfile.profile(keywords.length > 0)) {
+            if (hasKeywordsProfile.profile(inliningTarget, keywords.length > 0)) {
                 funcKwDict = factory().createDict(keywords);
             } else {
                 funcKwDict = factory().createDict();
