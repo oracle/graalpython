@@ -2578,8 +2578,10 @@ PyAPI_FUNC(int) PyGC_Enable() {
 PyAPI_FUNC(int) PyGC_IsEnabled() {
     unimplemented("PyGC_IsEnabled"); exit(-1);
 }
+int (*__target__PyGILState_Check)() = NULL;
 PyAPI_FUNC(int) PyGILState_Check() {
-    unimplemented("PyGILState_Check"); exit(-1);
+    int result = (int) __target__PyGILState_Check();
+    return result;
 }
 PyGILState_STATE (*__target__PyGILState_Ensure)() = NULL;
 PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
@@ -6750,6 +6752,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyFloat_FromDouble = getAPI("PyFloat_FromDouble");
     __target__PyFrame_New = getAPI("PyFrame_New");
     __target__PyFrozenSet_New = getAPI("PyFrozenSet_New");
+    __target__PyGILState_Check = getAPI("PyGILState_Check");
     __target__PyGILState_Ensure = getAPI("PyGILState_Ensure");
     __target__PyGILState_GetThisThreadState = getAPI("PyGILState_GetThisThreadState");
     __target__PyGILState_Release = getAPI("PyGILState_Release");

@@ -157,6 +157,7 @@ typedef struct {
     BUILTIN(PyFloat_FromDouble, PyObject*, double) \
     BUILTIN(PyFrame_New, PyFrameObject*, PyThreadState*, PyCodeObject*, PyObject*, PyObject*) \
     BUILTIN(PyFrozenSet_New, PyObject*, PyObject*) \
+    BUILTIN(PyGILState_Check, int) \
     BUILTIN(PyGILState_Ensure, PyGILState_STATE) \
     BUILTIN(PyGILState_Release, void, PyGILState_STATE) \
     BUILTIN(PyImport_GetModuleDict, PyObject*) \

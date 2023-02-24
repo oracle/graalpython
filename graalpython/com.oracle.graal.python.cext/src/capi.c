@@ -1509,6 +1509,10 @@ PyAPI_FUNC(PyFrameObject*) PyFrame_New(PyThreadState* a, PyCodeObject* b, PyObje
 PyAPI_FUNC(PyObject*) PyFrozenSet_New(PyObject* a) {
     return GraalPyFrozenSet_New(a);
 }
+#undef PyGILState_Check
+PyAPI_FUNC(int) PyGILState_Check() {
+    return GraalPyGILState_Check();
+}
 #undef PyGILState_Ensure
 PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
     return GraalPyGILState_Ensure();
