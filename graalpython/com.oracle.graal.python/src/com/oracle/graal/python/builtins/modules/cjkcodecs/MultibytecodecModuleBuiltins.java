@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleIsValidNode.PyCapsuleIsValid;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_TYPE_INVALID;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
@@ -58,6 +57,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsule_IsValid;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
@@ -136,7 +136,7 @@ public class MultibytecodecModuleBuiltins extends PythonBuiltins {
                         PythonCextCapsuleBuiltins.NameMatchesNode nameMatchesNode,
                         PythonObjectFactory factory,
                         PRaiseNode raiseNode) {
-            if (PyCapsuleIsValid(arg, PyMultibyteCodec_CAPSULE_NAME, nameMatchesNode) == 0) {
+            if (PyCapsule_IsValid.doCapsule(arg, PyMultibyteCodec_CAPSULE_NAME, nameMatchesNode) == 0) {
                 throw raiseNode.raise(ValueError, ARGUMENT_TYPE_INVALID);
             }
             MultibyteCodec codec;

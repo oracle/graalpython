@@ -138,7 +138,7 @@ public final class PythonCextCapsuleBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     public abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
         @Specialization
-        static int doCapsule(PyCapsule o, TruffleString name,
+        public static int doCapsule(PyCapsule o, TruffleString name,
                         @Cached NameMatchesNode nameMatchesNode) {
             if (o.getPointer() == null) {
                 return 0;
