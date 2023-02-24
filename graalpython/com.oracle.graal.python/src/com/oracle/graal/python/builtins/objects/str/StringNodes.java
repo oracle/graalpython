@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Unic
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -105,6 +106,10 @@ public abstract class StringNodes {
     @GenerateUncached
     @ImportStatic(StringNodes.class)
     public abstract static class StringMaterializeNode extends Node {
+
+        public static TruffleString executeUncached(PString s) {
+            return StringMaterializeNodeGen.getUncached().execute(s);
+        }
 
         public abstract TruffleString execute(PString materialize);
 
