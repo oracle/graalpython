@@ -320,6 +320,7 @@ public abstract class TypeNodes {
                 case DictRemover:
                 case StructParam:
                 case CArgObject:
+                case MultibyteCodec:
                     result = DEFAULT;
                     break;
                 case PythonObject:
@@ -331,6 +332,10 @@ public abstract class TypeNodes {
                 case Structure:
                 case Union:
                 case SimpleCData:
+                case MultibyteIncrementalEncoder:
+                case MultibyteIncrementalDecoder:
+                case MultibyteStreamReader:
+                case MultibyteStreamWriter:
                     result = DEFAULT | BASETYPE;
                     break;
                 case PArray:

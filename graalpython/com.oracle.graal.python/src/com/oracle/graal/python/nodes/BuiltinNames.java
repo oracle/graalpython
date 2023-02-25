@@ -427,4 +427,23 @@ public abstract class BuiltinNames {
 
     public static final String J__ASYNCIO = "_asyncio";
     public static final TruffleString T__ASYNCIO = tsLiteral(J__ASYNCIO);
+
+    public static final String J__CODECS_CN = "_codecs_cn";
+    public static final TruffleString T__CODECS_CN = tsLiteral(J__CODECS_CN);
+
+    public static final String J__CODECS_HK = "_codecs_hk";
+    public static final TruffleString T__CODECS_HK = tsLiteral(J__CODECS_HK);
+
+    public static final String J__CODECS_ISO2022 = "_codecs_iso2022";
+    public static final TruffleString T__CODECS_ISO2022 = tsLiteral(J__CODECS_ISO2022);
+
+    public static final String J__CODECS_JP = "_codecs_jp";
+    public static final TruffleString T__CODECS_JP = tsLiteral(J__CODECS_JP);
+
+    public static final String J__CODECS_KR = "_codecs_kr";
+    public static final TruffleString T__CODECS_KR = tsLiteral(J__CODECS_KR);
+
+    public static final String J__CODECS_TW = "_codecs_tw";
+    public static final TruffleString T__CODECS_TW = tsLiteral(J__CODECS_TW);
+
 }

@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitValue;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_OBJECT;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.UNICODE_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ASCII;
@@ -51,9 +53,11 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TRUFFLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
 import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_SEARCH_MUST_RETURN_4;
+import static com.oracle.graal.python.nodes.ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_ERROR_WITH_CODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.HANDLER_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ESCAPE_AT;
+import static com.oracle.graal.python.nodes.ErrorMessages.POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_RETURN_TUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ERROR_HANDLER;
@@ -68,8 +72,10 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEPASS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF_UNDERSCORE_8;
 import static com.oracle.graal.python.nodes.StringLiterals.T_XMLCHARREFREPLACE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
@@ -103,18 +109,23 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -143,6 +154,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -383,15 +395,27 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @GenerateUncached
     public abstract static class RaiseDecodingErrorNode extends Node {
-        public abstract RuntimeException execute(TruffleDecoder decoder, Object inputObject);
+        protected abstract Object execute(TruffleDecoder decoder, Object inputObject, boolean justMakeExcept);
+
+        // make_decode_exception
+        public Object makeDecodeException(TruffleDecoder decoder, Object inputObject) {
+            return execute(decoder, inputObject, true);
+        }
+
+        public Object raise(TruffleDecoder decoder, Object inputObject) {
+            return execute(decoder, inputObject, false);
+        }
 
         @Specialization
-        static RuntimeException doRaise(TruffleDecoder decoder, Object inputObject,
+        static Object doRaise(TruffleDecoder decoder, Object inputObject, boolean justMakeExcept,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
             int start = decoder.getInputPosition();
             int end = start + decoder.getErrorLength();
             Object exception = callNode.execute(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
+            if (justMakeExcept) {
+                return exception;
+            }
             if (exception instanceof PBaseException) {
                 throw raiseNode.raiseExceptionObject((PBaseException) exception);
             } else {
@@ -404,39 +428,149 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
-    public abstract static class HandleDecodingErrorNode extends Node {
-        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
+    protected abstract static class InternErrorAction extends Node {
+
+        public abstract TruffleString execute(TruffleString errorAction);
 
         @Specialization
-        static void doStrict(TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
+        public static TruffleString intern(TruffleString errorAction,
                         @Cached ConditionProfile strictProfile,
                         @Cached ConditionProfile backslashreplaceProfile,
                         @Cached ConditionProfile surrogatepassProfile,
                         @Cached ConditionProfile surrogateescapeProfile,
-                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached TruffleString.EqualNode equalNode) {
+            if (strictProfile.profile(equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
+                return T_STRICT;
+            } else if (backslashreplaceProfile.profile(equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
+                return T_BACKSLASHREPLACE;
+            } else if (surrogatepassProfile.profile(equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
+                return T_SURROGATEPASS;
+            } else if (surrogateescapeProfile.profile(equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
+                return T_SURROGATEESCAPE;
+            }
+            return errorAction;
+        }
+    }
+
+    /*
+     * This Node is expecting the errorAction truffle string to be interned ahead.
+     */
+    @ImportStatic(StringLiterals.class)
+    @GenerateUncached
+    public abstract static class HandleDecodingErrorNode extends Node {
+        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, PBytesLike inputObject);
+
+        @Specialization(guards = "errorAction == T_STRICT")
+        static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
+            raiseDecodingErrorNode.raise(decoder, inputObject);
+        }
+
+        @Specialization(guards = "errorAction == T_BACKSLASHREPLACE")
+        static void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
-            boolean fixed;
             try {
                 // Ignore and replace are handled by Java Charset
-                if (strictProfile.profile(equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
-                    fixed = false;
-                } else if (backslashreplaceProfile.profile(equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
-                    fixed = backslashreplace(decoder);
-                } else if (surrogatepassProfile.profile(equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
-                    fixed = surrogatepass(decoder, equalNode);
-                } else if (surrogateescapeProfile.profile(equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
-                    fixed = surrogateescape(decoder);
-                } else {
-                    throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+                if (!backslashreplace(decoder)) {
+                    raiseDecodingErrorNode.raise(decoder, inputObject);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(MemoryError);
             }
-            if (!fixed) {
-                throw raiseDecodingErrorNode.execute(decoder, inputObject);
+        }
+
+        @Specialization(guards = "errorAction == T_SURROGATEPASS")
+        static void doSurrogatepass(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                // Ignore and replace are handled by Java Charset
+                if (!surrogatepass(decoder, equalNode)) {
+                    raiseDecodingErrorNode.raise(decoder, inputObject);
+                }
+            } catch (OutOfMemoryError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(MemoryError);
             }
+        }
+
+        @Specialization(guards = "errorAction == T_SURROGATEESCAPE")
+        static void doSurrogateescape(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                // Ignore and replace are handled by Java Charset
+                if (!surrogateescape(decoder)) {
+                    raiseDecodingErrorNode.raise(decoder, inputObject);
+                }
+            } catch (OutOfMemoryError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        @Fallback
+        void doCustom(TruffleDecoder decoder, TruffleString errorAction, PBytesLike inputObject,
+                        @Cached CallNode callNode,
+                        @Cached BaseExceptionAttrNode attrNode,
+                        @Cached GetInternalObjectArrayNode getArray,
+                        @Cached GetInternalByteArrayNode getBytes,
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                Object errorHandler = LookupErrorNode.get(PythonContext.get(this), errorAction);
+                if (errorHandler == null) {
+                    throw raiseNode.raise(LookupError, UNKNOWN_ERROR_HANDLER, errorAction);
+                }
+                Object exceptionObject = raiseDecodingErrorNode.makeDecodeException(decoder, inputObject);
+                Object restuple = callNode.execute(errorHandler, exceptionObject);
+
+                Object[] t = null;
+                if (PGuards.isPTuple(restuple)) {
+                    t = getArray.execute(((PTuple) restuple).getSequenceStorage());
+                }
+
+                if (t == null || t.length != 2) {
+                    throw raiseNode.raise(TypeError, DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+                }
+                int newpos = asIntNode.execute(null, t[1]);
+                /*- Copy back the bytes variables, which might have been modified by the callback */
+                assert exceptionObject instanceof PBaseException;
+                Object obj = attrNode.get((PBaseException) exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
+                assert obj instanceof PBytesLike;
+                PBytesLike inputobj = (PBytesLike) obj;
+                byte[] input = getBytes.execute(inputobj.getSequenceStorage());
+                int insize = inputobj.getSequenceStorage().length();
+
+                if (newpos < 0) {
+                    newpos = insize + newpos;
+                }
+                if (newpos < 0 || newpos > insize) {
+                    throw raiseNode.raise(IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
+                }
+
+                if (!custom(decoder, input, insize, newpos)) {
+                    throw raiseNode.raise(SystemError);
+                }
+
+            } catch (OutOfMemoryError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(MemoryError);
+            }
+        }
+
+        @TruffleBoundary
+        private static boolean custom(TruffleDecoder decoder, byte[] input, int insize, int newpos) {
+            decoder.inputBuffer.clear();
+            if (decoder.inputBuffer.capacity() < insize) {
+                return false;
+            }
+            decoder.inputBuffer.put(input).limit(insize).position(newpos);
+            return true;
         }
 
         @TruffleBoundary
@@ -595,6 +729,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode,
+                        @Cached InternErrorAction internErrorAction,
                         @Cached HandleDecodingErrorNode errorHandler,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
@@ -612,7 +747,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 try {
                     decoder = new TruffleDecoder(normalizedEncoding, charset, bytes, len, errorAction);
                     while (!decoder.decodingStep(finalData)) {
-                        errorHandler.execute(decoder, errors, input);
+                        errorHandler.execute(decoder, internErrorAction.execute(errors), factory.createBytes(bytes, len));
                     }
                 } catch (OutOfMemoryError e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1036,7 +1171,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "lookup_error", minNumOfPositionalArgs = 1, parameterNames = {"name"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
-    abstract static class LookupErrorNode extends PythonUnaryClinicBuiltinNode {
+    public abstract static class LookupErrorNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1054,7 +1189,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object get(PythonContext ctx, TruffleString name) {
+        protected static Object get(PythonContext ctx, TruffleString name) {
             switch (name.toJavaStringUncached()) {
                 case "strict":
                     return ctx.lookupBuiltinModule(BuiltinNames.T__CODECS).getAttribute(PythonUtils.tsLiteral("PyCodec_StrictErrors"));
