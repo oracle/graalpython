@@ -92,7 +92,7 @@ public class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         return MultibyteStreamWriterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "stream", "errors",})
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "stream", "errors"})
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonTernaryBuiltinNode {
 
@@ -134,7 +134,7 @@ public class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    static abstract class IReadNode extends PNodeWithRaise {
+    abstract static class IReadNode extends PNodeWithRaise {
 
         abstract TruffleString execute(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint);
 

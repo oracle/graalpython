@@ -97,7 +97,7 @@ public class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         return MultibyteStreamWriterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors",})
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBinaryBuiltinNode {
 

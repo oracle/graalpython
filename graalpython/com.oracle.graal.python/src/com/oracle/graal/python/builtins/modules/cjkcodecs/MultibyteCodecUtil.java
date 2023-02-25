@@ -134,7 +134,7 @@ public class MultibyteCodecUtil {
     }
 
     @GenerateInline(false)
-    static abstract class CallErrorCallbackNode extends Node {
+    abstract static class CallErrorCallbackNode extends Node {
 
         abstract Object execute(VirtualFrame frame, Object errors, Object exc);
 
@@ -152,7 +152,7 @@ public class MultibyteCodecUtil {
         }
     }
 
-    static abstract class EncodeErrorNode extends PNodeWithRaise {
+    abstract static class EncodeErrorNode extends PNodeWithRaise {
 
         private static final CharBuffer REPLACEMENT = CharBuffer.wrap("?");
 
@@ -307,7 +307,7 @@ public class MultibyteCodecUtil {
         }
     }
 
-    static abstract class DecodeErrorNode extends PNodeWithRaise {
+    abstract static class DecodeErrorNode extends PNodeWithRaise {
 
         abstract void execute(VirtualFrame frame, MultibyteCodec codec,
                         // MultibyteCodecState state,
@@ -424,7 +424,7 @@ public class MultibyteCodecUtil {
         return null;
     }
 
-    static abstract class EncodeNode extends PNodeWithRaise {
+    abstract static class EncodeNode extends PNodeWithRaise {
 
         abstract PBytes execute(VirtualFrame frame, MultibyteCodec codec, MultibyteCodecState state, MultibyteEncodeBuffer buf, Object errors, int flags,
                         PythonObjectFactory factory);

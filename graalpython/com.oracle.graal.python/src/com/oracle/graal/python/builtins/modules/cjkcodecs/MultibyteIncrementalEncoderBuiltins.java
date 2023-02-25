@@ -109,7 +109,7 @@ public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         return MultibyteStreamWriterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors",})
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "errors"})
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBinaryBuiltinNode {
 
@@ -276,7 +276,7 @@ public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
             // for the encoder object.
             // memcpy(statebytes + statesize, self.state.c, MULTIBYTECODECSTATE);
             // statesize += MULTIBYTECODECSTATE;
-            Object stateobj = fromByteArray.execute(statebytes, false /* little-endian */ );
+            Object stateobj = fromByteArray.execute(statebytes, false);
             // since statebytes.length > 8, we will get a PInt
             writeAttrNode.execute(stateobj, ENCODER_OBJECT_ATTR, self.state);
             return stateobj;
@@ -294,7 +294,7 @@ public class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                         @Cached IntNodes.PyLongAsByteArray asByteArray) {
             int sizeOfStateBytes = 1 + MAXENCPENDING * 4 + MULTIBYTECODECSTATE;
 
-            byte[] statebytes = asByteArray.execute(statelong, sizeOfStateBytes, false /*- little-endian */ );
+            byte[] statebytes = asByteArray.execute(statelong, sizeOfStateBytes, false);
 
             if (statebytes[0] > MAXENCPENDING * 4) {
                 throw raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
