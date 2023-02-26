@@ -165,7 +165,7 @@ auto_replacements = {
    
 def auto_patch(path, dryrun):
     "reads the given file, applies all replacements, and writes back the result if there were changes"
-    
+
     with open(path, mode='r') as f:
         try:
             contents = f.read()
@@ -201,11 +201,16 @@ def auto_patch(path, dryrun):
 
 
 def auto_patch_tree(location, dryrun=False):
-    for root, dirs, files in os.walk(location):
-        for name in files:
-            if '.c' in name or '.h' in name or '.inc' in name:
-                path = os.path.join(root, name)
-                auto_patch(path, dryrun)
+    if os.path.isfile(location):
+        files = [location]
+    else:
+        files = [os.path.join(root, name)
+                 for root, dirs, files in os.walk(location)
+                 for name in files]
+
+    for path in files:
+        if '.c' in path or '.h' in path or '.inc' in path:
+            auto_patch(path, dryrun)
 
 
 if __name__ == "__main__":
