@@ -101,12 +101,28 @@ except AttributeError:
     _RTLD_NOLOAD = ctypes.DEFAULT_MODE
 
 libc_name = find_library("c")
-LIBC = None if libc_name is None else ctypes.CDLL(libc_name, mode=_RTLD_NOLOAD)
+LIBC = None 
+if libc_name is not None:
+    try:
+        LIBC = ctypes.CDLL(libc_name, mode=_RTLD_NOLOAD)
+    except OSError:
+        # we most certainly don't have permission to load a native library
+        # so, this test is irrelevant in this case.
+        pass
 CNT = 0
-
+DLPI_LIST = []
 
 def _callback(info, size, data):
     global CNT
+    global DLPI_LIST
+    # Get the path of the current library
+    filepath = info.contents.dlpi_name
+    if filepath:
+        filepath = filepath.decode("utf-8")
+
+        DLPI_LIST.append(filepath)
+        # Store the library controller if it is supported and selected
+        # self._make_controller_from_path(filepath)
     CNT += 1
     return 0
 
@@ -125,4 +141,5 @@ def test_libc_callbacks():
     data = ctypes.c_char_p(b"")
     LIBC.dl_iterate_phdr(c_match_library_callback, data)
 
+    assert len(DLPI_LIST) > 0, "no library was found!"
     assert CNT > 0, "no callbacks have been called"
