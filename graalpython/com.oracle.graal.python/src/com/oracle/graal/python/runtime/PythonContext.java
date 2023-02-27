@@ -2167,7 +2167,7 @@ public final class PythonContext extends Python3Core {
      *
      * @see GilNode
      */
-    boolean ownsGil() {
+    public boolean ownsGil() {
         return globalInterpreterLock.isHeldByCurrentThread();
     }
 

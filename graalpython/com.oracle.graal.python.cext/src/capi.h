@@ -78,12 +78,6 @@ typedef struct mmap_object mmap_object;
 
 /* Private types are defined here because we need to declare the type cast. */
 
-typedef struct {
-    PyObject_VAR_HEAD
-    int readonly;
-    void *buf_delegate;
-} PyBufferDecorator;
-
 /* Taken from CPython "Objects/descrobject.c".
  * This struct is actually private to 'descrobject.c' but we need to register
  * it to the managed property type. */
@@ -163,6 +157,7 @@ typedef struct {
     BUILTIN(PyFloat_FromDouble, PyObject*, double) \
     BUILTIN(PyFrame_New, PyFrameObject*, PyThreadState*, PyCodeObject*, PyObject*, PyObject*) \
     BUILTIN(PyFrozenSet_New, PyObject*, PyObject*) \
+    BUILTIN(PyGILState_Check, int) \
     BUILTIN(PyGILState_Ensure, PyGILState_STATE) \
     BUILTIN(PyGILState_Release, void, PyGILState_STATE) \
     BUILTIN(PyImport_GetModuleDict, PyObject*) \

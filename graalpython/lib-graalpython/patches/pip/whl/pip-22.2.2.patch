@@ -58,25 +58,101 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..d41572c
+index 0000000..59a5cdb
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,178 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
-+from pip._internal.cli.base_command import Command
-+from pip._vendor.packaging.requirements import Requirement
++import re
++from pathlib import Path
 +
-+NAME_VER_PATTERN = "(.+)-(\\d+)(.\\d+)?(.\\d+)?"
++from pip._vendor.packaging.version import VERSION_PATTERN
++
 +PATCHES_BASE_DIRS = [os.path.join(__graalpython__.core_home, "patches")]
 +if hasattr(__graalpython__, "tdebug"):
 +    PATCHES_BASE_DIRS += os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
 +
 +BUNDLED_WHEELS_PATH = None
 +
++
 +def is_bundled_wheel(location, package_name):
 +    return os.path.exists(os.path.join(location, package_name, '.graalpy_bundled'))
++
++
++def normalize_name(name):
++    return re.sub('[-_.]+', '-', name).lower()
++
++
++class PatchRepository:
++    def __init__(self, base_dirs):
++        self._repository = {}
++        for base_dir in base_dirs:
++            for package_dir in Path(base_dir).iterdir():
++                denormalized_name = package_dir.name
++                normalized_name = normalize_name(denormalized_name)
++                entry = {}
++                for dist_type in ('whl', 'sdist'):
++                    typedir = package_dir / dist_type
++                    if typedir.is_dir():
++                        versions = {}
++                        subentry = {'versions': versions}
++                        for file in typedir.iterdir():
++                            if file.suffix == '.patch':
++                                if file.stem == denormalized_name:
++                                    versions[None] = file
++                                elif (version := file.stem.removeprefix(f'{denormalized_name}-')) != file.stem:
++                                    versions[version] = file
++                            elif file.suffix == '.dir':
++                                subentry['dir'] = file
++                        entry[dist_type] = subentry
++                self._repository[normalized_name] = entry
++
++    def _deep_get(self, *args):
++        res = self._repository
++        for arg in args:
++            res = res.get(arg)
++            if not res:
++                return None
++        return res
++
++    def get_patch_versions(self, name, dist_types=('whl', 'sdist')):
++        versions = set()
++        for dist_type in dist_types:
++            versions |= set(self._deep_get(normalize_name(name), dist_type, 'versions') or {})
++        return versions
++
++    def get_patch(self, name, requested_version, dist_type):
++        versions = self._deep_get(normalize_name(name), dist_type, 'versions')
++        if not versions:
++            return None
++        while True:
++            if patch := versions.get(requested_version):
++                return patch
++            if not requested_version:
++                return None
++            split = requested_version.rsplit('.', 1)
++            if len(split) == 2:
++                requested_version = split[0]
++            else:
++                requested_version = None
++
++    def get_patch_subdir(self, name):
++        dir_file = self._deep_get(normalize_name(name), 'whl', 'dir')
++        if dir_file:
++            with open(dir_file) as f:
++                return f.read().strip()
++
++
++__PATCH_REPOSITORY = None
++
++
++def get_patch_repository():
++    global __PATCH_REPOSITORY
++    if not __PATCH_REPOSITORY:
++        __PATCH_REPOSITORY = PatchRepository(PATCHES_BASE_DIRS)
++    return __PATCH_REPOSITORY
 +
 +
 +def apply_graalpy_patches(filename, location):
@@ -85,134 +161,85 @@ index 0000000..d41572c
 +    Note that 'location' must be the parent directory of the package directory itself.
 +    For example: /path/to/site-package and not /path/to/site-packages/mypackage.
 +    """
-+    import re
-+    import subprocess
 +    import autopatch_capi
++    import subprocess
 +
 +    autopatch_capi.auto_patch_tree(location)
 +
 +    # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
-+    # some packages may have only major.minor or just major version
 +    archive_name = os.path.basename(filename)
-+    name_ver_match = re.search("^{0}.*\\.(tar\\.gz|tar|whl|zip)$".format(NAME_VER_PATTERN), archive_name)
++    name_ver_match = re.match(fr"^(?P<name>.*?)-(?P<version>{VERSION_PATTERN}).*?\.(?P<suffix>tar\.gz|tar|whl|zip)$",
++                              archive_name, re.VERBOSE | re.I)
 +    if not name_ver_match:
-+        print("GraalPy warning: could not parse package name, version, or format from '{}'.\n"
-+              "Could not determine if any GraalPy specific patches need to be applied.".format(archive_name))
++        print(f"GraalPy warning: could not parse package name, version, or format from {archive_name!r}.\n"
++              "Could not determine if any GraalPy specific patches need to be applied.")
 +        return
 +
-+    suffix = name_ver_match.group(5)
-+    package_name = name_ver_match.group(1)
++    name = name_ver_match.group('name')
++    version = name_ver_match.group('version')
++    suffix = name_ver_match.group('suffix')
++    is_wheel = suffix == "whl"
 +
 +    # Avoid applying patches to bundled wheels, they are already patched
-+    if suffix == "whl" and is_bundled_wheel(location, package_name):
++    if is_wheel and is_bundled_wheel(location, name):
 +        return
 +
-+    is_sdist = suffix in ("tar.gz", "zip")
++    print(f"Looking for GraalPy patches for {name}")
++    repository = get_patch_repository()
 +
-+    # NOTE: Following 3 functions are duplicated in ginstall.py:
-+    # creates a search list of a versioned file:
-+    # {name}-X.Y.Z.{suffix}, {name}-X.Y.{suffix}, {name}-X.{suffix}, {name}.{suffix}
-+    # 'versions' is a result of re.search
-+    def list_versioned(pkg_name, versions, dir, suffix):
-+        acc = ""
-+        res = []
-+        for i in range(2, 5):
-+            v = versions.group(i)
-+            if v is not None:
-+                acc = acc + v
-+                res.append(acc)
-+        res.reverse()
-+        res = [os.path.join(dir, pkg_name + "-" + ver + suffix) for ver in res]
-+        res.append(os.path.join(dir, pkg_name + suffix))
-+        return res
-+
-+    def first_existing(pkg_name, versions, dir, suffix):
-+        for filename in list_versioned(pkg_name, versions, dir, suffix):
-+            if os.path.exists(filename):
-+                return filename
-+
-+    def read_first_existing(pkg_name, versions, dir, suffix):
-+        filename = first_existing(pkg_name, versions, dir, suffix)
-+        if filename:
-+            with open(filename, "r") as f:
-+                return f.read()
-+
-+    # end of code duplicated in ginstall.py
-+
-+    def apply_first_existing(dir, suffix, wd=None):
-+        patch_target_dir = location
-+        if wd:
-+            patch_target_dir = os.path.join(location, wd)
-+        filename = first_existing(package_name, name_ver_match, dir, suffix)
-+        if filename:
-+            print("Patching package " + package_name + " using " + filename)
-+            try:
-+                subprocess.run(["patch", "-f", "-d", patch_target_dir, "-p1", "-i", filename], check=True)
-+            except FileNotFoundError:
-+                print(
-+                    "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
-+            except subprocess.CalledProcessError:
-+                print("Applying GraalPy patch failed for %s. The package may still work." % package_name)
-+        elif os.path.isdir(dir):
-+            patchfiles = [f for f in os.listdir(dir) if re.match("{0}{1}$".format(NAME_VER_PATTERN, suffix), f)]
-+            if patchfiles:
-+                print("We have patches to make this package work on GraalVM for some version(s).")
-+                print(
-+                    "If installing or running fails, consider using one of the versions that we have patches for:\n\t",
-+                    "\n\t".join(patchfiles), sep="")
-+
-+    print("Looking for GraalPy patches for " + package_name)
-+
-+    for pbd in PATCHES_BASE_DIRS:
++    if is_wheel:
++        query_dist_types = ('whl',)
 +        # patches intended for binary distribution:
-+        # we may need to change wd if we are actually patching a source distribution
-+        # with a patch intended for a binary distribution, because in the source
-+        # distribution the actual deployed sources may be in a subdirectory (typically "src")
-+        bdist_dir = os.path.join(pbd, package_name, "whl")
-+        bdist_patch_wd = read_first_existing(package_name, name_ver_match, bdist_dir, ".dir") if is_sdist else None
-+        apply_first_existing(bdist_dir, ".patch", bdist_patch_wd)
-+
++        patch = repository.get_patch(name, version, 'whl')
++    else:
++        query_dist_types = ('sdist', 'whl')
 +        # patches intended for source distribution if applicable
-+        if is_sdist:
-+            sdist_dir = os.path.join(pbd, package_name, "sdist")
-+            apply_first_existing(sdist_dir, ".patch")
++        patch = repository.get_patch(name, version, 'sdist')
++        if not patch:
++            patch = repository.get_patch(name, version, 'whl')
++            if subdir := repository.get_patch_subdir(name):
++                # we may need to change wd if we are actually patching a source distribution
++                # with a patch intended for a binary distribution, because in the source
++                # distribution the actual deployed sources may be in a subdirectory (typically "src")
++                location = os.path.join(location, subdir)
++    if patch:
++        print(f"Patching package {name} using {patch}")
++        try:
++            subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", str(patch)], check=True)
++        except FileNotFoundError:
++            print(
++                "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
++        except subprocess.CalledProcessError:
++            print(f"Applying GraalPy patch failed for {name}. The package may still work.")
++    elif versions := repository.get_patch_versions(name, dist_types=query_dist_types):
++        print("We have patches to make this package work on GraalVM for some version(s).")
++        print("If installing or running fails, consider using one of the versions that we have patches for:")
++        for version in versions:
++            print(f'- {version}')
 +
 +
-+AVAILABLE_PATCHES = {}
++def version_match(v1, v2):
++    if v2 is None:
++        # Unversioned patch matches everything
++        return True
++    for c1, c2 in zip(v1.split('.'), v2.split('.')):
++        if c1 != c2:
++            return False
++    return True
 +
 +
 +def apply_graalpy_sort_order(sort_key_func):
 +    def wrapper(self, candidate):
 +        default_sort_key = sort_key_func(self, candidate)
 +        name = candidate.name
-+        if name not in AVAILABLE_PATCHES:
-+            AVAILABLE_PATCHES[name] = find_patched_version(name)
-+        patched_version_candidates = AVAILABLE_PATCHES[name]
++        version = str(candidate.version)
++        patched_version_candidates = get_patch_repository().get_patch_versions(name)
 +        for patched_version in patched_version_candidates:
-+            if candidate.version.release[:len(patched_version)] == patched_version:
++            if version_match(version, patched_version):
 +                return (1,) + default_sort_key
 +        return (0,) + default_sort_key
++
 +    return wrapper
-+
-+
-+def find_patched_version(name):
-+    # we may find a patch directory, and then we should prefer a
-+    # version with a patch from that directory
-+    import re
-+    patchfiles = []
-+    for pbd in PATCHES_BASE_DIRS:
-+        for sfx in ["whl", "sdist"]:
-+            dir = os.path.join(pbd, name, sfx)
-+            if os.path.isdir(dir):
-+                for f in os.listdir(dir):
-+                    if f == f"{name}.patch":
-+                        # generic patch available, don't care about
-+                        # the version
-+                        return []
-+                    if m := re.match(f"{NAME_VER_PATTERN}\\.patch", f):
-+                        version = (int(g.strip(".")) for g in m.group(2, 3, 4) if g)
-+                        patchfiles.append(tuple(version))
-+    return patchfiles
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
 index 78b5c13..18a184c 100644
 --- a/pip/_internal/utils/unpacking.py

@@ -182,6 +182,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_objvoid;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_voidvoidptr;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -1137,7 +1139,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyGC_Disable", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyGC_Enable", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyGC_IsEnabled", ret = Int, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyHash_GetFuncDef", ret = PYHASH_FUNCDEF_PTR, args = {}, call = Ignored, comment = "removed from our pyhash.h")
     @CApiBuiltin(name = "PyImport_AppendInittab", ret = Int, args = {ConstCharPtr, func_objvoid}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_ExecCodeModule", ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
@@ -1480,6 +1481,7 @@ public final class CApiFunction {
                                 throw new RuntimeException(e2);
                             }
                         }
+                        verifyNodeClass(clazz, annotation);
                         result.add(new CApiBuiltinDesc(name, annotation.inlined(), annotation.ret(), annotation.args(), annotation.call(), annotation.forwardsTo(), gen.getCanonicalName()));
                     }
                 } catch (Throwable t) {
@@ -1487,5 +1489,17 @@ public final class CApiFunction {
                 }
             }
         }
+    }
+
+    private static void verifyNodeClass(Class<?> clazz, CApiBuiltin annotation) {
+        for (Method method : clazz.getMethods()) {
+            if (Modifier.isAbstract(method.getModifiers()) && "execute".equals(method.getName())) {
+                if (method.getParameterTypes().length != annotation.args().length) {
+                    throw new AssertionError("Arity mismatch between declared arguments and builtin superclass for " + clazz.getName());
+                }
+                return;
+            }
+        }
+        throw new RuntimeException("Couldn't find execute method for C builtin " + clazz.getName());
     }
 }

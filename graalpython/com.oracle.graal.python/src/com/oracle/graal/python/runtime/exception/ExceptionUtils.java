@@ -98,7 +98,7 @@ public final class ExceptionUtils {
             appendStackLine(stack, location, rootNode, true, lineno);
             return null;
         });
-        printStack(new PrintWriter(System.err), stack);
+        printStack(new PrintWriter(System.err, true), stack);
     }
 
     private static int getLineno(Frame frame) {
@@ -120,7 +120,7 @@ public final class ExceptionUtils {
      */
     @TruffleBoundary
     public static void printPythonLikeStackTrace(Throwable e) {
-        printPythonLikeStackTrace(new PrintWriter(System.err), e);
+        printPythonLikeStackTrace(new PrintWriter(System.err, true), e);
     }
 
     /**
@@ -128,7 +128,7 @@ public final class ExceptionUtils {
      */
     @TruffleBoundary
     public static void printPythonLikeStackTrace(PythonContext context, Throwable e) {
-        printPythonLikeStackTrace(new PrintWriter(context.getEnv().err()), e);
+        printPythonLikeStackTrace(new PrintWriter(context.getEnv().err(), true), e);
     }
 
     private static void printPythonLikeStackTrace(PrintWriter p, Throwable e) {

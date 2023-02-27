@@ -147,7 +147,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
-import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
@@ -199,7 +198,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
@@ -2980,36 +2978,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         static Object threeArgs(@SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
                         @Shared @Cached PySliceNew sliceNode) {
             return sliceNode.execute(start, stop, step);
-        }
-    }
-
-    // buffer([iterable])
-    @Builtin(name = "buffer", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuffer)
-    @GenerateNodeFactory
-    public abstract static class BufferNode extends PythonBuiltinNode {
-        @Child private LookupInheritedSlotNode getSetItemNode;
-
-        @Specialization(guards = "isNoValue(readOnly)")
-        protected PBuffer construct(Object cls, Object delegate, @SuppressWarnings("unused") PNone readOnly) {
-            return factory().createBuffer(cls, delegate, !hasSetItem(delegate));
-        }
-
-        @Specialization
-        protected PBuffer construct(Object cls, Object delegate, boolean readOnly) {
-            return factory().createBuffer(cls, delegate, readOnly);
-        }
-
-        @Fallback
-        public PBuffer doGeneric(@SuppressWarnings("unused") Object cls, Object delegate, @SuppressWarnings("unused") Object readOnly) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_BUFFER_FOR, delegate);
-        }
-
-        public boolean hasSetItem(Object object) {
-            if (getSetItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSetItemNode = insert(LookupInheritedSlotNode.create(SpecialMethodSlot.SetItem));
-            }
-            return getSetItemNode.execute(object) != PNone.NO_VALUE;
         }
     }
 

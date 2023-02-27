@@ -48,8 +48,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.ReferenceTypeNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
@@ -68,7 +68,7 @@ public final class PythonCextWeakrefBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyWeakref_NewRef extends CApiQuaternaryBuiltinNode {
+    abstract static class PyWeakref_NewRef extends CApiBinaryBuiltinNode {
         @Specialization
         public Object refType(Object object, Object callback,
                         @Cached ReferenceTypeNode referenceType) {
@@ -77,7 +77,7 @@ public final class PythonCextWeakrefBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
-    abstract static class PyWeakref_GetObject extends CApiQuaternaryBuiltinNode {
+    abstract static class PyWeakref_GetObject extends CApiUnaryBuiltinNode {
         @Specialization
         public Object call(PReferenceType self) {
             return self.getPyObject();

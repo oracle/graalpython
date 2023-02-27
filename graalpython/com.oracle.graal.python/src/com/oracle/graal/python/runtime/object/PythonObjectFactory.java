@@ -151,7 +151,6 @@ import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
-import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
@@ -1100,14 +1099,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PForeignArrayIterator createForeignArrayIterator(Object iterable) {
         return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, PythonBuiltinClassType.PForeignArrayIterator.getInstanceShape(getLanguage()), iterable));
-    }
-
-    public final PBuffer createBuffer(Object cls, Object iterable, boolean readonly) {
-        return trace(new PBuffer(cls, getShape(cls), iterable, readonly));
-    }
-
-    public final PBuffer createBuffer(Object iterable, boolean readonly) {
-        return trace(new PBuffer(PythonBuiltinClassType.PBuffer, PythonBuiltinClassType.PBuffer.getInstanceShape(getLanguage()), iterable, readonly));
     }
 
     public final PCode createCode(RootCallTarget ct) {

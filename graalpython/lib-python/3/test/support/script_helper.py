@@ -65,8 +65,9 @@ class _PythonRunResult(collections.namedtuple("_PythonRunResult",
         out, err = self.out, self.err
         if len(out) > maxlen:
             out = b'(... truncated stdout ...)' + out[-maxlen:]
-        if len(err) > maxlen:
-            err = b'(... truncated stderr ...)' + err[-maxlen:]
+        # GraalPy change: this often ends up truncating the useful part of Java stacktrace
+        # if len(err) > maxlen:
+        #     err = b'(... truncated stderr ...)' + err[-maxlen:]
         out = out.decode('ascii', 'replace').rstrip()
         err = err.decode('ascii', 'replace').rstrip()
         raise AssertionError("Process return code is %d\n"
