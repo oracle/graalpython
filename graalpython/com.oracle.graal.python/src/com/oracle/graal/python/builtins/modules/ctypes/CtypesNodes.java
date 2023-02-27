@@ -50,20 +50,32 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -145,6 +157,53 @@ public class CtypesNodes {
             // IsSameTypeNode.execute(clazz, type) is done within IsSubtypeNode
             return isSubtypeNode.execute(clazz, type);
         }
+    }
+
+    @GenerateUncached
+    protected abstract static class GetBytesFromNativePointerNode extends PNodeWithContext {
+
+        abstract byte[] execute(Object pointer, int size);
+
+        protected CtypesModuleBuiltins getCtypesMod(PythonContext context) {
+            return (CtypesModuleBuiltins) context.lookupBuiltinModule(T__CTYPES).getBuiltins();
+        }
+
+        @Specialization(guards = "size > 0")
+        byte[] getBytes(Object pointer, int size,
+                        @Shared("c") @Cached(value = "getContext()", allowUncached = true, neverDefault = false) PythonContext context,
+                        @Cached(value = "getCtypesMod(context)", allowUncached = true, neverDefault = false) CtypesModuleBuiltins mod,
+                        @Shared("r") @Cached PRaiseNode raiseNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            try {
+                byte[] bytes = new byte[size];
+                lib.execute(mod.getMemcpyFunction(), context.getEnv().asGuestValue(bytes), pointer, size);
+                return bytes;
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw raiseNode.raise(SystemError, e);
+            }
+        }
+
+        @Specialization(guards = "ignored < 0")
+        byte[] getStringBytes(Object pointer, @SuppressWarnings("unused") int ignored,
+                        @Shared("c") @Cached(value = "getContext()", allowUncached = true, neverDefault = false) PythonContext context,
+                        @Cached(value = "getCtypesMod(context)", allowUncached = true, neverDefault = false) CtypesModuleBuiltins mod,
+                        @Shared("r") @Cached PRaiseNode raiseNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            try {
+                long size = (Long) lib.execute(mod.getStrlenFunction(), pointer);
+                byte[] bytes = new byte[(int) size];
+                lib.execute(mod.getMemcpyFunction(), context.getEnv().asGuestValue(bytes), pointer, size);
+                return bytes;
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw raiseNode.raise(SystemError, e);
+            }
+        }
+
+        @Specialization(guards = "size == 0")
+        static byte[] empty(@SuppressWarnings("unused") Object pointer, @SuppressWarnings("unused") int size) {
+            return EMPTY_BYTE_ARRAY;
+        }
+
     }
 
     protected static final ByteArraySupport SERIALIZE_LE = ByteArraySupport.littleEndian();
