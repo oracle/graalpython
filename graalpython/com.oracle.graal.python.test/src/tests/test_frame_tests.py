@@ -51,6 +51,7 @@ def test_lineno():
 def test_nested_lineno():
     def test_nested():
         return sys._getframe(0)
+
     f = test_nested()
     assert f.f_lineno == 53
 
@@ -67,9 +68,11 @@ def test_read_and_write_locals():
 
 def test_backref():
     a = 'test_backref'
+
     def foo():
         a = 'foo'
         return sys._getframe(0).f_back
+
     assert foo().f_locals['a'] == 'test_backref'
 
     def get_frame():
@@ -106,7 +109,7 @@ def test_backref_recursive():
             return stack
         else:
             # This recursive call will cause
-            return foo(i+1)
+            return foo(i + 1)
 
     def bar():
         return foo(0)
@@ -150,6 +153,15 @@ def test_locals_cells():
     cell = foo.__closure__[0]
 
     assert type(locals()['cell']).__name__ == 'cell'
+
+
+def test_locals_freevar_in_class():
+    x = 1
+
+    class Foo:
+        c = x
+        assert 'c' in locals()
+        assert 'x' not in locals()
 
 # GR-22089
 # def test_backref_from_traceback():

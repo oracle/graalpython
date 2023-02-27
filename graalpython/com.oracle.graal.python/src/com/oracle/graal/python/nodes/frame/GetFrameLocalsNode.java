@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictDelItem;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -55,6 +56,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -140,6 +142,31 @@ public abstract class GetFrameLocalsNode extends Node {
         @Idempotent
         protected static FrameInfo getInfo(FrameDescriptor fd) {
             return (FrameInfo) fd.getInfo();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code PyFrame_LocalsToFast}
+     */
+    public static void syncLocalsBackToFrame(CodeUnit co, PFrame pyFrame, Frame localFrame) {
+        if (!pyFrame.hasCustomLocals()) {
+            PDict localsDict = (PDict) pyFrame.getLocalsDict();
+            copyLocalsArray(localFrame, localsDict, co.varnames, 0, false);
+            copyLocalsArray(localFrame, localsDict, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
+        }
+    }
+
+    private static void copyLocalsArray(Frame localFrame, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        for (int i = 0; i < namesArray.length; i++) {
+            TruffleString varname = namesArray[i];
+            Object value = PyDictGetItem.getUncached().execute(null, localsDict, varname);
+            if (deref) {
+                PCell cell = (PCell) localFrame.getObject(offset + i);
+                cell.setRef(value);
+            } else {
+                localFrame.setObject(offset + i, value);
+            }
         }
     }
 
