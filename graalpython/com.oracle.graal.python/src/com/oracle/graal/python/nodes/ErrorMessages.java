@@ -1473,4 +1473,8 @@ public abstract class ErrorMessages {
     public static final TruffleString NO_RUNNING_EVENT_LOOP = tsLiteral("no running event loop");
     public static final TruffleString CANT_ENTER_TASK_ALREADY_RUNNING = tsLiteral("Cannot enter into task %s while another task %s is being executed.");
     public static final TruffleString TASK_NOT_ENTERED = tsLiteral("Leaving task %s does not match the current task %s.");
+    public static final TruffleString CANNOT_BUILD_PARAMETER = tsLiteral("cannot build parameter");
+    public static final TruffleString ON_CALLING_CTYPES_CALLBACK_FUNCTION = tsLiteral("on calling ctypes callback function");
+    public static final TruffleString ON_CONVERTING_RESULT_OF_CTYPES_CALLBACK_FUNCTION = tsLiteral("on converting result of ctypes callback function");
+    public static final TruffleString MEMORY_LEAK_IN_CALLBACK_FUNCTION = tsLiteral("memory leak in callback function.");
 }
