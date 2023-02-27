@@ -52,7 +52,6 @@ import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuil
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FOUT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.T___ctypes_from_outparam__;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PyCFuncPtrTypeNewNode.converters_from_argtypes;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALL_TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
@@ -222,7 +221,6 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             if (dict == null || dict.argtypes == null) {
                 throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
-
             CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags,
                             pyTypeStgDictNode);
             PyCFuncPtrObject self = factory().createPyCFuncPtrObject(type);
@@ -254,7 +252,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             p.setfunc = null;
             p.ffi_restype = null;
 
-            for (int i = 0; i < nArgs + 1; ++i) {
+            for (int i = 0; i < nArgs; ++i) {
                 p.atypes[i] = null;
             }
             return p;
@@ -272,7 +270,6 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             return dict.ffi_type_pointer;
         }
 
-        @SuppressWarnings("unused")
         CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags,
                         PyTypeStgDictNode pyTypeStgDictNode) {
             int nArgs = converters.length;
@@ -284,7 +281,6 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 Object cnv = converters[i];
                 p.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
             }
-            p.atypes[i] = null;
 
             p.restype = restype;
             if (restype == PNone.NONE) {
@@ -506,7 +502,6 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 }
             }
             CtypesThreadState state = CtypesThreadState.get(getContext(), PythonLanguage.get(this));
-            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().lookupBuiltinModule(T__CTYPES).getBuiltins();
             Object result = callProcNode.execute(frame, pProc,
                             callargs,
                             dict.flags,
@@ -516,8 +511,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                             checker,
                             state,
                             factory(),
-                            getContext(),
-                            ctypesModuleBuiltins);
+                            getContext());
             /* The 'errcheck' protocol */
             if (result != null && errcheck != null) {
                 Object v = callNode.execute(frame, errcheck, result, self, callargs);
