@@ -72,7 +72,7 @@ import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 import java.nio.CharBuffer;
 
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -143,14 +143,14 @@ public class MultibyteCodecUtil {
 
         // call_error_callback
         @Specialization
-        static Object callErrorCallback(VirtualFrame frame, Object errors, Object exc,
+        static Object callErrorCallback(Node inliningTarget, Object errors, Object exc,
                         @Cached(inline = false) CastToTruffleStringNode castToStringNode,
                         @Cached(inline = false) PyUnicodeCheckNode unicodeCheckNode,
-                        @Cached(inline = false) CodecsModuleBuiltins.LookupErrorNode lookupErrorNode,
+                        @Cached PyCodecLookupErrorNode lookupErrorNode,
                         @Cached(inline = false) CallNode callNode) {
             assert (unicodeCheckNode.execute(errors));
             TruffleString str = castToStringNode.execute(errors);
-            Object cb = lookupErrorNode.execute(frame, str);
+            Object cb = lookupErrorNode.execute(inliningTarget, str);
             return callNode.execute(cb, exc);
         }
     }

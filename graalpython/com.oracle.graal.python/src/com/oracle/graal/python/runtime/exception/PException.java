@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinSubtypeObjectProfile;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -56,6 +57,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -267,6 +269,12 @@ public final class PException extends AbstractTruffleException {
 
     public void expect(Node inliningTarget, PythonBuiltinClassType error, IsBuiltinObjectProfile profile) {
         if (!profile.profileException(inliningTarget, this, error)) {
+            throw this;
+        }
+    }
+
+    public void expectSubclass(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType error, IsBuiltinSubtypeObjectProfile profile) {
+        if (!profile.profileException(frame, inliningTarget, this, error)) {
             throw this;
         }
     }
