@@ -168,7 +168,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -554,13 +554,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetItem getItem,
                         @Cached PointerTypeNode callPOINTER,
                         @Cached CallNode callNode,
-                        @Cached GetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode) {
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
-            Object typ = getItem.execute(frame, ctypes.ptrtype_cache, getClassNode.execute(arg));
+            Object typ = getItem.execute(frame, ctypes.ptrtype_cache, getClassNode.execute(inliningTarget, arg));
             if (typ != null) {
                 return callNode.execute(frame, typ, arg);
             }
-            typ = callPOINTER.execute(frame, getClassNode.execute(arg));
+            typ = callPOINTER.execute(frame, getClassNode.execute(inliningTarget, arg));
             return callNode.execute(frame, typ, arg);
         }
     }
@@ -1039,10 +1040,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(CDataObject obj, int offset,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedGetClassNode getClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             if (!pyTypeCheck.isCDataObject(obj)) {
-                return error(null, obj, offset);
+                return error(null, obj, offset, inliningTarget, getClassNode);
             }
             FFIType ffiType = pyObjectStgDictNode.execute(obj).ffi_type_pointer;
             PyCArgObject parg = factory().createCArgObject();
@@ -1062,8 +1065,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object error(VirtualFrame frame, Object obj, Object off) {
-            Object clazz = GetClassNode.getUncached().execute(obj);
+        Object error(VirtualFrame frame, Object obj, Object off,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedGetClassNode getClassNode) {
+            Object clazz = getClassNode.execute(inliningTarget, obj);
             TruffleString name = GetNameNode.getUncached().execute(clazz);
             throw raise(TypeError, BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S, name);
         }
@@ -1733,43 +1738,96 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateUncached
+    abstract static class FailedCastCheckNode extends Node {
+        abstract void execute(Object arg);
+
+        @Specialization
+        static void raiseError(Object arg,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached IsTypeNode isTypeNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetNameNode getNameNode) {
+            Object clazz = isTypeNode.execute(arg) ? arg : getClassNode.execute(inliningTarget, arg);
+            throw raiseNode.raise(TypeError, CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S, getNameNode.execute(clazz));
+        }
+    }
+
+    // cast_check_pointertype
+    @GenerateUncached
+    abstract static class CastCheckPtrTypeNode extends Node {
+
+        private static final char[] sPzUZXO = "sPzUZXO".toCharArray();
+
+        abstract void execute(Object arg);
+
+        protected static boolean isPtrTypeObject(Object arg, PyTypeCheck pyTypeCheck) {
+            return pyTypeCheck.isPyCPointerTypeObject(arg) || pyTypeCheck.isPyCFuncPtrTypeObject(arg);
+        }
+
+        @Specialization(guards = "isPtrTypeObject(arg, pyTypeCheck)")
+        static void fastCheck(@SuppressWarnings("unused") Object arg,
+                        @SuppressWarnings("unused") @Shared @Cached PyTypeCheck pyTypeCheck) {
+        }
+
+        @Specialization(replaces = {"fastCheck"})
+        static void fullcheck(Object arg,
+                        @Shared @Cached PyTypeCheck pyTypeCheck,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached FailedCastCheckNode failedCastCheckNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            if (isPtrTypeObject(arg, pyTypeCheck)) {
+                return;
+            }
+            StgDictObject dict = pyTypeStgDictNode.execute(arg);
+            if (dict != null && dict.proto != null) {
+                if (PGuards.isTruffleString(dict.proto)) {
+                    int code = codePointAtIndexNode.execute((TruffleString) dict.proto, 0, TS_ENCODING);
+                    if (strchr(sPzUZXO, code)) {
+                        /* simple pointer types, c_void_p, c_wchar_p, BSTR, ... */
+                        return;
+                    }
+                }
+            }
+            failedCastCheckNode.execute(arg);
+        }
+    }
+
     @ImportStatic(PGuards.class)
     @GenerateUncached
     protected abstract static class CastFunctionNode extends Node {
 
-        private static final char[] sPzUZXO = "sPzUZXO".toCharArray();
-
         abstract Object execute(Object ptr, Object src, Object ctype);
 
         @Specialization
-        static Object cast(PythonNativeVoidPtr ptr, @SuppressWarnings("unused") PythonNativeVoidPtr src, Object ctype,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached IsTypeNode isTypeNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
+        static Object l(long ptr, @SuppressWarnings("unused") long src, Object ctype,
+                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
+                        @Shared @Cached CallNode callNode) {
+            castCheckPtrTypeNode.execute(ctype);
+            CDataObject result = (CDataObject) callNode.execute(ctype);
+            result.b_ptr = PtrValue.nativePointer(ptr);
+            return result;
+        }
+
+        @Specialization
+        static Object nativeptr(PythonNativeVoidPtr ptr, @SuppressWarnings("unused") PythonNativeVoidPtr src, Object ctype,
+                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
+                        @Shared @Cached CallNode callNode) {
+            castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
             result.b_ptr = PtrValue.nativePointer(ptr.getPointerObject());
             return result;
         }
 
         @Specialization
-        static Object cast(CDataObject ptr, CDataObject src, Object ctype,
+        static Object cdata(CDataObject ptr, CDataObject src, Object ctype,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PythonObjectFactory factory,
-                        @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached IsTypeNode isTypeNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
+                        @Shared @Cached CallNode callNode,
+                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode) {
+            castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
             /*
@@ -1804,16 +1862,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isCDataObject(src)")
-        static Object cast(PtrValue ptr, @SuppressWarnings("unused") Object src, Object ctype,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached IsTypeNode isTypeNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
+        static Object ptr(PtrValue ptr, @SuppressWarnings("unused") Object src, Object ctype,
+                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
+                        @Shared @Cached CallNode callNode) {
+            castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
             /* Should we assert that result is a pointer type? */
@@ -1822,33 +1874,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        static void cast_check_pointertype(Object arg,
-                        PRaiseNode raiseNode,
-                        PyTypeCheck pyTypeCheck,
-                        PyTypeStgDictNode pyTypeStgDictNode,
-                        IsTypeNode isTypeNode,
-                        GetClassNode getClassNode,
-                        GetNameNode getNameNode,
-                        TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            if (pyTypeCheck.isPyCPointerTypeObject(arg)) {
-                return;
-            }
-            if (pyTypeCheck.isPyCFuncPtrTypeObject(arg)) {
-                return;
-            }
-            StgDictObject dict = pyTypeStgDictNode.execute(arg);
-            if (dict != null && dict.proto != null) {
-                if (PGuards.isTruffleString(dict.proto)) {
-                    int code = codePointAtIndexNode.execute((TruffleString) dict.proto, 0, TS_ENCODING);
-                    if (strchr(sPzUZXO, code)) {
-                        /* simple pointer types, c_void_p, c_wchar_p, BSTR, ... */
-                        return;
-                    }
-                }
-            }
-            Object clazz = isTypeNode.execute(arg) ? arg : getClassNode.execute(arg);
-            throw raiseNode.raise(TypeError, CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S, getNameNode.execute(clazz));
-        }
     }
 
     @ExportLibrary(InteropLibrary.class)

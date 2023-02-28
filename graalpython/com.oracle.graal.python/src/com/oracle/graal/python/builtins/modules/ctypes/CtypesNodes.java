@@ -63,10 +63,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameType
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -151,9 +152,10 @@ public class CtypesNodes {
 
         @Specialization
         static boolean checkType(Object receiver, Object type,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
-            Object clazz = getClassNode.execute(receiver);
+            Object clazz = getClassNode.execute(inliningTarget, receiver);
             // IsSameTypeNode.execute(clazz, type) is done within IsSubtypeNode
             return isSubtypeNode.execute(clazz, type);
         }
