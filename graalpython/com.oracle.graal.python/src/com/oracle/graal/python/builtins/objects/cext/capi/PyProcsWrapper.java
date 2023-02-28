@@ -753,6 +753,59 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class DescrGetFunctionWrapper extends PyProcsWrapper {
+
+        public DescrGetFunctionWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage(name = "execute")
+        static class Execute {
+
+            @Specialization(guards = "arguments.length == 3")
+            static Object call(DescrGetFunctionWrapper self, Object[] arguments,
+                            @Cached CallTernaryMethodNode callNode,
+                            @Cached ToJavaNode toJavaNode,
+                            @Cached ToNewRefNode toNewRefNode,
+                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                            @Exclusive @Cached GilNode gil) {
+                boolean mustRelease = gil.acquire();
+                CApiTiming.enter();
+                try {
+                    try {
+                        // convert args
+                        Object receiver = toJavaNode.execute(arguments[0]);
+                        Object obj = toJavaNode.execute(arguments[1]);
+                        Object cls = toJavaNode.execute(arguments[2]);
+
+                        Object result = callNode.execute(null, self.getDelegate(), receiver, obj, cls);
+                        return toNewRefNode.execute(result);
+                    } catch (Throwable t) {
+                        throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getDelegate());
+                    }
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(null, e);
+                    return PythonContext.get(gil).getNativeNull().getPtr();
+                } finally {
+                    CApiTiming.exit(self.timing);
+                    gil.release(mustRelease);
+                }
+            }
+
+            @Specialization(guards = "arguments.length != 3")
+            static Object error(@SuppressWarnings("unused") DescrGetFunctionWrapper self, Object[] arguments) throws ArityException {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(3, 3, arguments.length);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER,POINTER):POINTER";
+        }
+    }
+
     public static GetAttrWrapper createGetAttrWrapper(Object method) {
         assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
         return new GetAttrWrapper(method);

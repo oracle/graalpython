@@ -137,6 +137,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
@@ -169,6 +170,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
@@ -1566,6 +1568,22 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = descrgetfunc, args = {PyTypeObject}, call = Ignored)
+    public abstract static class Py_get_PyTypeObject_tp_descr_get extends PyGetTypeSlotNode {
+
+        Py_get_PyTypeObject_tp_descr_get() {
+            super(T___GET__);
+        }
+    }
+
+    @CApiBuiltin(ret = descrsetfunc, args = {PyTypeObject}, call = Ignored)
+    public abstract static class Py_get_PyTypeObject_tp_descr_set extends PyGetTypeSlotNode {
+
+        Py_get_PyTypeObject_tp_descr_set() {
+            super(T___SET__);
+        }
+    }
+
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_traverse", ret = traverseproc, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_clear", ret = inquiry, args = {PyTypeObject}, call = Ignored)
     public abstract static class Py_get_PyTypeObject_tp_TraverseClear extends CApiUnaryBuiltinNode {
@@ -1927,8 +1945,6 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_methods", ret = PyMethodDef, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_members", ret = PyMemberDef, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_getset", ret = PyGetSetDef, args = {PyTypeObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_get_PyTypeObject_tp_descr_get", ret = descrgetfunc, args = {PyTypeObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_get_PyTypeObject_tp_descr_set", ret = descrsetfunc, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_is_gc", ret = inquiry, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_finalize", ret = destructor, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_vectorcall", ret = vectorcallfunc, args = {PyTypeObject}, call = Ignored)
@@ -2029,9 +2045,12 @@ public final class PythonCextSlotBuiltins {
                     return new PyProcsWrapper.RichcmpFunctionWrapper(value);
                 case objobjargproc:
                 case setattrofunc:
+                case descrsetfunc:
                     return new PyProcsWrapper.SetAttrWrapper(value);
                 case getattrofunc:
                     return new PyProcsWrapper.GetAttrWrapper(value);
+                case descrgetfunc:
+                    return new PyProcsWrapper.DescrGetFunctionWrapper(value);
             }
             throw CompilerDirectives.shouldNotReachHere("descriptor: " + getRetDescriptor());
         }
