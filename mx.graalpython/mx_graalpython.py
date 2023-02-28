@@ -996,8 +996,9 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
         mx.run_mx(["build", "--dependencies", "LLVM_TOOLCHAIN"])
         env.update(LLVM_TOOLCHAIN_VANILLA=mx_subst.path_substitutions.substitute('<path:LLVM_TOOLCHAIN>/bin'))
         mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
-        mx.log("Ensure 'setuptools' is installed")
-        mx.run([python_binary] + args + ["-m", "ginstall", "install", "--user", "pytest"],
+        mx.run([python_binary] + args + ["-m", "ensurepip", "--user"],
+               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        mx.run([python_binary] + args + ["-m", "pip", "install", "--user", "pytest<=6.2.3", "pytest-xdist", "filelock"],
                nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
         if not is_collectiong_coverage():
             # parallelize
