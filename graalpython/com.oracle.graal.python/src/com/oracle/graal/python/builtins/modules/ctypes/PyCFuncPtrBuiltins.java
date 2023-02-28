@@ -56,6 +56,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQ
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALL_TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_ENOUGH_ARGUMENTS;
 import static com.oracle.graal.python.nodes.ErrorMessages.NULL_STGDICT_UNEXPECTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S;
@@ -289,7 +290,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             } else {
                 StgDictObject dict = pyTypeStgDictNode.execute(restype);
                 if (dict == null || dict.setfunc == FieldSet.nil) {
-                    throw raise(TypeError); // , INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
+                    throw raise(TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
                 }
                 p.setfunc = dict.setfunc;
                 p.ffi_restype = dict.ffi_type_pointer;
