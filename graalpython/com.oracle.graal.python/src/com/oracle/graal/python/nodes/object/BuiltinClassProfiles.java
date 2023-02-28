@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.InlineIsBuiltinClassProfileNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfilesFactory.IsBuiltinObjectProfileNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -51,6 +52,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class BuiltinClassProfiles {
@@ -228,4 +230,36 @@ public abstract class BuiltinClassProfiles {
             return isOtherBuiltinClass.execute(inliningTarget, clazz, forbiddenType);
         }
     }
+
+    @GenerateCached(false)
+    @GenerateUncached
+    @GenerateInline
+    public abstract static class IsBuiltinSubtypeObjectProfile extends Node {
+        public static boolean profileObjectUncached(Object obj, PythonBuiltinClassType type) {
+            return IsBuiltinSubtypeObjectProfile.getUncached().profileObject(null, null, obj, type);
+        }
+
+        public static IsBuiltinSubtypeObjectProfile getUncached() {
+            return BuiltinClassProfilesFactory.IsBuiltinSubtypeObjectProfileNodeGen.getUncached();
+        }
+
+        public final boolean profileException(VirtualFrame frame, Node inliningTarget, PException obj, PythonBuiltinClassType type) {
+            return profileObject(frame, inliningTarget, obj.getUnreifiedException(), type);
+        }
+
+        public final boolean profileObject(VirtualFrame frame, Node inliningTarget, Object obj, PythonBuiltinClassType type) {
+            return execute(frame, inliningTarget, obj, type);
+        }
+
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object obj, PythonBuiltinClassType type);
+
+        @Specialization
+        static boolean doIt(VirtualFrame frame, Node inliningTarget, Object obj, PythonBuiltinClassType type,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            Object clazz = getClassNode.execute(inliningTarget, obj);
+            return isSubtypeNode.execute(frame, clazz, type);
+        }
+    }
+
 }
