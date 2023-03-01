@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,6 +101,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -194,6 +196,8 @@ public final class CApiContext extends CExtContext {
     private Object nativeLibrary;
     private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
+
+    private final IdentityHashMap<Object, Object> procWrappers = new IdentityHashMap<>();
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -1049,5 +1053,10 @@ public final class CApiContext extends CExtContext {
 
     public void retainClosure(Object closure) {
         callableClosures.add(closure);
+    }
+
+    @TruffleBoundary
+    public Object getOrCreateProcWrapper(Object callable, Function<Object, Object> factory) {
+        return procWrappers.computeIfAbsent(callable, factory);
     }
 }

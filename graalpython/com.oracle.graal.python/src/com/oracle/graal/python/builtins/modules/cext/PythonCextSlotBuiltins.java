@@ -175,6 +175,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.CharsetEncoder;
@@ -191,7 +192,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNativeMemberInMRONode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
@@ -230,7 +231,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -265,6 +265,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -1979,9 +1980,11 @@ public final class PythonCextSlotBuiltins {
     }
 
     public abstract static class PyGetTypeSlotNode extends CApiUnaryBuiltinNode {
+        private final TruffleString name;
         private @Child LookupAttributeInMRONode lookup;
 
         PyGetTypeSlotNode(TruffleString name) {
+            this.name = name;
             lookup = LookupAttributeInMRONode.create(name);
         }
 
@@ -1996,28 +1999,26 @@ public final class PythonCextSlotBuiltins {
         }
 
         @TruffleBoundary
-        private Object getProcsWrapper(Object object) {
-            Object value = lookup.execute(object);
+        private Object getProcsWrapper(Object type) {
+            Object value = lookup.execute(type);
             if (value instanceof PNone) {
                 // both None and NO_VALUE can appear
                 return getNULL();
             }
-            if (value instanceof PFunction) {
-                PFunction func = (PFunction) value;
-                if (func.procsWrapper != null) {
-                    return func.procsWrapper;
+            /*
+             * The method can be a slot wrapper that already wraps a native slot function. If it
+             * matches in type and slot name, we should unwrap it to avoid nesting multiple
+             * wrappers.
+             */
+            if (value instanceof PBuiltinFunction function) {
+                Object wrappedPtr = ExternalFunctionNodes.tryGetHiddenCallable(function);
+                if (wrappedPtr != null && name.equalsUncached(function.getName(), TS_ENCODING) &&
+                                function.getEnclosingType() != null && IsSubtypeNode.getUncached().execute(type, function.getEnclosingType())) {
+                    return wrappedPtr;
                 }
-                return func.procsWrapper = createProcsWrapper(value);
-            } else if (value instanceof PBuiltinFunction) {
-                PBuiltinFunction func = (PBuiltinFunction) value;
-                if (func.procsWrapper != null) {
-                    return func.procsWrapper;
-                }
-                return func.procsWrapper = createProcsWrapper(value);
-            } else if (value instanceof PythonAbstractNativeObject) {
-                return ((PythonAbstractNativeObject) value).getPtr();
             }
-            throw CompilerDirectives.shouldNotReachHere(value.getClass().getSimpleName());
+            CApiContext cApiContext = PythonContext.get(this).getCApiContext();
+            return cApiContext.getOrCreateProcWrapper(value, this::createProcsWrapper);
         }
 
         private Object createProcsWrapper(Object value) {

@@ -168,6 +168,13 @@ public abstract class ExternalFunctionNodes {
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
+    public static Object tryGetHiddenCallable(PBuiltinFunction function) {
+        if (function.getFunctionRootNode() instanceof MethodDescriptorRoot) {
+            return getHiddenCallable(function.getKwDefaults());
+        }
+        return null;
+    }
+
     public static Object getHiddenCallable(PKeyword[] kwDefaults) {
         if (kwDefaults.length >= KEYWORDS_HIDDEN_CALLABLE.length) {
             PKeyword kwDefault = kwDefaults[0];
