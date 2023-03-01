@@ -268,6 +268,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1410,6 +1411,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             throw new AbstractMethodError(); // Cannot be really abstract b/c Truffle DSL...
         }
 
+        @Idempotent
         protected int getMaxExplodeLoop() {
             return MAX_EXPLODE_LOOP >> depth;
         }

@@ -57,6 +57,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -81,6 +82,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         return null;
     }
 
+    @Idempotent
     protected static boolean hasNoDict(Shape shape) {
         return (shape.getFlags() & PythonObject.HAS_MATERIALIZED_DICT) == 0;
     }

@@ -1,7 +1,8 @@
-diff -u -r a/numpy/__init__.py b/numpy/__init__.py
+diff --git a/numpy/__init__.py b/numpy/__init__.py
+index 45b0cf2..8b3f758 100644
 --- a/numpy/__init__.py
 +++ b/numpy/__init__.py
-@@ -333,7 +333,7 @@
+@@ -333,7 +333,7 @@ else:
          try:
              x = ones(2, dtype=float32)
              if not abs(x.dot(x) - 2.0) < 1e-5:
@@ -10,10 +11,11 @@ diff -u -r a/numpy/__init__.py b/numpy/__init__.py
          except AssertionError:
              msg = ("The current Numpy installation ({!r}) fails to "
                     "pass simple sanity checks. This can be caused for example "
-diff -u -r a/numpy/core/getlimits.py b/numpy/core/getlimits.py
+diff --git a/numpy/core/getlimits.py b/numpy/core/getlimits.py
+index 4149a53..b394c0e 100644
 --- a/numpy/core/getlimits.py
 +++ b/numpy/core/getlimits.py
-@@ -216,90 +216,6 @@
+@@ -216,90 +216,6 @@ def _register_known_types():
      _register_type(float64_ma, b'\x9a\x99\x99\x99\x99\x99\xb9\xbf')
      _float_ma[64] = float64_ma
  
@@ -104,10 +106,11 @@ diff -u -r a/numpy/core/getlimits.py b/numpy/core/getlimits.py
  
  
  def _get_machar(ftype):
-diff -u -r a/numpy/core/setup.py b/numpy/core/setup.py
+diff --git a/numpy/core/setup.py b/numpy/core/setup.py
+index 52b51e4..9c1c901 100644
 --- a/numpy/core/setup.py
 +++ b/numpy/core/setup.py
-@@ -866,7 +866,7 @@
+@@ -866,7 +866,7 @@ def configuration(parent_package='',top_path=None):
      if os.environ.get('NPY_USE_BLAS_ILP64', "0") != "0":
          blas_info = get_info('blas_ilp64_opt', 2)
      else:
@@ -116,10 +119,11 @@ diff -u -r a/numpy/core/setup.py b/numpy/core/setup.py
  
      have_blas = blas_info and ('HAVE_CBLAS', None) in blas_info.get('define_macros', [])
  
-diff -u -r a/numpy/core/setup_common.py b/numpy/core/setup_common.py
+diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
+index ce966dd..73f9fae 100644
 --- a/numpy/core/setup_common.py
 +++ b/numpy/core/setup_common.py
-@@ -129,7 +129,7 @@
+@@ -129,7 +129,7 @@ OPTIONAL_STDFUNCS = ["expm1", "log1p", "acosh", "asinh", "atanh",
          "rint", "trunc", "exp2", "log2", "hypot", "atan2", "pow",
          "copysign", "nextafter", "strtoll", "strtoull", "cbrt"]
  
@@ -128,7 +132,7 @@ diff -u -r a/numpy/core/setup_common.py b/numpy/core/setup_common.py
  OPTIONAL_FILE_FUNCS = ["ftello", "fseeko", "fallocate"]
  OPTIONAL_MISC_FUNCS = ["backtrace", "madvise"]
  
-@@ -302,8 +302,8 @@
+@@ -302,8 +302,8 @@ def check_long_double_representation(cmd):
          # try linking to support CC="gcc -flto" or icc -ipo
          # struct needs to be volatile so it isn't optimized away
          # additionally "clang -flto" requires the foo struct to be used
@@ -139,10 +143,11 @@ diff -u -r a/numpy/core/setup_common.py b/numpy/core/setup_common.py
          src, obj = cmd._compile(body, None, None, 'c')
          cmd.temp_files.append("_configtest")
          cmd.compiler.link_executable([obj], "_configtest")
-diff -u -r a/numpy/core/src/_simd/_simd_convert.inc b/numpy/core/src/_simd/_simd_convert.inc
+diff --git a/numpy/core/src/_simd/_simd_convert.inc b/numpy/core/src/_simd/_simd_convert.inc
+index 46e0444..261cf5b 100644
 --- a/numpy/core/src/_simd/_simd_convert.inc
 +++ b/numpy/core/src/_simd/_simd_convert.inc
-@@ -101,9 +101,8 @@
+@@ -101,9 +101,8 @@ simd_sequence_from_iterable(PyObject *obj, simd_data_type dtype, Py_ssize_t min_
      if (dst == NULL) {
          return NULL;
      }
@@ -153,10 +158,84 @@ diff -u -r a/numpy/core/src/_simd/_simd_convert.inc b/numpy/core/src/_simd/_simd
          npyv_lanetype_u8 *sdst = dst + i * info->lane_size;
          memcpy(sdst, &data.u64, info->lane_size);
      }
-diff -u -r a/numpy/core/src/common/npy_hashtable.c b/numpy/core/src/common/npy_hashtable.c
+diff --git a/numpy/core/src/common/npy_config.h b/numpy/core/src/common/npy_config.h
+index b01eca5..bd491ec 100644
+--- a/numpy/core/src/common/npy_config.h
++++ b/numpy/core/src/common/npy_config.h
+@@ -70,6 +70,68 @@
+ 
+ #endif
+ 
++#if GRAALVM_PYTHON
++
++#undef HAVE_CABS
++#undef HAVE_CABSF
++#undef HAVE_CABSL
++#undef HAVE_CACOS
++#undef HAVE_CACOSF
++#undef HAVE_CACOSH
++#undef HAVE_CACOSHF
++#undef HAVE_CACOSHL
++#undef HAVE_CACOSL
++#undef HAVE_CARG
++#undef HAVE_CARGF
++#undef HAVE_CARGL
++#undef HAVE_CASIN
++#undef HAVE_CASINF
++#undef HAVE_CASINH
++#undef HAVE_CASINHF
++#undef HAVE_CASINHL
++#undef HAVE_CASINL
++#undef HAVE_CATAN
++#undef HAVE_CATANF
++#undef HAVE_CATANH
++#undef HAVE_CATANHF
++#undef HAVE_CATANHL
++#undef HAVE_CATANL
++#undef HAVE_CCOS
++#undef HAVE_CCOSF
++#undef HAVE_CCOSH
++#undef HAVE_CCOSHF
++#undef HAVE_CCOSHL
++#undef HAVE_CCOSL
++#undef HAVE_CEXP
++#undef HAVE_CEXPF
++#undef HAVE_CEXPL
++#undef HAVE_CLOG
++#undef HAVE_CLOGF
++#undef HAVE_CLOGL
++#undef HAVE_CPOW
++#undef HAVE_CPOWF
++#undef HAVE_CPOWL
++#undef HAVE_CSIN
++#undef HAVE_CSINF
++#undef HAVE_CSINH
++#undef HAVE_CSINHF
++#undef HAVE_CSINHL
++#undef HAVE_CSINL
++#undef HAVE_CSQRT
++#undef HAVE_CSQRTF
++#undef HAVE_CSQRTL
++#undef HAVE_CTAN
++#undef HAVE_CTANF
++#undef HAVE_CTANH
++#undef HAVE_CTANHF
++#undef HAVE_CTANHL
++#undef HAVE_CTANL
++
++#undef HAVE_LOG2
++#undef HAVE_HYPOTL
++
++#endif
++
+ /* MSVC _hypot messes with fp precision mode on 32-bit, see gh-9567 */
+ #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(_WIN64)
+ 
+diff --git a/numpy/core/src/common/npy_hashtable.c b/numpy/core/src/common/npy_hashtable.c
+index af9e2df..042d854 100644
 --- a/numpy/core/src/common/npy_hashtable.c
 +++ b/numpy/core/src/common/npy_hashtable.c
-@@ -44,7 +44,8 @@
+@@ -44,7 +44,8 @@ identity_list_hash(PyObject *const *v, int len)
           * Lane is the single item hash, which for us is the rotated pointer.
           * Identical to the python type hash (pointers end with 0s normally).
           */
@@ -166,10 +245,11 @@ diff -u -r a/numpy/core/src/common/npy_hashtable.c b/numpy/core/src/common/npy_h
          Py_uhash_t lane = (y >> 4) | (y << (8 * SIZEOF_VOID_P - 4));
          acc += lane * _NpyHASH_XXPRIME_2;
          acc = _NpyHASH_XXROTATE(acc);
-diff -u -r a/numpy/core/src/common/ufunc_override.c b/numpy/core/src/common/ufunc_override.c
+diff --git a/numpy/core/src/common/ufunc_override.c b/numpy/core/src/common/ufunc_override.c
+index 4fb4d4b..a721a60 100644
 --- a/numpy/core/src/common/ufunc_override.c
 +++ b/numpy/core/src/common/ufunc_override.c
-@@ -79,13 +79,12 @@
+@@ -79,13 +79,12 @@ PyUFunc_HasOverride(PyObject * obj)
  /*
   * Get possible out argument from kwds, and returns the number of outputs
   * contained within it: if a tuple, the number of elements in it, 1 otherwise.
@@ -185,25 +265,26 @@ diff -u -r a/numpy/core/src/common/ufunc_override.c b/numpy/core/src/common/ufun
  {
      if (kwds == NULL) {
          Py_INCREF(Py_None);
-@@ -121,13 +120,11 @@
+@@ -121,13 +120,11 @@ PyUFuncOverride_GetOutObjects(PyObject *kwds, PyObject **out_kwd_obj, PyObject *
              *out_kwd_obj = NULL;
              return -1;
          }
 -        *out_objs = PySequence_Fast_ITEMS(seq);
-         *out_kwd_obj = seq;
+-        *out_kwd_obj = seq;
++        *out_kwd_obj = PyTuple_Pack(1, *out_kwd_obj);
          return PySequence_Fast_GET_SIZE(seq);
      }
      else {
--        Py_INCREF(*out_kwd_obj);
+         Py_INCREF(*out_kwd_obj);
 -        *out_objs = out_kwd_obj;
-+    	*out_kwd_obj = PyTuple_Pack(1, *out_kwd_obj);
          return 1;
      }
  }
-diff -u -r a/numpy/core/src/common/ufunc_override.h b/numpy/core/src/common/ufunc_override.h
+diff --git a/numpy/core/src/common/ufunc_override.h b/numpy/core/src/common/ufunc_override.h
+index 5da95fb..3879016 100644
 --- a/numpy/core/src/common/ufunc_override.h
 +++ b/numpy/core/src/common/ufunc_override.h
-@@ -27,12 +27,11 @@
+@@ -27,12 +27,11 @@ PyUFunc_HasOverride(PyObject *obj);
  /*
   * Get possible out argument from kwds, and returns the number of outputs
   * contained within it: if a tuple, the number of elements in it, 1 otherwise.
@@ -218,10 +299,11 @@ diff -u -r a/numpy/core/src/common/ufunc_override.h b/numpy/core/src/common/ufun
 +PyUFuncOverride_GetOutObjects(PyObject *kwds, PyObject **out_kwd_obj);
  
  #endif  /* NUMPY_CORE_SRC_COMMON_UFUNC_OVERRIDE_H_ */
-diff -u -r a/numpy/core/src/multiarray/_multiarray_tests.c.src b/numpy/core/src/multiarray/_multiarray_tests.c.src
+diff --git a/numpy/core/src/multiarray/_multiarray_tests.c.src b/numpy/core/src/multiarray/_multiarray_tests.c.src
+index 0fcebed..6b8b455 100644
 --- a/numpy/core/src/multiarray/_multiarray_tests.c.src
 +++ b/numpy/core/src/multiarray/_multiarray_tests.c.src
-@@ -2039,22 +2039,7 @@
+@@ -2039,22 +2039,7 @@ get_fpu_mode(PyObject *NPY_UNUSED(self), PyObject *args)
      if (!PyArg_ParseTuple(args, "")) {
          return NULL;
      }
@@ -244,13 +326,15 @@ diff -u -r a/numpy/core/src/multiarray/_multiarray_tests.c.src b/numpy/core/src/
  }
  
  /*
-diff -u -r a/numpy/core/src/multiarray/alloc.c b/numpy/core/src/multiarray/alloc.c
+diff --git a/numpy/core/src/multiarray/alloc.c b/numpy/core/src/multiarray/alloc.c
+index 6f18054..5b6f8b6 100644
 --- a/numpy/core/src/multiarray/alloc.c
 +++ b/numpy/core/src/multiarray/alloc.c
-@@ -106,18 +106,6 @@
+@@ -105,18 +105,6 @@ _npy_alloc_cache(npy_uintp nelem, npy_uintp esz, npy_uint msz,
+     if (p) {
  #ifdef _PyPyGC_AddMemoryPressure
          _PyPyPyGC_AddMemoryPressure(nelem * esz);
- #endif
+-#endif
 -#ifdef NPY_OS_LINUX
 -        /* allow kernel allocating huge pages for large arrays */
 -        if (NPY_UNLIKELY(nelem * esz >= ((1u<<22u))) && _madvise_hugepage) {
@@ -262,14 +346,14 @@ diff -u -r a/numpy/core/src/multiarray/alloc.c b/numpy/core/src/multiarray/alloc
 -             */
 -            madvise((void*)((npy_uintp)p + offset), length, MADV_HUGEPAGE);
 -        }
--#endif
+ #endif
      }
      return p;
- }
-diff -u -r a/numpy/core/src/multiarray/array_coercion.c b/numpy/core/src/multiarray/array_coercion.c
+diff --git a/numpy/core/src/multiarray/array_coercion.c b/numpy/core/src/multiarray/array_coercion.c
+index 562e4f0..849ceba 100644
 --- a/numpy/core/src/multiarray/array_coercion.c
 +++ b/numpy/core/src/multiarray/array_coercion.c
-@@ -1106,7 +1106,6 @@
+@@ -1106,7 +1106,6 @@ PyArray_DiscoverDTypeAndShape_Recursive(
      }
  
      npy_intp size = PySequence_Fast_GET_SIZE(seq);
@@ -277,19 +361,20 @@ diff -u -r a/numpy/core/src/multiarray/array_coercion.c b/numpy/core/src/multiar
  
      if (update_shape(curr_dims, &max_dims,
                       out_shape, 1, &size, NPY_TRUE, flags) < 0) {
-@@ -1128,7 +1127,7 @@
+@@ -1128,7 +1127,7 @@ PyArray_DiscoverDTypeAndShape_Recursive(
      /* Recursive call for each sequence item */
      for (Py_ssize_t i = 0; i < size; i++) {
          max_dims = PyArray_DiscoverDTypeAndShape_Recursive(
 -                objects[i], curr_dims + 1, max_dims,
-+        		PySequence_Fast_GET_ITEM(seq, i), curr_dims + 1, max_dims,
++                PySequence_Fast_GET_ITEM(seq, i), curr_dims + 1, max_dims,
                  out_descr, out_shape, coercion_cache_tail_ptr, fixed_DType,
                  flags, never_copy);
  
-diff -u -r a/numpy/core/src/multiarray/arrayfunction_override.c b/numpy/core/src/multiarray/arrayfunction_override.c
+diff --git a/numpy/core/src/multiarray/arrayfunction_override.c b/numpy/core/src/multiarray/arrayfunction_override.c
+index af53d78..f42c8fc 100644
 --- a/numpy/core/src/multiarray/arrayfunction_override.c
 +++ b/numpy/core/src/multiarray/arrayfunction_override.c
-@@ -72,12 +72,11 @@
+@@ -72,12 +72,11 @@ get_implementing_args_and_methods(PyObject *relevant_args,
  {
      int num_implementing_args = 0;
  
@@ -303,7 +388,7 @@ diff -u -r a/numpy/core/src/multiarray/arrayfunction_override.c b/numpy/core/src
  
          /* Have we seen this type before? */
          for (int j = 0; j < num_implementing_args; j++) {
-@@ -156,12 +155,11 @@
+@@ -156,12 +155,11 @@ NPY_NO_EXPORT PyObject *
  array_function_method_impl(PyObject *func, PyObject *types, PyObject *args,
                             PyObject *kwargs)
  {
@@ -313,14 +398,15 @@ diff -u -r a/numpy/core/src/multiarray/arrayfunction_override.c b/numpy/core/src
      for (Py_ssize_t j = 0; j < length; j++) {
          int is_subclass = PyObject_IsSubclass(
 -            items[j], (PyObject *)&PyArray_Type);
-+        		PySequence_Fast_GET_ITEM(types, j), (PyObject *)&PyArray_Type);
++            PySequence_Fast_GET_ITEM(types, j), (PyObject *)&PyArray_Type);
          if (is_subclass == -1) {
              return NULL;
          }
-diff -u -r a/numpy/core/src/multiarray/compiled_base.c b/numpy/core/src/multiarray/compiled_base.c
+diff --git a/numpy/core/src/multiarray/compiled_base.c b/numpy/core/src/multiarray/compiled_base.c
+index 5853e06..fc7aedd 100644
 --- a/numpy/core/src/multiarray/compiled_base.c
 +++ b/numpy/core/src/multiarray/compiled_base.c
-@@ -1414,78 +1414,78 @@
+@@ -1414,78 +1414,78 @@ arr_add_docstring(PyObject *NPY_UNUSED(dummy), PyObject *args)
          return NULL;
      }
  
@@ -396,85 +482,86 @@ diff -u -r a/numpy/core/src/multiarray/compiled_base.c b/numpy/core/src/multiarr
 -    }
 -
 -#undef _ADDDOC
-+//#define _ADDDOC(doc, name)                                              \
-+//        if (!(doc)) {                                                   \
-+//            doc = docstr;                                               \
-+//            Py_INCREF(str);  /* hold on to string (leaks reference) */  \
-+//        }                                                               \
-+//        else if (strcmp(doc, docstr) != 0) {                            \
-+//            PyErr_Format(PyExc_RuntimeError, "%s method %s", name, msg); \
-+//            return NULL;                                                \
-+//        }
-+//
-+//    if (Py_TYPE(obj) == &PyCFunction_Type) {
-+//        PyCFunctionObject *new = (PyCFunctionObject *)obj;
-+//        _ADDDOC(PyObject_GetDoc((PyObject*)(new)), new->m_ml->ml_name);
-+//    }
-+//    else if (PyObject_TypeCheck(obj, &PyType_Type)) {
-+//        /*
-+//         * We add it to both `tp_doc` and `__doc__` here.  Note that in theory
-+//         * `tp_doc` extracts the signature line, but we currently do not use
-+//         * it.  It may make sense to only add it as `__doc__` and
-+//         * `__text_signature__` to the dict in the future.
-+//         * The dictionary path is only necessary for heaptypes (currently not
-+//         * used) and metaclasses.
-+//         * If `__doc__` as stored in `tp_dict` is None, we assume this was
-+//         * filled in by `PyType_Ready()` and should also be replaced.
-+//         */
-+//        PyTypeObject *new = (PyTypeObject *)obj;
-+//        _ADDDOC(new->tp_doc, new->tp_name);
-+//        if (new->tp_dict != NULL && PyDict_CheckExact(new->tp_dict) &&
-+//                PyDict_GetItemString(new->tp_dict, "__doc__") == Py_None) {
-+//            /* Warning: Modifying `tp_dict` is not generally safe! */
-+//            if (PyDict_SetItemString(new->tp_dict, "__doc__", str) < 0) {
-+//                return NULL;
-+//            }
-+//        }
-+//    }
-+//    else if (Py_TYPE(obj) == &PyMemberDescr_Type) {
-+//        PyMemberDescrObject *new = (PyMemberDescrObject *)obj;
-+//        _ADDDOC(new->d_member->doc, new->d_member->name);
-+//    }
-+//    else if (Py_TYPE(obj) == &PyGetSetDescr_Type) {
-+//        PyGetSetDescrObject *new = (PyGetSetDescrObject *)obj;
-+//        _ADDDOC(new->d_getset->doc, new->d_getset->name);
-+//    }
-+//    else if (Py_TYPE(obj) == &PyMethodDescr_Type) {
-+//        PyMethodDescrObject *new = (PyMethodDescrObject *)obj;
-+//        _ADDDOC(new->d_method->ml_doc, new->d_method->ml_name);
-+//    }
-+//    else {
-+//        PyObject *doc_attr;
-+//
-+//        doc_attr = PyObject_GetAttrString(obj, "__doc__");
-+//        if (doc_attr != NULL && doc_attr != Py_None &&
-+//                (PyUnicode_Compare(doc_attr, str) != 0)) {
-+//            Py_DECREF(doc_attr);
-+//            if (PyErr_Occurred()) {
-+//                /* error during PyUnicode_Compare */
-+//                return NULL;
-+//            }
-+//            PyErr_Format(PyExc_RuntimeError, "object %s", msg);
-+//            return NULL;
-+//        }
-+//        Py_XDECREF(doc_attr);
-+//
-+//        if (PyObject_SetAttrString(obj, "__doc__", str) < 0) {
-+//            PyErr_SetString(PyExc_TypeError,
-+//                            "Cannot set a docstring for that object");
-+//            return NULL;
-+//        }
-+//        Py_RETURN_NONE;
-+//    }
-+//
-+//#undef _ADDDOC
++// #define _ADDDOC(doc, name)                                              \
++//         if (!(doc)) {                                                   \
++//             doc = docstr;                                               \
++//             Py_INCREF(str);  /* hold on to string (leaks reference) */  \
++//         }                                                               \
++//         else if (strcmp(doc, docstr) != 0) {                            \
++//             PyErr_Format(PyExc_RuntimeError, "%s method %s", name, msg); \
++//             return NULL;                                                \
++//         }
++
++//     if (Py_TYPE(obj) == &PyCFunction_Type) {
++//         PyCFunctionObject *new = (PyCFunctionObject *)obj;
++//         _ADDDOC(PyObject_GetDoc((PyObject*)(new)), new->m_ml->ml_name);
++//     }
++//     else if (PyObject_TypeCheck(obj, &PyType_Type)) {
++//         /*
++//          * We add it to both `tp_doc` and `__doc__` here.  Note that in theory
++//          * `tp_doc` extracts the signature line, but we currently do not use
++//          * it.  It may make sense to only add it as `__doc__` and
++//          * `__text_signature__` to the dict in the future.
++//          * The dictionary path is only necessary for heaptypes (currently not
++//          * used) and metaclasses.
++//          * If `__doc__` as stored in `tp_dict` is None, we assume this was
++//          * filled in by `PyType_Ready()` and should also be replaced.
++//          */
++//         PyTypeObject *new = (PyTypeObject *)obj;
++//         _ADDDOC(new->tp_doc, new->tp_name);
++//         if (new->tp_dict != NULL && PyDict_CheckExact(new->tp_dict) &&
++//                 PyDict_GetItemString(new->tp_dict, "__doc__") == Py_None) {
++//             /* Warning: Modifying `tp_dict` is not generally safe! */
++//             if (PyDict_SetItemString(new->tp_dict, "__doc__", str) < 0) {
++//                 return NULL;
++//             }
++//         }
++//     }
++//     else if (Py_TYPE(obj) == &PyMemberDescr_Type) {
++//         PyMemberDescrObject *new = (PyMemberDescrObject *)obj;
++//         _ADDDOC(new->d_member->doc, new->d_member->name);
++//     }
++//     else if (Py_TYPE(obj) == &PyGetSetDescr_Type) {
++//         PyGetSetDescrObject *new = (PyGetSetDescrObject *)obj;
++//         _ADDDOC(new->d_getset->doc, new->d_getset->name);
++//     }
++//     else if (Py_TYPE(obj) == &PyMethodDescr_Type) {
++//         PyMethodDescrObject *new = (PyMethodDescrObject *)obj;
++//         _ADDDOC(new->d_method->ml_doc, new->d_method->ml_name);
++//     }
++//     else {
++//         PyObject *doc_attr;
++
++//         doc_attr = PyObject_GetAttrString(obj, "__doc__");
++//         if (doc_attr != NULL && doc_attr != Py_None &&
++//                 (PyUnicode_Compare(doc_attr, str) != 0)) {
++//             Py_DECREF(doc_attr);
++//             if (PyErr_Occurred()) {
++//                 /* error during PyUnicode_Compare */
++//                 return NULL;
++//             }
++//             PyErr_Format(PyExc_RuntimeError, "object %s", msg);
++//             return NULL;
++//         }
++//         Py_XDECREF(doc_attr);
++
++//         if (PyObject_SetAttrString(obj, "__doc__", str) < 0) {
++//             PyErr_SetString(PyExc_TypeError,
++//                             "Cannot set a docstring for that object");
++//             return NULL;
++//         }
++//         Py_RETURN_NONE;
++//     }
++
++// #undef _ADDDOC
  
      Py_RETURN_NONE;
  }
-diff -u -r a/numpy/core/src/multiarray/iterators.c b/numpy/core/src/multiarray/iterators.c
+diff --git a/numpy/core/src/multiarray/iterators.c b/numpy/core/src/multiarray/iterators.c
+index f959162..2ef579b 100644
 --- a/numpy/core/src/multiarray/iterators.c
 +++ b/numpy/core/src/multiarray/iterators.c
-@@ -1400,7 +1400,11 @@
+@@ -1400,7 +1400,11 @@ arraymultiter_new(PyTypeObject *NPY_UNUSED(subtype), PyObject *args,
          Py_DECREF(fast_seq);
          return multiiter_wrong_number_of_args();
      }
@@ -487,10 +574,11 @@ diff -u -r a/numpy/core/src/multiarray/iterators.c b/numpy/core/src/multiarray/i
      Py_DECREF(fast_seq);
      return ret;
  }
-diff -u -r a/numpy/core/src/multiarray/methods.c b/numpy/core/src/multiarray/methods.c
+diff --git a/numpy/core/src/multiarray/methods.c b/numpy/core/src/multiarray/methods.c
+index 3e8c78d..60eacfb 100644
 --- a/numpy/core/src/multiarray/methods.c
 +++ b/numpy/core/src/multiarray/methods.c
-@@ -1095,7 +1095,6 @@
+@@ -1095,7 +1095,6 @@ any_array_ufunc_overrides(PyObject *args, PyObject *kwds)
      int nin, nout;
      PyObject *out_kwd_obj;
      PyObject *fast;
@@ -498,7 +586,7 @@ diff -u -r a/numpy/core/src/multiarray/methods.c b/numpy/core/src/multiarray/met
  
      /* check inputs */
      nin = PyTuple_Size(args);
-@@ -1106,21 +1105,20 @@
+@@ -1106,21 +1105,20 @@ any_array_ufunc_overrides(PyObject *args, PyObject *kwds)
      if (fast == NULL) {
          return -1;
      }
@@ -523,10 +611,11 @@ diff -u -r a/numpy/core/src/multiarray/methods.c b/numpy/core/src/multiarray/met
              Py_DECREF(out_kwd_obj);
              return 1;
          }
-diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee754.c.src
+diff --git a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee754.c.src
+index 4e6ddb7..c3a43a7 100644
 --- a/numpy/core/src/npymath/ieee754.c.src
 +++ b/numpy/core/src/npymath/ieee754.c.src
-@@ -558,12 +558,10 @@
+@@ -558,12 +558,10 @@ npy_longdouble npy_nextafterl(npy_longdouble x, npy_longdouble y)
  #endif
  
  int npy_clear_floatstatus() {
@@ -541,7 +630,7 @@ diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee7
  }
  
  /*
-@@ -593,45 +591,32 @@
+@@ -593,45 +591,32 @@ int npy_get_floatstatus() {
  
  int npy_get_floatstatus_barrier(char * param)
  {
@@ -593,7 +682,7 @@ diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee7
  }
  
  #elif defined(_AIX) && !defined(__GNUC__)
-@@ -640,45 +625,32 @@
+@@ -640,45 +625,32 @@ void npy_set_floatstatus_invalid(void)
  
  int npy_get_floatstatus_barrier(char *param)
  {
@@ -645,7 +734,7 @@ diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee7
  }
  
  #elif defined(_MSC_VER) || (defined(__osf__) && defined(__alpha)) || \
-@@ -699,23 +671,22 @@
+@@ -699,23 +671,22 @@ static volatile double _npy_floatstatus_x,
  
  void npy_set_floatstatus_divbyzero(void)
  {
@@ -673,7 +762,7 @@ diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee7
  }
  
  /* MS Windows -----------------------------------------------------*/
-@@ -725,32 +696,12 @@
+@@ -725,32 +696,12 @@ void npy_set_floatstatus_invalid(void)
  
  int npy_get_floatstatus_barrier(char *param)
  {
@@ -708,7 +797,7 @@ diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee7
  }
  
  /*  OSF/Alpha (Tru64)  ---------------------------------------------*/
-@@ -760,26 +711,12 @@
+@@ -760,26 +711,12 @@ int npy_clear_floatstatus_barrier(char *param)
  
  int npy_get_floatstatus_barrier(char *param)
  {
@@ -737,7 +826,7 @@ diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee7
  }
  
  #endif
-@@ -791,52 +728,33 @@
+@@ -791,52 +728,33 @@ int npy_clear_floatstatus_barrier(char *param)
  
  int npy_get_floatstatus_barrier(char* param)
  {
@@ -796,22 +885,24 @@ diff -u -r a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee7
  }
  
  #endif
-diff -u -r a/numpy/core/src/umath/extobj.c b/numpy/core/src/umath/extobj.c
+diff --git a/numpy/core/src/umath/extobj.c b/numpy/core/src/umath/extobj.c
+index 6b9a27e..5290d82 100644
 --- a/numpy/core/src/umath/extobj.c
 +++ b/numpy/core/src/umath/extobj.c
-@@ -283,7 +283,7 @@
+@@ -283,7 +283,7 @@ _check_ufunc_fperr(int errmask, PyObject *extobj, const char *ufunc_name) {
      if (!errmask) {
          return 0;
      }
 -    fperr = npy_get_floatstatus_barrier((char*)extobj);
-+    fperr = npy_get_floatstatus_barrier((char*)ufunc_name);
++    fperr = npy_get_floatstatus_barrier("");
      if (!fperr) {
          return 0;
      }
-diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
+diff --git a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
+index 3a8a549..a3d29c4 100644
 --- a/numpy/core/src/umath/loops.c.src
 +++ b/numpy/core/src/umath/loops.c.src
-@@ -668,7 +668,7 @@
+@@ -668,7 +668,7 @@ NPY_NO_EXPORT NPY_GCC_OPT_3 void
  #ifdef @TYPE@_left_shift_needs_clear_floatstatus
      // For some reason, our macOS CI sets an "invalid" flag here, but only
      // for some types.
@@ -820,7 +911,7 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  #endif
  }
  
-@@ -1422,7 +1422,7 @@
+@@ -1422,7 +1422,7 @@ NPY_NO_EXPORT void
              *((npy_bool *)op1) = in1 @OP@ in2;
          }
      }
@@ -829,7 +920,7 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  }
  /**end repeat1**/
  
-@@ -1463,7 +1463,7 @@
+@@ -1463,7 +1463,7 @@ NPY_NO_EXPORT void
              *((npy_bool *)op1) = @func@(in1) != 0;
          }
      }
@@ -838,7 +929,7 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  }
  /**end repeat2**/
  /**end repeat1**/
-@@ -1572,7 +1572,7 @@
+@@ -1572,7 +1572,7 @@ NPY_NO_EXPORT void
          const @type@ in1 = *(@type@ *)ip1;
          *((@type@ *)op1) = in1 > 0 ? 1 : (in1 < 0 ? -1 : (in1 == 0 ? 0 : in1));
      }
@@ -847,7 +938,7 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  }
  
  NPY_NO_EXPORT void
-@@ -1672,7 +1672,7 @@
+@@ -1672,7 +1672,7 @@ LONGDOUBLE_absolute(char **args, npy_intp const *dimensions, npy_intp const *ste
          /* add 0 to clear -0.0 */
          *((npy_longdouble *)op1) = tmp + 0;
      }
@@ -856,7 +947,7 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  }
  
  NPY_NO_EXPORT void
-@@ -1794,7 +1794,7 @@
+@@ -1794,7 +1794,7 @@ HALF_@kind@(char **args, npy_intp const *dimensions, npy_intp const *steps, void
          const npy_half in1 = *(npy_half *)ip1;
          *((npy_bool *)op1) = @func@(in1) != 0;
      }
@@ -865,7 +956,7 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  }
  /**end repeat**/
  
-@@ -2214,7 +2214,7 @@
+@@ -2214,7 +2214,7 @@ NPY_NO_EXPORT void
          const @ftype@ in1i = ((@ftype@ *)ip1)[1];
          *((npy_bool *)op1) = @func@(in1r) @OP@ @func@(in1i);
      }
@@ -874,7 +965,7 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  }
  /**end repeat1**/
  
-@@ -2336,7 +2336,7 @@
+@@ -2336,7 +2336,7 @@ NPY_NO_EXPORT void
          ((@ftype@ *)op1)[0] = in1r;
          ((@ftype@ *)op1)[1] = in1i;
      }
@@ -883,10 +974,11 @@ diff -u -r a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
  }
  /**end repeat1**/
  
-diff -u -r a/numpy/core/src/umath/reduction.c b/numpy/core/src/umath/reduction.c
+diff --git a/numpy/core/src/umath/reduction.c b/numpy/core/src/umath/reduction.c
+index 817f99a..0a4f10b 100644
 --- a/numpy/core/src/umath/reduction.c
 +++ b/numpy/core/src/umath/reduction.c
-@@ -306,7 +306,7 @@
+@@ -306,7 +306,7 @@ PyUFunc_ReduceWrapper(PyArrayMethod_Context *context,
      needs_api |= NpyIter_IterationNeedsAPI(iter);
      if (!(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
          /* Start with the floating-point exception flags cleared */
@@ -895,10 +987,11 @@ diff -u -r a/numpy/core/src/umath/reduction.c b/numpy/core/src/umath/reduction.c
      }
  
      /*
-diff -u -r a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalarmath.c.src
+diff --git a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalarmath.c.src
+index c477f9e..a9a605f 100644
 --- a/numpy/core/src/umath/scalarmath.c.src
 +++ b/numpy/core/src/umath/scalarmath.c.src
-@@ -1237,7 +1237,7 @@
+@@ -1237,7 +1237,7 @@ static PyObject *
      }
  
  #if @fperr@
@@ -907,7 +1000,7 @@ diff -u -r a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalar
  #endif
      if (is_forward) {
          arg1 = PyArrayScalar_VAL(a, @Name@);
-@@ -1272,7 +1272,7 @@
+@@ -1272,7 +1272,7 @@ static PyObject *
  
  #if @fperr@
      /* Check status flag.  If it is set, then look up what to do */
@@ -916,7 +1009,7 @@ diff -u -r a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalar
  #endif
      if (retstatus) {
          int bufsize, errmask;
-@@ -1408,7 +1408,7 @@
+@@ -1408,7 +1408,7 @@ static PyObject *
      }
  
  #if !@isint@
@@ -925,7 +1018,7 @@ diff -u -r a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalar
  #endif
  
      if (is_forward) {
-@@ -1440,7 +1440,7 @@
+@@ -1440,7 +1440,7 @@ static PyObject *
  
  #if !@isint@
      /* Check status flag.  If it is set, then look up what to do */
@@ -934,10 +1027,11 @@ diff -u -r a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalar
  #endif
      if (retstatus) {
          int bufsize, errmask;
-diff -u -r a/numpy/core/src/umath/simd.inc.src b/numpy/core/src/umath/simd.inc.src
+diff --git a/numpy/core/src/umath/simd.inc.src b/numpy/core/src/umath/simd.inc.src
+index b477027..f40bc83 100644
 --- a/numpy/core/src/umath/simd.inc.src
 +++ b/numpy/core/src/umath/simd.inc.src
-@@ -1210,7 +1210,7 @@
+@@ -1210,7 +1210,7 @@ AVX512F_absolute_@TYPE@(@type@ * op,
          ip += 2*@num_lanes@*stride_ip1;
          num_remaining_elements -= 2*@num_lanes@;
      }
@@ -946,10 +1040,11 @@ diff -u -r a/numpy/core/src/umath/simd.inc.src b/numpy/core/src/umath/simd.inc.s
  }
  
  #endif
-diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_object.c
+diff --git a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_object.c
+index fce7d61..001d57e 100644
 --- a/numpy/core/src/umath/ufunc_object.c
 +++ b/numpy/core/src/umath/ufunc_object.c
-@@ -123,7 +123,7 @@
+@@ -123,7 +123,7 @@ PyUFunc_getfperr(void)
       * keep it so just in case third party code relied on the clearing
       */
      char param = 0;
@@ -958,7 +1053,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
  }
  
  #define HANDLEIT(NAME, str) {if (retstatus & NPY_FPE_##NAME) {          \
-@@ -157,7 +157,7 @@
+@@ -157,7 +157,7 @@ PyUFunc_checkfperr(int errmask, PyObject *errobj, int *first)
  {
      /* clearing is done for backward compatibility */
      int retstatus;
@@ -967,7 +1062,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
  
      return PyUFunc_handlefperr(errmask, errobj, retstatus, first);
  }
-@@ -169,7 +169,7 @@
+@@ -169,7 +169,7 @@ NPY_NO_EXPORT void
  PyUFunc_clearfperr()
  {
      char param = 0;
@@ -976,7 +1071,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
  }
  
  /*
-@@ -1341,7 +1341,7 @@
+@@ -1341,7 +1341,7 @@ try_trivial_single_output_loop(PyArrayMethod_Context *context,
      }
  
      if (!(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
@@ -985,7 +1080,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
      }
      if (!(flags & NPY_METH_REQUIRES_PYAPI)) {
          NPY_BEGIN_THREADS_THRESHOLDED(count);
-@@ -1589,7 +1589,7 @@
+@@ -1589,7 +1589,7 @@ execute_ufunc_loop(PyArrayMethod_Context *context, int masked,
      NPY_BEGIN_THREADS_DEF;
  
      if (!(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
@@ -994,7 +1089,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
      }
      if (!needs_api && !(flags & NPY_METH_REQUIRES_PYAPI)) {
          NPY_BEGIN_THREADS_THRESHOLDED(full_size);
-@@ -2518,7 +2518,7 @@
+@@ -2518,7 +2518,7 @@ PyUFunc_GeneralizedFunctionInternal(PyUFuncObject *ufunc,
      needs_api |= NpyIter_IterationNeedsAPI(iter);
      if (!(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
          /* Start with the floating-point exception flags cleared */
@@ -1003,7 +1098,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
      }
  
      NPY_UF_DBG_PRINT("Executing inner loop\n");
-@@ -3195,7 +3195,7 @@
+@@ -3195,7 +3195,7 @@ PyUFunc_Accumulate(PyUFuncObject *ufunc, PyArrayObject *arr, PyArrayObject *out,
      needs_api = (flags & NPY_METH_REQUIRES_PYAPI) != 0;
      if (!(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
          /* Start with the floating-point exception flags cleared */
@@ -1012,7 +1107,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
      }
  
      /*
-@@ -3616,7 +3616,7 @@
+@@ -3616,7 +3616,7 @@ PyUFunc_Reduceat(PyUFuncObject *ufunc, PyArrayObject *arr, PyArrayObject *ind,
      needs_api = (flags & NPY_METH_REQUIRES_PYAPI) != 0;
      if (!(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
          /* Start with the floating-point exception flags cleared */
@@ -1021,7 +1116,7 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
      }
  
      /*
-@@ -6126,7 +6126,7 @@
+@@ -6126,7 +6126,7 @@ ufunc_at(PyUFuncObject *ufunc, PyObject *args)
      needs_api |= NpyIter_IterationNeedsAPI(iter_buffer);
      if (!(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
          /* Start with the floating-point exception flags cleared */
@@ -1030,10 +1125,11 @@ diff -u -r a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_ob
      }
  
      if (!needs_api) {
-diff -u -r a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
+diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
+index f0487cb..647ed72 100644
 --- a/numpy/distutils/ccompiler.py
 +++ b/numpy/distutils/ccompiler.py
-@@ -684,7 +684,7 @@
+@@ -684,7 +684,7 @@ def CCompiler_cxx_compiler(self):
  
      cxx = copy(self)
      cxx.compiler_cxx = cxx.compiler_cxx
@@ -1042,10 +1138,110 @@ diff -u -r a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
                        sanitize_cxx_flags(cxx.compiler_so[1:])
      if (sys.platform.startswith(('aix', 'os400')) and
              'ld_so_aix' in cxx.linker_so[0]):
-diff -u -r a/numpy/linalg/setup.py b/numpy/linalg/setup.py
+diff --git a/numpy/distutils/fcompiler/__init__.py b/numpy/distutils/fcompiler/__init__.py
+index ecba3e5..0801851 100644
+--- a/numpy/distutils/fcompiler/__init__.py
++++ b/numpy/distutils/fcompiler/__init__.py
+@@ -749,7 +749,7 @@ _default_compilers = (
+     ('win32', ('gnu', 'intelv', 'absoft', 'compaqv', 'intelev', 'gnu95', 'g95',
+                'intelvem', 'intelem', 'flang')),
+     ('cygwin.*', ('gnu', 'intelv', 'absoft', 'compaqv', 'intelev', 'gnu95', 'g95')),
+-    ('linux.*', ('arm', 'gnu95', 'intel', 'lahey', 'pg', 'nv', 'absoft', 'nag',
++    ('linux.*', ('flang-new', 'arm', 'gnu95', 'intel', 'lahey', 'pg', 'nv', 'absoft', 'nag',
+                  'vast', 'compaq', 'intele', 'intelem', 'gnu', 'g95', 
+                  'pathf95', 'nagfor', 'fujitsu')),
+     ('darwin.*', ('gnu95', 'nag', 'nagfor', 'absoft', 'ibm', 'intel', 'gnu',
+diff --git a/numpy/distutils/fcompiler/llvm.py b/numpy/distutils/fcompiler/llvm.py
+new file mode 100644
+index 0000000..fc08917
+--- /dev/null
++++ b/numpy/distutils/fcompiler/llvm.py
+@@ -0,0 +1,80 @@
++# https://flang.llvm.org/docs/
++
++import sys
++import functools
++import subprocess
++from numpy.distutils.fcompiler import FCompiler
++from os.path import join, normpath
++
++compilers = ['FlangNewFCompiler']
++
++
++class FlangNewFCompiler(FCompiler):
++    compiler_type = 'flang-new'
++    description = 'flang LLVM compiler'
++    version_pattern = r'\s*flang-new version (?P<version>[\d.-]+).*'
++
++    executables = {
++        'version_cmd': ["<F77>", "--version"],
++        'compiler_f77': ["flang-new", "-flto=full"],
++        'compiler_fix': ["flang-new", "-flto=full", "-ffixed-form"],
++        'compiler_f90': ["flang-new", "-flto=full"],
++        'linker_so': ["<F90>", "-fuse-ld=lld"],
++        'archiver': ["llvm-ar", "-rc"],
++        'ranlib': ["llvm-ranlib"],
++    }
++    
++    module_dir_switch = '-module-dir '
++    module_include_switch = '-I'
++
++    def get_libraries(self):
++        opt = FCompiler.get_libraries(self)
++        return opt
++
++    def get_lib_dir(self):
++        try:
++            output = subprocess.check_output(self.compiler_f77 + ['--version'])
++        except (OSError, subprocess.CalledProcessError):
++            pass
++        else:
++            flang_dir = output.splitlines()[-1].split()[-1].strip().decode("utf-8")
++            return normpath(join(flang_dir, '..', 'lib'))
++        return None
++
++    @functools.lru_cache(maxsize=128)
++    def get_library_dirs(self):
++        """List of compiler library directories."""
++        opt = FCompiler.get_library_dirs(self)
++        opt.append(self.get_lib_dir())
++        return opt
++        
++    def get_flags(self):
++        return ['']
++
++    def get_flags_free(self):
++        return []
++
++    def get_flags_opt(self):
++        return ['-O3']
++
++    def get_flags_debug(self):
++        return ['-g']
++
++    def get_flags_linker_so(self):
++        return ["-shared", '-fPIC']
++
++    def get_flags_arch(self):
++        return []
++
++    def runtime_library_dir_option(self, dir):
++        raise NotImplementedError
++
++
++if __name__ == '__main__':
++    from distutils import log
++    log.set_verbosity(2)
++    from numpy.distutils import customized_fcompiler
++    if 'flang-new' in sys.argv:
++        print(customized_fcompiler(compiler='flang-new').get_version())
++    else:
++        print(customized_fcompiler(compiler='gfortran').get_version())
+diff --git a/numpy/linalg/setup.py b/numpy/linalg/setup.py
+index dc62dff..5e0e0df 100644
 --- a/numpy/linalg/setup.py
 +++ b/numpy/linalg/setup.py
-@@ -51,6 +51,7 @@
+@@ -51,6 +51,7 @@ def configuration(parent_package='', top_path=None):
          lapack_info = numpy_linalg_lapack_lite().get_info(2)
  
      def get_lapack_lite_sources(ext, build_dir):
@@ -1053,10 +1249,11 @@ diff -u -r a/numpy/linalg/setup.py b/numpy/linalg/setup.py
          if use_lapack_lite:
              print("### Warning:  Using unoptimized lapack ###")
              return all_sources
-diff -u -r a/numpy/linalg/umath_linalg.cpp b/numpy/linalg/umath_linalg.cpp
+diff --git a/numpy/linalg/umath_linalg.cpp b/numpy/linalg/umath_linalg.cpp
+index bbb4bb8..d188e40 100644
 --- a/numpy/linalg/umath_linalg.cpp
 +++ b/numpy/linalg/umath_linalg.cpp
-@@ -414,7 +414,7 @@
+@@ -414,7 +414,7 @@ static inline int
  get_fp_invalid_and_clear(void)
  {
      int status;
@@ -1065,7 +1262,7 @@ diff -u -r a/numpy/linalg/umath_linalg.cpp b/numpy/linalg/umath_linalg.cpp
      return !!(status & NPY_FPE_INVALID);
  }
  
-@@ -425,7 +425,7 @@
+@@ -425,7 +425,7 @@ set_fp_invalid_or_clear(int error_occurred)
          npy_set_floatstatus_invalid();
      }
      else {
@@ -1074,10 +1271,20 @@ diff -u -r a/numpy/linalg/umath_linalg.cpp b/numpy/linalg/umath_linalg.cpp
      }
  }
  
-diff -u -r a/setup.py b/setup.py
+diff --git a/setup.py b/setup.py
+index 3aa7504..057fda2 100755
 --- a/setup.py
 +++ b/setup.py
-@@ -451,7 +451,8 @@
+@@ -239,6 +239,8 @@ def get_build_overrides():
+             if _needs_gcc_c99_flag(self):
+                 if '-std=c99' not in ext.extra_compile_args:
+                     ext.extra_compile_args.append('-std=c99')
++                if '--disable-optimization' not in ext.extra_comppile_args:
++                    ext.extra_compile_args.append('--disable-optimization')
+             build_ext.build_extension(self, ext)
+     return new_build_clib, new_build_ext
+ 
+@@ -451,7 +453,8 @@ def setup_package():
          version=versioneer.get_version(),
          cmdclass=cmdclass,
          python_requires='>=3.8',
@@ -1087,15 +1294,17 @@ diff -u -r a/setup.py b/setup.py
          entry_points={
              'console_scripts': f2py_cmds,
              'array_api': ['numpy = numpy.array_api'],
-diff -u -r a/tools/cythonize.py b/tools/cythonize.py
+diff --git a/tools/cythonize.py b/tools/cythonize.py
+index 002b2fa..367ec0a 100755
 --- a/tools/cythonize.py
 +++ b/tools/cythonize.py
-@@ -48,9 +48,18 @@
+@@ -48,10 +48,19 @@ def process_pyx(fromfile, tofile):
      if tofile.endswith('.cxx'):
          flags.append('--cplus')
  
 -    subprocess.check_call(
 -        [sys.executable, '-m', 'cython'] + flags + ["-o", tofile, fromfile])
+-
 +    # subprocess.check_call(
 +    #     [sys.executable, '-m', 'cython'] + flags + ["-o", tofile, fromfile])
  
@@ -1108,6 +1317,7 @@ diff -u -r a/tools/cythonize.py b/tools/cythonize.py
 +            sys.exit(retcode)
 +    finally:
 +        sys.argv[1:] = prev_argv
- 
++    
  def process_tempita_pyx(fromfile, tofile):
      import npy_tempita as tempita
+ 

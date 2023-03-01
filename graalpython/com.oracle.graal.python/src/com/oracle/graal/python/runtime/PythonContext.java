@@ -168,6 +168,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -578,6 +579,7 @@ public final class PythonContext extends Python3Core {
             return curThreadState;
         }
 
+        @NonIdempotent
         PythonThreadState getThreadState() {
             return PythonLanguage.get(this).getThreadStateLocal().get();
         }

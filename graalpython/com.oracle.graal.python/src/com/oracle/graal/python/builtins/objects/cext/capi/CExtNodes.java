@@ -187,6 +187,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1186,6 +1187,7 @@ public abstract class CExtNodes {
             return output;
         }
 
+        @Idempotent
         static int effectiveLen(int len, int offset) {
             return len - offset;
         }
@@ -1238,6 +1240,7 @@ public abstract class CExtNodes {
             return output;
         }
 
+        @Idempotent
         static int effectiveLen(int len, int offset) {
             return len - offset;
         }

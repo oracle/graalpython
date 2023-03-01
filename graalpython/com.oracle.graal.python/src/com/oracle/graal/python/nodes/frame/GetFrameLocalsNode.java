@@ -52,6 +52,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -136,6 +137,7 @@ public abstract class GetFrameLocalsNode extends Node {
             }
         }
 
+        @Idempotent
         protected static FrameInfo getInfo(FrameDescriptor fd) {
             return (FrameInfo) fd.getInfo();
         }

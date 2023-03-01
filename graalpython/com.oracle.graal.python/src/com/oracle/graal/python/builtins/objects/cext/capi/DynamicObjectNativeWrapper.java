@@ -214,6 +214,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -329,10 +330,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
+        @Idempotent
         protected static boolean isObBase(String key) {
             return OB_BASE.getMemberNameJavaString().equals(key);
         }
 
+        @Idempotent
         protected static boolean isObRefcnt(String key) {
             return OB_REFCNT.getMemberNameJavaString().equals(key);
         }
@@ -2163,14 +2166,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 }
             }
 
+            @Idempotent
             protected static boolean isObBase(String key) {
                 return OB_BASE.getMemberNameJavaString().equals(key);
             }
 
+            @Idempotent
             protected static boolean isObRefcnt(String key) {
                 return OB_REFCNT.getMemberNameJavaString().equals(key);
             }
 
+            @Idempotent
             protected static boolean isObType(String key) {
                 return OB_TYPE.getMemberNameJavaString().equals(key);
             }

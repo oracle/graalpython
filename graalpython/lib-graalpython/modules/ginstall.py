@@ -221,7 +221,13 @@ def known_packages():
         install_with_pip("joblib==1.1.0", **kwargs)
 
     @pip_package()
+    def cppy(**kwargs):
+        setuptools_scm(**kwargs)
+        install_from_pypi("cppy==1.2.1", **kwargs)
+
+    @pip_package()
     def kiwisolver(**kwargs):
+        cppy(**kwargs)
         install_with_pip("kiwisolver==1.4.4", **kwargs)
 
     @pip_package()
@@ -330,7 +336,7 @@ def known_packages():
     @pip_package()
     def setuptools_scm(**kwargs):
         setuptools(**kwargs)
-        install_from_pypi("setuptools_scm==1.15.0", **kwargs)
+        install_with_pip("setuptools_scm==7.1.0", **kwargs)
 
     @pip_package()
     def numpy(**kwargs):
@@ -509,10 +515,6 @@ library_dirs = {lapack_lib}"""
     def cycler(**kwargs):
         six(**kwargs)
         install_from_pypi("cycler==0.11.0", **kwargs)
-
-    @pip_package()
-    def cppy(**kwargs):
-        install_from_pypi("cppy==1.1.0", **kwargs)
 
     @pip_package()
     def tox(**kwargs):

@@ -49,6 +49,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeMember {
@@ -355,6 +356,7 @@ public enum NativeMember {
         return null;
     }
 
+    @Idempotent
     public static boolean isValid(String name) {
         return byName(name) != null;
     }
