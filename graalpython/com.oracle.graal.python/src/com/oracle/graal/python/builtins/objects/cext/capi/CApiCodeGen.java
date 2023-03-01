@@ -104,22 +104,29 @@ public final class CApiCodeGen {
             return Arrays.stream(arguments).anyMatch(a -> a == ArgDescriptor.VARARGS);
         }
 
-        void generateUnimplemented(List<String> lines) {
+        private void generateFunctionHeader(List<String> lines) {
             lines.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
                             "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+        }
+
+        private String getTargetDefinition() {
+            return returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;";
+        }
+
+        void generateUnimplemented(List<String> lines) {
+            generateFunctionHeader(lines);
             lines.add("    unimplemented(\"" + name + "\"); exit(-1);");
             lines.add("}");
         }
 
-        void generateC(List<String> lines) {
-            lines.add(returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;");
-            lines.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
-                            "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+        void generateForward(List<String> lines, boolean direct) {
+            generateFunctionHeader(lines);
             String line = "    ";
             if (!returnType.isVoid()) {
                 line += returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ";
             }
-            lines.add(line + targetName() + "(" + mapArgs(i -> argName(i), ", ") + ");");
+            String target = direct ? "Graal" + name : targetName();
+            lines.add(line + target + "(" + mapArgs(i -> argName(i), ", ") + ");");
 
             if (returnType.isVoid()) {
                 if (returnType == VoidNoReturn) {
@@ -132,7 +139,7 @@ public final class CApiCodeGen {
         }
 
         private void generateVarargForward(List<String> lines, String forwardFunction) {
-            lines.add("PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+            generateFunctionHeader(lines);
             lines.add("    va_list args;");
             lines.add("    va_start(args, " + argName(arguments.length - 2) + ");");
             String line = "    ";
@@ -305,8 +312,11 @@ public final class CApiCodeGen {
                         missingVarargForwards.add(function.name);
                     }
                 }
+            } else if (function.call == Direct && Arrays.stream(function.arguments).noneMatch(arg -> arg == ConstCharPtrAsTruffleString)) {
+                function.generateForward(lines, true);
             } else {
-                function.generateC(lines);
+                lines.add(function.getTargetDefinition());
+                function.generateForward(lines, false);
                 toBeResolved.add(function);
             }
         }
