@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -149,7 +150,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         protected Object execute(Object[] arguments,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached CallBinaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -190,7 +191,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         protected Object execute(Object[] arguments,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached CallBinaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -231,7 +232,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         protected Object execute(Object[] arguments,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -275,7 +276,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected Object execute(Object[] arguments,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -315,7 +316,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected int execute(Object[] arguments,
                         @Cached CallTernaryMethodNode callTernaryMethodNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ConditionProfile arityProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -362,7 +363,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
+                            @Cached NativeToPythonNode toJavaNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -419,7 +420,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ToNewRefNode toNewRefNode,
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
+                            @Cached NativeToPythonNode toJavaNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -474,7 +475,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
+                            @Cached NativeToPythonNode toJavaNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -530,7 +531,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
+                            @Cached NativeToPythonNode toJavaNode,
                             @Cached ToNewRefNode toNewRefNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
@@ -582,7 +583,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached CallTernaryMethodNode callNode,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -631,7 +632,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         protected Object execute(Object[] arguments,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached CallBinaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -673,7 +674,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected Object execute(Object[] arguments,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaIntLossyNode castLossy,
@@ -719,7 +720,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected Object execute(Object[] arguments,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();

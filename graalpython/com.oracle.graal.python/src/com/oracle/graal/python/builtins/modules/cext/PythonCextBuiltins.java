@@ -183,6 +183,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
@@ -717,9 +718,7 @@ public final class PythonCextBuiltins {
                     assert arguments.length == argNodes.length;
 
                     Object[] argCast = new Object[argNodes.length];
-                    for (int i = 0; i < argNodes.length; i++) {
-                        argCast[i] = argNodes[i] == null ? arguments[i] : argNodes[i].execute(arguments[i]);
-                    }
+                    castArguments(arguments, argCast);
                     Object result = builtinNode.execute(argCast);
                     if (retNode != null) {
                         result = retNode.execute(result);
@@ -750,6 +749,13 @@ public final class PythonCextBuiltins {
                 }
             } finally {
                 CApiTiming.exit(self.timing);
+            }
+        }
+
+        @ExplodeLoop
+        private void castArguments(Object[] arguments, Object[] argCast) {
+            for (int i = 0; i < argNodes.length; i++) {
+                argCast[i] = argNodes[i] == null ? arguments[i] : argNodes[i].execute(arguments[i]);
             }
         }
     }
@@ -1503,7 +1509,7 @@ public final class PythonCextBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.fine(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
@@ -1514,7 +1520,7 @@ public final class PythonCextBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.fine(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
     }

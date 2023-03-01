@@ -573,6 +573,7 @@ char _PyByteArray_empty_string[] = "";
 #include "complexobject.c"
 #include "dictobject.c"
 #include "modsupport_shared.c"
+#include "object_shared.c"
 #include "pylifecycle.c"
 
 /*

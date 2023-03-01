@@ -103,6 +103,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.Fr
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolver;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -1001,7 +1003,7 @@ public abstract class CExtNodes {
                         rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
         static Object getNativeClassByMember(PythonAbstractNativeObject object,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberNameJavaString())));
@@ -1015,7 +1017,7 @@ public abstract class CExtNodes {
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Cached PCallCapiFunction callGetObTypeNode,
                         @Cached CExtNodes.GetLLVMType getLLVMType,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             Object typedPtr = callGetObTypeNode.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
             return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberNameJavaString())));
@@ -1757,7 +1759,7 @@ public abstract class CExtNodes {
         static Object getByMember(PythonAbstractNativeObject object, NativeMember member,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
-                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") CExtAsPythonObjectNode toJavaNode)
                         throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return toJavaNode.execute(lib.readMember(object.getPtr(), member.getMemberNameJavaString()));
@@ -1771,7 +1773,7 @@ public abstract class CExtNodes {
                         @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached CExtNodes.GetLLVMType getLLVMType,
-                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") CExtAsPythonObjectNode toJavaNode)
                         throws UnknownIdentifierException, UnsupportedMessageException {
             Object typedPtr = callGetObTypeNode.call(FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyTypeObject));
             return toJavaNode.execute(lib.readMember(typedPtr, member.getMemberNameJavaString()));
@@ -1782,7 +1784,7 @@ public abstract class CExtNodes {
                         @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
                         @SuppressWarnings("unused") @Cached TruffleString.ConcatNode concatNode,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
+                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") CExtAsPythonObjectNode toJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
             return toJavaNode.execute(callMemberGetterNode.call(cachedMemberName.getGetterFunctionName(), toSulong.execute(self)));
         }
@@ -1791,7 +1793,7 @@ public abstract class CExtNodes {
         static Object doGeneric(Object self, NativeMember memberName,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached CharPtrToJavaNode charPtrToJavaNode,
                         @Cached VoidPtrToJavaNode voidPtrToJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
@@ -1823,10 +1825,10 @@ public abstract class CExtNodes {
         }
 
         @NeverDefault
-        static ToJavaBaseNode createForMember(NativeMember member) {
+        static CExtAsPythonObjectNode createForMember(NativeMember member) {
             switch (member.getType()) {
                 case OBJECT:
-                    return ToJavaNodeGen.create();
+                    return NativeToPythonNodeGen.create();
                 case CSTRING:
                     return CharPtrToJavaNodeGen.create();
                 case PRIMITIVE:
@@ -1836,10 +1838,10 @@ public abstract class CExtNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        static ToJavaBaseNode getUncachedForMember(NativeMember member) {
+        static CExtAsPythonObjectNode getUncachedForMember(NativeMember member) {
             switch (member.getType()) {
                 case OBJECT:
-                    return ToJavaNodeGen.getUncached();
+                    return NativeToPythonNodeGen.getUncached();
                 case CSTRING:
                     return CharPtrToJavaNodeGen.getUncached();
                 case PRIMITIVE:

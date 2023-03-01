@@ -52,9 +52,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PCallCapiFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsFixedNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeBooleanNodeGen;
@@ -189,7 +189,7 @@ public class CApiMemberAccessNodes {
                 return NativeUnsignedPrimitiveAsPythonObjectNodeGen.create();
             case T_OBJECT:
             case T_OBJECT_EX:
-                return AsPythonObjectNodeGen.create();
+                return NativeToPythonNodeGen.create();
         }
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
