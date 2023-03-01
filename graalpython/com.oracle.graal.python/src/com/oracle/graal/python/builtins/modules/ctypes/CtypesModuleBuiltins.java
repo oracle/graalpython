@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ArgError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtr;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointerType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins.paramFunc;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
@@ -109,6 +108,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.GetBytesFromNativePointerNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
@@ -1099,8 +1099,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                             null,
                             ctypes,
                             factory(),
-                            getContext(),
-                            (CtypesModuleBuiltins) ctypesModule.getBuiltins());
+                            getContext());
         }
     }
 
@@ -1149,8 +1148,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                             null,
                             ctypes,
                             factory(),
-                            getContext(),
-                            (CtypesModuleBuiltins) ctypesModule.getBuiltins());
+                            getContext());
         }
     }
 
@@ -1174,8 +1172,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, NativeFunction pProc, Object[] argtuple, int flags, Object[] argtypes, Object[] converters, Object restype, Object checker,
                         CtypesThreadState state,
                         PythonObjectFactory factory,
-                        PythonContext context,
-                        CtypesModuleBuiltins ctypesModuleBuiltins);
+                        PythonContext context);
 
         /*
          * bpo-13097: Max number of arguments _ctypes_callproc will accept.
@@ -1196,10 +1193,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") CtypesThreadState state,
                         PythonObjectFactory factory,
                         PythonContext context,
-                        CtypesModuleBuiltins ctypesModuleBuiltins,
                         @Cached ConvParamNode convParamNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
+                        @Cached GetBytesFromNativePointerNode getNativeBytes,
                         @Cached GetResultNode getResultNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -1237,6 +1234,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 }
                 FFIType ffiType = args[i].ffi_type;
                 atypes[i] = ffiType;
+                if (arg instanceof PyCFuncPtrObject) {
+                    atypes[i] = new FFIType(atypes[i], ((PyCFuncPtrObject) arg).thunk);
+                }
                 Object value = args[i].value;
                 if (ffiType.type.isArray()) {
                     if (!isLLVM) {
@@ -1280,7 +1280,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         throw CompilerDirectives.shouldNotReachHere(e);
                     }
                 } else if (!isLLVM && ilib.isPointer(result)) {
-                    result = getNativeBytes(ctypesModuleBuiltins, getContext(), result, getRaiseNode());
+                    result = getNativeBytes.execute(result, -1);
                 } else if (ilib.isNumber(result)) {
                     byte[] bytes = new byte[rtype.size];
                     CtypesNodes.setValue(rtype.type, bytes, 0, result);
@@ -1341,7 +1341,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") CtypesThreadState state,
                         @SuppressWarnings("unused") PythonObjectFactory factory,
                         @SuppressWarnings("unused") PythonContext context,
-                        @SuppressWarnings("unused") CtypesModuleBuiltins ctypesModuleBuiltins,
                         @CachedLibrary(limit = "1") InteropLibrary ilib) {
             return callManagedFunction(pProc, argarray, ilib);
         }
@@ -1362,18 +1361,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             Source source = Source.newBuilder(J_NFI_LANGUAGE, signature, pProc.name).build();
             Object nfiSignature = context.getEnv().parseInternal(source).call();
             return SignatureLibrary.getUncached().bind(nfiSignature, pProc.sym);
-        }
-
-        @TruffleBoundary
-        private static byte[] getNativeBytes(CtypesModuleBuiltins ctypesModuleBuiltins, PythonContext context, Object pointer, PRaiseNode raiseNode) {
-            try {
-                long size = (Long) InteropLibrary.getUncached().execute(ctypesModuleBuiltins.getStrlenFunction(), pointer);
-                byte[] bytes = new byte[(int) size];
-                InteropLibrary.getUncached().execute(ctypesModuleBuiltins.getMemcpyFunction(), context.getEnv().asGuestValue(bytes), pointer, size);
-                return bytes;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw raiseNode.raise(SystemError, e);
-            }
         }
 
         /**

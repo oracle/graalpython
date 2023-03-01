@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -201,33 +201,35 @@ final class FFIType {
     FFIType[] elements;
 
     final FFIType asArray;
+    final CThunkObject callback;
 
-    protected FFIType(int size, int alignment, FFI_TYPES type, FFIType[] elements, FFIType asArray) {
+    private FFIType(int size, int alignment, FFI_TYPES type, FFIType[] elements, FFIType asArray, CThunkObject callback) {
         this.size = size;
         this.alignment = alignment;
         this.type = type;
         this.elements = elements;
         this.asArray = asArray == null ? this : asArray;
+        this.callback = callback;
     }
 
     protected FFIType(int size, int alignment, FFI_TYPES type, FFIType[] elements) {
-        this(size, alignment, type, elements, null);
+        this(size, alignment, type, elements, null, null);
     }
 
     protected FFIType(int size, int alignment, FFI_TYPES type) {
-        this(size, alignment, type, null, null);
+        this(size, alignment, type, null, null, null);
     }
 
     protected FFIType(int size, int alignment, FFI_TYPES type, FFIType asArray) {
-        this(size, alignment, type, null, asArray);
+        this(size, alignment, type, null, asArray, null);
     }
 
-    protected FFIType(FFIType copyFrom) {
-        this(copyFrom.size, copyFrom.alignment, copyFrom.type, copyFrom.elements, copyFrom.asArray);
+    protected FFIType(FFIType copyFrom, CThunkObject callback) {
+        this(copyFrom.size, copyFrom.alignment, copyFrom.type, copyFrom.elements, copyFrom.asArray, callback);
     }
 
     protected FFIType() {
-        this(0, 0, FFI_TYPES.FFI_TYPE_VOID, null, null);
+        this(0, 0, FFI_TYPES.FFI_TYPE_VOID, null, null, null);
     }
 
     protected static int typeSize() {
@@ -238,15 +240,23 @@ final class FFIType {
         return asArray;
     }
 
+    protected boolean isCallback() {
+        return callback != null;
+    }
+
     private static TruffleString getNFIType(FFIType type) {
         return type.type.isArray ? FFI_TYPES.FFI_TYPE_UINT8_ARRAY.getNFIType() : type.type.getNFIType();
+    }
+
+    private static TruffleString getNFICallback(FFIType type) {
+        return getNFIReturnType(type);
     }
 
     private static TruffleString getNFIReturnType(FFIType type) {
         return type.type.isArray ? FFI_TYPES.FFI_TYPE_POINTER.getNFIType() : type.type.getNFIType();
     }
 
-    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype,
+    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype, boolean isCallback,
                     TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
         TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
         boolean first = true;
@@ -257,11 +267,22 @@ final class FFIType {
             } else {
                 appendStringNode.execute(sb, T_COMMA_SPACE);
             }
-            appendStringNode.execute(sb, getNFIType(type));
+            if (type.isCallback()) {
+                TruffleString subSignature = buildNFISignature(type.callback.atypes, type.callback.ffi_restype, true,
+                                appendStringNode, toStringNode);
+                appendStringNode.execute(sb, subSignature);
+            } else {
+                appendStringNode.execute(sb, isCallback ? getNFICallback(type) : getNFIType(type));
+            }
         }
         appendStringNode.execute(sb, T_LEFT_PAREN_COLON);
         appendStringNode.execute(sb, getNFIReturnType(restype));
         return toStringNode.execute(sb);
+    }
+
+    protected static TruffleString buildNFISignature(FFIType[] atypes, FFIType restype,
+                    TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+        return buildNFISignature(atypes, restype, false, appendStringNode, toStringNode);
     }
 
     enum FieldSet {

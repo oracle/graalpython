@@ -298,7 +298,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 stgdict.ffi_type_pointer.elements = new FFIType[ffielemLen];
                 if (basedict.ffi_type_pointer.elements != null && basedict.ffi_type_pointer.elements.length == ffielemLen) {
                     for (int idx = 0; idx < ffielemLen; idx++) {
-                        stgdict.ffi_type_pointer.elements[idx] = new FFIType(basedict.ffi_type_pointer.elements[idx]);
+                        stgdict.ffi_type_pointer.elements[idx] = new FFIType(basedict.ffi_type_pointer.elements[idx], null);
                     }
                 }
                 ffi_ofs = basedict.length;
@@ -533,7 +533,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 FFIType[] element_types = new FFIType[ffi_ofs + len /* + 1 */];
                 if (ffi_ofs != 0 && (basedict != null)) {
                     for (int idx = 0; idx < ffi_ofs; idx++) {
-                        element_types[idx] = new FFIType(basedict.ffi_type_pointer.elements[idx]);
+                        element_types[idx] = new FFIType(basedict.ffi_type_pointer.elements[idx], null);
                     }
                 }
                 int element_index = ffi_ofs; /* index into element_types for this */

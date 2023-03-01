@@ -1217,6 +1217,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INT_TOO_LONG_TO_CONVERT = tsLiteral("int too long to convert");
     public static final TruffleString CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S = tsLiteral("cast() argument 2 must be a pointer type, not %s");
     public static final TruffleString WRONG_TYPE = tsLiteral("wrong type");
+    public static final TruffleString INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION = tsLiteral("invalid result type for callback function");
     public static final TruffleString INVALID_INDEX = tsLiteral("invalid index");
     public static final TruffleString INDICES_MUST_BE_INTEGERS = tsLiteral("indices must be integers");
     public static final TruffleString CAN_ONLY_ASSIGN_SEQUENCE_OF_SAME_SIZE = tsLiteral("Can only assign sequence of same size");
@@ -1496,4 +1497,8 @@ public abstract class ErrorMessages {
     public static final TruffleString STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S = tsLiteral("stream function returned a non-bytes object (%s)");
 
     public static final TruffleString DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE = tsLiteral("decoding error handler must return (str, int) tuple");
+    public static final TruffleString CANNOT_BUILD_PARAMETER = tsLiteral("cannot build parameter");
+    public static final TruffleString ON_CALLING_CTYPES_CALLBACK_FUNCTION = tsLiteral("on calling ctypes callback function");
+    public static final TruffleString ON_CONVERTING_RESULT_OF_CTYPES_CALLBACK_FUNCTION = tsLiteral("on converting result of ctypes callback function");
+    public static final TruffleString MEMORY_LEAK_IN_CALLBACK_FUNCTION = tsLiteral("memory leak in callback function.");
 }

@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -258,6 +259,30 @@ public abstract class BytesNodes {
 
         public static ToBytesNode create(PythonBuiltinClassType errorType, TruffleString errorMessageFormat) {
             return ToBytesNodeGen.create(errorType, errorMessageFormat);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ToBytesWithoutFrameNode extends Node {
+
+        public abstract byte[] execute(Object object);
+
+        @Specialization(limit = "3")
+        static byte[] doBuffer(Object object,
+                        @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raiseNode) {
+            Object buffer;
+            try {
+                buffer = bufferAcquireLib.acquireReadonly(object);
+            } catch (PException e) {
+                throw raiseNode.raise(TypeError, EXPECTED_BYTESLIKE_GOT_P, object);
+            }
+            try {
+                return bufferLib.getCopiedByteArray(buffer);
+            } finally {
+                bufferLib.release(buffer);
+            }
         }
     }
 

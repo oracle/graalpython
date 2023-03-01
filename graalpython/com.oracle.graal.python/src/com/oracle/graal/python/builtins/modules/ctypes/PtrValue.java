@@ -176,12 +176,12 @@ final class PtrValue implements TruffleObject {
         offset = 0;
     }
 
-    protected void toNativePointer(Object o) {
+    protected void toNativePointer(Object o, FFI_TYPES type) {
         if (o instanceof PtrValue) {
             ptr = ((PtrValue) o).ptr;
             offset = ((PtrValue) o).offset;
         } else {
-            ptr = new NativePointerStorage(o);
+            ptr = new NativePointerStorage(o, type);
             offset = 0;
         }
     }
@@ -211,7 +211,6 @@ final class PtrValue implements TruffleObject {
             case FFI_TYPE_DOUBLE:
                 return new PrimitiveStorage(value != null ? value : t.getInitValue(), type.type);
 
-            case FFI_TYPE_STRUCT: // TODO
             case FFI_TYPE_STRING:
             case FFI_TYPE_UINT8_ARRAY:
             case FFI_TYPE_SINT8_ARRAY:
@@ -225,8 +224,14 @@ final class PtrValue implements TruffleObject {
             case FFI_TYPE_DOUBLE_ARRAY:
                 return new ByteArrayStorage(type.type, new byte[size]);
 
+            case FFI_TYPE_STRUCT: // TODO
+                if (value == null) {
+                    return new ByteArrayStorage(type.type, new byte[size]);
+                } else {
+                    return new NativePointerStorage(value, t);
+                }
             case FFI_TYPE_POINTER:
-                return new NativePointerStorage(value);
+                return new NativePointerStorage(value, t);
             default:
                 throw CompilerDirectives.shouldNotReachHere("Not supported type!");
 
@@ -242,7 +247,7 @@ final class PtrValue implements TruffleObject {
     }
 
     protected static PtrValue nativePointer(Object o) {
-        return new PtrValue(new NativePointerStorage(o), 0);
+        return new PtrValue(new NativePointerStorage(o, FFI_TYPES.FFI_TYPE_POINTER), 0);
     }
 
     protected static PtrValue ref(Storage storage) {
@@ -371,8 +376,8 @@ final class PtrValue implements TruffleObject {
 
         Object value;
 
-        NativePointerStorage(Object o) {
-            super(FFI_TYPES.FFI_TYPE_POINTER);
+        NativePointerStorage(Object o, FFI_TYPES t) {
+            super(t);
             this.value = o;
         }
 
