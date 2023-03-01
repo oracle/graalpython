@@ -1133,7 +1133,9 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         public Object get(Object object,
                         @Cached InlinedGetClassNode getClassNode) {
-            return getClassNode.execute(this, object);
+            Object result = getClassNode.execute(this, object);
+            assert !(result instanceof Integer);
+            return result;
         }
     }
 

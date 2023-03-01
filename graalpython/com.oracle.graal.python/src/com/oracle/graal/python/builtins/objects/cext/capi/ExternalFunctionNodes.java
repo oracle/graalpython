@@ -77,6 +77,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
@@ -238,20 +240,14 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class ToNativeNode extends CExtToNativeNode {
-
-        @Override
-        public Object execute(Object object) {
-            return CApiTransitions.pythonToNative(object, false);
-        }
-    }
-
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
+
+        @Child private PythonToNativeNode toNative = PythonToNativeNodeGen.create();
 
         @Override
         public Object execute(Object object) {
             assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
-            return CApiTransitions.pythonToNative(object, false);
+            return toNative.execute(object);
         }
     }
 
@@ -260,14 +256,6 @@ public abstract class ExternalFunctionNodes {
         @Override
         public Object execute(Object object) {
             return CApiTransitions.pythonToNative(object, true);
-        }
-    }
-
-    public static final class ToPythonNode extends CExtToJavaNode {
-
-        @Override
-        public Object execute(Object object) {
-            return CApiTransitions.nativeToPython(object, false);
         }
     }
 
@@ -758,7 +746,6 @@ public abstract class ExternalFunctionNodes {
 
             CApiTiming.enter();
             try {
-
                 Object result;
                 if (!lib.isExecutable(callable)) {
                     if (signature == null) {

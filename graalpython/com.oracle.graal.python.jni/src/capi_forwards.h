@@ -4943,26 +4943,6 @@ PyAPI_FUNC(void) Py_InitializeEx(int a) {
 PyAPI_FUNC(PyStatus) Py_InitializeFromConfig(const PyConfig* a) {
     unimplemented("Py_InitializeFromConfig"); exit(-1);
 }
-int (*__target__Py_Is)(PyObject*, PyObject*) = NULL;
-PyAPI_FUNC(int) Py_Is(PyObject* a, PyObject* b) {
-    int result = (int) __target__Py_Is(a, b);
-    return result;
-}
-int (*__target__Py_IsFalse)(PyObject*) = NULL;
-PyAPI_FUNC(int) Py_IsFalse(PyObject* a) {
-    int result = (int) __target__Py_IsFalse(a);
-    return result;
-}
-int (*__target__Py_IsNone)(PyObject*) = NULL;
-PyAPI_FUNC(int) Py_IsNone(PyObject* a) {
-    int result = (int) __target__Py_IsNone(a);
-    return result;
-}
-int (*__target__Py_IsTrue)(PyObject*) = NULL;
-PyAPI_FUNC(int) Py_IsTrue(PyObject* a) {
-    int result = (int) __target__Py_IsTrue(a);
-    return result;
-}
 void (*__target__Py_LeaveRecursiveCall)() = NULL;
 PyAPI_FUNC(void) Py_LeaveRecursiveCall() {
     __target__Py_LeaveRecursiveCall();
@@ -6393,31 +6373,8 @@ void (*__target___Py_NewReference)(PyObject*) = NULL;
 PyAPI_FUNC(void) _Py_NewReference(PyObject* a) {
     __target___Py_NewReference(a);
 }
-Py_ssize_t (*__target___Py_REFCNT)(const PyObject*) = NULL;
-PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(const PyObject* a) {
-    Py_ssize_t result = (Py_ssize_t) __target___Py_REFCNT(a);
-    return result;
-}
 PyAPI_FUNC(void) _Py_RestoreSignals() {
     unimplemented("_Py_RestoreSignals"); exit(-1);
-}
-Py_ssize_t (*__target___Py_SET_REFCNT)(PyObject*, Py_ssize_t) = NULL;
-PyAPI_FUNC(Py_ssize_t) _Py_SET_REFCNT(PyObject* a, Py_ssize_t b) {
-    Py_ssize_t result = (Py_ssize_t) __target___Py_SET_REFCNT(a, b);
-    return result;
-}
-void (*__target___Py_SET_SIZE)(PyVarObject*, Py_ssize_t) = NULL;
-PyAPI_FUNC(void) _Py_SET_SIZE(PyVarObject* a, Py_ssize_t b) {
-    __target___Py_SET_SIZE(a, b);
-}
-void (*__target___Py_SET_TYPE)(PyObject*, PyTypeObject*) = NULL;
-PyAPI_FUNC(void) _Py_SET_TYPE(PyObject* a, PyTypeObject* b) {
-    __target___Py_SET_TYPE(a, b);
-}
-Py_ssize_t (*__target___Py_SIZE)(const PyVarObject*) = NULL;
-PyAPI_FUNC(Py_ssize_t) _Py_SIZE(const PyVarObject* a) {
-    Py_ssize_t result = (Py_ssize_t) __target___Py_SIZE(a);
-    return result;
 }
 PyAPI_FUNC(char*) _Py_SetLocaleFromEnv(int a) {
     unimplemented("_Py_SetLocaleFromEnv"); exit(-1);
@@ -6427,11 +6384,6 @@ PyAPI_FUNC(void) _Py_SetProgramFullPath(const wchar_t* a) {
 }
 PyAPI_FUNC(const char*) _Py_SourceAsString(PyObject* a, const char* b, const char* c, PyCompilerFlags* d, PyObject** e) {
     unimplemented("_Py_SourceAsString"); exit(-1);
-}
-PyTypeObject* (*__target___Py_TYPE)(const PyObject*) = NULL;
-PyAPI_FUNC(PyTypeObject*) _Py_TYPE(const PyObject* a) {
-    PyTypeObject* result = (PyTypeObject*) __target___Py_TYPE(a);
-    return result;
 }
 PyAPI_FUNC(int) _Py_abspath(const wchar_t* a, wchar_t** b) {
     unimplemented("_Py_abspath"); exit(-1);
@@ -7063,10 +7015,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__Py_GetCompiler = getAPI("Py_GetCompiler");
     __target__Py_GetVersion = getAPI("Py_GetVersion");
     __target__Py_IncRef = getAPI("Py_IncRef");
-    __target__Py_Is = getAPI("Py_Is");
-    __target__Py_IsFalse = getAPI("Py_IsFalse");
-    __target__Py_IsNone = getAPI("Py_IsNone");
-    __target__Py_IsTrue = getAPI("Py_IsTrue");
     __target__Py_LeaveRecursiveCall = getAPI("Py_LeaveRecursiveCall");
     __target__Py_NewRef = getAPI("Py_NewRef");
     __target__Py_XNewRef = getAPI("Py_XNewRef");
@@ -7186,12 +7134,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___Py_HashPointerRaw = getAPI("_Py_HashPointerRaw");
     __target___Py_IncRef = getAPI("_Py_IncRef");
     __target___Py_NewReference = getAPI("_Py_NewReference");
-    __target___Py_REFCNT = getAPI("_Py_REFCNT");
-    __target___Py_SET_REFCNT = getAPI("_Py_SET_REFCNT");
-    __target___Py_SET_SIZE = getAPI("_Py_SET_SIZE");
-    __target___Py_SET_TYPE = getAPI("_Py_SET_TYPE");
-    __target___Py_SIZE = getAPI("_Py_SIZE");
-    __target___Py_TYPE = getAPI("_Py_TYPE");
     __target___Py_gitidentifier = getAPI("_Py_gitidentifier");
     __target___Py_gitversion = getAPI("_Py_gitversion");
     __target___Py_parse_inf_or_nan = getAPI("_Py_parse_inf_or_nan");

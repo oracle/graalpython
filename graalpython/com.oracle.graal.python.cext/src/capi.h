@@ -62,7 +62,7 @@
 #include <graalvm/llvm/polyglot.h>
 #include <truffle.h>
 #include <graalvm/llvm/handles.h>
-#endif
+#endif // EXCLUDE_POLYGLOT_API
 
 #define SRC_CS "utf-8"
 
@@ -832,7 +832,11 @@ static void PyTruffle_Log(int level, const char* format, ... ) {
 	}
 }
 
-#ifndef EXCLUDE_POLYGLOT_API
+#ifdef EXCLUDE_POLYGLOT_API
+
+#define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & 0x8000000000000000L) != 0)
+
+#else // EXCLUDE_POLYGLOT_API
 
 typedef int (*cache_query_t)(uint64_t);
 typedef PyObject* (*ptr_cache_t)(PyObject*);

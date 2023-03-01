@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
@@ -69,16 +68,6 @@ public abstract class GraalHPyConversionNodeSupplier {
         }
 
         @Override
-        public CExtAsPythonObjectNode createAsPythonObjectNode() {
-            return HPyAsPythonObjectNodeGen.create();
-        }
-
-        @Override
-        public CExtAsPythonObjectNode getUncachedAsPythonObjectNode() {
-            return HPyAsPythonObjectNodeGen.getUncached();
-        }
-
-        @Override
         public CExtToJavaNode createToJavaNode() {
             return HPyAsPythonObjectNodeGen.create();
         }
@@ -103,16 +92,6 @@ public abstract class GraalHPyConversionNodeSupplier {
         @Override
         public CExtToNativeNode getUncachedToNativeNode() {
             return HPyAsNativeInt64NodeGen.getUncached();
-        }
-
-        @Override
-        public CExtAsPythonObjectNode createAsPythonObjectNode() {
-            throw CompilerDirectives.shouldNotReachHere("unsupported");
-        }
-
-        @Override
-        public CExtAsPythonObjectNode getUncachedAsPythonObjectNode() {
-            throw CompilerDirectives.shouldNotReachHere("unsupported");
         }
 
         @Override

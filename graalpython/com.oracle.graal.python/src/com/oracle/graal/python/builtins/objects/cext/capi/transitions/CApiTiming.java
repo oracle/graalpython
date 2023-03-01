@@ -138,7 +138,7 @@ public final class CApiTiming {
         long percent = totalTime / 100;
         visibleTime = 0;
         for (var e : sorted) {
-            if (e.time >= cutoffTime) {
+            if (e.time >= cutoffTime || e.count >= (totalCount * CUTOFF_PERCENT)) {
                 System.out.printf("%70s  %8s %8sms %s\n", e.name, e.count, e.time / 1000000, stars(percent, e.time));
                 visibleCount += e.count;
                 visibleTime += e.time;

@@ -73,12 +73,12 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -228,7 +228,7 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         Object doGeneric(PythonNativeWrapper object, long size,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached NativeToPythonNode asPythonObjectNode,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
             byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
             if (size >= 0 && size < ary.length) {
@@ -257,7 +257,7 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyTruffleByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(PythonNativeWrapper object, long size,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached NativeToPythonNode asPythonObjectNode,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
             byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
             if (size >= 0 && size < ary.length) {

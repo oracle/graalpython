@@ -121,36 +121,6 @@ static PyNumberMethods none_as_number = {
     0,                          /* nb_index */
 };
 
-Py_ssize_t _Py_REFCNT(const PyObject *obj) {
-	return PyObject_ob_refcnt(obj);
-}
-
-Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-	set_PyObject_ob_refcnt(obj, cnt);
-	return cnt;
-}
-
-PyTypeObject* _Py_TYPE(const PyObject *a) {
-	return PyObject_ob_type(a);
-}
-Py_ssize_t _Py_SIZE(const PyVarObject *a) {
-	return PyVarObject_ob_size(a);
-}
-void _Py_SET_TYPE(PyObject *a, PyTypeObject *b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the type of an object is not supported\n");
-	} else {
-		a->ob_type = b;
-	}
-}
-void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the size of an object is not supported\n");
-	} else {
-		a->ob_size = b;
-	}
-}
-
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
@@ -848,31 +818,3 @@ Py_XNewRef(PyObject *obj)
 {
     return _Py_XNewRef(obj);
 }
-
-#undef Py_Is
-#undef Py_IsNone
-#undef Py_IsTrue
-#undef Py_IsFalse
-
-// Export Py_Is(), Py_IsNone(), Py_IsTrue(), Py_IsFalse() as regular functions
-// for the stable ABI.
-int Py_Is(PyObject *x, PyObject *y)
-{
-    return (x == y);
-}
-
-int Py_IsNone(PyObject *x)
-{
-    return Py_Is(x, Py_None);
-}
-
-int Py_IsTrue(PyObject *x)
-{
-    return Py_Is(x, Py_True);
-}
-
-int Py_IsFalse(PyObject *x)
-{
-    return Py_Is(x, Py_False);
-}
-
