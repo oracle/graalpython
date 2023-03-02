@@ -689,6 +689,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @Override
+    protected int computeSize() {
+        return bytecode.length / 2;
+    }
+
+    @Override
     public String getName() {
         return name.toJavaStringUncached();
     }
