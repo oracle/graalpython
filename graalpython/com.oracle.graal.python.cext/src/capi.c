@@ -2277,6 +2277,10 @@ PyAPI_FUNC(PyObject*) _PyUnicode_AsUTF8String(PyObject* a, const char* b) {
 PyAPI_FUNC(int) _PyUnicode_EqualToASCIIString(PyObject* a, const char* b) {
     return Graal_PyUnicode_EqualToASCIIString(a, truffleString(b));
 }
+#undef _Py_GetErrorHandler
+PyAPI_FUNC(_Py_error_handler) _Py_GetErrorHandler(const char* a) {
+    return Graal_Py_GetErrorHandler(truffleString(a));
+}
 #undef _Py_HashDouble
 PyAPI_FUNC(Py_hash_t) _Py_HashDouble(PyObject* a, double b) {
     return Graal_Py_HashDouble(a, b);

@@ -689,7 +689,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_get_inheritable", ret = Int, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_GetAllocatedBlocks", ret = Py_ssize_t, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_GetConfig", ret = CONST_PYCONFIG_PTR, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "_Py_GetErrorHandler", ret = _PY_ERROR_HANDLER, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_InitializeMain", ret = PYSTATUS, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_isabs", ret = Int, args = {CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_IsCoreInitialized", ret = Int, args = {}, call = NotImplemented)
