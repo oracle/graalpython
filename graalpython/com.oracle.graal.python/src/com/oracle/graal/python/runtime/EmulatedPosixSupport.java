@@ -1085,17 +1085,17 @@ public final class EmulatedPosixSupport extends PosixResources {
                         CREATION_TIME,
                         SIZE), linkOptions);
         int mode = fileTypeBitsFromAttributes(attributes);
-        if (file.isReadable()) {
+        if (isReadable(file)) {
             mode |= 0004;
             mode |= 0040;
             mode |= 0400;
         }
-        if (file.isWritable()) {
+        if (isWritable(file)) {
             mode |= 0002;
             mode |= 0020;
             mode |= 0200;
         }
-        if (file.isExecutable()) {
+        if (isExecutable(file)) {
             mode |= 0001;
             mode |= 0010;
             mode |= 0100;
@@ -1112,6 +1112,30 @@ public final class EmulatedPosixSupport extends PosixResources {
                         // dummy values will be filled in by setTimestamps
                         0, 0, 0, 0, 0, 0
         });
+    }
+
+    private static boolean isReadable(TruffleFile file) {
+        try {
+            return file.isReadable();
+        } catch (SecurityException e) {
+            return false;
+        }
+    }
+
+    private static boolean isWritable(TruffleFile file) {
+        try {
+            return file.isWritable();
+        } catch (SecurityException e) {
+            return false;
+        }
+    }
+
+    private static boolean isExecutable(TruffleFile file) {
+        try {
+            return file.isExecutable();
+        } catch (SecurityException e) {
+            return false;
+        }
     }
 
     private static long[] setTimestamps(Attributes attributes, TruffleFile.AttributeDescriptor<FileTime> ctimeDescriptor, long[] statResult) {
@@ -1700,13 +1724,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
         boolean result = true;
         if ((mode & X_OK.value) != 0) {
-            result = result && file.isExecutable();
+            result = result && isExecutable(file);
         }
         if ((mode & R_OK.value) != 0) {
-            result = result && file.isReadable();
+            result = result && isReadable(file);
         }
         if ((mode & W_OK.value) != 0) {
-            result = result && file.isWritable();
+            result = result && isWritable(file);
         }
         return result;
     }
@@ -2009,7 +2033,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         for (Object o : executables) {
             String path = pathToJavaString(o);
             TruffleFile executableFile = cwdFile.resolve(path);
-            if (executableFile.isExecutable()) {
+            if (isExecutable(executableFile)) {
                 argStrings[0] = path;
                 try {
                     return exec(argStrings, cwdFile, envMap, stdinWriteFd, stdinReadFd, stdoutWriteFd, stdoutReadFd, stderrWriteFd, errPipeWriteFd, stderrReadFd);
