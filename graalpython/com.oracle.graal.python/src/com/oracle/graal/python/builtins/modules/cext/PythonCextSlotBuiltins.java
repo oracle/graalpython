@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
@@ -1338,8 +1339,7 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         public Object get(PythonManagedClass object,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode) {
-            // TODO: is this correct, "DEALLOC"?
-            return lookupNativeMemberNode.execute(object, TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC);
+            return lookupNativeMemberNode.execute(object, TP_DEL, TypeBuiltins.TYPE_DEL);
         }
     }
 
