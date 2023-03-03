@@ -189,6 +189,7 @@ public class CApiTransitions {
         }
     }
 
+    @TruffleBoundary
     public static void registerNativeSequenceStorage(NativeSequenceStorage storage) {
         NativeStorageReference ref = new NativeStorageReference(storage);
         storage.setReference(ref);
