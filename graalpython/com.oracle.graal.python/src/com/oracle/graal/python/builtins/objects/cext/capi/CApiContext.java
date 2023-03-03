@@ -46,23 +46,17 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_GET_;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_TYPE_ID;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import java.io.IOException;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
@@ -75,14 +69,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
@@ -91,25 +82,18 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Chec
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNodeGen;
-import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -157,23 +141,17 @@ public final class CApiContext extends CExtContext {
      */
     static final CApiContext LAZY_CONTEXT = new CApiContext();
 
-    public static final long REFERENCE_COUNT_BITS = Integer.SIZE;
-    public static final long REFERENCE_COUNT_MARKER = (1L << REFERENCE_COUNT_BITS);
     /* a random number between 1 and 20 */
     private static final int MAX_COLLECTION_RETRIES = 17;
 
     /** Total amount of allocated native memory (in bytes). */
     private long allocatedMemory = 0;
 
-    private final ReferenceQueue<Object> nativeObjectsQueue;
     private Map<Object, AllocInfo> allocatedNativeMemory;
-    private final ReferenceStack<NativeObjectReference> nativeObjectWrapperList;
     private TraceMallocDomain[] traceMallocDomains;
 
     /** Container of pointers that have seen to be free'd. */
     private Map<Object, AllocInfo> freedNativeMemory;
-
-    @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
 
     /**
      * This cache is used to cache native wrappers for frequently used primitives. This is strictly
@@ -226,20 +204,12 @@ public final class CApiContext extends CExtContext {
      */
     private CApiContext() {
         super(null, null, null);
-        nativeObjectsQueue = null;
-        nativeObjectWrapperList = null;
         primitiveNativeWrapperCache = null;
         llvmTypeCache = null;
     }
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
-        nativeObjectsQueue = new ReferenceQueue<>();
-        nativeObjectWrapperList = new ReferenceStack<>();
-
-        // avoid 0 to be used as ID
-        int nullID = nativeObjectWrapperList.reserve();
-        assert nullID == 0;
 
         // initialize primitive and pointer type cache
         llvmTypeCache = new Object[LLVMType.values().length];
@@ -251,34 +221,6 @@ public final class CApiContext extends CExtContext {
             CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
             primitiveNativeWrapperCache[i] = nativeWrapper;
         }
-
-        context.registerAsyncAction(() -> {
-            Reference<?> reference = null;
-            if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
-                try {
-                    reference = nativeObjectsQueue.remove();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            } else {
-                reference = nativeObjectsQueue.poll();
-            }
-
-            ArrayList<NativeObjectReference> refs = new ArrayList<>();
-            do {
-                if (reference instanceof NativeObjectReference) {
-                    refs.add((NativeObjectReference) reference);
-                }
-                // consume all
-                reference = nativeObjectsQueue.poll();
-            } while (reference != null);
-
-            if (!refs.isEmpty()) {
-                return new CApiReferenceCleanerAction(refs.toArray(new NativeObjectReference[0]));
-            }
-
-            return null;
-        });
     }
 
     public int getPyLongBitsInDigit() {
@@ -323,14 +265,6 @@ public final class CApiContext extends CExtContext {
             }
         }
         return ptr;
-    }
-
-    private RootCallTarget getReferenceCleanerCallTarget() {
-        if (referenceCleanerCallTarget == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            referenceCleanerCallTarget = PythonLanguage.get(null).createCachedCallTarget(l -> new CApiReferenceCleanerRootNode(l), CApiReferenceCleanerRootNode.class);
-        }
-        return referenceCleanerCallTarget;
     }
 
     public TraceMallocDomain getTraceMallocDomain(int domainIdx) {
@@ -411,185 +345,6 @@ public final class CApiContext extends CExtContext {
             return modulesByIndex.get(i);
         }
         return null;
-    }
-
-    static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
-
-        /**
-         * The associated native pointer object that needs to be released if this reference dies.
-         */
-        final Object ptrObject;
-
-        /** The ID of this reference, i.e., the index of the ref in the global reference list. */
-        final int id;
-
-        /**
-         * If {@code true}, the native object should not be released because a new managed ref was
-         * created.
-         */
-        boolean resurrect;
-
-        /**
-         * When stealing references, this is the number of stolen reference counts (need to be
-         * subtracted in the end).
-         */
-        long managedRefCount;
-
-        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q, long managedRefCount, int id) {
-            super(referent, q);
-            this.ptrObject = referent.getPtr();
-            this.managedRefCount = managedRefCount;
-            this.id = id;
-        }
-
-        public Object getPtrObject() {
-            return ptrObject;
-        }
-
-        public void markAsResurrected() {
-            resurrect = true;
-        }
-    }
-
-    /**
-     * Simple root node that executes a reference decrease.
-     */
-    private static final class CApiReferenceCleanerRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("ptr", "managedRefCount"), EMPTY_TRUFFLESTRING_ARRAY);
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiReferenceCleanerRootNode.class);
-
-        @Child private CalleeContext calleeContext;
-        @Child private InteropLibrary pointerObjectLib;
-        @Child private PCallCapiFunction callBulkSubref;
-
-        protected CApiReferenceCleanerRootNode(PythonLanguage language) {
-            super(language);
-            this.calleeContext = CalleeContext.create();
-            this.callBulkSubref = PCallCapiFunction.create();
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            calleeContext.enter(frame);
-            try {
-                NativeObjectReference[] nativeObjectReferences = (NativeObjectReference[]) PArguments.getArgument(frame, 0);
-                int cleaned = 0;
-                CApiContext cApiContext = PythonContext.get(this).getCApiContext();
-                long allocatedNativeMem = cApiContext.allocatedMemory;
-                long startTime = 0;
-                long middleTime = 0;
-                final int n = nativeObjectReferences.length;
-                boolean loggable = LOGGER.isLoggable(Level.FINE);
-
-                if (loggable) {
-                    startTime = System.currentTimeMillis();
-                }
-
-                /*
-                 * Note about the order of operations - we need to call the finalizers first before
-                 * removing the objects from the wrapper list because the finalizers may still make
-                 * upcalls and those need the wrappers to work correctly.
-                 */
-
-                callBulkSubref.call(NativeCAPISymbol.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
-
-                if (loggable) {
-                    middleTime = System.currentTimeMillis();
-                }
-
-                if (LOGGER.isLoggable(Level.FINER)) {
-                    // it's not an OSR loop, so we do this before the loop
-                    if (n > 0 && pointerObjectLib == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        pointerObjectLib = insert(InteropLibrary.getFactory().create(nativeObjectReferences[0].ptrObject));
-                    }
-
-                    for (int i = 0; i < n; i++) {
-                        NativeObjectReference nativeObjectReference = nativeObjectReferences[i];
-                        Object pointerObject = nativeObjectReference.ptrObject;
-                        if (!nativeObjectReference.resurrect) {
-                            cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
-                            if (!nativeObjectReference.resurrect && !pointerObjectLib.isNull(pointerObject)) {
-                                cApiContext.checkAccess(pointerObject, pointerObjectLib);
-                                LOGGER.finer(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
-                                cleaned++;
-                            }
-                        }
-                    }
-                } else {
-                    for (int i = 0; i < n; i++) {
-                        NativeObjectReference nativeObjectReference = nativeObjectReferences[i];
-                        if (!nativeObjectReference.resurrect) {
-                            cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
-                        }
-                    }
-                }
-
-                if (loggable) {
-                    final long countDuration = System.currentTimeMillis() - middleTime;
-                    final long duration = middleTime - startTime;
-                    final int finalCleaned = cleaned;
-                    final long freedNativeMemory = allocatedNativeMem - cApiContext.allocatedMemory;
-                    LOGGER.fine(() -> "Total queued references: " + n);
-                    LOGGER.fine(() -> "Cleaned references: " + finalCleaned);
-                    LOGGER.fine(() -> "Free'd native memory: " + freedNativeMemory);
-                    LOGGER.fine(() -> "Count duration: " + countDuration);
-                    LOGGER.fine(() -> "Duration: " + duration);
-                }
-            } finally {
-                calleeContext.exit(frame, this);
-            }
-            return PNone.NONE;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-
-        @Override
-        public String getName() {
-            return "native_reference_cleaner";
-        }
-
-        @Override
-        public boolean isInternal() {
-            return false;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return false;
-        }
-    }
-
-    /**
-     * Reference cleaner action that will be executed by the {@link AsyncHandler}.
-     */
-    private static final class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
-
-        private final NativeObjectReference[] nativeObjectReferences;
-
-        public CApiReferenceCleanerAction(NativeObjectReference[] nativeObjectReferences) {
-            this.nativeObjectReferences = nativeObjectReferences;
-        }
-
-        @Override
-        public void execute(PythonContext context) {
-            Object[] pArguments = PArguments.create(1);
-            PArguments.setArgument(pArguments, 0, nativeObjectReferences);
-            GenericInvokeNode.getUncached().execute(context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
-        }
-    }
-
-    public NativeObjectReference lookupNativeObjectReference(int idx) {
-        return nativeObjectWrapperList.get(idx);
-    }
-
-    static long idToRefCnt(int id) {
-        long nativeRefCnt = (long) id << REFERENCE_COUNT_BITS;
-        assert nativeRefCnt >= REFERENCE_COUNT_MARKER;
-        return nativeRefCnt;
     }
 
     @TruffleBoundary
@@ -726,32 +481,6 @@ public final class CApiContext extends CExtContext {
                 LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
             }
         }
-    }
-
-    /**
-     * Internal method for debugging purposes. This method looks up how many phantom references are
-     * currently in the escaped references list. This is useful to check if the current reference
-     * count of a native object is consistent with the upcoming decrements.
-     */
-    @SuppressWarnings("unused")
-    public List<Integer> containsAddress(long l) {
-        CompilerAsserts.neverPartOfCompilation();
-        int i = 0;
-        List<Integer> indx = new ArrayList<>();
-        InteropLibrary lib = InteropLibrary.getFactory().getUncached();
-        for (NativeObjectReference nor : nativeObjectWrapperList) {
-            Object obj = nor.ptrObject;
-
-            try {
-                if (lib.isPointer(obj) && lib.asPointer(obj) == l) {
-                    indx.add(i);
-                }
-            } catch (UnsupportedMessageException e) {
-                // ignore
-            }
-            i++;
-        }
-        return indx;
     }
 
     public static final class AllocInfo {
