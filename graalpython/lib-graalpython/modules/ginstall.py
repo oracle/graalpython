@@ -544,6 +544,7 @@ library_dirs = {lapack_lib}"""
         python_dateutil(**kwargs)
         numpy(**kwargs)
         Pillow(**kwargs)
+        kiwisolver(**kwargs)
 
         def download_freetype(extracted_dir):
             target_dir = os.path.join(extracted_dir, "build")
