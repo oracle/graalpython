@@ -146,7 +146,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
             int[] suboffsets = cBuffer.getSuboffsets();
             int flags = initFlagsNode.execute(cBuffer.getDims(), cBuffer.getItemSize(), shape, strides, suboffsets);
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
-            Object pythonBuffer = new NativeSequenceStorage(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), SequenceStorage.ListStorageType.Byte);
+            Object pythonBuffer = NativeSequenceStorage.create(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), SequenceStorage.ListStorageType.Byte, false);
             TruffleString format = cBuffer.getFormat();
             return factory.createMemoryView(PythonContext.get(this), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode),

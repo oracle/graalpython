@@ -1203,7 +1203,7 @@ public final class PythonCextBuiltins {
                         }
                     }
                 }
-                Object buffer = new NativeSequenceStorage(bufPointer, len, len, SequenceStorage.ListStorageType.Byte);
+                Object buffer = NativeSequenceStorage.create(bufPointer, len, len, SequenceStorage.ListStorageType.Byte, false);
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 BufferLifecycleManager bufferLifecycleManager = null;
                 if (!lib.isNull(bufferStructPointer)) {

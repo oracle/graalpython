@@ -41,6 +41,8 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -60,22 +62,41 @@ public final class NativeSequenceStorage extends SequenceStorage {
 
     private final ListStorageType elementType;
 
-    public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
+    private NativeStorageReference reference;
+
+    private NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
         super(length, capacity);
         this.ptr = ptr;
         this.elementType = elementType;
+    }
+
+    /**
+     * @param ownsMemory whether the memory should be freed when this object dies. Should be true
+     *            when actually used as a sequence storage
+     */
+    public static NativeSequenceStorage create(Object ptr, int length, int capacity, ListStorageType elementType, boolean ownsMemory) {
+        NativeSequenceStorage storage = new NativeSequenceStorage(ptr, length, capacity, elementType);
+        if (ownsMemory) {
+            CApiTransitions.registerNativeSequenceStorage(storage);
+        }
+        return storage;
     }
 
     public Object getPtr() {
         return ptr;
     }
 
-    public void setPtr(Object ptr) {
+    public void setPtrAndSize(Object ptr, int size) {
+        if (reference != null) {
+            reference.setPtr(ptr);
+            reference.setSize(size);
+        }
         this.ptr = ptr;
+        this.capacity = size;
     }
 
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
+    public void setReference(NativeStorageReference reference) {
+        this.reference = reference;
     }
 
     @Override
