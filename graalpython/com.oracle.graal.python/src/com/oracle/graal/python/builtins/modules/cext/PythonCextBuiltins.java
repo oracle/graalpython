@@ -216,7 +216,7 @@ public final class PythonCextBuiltins {
         public abstract Object execute(Object value);
 
         @Specialization
-        static PythonBuiltinObject doString(TruffleString str,
+        public static PString doString(TruffleString str,
                         @Cached PythonObjectFactory factory) {
             return factory.createString(str);
         }
