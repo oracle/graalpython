@@ -1937,7 +1937,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     ],
     library_configs=[
         mx_sdk.LanguageLibraryConfig(
-            launchers=['bin/<exe:graalpy>', 'bin/<exe:python>', 'bin/<exe:python3>'],
+            launchers=['bin/<exe:graalpy>', 'bin/<exe:graalpy-lt>', 'bin/<exe:python>', 'bin/<exe:python3>'],
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
@@ -2380,6 +2380,9 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         # n.b.: we don't want derived projects to also have to depend on our build env vars
         env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
         env.update(self.subject.getBuildEnv())
+
+        # we need to use the sulong toolchain for this
+        args.insert(0, "--python.UseSystemToolchain=false")
 
         # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them,
         # besides keeping custom sysroot, since our toolchain forwards to the system headers

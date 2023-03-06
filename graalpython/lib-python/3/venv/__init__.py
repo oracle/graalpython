@@ -74,7 +74,8 @@ class EnvBuilder:
         if self.with_pip:
             self._setup_pip(context)
         # Truffle change
-        self._install_compilers(context)
+        if not __graalpython__.use_system_toolchain:
+            self._install_compilers(context)
         # End of Truffle change
         if not self.upgrade:
             self.setup_scripts(context)
@@ -183,7 +184,7 @@ class EnvBuilder:
 
 
     def _install_compilers(self, context):
-        """Puts the Graal LLVM compiler tools on the path"""
+        """Puts the Graal LLVM compiler tools on the path."""
         bin_dir = os.path.join(context.env_dir, context.bin_name)
         for (tool_path, names) in __graalpython__.get_toolchain_tools_for_venv().items():
             for name in names:

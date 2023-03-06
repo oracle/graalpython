@@ -391,6 +391,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.INTERNAL, help = "The list of the original command line arguments passed to the Python executable.") //
     public static final OptionKey<TruffleString> OrigArgv = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
+    @Option(category = OptionCategory.EXPERT, help = "If true, use the system's toolchain for native extension compilation. Otherwise, use the LLVM Toolchain included with GraalVM.") //
+    public static final OptionKey<Boolean> UseSystemToolchain = new OptionKey<>(true);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

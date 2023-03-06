@@ -617,6 +617,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
+        if (isLLVMToolchainLauncher()) {
+            if (!hasContextOptionSetViaCommandLine("UseSystemToolchain")) {
+                contextBuilder.option("python.UseSystemToolchain", "false");
+            }
+            if (!hasContextOptionSetViaCommandLine("NativeModules")) {
+                contextBuilder.option("python.NativeModules", "");
+            }
+        }
+
         if (relaunchArgs != null) {
             Iterator<String> it = origArgs.iterator();
             while (it.hasNext()) {
@@ -886,6 +895,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void printHelp(OptionCategory maxCategory) {
+        if (isLLVMToolchainLauncher()) {
+            System.out.println("GraalPy launcher to use LLVM toolchain and Sulong execution of native extensions.\n");
+        }
         System.out.println("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
                         "-B     : this disables writing .py[co] files on import\n" +
@@ -956,6 +968,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                         "\nEnvironment variables specific to the Graal Python launcher:\n" +
                                         "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
                                         "   This is required when starting subprocesses of python.\n" : ""));
+    }
+
+    private boolean isLLVMToolchainLauncher() {
+        String exeName = getResolvedExecutableName();
+        return exeName != null && exeName.endsWith("-lt");
     }
 
     @Override
@@ -1184,6 +1201,39 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             System.err.println(e.getMessage());
             System.exit(-1);
         }
+    }
+
+    protected String getResolvedExecutableName() {
+        // Note that with thin launchers, both graalpy and graalpy-managed are actual executables
+        // that load and start GraalPy from a shared library
+        if (ImageInfo.inImageRuntimeCode()) {
+            // This is the fastest, most straightforward way to get the name of the actual
+            // executable, i.e., with symlinks resolved all the way down to either graalpy or
+            // graalpy-managed.
+            String executableName = ProcessProperties.getExecutableName();
+            if (executableName != null) {
+                return executableName;
+            }
+        }
+        // The program name can be a symlink, or a command resolved via $PATH
+        // We use getLauncherExecName, which should resolve $PATH commands for us
+        String launcherExecName = getLauncherExecName();
+        if (launcherExecName == null) {
+            return null;
+        }
+        Path programPath = Paths.get(launcherExecName);
+        Path realPath;
+        try {
+            // toRealPath resolves symlinks along the way
+            realPath = programPath.toRealPath();
+        } catch (IOException ex) {
+            throw abort(String.format("Cannot determine the executable name from path: '%s'", programPath), 72);
+        }
+        Path f = realPath.getFileName();
+        if (f == null) {
+            throw abort(String.format("Cannot determine the executable name from path: '%s'", realPath), 73);
+        }
+        return f.toString();
     }
 
     private List<String> getCmdline(List<String> args, List<String> subProcessDefs) {
