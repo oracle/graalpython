@@ -1269,7 +1269,8 @@ PyAPI_FUNC(void) initialize_graal_capi(ptr_cache_t _pythonToNative, void_ptr_cac
     initialize_hashes();
     initialize_bufferprocs();
 
-	// TODO: initialize during cext initialization doesn't work at the moment
+    // TODO: initialize during cext initialization doesn't work at the moment
+    // This is hardcoded the same way in capi_native.c
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
 
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
