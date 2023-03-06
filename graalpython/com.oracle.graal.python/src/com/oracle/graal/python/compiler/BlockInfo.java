@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -147,6 +147,18 @@ class BlockInfo {
         public TryFinally(Block tryBlock, Block exceptionHandler, StmtTy[] body) {
             super(tryBlock, exceptionHandler);
             this.body = body;
+        }
+    }
+
+    static class AsyncForLoop extends Loop {
+        public AsyncForLoop(Block start, Block after) {
+            super(start, after);
+        }
+    }
+
+    static class AsyncForLoopExit extends AbstractExceptionHandler {
+        public AsyncForLoopExit(Block tryBlock, Block exceptionHandler) {
+            super(tryBlock, exceptionHandler);
         }
     }
 }

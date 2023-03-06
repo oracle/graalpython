@@ -1486,9 +1486,10 @@ public abstract class ErrorMessages {
     public static final TruffleString PY_CAPSULE_SET_POINTER_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_SetPointer called with null pointer");
     public static final TruffleString PY_CAPSULE_IMPORT_COULD_NOT_IMPORT_MODULE_S = tsLiteral("PyCapsule_Import could not import module \"%s\"");
     public static final TruffleString PY_CAPSULE_IMPORT_S_IS_NOT_VALID = tsLiteral("PyCapsule_Import \"%s\" is not valid");
-    public static final TruffleString CANNOT_BE_USED_AWAIT = tsLiteral("object %s can't be used in 'await' expression");
 
     // asyncio
+
+    public static final TruffleString CANNOT_BE_USED_AWAIT = tsLiteral("object %s can't be used in 'await' expression");
     public static final TruffleString AWAIT_RETURN_COROUTINE = tsLiteral("__await__() returned a coroutine");
     public static final TruffleString AWAIT_RETURN_NON_ITER = tsLiteral("__await__() returned non-iterator of type '%s'");
     public static final TruffleString NO_RUNNING_EVENT_LOOP = tsLiteral("no running event loop");
@@ -1518,4 +1519,10 @@ public abstract class ErrorMessages {
     public static final TruffleString ON_CALLING_CTYPES_CALLBACK_FUNCTION = tsLiteral("on calling ctypes callback function");
     public static final TruffleString ON_CONVERTING_RESULT_OF_CTYPES_CALLBACK_FUNCTION = tsLiteral("on converting result of ctypes callback function");
     public static final TruffleString MEMORY_LEAK_IN_CALLBACK_FUNCTION = tsLiteral("memory leak in callback function.");
+
+    public static final TruffleString ASYNC_FOR_NO_AITER = tsLiteral("'async for' requires object with __aiter__ method, got %s");
+
+    public static final TruffleString ASYNC_FOR_NO_ANEXT_INITIAL = tsLiteral("'async for' received an object from __aiter__ that does not implement __anext__: %s");
+
+    public static final TruffleString ASYNC_FOR_NO_ANEXT_ITERATION = tsLiteral("'async for' requires an iterator with __anext__ method, got %s");
 }

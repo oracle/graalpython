@@ -129,6 +129,22 @@ public enum OpCodes {
      */
     GET_AWAITABLE(0, 1, 1),
     /**
+     * Gets the async iterator of an object - error if a coroutine is returned
+     *
+     * Pops: object
+     *
+     * Pushes: async iterator
+     */
+    GET_AITER(0, 1, 1),
+    /**
+     * Get the awaitable that will return the next element of an async iterator
+     *
+     * Pops: object
+     *
+     * Pushes: awaitable
+     */
+    GET_ANEXT(0, 1, 1),
+    /**
      * Pushes: {@code __build_class__} builtin
      */
     LOAD_BUILD_CLASS(0, 0, 1),
@@ -714,6 +730,13 @@ public enum OpCodes {
      * Pushes (if jumping): the generator return value
      */
     THROW(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
+    /**
+     * Exception handler for async for loops. If the current exception is StopAsyncIteration, handle
+     * it, otherwise, reraise.
+     *
+     * Pops: exception, then the async iterator
+     */
+    END_ASYNC_FOR(0, 2, 0),
 
     // with statements
     /**

@@ -63,6 +63,7 @@ import static com.oracle.graal.python.compiler.OpCodes.DELETE_GLOBAL;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.DUP_TOP;
+import static com.oracle.graal.python.compiler.OpCodes.END_ASYNC_FOR;
 import static com.oracle.graal.python.compiler.OpCodes.END_EXC_HANDLER;
 import static com.oracle.graal.python.compiler.OpCodes.EXIT_AWITH;
 import static com.oracle.graal.python.compiler.OpCodes.EXIT_WITH;
@@ -70,6 +71,8 @@ import static com.oracle.graal.python.compiler.OpCodes.FORMAT_VALUE;
 import static com.oracle.graal.python.compiler.OpCodes.FOR_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.FROZENSET_FROM_LIST;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AEXIT_CORO;
+import static com.oracle.graal.python.compiler.OpCodes.GET_AITER;
+import static com.oracle.graal.python.compiler.OpCodes.GET_ANEXT;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
 import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.GET_LEN;
@@ -2072,8 +2075,50 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AsyncFor node) {
+        if (!unit.scope.isFunction()) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async for' outside function");
+        }
+        if (unit.scopeType != CompilationScope.AsyncFunction) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "'async for' outside async function");
+        }
+        visitAsyncFor(node);
+        return null;
+    }
+
+    private void visitAsyncFor(StmtTy.AsyncFor node) {
         setLocation(node);
-        return emitNotImplemented("async for");
+        Block head = new Block();
+        Block body = new Block();
+        Block end = new Block();
+        Block except = new Block();
+        Block orelse = node.orElse != null ? new Block() : null;
+        node.iter.accept(this);
+        addOp(GET_AITER);
+        unit.useNextBlock(head);
+        unit.pushBlock(new BlockInfo.AsyncForLoop(head, end));
+        unit.pushBlock(new BlockInfo.AsyncForLoopExit(head, except));
+        addOp(DUP_TOP);
+        addOp(GET_ANEXT);
+        addOp(LOAD_NONE);
+        addYieldFrom();
+        addOp(JUMP_FORWARD, body);
+        unit.useNextBlock(except);
+        addOp(END_ASYNC_FOR);
+        addOp(JUMP_FORWARD, node.orElse != null ? orelse : end);
+        unit.popBlock();
+        unit.useNextBlock(body);
+        try {
+            node.target.accept(this);
+            visitSequence(node.body);
+            addOp(JUMP_BACKWARD, head);
+        } finally {
+            unit.popBlock();
+        }
+        if (node.orElse != null) {
+            unit.useNextBlock(orelse);
+            visitSequence(node.orElse);
+        }
+        unit.useNextBlock(end);
     }
 
     // TODO temporary helper so that stuff that's not implemented can compile into stubs
@@ -3670,6 +3715,19 @@ public class Compiler implements SSTreeVisitor<Void> {
                         addOp(ROT_TWO);
                     }
                     addOp(POP_TOP);
+                } else if (info instanceof BlockInfo.AsyncForLoop) {
+                    // AsyncForLoopExit cannot have a return, break, or continue in it, so no need
+                    // to check it.
+                    if (type == UnwindType.CONTINUE) {
+                        return (BlockInfo.Loop) info;
+                    }
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_TWO);
+                    }
+                    addOp(POP_TOP);
+                    if (type == UnwindType.BREAK) {
+                        return (BlockInfo.Loop) info;
+                    }
                 }
                 info = info.outer;
             }
