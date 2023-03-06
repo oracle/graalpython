@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -103,6 +102,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -197,7 +197,7 @@ public final class CApiContext extends CExtContext {
     private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
 
-    private final IdentityHashMap<Object, Object> procWrappers = new IdentityHashMap<>();
+    private final WeakIdentityHashMap<Object, Object> procWrappers = new WeakIdentityHashMap<>();
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());

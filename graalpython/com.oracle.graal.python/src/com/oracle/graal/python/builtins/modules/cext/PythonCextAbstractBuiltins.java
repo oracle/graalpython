@@ -909,28 +909,28 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyObject_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
-        int set(PBuiltinFunction obj, TruffleString value,
-                        @Cached WriteAttributeToDynamicObjectNode write) {
+        static int set(PBuiltinFunction obj, TruffleString value,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
             write.execute(obj, T___DOC__, value);
             return 1;
         }
 
         @Specialization
-        int set(PBuiltinMethod obj, TruffleString value,
-                        @Cached WriteAttributeToDynamicObjectNode write) {
+        static int set(PBuiltinMethod obj, TruffleString value,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
             set(obj.getFunction(), value, write);
             return 1;
         }
 
         @Specialization
-        int set(GetSetDescriptor obj, TruffleString value,
-                        @Cached WriteAttributeToDynamicObjectNode write) {
+        static int set(GetSetDescriptor obj, TruffleString value,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
             write.execute(obj, T___DOC__, value);
             return 1;
         }
 
         @Specialization(guards = "isType.execute(type)", limit = "1")
-        int set(PythonNativeClass type, TruffleString value,
+        static int set(PythonNativeClass type, TruffleString value,
                         @SuppressWarnings("unused") @Cached IsTypeNode isType,
                         // TODO we should write to tp_doc, this writes to __doc__ in the type dict
                         @Cached("createForceType()") WriteAttributeToObjectNode write) {
@@ -940,7 +940,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        int set(Object obj, Object value) {
+        static int set(Object obj, Object value) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw CompilerDirectives.shouldNotReachHere("Don't know how to set doc for " + obj.getClass());
         }
     }

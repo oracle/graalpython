@@ -898,7 +898,7 @@ void PyTruffle_PrimitiveArrayFree(void* array) {
     free(array);
 }
 
-void PyTruffle_ObjectArrayFree(PyObject** array, int size) {
+void PyTruffle_ObjectArrayFree(PyObject** array, int32_t size) {
     for (int i = 0; i < size; i++) {
         Py_DECREF(array[i]);
     }
