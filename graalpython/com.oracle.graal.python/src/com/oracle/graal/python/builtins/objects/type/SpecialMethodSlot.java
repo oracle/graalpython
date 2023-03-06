@@ -61,11 +61,13 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T__AENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T__AEXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T__AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
@@ -211,10 +213,13 @@ public enum SpecialMethodSlot {
 
     Iter(T___ITER__),
     Next(T___NEXT__),
-    Await(T__AWAIT__),
+    Await(T___AWAIT__),
 
-    AEnter(T__AENTER__),
-    AExit(T__AEXIT__),
+    AEnter(T___AENTER__),
+    AExit(T___AEXIT__),
+
+    AIter(T___AITER__),
+    ANext(T___ANEXT__),
 
     New(T___NEW__, NO_BUILTIN_DESCRIPTORS),
     Init(T___INIT__, NO_BUILTIN_DESCRIPTORS),
@@ -942,6 +947,9 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___AND__, TS_ENCODING)) {
                     return And;
                 }
+                if (eqNode.execute(name, T___ANEXT__, TS_ENCODING)) {
+                    return ANext;
+                }
                 break;
             case 'r' * 26 + 'a':    // ra
                 if (eqNode.execute(name, T___RAND__, TS_ENCODING)) {
@@ -1074,16 +1082,21 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 'a' * 26 + 'w': // aw
-                if (eqNode.execute(name, T__AWAIT__, TS_ENCODING)) {
+                if (eqNode.execute(name, T___AWAIT__, TS_ENCODING)) {
                     return Await;
                 }
                 break;
             case 'a' * 26 + 'e': // ae
-                if (eqNode.execute(name, T__AENTER__, TS_ENCODING)) {
+                if (eqNode.execute(name, T___AENTER__, TS_ENCODING)) {
                     return AEnter;
                 }
-                if (eqNode.execute(name, T__AEXIT__, TS_ENCODING)) {
+                if (eqNode.execute(name, T___AEXIT__, TS_ENCODING)) {
                     return AExit;
+                }
+                break;
+            case 'a' * 26 + 'i': // ai
+                if (eqNode.execute(name, T___AITER__, TS_ENCODING)) {
+                    return AIter;
                 }
                 break;
         }

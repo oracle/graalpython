@@ -117,8 +117,7 @@ public class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class InternalSetRunningLoop extends PythonUnaryBuiltinNode {
         @Specialization
         public Object setCurrentLoop(Object loop) {
-            getContext().getThreadState(getLanguage()).setRunningEventLoop(loop);
-
+            getContext().getThreadState(getLanguage()).setRunningEventLoop(loop == PNone.NONE ? null : loop);
             return PNone.NONE;
         }
     }
