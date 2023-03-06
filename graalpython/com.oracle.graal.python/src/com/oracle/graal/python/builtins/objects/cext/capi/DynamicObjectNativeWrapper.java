@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNativeMemberInMRONode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
@@ -112,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -314,7 +314,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         static Object execute(DynamicObjectNativeWrapper object, String key,
                         @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                        @Exclusive @Cached AsPythonObjectNode getDelegate,
+                        @Exclusive @Cached NativeToPythonNode getDelegate,
                         @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
@@ -1513,7 +1513,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             static void doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object nativeValue,
                             @Cached GetDictIfExistsNode getDict,
                             @Cached SetDictNode setDict,
-                            @Cached AsPythonObjectNode asPythonObjectNode,
+                            @Cached NativeToPythonNode asPythonObjectNode,
                             @Cached WriteAttributeToObjectNode writeAttrNode,
                             @Cached HashingStorageGetIterator getIterator,
                             @Cached HashingStorageIteratorNext itNext,
@@ -2141,7 +2141,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             static Object execute(PrimitiveNativeWrapper object, String key,
                             @Exclusive @Cached BranchProfile isNotObRefcntProfile,
                             @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                            @Exclusive @Cached AsPythonObjectNode getDelegate,
+                            @Exclusive @Cached NativeToPythonNode getDelegate,
                             @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
                 boolean mustRelease = gil.acquire();
                 try {

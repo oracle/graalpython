@@ -109,8 +109,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     /* Python C API functions */
 
     FUN_PY_TRUFFLE_STRING_TO_CSTR("PyTruffle_StringToCstr"),
-    FUN_NATIVE_HANDLE_FOR_ARRAY("NativeHandle_ForArray"),
-    FUN_PY_NONE_HANDLE("PyNoneHandle"),
     FUN_WHCAR_SIZE("PyTruffle_Wchar_Size"),
     FUN_PY_TRUFFLE_CSTR_TO_STRING("PyTruffle_CstrToString"),
     FUN_PY_TRUFFLE_ASCII_TO_STRING("PyTruffle_AsciiToString"),

@@ -4126,9 +4126,8 @@ PyAPI_FUNC(PyObject*) PyType_GenericNew(PyTypeObject* a, PyObject* b, PyObject* 
     PyObject* result = (PyObject*) __target__PyType_GenericNew(a, b, c);
     return result;
 }
-unsigned long (*__target__PyType_GetFlags)(PyTypeObject*) = NULL;
 PyAPI_FUNC(unsigned long) PyType_GetFlags(PyTypeObject* a) {
-    unsigned long result = (unsigned long) __target__PyType_GetFlags(a);
+    unsigned long result = (unsigned long) GraalPyType_GetFlags(a);
     return result;
 }
 PyObject* (*__target__PyType_GetModule)(PyTypeObject*) = NULL;
@@ -6587,7 +6586,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyType_FromSpecWithBases = getAPI("PyType_FromSpecWithBases");
     __target__PyType_GenericAlloc = getAPI("PyType_GenericAlloc");
     __target__PyType_GenericNew = getAPI("PyType_GenericNew");
-    __target__PyType_GetFlags = getAPI("PyType_GetFlags");
     __target__PyType_GetModule = getAPI("PyType_GetModule");
     __target__PyType_GetModuleState = getAPI("PyType_GetModuleState");
     __target__PyType_GetSlot = getAPI("PyType_GetSlot");
