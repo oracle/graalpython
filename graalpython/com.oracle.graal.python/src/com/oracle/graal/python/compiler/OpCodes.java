@@ -46,6 +46,7 @@ import com.oracle.graal.python.annotations.GenerateEnumConstants;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 
 /**
  * Operation codes of our bytecode interpreter. They are similar to CPython's, but not the same. Our
@@ -703,6 +704,13 @@ public enum OpCodes {
      * Pops: yielded value
      */
     YIELD_VALUE(0, 1, 0),
+    /**
+     * Wrap value from the stack in a {@link PAsyncGenWrappedValue}. CPython 3.11 opcode, used here
+     * to avoid a runtime check
+     *
+     * Pops: an object Pushes: async_generator_wrapped_value
+     */
+    ASYNCGEN_WRAP(0, 1, 1),
     /**
      * Resume after yield. Will raise exception passed by {@code throw} if any.
      *

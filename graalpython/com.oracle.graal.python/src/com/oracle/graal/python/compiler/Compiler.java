@@ -41,6 +41,7 @@
 package com.oracle.graal.python.compiler;
 
 import static com.oracle.graal.python.compiler.OpCodes.ADD_TO_COLLECTION;
+import static com.oracle.graal.python.compiler.OpCodes.ASYNCGEN_WRAP;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_OP;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.BUILD_SLICE;
@@ -1851,6 +1852,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                 node.value.accept(this);
             } else {
                 addOp(LOAD_NONE);
+            }
+            if (unit.scopeType == CompilationScope.AsyncFunction) {
+                // Async generator
+                addOp(ASYNCGEN_WRAP);
             }
             addOp(YIELD_VALUE);
             addOp(RESUME_YIELD);

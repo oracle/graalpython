@@ -73,6 +73,9 @@ import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenAThrow;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 import com.oracle.graal.python.builtins.objects.asyncio.PCoroutineWrapper;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -1514,4 +1517,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new MultibyteCodecObject(type, getShape(type), codec));
     }
 
+    public PAsyncGenASend createAsyncGeneratorASend() {
+        return trace(new PAsyncGenASend(getLanguage()));
+    }
+
+    public PAsyncGenAThrow createAsyncGeneratorAThrow() {
+        return trace(new PAsyncGenAThrow(getLanguage()));
+    }
+
+    public PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(Object wrapped) {
+        return trace(new PAsyncGenWrappedValue(getLanguage(), wrapped));
+    }
 }

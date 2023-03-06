@@ -55,6 +55,7 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGeneratorBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -713,7 +714,8 @@ public abstract class Python3Core {
                         new GraalHPyDebugModuleBuiltins(),
 
                         // _asyncio
-                        new AsyncioModuleBuiltins()));
+                        new AsyncioModuleBuiltins(),
+                        new AsyncGeneratorBuiltins()));
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
