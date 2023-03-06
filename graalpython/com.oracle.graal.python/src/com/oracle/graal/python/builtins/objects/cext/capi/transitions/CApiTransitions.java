@@ -568,7 +568,13 @@ public class CApiTransitions {
         } else if (obj instanceof DescriptorDeleteMarker) {
             return PythonContext.get(null).getNativeNull().getPtr();
         } else {
-            PythonNativeWrapper wrapper = GetNativeWrapperNodeGen.getUncached().execute(obj);
+            Object promoted;
+            if (obj instanceof TruffleString) {
+                promoted = PythonContext.get(null).getCApiContext().getOrInsertPromotedTruffleString((TruffleString) obj);
+            } else {
+                promoted = obj;
+            }
+            PythonNativeWrapper wrapper = GetNativeWrapperNodeGen.getUncached().execute(promoted);
             if (transfer) {
                 // native part needs to decRef to release
                 incRef(wrapper, 1);

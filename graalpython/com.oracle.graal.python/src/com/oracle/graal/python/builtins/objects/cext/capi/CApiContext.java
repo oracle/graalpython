@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -101,6 +103,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -160,6 +163,8 @@ public final class CApiContext extends CExtContext {
      */
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
 
+    private final WeakIdentityHashMap<TruffleString, PString> promotedTruffleStringCache;
+
     /**
      * Required to emulate PyLongObject's ABI; number of bits per digit (equal to
      * {@code PYLONG_BITS_IN_DIGIT}.
@@ -205,6 +210,7 @@ public final class CApiContext extends CExtContext {
     private CApiContext() {
         super(null, null, null);
         primitiveNativeWrapperCache = null;
+        promotedTruffleStringCache = null;
         llvmTypeCache = null;
     }
 
@@ -221,6 +227,7 @@ public final class CApiContext extends CExtContext {
             CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
             primitiveNativeWrapperCache[i] = nativeWrapper;
         }
+        promotedTruffleStringCache = new WeakIdentityHashMap<>();
     }
 
     public int getPyLongBitsInDigit() {
@@ -345,6 +352,16 @@ public final class CApiContext extends CExtContext {
             return modulesByIndex.get(i);
         }
         return null;
+    }
+
+    @TruffleBoundary
+    public Object getOrInsertPromotedTruffleString(TruffleString obj) {
+        PString pString = promotedTruffleStringCache.get(obj);
+        if (pString == null) {
+            pString = PromoteBorrowedValue.doString(obj, getContext().factory());
+            promotedTruffleStringCache.put(obj, pString);
+        }
+        return pString;
     }
 
     @TruffleBoundary
