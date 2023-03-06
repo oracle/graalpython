@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -62,8 +62,6 @@ public final class PFunction extends PythonObject {
     @CompilationFinal private PCode code;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
-
-    public Object procsWrapper;
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, PCell[] closure) {
         this(lang, name, qualname, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);

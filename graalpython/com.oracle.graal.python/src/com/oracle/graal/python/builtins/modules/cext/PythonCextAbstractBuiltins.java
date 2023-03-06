@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_OBJECT_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -57,6 +58,7 @@ import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
@@ -81,19 +83,24 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins.PyErr_Restore;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
@@ -107,6 +114,8 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -879,10 +888,20 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.ConstCharPtr, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
     abstract static class PyObject_GetDoc extends CApiUnaryBuiltinNode {
         @Specialization
-        Object check(@SuppressWarnings("unused") Object obj) {
+        Object get(Object obj,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached AsCharPointerNode asCharPointerNode) {
+            try {
+                Object doc = lookupAttr.execute(null, obj, T___DOC__);
+                if (!(doc instanceof PNone)) {
+                    return asCharPointerNode.execute(doc);
+                }
+            } catch (PException e) {
+                // ignore
+            }
             return getNULL();
         }
     }
@@ -890,8 +909,40 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyObject_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
-        int check(@SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") TruffleString value) {
+        static int set(PBuiltinFunction obj, TruffleString value,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
+            write.execute(obj, T___DOC__, value);
             return 1;
+        }
+
+        @Specialization
+        static int set(PBuiltinMethod obj, TruffleString value,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
+            set(obj.getFunction(), value, write);
+            return 1;
+        }
+
+        @Specialization
+        static int set(GetSetDescriptor obj, TruffleString value,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
+            write.execute(obj, T___DOC__, value);
+            return 1;
+        }
+
+        @Specialization(guards = "isType.execute(type)", limit = "1")
+        static int set(PythonNativeClass type, TruffleString value,
+                        @SuppressWarnings("unused") @Cached IsTypeNode isType,
+                        // TODO we should write to tp_doc, this writes to __doc__ in the type dict
+                        @Cached("createForceType()") WriteAttributeToObjectNode write) {
+            write.execute(type, T___DOC__, value);
+            return 1;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static int set(Object obj, Object value) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere("Don't know how to set doc for " + obj.getClass());
         }
     }
 }

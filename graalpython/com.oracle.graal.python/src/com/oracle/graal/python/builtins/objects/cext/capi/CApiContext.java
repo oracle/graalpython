@@ -102,6 +102,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
@@ -199,6 +200,8 @@ public final class CApiContext extends CExtContext {
     private Object nativeLibrary;
     private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
+
+    private final WeakIdentityHashMap<Object, Object> procWrappers = new WeakIdentityHashMap<>();
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -1066,5 +1069,10 @@ public final class CApiContext extends CExtContext {
 
     public void retainClosure(Object closure) {
         callableClosures.add(closure);
+    }
+
+    @TruffleBoundary
+    public Object getOrCreateProcWrapper(Object callable, Function<Object, Object> factory) {
+        return procWrappers.computeIfAbsent(callable, factory);
     }
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -130,6 +130,31 @@ class TestPyBytes(CPyExtTestCase):
         arguments=["PyObject* arg"],
         resultvars=("char* s", "Py_ssize_t sz"),
         resulttype="int"
+    )
+
+    test_native_storage = CPyExtFunction(
+        lambda args: args[0].encode('utf-8')[-1],
+        lambda: (("hello",), ("world",)),
+        argspec="O",
+        arguments=["PyObject* arg"],
+        resultspec="i",
+        # The code is creating the bytes objects in such a roundabout way in order to make sure the native storage will
+        # get collected after the test
+        code="""
+        int wrap_test_native_storage(PyObject* str) {
+            PyObject* bytes = PyUnicode_AsUTF8String(str);
+            if (bytes == NULL)
+                return -1;
+            char* s;
+            Py_ssize_t sz;
+            if (PyBytes_AsStringAndSize(bytes, &s, &sz) < 0)
+                return -1;
+            int ret = s[sz - 1];
+            Py_DECREF(bytes);
+            return ret;
+        }
+        """,
+        callfunction='wrap_test_native_storage',
     )
 
     # PyBytes_Size

@@ -44,28 +44,32 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -94,6 +98,7 @@ public class CApiTransitions {
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final WeakHashMap<Object, WeakReference<PythonAbstractNativeObject>> managedNativeLookup = new WeakHashMap<>();
         public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>();
+        public final Set<NativeStorageReference> nativeStorageReferences = new HashSet<>();
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
 
@@ -146,13 +151,49 @@ public class CApiTransitions {
             this.pointer = pointer;
             referent.ref = this;
             assert (pointer & 7) == 0;
-            LOGGER.finer(() -> PythonUtils.formatJString("new NativeObjectReference reference to %s", referent));
+            LOGGER.finer(() -> PythonUtils.formatJString("new NativeObjectReference<%s> to %s", Long.toHexString(pointer), referent));
         }
 
         @Override
         public String toString() {
             return "NativeObjectReference<" + (get() == null ? "freed," : "") + Long.toHexString(pointer) + ">";
         }
+    }
+
+    public static final class NativeStorageReference extends IdReference<NativeSequenceStorage> {
+        private final ListStorageType type;
+        private Object ptr;
+        private int size;
+
+        public NativeStorageReference(NativeSequenceStorage storage) {
+            super(storage);
+            type = storage.getElementType();
+            ptr = storage.getPtr();
+            LOGGER.finer(() -> PythonUtils.formatJString("new NativeStorageReference<%s>", ptr));
+        }
+
+        public Object getPtr() {
+            return ptr;
+        }
+
+        public void setPtr(Object ptr) {
+            this.ptr = ptr;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public void setSize(int size) {
+            this.size = size;
+        }
+    }
+
+    @TruffleBoundary
+    public static void registerNativeSequenceStorage(NativeSequenceStorage storage) {
+        NativeStorageReference ref = new NativeStorageReference(storage);
+        storage.setReference(ref);
+        getContext().nativeStorageReferences.add(ref);
     }
 
     @TruffleBoundary
@@ -178,8 +219,7 @@ public class CApiTransitions {
                     assert context.referenceQueuePollActive;
                 }
                 count++;
-                if (entry instanceof PythonObjectReference) {
-                    PythonObjectReference reference = (PythonObjectReference) entry;
+                if (entry instanceof PythonObjectReference reference) {
                     LOGGER.finer(() -> PythonUtils.formatJString("releasing PythonObjectReference %s", reference));
 
                     if (HandleTester.pointsToPyHandleSpace(reference.pointer)) {
@@ -190,8 +230,7 @@ public class CApiTransitions {
                         assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
                         nativeLookupRemove(context, reference.pointer);
                     }
-                } else {
-                    NativeObjectReference reference = (NativeObjectReference) entry;
+                } else if (entry instanceof NativeObjectReference reference) {
                     LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
                     nativeLookupRemove(context, reference.pointer);
                     Object object = reference.object;
@@ -203,6 +242,15 @@ public class CApiTransitions {
                         }
                     }
                     PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_SUBREF, object, PythonNativeWrapper.MANAGED_REFCNT);
+                } else if (entry instanceof NativeStorageReference reference) {
+                    LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeStorageReference %s", reference));
+                    context.nativeStorageReferences.remove(entry);
+                    if (reference.type == ListStorageType.Generic) {
+                        PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_FREE, reference.ptr, reference.size);
+                    } else {
+                        assert reference.type != ListStorageType.Uninitialized;
+                        PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_PRIMITIVE_ARRAY_FREE, reference.ptr);
+                    }
                 }
             }
         }

@@ -365,7 +365,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1, doc = "Return str(self).")
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization

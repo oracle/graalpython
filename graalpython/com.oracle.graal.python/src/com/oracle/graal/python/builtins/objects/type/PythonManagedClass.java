@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -78,6 +78,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private boolean mroInitialized = false;
 
     public PTuple mroStore;
+    public PTuple basesTuple;
 
     @TruffleBoundary
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, PythonAbstractClass... baseClasses) {

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
@@ -137,6 +138,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
@@ -169,10 +171,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.CharsetEncoder;
@@ -189,7 +193,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNativeMemberInMRONode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
@@ -228,7 +232,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -263,6 +266,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -1335,8 +1339,7 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         public Object get(PythonManagedClass object,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode) {
-            // TODO: is this correct, "DEALLOC"?
-            return lookupNativeMemberNode.execute(object, TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC);
+            return lookupNativeMemberNode.execute(object, TP_DEL, TypeBuiltins.TYPE_DEL);
         }
     }
 
@@ -1563,6 +1566,22 @@ public final class PythonCextSlotBuiltins {
         public Object get(@SuppressWarnings("unused") PythonManagedClass object) {
             // TODO create dict view on subclasses set
             return factory().createDict();
+        }
+    }
+
+    @CApiBuiltin(ret = descrgetfunc, args = {PyTypeObject}, call = Ignored)
+    public abstract static class Py_get_PyTypeObject_tp_descr_get extends PyGetTypeSlotNode {
+
+        Py_get_PyTypeObject_tp_descr_get() {
+            super(T___GET__);
+        }
+    }
+
+    @CApiBuiltin(ret = descrsetfunc, args = {PyTypeObject}, call = Ignored)
+    public abstract static class Py_get_PyTypeObject_tp_descr_set extends PyGetTypeSlotNode {
+
+        Py_get_PyTypeObject_tp_descr_set() {
+            super(T___SET__);
         }
     }
 
@@ -1908,14 +1927,25 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
+    public abstract static class Py_get_PyTypeObject_tp_bases extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object doTpBases(PythonManagedClass type,
+                        @Cached TypeNodes.GetBaseClassesNode getBaseClassesNode) {
+            if (type.basesTuple == null) {
+                type.basesTuple = factory().createTuple(getBaseClassesNode.execute(type));
+            }
+            return type.basesTuple;
+        }
+    }
+
     @CApiBuiltin(name = "Py_get_dummy", ret = Pointer, args = {Pointer}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_setattr", ret = setattrfunc, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_getattr", ret = getattrfunc, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_methods", ret = PyMethodDef, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_members", ret = PyMemberDef, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_getset", ret = PyGetSetDef, args = {PyTypeObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_get_PyTypeObject_tp_descr_get", ret = descrgetfunc, args = {PyTypeObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_get_PyTypeObject_tp_descr_set", ret = descrsetfunc, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_is_gc", ret = inquiry, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_finalize", ret = destructor, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_vectorcall", ret = vectorcallfunc, args = {PyTypeObject}, call = Ignored)
@@ -1939,7 +1969,6 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "Py_get_PyTypeObject_tp_bases", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_cache", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_weaklist", ret = PyObjectBorrowed, args = {PyTypeObject}, call = Ignored)
     public abstract static class PyGetSlotDummyPyPtr extends CApiUnaryBuiltinNode {
@@ -1951,9 +1980,11 @@ public final class PythonCextSlotBuiltins {
     }
 
     public abstract static class PyGetTypeSlotNode extends CApiUnaryBuiltinNode {
+        private final TruffleString name;
         private @Child LookupAttributeInMRONode lookup;
 
         PyGetTypeSlotNode(TruffleString name) {
+            this.name = name;
             lookup = LookupAttributeInMRONode.create(name);
         }
 
@@ -1968,28 +1999,26 @@ public final class PythonCextSlotBuiltins {
         }
 
         @TruffleBoundary
-        private Object getProcsWrapper(Object object) {
-            Object value = lookup.execute(object);
+        private Object getProcsWrapper(Object type) {
+            Object value = lookup.execute(type);
             if (value instanceof PNone) {
                 // both None and NO_VALUE can appear
                 return getNULL();
             }
-            if (value instanceof PFunction) {
-                PFunction func = (PFunction) value;
-                if (func.procsWrapper != null) {
-                    return func.procsWrapper;
+            /*
+             * The method can be a slot wrapper that already wraps a native slot function. If it
+             * matches in type and slot name, we should unwrap it to avoid nesting multiple
+             * wrappers.
+             */
+            if (value instanceof PBuiltinFunction function) {
+                Object wrappedPtr = ExternalFunctionNodes.tryGetHiddenCallable(function);
+                if (wrappedPtr != null && name.equalsUncached(function.getName(), TS_ENCODING) &&
+                                function.getEnclosingType() != null && IsSubtypeNode.getUncached().execute(type, function.getEnclosingType())) {
+                    return wrappedPtr;
                 }
-                return func.procsWrapper = createProcsWrapper(value);
-            } else if (value instanceof PBuiltinFunction) {
-                PBuiltinFunction func = (PBuiltinFunction) value;
-                if (func.procsWrapper != null) {
-                    return func.procsWrapper;
-                }
-                return func.procsWrapper = createProcsWrapper(value);
-            } else if (value instanceof PythonAbstractNativeObject) {
-                return ((PythonAbstractNativeObject) value).getPtr();
             }
-            throw CompilerDirectives.shouldNotReachHere(value.getClass().getSimpleName());
+            CApiContext cApiContext = PythonContext.get(this).getCApiContext();
+            return cApiContext.getOrCreateProcWrapper(value, this::createProcsWrapper);
         }
 
         private Object createProcsWrapper(Object value) {
@@ -2017,9 +2046,12 @@ public final class PythonCextSlotBuiltins {
                     return new PyProcsWrapper.RichcmpFunctionWrapper(value);
                 case objobjargproc:
                 case setattrofunc:
+                case descrsetfunc:
                     return new PyProcsWrapper.SetAttrWrapper(value);
                 case getattrofunc:
                     return new PyProcsWrapper.GetAttrWrapper(value);
+                case descrgetfunc:
+                    return new PyProcsWrapper.DescrGetFunctionWrapper(value);
             }
             throw CompilerDirectives.shouldNotReachHere("descriptor: " + getRetDescriptor());
         }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import gc
 
 import sys
 import os
@@ -400,6 +401,7 @@ class CPyExtFunction():
                 assert cresult == presult, ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
             else:
                 assert self.cmpfunc(cresult, presult), ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
+        gc.collect()
 
     def __get__(self, instance, typ=None):
         if typ is None:
