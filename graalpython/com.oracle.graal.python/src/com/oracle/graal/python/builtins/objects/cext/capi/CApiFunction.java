@@ -617,7 +617,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyType_FromSpecWithBases", ret = PyObject, args = {PY_TYPE_SPEC, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyType_GenericAlloc", ret = PyObject, args = {PyTypeObject, Py_ssize_t}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyType_GenericNew", ret = PyObject, args = {PyTypeObject, PyObject, PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyType_GetFlags", ret = UNSIGNED_LONG, args = {PyTypeObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyType_GetModule", ret = PyObject, args = {PyTypeObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyType_GetModuleState", ret = Pointer, args = {PyTypeObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyType_GetSlot", ret = Pointer, args = {PyTypeObject, Int}, call = PolyglotImpl)

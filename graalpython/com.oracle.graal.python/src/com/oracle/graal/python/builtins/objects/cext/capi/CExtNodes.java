@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CharPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
@@ -610,24 +609,6 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    /**
-     * Unwraps objects contained in {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper}
-     * instances or wraps objects allocated in native code for consumption in Java.
-     */
-    @GenerateUncached
-    @ImportStatic({PGuards.class, CApiGuards.class})
-    public abstract static class AsPythonObjectNode extends CExtAsPythonObjectNode {
-
-        @Specialization(limit = "3")
-        static Object doNativeObject(Object object,
-                        @CachedLibrary("object") InteropLibrary lib) {
-            if (lib.isNull(object)) {
-                return PNone.NO_VALUE;
-            }
-            return CApiTransitions.nativeToPython(object, false);
-        }
-    }
-
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectStealingNode extends CExtAsPythonObjectNode {
@@ -767,7 +748,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
-                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
+                        @Exclusive @Cached NativeToPythonNode toJavaNode) {
             return toJavaNode.execute(value);
         }
 
@@ -1026,7 +1007,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = {"getNativeClassByMember", "getNativeClassByMemberAttachType"})
         static Object getNativeClass(PythonAbstractNativeObject object,
                         @Cached PCallCapiFunction callGetObTypeNode,
-                        @Cached AsPythonObjectNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ProfileClassNode classProfile) {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
@@ -1137,7 +1118,7 @@ public abstract class CExtNodes {
         static Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
                         @Cached("args.length") int cachedLength,
                         @Cached("offset") int cachedOffset,
-                        @Cached("createNodes(args.length)") AsPythonObjectNode[] toJavaNodes) {
+                        @Cached("createNodes(args.length)") NativeToPythonNode[] toJavaNodes) {
             int n = cachedLength - cachedOffset;
             Object[] output = new Object[n];
             for (int i = 0; i < n; i++) {
@@ -1148,7 +1129,7 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = "cached")
         static Object[] uncached(Object[] args, int offset,
-                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
+                        @Exclusive @Cached NativeToPythonNode toJavaNode) {
             int len = args.length - offset;
             Object[] output = new Object[len];
             for (int i = 0; i < len; i++) {
@@ -1162,10 +1143,10 @@ public abstract class CExtNodes {
             return len - offset;
         }
 
-        static AsPythonObjectNode[] createNodes(int n) {
-            AsPythonObjectNode[] nodes = new AsPythonObjectNode[n];
+        static NativeToPythonNode[] createNodes(int n) {
+            NativeToPythonNode[] nodes = new NativeToPythonNode[n];
             for (int i = 0; i < n; i++) {
-                nodes[i] = AsPythonObjectNodeGen.create();
+                nodes[i] = NativeToPythonNodeGen.create();
             }
             return nodes;
         }
@@ -1376,7 +1357,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 2")
         Object upcall0(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1387,7 +1368,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall1(VirtualFrame frame, Object[] args,
                         @Cached CallUnaryMethodNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1398,7 +1379,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 4")
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1409,7 +1390,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 5")
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1420,7 +1401,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             // we needs at least a receiver and a member name
             assert args.length >= 2;
@@ -2635,7 +2616,7 @@ public abstract class CExtNodes {
                         @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
                         @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
                         @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+                        @Shared("asPythonObjectNode") @Cached NativeToPythonNode asPythonObjectNode) {
             Object type = asPythonObjectNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, ptr));
             Object llvmType = getSulongTypeNode.execute(type);
             if (llvmType == null) {
@@ -2651,7 +2632,7 @@ public abstract class CExtNodes {
                         @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
                         @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
                         @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+                        @Shared("asPythonObjectNode") @Cached NativeToPythonNode asPythonObjectNode) {
             if (!lib.hasMetaObject(ptr)) {
                 return doUntyped(ptr, lib, getSulongTypeNode, getLLVMType, callGetObTypeNode, callPolyglotFromTypedNode, asPythonObjectNode);
             }
@@ -3083,7 +3064,7 @@ public abstract class CExtNodes {
         @Specialization
         static PMemoryView fromNative(PythonNativeObject buf, int flags,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached NativeToPythonNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
             Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);

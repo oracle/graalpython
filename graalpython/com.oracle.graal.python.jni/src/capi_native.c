@@ -341,7 +341,24 @@ CAPI_BUILTINS
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
     initializeCAPIForwards(getAPI);
 
-    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    if (PyTruffle_Log_Fine()) {
+    	// provide some timing info for native/Java boundary
+
+        clock_t start;
+        for (int run = 0; run < 2000; run++) {
+			start = clock();
+			int COUNT = 10000;
+			for (int i = 0; i < COUNT; i++) {
+				GraalPyTruffleLong_Zero();
+			}
+			double delta = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+			if ((run % 100) == 0) {
+				PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "C API Timing probe: %.0fns", delta * 1000000000 / COUNT);
+			}
+        }
+        PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    }
+
     return 1;
 }
 

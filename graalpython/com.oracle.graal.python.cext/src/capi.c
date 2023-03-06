@@ -606,11 +606,6 @@ PyAPI_FUNC(void) PyTruffle_Free(intptr_t val) {
     PyMem_RawFree((void*) val);
 }
 
-/** to be used from Java code only; creates the deref handle for a sequence wrapper */
-PyAPI_FUNC(void*) NativeHandle_ForArray(void* jobj, Py_ssize_t element_size) {
-    return create_deref_handle(jobj);
-}
-
 PyAPI_FUNC(const char*) PyTruffle_StringToCstr(void* o, int32_t strLen) {
     const char *buffer;
     const char *str;
@@ -2022,6 +2017,10 @@ PyAPI_FUNC(int) PyTuple_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
 #undef PyTuple_Size
 PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
     return GraalPyTuple_Size(a);
+}
+#undef PyType_GetFlags
+PyAPI_FUNC(unsigned long) PyType_GetFlags(PyTypeObject* a) {
+    return GraalPyType_GetFlags(a);
 }
 #undef PyType_IsSubtype
 PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {

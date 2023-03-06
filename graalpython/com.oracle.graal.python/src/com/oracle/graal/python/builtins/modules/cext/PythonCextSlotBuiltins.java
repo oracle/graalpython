@@ -1411,7 +1411,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_flags extends CApiUnaryBuiltinNode {
 
         @Specialization
-        public Object get(PythonManagedClass object,
+        public long get(PythonManagedClass object,
                         @Cached GetTypeFlagsNode getTypeFlagsNode) {
             return getTypeFlagsNode.execute(object);
         }
