@@ -69,8 +69,7 @@ enum ArgBehavior {
     PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::new, null, null, null),
     Pointer("POINTER", "J", "jlong", "long", null, null, null),
     WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNode::new, null),
-    TruffleStringPointer("STRING", "J", "jlong", "long", null, CharPtrToJavaNodeGen::create, null),
-    JavaStringPointer("STRING", "J", "jlong", "long", null, null, null),
+    TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToJavaNodeGen::create, null),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
     Char16("SINT16", "C", "jchar", "char", null, null, null),
     Int32("SINT32", "I", "jint", "int", ToInt32NodeGen::create, null, null),
@@ -406,8 +405,7 @@ public enum ArgDescriptor {
 
     public boolean isPyObjectOrPointer() {
         return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed || behavior == ArgBehavior.Pointer || behavior == ArgBehavior.WrappedPointer ||
-                        behavior == ArgBehavior.TruffleStringPointer ||
-                        behavior == ArgBehavior.JavaStringPointer;
+                        behavior == ArgBehavior.TruffleStringPointer;
     }
 
     public boolean isIntType() {

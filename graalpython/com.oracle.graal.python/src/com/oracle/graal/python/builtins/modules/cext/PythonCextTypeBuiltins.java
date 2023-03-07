@@ -152,7 +152,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Direct, inlined = true)
     @ImportStatic(PythonOptions.class)
     abstract static class PyType_IsSubtype extends CApiBinaryBuiltinNode {
 

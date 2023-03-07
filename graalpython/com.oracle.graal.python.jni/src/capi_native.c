@@ -39,10 +39,11 @@
  * SOFTWARE.
  */
 
-#include <Python.h>
-
 #define EXCLUDE_POLYGLOT_API
 #define Py_BUILD_CORE
+
+#include <Python.h>
+
 #include "capi.h"
 
 #include <frameobject.h>
@@ -298,7 +299,7 @@ int initNativeForwardCalled = 0;
 /**
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
-PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
+PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
     if (initNativeForwardCalled) {
     	return 0;
     }
@@ -339,7 +340,10 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
 CAPI_BUILTINS
 #undef BUILTIN
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
+	printf("options: %x\n", Py_Truffle_Options);
     initializeCAPIForwards(getAPI);
+
+    initialize_native_locations(&PyTruffle_AllocatedMemory, &PyTruffle_MaxNativeMemory, &PyTruffle_NativeMemoryGCBarrier);
 
     if (PyTruffle_Log_Fine()) {
     	// provide some timing info for native/Java boundary
@@ -567,6 +571,20 @@ PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject* a, const char* b, ...) {
     return result;
 }
 
+int PyType_IsSubtype(PyTypeObject *a, PyTypeObject *b) {
+
+	// stay in native code if possible
+
+	PyTypeObject* t = a;
+    do {
+        if (t == b)
+            return 1;
+        t = t->tp_base;
+    } while (t != NULL);
+
+	return PyType_IsSubtype_Inlined(a, b);
+}
+
 
 /*
  * This dummy implementation is needed until we can properly transition the PyThreadState data structure to native.
@@ -583,14 +601,22 @@ char _PyByteArray_empty_string[] = "";
 /*
  * The following source files contain code that can be compiled directly and does not need to be called via stubs in Sulong:
  */
-
 #define COMPILING_NATIVE_CAPI
+
+// there are only pointers, no polyglot values
+static int polyglot_is_value(const void *value) {
+    return 0;
+}
+
 #include "_warnings.c"
 #include "boolobject.c"
+#include "longobject_shared.c"
 #include "complexobject.c"
 #include "dictobject.c"
+#include "floatobject.c"
 #include "modsupport_shared.c"
 #include "object_shared.c"
+#include "obmalloc.c"
 #include "pylifecycle.c"
 
 /*

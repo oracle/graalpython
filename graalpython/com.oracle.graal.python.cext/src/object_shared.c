@@ -40,6 +40,9 @@
  */
 #include "capi.h"
 
+#include "pycore_pymem.h"
+#include "pycore_object.h"
+
 Py_ssize_t _Py_REFCNT(const PyObject *obj) {
 	return PyObject_ob_refcnt(obj);
 }
@@ -97,5 +100,108 @@ int Py_IsTrue(PyObject *x)
 int Py_IsFalse(PyObject *x)
 {
     return Py_Is(x, Py_False);
+}
+
+void _Py_IncRef(PyObject *op) {
+    Py_SET_REFCNT(op, Py_REFCNT(op) + 1);
+}
+
+void _Py_DecRef(PyObject *op) {
+    Py_ssize_t cnt = Py_REFCNT(op) - 1;
+    Py_SET_REFCNT(op, cnt);
+    if (cnt != 0) {
+    }
+    else {
+        _Py_Dealloc(op);
+    }
+}
+
+void Py_IncRef(PyObject *op) {
+	if (op != NULL) {
+		_Py_IncRef(op);
+	}
+}
+
+void Py_DecRef(PyObject *op) {
+	if (op != NULL) {
+		_Py_DecRef(op);
+	}
+}
+
+
+#undef _Py_Dealloc
+
+void
+_Py_Dealloc(PyObject *op)
+{
+    destructor dealloc = Py_TYPE(op)->tp_dealloc;
+#ifdef Py_TRACE_REFS
+    _Py_ForgetReference(op);
+#endif
+    (*dealloc)(op);
+}
+
+
+void
+_Py_NewReference(PyObject *op)
+{
+    if (_Py_tracemalloc_config.tracing) {
+        _PyTraceMalloc_NewReference(op);
+    }
+#ifdef Py_REF_DEBUG
+    _Py_RefTotal++;
+#endif
+    Py_SET_REFCNT(op, 1);
+#ifdef Py_TRACE_REFS
+    _Py_AddToAllObjects(op, 1);
+#endif
+}
+
+PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+
+    _PyObject_Init(op, tp);
+    return op;
+}
+
+// taken from CPython "Objects/object.c"
+PyVarObject* PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
+    if (op == NULL) {
+        return (PyVarObject*) PyErr_NoMemory();
+    }
+
+    _PyObject_InitVar(op, tp, size);
+    return op;
+}
+
+PyObject* _PyObject_New(PyTypeObject *tp) {
+    PyObject *op = (PyObject*)PyObject_MALLOC(_PyObject_SIZE(tp));
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+    return PyObject_INIT(op, tp);
+}
+
+PyVarObject* _PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems) {
+    PyVarObject* op;
+    const size_t size = _PyObject_VAR_SIZE(tp, nitems);
+    op = (PyVarObject*) PyObject_MALLOC(size);
+    if (op == NULL)
+        return (PyVarObject*)PyErr_NoMemory();
+    return PyObject_INIT_VAR(op, tp, nitems);
+}
+
+PyObject* _PyObject_GC_New(PyTypeObject *tp) {
+    return _PyObject_New(tp);
+}
+
+PyVarObject* _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems) {
+    return _PyObject_NewVar(tp, nitems);
+}
+
+void PyObject_GC_Del(void *tp) {
+	PyObject_Free(tp);
 }
 

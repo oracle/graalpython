@@ -371,7 +371,7 @@ public abstract class ExternalFunctionNodes {
             this.returnValue = returnValue;
             this.arguments = arguments;
 
-            StringBuilder s = new StringBuilder("(");
+            StringBuilder s = new StringBuilder("with panama (");
             for (int i = 0; i < arguments.length; i++) {
                 s.append(i == 0 ? "" : ",");
                 s.append(arguments[i].getNFISignature());

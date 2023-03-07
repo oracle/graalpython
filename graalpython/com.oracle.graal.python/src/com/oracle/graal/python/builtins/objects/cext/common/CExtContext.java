@@ -336,7 +336,7 @@ public abstract class CExtContext {
                     if (cApiContext.supportsNativeBackend) {
                         GraalHPyContext.loadJNIBackend();
                         LOGGER.config("loading module " + spec.path + " as native");
-                        library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+                        library = GraalHPyContext.evalNFI(context, "with panama load \"" + spec.path + "\"", "load " + spec.name);
                     }
                 }
             } else {

@@ -87,6 +87,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 
+import sun.misc.Unsafe;
+
 public class CApiTransitions {
 
     // if != 0: GC every X C API calls
@@ -102,6 +104,7 @@ public class CApiTransitions {
 
     public static final class HandleContext {
 
+        public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final WeakHashMap<Object, WeakReference<PythonAbstractNativeObject>> managedNativeLookup = new WeakHashMap<>();
         public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>();
@@ -210,11 +213,17 @@ public class CApiTransitions {
             ReferenceQueue<Object> queue = context.referenceQueue;
             int count = 0;
             long start = 0;
+            NativeObjectReferenceArrayWrapper referencesToBeFreed = getContext().referencesToBeFreed;
             while (true) {
                 Object entry = queue.poll();
                 if (entry == null) {
                     if (count > 0) {
                         assert context.referenceQueuePollActive;
+                        if (!referencesToBeFreed.isEmpty()) {
+                            LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
+                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_BULK_DEALLOC, referencesToBeFreed, referencesToBeFreed.getArraySize());
+                            referencesToBeFreed.reset();
+                        }
                         context.referenceQueuePollActive = false;
                         LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
                     }
@@ -242,15 +251,9 @@ public class CApiTransitions {
                 } else if (entry instanceof NativeObjectReference reference) {
                     LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
                     nativeLookupRemove(context, reference.pointer);
-                    Object object = reference.object;
-                    if (LIB.isPointer(object)) {
-                        try {
-                            object = LIB.asPointer(object);
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
+                    if (addNativeRefCount(reference.pointer, -PythonNativeWrapper.MANAGED_REFCNT) == 0) {
+                        referencesToBeFreed.add(reference.pointer);
                     }
-                    PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_SUBREF, object, PythonNativeWrapper.MANAGED_REFCNT);
                 } else if (entry instanceof NativeStorageReference reference) {
                     LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeStorageReference %s", reference));
                     context.nativeStorageReferences.remove(entry);
@@ -649,11 +652,16 @@ public class CApiTransitions {
     @ImportStatic(CApiGuards.class)
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
+        protected boolean needsTransfer() {
+            return false;
+        }
+
         @Specialization
-        static Object doNative(PythonAbstractNativeObject obj) {
+        static Object doNative(PythonAbstractNativeObject obj,
+                        @Cached PCallCapiFunction callAddRef) {
             boolean transfer = false;
             if (transfer) {
-                PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_ADDREF, obj.object, 1);
+                callAddRef.call(NativeCAPISymbol.FUN_ADDREF, obj.object, 1);
             }
             return obj.getPtr();
         }
@@ -664,7 +672,7 @@ public class CApiTransitions {
         }
 
         @Specialization
-        Object doNative(DescriptorDeleteMarker obj) {
+        Object doNative(@SuppressWarnings("unused") DescriptorDeleteMarker obj) {
             return getContext().getNativeNull().getPtr();
         }
 
@@ -673,16 +681,23 @@ public class CApiTransitions {
         }
 
         @Specialization(guards = "isOther(obj)")
-        static Object doOther(Object obj,
+        Object doOther(Object obj,
                         @Cached GetNativeWrapperNode getWrapper) {
-            boolean transfer = false;
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
-            if (transfer) {
+            if (needsTransfer()) {
                 // native part needs to decRef to release
                 incRef(wrapper, 1);
             }
             return wrapper;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class PythonToNativeTransferNode extends PythonToNativeNode {
+        @Override
+        protected boolean needsTransfer() {
+            return true;
         }
     }
 
@@ -692,6 +707,10 @@ public class CApiTransitions {
 
         public abstract Object execute(PythonNativeWrapper object);
 
+        protected boolean needsTransfer() {
+            return false;
+        }
+
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
                         @Cached ConditionProfile isPrimitiveProfile) {
@@ -699,7 +718,7 @@ public class CApiTransitions {
         }
 
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
-        static Object doForeign(Object value,
+        Object doNonWrapper(Object value,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached ConditionProfile isNullProfile,
                         @Cached ConditionProfile isZeroProfile,
@@ -709,8 +728,6 @@ public class CApiTransitions {
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
             assert !(value instanceof PythonAbstractNativeObject);
-
-            boolean transfer = false;
 
             // this is just a shortcut
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
@@ -749,22 +766,22 @@ public class CApiTransitions {
                     Object ref = lookup.get();
                     if (ref == null) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(value, transfer, pointer);
+                        return createAbstractNativeObject(value, needsTransfer(), pointer);
                     }
                     if (ref instanceof PythonNativeWrapper) {
                         wrapper = (PythonNativeWrapper) ref;
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
-                        if (transfer) {
-                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_ADDREF, value, -1);
+                        if (needsTransfer()) {
+                            addNativeRefCount(pointer, -1);
                         }
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(value, transfer, pointer);
+                    return createAbstractNativeObject(value, needsTransfer(), pointer);
                 }
             }
-            return handleWrapper(isPrimitiveProfile, transfer, wrapper);
+            return handleWrapper(isPrimitiveProfile, needsTransfer(), wrapper);
         }
 
         private static Object handleWrapper(ConditionProfile isPrimitiveProfile, boolean transfer, PythonNativeWrapper wrapper) {
@@ -803,6 +820,27 @@ public class CApiTransitions {
             }
             return result;
         }
+    }
+
+    @GenerateUncached
+    public abstract static class NativeToPythonTransferNode extends NativeToPythonNode {
+        @Override
+        protected boolean needsTransfer() {
+            return true;
+        }
+    }
+
+    private static Unsafe UNSAFE = PythonUtils.initUnsafe();
+    private static final int TP_REFCNT_OFFSET = 0;
+
+    private static long addNativeRefCount(long pointer, long refCntDelta) {
+        long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
+        assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
+        assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
+
+        refCount += refCntDelta;
+        UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount);
+        return refCount;
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -859,7 +897,7 @@ public class CApiTransitions {
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
                         if (transfer) {
-                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_ADDREF, value, -1);
+                            addNativeRefCount(pointer, -1);
                         }
                         return result;
                     }
@@ -901,7 +939,7 @@ public class CApiTransitions {
         nativeLookupPut(getContext(), pointer, ref);
 
         long refCntDelta = PythonNativeWrapper.MANAGED_REFCNT - (transfer ? 1 : 0);
-        PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_ADDREF, obj, refCntDelta);
+        addNativeRefCount(pointer, refCntDelta);
         return result;
     }
 

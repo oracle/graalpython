@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
@@ -72,8 +73,8 @@ public final class PythonCextFloatBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
-    abstract static class PyFloat_AsDouble extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleFloat_AsDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
         static double doLongNativeWrapper(long object) {

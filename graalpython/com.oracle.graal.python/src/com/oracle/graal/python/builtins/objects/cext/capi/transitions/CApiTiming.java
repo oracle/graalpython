@@ -40,8 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import static java.util.stream.Collectors.summingLong;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -55,7 +59,14 @@ public final class CApiTiming {
     private static final int PROFILE_CALL_INTERVAL = Integer.getInteger("python.CAPITiming", 0);
 
     private static final int INITIAL_STACK = 100;
-    private static final double CUTOFF_PERCENT = 0.95;
+    /**
+     * Include results until at least this fraction of total time is included.
+     */
+    private static final double CUTOFF_TIME = 0.95;
+    /**
+     * Include results until at least this fraction of total calls is included.
+     */
+    private static final double CUTOFF_COUNT = 0.95;
 
     private static final class TimingStack {
         long[] subTimes = new long[INITIAL_STACK + 1];
@@ -117,28 +128,15 @@ public final class CApiTiming {
         sorted.sort((a, b) -> Boolean.compare(a.fromJava, b.fromJava) * 100 + a.name.compareTo(b.name));
         System.out.println("======================================================================");
         System.out.printf("%70s  %8s %10s\n", "Name:", "Count:", "Time:");
-        long totalCount = 0;
-        long totalTime = 0;
-        ArrayList<Long> times = new ArrayList<>();
-        for (var e : sorted) {
-            totalCount += e.count;
-            totalTime += e.time;
-            times.add(e.time);
-        }
-        times.sort(Long::compare);
-        long visibleTime = 0;
-        long cutoffTime = 0;
-        for (int i = times.size() - 1; i >= 0; i--) {
-            if (visibleTime <= totalTime * CUTOFF_PERCENT) {
-                cutoffTime = times.get(i);
-                visibleTime += cutoffTime;
-            }
-        }
-        long visibleCount = 0;
+        long totalCount = sorted.stream().collect(summingLong(e -> e.count));
+        long totalTime = sorted.stream().collect(summingLong(e -> e.time));
+        long cutoffTime = getCutoff(totalTime, sorted.stream().map(e -> e.time));
+        long cutoffCount = getCutoff(totalCount, sorted.stream().map(e -> e.count));
         long percent = totalTime / 100;
-        visibleTime = 0;
+        long visibleCount = 0;
+        long visibleTime = 0;
         for (var e : sorted) {
-            if (e.time >= cutoffTime || e.count >= (totalCount * CUTOFF_PERCENT)) {
+            if (e.time >= cutoffTime || e.count >= cutoffCount) {
                 System.out.printf("%70s  %8s %8sms %s\n", e.name, e.count, e.time / 1000000, stars(percent, e.time));
                 visibleCount += e.count;
                 visibleTime += e.time;
@@ -147,10 +145,28 @@ public final class CApiTiming {
         System.out.printf("%70s  %8s %8sms %s\n", "Others:", (totalCount - visibleCount), (totalTime - visibleTime) / 1000000, stars(percent, totalTime - visibleTime));
         System.out.println("----------------------------------------------------------------------");
         System.out.printf("%70s  %8s %8sms\n", "Total:", totalCount, totalTime / 1000000);
+        System.out.printf("%70s  %8s %8sms)\n", "(cutoff:", cutoffCount, cutoffTime / 1000000);
         System.out.println();
     }
 
+    private static long getCutoff(long total, Stream<Long> values) {
+        ArrayList<Long> sorted = new ArrayList<>(values.toList());
+        sorted.sort(Long::compare);
+        long accountedTime = 0;
+        long cutoffTime = 0;
+        for (int i = sorted.size() - 1; i >= 0; i--) {
+            if (accountedTime <= total * CUTOFF_TIME) {
+                cutoffTime = sorted.get(i);
+                accountedTime += cutoffTime;
+            }
+        }
+        return cutoffTime;
+    }
+
     private static String stars(long percent, long time) {
+        if (percent == 0) {
+            return "";
+        }
         String STARS = "****************************************************************************************************";
         int value = (int) ((time + percent / 2) / percent);
         return String.format("%2d", value) + "% " + STARS.substring(0, value);

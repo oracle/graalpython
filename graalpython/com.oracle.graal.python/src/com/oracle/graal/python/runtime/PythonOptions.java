@@ -376,6 +376,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Max native memory heap size (default: 2 GB).") //
     public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 31);
 
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Initial native memory heap size that triggers a GC (default: 256 MB).") //
+    public static final OptionKey<Long> InitialNativeMemory = new OptionKey<>(1L << 28);
+
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set by the launcher to true (false means that GraalPython is being embedded in an application).") //
     public static final OptionKey<Boolean> RunViaLauncher = new OptionKey<>(false);
 
