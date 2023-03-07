@@ -108,6 +108,13 @@ MICRO_BENCHMARKS = {
     'tuple-indexing-from-literal': ITER_10 + ['10000000'],
     'repeated-import': ITER_10 + ['10000000'],
     'codeobject-interpretation': ITER_10 + ['2000'],
+    'regexp': ITER_10,
+    'regexp-split': ITER_10,
+    'regexp-literal-no-match': ITER_10,
+    'regexp-literal-match': ITER_10,
+    'regexp-universal-match': ITER_10,
+    'regexp-char-class-match': ITER_10,
+    'regexp-char-class-no-match': ITER_10,
 }
 
 MICRO_BENCHMARKS_SMALL = {
