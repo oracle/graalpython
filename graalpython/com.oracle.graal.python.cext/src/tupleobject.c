@@ -79,7 +79,6 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     if (newobj == NULL) {
         return NULL;
     }
-    newobj->ob_item = (PyObject **) ((char *)newobj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
 
     // This polyglot type cast is important such that we can directly read and
     // write members of the pointer from Java code.
@@ -109,6 +108,7 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
     	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
     }
     PyObject_INIT_VAR(newObj, cls, nitems);
+    ((PyTupleObject*)newObj)->ob_item = (PyObject **) ((char *)newObj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
     return newObj;
 }
 

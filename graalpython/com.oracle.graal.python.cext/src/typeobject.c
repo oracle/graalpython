@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -306,29 +306,31 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
         COPYSLOT(tp_iter);
         COPYSLOT(tp_iternext);
     }
-
-    if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_FINALIZE) &&
-        (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_FINALIZE)) {
-        COPYSLOT(tp_finalize);
-    }
-    if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_GC) ==
-        (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_GC)) {
-        /* They agree about gc. */
-        COPYSLOT(tp_free);
-    }
-    else if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_GC) &&
-    		PyTypeObject_tp_free(type) == NULL &&
-			PyTypeObject_tp_free(base) == PyObject_Free) {
-        /* A bit of magic to plug in the correct default
-         * tp_free function when a derived class adds gc,
-         * didn't define tp_free, and the base uses the
-         * default non-gc tp_free.
+    {
+        COPYSLOT(tp_alloc);
+        if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_FINALIZE) &&
+            (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_FINALIZE)) {
+            COPYSLOT(tp_finalize);
+        }
+        if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_GC) ==
+            (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_GC)) {
+            /* They agree about gc. */
+            COPYSLOT(tp_free);
+        }
+        else if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_GC) &&
+                PyTypeObject_tp_free(type) == NULL &&
+                PyTypeObject_tp_free(base) == PyObject_Free) {
+            /* A bit of magic to plug in the correct default
+             * tp_free function when a derived class adds gc,
+             * didn't define tp_free, and the base uses the
+             * default non-gc tp_free.
+             */
+            set_PyTypeObject_tp_free(type, PyObject_GC_Del);
+        }
+        /* else they didn't agree about gc, and there isn't something
+         * obvious to be done -- the type is on its own.
          */
-    	set_PyTypeObject_tp_free(type, PyObject_GC_Del);
     }
-    /* else they didn't agree about gc, and there isn't something
-     * obvious to be done -- the type is on its own.
-     */
 }
 
 static int add_member(PyTypeObject* cls, PyObject* type_dict, const char* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
