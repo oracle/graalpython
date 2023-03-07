@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,14 +61,16 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PGroupBy})
@@ -93,28 +95,29 @@ public final class GroupByBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object next(VirtualFrame frame, PGroupBy self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached BranchProfile eqProfile,
-                        @Cached ConditionProfile hasFuncProfile,
-                        @Cached LoopConditionProfile loopConditionProfile) {
+                        @Cached InlinedBranchProfile eqProfile,
+                        @Cached InlinedConditionProfile hasFuncProfile,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile) {
             self.setCurrGrouper(null);
-            while (loopConditionProfile.profile(doGroupByStep(frame, self, eqProfile, eqNode))) {
-                self.groupByStep(frame, nextNode, callNode, hasFuncProfile);
+            while (loopConditionProfile.profile(inliningTarget, doGroupByStep(frame, inliningTarget, self, eqProfile, eqNode))) {
+                self.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
             }
             self.setTgtKey(self.getCurrKey());
             PGrouper grouper = factory().createGrouper(self, self.getTgtKey());
             return factory().createTuple(new Object[]{self.getCurrKey(), grouper});
         }
 
-        protected boolean doGroupByStep(VirtualFrame frame, PGroupBy self, BranchProfile eqProfile, PyObjectRichCompareBool.EqNode eqNode) {
+        protected boolean doGroupByStep(VirtualFrame frame, Node inliningTarget, PGroupBy self, InlinedBranchProfile eqProfile, PyObjectRichCompareBool.EqNode eqNode) {
             if (self.getCurrKey() == null) {
                 return true;
             } else if (self.getTgtKey() == null) {
                 return false;
             } else {
-                eqProfile.enter();
+                eqProfile.enter(inliningTarget);
                 if (!eqNode.execute(frame, self.getTgtKey(), self.getCurrKey())) {
                     return false;
                 }

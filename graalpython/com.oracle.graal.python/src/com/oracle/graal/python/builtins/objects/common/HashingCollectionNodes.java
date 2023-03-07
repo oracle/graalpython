@@ -76,8 +76,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -112,11 +111,11 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached ObjectHashMap.PutNode putNode,
-                        @Cached ConditionProfile hasFrameProfile,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Cached InlinedLoopConditionProfile loopProfile) {
             // We want to avoid calling __hash__() during map.put
-            map.setValueForAllKeys(frame, value, putNode, hasFrameProfile, loopProfile);
+            map.setValueForAllKeys(frame, inliningTarget, value, putNode, loopProfile);
             return map;
         }
 

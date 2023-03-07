@@ -127,7 +127,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFloat)
@@ -972,17 +972,18 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object round(double x, @SuppressWarnings("unused") PNone none,
-                        @Cached ConditionProfile nanProfile,
-                        @Cached ConditionProfile infProfile,
-                        @Cached ConditionProfile isLongProfile) {
-            if (nanProfile.profile(Double.isNaN(x))) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile nanProfile,
+                        @Cached InlinedConditionProfile infProfile,
+                        @Cached InlinedConditionProfile isLongProfile) {
+            if (nanProfile.profile(inliningTarget, Double.isNaN(x))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
-            if (infProfile.profile(Double.isInfinite(x))) {
+            if (infProfile.profile(inliningTarget, Double.isInfinite(x))) {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
             double result = round(x, 0);
-            if (isLongProfile.profile(result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
+            if (isLongProfile.profile(inliningTarget, result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
                 return factory().createInt(toBigInteger(result));
             } else {
                 return (long) result;
@@ -1026,14 +1027,16 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean eqDbLn(double a, long b,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return compareDoubleToLong(a, b, longFitsToDoubleProfile) == 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
         static boolean eqLnDb(long a, double b,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return compareDoubleToLong(b, a, longFitsToDoubleProfile) == 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return compareDoubleToLong(inliningTarget, b, a, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
@@ -1066,8 +1069,8 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         // adapted from CPython's float_richcompare in floatobject.c
-        public static double compareDoubleToLong(double v, long w, ConditionProfile wFitsInDoubleProfile) {
-            if (wFitsInDoubleProfile.profile(w > -0x1000000000000L && w < 0x1000000000000L)) {
+        public static double compareDoubleToLong(Node inliningTarget, double v, long w, InlinedConditionProfile wFitsInDoubleProfile) {
+            if (wFitsInDoubleProfile.profile(inliningTarget, w > -0x1000000000000L && w < 0x1000000000000L)) {
                 // w is at most 48 bits and thus fits into a double without any loss
                 return v - w;
             } else {
@@ -1119,14 +1122,16 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean neDbLn(double a, long b,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(a, b, longFitsToDoubleProfile) != 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
         static boolean neLnDb(long a, double b,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(b, a, longFitsToDoubleProfile) != 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, b, a, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
@@ -1181,14 +1186,16 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doDL(double x, long y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) < 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, x, y, longFitsToDoubleProfile) < 0;
         }
 
         @Specialization
         static boolean doLD(long x, double y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) > 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, y, x, longFitsToDoubleProfile) > 0;
         }
 
         @Specialization
@@ -1264,14 +1271,16 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doDL(double x, long y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) <= 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, x, y, longFitsToDoubleProfile) <= 0;
         }
 
         @Specialization
         static boolean doLD(long x, double y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) >= 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, y, x, longFitsToDoubleProfile) >= 0;
         }
 
         @Specialization
@@ -1347,14 +1356,16 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doDL(double x, long y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) > 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, x, y, longFitsToDoubleProfile) > 0;
         }
 
         @Specialization
         static boolean doLD(long x, double y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) < 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, y, x, longFitsToDoubleProfile) < 0;
         }
 
         @Specialization
@@ -1430,14 +1441,16 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doDL(double x, long y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) >= 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, x, y, longFitsToDoubleProfile) >= 0;
         }
 
         @Specialization
         static boolean doLD(long x, double y,
-                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
-            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) <= 0;
+                        @Bind("this") Node inliningTarget,
+                        @Shared("longFitsToDouble") @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(inliningTarget, y, x, longFitsToDoubleProfile) <= 0;
         }
 
         @Specialization
@@ -1556,12 +1569,13 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple get(double self,
-                        @Cached ConditionProfile nanProfile,
-                        @Cached ConditionProfile infProfile) {
-            if (nanProfile.profile(Double.isNaN(self))) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile nanProfile,
+                        @Cached InlinedConditionProfile infProfile) {
+            if (nanProfile.profile(inliningTarget, Double.isNaN(self))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }
-            if (infProfile.profile(Double.isInfinite(self))) {
+            if (infProfile.profile(inliningTarget, Double.isInfinite(self))) {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "Infinity");
             }
 

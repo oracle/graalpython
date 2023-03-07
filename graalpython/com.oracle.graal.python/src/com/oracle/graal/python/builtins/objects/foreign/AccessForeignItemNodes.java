@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -83,7 +84,8 @@ import com.oracle.truffle.api.interop.UnknownKeyException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class AccessForeignItemNodes {
@@ -256,10 +258,11 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = "lib.hasArrayElements(object)")
         public Object doArraySlice(VirtualFrame frame, Object object, PSlice idxSlice, Object pvalues,
+                        @Bind("this") Node inliningTarget,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNext,
-                        @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
+                        @Shared("wrongIndex") @Cached InlinedBranchProfile wrongIndex,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Shared("gil") @Cached GilNode gil) {
@@ -269,7 +272,7 @@ abstract class AccessForeignItemNodes {
                 Object value = getNext.execute(frame, iter);
                 gil.release(true);
                 try {
-                    writeForeignIndex(object, i, value, lib, wrongIndex);
+                    writeForeignIndex(inliningTarget, object, i, value, lib, wrongIndex);
                 } finally {
                     gil.acquire();
                 }
@@ -279,14 +282,15 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"lib.hasArrayElements(object)", "!isPSlice(key)"})
         Object doArrayIndex(Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached NormalizeIndexNode normalize,
-                        @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
+                        @Shared("wrongIndex") @Cached InlinedBranchProfile wrongIndex,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Shared("gil") @Cached GilNode gil) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
                 gil.release(true);
                 try {
-                    writeForeignIndex(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), value, lib, wrongIndex);
+                    writeForeignIndex(inliningTarget, object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), value, lib, wrongIndex);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
@@ -296,7 +300,7 @@ abstract class AccessForeignItemNodes {
             } else if (lib.isBoolean(key)) {
                 gil.release(true);
                 try {
-                    writeForeignIndex(object, lib.asBoolean(key) ? 1 : 0, value, lib, wrongIndex);
+                    writeForeignIndex(inliningTarget, object, lib.asBoolean(key) ? 1 : 0, value, lib, wrongIndex);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
@@ -310,7 +314,8 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"lib.hasHashEntries(object)"})
         Object doHashKey(Object object, Object key, Object value,
-                        @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("wrongIndex") @Cached InlinedBranchProfile wrongIndex,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared("gil") @Cached GilNode gil) {
@@ -327,7 +332,7 @@ abstract class AccessForeignItemNodes {
                     gil.acquire();
                 }
             }
-            wrongIndex.enter();
+            wrongIndex.enter(inliningTarget);
             gil.release(true);
             try {
                 throw raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
@@ -344,7 +349,7 @@ abstract class AccessForeignItemNodes {
             throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, object);
         }
 
-        private void writeForeignIndex(Object object, int idx, Object value, InteropLibrary libForObject, BranchProfile wrongIndex) {
+        private void writeForeignIndex(Node inliningTarget, Object object, int idx, Object value, InteropLibrary libForObject, InlinedBranchProfile wrongIndex) {
             if (libForObject.isArrayElementWritable(object, idx)) {
                 try {
                     libForObject.writeArrayElement(object, idx, value);
@@ -355,7 +360,7 @@ abstract class AccessForeignItemNodes {
                     throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
                 }
             }
-            wrongIndex.enter();
+            wrongIndex.enter(inliningTarget);
             throw raise(IndexError, ErrorMessages.INVALID_INDEX_S, idx);
         }
 

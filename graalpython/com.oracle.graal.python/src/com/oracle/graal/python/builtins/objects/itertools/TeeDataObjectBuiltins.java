@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,14 +68,16 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PTeeDataObject})
 public final class TeeDataObjectBuiltins extends PythonBuiltins {
@@ -122,12 +124,13 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isList(values)")
         Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
+                        @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetSequenceStorageNode getStorageNode,
-                        @Cached BranchProfile numreadLCProfile) {
+                        @Cached InlinedBranchProfile numreadLCProfile) {
             int numread = (int) lenNode.execute(frame, values);
             if (numread == LINKCELLS) {
-                numreadLCProfile.enter();
+                numreadLCProfile.enter(inliningTarget);
                 if (!(nxt instanceof PTeeDataObject)) {
                     throw raise(ValueError, S_MUST_BE_S, "_tee_dataobject next link", "_tee_dataobject");
                 }
@@ -165,11 +168,12 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         Object reduce(PTeeDataObject self,
-                        @Cached GetClassNode getClass) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClass) {
             int numread = self.getNumread();
             Object[] values = new Object[numread];
             PythonUtils.arraycopy(self.getValues(), 0, values, 0, numread);
-            Object type = getClass.execute(self);
+            Object type = getClass.execute(inliningTarget, self);
             Object nextlink = self.getNextlink();
             PTuple tuple = factory().createTuple(new Object[]{self.getIt(), factory().createList(values), nextlink == null ? PNone.NONE : nextlink});
             return factory().createTuple(new Object[]{type, tuple});

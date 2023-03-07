@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,15 +63,18 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PPermutations})
 public final class PermutationsBuiltins extends PythonBuiltins {
@@ -101,27 +104,28 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isStopped()")
         Object next(PPermutations self,
-                        @Cached ConditionProfile isStartedProfile,
-                        @Cached BranchProfile jProfile,
-                        @Cached LoopConditionProfile resultLoopProfile,
-                        @Cached LoopConditionProfile mainLoopProfile,
-                        @Cached LoopConditionProfile shiftIndicesProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isStartedProfile,
+                        @Cached InlinedBranchProfile jProfile,
+                        @Cached InlinedLoopConditionProfile resultLoopProfile,
+                        @Cached InlinedLoopConditionProfile mainLoopProfile,
+                        @Cached InlinedLoopConditionProfile shiftIndicesProfile) {
             int r = self.getR();
 
             int[] indices = self.getIndices();
             Object[] result = new Object[r];
             Object[] pool = self.getPool();
-            resultLoopProfile.profileCounted(r);
-            for (int i = 0; resultLoopProfile.inject(i < r); i++) {
+            resultLoopProfile.profileCounted(inliningTarget, r);
+            for (int i = 0; resultLoopProfile.inject(inliningTarget, i < r); i++) {
                 result[i] = pool[indices[i]];
             }
 
             int[] cycles = self.getCycles();
             int i = r - 1;
-            while (mainLoopProfile.profile(i >= 0)) {
+            while (mainLoopProfile.profile(inliningTarget, i >= 0)) {
                 int j = cycles[i] - 1;
                 if (j > 0) {
-                    jProfile.enter();
+                    jProfile.enter(inliningTarget);
                     cycles[i] = j;
                     int tmp = indices[i];
                     indices[i] = indices[indices.length - j];
@@ -132,8 +136,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                 int n1 = indices.length - 1;
                 assert n1 >= 0;
                 int num = indices[i];
-                shiftIndicesProfile.profileCounted(n1 - i);
-                for (int k = i; shiftIndicesProfile.profile(k < n1); k++) {
+                shiftIndicesProfile.profileCounted(inliningTarget, n1 - i);
+                for (int k = i; shiftIndicesProfile.profile(inliningTarget, k < n1); k++) {
                     indices[k] = indices[k + 1];
                 }
                 indices[n1] = num;
@@ -141,7 +145,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
             }
 
             self.setStopped(true);
-            if (isStartedProfile.profile(self.isStarted())) {
+            if (isStartedProfile.profile(inliningTarget, self.isStarted())) {
                 throw raiseStopIteration();
             } else {
                 self.setStarted(true);
@@ -155,8 +159,9 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isRaisedStopIteration()")
         Object reduce(PPermutations self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PList poolList = factory().createList(self.getPool());
             PTuple tuple = factory().createTuple(new Object[]{poolList, self.getR()});
 
@@ -171,8 +176,9 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isRaisedStopIteration()")
         Object reduceStopped(PPermutations self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{factory().createEmptyTuple(), self.getR()});
             Object[] result = new Object[]{type, tuple};
             return factory().createTuple(result);
@@ -186,10 +192,11 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setState(VirtualFrame frame, PPermutations self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
-                        @Cached LoopConditionProfile indicesProfile,
-                        @Cached LoopConditionProfile cyclesProfile) {
+                        @Cached InlinedLoopConditionProfile indicesProfile,
+                        @Cached InlinedLoopConditionProfile cyclesProfile) {
             if (sizeNode.execute(frame, state) != 3) {
                 throw raise(ValueError, INVALID_ARGS, T___SETSTATE__);
             }
@@ -201,8 +208,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
             }
 
             self.setStarted((boolean) getItemNode.execute(frame, state, 2));
-            indicesProfile.profileCounted(poolLen);
-            for (int i = 0; indicesProfile.inject(i < poolLen); i++) {
+            indicesProfile.profileCounted(inliningTarget, poolLen);
+            for (int i = 0; indicesProfile.inject(inliningTarget, i < poolLen); i++) {
                 int index = (int) getItemNode.execute(frame, indices, i);
                 if (index < 0) {
                     index = 0;
@@ -212,8 +219,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                 self.getIndices()[i] = index;
             }
 
-            cyclesProfile.profileCounted(self.getR());
-            for (int i = 0; cyclesProfile.inject(i < self.getR()); i++) {
+            cyclesProfile.profileCounted(inliningTarget, self.getR());
+            for (int i = 0; cyclesProfile.inject(inliningTarget, i < self.getR()); i++) {
                 int index = (int) getItemNode.execute(frame, cycles, i);
                 if (index < 1) {
                     index = 1;

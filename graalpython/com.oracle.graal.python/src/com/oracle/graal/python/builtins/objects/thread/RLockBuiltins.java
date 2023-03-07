@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,11 +56,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRLock)
 public class RLockBuiltins extends PythonBuiltins {
@@ -114,9 +116,10 @@ public class RLockBuiltins extends PythonBuiltins {
     abstract static class ReleaseSaveRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object releaseSave(PRLock self,
-                        @Cached ConditionProfile countProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile countProfile) {
             int count = self.getCount();
-            if (countProfile.profile(count == 0)) {
+            if (countProfile.profile(inliningTarget, count == 0)) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);
             }
             PTuple retVal = factory().createTuple(new Object[]{count, self.getOwnerId()});

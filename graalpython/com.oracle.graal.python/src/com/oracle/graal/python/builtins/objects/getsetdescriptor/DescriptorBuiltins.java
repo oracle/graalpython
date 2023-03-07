@@ -82,8 +82,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -256,12 +256,13 @@ public class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallBinaryMethodNode callNode,
-                        @Cached BranchProfile branchProfile) {
+                        @Cached InlinedBranchProfile branchProfile) {
             if (descr.allowsDelete()) {
                 return callNode.executeObject(frame, descr.getSet(), obj, DescriptorDeleteMarker.INSTANCE);
             } else {
-                branchProfile.enter();
+                branchProfile.enter(inliningTarget);
                 if (descr.getSet() != null) {
                     if (descr.getName().equalsUncached(T__CHUNK_SIZE, TS_ENCODING)) {
                         // This is a special error message case. see
@@ -277,11 +278,12 @@ public class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached WriteAttributeToObjectNode writeNode,
                         @Cached ReadAttributeFromObjectNode readNode,
-                        @Cached ConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile) {
             // PyMember_SetOne - Check if the attribute is set.
-            if (profile.profile(readNode.execute(obj, descr.getKey()) != PNone.NO_VALUE)) {
+            if (profile.profile(inliningTarget, readNode.execute(obj, descr.getKey()) != PNone.NO_VALUE)) {
                 writeNode.execute(obj, descr.getKey(), PNone.NO_VALUE);
                 return PNone.NONE;
             }

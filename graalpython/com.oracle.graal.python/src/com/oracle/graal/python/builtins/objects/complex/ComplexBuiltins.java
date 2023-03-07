@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -103,6 +103,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -111,7 +112,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PComplex)
@@ -336,15 +338,16 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplex(PComplex left, PComplex right,
-                        @Cached ConditionProfile topConditionProfile,
-                        @Cached ConditionProfile zeroDivisionProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile topConditionProfile,
+                        @Cached InlinedConditionProfile zeroDivisionProfile) {
             double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
             double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
             double real;
             double imag;
-            if (topConditionProfile.profile(absRightReal >= absRightImag)) {
+            if (topConditionProfile.profile(inliningTarget, absRightReal >= absRightImag)) {
                 /* divide tops and bottom by right.real */
-                if (zeroDivisionProfile.profile(absRightReal == 0.0)) {
+                if (zeroDivisionProfile.profile(inliningTarget, absRightReal == 0.0)) {
                     throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
                 } else {
                     double ratio = right.getImag() / right.getReal();
@@ -585,8 +588,9 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doComplexInt(PComplex left, long right,
-                        @Cached ConditionProfile longFitsToDoubleProfile) {
-            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) == 0;
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
@@ -657,8 +661,9 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doComplex(PComplex left, long right,
-                        @Cached ConditionProfile longFitsToDoubleProfile) {
-            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) != 0;
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile longFitsToDoubleProfile) {
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(inliningTarget, left.getReal(), right, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization

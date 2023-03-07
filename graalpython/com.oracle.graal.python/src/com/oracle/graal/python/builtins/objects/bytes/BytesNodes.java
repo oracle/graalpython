@@ -104,6 +104,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -116,7 +117,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -296,8 +297,9 @@ public abstract class BytesNodes {
 
         @Specialization
         int find(byte[] haystack, int len1, byte needle, int start, int end,
-                        @Cached ConditionProfile earlyExit) {
-            if (earlyExit.profile(start >= len1)) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile earlyExit) {
+            if (earlyExit.profile(inliningTarget, start >= len1)) {
                 return -1;
             }
             return findElement(haystack, needle, start, end > len1 ? len1 : end);
@@ -305,18 +307,19 @@ public abstract class BytesNodes {
 
         @Specialization
         int find(byte[] haystack, int len1, byte[] needle, int start, int end,
-                        @Cached ConditionProfile earlyExit1,
-                        @Cached ConditionProfile earlyExit2,
-                        @Cached ConditionProfile lenIsOne) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile earlyExit1,
+                        @Cached @Shared InlinedConditionProfile earlyExit2,
+                        @Cached @Exclusive InlinedConditionProfile lenIsOne) {
             int len2 = needle.length;
 
-            if (earlyExit1.profile(len2 == 0 && start <= len1)) {
+            if (earlyExit1.profile(inliningTarget, len2 == 0 && start <= len1)) {
                 return emptySubIndex(start, end);
             }
-            if (earlyExit2.profile(start >= len1 || len1 < len2)) {
+            if (earlyExit2.profile(inliningTarget, start >= len1 || len1 < len2)) {
                 return -1;
             }
-            if (lenIsOne.profile(len2 == 1)) {
+            if (lenIsOne.profile(inliningTarget, len2 == 1)) {
                 return findElement(haystack, needle[0], start, end);
             }
 
@@ -325,17 +328,18 @@ public abstract class BytesNodes {
 
         @Specialization
         int find(SequenceStorage self, int len1, PBytesLike sub, int start, int end,
-                        @Cached ConditionProfile earlyExit1,
-                        @Cached ConditionProfile earlyExit2,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile earlyExit1,
+                        @Cached @Shared InlinedConditionProfile earlyExit2,
+                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
             byte[] haystack = getBytes.execute(self);
             byte[] needle = getBytes.execute(sub.getSequenceStorage());
             int len2 = sub.getSequenceStorage().length();
 
-            if (earlyExit1.profile(len2 == 0 && start <= len1)) {
+            if (earlyExit1.profile(inliningTarget, len2 == 0 && start <= len1)) {
                 return emptySubIndex(start, end);
             }
-            if (earlyExit2.profile(start >= len1 || len1 < len2)) {
+            if (earlyExit2.profile(inliningTarget, start >= len1 || len1 < len2)) {
                 return -1;
             }
             if (len2 == 1) {
@@ -347,10 +351,11 @@ public abstract class BytesNodes {
 
         @Specialization
         int find(SequenceStorage self, int len1, int sub, int start, int end,
-                        @Cached ConditionProfile earlyExit,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached CastToJavaByteNode cast) {
-            if (earlyExit.profile(start >= len1)) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile earlyExit,
+                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached @Shared CastToJavaByteNode cast) {
+            if (earlyExit.profile(inliningTarget, start >= len1)) {
                 return -1;
             }
             byte[] haystack = getBytes.execute(self);
@@ -359,12 +364,13 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "!isBytes(sub)")
         int useIndex(SequenceStorage self, int len1, Object sub, int start, int end,
-                        @Cached ConditionProfile earlyExit,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile earlyExit,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached CastToJavaByteNode cast,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
-            if (earlyExit.profile(start >= len1)) {
+                        @Cached @Shared CastToJavaByteNode cast,
+                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+            if (earlyExit.profile(inliningTarget, start >= len1)) {
                 return -1;
             }
             if (indexCheckNode.execute(sub)) {
@@ -691,15 +697,15 @@ public abstract class BytesNodes {
 
         @Specialization(guards = {"isString(source)", "isString(encoding)"})
         byte[] fromString(Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached CastToTruffleStringNode castStr,
-                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
+                        @Cached @Shared CastToTruffleStringNode castStr,
+                        @Cached @Shared CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
             return encodeNode.execute(source, castStr.execute(encoding), T_STRICT);
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)", "isString(errors)"})
         byte[] fromString(Object source, Object encoding, Object errors,
-                        @Cached CastToTruffleStringNode castStr,
-                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
+                        @Cached @Shared CastToTruffleStringNode castStr,
+                        @Cached @Shared CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
             return encodeNode.execute(source, castStr.execute(encoding), castStr.execute(errors));
         }
 
@@ -726,8 +732,8 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "bytesPerSepGroup == 0")
         public static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int resultlen = arglen * 2;
             byte[] retbuf = new byte[resultlen];
@@ -743,17 +749,18 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "bytesPerSepGroup < 0")
         public TruffleString negative(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
-                        @Cached ConditionProfile earlyExit,
-                        @Cached ConditionProfile memoryError,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            if (earlyExit.profile(arglen == 0)) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile earlyExit,
+                        @Cached @Shared InlinedConditionProfile memoryError,
+                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
+            if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
             }
             int absBytesPerSepGroup = -bytesPerSepGroup;
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
-            if (memoryError.profile(arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
+            if (memoryError.profile(inliningTarget, arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
                 throw raise(MemoryError);
             }
 
@@ -785,17 +792,18 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "absBytesPerSepGroup > 0")
         public TruffleString positive(byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
-                        @Cached ConditionProfile earlyExit,
-                        @Cached ConditionProfile memoryError,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            if (earlyExit.profile(arglen == 0)) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile earlyExit,
+                        @Cached @Shared InlinedConditionProfile memoryError,
+                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
+            if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
             }
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
 
-            if (memoryError.profile(arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
+            if (memoryError.profile(inliningTarget, arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
                 throw raise(MemoryError);
             }
 

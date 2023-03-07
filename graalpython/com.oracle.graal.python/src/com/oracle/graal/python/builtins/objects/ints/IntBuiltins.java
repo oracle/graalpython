@@ -168,9 +168,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.IntValueProfile;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
@@ -217,54 +217,59 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         Object roundLongInt(long arg, int n,
-                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("intOvf") @Cached InlinedBranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
-            return makeInt(op(arg, n), intOverflow);
+            return makeInt(inliningTarget, op(arg, n), intOverflow);
         }
 
         @Specialization
         Object roundPIntInt(PInt arg, int n,
-                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("intOvf") @Cached InlinedBranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
-            return makeInt(op(arg.getValue(), n), intOverflow);
+            return makeInt(inliningTarget, op(arg.getValue(), n), intOverflow);
         }
 
         @Specialization
         Object roundLongLong(long arg, long n,
-                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("intOvf") @Cached InlinedBranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
             if (n < Integer.MIN_VALUE) {
                 return 0;
             }
-            return makeInt(op(arg, (int) n), intOverflow);
+            return makeInt(inliningTarget, op(arg, (int) n), intOverflow);
         }
 
         @Specialization
         Object roundPIntLong(PInt arg, long n,
-                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("intOvf") @Cached InlinedBranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
             if (n < Integer.MIN_VALUE) {
                 return 0;
             }
-            return makeInt(op(arg.getValue(), (int) n), intOverflow);
+            return makeInt(inliningTarget, op(arg.getValue(), (int) n), intOverflow);
         }
 
         @Specialization
         Object roundPIntLong(long arg, PInt n,
-                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("intOvf") @Cached InlinedBranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
             }
             try {
-                return makeInt(op(arg, n.intValueExact()), intOverflow);
+                return makeInt(inliningTarget, op(arg, n.intValueExact()), intOverflow);
             } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
@@ -273,12 +278,13 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         Object roundPIntPInt(PInt arg, PInt n,
-                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("intOvf") @Cached InlinedBranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
             }
             try {
-                return makeInt(op(arg.getValue(), n.intValueExact()), intOverflow);
+                return makeInt(inliningTarget, op(arg.getValue(), n.intValueExact()), intOverflow);
             } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
@@ -291,12 +297,12 @@ public final class IntBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
         }
 
-        private Object makeInt(BigDecimal d, BranchProfile intOverflow) {
+        private Object makeInt(Node inliningTarget, BigDecimal d, InlinedBranchProfile intOverflow) {
             try {
                 return intValueExact(d);
             } catch (OverflowException e) {
                 // does not fit int, so try long
-                intOverflow.enter();
+                intOverflow.enter(inliningTarget);
             }
             try {
                 return longValueExact(d);
@@ -1038,8 +1044,9 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right < 0")
         double doLLNeg(long left, long right, @SuppressWarnings("unused") PNone none,
-                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) {
-            if (leftIsZero.profile(left == 0)) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) {
+            if (leftIsZero.profile(inliningTarget, left == 0)) {
                 throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return Math.pow(left, right);
@@ -1047,12 +1054,13 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = {OverflowException.class, ArithmeticException.class})
         Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none,
-                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) throws OverflowException {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) throws OverflowException {
             long lright = right.longValueExact();
             if (lright >= 0) {
                 return doLLFast(left, lright, none);
             }
-            return doLLNeg(left, lright, none, leftIsZero);
+            return doLLNeg(left, lright, none, inliningTarget, leftIsZero);
         }
 
         @Specialization(replaces = "doLPNarrow")
@@ -1077,8 +1085,9 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right < 0")
         double doPLNeg(PInt left, long right, @SuppressWarnings("unused") PNone none,
-                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) {
-            if (leftIsZero.profile(left.isZero())) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero) {
+            if (leftIsZero.profile(inliningTarget, left.isZero())) {
                 throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return TrueDivNode.op(BigInteger.ONE, op(left.getValue(), -right), getRaiseNode());
@@ -1107,13 +1116,14 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right >= 0", replaces = "doLLPosLPos")
         long doLLPosLGeneric(long left, long right, long mod,
-                        @Cached ConditionProfile errorProfile,
-                        @Cached ConditionProfile modNegativeProfile) {
-            if (errorProfile.profile(mod == 0)) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile errorProfile,
+                        @Cached InlinedConditionProfile modNegativeProfile) {
+            if (errorProfile.profile(inliningTarget, mod == 0)) {
                 throw raise(ValueError, ErrorMessages.POW_THIRD_ARG_CANNOT_BE_ZERO);
             }
             try {
-                if (modNegativeProfile.profile(mod < 0)) {
+                if (modNegativeProfile.profile(inliningTarget, mod < 0)) {
                     return PInt.longValueExact(opNeg(left, right, mod));
                 }
                 return PInt.longValueExact(op(left, right, mod));
@@ -2758,11 +2768,12 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString doPInt(PInt self,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached IntValueProfile maxDigitsProfile,
-                        @Cached IntValueProfile maxDigitsBitLengthProfile) {
+                        @Cached InlinedIntValueProfile maxDigitsProfile,
+                        @Cached InlinedIntValueProfile maxDigitsBitLengthProfile) {
             PythonContext context = PythonContext.get(this);
-            int intMaxStrDigits = maxDigitsProfile.profile(context.getIntMaxStrDigits());
+            int intMaxStrDigits = maxDigitsProfile.profile(inliningTarget, context.getIntMaxStrDigits());
             /*
              * Approximate pre-check for the number of digits. It's done as a prevention for DoS
              * attacks, because CPython's conversion algorithm has bad complexity. Java's is
@@ -2777,7 +2788,7 @@ public final class IntBuiltins extends PythonBuiltins {
              */
             if (intMaxStrDigits > 0) {
                 int bitLength = positiveBitLength(self);
-                if (bitLength >= maxDigitsBitLengthProfile.profile(context.getMinIntBitLengthOverLimit())) {
+                if (bitLength >= maxDigitsBitLengthProfile.profile(inliningTarget, context.getMinIntBitLengthOverLimit())) {
                     throw raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, intMaxStrDigits);
                 }
             }

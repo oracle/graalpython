@@ -75,7 +75,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class DictNodes {
     @ImportStatic(HashingStorageGuards.class)
@@ -145,7 +145,7 @@ public abstract class DictNodes {
                         @Cached ListNodes.FastConstructListNode createListNode,
                         @Cached PyObjectGetItem getItem,
                         @Cached SequenceNodes.LenNode seqLenNode,
-                        @Cached ConditionProfile lengthTwoProfile,
+                        @Cached InlinedConditionProfile lengthTwoProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
             HashingStorage.StorageSupplier storageSupplier = (int length) -> self.getDictStorage();

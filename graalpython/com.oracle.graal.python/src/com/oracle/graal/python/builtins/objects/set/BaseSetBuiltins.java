@@ -108,7 +108,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PSet, PythonBuiltinClassType.PFrozenSet})
@@ -388,13 +388,14 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean isLessThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenSelfNode,
                         @Cached HashingStorageLen lenOtherNode,
                         @Cached HashingStorageCompareKeys compareKeys,
-                        @Cached ConditionProfile sizeProfile) {
+                        @Cached InlinedConditionProfile sizeProfile) {
             final int len1 = lenSelfNode.execute(self.getDictStorage());
             final int len2 = lenOtherNode.execute(other.getDictStorage());
-            if (sizeProfile.profile(len1 >= len2)) {
+            if (sizeProfile.profile(inliningTarget, len1 >= len2)) {
                 return false;
             }
             return BaseLessEqualNode.doLE(frame, self, other, compareKeys);
@@ -413,13 +414,14 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean isGreaterThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen aLenNode,
                         @Cached HashingStorageLen bLenNode,
                         @Cached HashingStorageCompareKeys compareKeys,
-                        @Cached ConditionProfile sizeProfile) {
+                        @Cached InlinedConditionProfile sizeProfile) {
             final int len1 = aLenNode.execute(self.getDictStorage());
             final int len2 = bLenNode.execute(other.getDictStorage());
-            if (sizeProfile.profile(len1 <= len2)) {
+            if (sizeProfile.profile(inliningTarget, len1 <= len2)) {
                 return false;
             }
             return BaseGreaterEqualNode.doGE(frame, self, other, compareKeys);

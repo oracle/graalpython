@@ -176,11 +176,11 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SequenceStorageNodes {
@@ -1411,15 +1411,16 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step == 1"})
         static void singleStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
+                        @Bind("this") Node inliningTarget,
                         @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
                         @Cached SetLenNode setLenNode,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached MemMoveNode memove,
                         @Cached MemCopyNode memcpy,
                         @Cached CopyNode copyNode,
-                        @Cached ConditionProfile memoryError,
-                        @Cached ConditionProfile negGrowth,
-                        @Cached ConditionProfile posGrowth,
+                        @Cached InlinedConditionProfile memoryError,
+                        @Cached InlinedConditionProfile negGrowth,
+                        @Cached InlinedConditionProfile posGrowth,
                         @Cached PRaiseNode raiseNode) {
             int start = sinfo.start;
             int stop = sinfo.stop;
@@ -1431,14 +1432,15 @@ public abstract class SequenceStorageNodes {
             if ((step < 0 && start < stop) || (step > 0 && start > stop)) {
                 stop = start;
             }
-            singleStep(self, start, stop, data, needed, setLenNode, ensureCapacityNode, memove, memcpy, memoryError, negGrowth, posGrowth, raiseNode);
+            singleStep(self, start, stop, data, needed, inliningTarget, setLenNode, ensureCapacityNode, memove, memcpy, memoryError, negGrowth, posGrowth, raiseNode);
         }
 
         @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step != 1"})
         static void multiStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
+                        @Bind("this") Node inliningTarget,
                         @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
-                        @Cached ConditionProfile wrongLength,
-                        @Cached ConditionProfile deleteSlice,
+                        @Cached InlinedConditionProfile wrongLength,
+                        @Cached InlinedConditionProfile deleteSlice,
                         @Cached SetLenNode setLenNode,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached MemMoveNode memove,
@@ -1453,11 +1455,11 @@ public abstract class SequenceStorageNodes {
 
             SequenceStorage data = (values == self) ? copyNode.execute(values) : values;
             int needed = data.length();
-            if (deleteSlice.profile(needed == 0)) {
+            if (deleteSlice.profile(inliningTarget, needed == 0)) {
                 DeleteSliceNode.multipleSteps(self, sinfo, setLenNode, ensureCapacityNode, memove);
             } else {
                 /*- Assign slice */
-                if (wrongLength.profile(needed != slicelen)) {
+                if (wrongLength.profile(inliningTarget, needed != slicelen)) {
                     raiseNode.raise(ValueError, ErrorMessages.ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE, needed, slicelen);
                 }
                 for (int cur = start, i = 0; i < slicelen; cur += step, i++) {
@@ -1477,20 +1479,21 @@ public abstract class SequenceStorageNodes {
          * CPython/Objects/bytearrayobject.c#bytearray_ass_subscript
          */
         static void singleStep(SequenceStorage self, int lo, int hi, SequenceStorage data, int needed,
+                        Node inliningTarget,
                         SetLenNode setLenNode,
                         EnsureCapacityNode ensureCapacityNode,
                         MemMoveNode memove,
                         MemCopyNode memcpy,
-                        ConditionProfile memoryError,
-                        ConditionProfile negGrowth,
-                        ConditionProfile posGrowth,
+                        InlinedConditionProfile memoryError,
+                        InlinedConditionProfile negGrowth,
+                        InlinedConditionProfile posGrowth,
                         PRaiseNode raiseNode) {
             int avail = hi - lo;
             int growth = needed - avail;
             assert avail >= 0 : "sliceInfo.start and sliceInfo.stop have not been adjusted.";
             int len = self.length();
 
-            if (negGrowth.profile(growth < 0)) {
+            if (negGrowth.profile(inliningTarget, growth < 0)) {
                 // ensure capacity will check if the storage can be resized.
                 ensureCapacityNode.execute(self, len + growth);
 
@@ -1515,11 +1518,11 @@ public abstract class SequenceStorageNodes {
                 */
                 memove.execute(self, lo + needed, hi, len - hi);
                 setLenNode.execute(self, len + growth); // growth is negative (Shrinking)
-            } else if (posGrowth.profile(growth > 0)) {
+            } else if (posGrowth.profile(inliningTarget, growth > 0)) {
                 // ensure capacity will check if the storage can be resized.
                 ensureCapacityNode.execute(self, len + growth);
 
-                if (memoryError.profile(len > Integer.MAX_VALUE - growth)) {
+                if (memoryError.profile(inliningTarget, len > Integer.MAX_VALUE - growth)) {
                     throw raiseNode.raise(MemoryError);
                 }
 
@@ -1553,14 +1556,16 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "elementType == cachedElementType", limit = "1")
         static boolean doCached(@SuppressWarnings("unused") ListStorageType elementType, Object item,
+                        @Bind("this") Node inliningTarget,
                         @Cached("elementType") ListStorageType cachedElementType,
-                        @Shared("profile") @Cached ConditionProfile profile) {
-            return doGeneric(cachedElementType, item, profile);
+                        @Shared("profile") @Cached InlinedConditionProfile profile) {
+            return doGeneric(cachedElementType, item, inliningTarget, profile);
         }
 
         @Specialization(replaces = "doCached")
         static boolean doGeneric(ListStorageType expectedType, Object item,
-                        @Shared("profile") @Cached ConditionProfile profile) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("profile") @Cached InlinedConditionProfile profile) {
             boolean res = false;
             switch (expectedType) {
                 case Byte:
@@ -1579,7 +1584,7 @@ public abstract class SequenceStorageNodes {
                     res = !(item instanceof Byte || item instanceof Integer || item instanceof Long || item instanceof Double);
                     break;
             }
-            return profile.profile(res);
+            return profile.profile(inliningTarget, res);
         }
 
         public static VerifyNativeItemNode getUncached() {
@@ -1922,10 +1927,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static byte[] doByteSequenceStorage(ByteSequenceStorage s,
-                        @Cached ConditionProfile profile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile) {
             byte[] bytes = GetInternalByteArrayNode.doByteSequenceStorage(s);
             int storageLength = s.length();
-            if (profile.profile(storageLength != bytes.length)) {
+            if (profile.profile(inliningTarget, storageLength != bytes.length)) {
                 return exactCopy(bytes, storageLength);
             }
             return bytes;
@@ -2123,7 +2129,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         SequenceStorage doRight(SequenceStorage left, SequenceStorage right,
-                        @Cached ConditionProfile shouldOverflow,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile shouldOverflow,
                         @Cached PRaiseNode raiseNode) {
             int destlen = 0;
             try {
@@ -2131,7 +2138,7 @@ public abstract class SequenceStorageNodes {
                 int len2 = right.length();
                 // we eagerly generalize the store to avoid possible cascading generalizations
                 destlen = PythonUtils.addExact(len1, len2);
-                if (errorForOverflow == OverflowError && shouldOverflow.profile(destlen >= SysModuleBuiltins.MAXSIZE)) {
+                if (errorForOverflow == OverflowError && shouldOverflow.profile(inliningTarget, destlen >= SysModuleBuiltins.MAXSIZE)) {
                     // cpython raises an overflow error when this happens
                     throw raiseNode.raise(OverflowError);
                 }
@@ -2602,12 +2609,13 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected SequenceStorage doGeneric(SequenceStorage s, Object indicationVal,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsAssignCompatibleNode isAssignCompatibleNode,
                         @Cached GetElementType getElementType,
-                        @Cached("createClassProfile()") ValueProfile valTypeProfile,
+                        @Cached InlinedExactClassProfile valTypeProfile,
                         @Cached PRaiseNode raiseNode) {
 
-            Object val = valTypeProfile.profile(indicationVal);
+            Object val = valTypeProfile.profile(inliningTarget, indicationVal);
             if (val instanceof SequenceStorage && isAssignCompatibleNode.execute(s, (SequenceStorage) val)) {
                 return s;
             }
@@ -2674,8 +2682,9 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static SequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s, SequenceStorage other,
-                        @Cached("createClassProfile()") ValueProfile otherProfile) {
-            return otherProfile.profile(other).createEmpty(DEFAULT_CAPACITY);
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile otherProfile) {
+            return otherProfile.profile(inliningTarget, other).createEmpty(DEFAULT_CAPACITY);
         }
 
         @Specialization
@@ -2769,9 +2778,10 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isFallbackCase(s, value, isAssignCompatibleNode)", limit = "1")
         static ObjectSequenceStorage doTyped(SequenceStorage s, @SuppressWarnings("unused") Object value,
-                        @Cached("createClassProfile()") ValueProfile selfProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile selfProfile,
                         @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
-            SequenceStorage profiled = selfProfile.profile(s);
+            SequenceStorage profiled = selfProfile.profile(inliningTarget, s);
             if (profiled instanceof BasicSequenceStorage) {
                 return new ObjectSequenceStorage(profiled.getInternalArray());
             }
@@ -3288,13 +3298,14 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "sinfo.step == 1")
         static void singleStep(SequenceStorage store, SliceInfo sinfo,
-                        @Cached ConditionProfile shortCircuitProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile shortCircuitProfile,
                         @Cached SetLenNode setLenNode,
                         @Cached MemMoveNode memove) {
             int length = store.length();
             int sliceLength = sinfo.sliceLength;
 
-            if (shortCircuitProfile.profile(sliceLength == 0)) {
+            if (shortCircuitProfile.profile(inliningTarget, sliceLength == 0)) {
                 return;
             }
             int ilow = sinfo.start;
@@ -3548,10 +3559,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object[] doObjectSequenceStorage(ObjectSequenceStorage s,
-                        @Cached ConditionProfile profile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile) {
             Object[] objects = GetInternalObjectArrayNode.doObjectSequenceStorage(s);
             int storageLength = s.length();
-            if (profile.profile(storageLength != objects.length)) {
+            if (profile.profile(inliningTarget, storageLength != objects.length)) {
                 return exactCopy(objects, storageLength);
             }
             return objects;
@@ -3814,14 +3826,14 @@ public abstract class SequenceStorageNodes {
          * StopIteration.
          */
         protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, ListStorageType type, NextNode nextNode, IsBuiltinObjectProfile errorProfile,
-                        Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, LoopConditionProfile loopProfile) {
+                        Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, InlinedLoopConditionProfile loopProfile) {
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
                 Object[] elements = new Object[size];
                 int i = 0;
                 try {
                     Object value;
-                    for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                    for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
                         if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                             elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                         }
@@ -3841,7 +3853,7 @@ public abstract class SequenceStorageNodes {
                             boolean[] elements = new boolean[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         array = elements;
@@ -3857,7 +3869,7 @@ public abstract class SequenceStorageNodes {
                             byte[] elements = new byte[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(PGuards.expectInteger(value));
@@ -3878,7 +3890,7 @@ public abstract class SequenceStorageNodes {
                             int[] elements = new int[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3893,7 +3905,7 @@ public abstract class SequenceStorageNodes {
                             long[] elements = new long[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3908,7 +3920,7 @@ public abstract class SequenceStorageNodes {
                             double[] elements = new double[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3922,7 +3934,7 @@ public abstract class SequenceStorageNodes {
                         case Generic: {
                             Object[] elements = new Object[size];
                             try {
-                                for (; loopProfile.profile((value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, iterator)) != STOP_MARKER); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -3996,7 +4008,7 @@ public abstract class SequenceStorageNodes {
             public SequenceStorage createBuiltinUnknownLen(VirtualFrame frame, PBuiltinIterator iterator, @SuppressWarnings("unused") int len,
                             @Bind("this") Node inliningTarget,
                             @Cached BuiltinIteratorLengthHint lengthHint,
-                            @Shared("loopProfile") @Cached LoopConditionProfile loopProfile,
+                            @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile,
                             @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached NextNode nextNode) {
@@ -4011,7 +4023,7 @@ public abstract class SequenceStorageNodes {
             @Specialization(replaces = "createBuiltinFastPath", guards = {"isBuiltinIterator(iterator)", "len >= 0"})
             public SequenceStorage createBuiltinKnownLen(VirtualFrame frame, PBuiltinIterator iterator, int len,
                             @Bind("this") Node inliningTarget,
-                            @Shared("loopProfile") @Cached LoopConditionProfile loopProfile,
+                            @Shared("loopProfile") @Cached InlinedLoopConditionProfile loopProfile,
                             @Shared("errProfile") @Cached IsBuiltinObjectProfile errorProfile,
                             @Shared("arrayGrowProfile") @Cached InlinedCountingConditionProfile arrayGrowProfile,
                             @Cached NextNode nextNode) {

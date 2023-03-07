@@ -122,7 +122,9 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -130,9 +132,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMMap)
@@ -242,15 +245,16 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
-                        @Cached ConditionProfile emptyProfile,
+                        @Cached InlinedConditionProfile emptyProfile,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLenNode) {
             try {
                 SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(self.getLength()));
                 int len = sliceLenNode.len(info);
-                if (emptyProfile.profile(len == 0)) {
+                if (emptyProfile.profile(inliningTarget, len == 0)) {
                     return createEmptyBytes(factory());
                 }
                 byte[] result = readBytes(this, frame, self, posixSupportLib, info.start, len);
@@ -267,14 +271,15 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(idxObj)")
         PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
-                        @Cached ConditionProfile outOfRangeProfile) {
+                        @Cached InlinedConditionProfile outOfRangeProfile) {
             long i = asLongNode.execute(frame, idxObj);
             long len = self.getLength();
             long idx = i < 0 ? i + len : i;
-            if (outOfRangeProfile.profile(idx < 0 || idx >= len)) {
+            if (outOfRangeProfile.profile(inliningTarget, idx < 0 || idx >= len)) {
                 throw raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
             }
             byte[] bytes = {castToByteNode.execute(frame, val)};
@@ -284,16 +289,17 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone doSlice(VirtualFrame frame, PMMap self, PSlice idx, PBytesLike val,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached ToByteArrayNode toByteArrayNode,
-                        @Cached ConditionProfile invalidStepProfile,
+                        @Cached InlinedConditionProfile invalidStepProfile,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
             try {
                 long len = self.getLength();
                 SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(len));
-                if (invalidStepProfile.profile(info.step != 1)) {
+                if (invalidStepProfile.profile(inliningTarget, info.step != 1)) {
                     throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.STEP_1_NOT_SUPPORTED);
                 }
                 byte[] bytes = toByteArrayNode.execute(val.getSequenceStorage());
@@ -429,36 +435,38 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes readUnlimited(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") PNone n,
-                        @Cached ConditionProfile emptyProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile emptyProfile,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             // intentionally accept NO_VALUE and NONE; both mean that we read unlimited # of bytes
-            return readBytes(frame, self, posixLib, self.getRemaining(), emptyProfile);
+            return readBytes(frame, inliningTarget, self, posixLib, self.getRemaining(), emptyProfile);
         }
 
         @Specialization(guards = "!isNoValue(n)")
         PBytes read(VirtualFrame frame, PMMap self, Object n,
-                        @Cached ConditionProfile emptyProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedConditionProfile emptyProfile,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached ConditionProfile negativeProfile) {
+                        @Cached InlinedConditionProfile negativeProfile) {
             // _Py_convert_optional_to_ssize_t:
             if (!indexCheckNode.execute(n)) {
                 throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
             }
             long nread = asSizeNode.executeExact(frame, n);
 
-            if (negativeProfile.profile(nread < 0)) {
-                return readUnlimited(frame, self, PNone.NO_VALUE, emptyProfile, posixLib);
+            if (negativeProfile.profile(inliningTarget, nread < 0)) {
+                return readUnlimited(frame, self, PNone.NO_VALUE, inliningTarget, emptyProfile, posixLib);
             }
             if (nread > self.getRemaining()) {
                 nread = self.getRemaining();
             }
-            return readBytes(frame, self, posixLib, nread, emptyProfile);
+            return readBytes(frame, inliningTarget, self, posixLib, nread, emptyProfile);
         }
 
-        private PBytes readBytes(VirtualFrame frame, PMMap self, PosixSupportLibrary posixLib, long nread, ConditionProfile emptyProfile) {
-            if (emptyProfile.profile(nread == 0)) {
+        private PBytes readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupportLibrary posixLib, long nread, InlinedConditionProfile emptyProfile) {
+            if (emptyProfile.profile(inliningTarget, nread == 0)) {
                 return createEmptyBytes(factory());
             }
             try {
@@ -553,7 +561,8 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         Object seek(PMMap self, long dist, int how,
-                        @Cached BranchProfile errorProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile errorProfile) {
             long where;
             switch (how) {
                 case 0: // relative to start
@@ -566,7 +575,7 @@ public class MMapBuiltins extends PythonBuiltins {
                     where = self.getLength() + dist;
                     break;
                 default:
-                    errorProfile.enter();
+                    errorProfile.enter(inliningTarget);
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_S_TYPE, "seek");
             }
             if (where > self.getLength() || where < 0) {

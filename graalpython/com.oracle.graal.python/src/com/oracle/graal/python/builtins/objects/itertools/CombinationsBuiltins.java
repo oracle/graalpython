@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,19 +62,22 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCombinations, PythonBuiltinClassType.PCombinationsWithReplacement})
 public class CombinationsBuiltins extends PythonBuiltins {
@@ -104,12 +107,13 @@ public class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
         Object nextNoResult(PAbstractCombinations self,
-                        @Cached PythonObjectFactory factory,
-                        @Cached LoopConditionProfile loopConditionProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared PythonObjectFactory factory,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile) {
             // On the first pass, initialize result tuple using the indices
             Object[] result = new Object[self.getR()];
-            loopConditionProfile.profileCounted(self.getR());
-            for (int i = 0; loopConditionProfile.inject(i < self.getR()); i++) {
+            loopConditionProfile.profileCounted(inliningTarget, self.getR());
+            for (int i = 0; loopConditionProfile.inject(inliningTarget, i < self.getR()); i++) {
                 int idx = self.getIndices()[i];
                 result[i] = self.getPool()[idx];
             }
@@ -119,22 +123,24 @@ public class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         Object next(PCombinations self,
-                        @Cached PythonObjectFactory factory,
-                        @Cached LoopConditionProfile indexLoopProfile,
-                        @Cached LoopConditionProfile resultLoopProfile) {
-            return nextInternal(self, factory, indexLoopProfile, resultLoopProfile);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared PythonObjectFactory factory,
+                        @Cached @Shared InlinedLoopConditionProfile indexLoopProfile,
+                        @Cached @Shared InlinedLoopConditionProfile resultLoopProfile) {
+            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         Object next(PCombinationsWithReplacement self,
-                        @Cached PythonObjectFactory factory,
-                        @Cached LoopConditionProfile indexLoopProfile,
-                        @Cached LoopConditionProfile resultLoopProfile) {
-            return nextInternal(self, factory, indexLoopProfile, resultLoopProfile);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared PythonObjectFactory factory,
+                        @Cached @Shared InlinedLoopConditionProfile indexLoopProfile,
+                        @Cached @Shared InlinedLoopConditionProfile resultLoopProfile) {
+            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile);
         }
 
-        private Object nextInternal(PAbstractCombinations self, PythonObjectFactory factory, LoopConditionProfile indexLoopProfile,
-                        LoopConditionProfile resultLoopProfile) throws PException {
+        private Object nextInternal(Node inliningTarget, PAbstractCombinations self, PythonObjectFactory factory, InlinedLoopConditionProfile indexLoopProfile,
+                        InlinedLoopConditionProfile resultLoopProfile) throws PException {
 
             CompilerAsserts.partialEvaluationConstant(self.getClass());
 
@@ -157,15 +163,15 @@ public class CombinationsBuiltins extends PythonBuiltins {
             // Increment the current index which we know is not at its maximum.
             // Then move back to the right setting each index to its lowest possible value
             self.getIndices()[i] += 1;
-            indexLoopProfile.profileCounted(self.getR() - i + 1);
-            for (int j = i + 1; indexLoopProfile.inject(j < self.getR()); j++) {
+            indexLoopProfile.profileCounted(inliningTarget, self.getR() - i + 1);
+            for (int j = i + 1; indexLoopProfile.inject(inliningTarget, j < self.getR()); j++) {
                 self.getIndices()[j] = self.maxIndex(j);
             }
 
             // Update the result for the new indices starting with i, the leftmost index that
             // changed
-            resultLoopProfile.profileCounted(self.getR() - i);
-            for (int j = i; resultLoopProfile.inject(j < self.getR()); j++) {
+            resultLoopProfile.profileCounted(inliningTarget, self.getR() - i);
+            for (int j = i; resultLoopProfile.inject(inliningTarget, j < self.getR()); j++) {
                 int index = self.getIndices()[j];
                 Object elem = self.getPool()[index];
                 result[j] = elem;
@@ -184,8 +190,9 @@ public class CombinationsBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNull(self)")
         Object reduceNoResult(PAbstractCombinations self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
 
             Object[] obj = new Object[self.getIndices().length];
             for (int i = 0; i < obj.length; i++) {
@@ -197,8 +204,9 @@ public class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNull(self)")
         Object reduce(PAbstractCombinations self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
 
             Object[] obj = new Object[self.getIndices().length];
             for (int i = 0; i < obj.length; i++) {
@@ -222,12 +230,13 @@ public class CombinationsBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setState(VirtualFrame frame, PAbstractCombinations self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached ToArrayNode toArrayNode,
                         @Cached CastToJavaIntLossyNode catsToIntNode,
-                        @Cached ConditionProfile noResultProfile,
-                        @Cached LoopConditionProfile indicesProfile) {
+                        @Cached InlinedConditionProfile noResultProfile,
+                        @Cached InlinedLoopConditionProfile indicesProfile) {
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
@@ -239,14 +248,14 @@ public class CombinationsBuiltins extends PythonBuiltins {
             PList indices = (PList) getItemNode.execute(frame, state, 0);
             Object[] obj = toArrayNode.execute(indices.getSequenceStorage());
             int[] intIndices = new int[obj.length];
-            indicesProfile.profileCounted(obj.length);
-            for (int i = 0; indicesProfile.inject(i < obj.length); i++) {
+            indicesProfile.profileCounted(inliningTarget, obj.length);
+            for (int i = 0; indicesProfile.inject(inliningTarget, i < obj.length); i++) {
                 intIndices[i] = catsToIntNode.execute(obj[i]);
             }
             self.setIndices(intIndices);
 
             Object lastResult = getItemNode.execute(frame, state, 1);
-            if (noResultProfile.profile(lastResult instanceof PNone)) {
+            if (noResultProfile.profile(inliningTarget, lastResult instanceof PNone)) {
                 self.setLastResult(null);
             } else {
                 obj = toArrayNode.execute(((PList) lastResult).getSequenceStorage());

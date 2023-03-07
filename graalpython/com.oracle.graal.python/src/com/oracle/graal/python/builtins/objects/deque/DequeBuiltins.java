@@ -131,7 +131,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -147,7 +147,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -295,8 +294,9 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         PDeque doGeneric(PDeque self,
-                        @Cached GetClassNode getClassNode) {
-            PDeque copy = factory().createDeque(getClassNode.execute(self));
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode) {
+            PDeque copy = factory().createDeque(getClassNode.execute(inliningTarget, self));
             copy.setMaxLength(self.getMaxLength());
             copy.addAll(self);
             return copy;
@@ -945,7 +945,7 @@ public class DequeBuiltins extends PythonBuiltins {
                 PList asList = PythonObjectFactory.getUncached().createList(items);
                 int maxLength = self.getMaxLength();
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-                sb.appendStringUncached(GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)));
+                sb.appendStringUncached(GetNameNode.getUncached().execute(InlinedGetClassNode.executeUncached(self)));
                 sb.appendStringUncached(T_LPAREN);
                 sb.appendStringUncached(PyObjectStrAsTruffleStringNode.getUncached().execute(null, asList));
                 if (maxLength != -1) {
@@ -967,12 +967,13 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, PDeque self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached ConditionProfile profile) {
-            Object clazz = getPythonClass(getClassNode.execute(self), profile);
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached InlinedConditionProfile profile) {
+            Object clazz = getPythonClass(inliningTarget, getClassNode.execute(inliningTarget, self), profile);
             Object dict = lookupAttr.execute(frame, self, T___DICT__);
             if (PGuards.isNoValue(dict) || sizeNode.execute(frame, dict) <= 0) {
                 dict = PNone.NONE;

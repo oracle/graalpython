@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,13 +56,15 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCompress})
 public final class CompressBuiltins extends PythonBuiltins {
@@ -86,15 +88,16 @@ public final class CompressBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object next(VirtualFrame frame, PCompress self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrue,
-                        @Cached LoopConditionProfile loopConditionProfile) {
+                        @Cached InlinedLoopConditionProfile loopConditionProfile) {
             Object nextSelector;
             Object nextItem;
             do {
                 nextItem = nextNode.execute(frame, self.getData(), PNone.NO_VALUE);
                 nextSelector = nextNode.execute(frame, self.getSelectors(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(!isTrue.execute(frame, nextSelector)));
+            } while (loopConditionProfile.profile(inliningTarget, !isTrue.execute(frame, nextSelector)));
             return nextItem;
         }
     }
@@ -104,8 +107,9 @@ public final class CompressBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PCompress self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getData(), self.getSelectors()});
             return factory().createTuple(new Object[]{type, tuple});
         }

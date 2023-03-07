@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -80,7 +81,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReferenceType)
@@ -133,10 +135,11 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getHash() == HASH_UNSET")
         long computeHash(VirtualFrame frame, PReferenceType self,
-                        @Cached ConditionProfile referentProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile referentProfile,
                         @Cached PyObjectHashNode hashNode) {
             Object referent = self.getObject();
-            if (referentProfile.profile(referent != null)) {
+            if (referentProfile.profile(inliningTarget, referent != null)) {
                 long hash = hashNode.execute(frame, referent);
                 self.setHash(hash);
                 return hash;

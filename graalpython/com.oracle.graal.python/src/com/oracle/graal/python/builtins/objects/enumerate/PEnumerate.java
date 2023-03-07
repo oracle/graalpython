@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,8 +28,9 @@ package com.oracle.graal.python.builtins.objects.enumerate;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PEnumerate extends PythonBuiltinObject {
 
@@ -52,8 +53,8 @@ public final class PEnumerate extends PythonBuiltinObject {
         return iterator;
     }
 
-    public Object getAndIncrementIndex(PythonObjectFactory factory, ConditionProfile bigIntIndexProfile) {
-        if (bigIntIndexProfile.profile(bigIndex != null)) {
+    public Object getAndIncrementIndex(Node inliningTarget, PythonObjectFactory factory, InlinedConditionProfile bigIntIndexProfile) {
+        if (bigIntIndexProfile.profile(inliningTarget, bigIndex != null)) {
             PInt idx = bigIndex;
             bigIndex = factory.createInt(bigIndex.inc());
             return idx;
@@ -61,8 +62,8 @@ public final class PEnumerate extends PythonBuiltinObject {
         return index++;
     }
 
-    public Object getIndex(ConditionProfile bigIntIndexProfile) {
-        if (bigIntIndexProfile.profile(bigIndex != null)) {
+    public Object getIndex(Node inliningTarget, InlinedConditionProfile bigIntIndexProfile) {
+        if (bigIntIndexProfile.profile(inliningTarget, bigIndex != null)) {
             return bigIndex;
         }
         return index;

@@ -227,10 +227,10 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
@@ -519,13 +519,11 @@ public abstract class TypeNodes {
 
         public abstract MroSequenceStorage execute(Object obj);
 
-        static MroSequenceStorage doPythonClass(PythonManagedClass obj,
-                        @Cached ConditionProfile notInitialized,
-                        @Cached ConditionProfile isPythonClass,
+        private static MroSequenceStorage doPythonClass(PythonManagedClass obj, Node inliningTarget, InlinedConditionProfile notInitialized, InlinedConditionProfile isPythonClass,
                         PythonLanguage language) {
-            if (!notInitialized.profile(obj.isMROInitialized())) {
+            if (!notInitialized.profile(inliningTarget, obj.isMROInitialized())) {
                 PythonAbstractClass[] mro = ComputeMroNode.doSlowPath(obj, false);
-                if (isPythonClass.profile(obj instanceof PythonClass)) {
+                if (isPythonClass.profile(inliningTarget, obj instanceof PythonClass)) {
                     ((PythonClass) obj).setMRO(mro, language);
                 } else {
                     assert obj instanceof PythonBuiltinClass;
@@ -538,9 +536,10 @@ public abstract class TypeNodes {
 
         @Specialization
         MroSequenceStorage doPythonClass(PythonManagedClass obj,
-                        @Cached ConditionProfile notInitialized,
-                        @Cached ConditionProfile isPythonClass) {
-            return doPythonClass(obj, notInitialized, isPythonClass, getLanguage());
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile notInitialized,
+                        @Cached InlinedConditionProfile isPythonClass) {
+            return doPythonClass(obj, inliningTarget, notInitialized, isPythonClass, getLanguage());
         }
 
         @Specialization
@@ -550,18 +549,19 @@ public abstract class TypeNodes {
 
         @Specialization
         static MroSequenceStorage doNativeClass(PythonNativeClass obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetTypeMemberNode getTpMroNode,
                         @Cached PRaiseNode raise,
-                        @Cached ConditionProfile lazyTypeInitProfile,
-                        @Cached("createClassProfile()") ValueProfile tpMroProfile,
-                        @Cached("createClassProfile()") ValueProfile storageProfile) {
+                        @Cached InlinedConditionProfile lazyTypeInitProfile,
+                        @Cached InlinedExactClassProfile tpMroProfile,
+                        @Cached InlinedExactClassProfile storageProfile) {
             Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
-            if (lazyTypeInitProfile.profile(tupleObj == PNone.NO_VALUE)) {
+            if (lazyTypeInitProfile.profile(inliningTarget, tupleObj == PNone.NO_VALUE)) {
                 tupleObj = initializeType(obj, getTpMroNode, raise);
             }
-            Object profiled = tpMroProfile.profile(tupleObj);
+            Object profiled = tpMroProfile.profile(inliningTarget, tupleObj);
             if (profiled instanceof PTuple) {
-                SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) profiled).getSequenceStorage());
+                SequenceStorage sequenceStorage = storageProfile.profile(inliningTarget, ((PTuple) profiled).getSequenceStorage());
                 if (sequenceStorage instanceof MroSequenceStorage) {
                     return (MroSequenceStorage) sequenceStorage;
                 }
@@ -587,9 +587,10 @@ public abstract class TypeNodes {
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
         @TruffleBoundary
         static MroSequenceStorage doSlowPath(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise) {
             if (obj instanceof PythonManagedClass) {
-                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.get(null));
+                return doPythonClass((PythonManagedClass) obj, inliningTarget, InlinedConditionProfile.getUncached(), InlinedConditionProfile.getUncached(), PythonLanguage.get(null));
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonContext.get(null).lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
@@ -687,10 +688,11 @@ public abstract class TypeNodes {
 
         @Specialization
         static Object doNative(PythonNativeClass obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached PRaiseNode raise,
-                        @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
-            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
+                        @Cached InlinedExactClassProfile resultTypeProfile) {
+            Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.execute(obj, NativeMember.TP_BASE));
             if (PGuards.isPNone(result)) {
                 return null;
             } else if (PGuards.isPythonClass(result)) {
@@ -719,11 +721,12 @@ public abstract class TypeNodes {
 
         @Specialization
         Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetTypeMemberNode getTpSubclassesNode,
-                        @Cached("createClassProfile()") ValueProfile profile) {
+                        @Cached InlinedExactClassProfile profile) {
             Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMember.TP_SUBCLASSES);
 
-            Object profiled = profile.profile(tpSubclasses);
+            Object profiled = profile.profile(inliningTarget, tpSubclasses);
             if (profiled instanceof PDict) {
                 return wrapDict(profiled);
             } else if (profiled instanceof PNone) {
@@ -882,11 +885,12 @@ public abstract class TypeNodes {
 
         @Specialization
         static PythonAbstractClass[] doNative(PythonNativeClass obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBasesNode,
-                        @Cached("createClassProfile()") ValueProfile resultTypeProfile,
+                        @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached GetInternalObjectArrayNode toArrayNode) {
-            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj, NativeMember.TP_BASES));
+            Object result = resultTypeProfile.profile(inliningTarget, getTpBasesNode.execute(obj, NativeMember.TP_BASES));
             if (result instanceof PTuple) {
                 Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
                 try {
@@ -942,11 +946,12 @@ public abstract class TypeNodes {
 
         @Specialization
         static PythonAbstractClass doNative(PythonNativeClass obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBaseNode,
-                        @Cached("createClassProfile()") ValueProfile resultTypeProfile,
+                        @Cached InlinedExactClassProfile resultTypeProfile,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
+            Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.execute(obj, NativeMember.TP_BASE));
             if (PGuards.isPNone(result)) {
                 return null;
             } else if (PGuards.isClass(result, lib)) {
@@ -1036,9 +1041,10 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean isCompatible(VirtualFrame frame, Object oldBase, Object newBase,
-                        @Cached BranchProfile errorSlotsBranch) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile errorSlotsBranch) {
             if (!compatibleForAssignment(frame, oldBase, newBase)) {
-                errorSlotsBranch.enter();
+                errorSlotsBranch.enter(inliningTarget);
                 throw getRaiseNode().raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
             }
             return true;
@@ -1299,42 +1305,43 @@ public abstract class TypeNodes {
 
         @Specialization
         protected Object getSolid(Object type,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
-                        @Cached BranchProfile typeIsNotBase,
-                        @Cached BranchProfile hasBase,
-                        @Cached BranchProfile hasNoBase) {
-            return solidBase(type, getBaseClassNode, PythonContext.get(this), readAttr, typeIsNotBase, hasBase,
+                        @Cached InlinedBranchProfile typeIsNotBase,
+                        @Cached InlinedBranchProfile hasBase,
+                        @Cached InlinedBranchProfile hasNoBase) {
+            return solidBase(type, inliningTarget, getBaseClassNode, PythonContext.get(this), readAttr, typeIsNotBase, hasBase,
                             hasNoBase, 0);
         }
 
         @TruffleBoundary
-        protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, int depth) {
-            return solidBase(type, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), BranchProfile.getUncached(),
-                            BranchProfile.getUncached(), BranchProfile.getUncached(), depth);
+        protected Object solidBaseTB(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, int depth) {
+            return solidBase(type, inliningTarget, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), InlinedBranchProfile.getUncached(),
+                            InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(), depth);
         }
 
-        protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, ReadAttributeFromObjectNode readAttr,
-                        BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
+        protected Object solidBase(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, ReadAttributeFromObjectNode readAttr,
+                        InlinedBranchProfile typeIsNotBase, InlinedBranchProfile hasBase, InlinedBranchProfile hasNoBase, int depth) {
             CompilerAsserts.partialEvaluationConstant(depth);
             Object base = getBaseClassNode.execute(type);
             if (base != null) {
-                hasBase.enter();
+                hasBase.enter(inliningTarget);
                 if (depth > 3) {
-                    base = solidBaseTB(base, getBaseClassNode, context, depth);
+                    base = solidBaseTB(base, inliningTarget, getBaseClassNode, context, depth);
                 } else {
-                    base = solidBase(base, getBaseClassNode, context, readAttr, typeIsNotBase, hasBase,
+                    base = solidBase(base, inliningTarget, getBaseClassNode, context, readAttr, typeIsNotBase, hasBase,
                                     hasNoBase, depth + 1);
                 }
             } else {
-                hasNoBase.enter();
+                hasNoBase.enter(inliningTarget);
                 base = context.lookupType(PythonBuiltinClassType.PythonObject);
             }
 
             if (type == base) {
                 return type;
             }
-            typeIsNotBase.enter();
+            typeIsNotBase.enter(inliningTarget);
 
             Object typeSlots = getSlotsFromType(type, readAttr);
             if (extraivars(type, base, typeSlots)) {
@@ -1722,13 +1729,14 @@ public abstract class TypeNodes {
 
         @Specialization
         static boolean doUserClass(PythonClass obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                        @Cached BranchProfile hasHPyFlagsProfile) {
+                        @Cached InlinedBranchProfile hasHPyFlagsProfile) {
             // Special case for custom classes created via HPy: They are managed classes but can
             // have custom flags. The flags may prohibit subtyping.
             Object flagsObj = readAttributeFromObjectNode.execute(obj, GraalHPyDef.TYPE_HPY_FLAGS);
             if (flagsObj != PNone.NO_VALUE) {
-                hasHPyFlagsProfile.enter();
+                hasHPyFlagsProfile.enter(inliningTarget);
                 return (((long) flagsObj) & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
             }
             return true;
@@ -2606,14 +2614,15 @@ public abstract class TypeNodes {
 
         @Specialization(guards = "depth < MAX_RECURSION_DEPTH")
         static long getItemsizeManagedRecursiveNode(PythonClass cls, int depth,
-                        @Shared("hasVal") @Cached ConditionProfile hasValueProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("hasVal") @Cached InlinedConditionProfile hasValueProfile,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeNode,
                         @Shared("getBase") @Cached GetBaseClassNode getBaseNode,
                         @Cached GetItemsizeNode baseItemsizeNode) {
             CompilerAsserts.partialEvaluationConstant(depth);
             Object itemsize = readNode.execute(cls, TYPE_ITEMSIZE);
-            if (hasValueProfile.profile(itemsize != PNone.NO_VALUE)) {
+            if (hasValueProfile.profile(inliningTarget, itemsize != PNone.NO_VALUE)) {
                 return (long) itemsize;
             }
 
@@ -2626,11 +2635,12 @@ public abstract class TypeNodes {
 
         @Specialization(guards = "depth >= MAX_RECURSION_DEPTH")
         static long getItemsizeManagedRecursiveCall(PythonClass cls, int depth,
-                        @Shared("hasVal") @Cached ConditionProfile hasValueProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("hasVal") @Cached InlinedConditionProfile hasValueProfile,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeNode,
                         @Shared("getBase") @Cached GetBaseClassNode getBaseNode) {
-            return getItemsizeManagedRecursiveNode(cls, depth, hasValueProfile, readNode, writeNode, getBaseNode, GetItemsizeNodeGen.getUncached());
+            return getItemsizeManagedRecursiveNode(cls, depth, inliningTarget, hasValueProfile, readNode, writeNode, getBaseNode, GetItemsizeNodeGen.getUncached());
         }
 
         @Specialization

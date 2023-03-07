@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,9 +64,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -75,7 +76,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -101,17 +103,19 @@ public class ClassmethodBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isSingleContext()", "isNoValue(type)", "cachedSelf == self"})
         Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
-                        @Cached GetClassNode getClass) {
-            return makeMethod.execute(getClass.execute(obj), cachedCallable);
+                        @Cached @Shared InlinedGetClassNode getClass) {
+            return makeMethod.execute(getClass.execute(inliningTarget, obj), cachedCallable);
         }
 
         @Specialization(guards = "isNoValue(type)", replaces = "getCached")
         Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached GetClassNode getClass,
-                        @Cached BranchProfile uninitialized) {
-            return doGet(self, getClass.execute(obj), uninitialized);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClass,
+                        @Cached @Shared InlinedBranchProfile uninitialized) {
+            return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), uninitialized);
         }
 
         /**
@@ -126,14 +130,15 @@ public class ClassmethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
         Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @Cached BranchProfile uninitialized) {
-            return doGet(self, type, uninitialized);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedBranchProfile uninitialized) {
+            return doGet(inliningTarget, self, type, uninitialized);
         }
 
-        private Object doGet(PDecoratedMethod self, Object type, BranchProfile uninitialized) {
+        private Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, InlinedBranchProfile uninitialized) {
             Object callable = self.getCallable();
             if (callable == null) {
-                uninitialized.enter();
+                uninitialized.enter(inliningTarget);
                 throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return makeMethod.execute(type, callable);

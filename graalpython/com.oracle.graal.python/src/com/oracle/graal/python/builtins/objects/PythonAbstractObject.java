@@ -123,6 +123,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -1028,13 +1029,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         static boolean access(Object object, TruffleString attrKeyName, int type,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached IsImmutable isImmutable,
                         @Cached GetMroNode getMroNode,
                         @Cached GilNode gil) {
@@ -1043,7 +1045,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 Object owner = object;
                 Object attr = PNone.NO_VALUE;
 
-                Object klass = getClassNode.execute(object);
+                Object klass = getClassNode.execute(inliningTarget, object);
                 for (PythonAbstractClass c : getMroNode.execute(klass)) {
                     // n.b. we need to use a different node because it makes a difference if the
                     // type is native
@@ -1124,7 +1126,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public boolean isImmutable(Object object,
-                        @Cached GetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode) {
             // TODO(fa) The first condition is too general; we should check if the object's type is
             // 'type'
             if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
@@ -1132,7 +1135,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             } else if (object instanceof PythonClass || object instanceof PythonModule) {
                 return false;
             } else {
-                Object klass = getClassNode.execute(object);
+                Object klass = getClassNode.execute(inliningTarget, object);
                 return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || PGuards.isNativeClass(object);
             }
         }
@@ -1154,13 +1157,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         static Object doSpecialObject(Object primary, Object index,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupInMRONode,
                         @Cached CallBinaryMethodNode callGetItemNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile profile) {
-            Object attrGetItem = lookupInMRONode.execute(getClassNode.execute(primary));
-            if (profile.profile(attrGetItem == PNone.NO_VALUE)) {
+                        @Cached InlinedConditionProfile profile) {
+            Object attrGetItem = lookupInMRONode.execute(getClassNode.execute(inliningTarget, primary));
+            if (profile.profile(inliningTarget, attrGetItem == PNone.NO_VALUE)) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, primary);
             }
             return callGetItemNode.executeObject(attrGetItem, primary, index);
@@ -1347,13 +1351,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         static void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PForeignToPTypeNode convert,
                         @Cached PInteropGetAttributeNode getAttributeNode,
                         @Cached CallBinaryMethodNode callSetItemNode,
-                        @Cached ConditionProfile profile) throws UnsupportedMessageException {
+                        @Cached InlinedConditionProfile profile) throws UnsupportedMessageException {
 
             Object attrSetitem = getAttributeNode.execute(primary, T___SETITEM__);
-            if (profile.profile(attrSetitem != PNone.NO_VALUE)) {
+            if (profile.profile(inliningTarget, attrSetitem != PNone.NO_VALUE)) {
                 callSetItemNode.executeObject(attrSetitem, key, convert.executeConvert(value));
             } else {
                 throw UnsupportedMessageException.create();
@@ -1408,11 +1413,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public void doSpecialObject(PythonAbstractObject primary, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallBinaryMethodNode callSetAttrNode,
-                        @Cached ConditionProfile profile) throws UnsupportedMessageException {
+                        @Cached InlinedConditionProfile profile) throws UnsupportedMessageException {
             Object attrDelattr = lookupSetAttrNode.execute(primary, T___DELITEM__);
-            if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
+            if (profile.profile(inliningTarget, attrDelattr != PNone.NO_VALUE)) {
                 callSetAttrNode.executeObject(attrDelattr, primary, key);
             } else {
                 throw UnsupportedMessageException.create();
@@ -1478,10 +1484,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public TruffleString doDefault(PythonAbstractObject receiver,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readStr,
                         @Cached CallNode callNode,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached ConditionProfile toStringUsed) {
+                        @Cached InlinedConditionProfile toStringUsed) {
             Object toStrAttr;
             TruffleString names;
             PythonContext context = PythonContext.get(this);
@@ -1493,7 +1500,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
             TruffleString result = null;
             PythonModule builtins = context.getBuiltins();
-            if (toStringUsed.profile(builtins != null)) {
+            if (toStringUsed.profile(inliningTarget, builtins != null)) {
                 toStrAttr = readStr.execute(builtins, names);
                 try {
                     result = castStr.execute(callNode.execute(toStrAttr, receiver));
@@ -1501,7 +1508,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // do nothing
                 }
             }
-            if (toStringUsed.profile(result != null)) {
+            if (toStringUsed.profile(inliningTarget, result != null)) {
                 return result;
             } else {
                 return receiver.toStringBoundary();

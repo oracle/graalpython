@@ -105,8 +105,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDefaultDict})
@@ -203,10 +203,11 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(defaultValue)")
         public Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
-                        @Cached ConditionProfile hasKeyProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasKeyProfile,
                         @Shared("delItem") @Cached HashingStorageDelItem delItem) {
             Object retVal = delItem.executePop(frame, dict.getDictStorage(), key, dict);
-            if (hasKeyProfile.profile(retVal != null)) {
+            if (hasKeyProfile.profile(inliningTarget, retVal != null)) {
                 return retVal;
             } else {
                 return defaultValue;

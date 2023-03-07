@@ -71,7 +71,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNo
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -96,7 +96,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -208,12 +208,13 @@ public abstract class StringNodes {
 
         @Specialization
         static int doNativeObject(PythonNativeObject x,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PRaiseNode raiseNode) {
-            if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
                 // read the native data
                 Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;
@@ -308,12 +309,13 @@ public abstract class StringNodes {
         // This specialization is just for better interpreter performance.
         // IMPORTANT: only do this if the sequence is exactly list or tuple (not subclassed); for
         // semantics, see CPython's 'abstract.c' function 'PySequence_Fast'
-        @Specialization(guards = "isExactlyListOrTuple(getClassNode, sequence)", limit = "1")
+        @Specialization(guards = "isExactlyListOrTuple(inliningTarget, getClassNode, sequence)", limit = "1")
         static TruffleString doPSequence(TruffleString self, PSequence sequence,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached ConditionProfile isEmptyProfile,
-                        @Cached ConditionProfile isSingleItemProfile,
+                        @Cached InlinedConditionProfile isEmptyProfile,
+                        @Cached InlinedConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PRaiseNode raise,
@@ -324,7 +326,7 @@ public abstract class StringNodes {
             int len = storage.length();
 
             // shortcut
-            if (isEmptyProfile.profile(len == 0)) {
+            if (isEmptyProfile.profile(inliningTarget, len == 0)) {
                 return T_EMPTY_STRING;
             }
 
@@ -334,7 +336,7 @@ public abstract class StringNodes {
             Object item = getItemNode.execute(storage, i);
             try {
                 // shortcut
-                if (isSingleItemProfile.profile(len == 1)) {
+                if (isSingleItemProfile.profile(inliningTarget, len == 1)) {
                     return castToStringNode.execute(item);
                 }
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
@@ -405,8 +407,8 @@ public abstract class StringNodes {
             }
         }
 
-        static boolean isExactlyListOrTuple(GetClassNode getClassNode, PSequence sequence) {
-            Object clazz = getClassNode.execute(sequence);
+        static boolean isExactlyListOrTuple(Node inliningTarget, InlinedGetClassNode getClassNode, PSequence sequence) {
+            Object clazz = getClassNode.execute(inliningTarget, sequence);
             return clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple;
         }
     }
@@ -495,9 +497,10 @@ public abstract class StringNodes {
 
         @Specialization
         static PString doPString(PString string,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode) {
-            if (cannotBeOverridden(getClassNode.execute(string))) {
+            if (cannotBeOverridden(getClassNode.execute(inliningTarget, string))) {
                 writeNode.execute(string, PString.INTERNED, true);
                 return string;
             }

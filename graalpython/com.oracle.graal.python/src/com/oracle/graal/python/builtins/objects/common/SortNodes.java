@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,14 +73,17 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.LoopNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -233,12 +236,13 @@ public abstract class SortNodes {
             Arrays.sort(array, 0, len, comparator);
         }
 
-        protected boolean isStringOnly(ObjectSequenceStorage storage, LoopConditionProfile isStringOnlyLoopProfile, ConditionProfile isStringOnlyBreakProfile) {
+        protected boolean isStringOnly(Node inliningTarget, ObjectSequenceStorage storage, InlinedLoopConditionProfile isStringOnlyLoopProfile,
+                        InlinedCountingConditionProfile isStringOnlyBreakProfile) {
             int length = storage.length();
             Object[] array = storage.getInternalArray();
-            for (int i = 0; isStringOnlyLoopProfile.profile(i < length); i++) {
+            for (int i = 0; isStringOnlyLoopProfile.profile(inliningTarget, i < length); i++) {
                 Object value = array[i];
-                if (isStringOnlyBreakProfile.profile(!(value instanceof TruffleString))) {
+                if (isStringOnlyBreakProfile.profile(inliningTarget, !(value instanceof TruffleString))) {
                     LoopNode.reportLoopCount(this, i);
                     return false;
                 }
@@ -249,11 +253,12 @@ public abstract class SortNodes {
 
         @Specialization
         void sortObjSeqStorage(VirtualFrame frame, ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
-                        @Cached ConditionProfile isStringOnlyProfile,
-                        @Cached LoopConditionProfile isStringOnlyLoopProfile,
-                        @Cached("createCountingProfile()") ConditionProfile isStringOnlyBreakProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isStringOnlyProfile,
+                        @Cached InlinedLoopConditionProfile isStringOnlyLoopProfile,
+                        @Cached InlinedCountingConditionProfile isStringOnlyBreakProfile,
                         @Cached CallContext callContext) {
-            if (isStringOnlyProfile.profile(isStringOnly(storage, isStringOnlyLoopProfile, isStringOnlyBreakProfile))) {
+            if (isStringOnlyProfile.profile(inliningTarget, isStringOnly(inliningTarget, storage, isStringOnlyLoopProfile, isStringOnlyBreakProfile))) {
                 // Sorting of strings seems to be so much faster (especially on SVM) that it is
                 // worth always checking for string only sequences and not replacing the strings
                 // specialized code with generic object storage code
