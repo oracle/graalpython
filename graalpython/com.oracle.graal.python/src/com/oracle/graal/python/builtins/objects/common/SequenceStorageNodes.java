@@ -683,12 +683,11 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isObject(getElementType, storage)", limit = "1")
         protected static Object doNativeObject(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
-                        @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
                         @Shared("getElementType") @Cached @SuppressWarnings("unused") GetElementType getElementType,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return verifyResult(verifyNativeItemNode, raiseNode, storage, toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx)));
+                return toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 // The 'InvalidArrayIndexException' should really not happen since we did a bounds
                 // check before.
