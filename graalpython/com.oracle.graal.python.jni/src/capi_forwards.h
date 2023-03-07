@@ -719,6 +719,7 @@ void unimplemented(const char* name) {
 #undef PyTruffleDict_Next
 #undef PyTruffleErr_Fetch
 #undef PyTruffleErr_GetExcInfo
+#undef PyTruffleFloat_AsDouble
 #undef PyTruffleFrame_New
 #undef PyTruffleHash_InitSecret
 #undef PyTruffleLong_AsPrimitive
@@ -761,14 +762,15 @@ void unimplemented(const char* name) {
 #undef PyTruffle_FileSystemDefaultEncoding
 #undef PyTruffle_Get_Inherited_Native_Slots
 #undef PyTruffle_HashConstant
+#undef PyTruffle_InitialNativeMemory
 #undef PyTruffle_LogString
+#undef PyTruffle_MaxNativeMemory
 #undef PyTruffle_MemoryViewFromBuffer
 #undef PyTruffle_Native_Options
 #undef PyTruffle_NewTypeDict
 #undef PyTruffle_NoValue
 #undef PyTruffle_None
 #undef PyTruffle_NotImplemented
-#undef PyTruffle_Object_Alloc
 #undef PyTruffle_Object_Free
 #undef PyTruffle_Register_NULL
 #undef PyTruffle_SeqIter_New
@@ -776,6 +778,7 @@ void unimplemented(const char* name) {
 #undef PyTruffle_Set_SulongType
 #undef PyTruffle_ToNative
 #undef PyTruffle_Trace_Type
+#undef PyTruffle_TriggerGC
 #undef PyTruffle_True
 #undef PyTruffle_Type
 #undef PyTruffle_Type_Modified
@@ -1488,7 +1491,6 @@ void unimplemented(const char* name) {
 #undef _PyTruffleObject_MakeTpCall
 #undef _PyTruffleSet_NextEntry
 #undef _PyTruffle_HashBytes
-#undef _PyTruffle_Trace_Free
 #undef _PyTuple_DebugMallocStats
 #undef _PyTuple_MaybeUntrack
 #undef _PyTuple_Resize
@@ -2424,10 +2426,6 @@ PyAPI_FUNC(int) PyFile_WriteString(const char* a, PyObject* b) {
     int result = (int) __target__PyFile_WriteString(a, b);
     return result;
 }
-PyAPI_FUNC(double) PyFloat_AsDouble(PyObject* a) {
-    double result = (double) GraalPyFloat_AsDouble(a);
-    return result;
-}
 PyAPI_FUNC(PyObject*) PyFloat_FromDouble(double a) {
     PyObject* result = (PyObject*) GraalPyFloat_FromDouble(a);
     return result;
@@ -2749,61 +2747,6 @@ PyAPI_FUNC(int) PyList_Sort(PyObject* a) {
     int result = (int) GraalPyList_Sort(a);
     return result;
 }
-double (*__target__PyLong_AsDouble)(PyObject*) = NULL;
-PyAPI_FUNC(double) PyLong_AsDouble(PyObject* a) {
-    double result = (double) __target__PyLong_AsDouble(a);
-    return result;
-}
-long (*__target__PyLong_AsLong)(PyObject*) = NULL;
-PyAPI_FUNC(long) PyLong_AsLong(PyObject* a) {
-    long result = (long) __target__PyLong_AsLong(a);
-    return result;
-}
-long (*__target__PyLong_AsLongAndOverflow)(PyObject*, int*) = NULL;
-PyAPI_FUNC(long) PyLong_AsLongAndOverflow(PyObject* a, int* b) {
-    long result = (long) __target__PyLong_AsLongAndOverflow(a, b);
-    return result;
-}
-long long (*__target__PyLong_AsLongLong)(PyObject*) = NULL;
-PyAPI_FUNC(long long) PyLong_AsLongLong(PyObject* a) {
-    long long result = (long long) __target__PyLong_AsLongLong(a);
-    return result;
-}
-long long (*__target__PyLong_AsLongLongAndOverflow)(PyObject*, int*) = NULL;
-PyAPI_FUNC(long long) PyLong_AsLongLongAndOverflow(PyObject* a, int* b) {
-    long long result = (long long) __target__PyLong_AsLongLongAndOverflow(a, b);
-    return result;
-}
-size_t (*__target__PyLong_AsSize_t)(PyObject*) = NULL;
-PyAPI_FUNC(size_t) PyLong_AsSize_t(PyObject* a) {
-    size_t result = (size_t) __target__PyLong_AsSize_t(a);
-    return result;
-}
-Py_ssize_t (*__target__PyLong_AsSsize_t)(PyObject*) = NULL;
-PyAPI_FUNC(Py_ssize_t) PyLong_AsSsize_t(PyObject* a) {
-    Py_ssize_t result = (Py_ssize_t) __target__PyLong_AsSsize_t(a);
-    return result;
-}
-unsigned long (*__target__PyLong_AsUnsignedLong)(PyObject*) = NULL;
-PyAPI_FUNC(unsigned long) PyLong_AsUnsignedLong(PyObject* a) {
-    unsigned long result = (unsigned long) __target__PyLong_AsUnsignedLong(a);
-    return result;
-}
-unsigned long long (*__target__PyLong_AsUnsignedLongLong)(PyObject*) = NULL;
-PyAPI_FUNC(unsigned long long) PyLong_AsUnsignedLongLong(PyObject* a) {
-    unsigned long long result = (unsigned long long) __target__PyLong_AsUnsignedLongLong(a);
-    return result;
-}
-unsigned long long (*__target__PyLong_AsUnsignedLongLongMask)(PyObject*) = NULL;
-PyAPI_FUNC(unsigned long long) PyLong_AsUnsignedLongLongMask(PyObject* a) {
-    unsigned long long result = (unsigned long long) __target__PyLong_AsUnsignedLongLongMask(a);
-    return result;
-}
-unsigned long (*__target__PyLong_AsUnsignedLongMask)(PyObject*) = NULL;
-PyAPI_FUNC(unsigned long) PyLong_AsUnsignedLongMask(PyObject* a) {
-    unsigned long result = (unsigned long) __target__PyLong_AsUnsignedLongMask(a);
-    return result;
-}
 PyAPI_FUNC(void*) PyLong_AsVoidPtr(PyObject* a) {
     void* result = (void*) GraalPyLong_AsVoidPtr(a);
     return result;
@@ -2842,11 +2785,6 @@ PyAPI_FUNC(PyObject*) PyLong_FromUnsignedLong(unsigned long a) {
 }
 PyAPI_FUNC(PyObject*) PyLong_FromUnsignedLongLong(unsigned long long a) {
     PyObject* result = (PyObject*) GraalPyLong_FromUnsignedLongLong(a);
-    return result;
-}
-PyObject* (*__target__PyLong_FromVoidPtr)(void*) = NULL;
-PyAPI_FUNC(PyObject*) PyLong_FromVoidPtr(void* a) {
-    PyObject* result = (PyObject*) __target__PyLong_FromVoidPtr(a);
     return result;
 }
 PyAPI_FUNC(PyObject*) PyLong_GetInfo() {
@@ -2889,46 +2827,8 @@ PyAPI_FUNC(PyObject*) PyMapping_Values(PyObject* a) {
     PyObject* result = (PyObject*) GraalPyMapping_Values(a);
     return result;
 }
-void* (*__target__PyMem_Calloc)(size_t, size_t) = NULL;
-PyAPI_FUNC(void*) PyMem_Calloc(size_t a, size_t b) {
-    void* result = (void*) __target__PyMem_Calloc(a, b);
-    return result;
-}
-void (*__target__PyMem_Free)(void*) = NULL;
-PyAPI_FUNC(void) PyMem_Free(void* a) {
-    __target__PyMem_Free(a);
-}
 PyAPI_FUNC(void) PyMem_GetAllocator(PyMemAllocatorDomain a, PyMemAllocatorEx* b) {
     unimplemented("PyMem_GetAllocator"); exit(-1);
-}
-void* (*__target__PyMem_Malloc)(size_t) = NULL;
-PyAPI_FUNC(void*) PyMem_Malloc(size_t a) {
-    void* result = (void*) __target__PyMem_Malloc(a);
-    return result;
-}
-void* (*__target__PyMem_RawCalloc)(size_t, size_t) = NULL;
-PyAPI_FUNC(void*) PyMem_RawCalloc(size_t a, size_t b) {
-    void* result = (void*) __target__PyMem_RawCalloc(a, b);
-    return result;
-}
-void (*__target__PyMem_RawFree)(void*) = NULL;
-PyAPI_FUNC(void) PyMem_RawFree(void* a) {
-    __target__PyMem_RawFree(a);
-}
-void* (*__target__PyMem_RawMalloc)(size_t) = NULL;
-PyAPI_FUNC(void*) PyMem_RawMalloc(size_t a) {
-    void* result = (void*) __target__PyMem_RawMalloc(a);
-    return result;
-}
-void* (*__target__PyMem_RawRealloc)(void*, size_t) = NULL;
-PyAPI_FUNC(void*) PyMem_RawRealloc(void* a, size_t b) {
-    void* result = (void*) __target__PyMem_RawRealloc(a, b);
-    return result;
-}
-void* (*__target__PyMem_Realloc)(void*, size_t) = NULL;
-PyAPI_FUNC(void*) PyMem_Realloc(void* a, size_t b) {
-    void* result = (void*) __target__PyMem_Realloc(a, b);
-    return result;
 }
 PyAPI_FUNC(void) PyMem_SetAllocator(PyMemAllocatorDomain a, PyMemAllocatorEx* b) {
     unimplemented("PyMem_SetAllocator"); exit(-1);
@@ -3370,14 +3270,6 @@ PyAPI_FUNC(PyObject*) PyObject_Format(PyObject* a, PyObject* b) {
     PyObject* result = (PyObject*) GraalPyObject_Format(a, b);
     return result;
 }
-void (*__target__PyObject_Free)(void*) = NULL;
-PyAPI_FUNC(void) PyObject_Free(void* a) {
-    __target__PyObject_Free(a);
-}
-void (*__target__PyObject_GC_Del)(void*) = NULL;
-PyAPI_FUNC(void) PyObject_GC_Del(void* a) {
-    __target__PyObject_GC_Del(a);
-}
 PyAPI_FUNC(int) PyObject_GC_IsFinalized(PyObject* a) {
     unimplemented("PyObject_GC_IsFinalized"); exit(-1);
 }
@@ -3461,16 +3353,6 @@ PyAPI_FUNC(Py_hash_t) PyObject_HashNotImplemented(PyObject* a) {
 PyAPI_FUNC(int) PyObject_IS_GC(PyObject* a) {
     unimplemented("PyObject_IS_GC"); exit(-1);
 }
-PyObject* (*__target__PyObject_Init)(PyObject*, PyTypeObject*) = NULL;
-PyAPI_FUNC(PyObject*) PyObject_Init(PyObject* a, PyTypeObject* b) {
-    PyObject* result = (PyObject*) __target__PyObject_Init(a, b);
-    return result;
-}
-PyVarObject* (*__target__PyObject_InitVar)(PyVarObject*, PyTypeObject*, Py_ssize_t) = NULL;
-PyAPI_FUNC(PyVarObject*) PyObject_InitVar(PyVarObject* a, PyTypeObject* b, Py_ssize_t c) {
-    PyVarObject* result = (PyVarObject*) __target__PyObject_InitVar(a, b, c);
-    return result;
-}
 PyAPI_FUNC(int) PyObject_IsInstance(PyObject* a, PyObject* b) {
     int result = (int) GraalPyObject_IsInstance(a, b);
     return result;
@@ -3490,11 +3372,6 @@ PyAPI_FUNC(Py_ssize_t) PyObject_LengthHint(PyObject* a, Py_ssize_t b) {
     Py_ssize_t result = (Py_ssize_t) GraalPyObject_LengthHint(a, b);
     return result;
 }
-void* (*__target__PyObject_Malloc)(size_t) = NULL;
-PyAPI_FUNC(void*) PyObject_Malloc(size_t a) {
-    void* result = (void*) __target__PyObject_Malloc(a);
-    return result;
-}
 int (*__target__PyObject_Not)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyObject_Not(PyObject* a) {
     int result = (int) __target__PyObject_Not(a);
@@ -3503,11 +3380,6 @@ PyAPI_FUNC(int) PyObject_Not(PyObject* a) {
 int (*__target__PyObject_Print)(PyObject*, FILE*, int) = NULL;
 PyAPI_FUNC(int) PyObject_Print(PyObject* a, FILE* b, int c) {
     int result = (int) __target__PyObject_Print(a, b, c);
-    return result;
-}
-void* (*__target__PyObject_Realloc)(void*, size_t) = NULL;
-PyAPI_FUNC(void*) PyObject_Realloc(void* a, size_t b) {
-    void* result = (void*) __target__PyObject_Realloc(a, b);
     return result;
 }
 PyAPI_FUNC(PyObject*) PyObject_Repr(PyObject* a) {
@@ -4145,7 +4017,7 @@ PyAPI_FUNC(void*) PyType_GetSlot(PyTypeObject* a, int b) {
     void* result = (void*) __target__PyType_GetSlot(a, b);
     return result;
 }
-PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
+MUST_INLINE PyAPI_FUNC(int) PyType_IsSubtype_Inlined(PyTypeObject* a, PyTypeObject* b) {
     int result = (int) GraalPyType_IsSubtype(a, b);
     return result;
 }
@@ -4656,10 +4528,6 @@ PyAPI_FUNC(PyObject*) Py_CompileStringExFlags(const char* a, const char* b, int 
 PyAPI_FUNC(PyObject*) Py_CompileStringObject(const char* a, PyObject* b, int c, PyCompilerFlags* d, int e) {
     unimplemented("Py_CompileStringObject"); exit(-1);
 }
-void (*__target__Py_DecRef)(PyObject*) = NULL;
-PyAPI_FUNC(void) Py_DecRef(PyObject* a) {
-    __target__Py_DecRef(a);
-}
 PyAPI_FUNC(wchar_t*) Py_DecodeLocale(const char* a, size_t* b) {
     unimplemented("Py_DecodeLocale"); exit(-1);
 }
@@ -4743,10 +4611,6 @@ const char* (*__target__Py_GetVersion)() = NULL;
 PyAPI_FUNC(const char*) Py_GetVersion() {
     const char* result = (const char*) __target__Py_GetVersion();
     return result;
-}
-void (*__target__Py_IncRef)(PyObject*) = NULL;
-PyAPI_FUNC(void) Py_IncRef(PyObject* a) {
-    __target__Py_IncRef(a);
 }
 PyAPI_FUNC(void) Py_Initialize() {
     unimplemented("Py_Initialize"); exit(-1);
@@ -5150,36 +5014,6 @@ PyAPI_FUNC(void) _PyFloat_DebugMallocStats(FILE* a) {
 PyAPI_FUNC(int) _PyFloat_FormatAdvancedWriter(_PyUnicodeWriter* a, PyObject* b, PyObject* c, Py_ssize_t d, Py_ssize_t e) {
     unimplemented("_PyFloat_FormatAdvancedWriter"); exit(-1);
 }
-int (*__target___PyFloat_Pack2)(double, unsigned char*, int) = NULL;
-PyAPI_FUNC(int) _PyFloat_Pack2(double a, unsigned char* b, int c) {
-    int result = (int) __target___PyFloat_Pack2(a, b, c);
-    return result;
-}
-int (*__target___PyFloat_Pack4)(double, unsigned char*, int) = NULL;
-PyAPI_FUNC(int) _PyFloat_Pack4(double a, unsigned char* b, int c) {
-    int result = (int) __target___PyFloat_Pack4(a, b, c);
-    return result;
-}
-int (*__target___PyFloat_Pack8)(double, unsigned char*, int) = NULL;
-PyAPI_FUNC(int) _PyFloat_Pack8(double a, unsigned char* b, int c) {
-    int result = (int) __target___PyFloat_Pack8(a, b, c);
-    return result;
-}
-double (*__target___PyFloat_Unpack2)(const unsigned char*, int) = NULL;
-PyAPI_FUNC(double) _PyFloat_Unpack2(const unsigned char* a, int b) {
-    double result = (double) __target___PyFloat_Unpack2(a, b);
-    return result;
-}
-double (*__target___PyFloat_Unpack4)(const unsigned char*, int) = NULL;
-PyAPI_FUNC(double) _PyFloat_Unpack4(const unsigned char* a, int b) {
-    double result = (double) __target___PyFloat_Unpack4(a, b);
-    return result;
-}
-double (*__target___PyFloat_Unpack8)(const unsigned char*, int) = NULL;
-PyAPI_FUNC(double) _PyFloat_Unpack8(const unsigned char* a, int b) {
-    double result = (double) __target___PyFloat_Unpack8(a, b);
-    return result;
-}
 PyAPI_FUNC(void) _PyFrame_DebugMallocStats(FILE* a) {
     unimplemented("_PyFrame_DebugMallocStats"); exit(-1);
 }
@@ -5282,16 +5116,6 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE* a) {
 }
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
     PyObject* result = (PyObject*) Graal_PyList_Extend(a, b);
-    return result;
-}
-int (*__target___PyLong_AsByteArray)(PyLongObject*, unsigned char*, size_t, int, int) = NULL;
-PyAPI_FUNC(int) _PyLong_AsByteArray(PyLongObject* a, unsigned char* b, size_t c, int d, int e) {
-    int result = (int) __target___PyLong_AsByteArray(a, b, c, d, e);
-    return result;
-}
-int (*__target___PyLong_AsInt)(PyObject*) = NULL;
-PyAPI_FUNC(int) _PyLong_AsInt(PyObject* a) {
-    int result = (int) __target___PyLong_AsInt(a);
     return result;
 }
 PyAPI_FUNC(time_t) _PyLong_AsTime_t(PyObject* a) {
@@ -5465,26 +5289,6 @@ PyAPI_FUNC(void) _PyObject_Dump(PyObject* a) {
 PyAPI_FUNC(PyObject*) _PyObject_FunctionStr(PyObject* a) {
     unimplemented("_PyObject_FunctionStr"); exit(-1);
 }
-PyObject* (*__target___PyObject_GC_Calloc)(size_t) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_GC_Calloc(size_t a) {
-    PyObject* result = (PyObject*) __target___PyObject_GC_Calloc(a);
-    return result;
-}
-PyObject* (*__target___PyObject_GC_Malloc)(size_t) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_GC_Malloc(size_t a) {
-    PyObject* result = (PyObject*) __target___PyObject_GC_Malloc(a);
-    return result;
-}
-PyObject* (*__target___PyObject_GC_New)(PyTypeObject*) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_GC_New(PyTypeObject* a) {
-    PyObject* result = (PyObject*) __target___PyObject_GC_New(a);
-    return result;
-}
-PyVarObject* (*__target___PyObject_GC_NewVar)(PyTypeObject*, Py_ssize_t) = NULL;
-PyAPI_FUNC(PyVarObject*) _PyObject_GC_NewVar(PyTypeObject* a, Py_ssize_t b) {
-    PyVarObject* result = (PyVarObject*) __target___PyObject_GC_NewVar(a, b);
-    return result;
-}
 PyAPI_FUNC(PyVarObject*) _PyObject_GC_Resize(PyVarObject* a, Py_ssize_t b) {
     unimplemented("_PyObject_GC_Resize"); exit(-1);
 }
@@ -5530,16 +5334,6 @@ PyAPI_FUNC(PyObject*) _PyObject_LookupSpecial(PyObject* a, _Py_Identifier* b) {
 PyObject* (*__target___PyObject_MakeTpCall)(PyThreadState*, PyObject*, PyObject*const*, Py_ssize_t, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) _PyObject_MakeTpCall(PyThreadState* a, PyObject* b, PyObject*const* c, Py_ssize_t d, PyObject* e) {
     PyObject* result = (PyObject*) __target___PyObject_MakeTpCall(a, b, c, d, e);
-    return result;
-}
-PyObject* (*__target___PyObject_New)(PyTypeObject*) = NULL;
-PyAPI_FUNC(PyObject*) _PyObject_New(PyTypeObject* a) {
-    PyObject* result = (PyObject*) __target___PyObject_New(a);
-    return result;
-}
-PyVarObject* (*__target___PyObject_NewVar)(PyTypeObject*, Py_ssize_t) = NULL;
-PyAPI_FUNC(PyVarObject*) _PyObject_NewVar(PyTypeObject* a, Py_ssize_t b) {
-    PyVarObject* result = (PyVarObject*) __target___PyObject_NewVar(a, b);
     return result;
 }
 PyObject* (*__target___PyObject_NextNotImplemented)(PyObject*) = NULL;
@@ -6086,14 +5880,6 @@ PyAPI_FUNC(int) _Py_CheckRecursiveCall(PyThreadState* a, const char* b) {
 PyAPI_FUNC(int) _Py_CoerceLegacyLocale(int a) {
     unimplemented("_Py_CoerceLegacyLocale"); exit(-1);
 }
-void (*__target___Py_Dealloc)(PyObject*) = NULL;
-PyAPI_FUNC(void) _Py_Dealloc(PyObject* a) {
-    __target___Py_Dealloc(a);
-}
-void (*__target___Py_DecRef)(PyObject*) = NULL;
-PyAPI_FUNC(void) _Py_DecRef(PyObject* a) {
-    __target___Py_DecRef(a);
-}
 PyAPI_FUNC(int) _Py_DecodeLocaleEx(const char* a, wchar_t** b, size_t* c, const char** d, int e, _Py_error_handler f) {
     unimplemented("_Py_DecodeLocaleEx"); exit(-1);
 }
@@ -6148,10 +5934,6 @@ PyAPI_FUNC(Py_hash_t) _Py_HashPointerRaw(const void* a) {
     Py_hash_t result = (Py_hash_t) __target___Py_HashPointerRaw(a);
     return result;
 }
-void (*__target___Py_IncRef)(PyObject*) = NULL;
-PyAPI_FUNC(void) _Py_IncRef(PyObject* a) {
-    __target___Py_IncRef(a);
-}
 PyAPI_FUNC(PyStatus) _Py_InitializeMain() {
     unimplemented("_Py_InitializeMain"); exit(-1);
 }
@@ -6169,10 +5951,6 @@ PyAPI_FUNC(PyObject*) _Py_Mangle(PyObject* a, PyObject* b) {
 }
 PyAPI_FUNC(PyThreadState*) _Py_NewInterpreter(int a) {
     unimplemented("_Py_NewInterpreter"); exit(-1);
-}
-void (*__target___Py_NewReference)(PyObject*) = NULL;
-PyAPI_FUNC(void) _Py_NewReference(PyObject* a) {
-    __target___Py_NewReference(a);
 }
 PyAPI_FUNC(void) _Py_RestoreSignals() {
     unimplemented("_Py_RestoreSignals"); exit(-1);
@@ -6460,28 +6238,8 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyInterpreterState_GetIDFromThreadState = getAPI("PyInterpreterState_GetIDFromThreadState");
     __target__PyInterpreterState_Main = getAPI("PyInterpreterState_Main");
     __target__PyIter_Check = getAPI("PyIter_Check");
-    __target__PyLong_AsDouble = getAPI("PyLong_AsDouble");
-    __target__PyLong_AsLong = getAPI("PyLong_AsLong");
-    __target__PyLong_AsLongAndOverflow = getAPI("PyLong_AsLongAndOverflow");
-    __target__PyLong_AsLongLong = getAPI("PyLong_AsLongLong");
-    __target__PyLong_AsLongLongAndOverflow = getAPI("PyLong_AsLongLongAndOverflow");
-    __target__PyLong_AsSize_t = getAPI("PyLong_AsSize_t");
-    __target__PyLong_AsSsize_t = getAPI("PyLong_AsSsize_t");
-    __target__PyLong_AsUnsignedLong = getAPI("PyLong_AsUnsignedLong");
-    __target__PyLong_AsUnsignedLongLong = getAPI("PyLong_AsUnsignedLongLong");
-    __target__PyLong_AsUnsignedLongLongMask = getAPI("PyLong_AsUnsignedLongLongMask");
-    __target__PyLong_AsUnsignedLongMask = getAPI("PyLong_AsUnsignedLongMask");
     __target__PyLong_FromString = getAPI("PyLong_FromString");
-    __target__PyLong_FromVoidPtr = getAPI("PyLong_FromVoidPtr");
     __target__PyMapping_GetItemString = getAPI("PyMapping_GetItemString");
-    __target__PyMem_Calloc = getAPI("PyMem_Calloc");
-    __target__PyMem_Free = getAPI("PyMem_Free");
-    __target__PyMem_Malloc = getAPI("PyMem_Malloc");
-    __target__PyMem_RawCalloc = getAPI("PyMem_RawCalloc");
-    __target__PyMem_RawFree = getAPI("PyMem_RawFree");
-    __target__PyMem_RawMalloc = getAPI("PyMem_RawMalloc");
-    __target__PyMem_RawRealloc = getAPI("PyMem_RawRealloc");
-    __target__PyMem_Realloc = getAPI("PyMem_Realloc");
     __target__PyMemoryView_FromBuffer = getAPI("PyMemoryView_FromBuffer");
     __target__PyMemoryView_FromMemory = getAPI("PyMemoryView_FromMemory");
     __target__PyMethodDescrObject_GetMethod = getAPI("PyMethodDescrObject_GetMethod");
@@ -6534,8 +6292,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyObject_Call = getAPI("PyObject_Call");
     __target__PyObject_CallObject = getAPI("PyObject_CallObject");
     __target__PyObject_CheckBuffer = getAPI("PyObject_CheckBuffer");
-    __target__PyObject_Free = getAPI("PyObject_Free");
-    __target__PyObject_GC_Del = getAPI("PyObject_GC_Del");
     __target__PyObject_GenericGetAttr = getAPI("PyObject_GenericGetAttr");
     __target__PyObject_GenericSetAttr = getAPI("PyObject_GenericSetAttr");
     __target__PyObject_GenericSetDict = getAPI("PyObject_GenericSetDict");
@@ -6543,12 +6299,8 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyObject_GetAttrString = getAPI("PyObject_GetAttrString");
     __target__PyObject_GetBuffer = getAPI("PyObject_GetBuffer");
     __target__PyObject_HasAttrString = getAPI("PyObject_HasAttrString");
-    __target__PyObject_Init = getAPI("PyObject_Init");
-    __target__PyObject_InitVar = getAPI("PyObject_InitVar");
-    __target__PyObject_Malloc = getAPI("PyObject_Malloc");
     __target__PyObject_Not = getAPI("PyObject_Not");
     __target__PyObject_Print = getAPI("PyObject_Print");
-    __target__PyObject_Realloc = getAPI("PyObject_Realloc");
     __target__PyObject_RichCompareBool = getAPI("PyObject_RichCompareBool");
     __target__PyObject_SelfIter = getAPI("PyObject_SelfIter");
     __target__PyObject_SetAttr = getAPI("PyObject_SetAttr");
@@ -6624,12 +6376,10 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyUnicode_InternInPlace = getAPI("PyUnicode_InternInPlace");
     __target__PyUnicode_New = getAPI("PyUnicode_New");
     __target__PyVectorcall_Call = getAPI("PyVectorcall_Call");
-    __target__Py_DecRef = getAPI("Py_DecRef");
     __target__Py_EnterRecursiveCall = getAPI("Py_EnterRecursiveCall");
     __target__Py_GetBuildInfo = getAPI("Py_GetBuildInfo");
     __target__Py_GetCompiler = getAPI("Py_GetCompiler");
     __target__Py_GetVersion = getAPI("Py_GetVersion");
-    __target__Py_IncRef = getAPI("Py_IncRef");
     __target__Py_LeaveRecursiveCall = getAPI("Py_LeaveRecursiveCall");
     __target__Py_NewRef = getAPI("Py_NewRef");
     __target__Py_XNewRef = getAPI("Py_XNewRef");
@@ -6655,36 +6405,22 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyErr_BadInternalCall = getAPI("_PyErr_BadInternalCall");
     __target___PyErr_WriteUnraisableMsg = getAPI("_PyErr_WriteUnraisableMsg");
     __target___PyEval_SliceIndex = getAPI("_PyEval_SliceIndex");
-    __target___PyFloat_Pack2 = getAPI("_PyFloat_Pack2");
-    __target___PyFloat_Pack4 = getAPI("_PyFloat_Pack4");
-    __target___PyFloat_Pack8 = getAPI("_PyFloat_Pack8");
-    __target___PyFloat_Unpack2 = getAPI("_PyFloat_Unpack2");
-    __target___PyFloat_Unpack4 = getAPI("_PyFloat_Unpack4");
-    __target___PyFloat_Unpack8 = getAPI("_PyFloat_Unpack8");
     __target___PyFrame_SetLineNumber = getAPI("_PyFrame_SetLineNumber");
     __target___PyGen_FetchStopIterationValue = getAPI("_PyGen_FetchStopIterationValue");
     __target___PyGen_Finalize = getAPI("_PyGen_Finalize");
     __target___PyGen_SetStopIterationValue = getAPI("_PyGen_SetStopIterationValue");
     __target___PyGen_yf = getAPI("_PyGen_yf");
     __target___PyImport_SetModule = getAPI("_PyImport_SetModule");
-    __target___PyLong_AsByteArray = getAPI("_PyLong_AsByteArray");
-    __target___PyLong_AsInt = getAPI("_PyLong_AsInt");
     __target___PyLong_FromTime_t = getAPI("_PyLong_FromTime_t");
     __target___PyMemoryView_GetBuffer = getAPI("_PyMemoryView_GetBuffer");
     __target___PyModule_CreateInitialized = getAPI("_PyModule_CreateInitialized");
     __target___PyModule_GetDef = getAPI("_PyModule_GetDef");
     __target___PyModule_GetDict = getAPI("_PyModule_GetDict");
     __target___PyModule_GetState = getAPI("_PyModule_GetState");
-    __target___PyObject_GC_Calloc = getAPI("_PyObject_GC_Calloc");
-    __target___PyObject_GC_Malloc = getAPI("_PyObject_GC_Malloc");
-    __target___PyObject_GC_New = getAPI("_PyObject_GC_New");
-    __target___PyObject_GC_NewVar = getAPI("_PyObject_GC_NewVar");
     __target___PyObject_GetAttrId = getAPI("_PyObject_GetAttrId");
     __target___PyObject_LookupAttr = getAPI("_PyObject_LookupAttr");
     __target___PyObject_LookupAttrId = getAPI("_PyObject_LookupAttrId");
     __target___PyObject_MakeTpCall = getAPI("_PyObject_MakeTpCall");
-    __target___PyObject_New = getAPI("_PyObject_New");
-    __target___PyObject_NewVar = getAPI("_PyObject_NewVar");
     __target___PyObject_NextNotImplemented = getAPI("_PyObject_NextNotImplemented");
     __target___PyObject_SetAttrId = getAPI("_PyObject_SetAttrId");
     __target___PySequence_Fast_ITEMS = getAPI("_PySequence_Fast_ITEMS");
@@ -6728,14 +6464,10 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyUnicode_ToUpperFull = getAPI("_PyUnicode_ToUpperFull");
     __target___PyUnicode_ToUppercase = getAPI("_PyUnicode_ToUppercase");
     __target___PyUnicode_get_wstr_length = getAPI("_PyUnicode_get_wstr_length");
-    __target___Py_Dealloc = getAPI("_Py_Dealloc");
-    __target___Py_DecRef = getAPI("_Py_DecRef");
     __target___Py_FatalErrorFunc = getAPI("_Py_FatalErrorFunc");
     __target___Py_HashBytes = getAPI("_Py_HashBytes");
     __target___Py_HashPointer = getAPI("_Py_HashPointer");
     __target___Py_HashPointerRaw = getAPI("_Py_HashPointerRaw");
-    __target___Py_IncRef = getAPI("_Py_IncRef");
-    __target___Py_NewReference = getAPI("_Py_NewReference");
     __target___Py_gitidentifier = getAPI("_Py_gitidentifier");
     __target___Py_gitversion = getAPI("_Py_gitversion");
     __target___Py_parse_inf_or_nan = getAPI("_Py_parse_inf_or_nan");

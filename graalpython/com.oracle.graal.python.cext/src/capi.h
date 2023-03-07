@@ -153,7 +153,6 @@ typedef struct {
     BUILTIN(PyException_SetContext, void, PyObject*, PyObject*) \
     BUILTIN(PyException_SetTraceback, int, PyObject*, PyObject*) \
     BUILTIN(PyFile_WriteObject, int, PyObject*, PyObject*, int) \
-    BUILTIN(PyFloat_AsDouble, double, PyObject*) \
     BUILTIN(PyFloat_FromDouble, PyObject*, double) \
     BUILTIN(PyFrame_New, PyFrameObject*, PyThreadState*, PyCodeObject*, PyObject*, PyObject*) \
     BUILTIN(PyFrozenSet_New, PyObject*, PyObject*) \
@@ -285,6 +284,7 @@ typedef struct {
     BUILTIN(PyTruffleDict_Next, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffleErr_Fetch, PyObject*) \
     BUILTIN(PyTruffleErr_GetExcInfo, PyObject*) \
+    BUILTIN(PyTruffleFloat_AsDouble, double, PyObject*) \
     BUILTIN(PyTruffleHash_InitSecret, void, void*) \
     BUILTIN(PyTruffleLong_AsPrimitive, long, PyObject*, int, long) \
     BUILTIN(PyTruffleLong_FromString, PyObject*, const char*, int, int) \
@@ -326,20 +326,22 @@ typedef struct {
     BUILTIN(PyTruffle_FileSystemDefaultEncoding, PyObject*) \
     BUILTIN(PyTruffle_Get_Inherited_Native_Slots, void*, PyTypeObject*, const char*) \
     BUILTIN(PyTruffle_HashConstant, long, int) \
+    BUILTIN(PyTruffle_InitialNativeMemory, size_t) \
     BUILTIN(PyTruffle_LogString, void, int, const char*) \
+    BUILTIN(PyTruffle_MaxNativeMemory, size_t) \
     BUILTIN(PyTruffle_MemoryViewFromBuffer, PyObject*, void*, PyObject*, Py_ssize_t, int, Py_ssize_t, const char*, int, void*, void*, void*, void*) \
     BUILTIN(PyTruffle_Native_Options, int) \
     BUILTIN(PyTruffle_NewTypeDict, PyObject*, PyTypeObject*) \
     BUILTIN(PyTruffle_NoValue, PyObject*) \
     BUILTIN(PyTruffle_None, PyObject*) \
     BUILTIN(PyTruffle_NotImplemented, PyObject*) \
-    BUILTIN(PyTruffle_Object_Alloc, int, void*, long) \
     BUILTIN(PyTruffle_Object_Free, int, void*) \
     BUILTIN(PyTruffle_Register_NULL, void, void*) \
     BUILTIN(PyTruffle_Set_Native_Slots, int, PyTypeObject*, void*, void*) \
     BUILTIN(PyTruffle_Set_SulongType, void*, PyTypeObject*, void*) \
     BUILTIN(PyTruffle_ToNative, int, void*) \
     BUILTIN(PyTruffle_Trace_Type, int, void*, void*) \
+    BUILTIN(PyTruffle_TriggerGC, void, size_t) \
     BUILTIN(PyTruffle_True, PyObject*) \
     BUILTIN(PyTruffle_Type, PyTypeObject*, const char*) \
     BUILTIN(PyTruffle_Type_Modified, int, PyTypeObject*, const char*, PyObject*) \
@@ -587,7 +589,6 @@ typedef struct {
     BUILTIN(_PyTruffleObject_MakeTpCall, PyObject*, PyObject*, void*, int, void*, void*) \
     BUILTIN(_PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(_PyTruffle_HashBytes, Py_hash_t, const char*) \
-    BUILTIN(_PyTruffle_Trace_Free, int, void*, Py_ssize_t) \
     BUILTIN(_PyType_Lookup, PyObject*, PyTypeObject*, PyObject*) \
     BUILTIN(_PyUnicode_AsASCIIString, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \
@@ -824,6 +825,7 @@ static void PyTruffle_Log(int level, const char* format, ... ) {
 		va_list args;
 		va_start(args, format);
 		vsprintf(buffer,format, args);
+		printf("logg\n");
 #ifndef EXCLUDE_POLYGLOT_API
 		GraalPyTruffle_LogString(level, polyglot_from_string(buffer, SRC_CS));
 #else
@@ -994,5 +996,9 @@ PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
                                                   const char *, char **, va_list);
 
 #endif // !EXCLUDE_POLYGLOT_API
+
+extern size_t PyTruffle_AllocatedMemory;
+extern size_t PyTruffle_MaxNativeMemory;
+extern size_t PyTruffle_NativeMemoryGCBarrier;
 
 #endif // CAPI_H

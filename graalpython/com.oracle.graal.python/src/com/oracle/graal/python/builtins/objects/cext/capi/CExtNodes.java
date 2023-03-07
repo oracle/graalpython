@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -212,6 +213,8 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
+
+import sun.misc.Unsafe;
 
 public abstract class CExtNodes {
 
@@ -943,10 +946,29 @@ public abstract class CExtNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        @Specialization(guards = "!isCArrayWrapper(charPtr)")
-        static PString doPointer(Object charPtr,
+        private static Unsafe UNSAFE = PythonUtils.initUnsafe();
+
+        @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")
+        static TruffleString doPointer(Object charPtr,
+                        @CachedLibrary("charPtr") InteropLibrary lib,
+                        @Cached TruffleString.FromNativePointerNode fromNative,
+                        @Cached StringMaterializeNode materialize,
                         @Cached PythonObjectFactory factory) {
-            return factory.createString(new NativeCharSequence(charPtr, 1, false));
+            if (lib.isPointer(charPtr)) {
+                long pointer;
+                try {
+                    pointer = lib.asPointer(charPtr);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+                int length = 0;
+                while (UNSAFE.getByte(pointer + length) != 0) {
+                    length++;
+                }
+                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, false);
+            }
+
+            return materialize.execute(factory.createString(new NativeCharSequence(charPtr, 1, false)));
         }
 
         static boolean isCArrayWrapper(Object object) {
@@ -1977,7 +1999,6 @@ public abstract class CExtNodes {
         static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value) {
             assert value >= 0 : "adding negative reference count; dealloc might not happen";
             CApiTransitions.incRef(nativeWrapper, value);
-// nativeWrapper.setRefCount(nativeWrapper.getRefCount() + value);
             return nativeWrapper;
         }
 

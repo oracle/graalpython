@@ -178,7 +178,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_ADDREF("PyTruffle_ADDREF"),
     FUN_SUBREF("PyTruffle_SUBREF"),
     FUN_GET_LONG_BITS_PER_DIGIT("get_long_bits_in_digit"),
-    FUN_BULK_SUBREF("PyTruffle_bulk_SUBREF"),
+    FUN_BULK_DEALLOC("PyTruffle_bulk_DEALLOC"),
     FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset"),
     FUN_PY_TRUFFLE_PY_MAPPING_CHECK("PyTruffle_PyMapping_Check"),
     FUN_PY_TRUFFLE_PY_MAPPING_SIZE("PyTruffle_PyMapping_Size"),

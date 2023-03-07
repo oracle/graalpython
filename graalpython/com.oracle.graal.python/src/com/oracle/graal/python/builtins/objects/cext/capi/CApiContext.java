@@ -218,8 +218,8 @@ public final class CApiContext extends CExtContext {
         llvmTypeCache = null;
     }
 
-    public CApiContext(PythonContext context, Object hpyLibrary) {
-        super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
+    public CApiContext(PythonContext context, Object llvmLibrary) {
+        super(context, llvmLibrary, CAPIConversionNodeSupplier.INSTANCE);
 
         // initialize primitive and pointer type cache
         llvmTypeCache = new Object[LLVMType.values().length];
@@ -460,7 +460,7 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    private void triggerGC(PythonContext context, long size, NodeInterface caller) {
+    public void triggerGC(PythonContext context, long size, NodeInterface caller) {
         long delay = 0;
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
@@ -998,9 +998,10 @@ public final class CApiContext extends CExtContext {
                  * PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*))
                  */
                 Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
-
-                Object signature = env.parseInternal(Source.newBuilder("nfi", "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):SINT32", "exec").build()).call();
-                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore());
+                Object initializeNativeLocations = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "initialize_native_locations");
+                Object signature = env.parseInternal(
+                                Source.newBuilder("nfi", "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID, (POINTER, POINTER, POINTER):VOID):SINT32", "exec").build()).call();
+                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore(), initializeNativeLocations);
                 if (InteropLibrary.getUncached().asInt(result) == 0) {
                     // this is not the first context - native C API backend not supported
                     nativeLibrary = null;
