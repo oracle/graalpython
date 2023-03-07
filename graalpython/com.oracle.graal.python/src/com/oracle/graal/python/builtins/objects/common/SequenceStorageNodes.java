@@ -280,6 +280,11 @@ public abstract class SequenceStorageNodes {
             return store.getElementType() == ListStorageType.Byte;
         }
 
+        @InliningCutoff
+        protected static boolean isObjectStorage(NativeSequenceStorage store) {
+            return store.getElementType() == ListStorageType.Generic;
+        }
+
         /**
          * Tests if {@code left} has the same element type as {@code right}.
          */
@@ -794,10 +799,11 @@ public abstract class SequenceStorageNodes {
         protected static NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
                         @Cached StorageToNativeNode storageToNativeNode,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CExtNodes.ToJavaNode toJavaNode) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = readNativeElement(lib, storage.getPtr(), i, raise);
+                newArray[j] = toJavaNode.execute(readNativeElement(lib, storage.getPtr(), i, raise));
             }
             return storageToNativeNode.execute(newArray, length);
         }
@@ -1268,25 +1274,35 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isByteStorage(storage)")
         protected static void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToByteNode castToByteNode) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(null, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw raiseNode.raise(SystemError, e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
-        @Specialization
+        @Specialization(guards = "isObjectStorage(storage)")
+        protected static void doNativeObject(NativeSequenceStorage storage, int idx, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached ToNewRefNode toSulongNode) {
+            // TODO xdecref previous value
+            try {
+                lib.writeArrayElement(storage.getPtr(), idx, toSulongNode.execute(value));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Fallback
         protected static void doNative(NativeSequenceStorage storage, int idx, Object value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached VerifyNativeItemNode verifyNativeItemNode) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value, verifyNativeItemNode));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw raiseNode.raise(SystemError, e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -1829,6 +1845,10 @@ public abstract class SequenceStorageNodes {
             return CmpNodeGen.create(BinaryComparisonNode.EqNode.create());
         }
 
+        @NeverDefault
+        public static CmpNode createNe() {
+            return CmpNodeGen.create(BinaryComparisonNode.NeNode.create());
+        }
     }
 
     /**

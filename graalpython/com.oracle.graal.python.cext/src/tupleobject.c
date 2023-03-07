@@ -95,15 +95,6 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     return (PyObject*) newobj;
 }
 
-int PyTruffle_Tuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
-    PyTuple_SET_ITEM(tuple, position, item);
-    return 0;
-}
-
-PyObject* PyTruffle_Tuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-    return PyTuple_GET_ITEM(tuple, position);
-}
-
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
 	/*
 	 * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
@@ -119,5 +110,9 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
     }
     PyObject_INIT_VAR(newObj, cls, nitems);
     return newObj;
+}
+
+void* PyTruffle_NativeTupleItems(PyTupleObject* tuple) {
+    return polyglot_from_PyObjectPtr_array(tuple->ob_item, tuple->ob_base.ob_size);
 }
 

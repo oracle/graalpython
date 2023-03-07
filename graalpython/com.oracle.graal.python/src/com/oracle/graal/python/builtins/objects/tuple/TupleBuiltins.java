@@ -61,13 +61,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CmpNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ConcatNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
@@ -80,17 +79,20 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyTupleCheckExactNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -104,6 +106,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -140,12 +143,13 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, int startIn, int endIn,
+        int index(VirtualFrame frame, Object self, Object value, int startIn, int endIn,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached InlinedBranchProfile startLe0Profile,
                         @Cached InlinedBranchProfile endLe0Profile,
                         @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
-            SequenceStorage storage = self.getSequenceStorage();
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, self);
             int start = startIn;
             if (start < 0) {
                 startLe0Profile.enter(inliningTarget);
@@ -175,11 +179,13 @@ public class TupleBuiltins extends PythonBuiltins {
     public abstract static class CountNode extends PythonBuiltinNode {
 
         @Specialization
-        long count(VirtualFrame frame, PTuple self, Object value,
+        long count(VirtualFrame frame, Object self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             long count = 0;
-            SequenceStorage tupleStore = self.getSequenceStorage();
+            SequenceStorage tupleStore = getTupleStorage.execute(inliningTarget, self);
             for (int i = 0; i < tupleStore.length(); i++) {
                 Object seqItem = getItemNode.execute(tupleStore, i);
                 if (eqNode.execute(frame, seqItem, value)) {
@@ -216,12 +222,14 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public static TruffleString repr(VirtualFrame frame, PTuple self,
+        public static TruffleString repr(VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            SequenceStorage tupleStore = self.getSequenceStorage();
+            SequenceStorage tupleStore = getTupleStorage.execute(inliningTarget, self);
             int len = tupleStore.length();
             if (len == 0) {
                 return T_EMPTY_PARENS;
@@ -286,11 +294,10 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @InliningCutoff
         @Specialization
-        static Object doNative(PythonNativeObject tuple, long key,
-                        @Cached PCallCapiFunction callSetItem,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
-            return asPythonObjectNode.execute(callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_GET_ITEM, toSulongNode.execute(tuple), key));
+        static Object doNative(VirtualFrame frame, PythonAbstractNativeObject tuple, Object key,
+                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached GetNativeTupleStorage asNativeStorage) {
+            return getItemNode.execute(frame, asNativeStorage.execute(tuple), key);
         }
 
         @SuppressWarnings("unused")
@@ -302,14 +309,22 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
-
+    @GenerateCached(false)
+    abstract static class AbstractCmpNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
-                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+                        @Shared("cmp") @Cached("createCmp()") SequenceStorageNodes.CmpNode cmp) {
+            return cmp.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+        }
+
+        @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1", replaces = "doPTuple")
+        boolean doTuple(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
+                        @Cached GetTupleStorage getLeft,
+                        @Cached GetTupleStorage getRight,
+                        @Shared("cmp") @Cached("createCmp()") SequenceStorageNodes.CmpNode cmp) {
+            return cmp.execute(frame, getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
         }
 
         @Fallback
@@ -317,105 +332,95 @@ public class TupleBuiltins extends PythonBuiltins {
         Object doOther(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
+        @NeverDefault
+        protected abstract SequenceStorageNodes.CmpNode createCmp();
+    }
+
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class EqNode extends AbstractCmpNode {
+
+        @NeverDefault
+        @Override
+        protected CmpNode createCmp() {
+            return SequenceStorageNodes.CmpNode.createEq();
+        }
     }
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class NeNode extends PythonBinaryBuiltinNode {
+    abstract static class NeNode extends AbstractCmpNode {
 
-        @Specialization
-        boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
-                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
-            return !eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @NeverDefault
+        @Override
+        protected CmpNode createCmp() {
+            return SequenceStorageNodes.CmpNode.createNe();
         }
     }
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GeNode extends PythonBinaryBuiltinNode {
+    abstract static class GeNode extends AbstractCmpNode {
 
-        @Specialization
-        boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
-                        @Cached("createGe()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+        @NeverDefault
+        @Override
+        protected CmpNode createCmp() {
+            return SequenceStorageNodes.CmpNode.createGe();
         }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
+    abstract static class LeNode extends AbstractCmpNode {
 
-        @Specialization
-        boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
-                        @Cached("createLe()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+        @NeverDefault
+        @Override
+        protected CmpNode createCmp() {
+            return SequenceStorageNodes.CmpNode.createLe();
         }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GtNode extends PythonBinaryBuiltinNode {
+    abstract static class GtNode extends AbstractCmpNode {
 
-        @Specialization
-        boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
-                        @Cached("createGt()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
-
-        @Fallback
-        PNotImplemented doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @NeverDefault
+        @Override
+        protected CmpNode createCmp() {
+            return SequenceStorageNodes.CmpNode.createGt();
         }
     }
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doPTuple(VirtualFrame frame, PTuple left, PTuple right,
-                        @Cached("createLt()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
-        }
+    abstract static class LtNode extends AbstractCmpNode {
 
-        @Fallback
-        PNotImplemented contains(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @NeverDefault
+        @Override
+        protected CmpNode createCmp() {
+            return SequenceStorageNodes.CmpNode.createLt();
         }
     }
 
     @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBuiltinNode {
-        @Specialization
-        PTuple doPTuple(PTuple left, PTuple right,
-                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
-            SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+
+        @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1")
+        PTuple doTuple(Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
+                        @Cached GetTupleStorage getLeft,
+                        @Cached GetTupleStorage getRight,
+                        @Cached("createConcat()") ConcatNode concatNode) {
+            SequenceStorage concatenated = concatNode.execute(getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
             return factory().createTuple(concatenated);
         }
 
         @NeverDefault
         protected static SequenceStorageNodes.ConcatNode createConcat() {
-            return SequenceStorageNodes.ConcatNode.create(() -> SequenceStorageNodes.ListGeneralizationNode.create());
+            return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
         }
 
         @Fallback
@@ -430,17 +435,18 @@ public class TupleBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PTuple mul(VirtualFrame frame, PTuple left, Object right,
+        Object doTuple(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached PyTupleCheckExactNode checkTuple,
+                        @Cached GetTupleStorage getLeft,
                         @Cached InlinedConditionProfile isSingleRepeat,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode) {
             int repeats = asSizeNode.executeExact(frame, right);
-            if (isSingleRepeat.profile(inliningTarget, PGuards.isPythonBuiltinClassType(getClassNode.execute(inliningTarget, left)) && repeats == 1)) {
+            if (isSingleRepeat.profile(inliningTarget, repeats == 1 && checkTuple.execute(left))) {
                 return left;
             } else {
-                return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), repeats));
+                return factory().createTuple(repeatNode.execute(frame, getLeft.execute(inliningTarget, left), repeats));
             }
         }
     }
@@ -449,9 +455,11 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(VirtualFrame frame, PTuple self, Object other,
+        boolean contains(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.ContainsNode containsNode) {
-            return containsNode.execute(frame, self.getSequenceStorage(), other);
+            return containsNode.execute(frame, getTupleStorage.execute(inliningTarget, self), other);
         }
 
     }
@@ -460,13 +468,9 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean doPTuple(PTuple self) {
-            return self.getSequenceStorage().length() != 0;
-        }
-
-        @Fallback
-        Object toBoolean(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        boolean doPTuple(Object self,
+                        @Cached PyTupleSizeNode sizeNode) {
+            return sizeNode.execute(self) != 0;
         }
     }
 
@@ -474,33 +478,33 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
-        PIntegerSequenceIterator doPListInt(PTuple primary) {
+        PIntegerSequenceIterator doPTupleInt(PTuple primary) {
             return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isObjectStorage(primary)"})
-        PObjectSequenceIterator doPListObject(PTuple primary) {
+        PObjectSequenceIterator doPTupleObject(PTuple primary) {
             return factory().createObjectSequenceIterator((ObjectSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isLongStorage(primary)"})
-        PLongSequenceIterator doPListLong(PTuple primary) {
+        PLongSequenceIterator doPTupleLong(PTuple primary) {
             return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isDoubleStorage(primary)"})
-        PDoubleSequenceIterator doPListDouble(PTuple primary) {
+        PDoubleSequenceIterator doPTupleDouble(PTuple primary) {
             return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
-        PSequenceIterator doPList(PTuple primary) {
+        PSequenceIterator doPTuple(PTuple primary) {
             return factory().createSequenceIterator(primary);
         }
 
-        @Fallback
-        static Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNone.NONE;
+        @Specialization
+        PSequenceIterator doNativeTuple(PythonAbstractNativeObject primary) {
+            return factory().createSequenceIterator(primary);
         }
     }
 
@@ -510,16 +514,31 @@ public class TupleBuiltins extends PythonBuiltins {
         protected static long HASH_UNSET = -1;
 
         @Specialization(guards = {"self.getHash() != HASH_UNSET"})
-        public long getHash(PTuple self) {
+        long getHash(PTuple self) {
             return self.getHash();
         }
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
-        public long computeHash(VirtualFrame frame, PTuple self,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached PyObjectHashNode hashNode) {
+        long computeHash(VirtualFrame frame, PTuple self,
+                        @Shared("getItem") @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
+            // XXX CPython claims that caching the hash is not worth the space overhead:
+            // https://bugs.python.org/issue9685
+            long hash = doComputeHash(frame, getItemNode, hashNode, self.getSequenceStorage());
+            self.setHash(hash);
+            return hash;
+        }
+
+        @Specialization
+        long computeHash(VirtualFrame frame, PythonAbstractNativeObject self,
+                        @Shared("getItem") @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode,
+                        @Cached GetNativeTupleStorage getStorage) {
+            return doComputeHash(frame, getItemNode, hashNode, getStorage.execute(self));
+        }
+
+        private static long doComputeHash(VirtualFrame frame, SequenceStorageNodes.GetItemNode getItemNode, PyObjectHashNode hashNode, SequenceStorage tupleStore) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
-            SequenceStorage tupleStore = self.getSequenceStorage();
             int len = tupleStore.length();
             long multiplier = 0xf4243;
             long hash = 0x345678;
@@ -535,14 +554,7 @@ public class TupleBuiltins extends PythonBuiltins {
             if (hash == Long.MAX_VALUE) {
                 hash = -2;
             }
-
-            self.setHash(hash);
             return hash;
-        }
-
-        @Fallback
-        Object genericHash(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -550,8 +562,10 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PTuple doIt(PTuple self) {
-            return factory().createTuple(new Object[]{factory().createTuple(self.getSequenceStorage())});
+        PTuple doIt(Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetTupleStorage getTupleStorage) {
+            return factory().createTuple(new Object[]{factory().createTuple(getTupleStorage.execute(inliningTarget, self))});
         }
     }
 
