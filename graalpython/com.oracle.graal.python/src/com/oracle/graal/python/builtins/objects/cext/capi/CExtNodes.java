@@ -993,32 +993,10 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     public abstract static class GetNativeClassNode extends PNodeWithContext {
+
         public abstract Object execute(PythonAbstractNativeObject object);
 
-        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "1")
-        @SuppressWarnings("unused")
-        static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
-                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
-                        @Cached("getNativeClassUncached(object)") Object cachedClass) {
-            // TODO: (tfel) is this really something we can do? It's so rare for this class to
-            // change that it shouldn't be worth the effort, but in native code, anything can
-            // happen. OTOH, CPython also has caches that can become invalid when someone just
-            // goes and changes the ob_type of an object.
-            return cachedClass;
-        }
-
-        @Specialization(guards = {"isSingleContext()", "isSame(lib, cachedObject, object)"})
-        @SuppressWarnings("unused")
-        static Object getNativeClassCached(PythonAbstractNativeObject object,
-                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
-                        @Cached("getNativeClassUncached(object)") Object cachedClass,
-                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
-            // TODO same as for 'getNativeClassCachedIdentity'
-            return cachedClass;
-        }
-
         @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, //
-                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"}, //
                         limit = "1", //
                         rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
         static Object getNativeClassByMember(PythonAbstractNativeObject object,
@@ -1030,7 +1008,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!lib.hasMembers(object.getPtr())"}, //
-                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember"}, //
+                        replaces = {"getNativeClassByMember"}, //
                         limit = "1", //
                         rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
         static Object getNativeClassByMemberAttachType(PythonAbstractNativeObject object,
@@ -1043,7 +1021,7 @@ public abstract class CExtNodes {
             return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberNameJavaString())));
         }
 
-        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember", "getNativeClassByMemberAttachType"})
+        @Specialization(replaces = {"getNativeClassByMember", "getNativeClassByMemberAttachType"})
         static Object getNativeClass(PythonAbstractNativeObject object,
                         @Cached PCallCapiFunction callGetObTypeNode,
                         @Cached AsPythonObjectNode toJavaNode,
@@ -1051,16 +1029,6 @@ public abstract class CExtNodes {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
         }
-
-        static boolean isSame(InteropLibrary lib, PythonAbstractNativeObject cachedObject, PythonAbstractNativeObject object) {
-            return lib.isIdentical(cachedObject, object, lib);
-        }
-
-        public static Object getNativeClassUncached(PythonAbstractNativeObject object) {
-            // do not wrap 'object.object' since that is really the native pointer object
-            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNode.getUncached());
-        }
-
     }
 
     // -----------------------------------------------------------------------------------------------------------------
