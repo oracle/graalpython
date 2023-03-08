@@ -212,6 +212,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceMethodsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
@@ -2012,17 +2013,19 @@ public final class PythonCextSlotBuiltins {
              */
             if (value instanceof PBuiltinFunction function) {
                 Object wrappedPtr = ExternalFunctionNodes.tryGetHiddenCallable(function);
+                // TODO also check that the signature matches
                 if (wrappedPtr != null && name.equalsUncached(function.getName(), TS_ENCODING) &&
-                                function.getEnclosingType() != null && IsSubtypeNode.getUncached().execute(type, function.getEnclosingType())) {
+                                function.getEnclosingType() != null && IsSubtypeNode.getUncached().execute(type,
+                                                function.getEnclosingType())) {
                     return wrappedPtr;
                 }
             }
             CApiContext cApiContext = PythonContext.get(this).getCApiContext();
-            return cApiContext.getOrCreateProcWrapper(value, this::createProcsWrapper);
+            return cApiContext.getOrCreateProcWrapper(getRetDescriptor(), value, PyGetTypeSlotNode::createProcsWrapper);
         }
 
-        private Object createProcsWrapper(Object value) {
-            switch (getRetDescriptor()) {
+        private static Object createProcsWrapper(ArgDescriptor signature, Object value) {
+            switch (signature) {
                 case unaryfunc:
                 case reprfunc:
                 case iternextfunc:
@@ -2053,7 +2056,7 @@ public final class PythonCextSlotBuiltins {
                 case descrgetfunc:
                     return new PyProcsWrapper.DescrGetFunctionWrapper(value);
             }
-            throw CompilerDirectives.shouldNotReachHere("descriptor: " + getRetDescriptor());
+            throw CompilerDirectives.shouldNotReachHere("descriptor: " + signature);
         }
     }
 

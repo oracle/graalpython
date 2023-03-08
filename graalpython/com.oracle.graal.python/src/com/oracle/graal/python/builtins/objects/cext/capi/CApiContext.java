@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -75,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Creat
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
@@ -102,7 +104,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
@@ -200,8 +202,6 @@ public final class CApiContext extends CExtContext {
     private Object nativeLibrary;
     private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
-
-    private final WeakIdentityHashMap<Object, Object> procWrappers = new WeakIdentityHashMap<>();
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -1071,8 +1071,26 @@ public final class CApiContext extends CExtContext {
         callableClosures.add(closure);
     }
 
+    private record ProcCacheItem(ArgDescriptor signature, Object callable) {
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof ProcCacheItem other) {
+                return signature == other.signature && callable == other.callable;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(signature) + 31 * System.identityHashCode(callable);
+        }
+    }
+
+    private final Map<ProcCacheItem, Object> procWrappers = new WeakHashMap<>();
+
     @TruffleBoundary
-    public Object getOrCreateProcWrapper(Object callable, Function<Object, Object> factory) {
-        return procWrappers.computeIfAbsent(callable, factory);
+    public Object getOrCreateProcWrapper(ArgDescriptor signature, Object callable, BiFunction<ArgDescriptor, Object, Object> factory) {
+        return procWrappers.computeIfAbsent(new ProcCacheItem(signature, callable), (cacheItem) -> factory.apply(cacheItem.signature, cacheItem.callable));
     }
 }
