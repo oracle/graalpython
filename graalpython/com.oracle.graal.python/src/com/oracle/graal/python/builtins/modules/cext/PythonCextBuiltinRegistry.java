@@ -1592,7 +1592,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 216:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_ByteArray_EmptyWithCapacityNodeGen.create();
             case 217:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.PyTruffle_Bytes_AsStringNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_AsStringNodeGen.create();
             case 218:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltinsFactory.PyTruffle_Bytes_CheckEmbeddedNullNodeGen.create();
             case 219:

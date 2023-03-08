@@ -84,8 +84,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -95,12 +93,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
@@ -111,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -150,7 +145,6 @@ import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1102,32 +1096,6 @@ public final class PythonCextBuiltins {
                 }
             }
             return l.toArray();
-        }
-    }
-
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffle_Bytes_AsString extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object doBytes(PBytes bytes) {
-            return new PySequenceArrayWrapper(bytes, 1);
-        }
-
-        @Specialization
-        static Object doUnicode(PString str,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            return new CStringWrapper(castToStringNode.execute(str));
-        }
-
-        @Specialization
-        static Object doNative(PythonAbstractNativeObject obj,
-                        @Cached ToSulongNode toSulong,
-                        @Cached PCallCapiFunction callMemberGetterNode) {
-            return callMemberGetterNode.call(NativeMember.OB_SVAL.getGetterFunctionName(), toSulong.execute(obj));
-        }
-
-        @Fallback
-        Object doUnicode(Object o) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", o);
         }
     }
 

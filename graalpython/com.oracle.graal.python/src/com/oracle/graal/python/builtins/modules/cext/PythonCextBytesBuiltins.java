@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -69,14 +70,20 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -88,6 +95,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -380,6 +388,32 @@ public final class PythonCextBytesBuiltins {
                 throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
             }
             return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffle_Bytes_AsString extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object doBytes(PBytes bytes) {
+            return new PySequenceArrayWrapper(bytes, 1);
+        }
+
+        @Specialization
+        static Object doUnicode(PString str,
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            return new CArrayWrappers.CStringWrapper(castToStringNode.execute(str));
+        }
+
+        @Specialization
+        static Object doNative(PythonAbstractNativeObject obj,
+                        @Cached CExtNodes.ToSulongNode toSulong,
+                        @Cached CExtNodes.PCallCapiFunction callMemberGetterNode) {
+            return callMemberGetterNode.call(NativeMember.OB_SVAL.getGetterFunctionName(), toSulong.execute(obj));
+        }
+
+        @Fallback
+        Object doUnicode(Object o) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", o);
         }
     }
 }
