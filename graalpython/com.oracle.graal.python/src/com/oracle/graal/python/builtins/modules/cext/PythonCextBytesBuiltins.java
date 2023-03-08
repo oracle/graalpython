@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -86,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -101,6 +103,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -118,14 +121,28 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     public abstract static class PyBytes_Size extends CApiUnaryBuiltinNode {
         @Specialization
-        public static int size(PBytes obj,
+        static int doPBytes(PBytes obj,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(null, obj);
         }
 
+        @Specialization
+        Object doOther(PythonAbstractNativeObject obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached CExtNodes.PCallCapiFunction callMemberGetterNode) {
+            if (PyBytesCheckNode.check(null, obj, inliningTarget, getClassNode, isSubtypeNode)) {
+                return callMemberGetterNode.call(NativeMember.OB_SIZE.getGetterFunctionName(), toSulongNode.execute(obj));
+            }
+            return fallback(obj);
+        }
+
         @Fallback
-        public int fallback(Object obj) {
-            throw raiseFallback(obj, PythonBuiltinClassType.PBytes);
+        @TruffleBoundary
+        int fallback(Object obj) {
+            throw raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
         }
     }
 
