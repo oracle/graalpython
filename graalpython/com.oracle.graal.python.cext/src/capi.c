@@ -429,6 +429,7 @@ PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
 
 TYPE_FIELD_GETTER(PyObject*, ob_type)
 PRIMITIVE_FIELD_GETTER(PyObject*, Py_ssize_t, ob_refcnt)
+PRIMITIVE_FIELD_GETTER(PyVarObject*, Py_ssize_t, ob_size)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_dict)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_base)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_bases)
