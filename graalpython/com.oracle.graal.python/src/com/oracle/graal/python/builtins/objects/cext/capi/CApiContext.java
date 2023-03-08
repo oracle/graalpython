@@ -118,6 +118,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -691,6 +692,19 @@ public final class CApiContext extends CExtContext {
             }
         }
         return context.getCApiContext();
+    }
+
+    @TruffleBoundary
+    public void finalizeCapi() {
+        if (nativeLibrary != null) {
+            try {
+                Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "finalizeCAPI");
+                Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", "():VOID", "exec").build()).call();
+                SignatureLibrary.getUncached().call(signature, initFunction);
+            } catch (InteropException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
     }
 
     @TruffleBoundary

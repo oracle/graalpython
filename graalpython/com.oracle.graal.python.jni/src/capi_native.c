@@ -422,6 +422,16 @@ void Py_IncRef(PyObject *a) {
 }
 */
 
+/*
+This is a workaround for C++ modules, namely PyTorch, that declare global/static variables with destructors that call
+_Py_DECREF. The destructors get called by libc during exit during which we cannot make upcalls as that would segfault.
+So we rebind them to no-ops when exitting.
+*/
+static void nop_Py_DecRef(PyObject* obj) {}
+void finalizeCAPI() {
+    __target___Py_DecRef = nop_Py_DecRef;
+    __target__Py_DecRef = nop_Py_DecRef;
+}
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     va_list vargs;
