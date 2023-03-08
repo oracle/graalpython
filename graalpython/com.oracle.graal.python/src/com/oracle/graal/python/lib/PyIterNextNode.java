@@ -91,16 +91,16 @@ public abstract class PyIterNextNode extends PNodeWithContext {
     // TODO list, tuple, enumerate, dict keys, dict values, dict items, string, bytes
 
     @Specialization
-    Object doGeneric(VirtualFrame frame, Object iterator,
+    static Object doGeneric(VirtualFrame frame, Object iterator,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
                     @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached PRaiseNode.Lazy raiseNode) {
         Object nextMethod = lookupNext.execute(frame, getClassNode.execute(inliningTarget, iterator), iterator);
         if (nextMethod == PNone.NO_VALUE) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
         }
         try {
             return callNext.executeObject(frame, nextMethod, iterator);

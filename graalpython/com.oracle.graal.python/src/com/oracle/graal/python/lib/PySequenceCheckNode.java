@@ -53,8 +53,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -62,6 +63,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -98,9 +100,10 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
 
     @Specialization(guards = {"!cannotBeSequence(object)"})
     boolean doPythonObject(PythonObject object,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
                     @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem) {
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
@@ -113,10 +116,11 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
 
     @Specialization(guards = {"!cannotBeSequence(object)", "!isNativeObject(object)"}, replaces = "doPythonObject")
     boolean doGeneric(Object object,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
                     @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,
                     @CachedLibrary(limit = "3") InteropLibrary lib) {
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return lib.hasArrayElements(object);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,8 +51,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -78,14 +79,15 @@ public abstract class PyObjectSetItem extends Node {
 
     @InliningCutoff
     @Specialization(replaces = "doList")
-    void doWithFrame(Frame frame, Object primary, Object index, Object value,
-                    @Cached GetClassNode getClassNode,
+    static void doWithFrame(Frame frame, Object primary, Object index, Object value,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetitem,
-                    @Cached PRaiseNode raise,
+                    @Cached PRaiseNode.Lazy raise,
                     @Cached CallTernaryMethodNode callSetitem) {
-        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
+        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(inliningTarget, primary), primary);
         if (setitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
         }
         callSetitem.execute(frame, setitem, primary, index, value);
     }

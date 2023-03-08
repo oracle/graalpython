@@ -49,7 +49,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -70,11 +71,12 @@ public abstract class PyObjectDelItem extends Node {
 
     @Specialization
     static void doWithFrame(VirtualFrame frame, Object primary, Object index,
-                    @Shared("getclass") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Shared("getclass") @Cached InlinedGetClassNode getClassNode,
                     @Cached("create(DelItem)") LookupSpecialMethodSlotNode lookupDelitem,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
                     @Shared("callNode") @Cached CallBinaryMethodNode callDelitem) {
-        Object delitem = lookupDelitem.execute(frame, getClassNode.execute(primary), primary);
+        Object delitem = lookupDelitem.execute(frame, getClassNode.execute(inliningTarget, primary), primary);
         if (delitem == PNone.NO_VALUE) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
         }
@@ -83,11 +85,12 @@ public abstract class PyObjectDelItem extends Node {
 
     @Specialization(replaces = "doWithFrame")
     static void doGeneric(Object primary, Object index,
-                    @Shared("getclass") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Shared("getclass") @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "DelItem") LookupCallableSlotInMRONode lookupDelitem,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
                     @Shared("callNode") @Cached CallBinaryMethodNode callDelitem) {
-        Object setitem = lookupDelitem.execute(getClassNode.execute(primary));
+        Object setitem = lookupDelitem.execute(getClassNode.execute(inliningTarget, primary));
         if (setitem == PNone.NO_VALUE) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
         }

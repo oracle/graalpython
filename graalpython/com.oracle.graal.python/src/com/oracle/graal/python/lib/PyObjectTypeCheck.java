@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,10 +43,12 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyObject_TypeCheck}. Performs a subclass check of an object
@@ -59,10 +61,11 @@ public abstract class PyObjectTypeCheck extends PNodeWithContext {
 
     @Specialization
     static boolean doGeneric(Object object, Object type,
-                    @Cached GetClassNode getClassNode,
-                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        Object objectType = getClassNode.execute(object);
-        return isSameTypeNode.execute(type, objectType) || isSubtypeNode.execute(objectType, type);
+        Object objectType = getClassNode.execute(inliningTarget, object);
+        return isSameTypeNode.execute(inliningTarget, type, objectType) || isSubtypeNode.execute(objectType, type);
     }
 }

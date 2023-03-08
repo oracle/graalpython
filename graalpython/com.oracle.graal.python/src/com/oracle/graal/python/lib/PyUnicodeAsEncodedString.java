@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -109,7 +110,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
 
     @Specialization(guards = {"isString(unicode)", "isCommon(encoding, toJavaStringNode)"}, limit = "1")
     Object doCommon(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
-                    @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode,
+                    @Shared @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode,
                     @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         return encodeNode.execute(frame, unicode, encoding, errors);
     }
@@ -117,7 +118,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
     @Specialization(guards = {"isString(unicode)", "!isCommon(encoding, toJavaStringNode)"}, limit = "1")
     Object doRegistry(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
                     @Bind("this") Node inliningTarget,
-                    @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
+                    @Exclusive @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
                     @Cached InlinedConditionProfile isBytesProfile,
                     @Cached InlinedConditionProfile isByteArrayProfile,
                     @Cached SequenceStorageNodes.CopyNode copyNode,
@@ -139,7 +140,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
 
     @Specialization(guards = {"isString(unicode)", "isNoValue(encoding)"})
     Object doNoEncoding(VirtualFrame frame, Object unicode, @SuppressWarnings("unused") PNone encoding, Object errors,
-                    @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
+                    @Shared @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
         return encodeNode.execute(frame, unicode, ENC_UTF8, errors);
     }
 

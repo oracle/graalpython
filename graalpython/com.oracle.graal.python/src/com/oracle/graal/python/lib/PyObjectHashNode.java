@@ -54,18 +54,22 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(SpecialMethodSlot.class)
@@ -80,15 +84,16 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
 
     @Specialization
     public static long hash(TruffleString object,
-                    @Cached TruffleString.HashCodeNode hashCodeNode) {
+                    @Shared @Cached TruffleString.HashCodeNode hashCodeNode) {
         return avoidNegative1(hashCodeNode.execute(object, TS_ENCODING));
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
     static long hash(PString object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached(inline = true) GetPythonObjectClassNode getClassNode,
                     @Cached CastToTruffleStringNode cast,
-                    @Cached TruffleString.HashCodeNode hashCodeNode) {
+                    @Shared @Cached TruffleString.HashCodeNode hashCodeNode) {
         return hash(cast.execute(object), hashCodeNode);
     }
 
@@ -146,14 +151,15 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
 
     @Fallback
     static long hash(VirtualFrame frame, Object object,
-                    @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "Hash") LookupCallableSlotInMRONode lookupHash,
                     @Cached MaybeBindDescriptorNode bindDescriptorNode,
                     @Cached CallUnaryMethodNode callHash,
                     @Cached CastUnsignedToJavaLongHashNode cast,
                     @Cached PRaiseNode raiseNode) {
         /* This combines the logic from abstract.c:PyObject_Hash and typeobject.c:slot_tp_hash */
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         // We have to do the lookup and bind steps separately to avoid binding possible None
         Object hashDescr = lookupHash.execute(type);
         if (hashDescr != PNone.NO_VALUE && hashDescr != PNone.NONE) {

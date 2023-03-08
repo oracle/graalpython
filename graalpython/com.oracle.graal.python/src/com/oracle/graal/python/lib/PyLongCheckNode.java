@@ -45,13 +45,15 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Check if the object is a long or subclass of. Equivalent of CPython's {@code PyLong_Check}.
@@ -83,10 +85,11 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
 
     @Specialization
     static boolean doGeneric(Object object,
-                    @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         if (isSubtypeNode.execute(type, PythonBuiltinClassType.PInt)) {
             return true;
         } else if (type == PythonBuiltinClassType.ForeignObject) {

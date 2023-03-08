@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
-/**
- * Equivalent to use for PyFrame_GetBuiltins. Note we ignore the actual frame and just always return
- * the context-global builtins module.
- */
+@GenerateInline
 @GenerateUncached
-public abstract class PyFrameGetBuiltins extends Node {
-    public abstract PythonModule execute();
-
-    @Specialization
-    PythonModule getBuiltins() {
-        return PythonContext.get(this).getBuiltins();
+@GenerateCached(false)
+public abstract class LazyInteropLibrary extends Node {
+    public InteropLibrary get(Node inliningTarget) {
+        return execute(inliningTarget);
     }
 
-    public static PyFrameGetBuiltins getUncached() {
-        return PyFrameGetBuiltinsNodeGen.getUncached();
+    abstract InteropLibrary execute(Node inliningTarget);
+
+    @Specialization
+    static InteropLibrary doIt(@CachedLibrary(limit = "3") InteropLibrary lib) {
+        return lib;
     }
 }

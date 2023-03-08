@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,7 +73,7 @@ public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
 
     @Specialization(guards = "longCheckNode.execute(object)", limit = "1")
     static int doPyLong(VirtualFrame frame, Object object,
-                    @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                     @Shared("asInt") @Cached PyLongAsIntNode asIntNode,
                     @Shared("raise") @Cached PRaiseNode raise) {
         return checkResult(asIntNode.execute(frame, object), raise);
