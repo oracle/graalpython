@@ -112,6 +112,17 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
     return newObj;
 }
 
+void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
+    Py_ssize_t len =  PyTuple_GET_SIZE(self);
+    if (len > 0) {
+        Py_ssize_t i = len;
+        while (--i >= 0) {
+            Py_XDECREF(self->ob_item[i]);
+        }
+    }
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
 void* PyTruffle_NativeTupleItems(PyTupleObject* tuple) {
     return polyglot_from_PyObjectPtr_array(tuple->ob_item, tuple->ob_base.ob_size);
 }

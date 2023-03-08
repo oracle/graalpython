@@ -98,6 +98,7 @@ static void object_dealloc(PyObject *self) {
 
 /* prototype */
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
+void PyTruffle_Tuple_Dealloc(PyTupleObject* tuple);
 
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
@@ -145,7 +146,7 @@ PyTypeObject PySlice_Type = 				PY_TRUFFLE_TYPE("slice", &PyType_Type, Py_TPFLAG
 PyTypeObject PyStaticMethod_Type = 			PY_TRUFFLE_TYPE("staticmethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PyType_Type));
 PyTypeObject PySuper_Type = 				PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 PyTypeObject PyTraceBack_Type = 			PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
-PyTypeObject PyTuple_Type = 				PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, 0, 0, 0);
+PyTypeObject PyTuple_Type = 				PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, (destructor)PyTruffle_Tuple_Dealloc, 0, 0);
 PyTypeObject PyType_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("type", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS, sizeof(PyHeapTypeObject), sizeof(PyMemberDef));
 PyTypeObject PyUnicode_Type = 				PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyUnicodeObject));
 /* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
