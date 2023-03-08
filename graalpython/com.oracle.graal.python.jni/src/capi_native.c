@@ -557,11 +557,13 @@ char _PyByteArray_empty_string[] = "";
  * The following source files contain code that can be compiled directly and does not need to be called via stubs in Sulong:
  */
 
+#define COMPILING_NATIVE_CAPI
 #include "_warnings.c"
 #include "boolobject.c"
 #include "complexobject.c"
 #include "dictobject.c"
 #include "modsupport_shared.c"
+#include "pylifecycle.c"
 
 /*
  * This mirrors the definition in capi.c that we us on Sulong, and needs to be

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,15 @@
  */
 #include "capi.h"
 
+int Py_IsInitialized(void) {
+    return 1;
+}
+
+#ifndef COMPILING_NATIVE_CAPI
 void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
 	GraalPyTruffle_FatalErrorFunc(func != NULL? truffleString(func): NULL, truffleString(msg), -1);
 	/* If the above upcall returns, then we just fall through to the 'abort' call. */
 	abort();
 }
+#endif // COMPILING_NATIVE_CAPI
 
-PyOS_sighandler_t PyOS_setsig(int sig, PyOS_sighandler_t handler) {
-	PyErr_SetString(PyExc_SystemError, "'PyOS_setsig' not implemented");
-	return NULL;
-}
-
-int PyOS_InterruptOccurred(void) {
-	PyErr_SetString(PyExc_SystemError, "'PyOS_InterruptOccurred' not implemented");
-	return -1;
-}

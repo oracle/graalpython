@@ -3354,10 +3354,8 @@ PyAPI_FUNC(PyObject*) PyOS_FSPath(PyObject* a) {
     PyObject* result = (PyObject*) __target__PyOS_FSPath(a);
     return result;
 }
-int (*__target__PyOS_InterruptOccurred)() = NULL;
 PyAPI_FUNC(int) PyOS_InterruptOccurred() {
-    int result = (int) __target__PyOS_InterruptOccurred();
-    return result;
+    unimplemented("PyOS_InterruptOccurred"); exit(-1);
 }
 PyAPI_FUNC(char*) PyOS_Readline(FILE* a, FILE* b, const char* c) {
     unimplemented("PyOS_Readline"); exit(-1);
@@ -3376,10 +3374,8 @@ PyAPI_FUNC(int) PyOS_mystricmp(const char* a, const char* b) {
 PyAPI_FUNC(int) PyOS_mystrnicmp(const char* a, const char* b, Py_ssize_t c) {
     unimplemented("PyOS_mystrnicmp"); exit(-1);
 }
-PyOS_sighandler_t (*__target__PyOS_setsig)(int, PyOS_sighandler_t) = NULL;
 PyAPI_FUNC(PyOS_sighandler_t) PyOS_setsig(int a, PyOS_sighandler_t b) {
-    PyOS_sighandler_t result = (PyOS_sighandler_t) __target__PyOS_setsig(a, b);
-    return result;
+    unimplemented("PyOS_setsig"); exit(-1);
 }
 double (*__target__PyOS_string_to_double)(const char*, char**, PyObject*) = NULL;
 PyAPI_FUNC(double) PyOS_string_to_double(const char* a, char** b, PyObject* c) {
@@ -4956,9 +4952,6 @@ int (*__target__Py_IsFalse)(PyObject*) = NULL;
 PyAPI_FUNC(int) Py_IsFalse(PyObject* a) {
     int result = (int) __target__Py_IsFalse(a);
     return result;
-}
-PyAPI_FUNC(int) Py_IsInitialized() {
-    unimplemented("Py_IsInitialized"); exit(-1);
 }
 int (*__target__Py_IsNone)(PyObject*) = NULL;
 PyAPI_FUNC(int) Py_IsNone(PyObject* a) {
@@ -6879,9 +6872,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyNumber_TrueDivide = getAPI("PyNumber_TrueDivide");
     __target__PyNumber_Xor = getAPI("PyNumber_Xor");
     __target__PyOS_FSPath = getAPI("PyOS_FSPath");
-    __target__PyOS_InterruptOccurred = getAPI("PyOS_InterruptOccurred");
     __target__PyOS_double_to_string = getAPI("PyOS_double_to_string");
-    __target__PyOS_setsig = getAPI("PyOS_setsig");
     __target__PyOS_string_to_double = getAPI("PyOS_string_to_double");
     __target__PyOS_strtol = getAPI("PyOS_strtol");
     __target__PyOS_strtoul = getAPI("PyOS_strtoul");
