@@ -490,7 +490,7 @@ def CPyExtType(name, code, **kwargs):
     {includes}
 
     typedef struct {{
-        PyObject_HEAD;
+        {struct_base};
         {cmembers}
     }} {name}Object;
 
@@ -636,6 +636,7 @@ def CPyExtType(name, code, **kwargs):
     kwargs.setdefault("tp_free", "PyObject_Del")
     kwargs.setdefault("cmembers", "")
     kwargs.setdefault("includes", "")
+    kwargs.setdefault("struct_base", "PyObject_HEAD")
     c_source = UnseenFormatter().format(template, **kwargs)
 
     source_file = "%s/%s.c" % (__dir__, name)

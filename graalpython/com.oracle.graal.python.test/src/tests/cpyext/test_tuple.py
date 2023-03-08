@@ -78,6 +78,7 @@ TupleSubclass = CPyExtType(
             return result;
        }
     """,
+    struct_base='PyTupleObject tuple',
     tp_base='&PyTuple_Type',
     tp_new='tuple_subclass_new',
     tp_alloc='0',
