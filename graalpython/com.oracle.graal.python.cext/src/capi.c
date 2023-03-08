@@ -907,6 +907,10 @@ void PyTruffle_ObjectArrayFree(PyObject** array, int32_t size) {
     free(array);
 }
 
+void PyTruffle_SetStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
+    Py_XSETREF(ptr[index], newitem);
+}
+
 PyAPI_FUNC(Py_ssize_t) PyTruffle_Object_Size(PyObject *op) {
     return ((PyVarObject*)op)->ob_size;
 }

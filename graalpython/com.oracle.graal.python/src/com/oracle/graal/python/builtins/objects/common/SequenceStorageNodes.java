@@ -35,6 +35,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SET_STORAGE_ITEM;
 import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextNode.STOP_MARKER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -1284,14 +1285,9 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isObjectStorage(storage)")
         protected static void doNativeObject(NativeSequenceStorage storage, int idx, Object value,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached PCallCapiFunction call,
                         @Cached ToNewRefNode toSulongNode) {
-            // TODO xdecref previous value
-            try {
-                lib.writeArrayElement(storage.getPtr(), idx, toSulongNode.execute(value));
-            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            call.call(FUN_PY_TRUFFLE_SET_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
         }
 
         @Fallback
