@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -66,6 +66,15 @@ def _normalize_bounds(string, pos, endpos):
 
 def _is_bytes_like(object):
     return isinstance(object, (bytes, bytearray, memoryview, array, mmap))
+
+def _getlocale():
+    from locale import getlocale
+    (lang, encoding) = getlocale()
+    if lang is None and charset is None:
+        return 'C'
+    if lang is None:
+        lang = 'en_US'
+    return '.'.join((lang, encoding))
 
 def _new_compile(p, flags=0):
     if _with_tregex and isinstance(p, (str, bytes, bytearray, memoryview, array, mmap)):
@@ -237,6 +246,7 @@ class Pattern():
         self.__binary = _is_bytes_like(pattern)
         self.pattern = pattern
         self.__input_flags = flags
+        self.__locale_sensitive = self.__is_locale_sensitive(pattern, flags)
         flags_str = []
         for char, flag in FLAGS.items():
             if flags & flag:
@@ -290,11 +300,19 @@ class Pattern():
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
     def __tregex_compile(self, method="search", must_advance=False):
-        if (method, must_advance) not in self.__compiled_regexes:
+        if self.__locale_sensitive:
+            key = (method, must_advance, _getlocale())
+        else:
+            key = (method, must_advance)
+        if key not in self.__compiled_regexes:
             try:
-                extra_options = f"PythonMethod={method},MustAdvance={'true' if must_advance else 'false'}"
+                if self.__locale_sensitive:
+                    locale_option = ",PythonLocale=" + key[2]
+                else:
+                    locale_option = ""
+                extra_options = f"PythonMethod={method},MustAdvance={'true' if must_advance else 'false'}{locale_option}"
                 compiled_regex = tregex_compile_internal(self.pattern, self.__flags_str, extra_options)
-                self.__compiled_regexes[(method, must_advance)] = compiled_regex
+                self.__compiled_regexes[key] = compiled_regex
             except ValueError as e:
                 if len(e.args) == 2:
                     msg = e.args[0]
@@ -307,7 +325,35 @@ class Pattern():
                         raise ValueError(msg) from None
                     raise error(msg, self.pattern, e.args[1]) from None
                 raise
-        return self.__compiled_regexes[(method, must_advance)]
+        return self.__compiled_regexes[key]
+
+    def __is_locale_sensitive(self, pattern, flags):
+        """Tests whether the regex is locale-sensitive. It is not completely precise. In some
+        instances, it will return `True` even though the regex is *not* locale-sensitive. This is
+        the case when sequences resembling inline flags appear in character classes or comments."""
+        if not _is_bytes_like(pattern):
+            return False
+        if flags & FLAG_LOCALE != 0:
+            return True
+        pattern = pattern.decode(encoding='LATIN-1')
+        position = 0
+        while position < len(pattern):
+            position = pattern.find('(?', position)
+            if position == -1:
+                break
+            backslash_position = position - 1
+            while backslash_position >= 0 and pattern[backslash_position] == '\\':
+                backslash_position = backslash_position - 1
+            # jump over '(?'
+            position = position + 2
+            if (position - backslash_position) % 2 == 0:
+                # found odd number of backslashes, the parentheses is a literal
+                continue
+            while position < len(pattern) and pattern[position] in 'aiLmsux':
+                if pattern[position] == 'L':
+                    return True
+                position = position + 1
+        return False
 
     def __fallback_compile(self):
         if self.__compiled_fallback is None:
