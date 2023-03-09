@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.io.PStringIO.PStringIOBufToStringNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.FindLineEndingNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
@@ -132,7 +133,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PStringIO)
 public final class StringIOBuiltins extends PythonBuiltins {
 
-    private static final TruffleString T_NIL = TruffleString.fromCodePointUncached(0, TS_ENCODING);
+    private static final int NIL_CODEPOINT = 0;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -174,9 +175,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
                     IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
                     StringReplaceNode replaceNode,
                     TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.RepeatNode repeatNode,
                     TruffleString.SubstringNode substringNode,
                     TruffleStringBuilder.AppendStringNode appendStringNode,
+                    TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                     TruffleStringBuilder.ToStringNode toStringNode) {
         assert (self.getPos() >= 0);
         TruffleString decoded;
@@ -190,60 +191,62 @@ public final class StringIOBuiltins extends PythonBuiltins {
             decoded = replaceNode.execute(decoded, T_NEWLINE, self.getWriteNewline(), -1);
         }
 
-        int len = codePointLengthNode.execute(decoded, TS_ENCODING);
+        int decodedLen = codePointLengthNode.execute(decoded, TS_ENCODING);
 
         /*
          * This overflow check is not strictly necessary. However, it avoids us to deal with funky
          * things like comparing an unsigned and a signed integer.
          */
-        if (self.getPos() > Integer.MAX_VALUE - len) {
+        if (self.getPos() > Integer.MAX_VALUE - decodedLen) {
             throw raise.raise(OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         if (self.isAccumulating()) {
             if (self.getStringSize() == self.getPos()) {
                 self.append(decoded, appendStringNode);
-                self.incPos(len);
+                self.incPos(decodedLen);
                 if (self.getStringSize() < self.getPos()) {
                     self.setStringsize(self.getPos());
                 }
                 return;
             }
-            self.realize(toStringNode);
+            self.realize();
         }
 
-        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilder sb = self.getBuf();
+        self.invalidateBufCache();
         if (self.getPos() > self.getStringSize()) {
             /*
              * In case of overseek, pad with null bytes the buffer region between the end of stream
              * and the current position.
              */
-            appendStringNode.execute(sb, self.getBuf());
-            // TODO GR-37214: append repeated codepoint
-            TruffleString nil = repeatNode.execute(T_NIL, self.getPos() - self.getStringSize(), TS_ENCODING);
-            appendStringNode.execute(sb, nil);
+            appendCodePointNode.execute(sb, NIL_CODEPOINT, self.getPos() - self.getStringSize());
             appendStringNode.execute(sb, decoded);
         } else if (self.getPos() < self.getStringSize()) {
             /*
              * Copy the data to the internal buffer, overwriting some of the existing data if
              * self.getPos() < self.getStringSize().
              */
-            TruffleString left = substringNode.execute(self.getBuf(), 0, self.getPos(), TS_ENCODING, true);
+            // TODO: TStringBuilder API to shrink the builder and/or to replace at codepoint
+            // position
+            // Without that API, we have to create a new builder and replace the old one with it
+            TruffleString currentBuf = toStringNode.execute(sb, true);
+            TruffleString left = substringNode.execute(currentBuf, 0, self.getPos(), TS_ENCODING, true);
+            sb = TruffleStringBuilder.create(TS_ENCODING, self.getPos() + decodedLen);
+            self.setBuf(sb);
             appendStringNode.execute(sb, left);
             appendStringNode.execute(sb, decoded);
-            int end = self.getPos() + len;
+            int end = self.getPos() + decodedLen;
             if (end < self.getStringSize()) {
-                TruffleString right = substringNode.execute(self.getBuf(), end, self.getStringSize() - end, TS_ENCODING, true);
+                TruffleString right = substringNode.execute(currentBuf, end, self.getStringSize() - end, TS_ENCODING, true);
                 appendStringNode.execute(sb, right);
             }
         } else {
-            appendStringNode.execute(sb, self.getBuf());
             appendStringNode.execute(sb, decoded);
         }
-        self.setBuf(toStringNode.execute(sb));
 
         /* Set the new length of the internal string if it has changed. */
-        self.incPos(len);
+        self.incPos(decodedLen);
         if (self.getStringSize() < self.getPos()) {
             self.setStringsize(self.getPos());
         }
@@ -268,10 +271,10 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached StringReplaceNode replaceNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached TruffleString.RepeatNode repeatNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached IONodes.ToTruffleStringNode toTruffleStringNode) {
             TruffleString newline;
 
@@ -317,7 +320,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
             if (!initialValue.isEmpty()) {
                 self.setRealized();
                 self.setPos(0);
-                writeString(frame, self, initialValue, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode, repeatNode, substringNode, appendStringNode, toStringNode);
+                writeString(frame, self, initialValue, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode,
+                                substringNode, appendStringNode, appendCodePointNode, toStringNode);
             } else {
                 /* Empty stringio object, we can start by accumulating */
                 self.setAccumulating();
@@ -363,15 +367,18 @@ public final class StringIOBuiltins extends PythonBuiltins {
                 return self.makeIntermediate(toStringNode);
             }
 
-            self.realize(toStringNode);
+            self.realize();
             int newPos = self.getPos() + size;
-            TruffleString output = substringNode.execute(self.getBuf(), self.getPos(), size, TS_ENCODING, false);
+            TruffleString lazyBuf = toStringNode.execute(self.getBuf(), true);
+            TruffleString output = substringNode.execute(lazyBuf, self.getPos(), size, TS_ENCODING, false);
             self.setPos(newPos);
             return output;
         }
     }
 
-    static TruffleString stringioReadline(Node inliningTarget, PStringIO self, int lim, FindLineEndingNode findLineEndingNode, TruffleString.SubstringNode substringNode) {
+    static TruffleString stringioReadline(Node inliningTarget, PStringIO self, int lim,
+                    FindLineEndingNode findLineEndingNode, TruffleString.SubstringNode substringNode,
+                    TruffleStringBuilder.ToStringNode toStringNode) {
         /* In case of overseek, return the empty string */
         if (self.getPos() >= self.getStringSize()) {
             return T_EMPTY_STRING;
@@ -384,7 +391,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         int[] consumed = new int[1];
-        int len = findLineEndingNode.execute(inliningTarget, self, self.getBuf(), start, consumed);
+        TruffleString lazyBuf = toStringNode.execute(self.getBuf(), true);
+        int len = findLineEndingNode.execute(inliningTarget, self, lazyBuf, start, consumed);
         /*
          * If we haven't found any line ending, we just return everything (`consumed` is ignored).
          */
@@ -392,7 +400,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             len = limit;
         }
         self.incPos(len);
-        return substringNode.execute(self.getBuf(), start, len, TS_ENCODING, false);
+        return substringNode.execute(lazyBuf, start, len, TS_ENCODING, false);
     }
 
     @Builtin(name = J_READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
@@ -411,8 +419,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            self.realize(toStringNode);
-            return stringioReadline(inliningTarget, self, size, findLineEndingNode, substringNode);
+            self.realize();
+            return stringioReadline(inliningTarget, self, size, findLineEndingNode, substringNode, toStringNode);
         }
     }
 
@@ -430,16 +438,21 @@ public final class StringIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
         static Object truncate(PStringIO self, @SuppressWarnings("unused") PNone size,
                         @Shared @Cached TruffleString.SubstringNode substringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            return truncate(self, self.getPos(), substringNode, toStringNode);
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
+            return truncate(self, self.getPos(), substringNode, toStringNode, appendStringNode);
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "size >= 0", "size < self.getStringSize()"})
         static Object truncate(PStringIO self, int size,
                         @Shared @Cached TruffleString.SubstringNode substringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            self.realize(toStringNode);
-            self.setBuf(substringNode.execute(self.getBuf(), 0, size, TS_ENCODING, false));
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
+            self.realize();
+            TruffleString currentBuf = toStringNode.execute(self.getBuf(), true);
+            TruffleStringBuilder newBuf = TruffleStringBuilder.create(TS_ENCODING, size);
+            appendStringNode.execute(newBuf, substringNode.execute(currentBuf, 0, size, TS_ENCODING, true));
+            self.setBuf(newBuf);
             self.setStringsize(size);
             return size;
         }
@@ -454,11 +467,12 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached TruffleString.SubstringNode substringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
             int size = asSizeNode.executeExact(frame, indexNode.execute(frame, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
-                    return truncate(self, size, substringNode, toStringNode);
+                    return truncate(self, size, substringNode, toStringNode, appendStringNode);
                 }
                 return size;
             }
@@ -486,13 +500,14 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached IncrementalNewlineDecoderBuiltins.DecodeNode decodeNode,
                         @Cached StringReplaceNode replaceNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.RepeatNode repeatNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             int size = codePointLengthNode.execute(s, TS_ENCODING);
             if (size > 0) {
-                writeString(frame, self, s, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode, repeatNode, substringNode, appendStringNode, toStringNode);
+                writeString(frame, self, s, getRaiseNode(), decodeNode, replaceNode, codePointLengthNode,
+                                substringNode, appendStringNode, appendCodePointNode, toStringNode);
             }
             return size;
         }
@@ -582,8 +597,10 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!self.isAccumulating()"})
-        static Object doit(PStringIO self) {
-            return self.getBuf();
+        static Object doit(PStringIO self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PStringIOBufToStringNode bufToStringNode) {
+            return bufToStringNode.execute(inliningTarget, self);
         }
     }
 
@@ -615,6 +632,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             Object[] array = getArray.execute(state.getSequenceStorage());
             if (array.length < 4) {
@@ -632,7 +650,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
             TruffleString buf = toString.execute(array[0]);
             int bufsize = codePointLengthNode.execute(buf, TS_ENCODING);
             self.setRealized();
-            self.setBuf(buf);
+            TruffleStringBuilder newBuf = TruffleStringBuilder.create(TS_ENCODING, bufsize);
+            appendStringNode.execute(newBuf, buf);
+            self.setBuf(newBuf);
             self.setStringsize(bufsize);
 
             /*
@@ -770,11 +790,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
         Object builtin(PStringIO self,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
-                        @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached FindLineEndingNode findLineEndingNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            self.realize(toStringNode);
-            TruffleString line = stringioReadline(inliningTarget, self, -1, findLineEndingNode, substringNode);
+            self.realize();
+            TruffleString line = stringioReadline(inliningTarget, self, -1, findLineEndingNode, substringNode, toStringNode);
             if (line.isEmpty()) {
                 throw raiseStopIteration();
             }
@@ -787,12 +807,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(inliningTarget, self, profile)"}, limit = "1")
         Object slowpath(VirtualFrame frame, PStringIO self,
-                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("profile") @Cached IsBuiltinObjectProfile profile,
                         @Cached PyObjectCallMethodObjArgs callMethodReadline,
-                        @Cached CastToTruffleStringNode toString,
-                        @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            self.realize(toStringNode);
+                        @Cached CastToTruffleStringNode toString) {
+            self.realize();
             Object res = callMethodReadline.execute(frame, self, T_READLINE);
             if (!PGuards.isString(res)) {
                 throw raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, T_READLINE, res);
