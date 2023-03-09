@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,13 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -58,24 +62,28 @@ public final class PStringIO extends PTextIOBase {
 
     private boolean closed;
 
-    private TruffleString buf;
+    private TruffleString cachedString;
+    private TruffleStringBuilder buf;
     private TruffleStringBuilder sb;
     private int pos;
     private int stringSize;
 
     public PStringIO(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        buf = T_EMPTY_STRING;
+        buf = null;
     }
 
-    public TruffleString getBuf() {
-        assert !isAccumulating();
+    public TruffleStringBuilder getBuf() {
         return buf;
     }
 
-    public void setBuf(TruffleString buf) {
-        assert !isAccumulating();
+    public void setBuf(TruffleStringBuilder buf) {
         this.buf = buf;
+        cachedString = null;
+    }
+
+    public void invalidateBufCache() {
+        cachedString = null;
     }
 
     public int getPos() {
@@ -106,11 +114,12 @@ public final class PStringIO extends PTextIOBase {
         return closed;
     }
 
-    public void realize(TruffleStringBuilder.ToStringNode toStringNode) {
+    public void realize() {
         if (!isAccumulating()) {
             return;
         }
-        buf = toStringNode.execute(sb);
+        buf = sb;
+        cachedString = null;
         sb = null;
     }
 
@@ -121,6 +130,7 @@ public final class PStringIO extends PTextIOBase {
     public void setAccumulating() {
         assert stringSize == 0 && !isAccumulating();
         sb = TruffleStringBuilder.create(TS_ENCODING);
+        cachedString = null;
     }
 
     public void append(TruffleString str, TruffleStringBuilder.AppendStringNode appendStringNode) {
@@ -130,7 +140,7 @@ public final class PStringIO extends PTextIOBase {
 
     public void setRealized() {
         sb = null;
-        buf = T_EMPTY_STRING;
+        buf = TruffleStringBuilder.create(TS_ENCODING);
     }
 
     public TruffleString makeIntermediate(TruffleStringBuilder.ToStringNode toStringNode) {
@@ -141,8 +151,31 @@ public final class PStringIO extends PTextIOBase {
     @Override
     public void clearAll() {
         super.clearAll();
-        buf = T_EMPTY_STRING;
+        buf = TruffleStringBuilder.create(TS_ENCODING);
         sb = null;
+        cachedString = null;
         setWriteNewline(null);
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class PStringIOBufToStringNode extends Node {
+        abstract TruffleString execute(Node inliningTarget, PStringIO self);
+
+        static boolean hasCache(PStringIO s) {
+            return s.cachedString != null;
+        }
+
+        @Specialization(guards = "hasCache(self)")
+        TruffleString doCached(PStringIO self) {
+            return self.cachedString;
+        }
+
+        @Specialization(guards = "!hasCache(self)")
+        TruffleString doUncached(PStringIO self,
+                        @Cached(inline = false) TruffleStringBuilder.ToStringNode toStringNode) {
+            self.cachedString = toStringNode.execute(self.getBuf());
+            return self.cachedString;
+        }
     }
 }
