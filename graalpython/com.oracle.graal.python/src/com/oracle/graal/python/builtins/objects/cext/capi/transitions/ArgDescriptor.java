@@ -313,7 +313,7 @@ public enum ArgDescriptor {
 
     func_objint("int (*)(PyObject*value)"),
     func_voidvoidptr("void (*)(void*)"),
-    func_voidvoid("void (*)(void)"),
+    func_voidvoid(ArgBehavior.Pointer, "void (*)(void)"),
     func_intvoidptr("int (*)(void*)"),
     func_objvoid("PyObject*(*)(void)"),
     func_objcharsizevoidptr("PyObject*(*)(const char*, Py_ssize_t, void*)"),

@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Long;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYMODULEDEF_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPILER_FLAGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_GIL_STATE_STATE;
@@ -566,7 +565,7 @@ public abstract class PythonCextBuiltinRegistry {
                     new CApiBuiltinExecutable("PyTruffleObject_GetItemString", Ignored, PyObjectTransfer,
                                     new ArgDescriptor[]{PyObject, ConstCharPtrAsTruffleString}, 201),
                     new CApiBuiltinExecutable("PyTruffleState_FindModule", Ignored, PyObjectBorrowed,
-                                    new ArgDescriptor[]{PYMODULEDEF_PTR}, 202),
+                                    new ArgDescriptor[]{Py_ssize_t}, 202),
                     new CApiBuiltinExecutable("PyTruffleStructSequence_InitType2", Ignored, Int,
                                     new ArgDescriptor[]{PyTypeObject, Pointer, Pointer, Int}, 203),
                     new CApiBuiltinExecutable("PyTruffleStructSequence_NewType", Ignored, PyTypeObjectTransfer,
