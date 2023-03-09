@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -52,8 +52,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -61,7 +63,8 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinFunctionOrMethod, PythonBuiltinClassType.MethodWrapper})
@@ -163,30 +166,34 @@ public class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
     public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString getQualName(VirtualFrame frame, PMethod method,
-                        @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode,
-                        @Cached("create(T___QUALNAME__)") GetAttributeNode getQualNameAttrNode,
-                        @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached ConditionProfile isGlobalProfile,
-                        @Cached GetClassNode getClassNode,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile, simpleTruffleStringFormatNode);
+                        @Bind("this") Node inliningTarget,
+                        @Cached("create(T___NAME__)") @Shared GetAttributeNode getNameAttrNode,
+                        @Cached("create(T___QUALNAME__)") @Shared GetAttributeNode getQualNameAttrNode,
+                        @Cached @Shared TypeNodes.IsTypeNode isTypeNode,
+                        @Cached @Shared CastToTruffleStringNode castToStringNode,
+                        @Cached @Shared InlinedConditionProfile isGlobalProfile,
+                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return makeQualname(frame, inliningTarget, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile,
+                            simpleTruffleStringFormatNode);
         }
 
         @Specialization
         TruffleString getQualName(VirtualFrame frame, PBuiltinMethod method,
-                        @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode,
-                        @Cached("create(T___QUALNAME__)") GetAttributeNode getQualNameAttrNode,
-                        @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached ConditionProfile isGlobalProfile,
-                        @Cached GetClassNode getClassNode,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile, simpleTruffleStringFormatNode);
+                        @Bind("this") Node inliningTarget,
+                        @Cached("create(T___NAME__)") @Shared GetAttributeNode getNameAttrNode,
+                        @Cached("create(T___QUALNAME__)") @Shared GetAttributeNode getQualNameAttrNode,
+                        @Cached @Shared TypeNodes.IsTypeNode isTypeNode,
+                        @Cached @Shared CastToTruffleStringNode castToStringNode,
+                        @Cached @Shared InlinedConditionProfile isGlobalProfile,
+                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return makeQualname(frame, inliningTarget, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile,
+                            simpleTruffleStringFormatNode);
         }
 
-        private TruffleString makeQualname(VirtualFrame frame, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode,
-                        CastToTruffleStringNode castToStringNode, GetClassNode getClassNode, TypeNodes.IsTypeNode isTypeNode, ConditionProfile isGlobalProfile,
+        private TruffleString makeQualname(VirtualFrame frame, Node inliningTarget, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode,
+                        CastToTruffleStringNode castToStringNode, InlinedGetClassNode getClassNode, TypeNodes.IsTypeNode isTypeNode, InlinedConditionProfile isGlobalProfile,
                         SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             TruffleString methodName;
             try {
@@ -194,11 +201,11 @@ public class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___NAME__);
             }
-            if (isGlobalProfile.profile(self == null || self instanceof PythonModule)) {
+            if (isGlobalProfile.profile(inliningTarget, self == null || self instanceof PythonModule)) {
                 return methodName;
             }
 
-            Object type = isTypeNode.execute(self) ? self : getClassNode.execute(self);
+            Object type = isTypeNode.execute(self) ? self : getClassNode.execute(inliningTarget, self);
             TruffleString typeQualName;
             try {
                 typeQualName = castToStringNode.execute(getQualNameAttrNode.executeObject(frame, type));

@@ -72,13 +72,15 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -131,11 +133,12 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
         Object getGlobals(PFunction self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict,
-                        @Cached ConditionProfile moduleGlobals) {
+                        @Cached InlinedConditionProfile moduleGlobals) {
             // see the make_globals_function from lib-graalpython/functions.py
             PythonObject globals = self.getGlobals();
-            if (moduleGlobals.profile(globals instanceof PythonModule)) {
+            if (moduleGlobals.profile(inliningTarget, globals instanceof PythonModule)) {
                 return getDict.execute(globals);
             } else {
                 return globals;

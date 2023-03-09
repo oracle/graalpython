@@ -73,17 +73,17 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCycle})
@@ -168,8 +168,9 @@ public final class CycleBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "hasIterable(self)")
         Object reduce(PCycle self,
-                        @Cached GetClassNode getClass) {
-            Object type = getClass.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClass) {
+            Object type = getClass.execute(inliningTarget, self);
             PTuple iterableTuple = factory().createTuple(new Object[]{self.getIterable()});
             PTuple tuple = factory().createTuple(new Object[]{getSavedList(self), self.isFirstpass()});
             return factory().createTuple(new Object[]{type, iterableTuple, tuple});
@@ -177,16 +178,17 @@ public final class CycleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!hasIterable(self)")
         Object reduceNoIterable(VirtualFrame frame, PCycle self,
-                        @Cached GetClassNode getClass,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClass,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached PyObjectGetIter getIterNode,
-                        @Cached BranchProfile indexProfile) {
-            Object type = getClass.execute(self);
+                        @Cached InlinedBranchProfile indexProfile) {
+            Object type = getClass.execute(inliningTarget, self);
             PList savedList = getSavedList(self);
             Object it = getIterNode.execute(frame, savedList);
             if (self.getIndex() > 0) {
-                indexProfile.enter();
+                indexProfile.enter(inliningTarget);
                 Object setStateCallable = lookupAttrNode.execute(frame, it, T___SETSTATE__);
                 callNode.executeObject(frame, setStateCallable, self.getIndex());
             }

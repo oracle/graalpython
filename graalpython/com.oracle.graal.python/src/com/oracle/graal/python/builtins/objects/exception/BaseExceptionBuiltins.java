@@ -81,8 +81,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -92,6 +92,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -103,7 +104,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -191,12 +192,13 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         public Object args(PBaseException self, @SuppressWarnings("unused") PNone none,
-                        @Cached ConditionProfile nullArgsProfile,
-                        @Cached ConditionProfile hasMessageFormat,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile nullArgsProfile,
+                        @Cached InlinedConditionProfile hasMessageFormat,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             PTuple args = self.getArgs();
-            if (nullArgsProfile.profile(args == null)) {
-                if (hasMessageFormat.profile(!self.hasMessageFormat())) {
+            if (nullArgsProfile.profile(inliningTarget, args == null)) {
+                if (hasMessageFormat.profile(inliningTarget, !self.hasMessageFormat())) {
                     args = factory().createEmptyTuple();
                 } else {
                     // lazily format the exception message:
@@ -382,10 +384,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(VirtualFrame frame, PBaseException self,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached ArgsNode argsNode,
                         @Cached DictNode dictNode) {
-            Object clazz = getClassNode.execute(self);
+            Object clazz = getClassNode.execute(inliningTarget, self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
             Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
             return factory().createTuple(new Object[]{clazz, args, dict});
@@ -397,13 +400,14 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "argsLen(frame, self, argsNode) == 0", limit = "1")
         Object reprNoArgs(@SuppressWarnings("unused") VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Shared("castStr") @Cached CastToTruffleStringNode castStringNode,
                         @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            Object type = getClassNode.execute(self);
+            Object type = getClassNode.execute(inliningTarget, self);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
             appendStringNode.execute(sb, T_EMPTY_PARENS);
@@ -412,15 +416,16 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "argsLen(frame, self, argsNode) == 1", limit = "1")
         Object reprArgs1(VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Cached GetItemNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Shared("castStr") @Cached CastToTruffleStringNode castStringNode,
                         @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            Object type = getClassNode.execute(self);
+            Object type = getClassNode.execute(inliningTarget, self);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
             appendStringNode.execute(sb, T_LPAREN);
@@ -431,14 +436,15 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "argsLen(frame, self, argsNode) > 1", limit = "1")
         Object reprArgs(VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.ReprNode reprNode,
                         @Shared("castStr") @Cached CastToTruffleStringNode castStringNode,
                         @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            Object type = getClassNode.execute(self);
+            Object type = getClassNode.execute(inliningTarget, self);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
             appendStringNode.execute(sb, reprNode.execute(frame, self.getArgs()));

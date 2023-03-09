@@ -107,7 +107,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
@@ -293,13 +293,13 @@ public class ModuleBuiltins extends PythonBuiltins {
                             @Bind("this") Node inliningTarget,
                             @Cached IsBuiltinObjectProfile isAttrError,
                             @Cached ReadAttributeFromObjectNode readGetattr,
-                            @Cached ConditionProfile customGetAttr,
+                            @Cached InlinedConditionProfile customGetAttr,
                             @Cached CallNode callNode,
                             @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                             @Cached CastToTruffleStringNode castNameToStringNode) {
                 e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, T___GETATTR__);
-                if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {
+                if (customGetAttr.profile(inliningTarget, getAttr != PNone.NO_VALUE)) {
                     return callNode.execute(frame, getAttr, key);
                 } else {
                     TruffleString moduleName;

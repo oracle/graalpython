@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -41,13 +41,15 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEnumerate)
 public final class EnumerateBuiltins extends PythonBuiltins {
@@ -63,9 +65,10 @@ public final class EnumerateBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doNext(VirtualFrame frame, PEnumerate self,
-                        @Cached ConditionProfile bigIntIndexProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile bigIntIndexProfile,
                         @Cached GetNextNode next) {
-            Object index = self.getAndIncrementIndex(factory(), bigIntIndexProfile);
+            Object index = self.getAndIncrementIndex(inliningTarget, factory(), bigIntIndexProfile);
             Object nextValue = next.execute(frame, self.getDecoratedIterator());
             return factory().createTuple((new Object[]{index, nextValue}));
         }
@@ -86,12 +89,13 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object reduce(PEnumerate self,
-                        @Cached ConditionProfile bigIntIndexProfile,
-                        @Cached GetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile bigIntIndexProfile,
+                        @Cached InlinedGetClassNode getClassNode) {
             Object iterator = self.getDecoratedIterator();
-            Object index = self.getIndex(bigIntIndexProfile);
+            Object index = self.getIndex(inliningTarget, bigIntIndexProfile);
             PTuple contents = factory().createTuple(new Object[]{iterator, index});
-            return factory().createTuple(new Object[]{getClassNode.execute(self), contents});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents});
         }
     }
 

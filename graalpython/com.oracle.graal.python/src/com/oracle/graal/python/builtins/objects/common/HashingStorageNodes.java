@@ -80,7 +80,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class HashingStorageNodes {
@@ -948,6 +948,7 @@ public class HashingStorageNodes {
 
         @Specialization
         boolean doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItemWithHash getBNode,
                         @Cached HashingStorageLen lenANode,
                         @Cached HashingStorageLen lenBNode,
@@ -957,15 +958,15 @@ public class HashingStorageNodes {
                         @Cached HashingStorageIteratorValue aIterValue,
                         @Cached HashingStorageIteratorKeyHash aIterHash,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached LoopConditionProfile earlyExitProfile) {
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedLoopConditionProfile earlyExitProfile) {
             if (lenANode.execute(aStorage) != lenBNode.execute(bStorage)) {
                 return false;
             }
             int index = 0;
             try {
                 HashingStorageIterator aIter = getAIter.execute(aStorage);
-                while (loopProfile.profile(aIterNext.execute(aStorage, aIter))) {
+                while (loopProfile.profile(inliningTarget, aIterNext.execute(aStorage, aIter))) {
                     if (CompilerDirectives.hasNextTier()) {
                         index++;
                     }
@@ -974,7 +975,7 @@ public class HashingStorageNodes {
                     long aHash = aIterHash.execute(aStorage, aIter);
                     Object bValue = getBNode.execute(frame, bStorage, aKey, aHash);
                     Object aValue = aIterValue.execute(aStorage, aIter);
-                    if (earlyExitProfile.profile(!(bValue == null || !eqNode.execute(frame, bValue, aValue)))) {
+                    if (earlyExitProfile.profile(inliningTarget, !(bValue == null || !eqNode.execute(frame, bValue, aValue)))) {
                         // if->continue such that the "true" count of the profile represents the
                         // loop iterations and the "false" count the early exit
                         continue;
@@ -1028,14 +1029,15 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object doIt(Frame frame, Node callbackInliningTarget, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulatorIn,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Cached InlinedLoopConditionProfile loopProfile) {
             int index = 0;
             Object accumulator = accumulatorIn;
             try {
                 HashingStorageIterator aIter = getIter.execute(storage);
-                while (loopProfile.profile(iterNext.execute(storage, aIter))) {
+                while (loopProfile.profile(inliningTarget, iterNext.execute(storage, aIter))) {
                     if (CompilerDirectives.hasNextTier()) {
                         index++;
                     }

@@ -83,8 +83,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator,
@@ -140,11 +140,12 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         Object next(PArrayIterator self,
-                        @Cached("createClassProfile()") ValueProfile itemTypeProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile itemTypeProfile,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             PArray array = self.array;
             if (self.getIndex() < array.getLength()) {
-                return itemTypeProfile.profile(getValueNode.execute(array, self.index++));
+                return itemTypeProfile.profile(inliningTarget, getValueNode.execute(array, self.index++));
             }
             return stopIteration(self);
         }
@@ -167,8 +168,9 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         Object next(PIntRangeIterator self,
-                        @Shared("next") @Cached ConditionProfile profile) {
-            if (profile.profile(self.hasNextInt())) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("next") @Cached InlinedConditionProfile profile) {
+            if (profile.profile(inliningTarget, self.hasNextInt())) {
                 return self.nextInt();
             }
             return stopIteration(self);
@@ -210,15 +212,16 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         Object nextHashingStorageIter(PHashingStorageIterator self,
-                        @Cached ConditionProfile sizeChanged,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile sizeChanged,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageIteratorNext nextNode,
                         @Cached PHashingStorageIteratorNextValue itValueNode,
-                        @Shared("next") @Cached ConditionProfile profile) {
+                        @Shared("next") @Cached InlinedConditionProfile profile) {
             HashingStorage storage = self.getHashingStorage();
             final HashingStorageIterator it = self.getIterator();
-            if (profile.profile(nextNode.execute(storage, it))) {
-                if (sizeChanged.profile(self.checkSizeChanged(lenNode))) {
+            if (profile.profile(inliningTarget, nextNode.execute(storage, it))) {
+                if (sizeChanged.profile(inliningTarget, self.checkSizeChanged(lenNode))) {
                     String name = PBaseSetIterator.isInstance(self) ? "Set" : "dictionary";
                     throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
                 }
@@ -308,9 +311,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(@SuppressWarnings({"unused"}) VirtualFrame frame, PDictView.PBaseDictIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(self.checkSizeChanged(lenNode))) {
+                        @Cached InlinedConditionProfile profile) {
+            if (profile.profile(inliningTarget, self.checkSizeChanged(lenNode))) {
                 return 0;
             }
             return self.getSize() - self.getIndex();
@@ -352,11 +356,12 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(PBaseSetIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
-                        @Cached ConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile) {
             int size = self.getSize();
             final int lenSet = lenNode.execute(self.getHashingStorage());
-            if (profile.profile(lenSet != size)) {
+            if (profile.profile(inliningTarget, lenSet != size)) {
                 return 0;
             }
             int len = size - self.getIndex();
@@ -392,9 +397,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(VirtualFrame frame, PArrayIterator self,
-                        @Cached ConditionProfile exhaustedProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile exhaustedProfile) {
             PythonContext context = PythonContext.get(this);
-            if (!exhaustedProfile.profile(self.isExhausted())) {
+            if (!exhaustedProfile.profile(inliningTarget, self.isExhausted())) {
                 return reduceInternal(frame, self.array, self.getIndex(), context);
             } else {
                 return reduceInternal(frame, factory().createEmptyTuple(), context);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -102,6 +102,7 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -109,7 +110,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
@@ -151,12 +153,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getitemSlice(PMemoryView self, PSlice slice,
-                        @Shared("zeroDim") @Cached ConditionProfile zeroDimProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("zeroDim") @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode) {
             self.checkReleased(this);
-            if (zeroDimProfile.profile(self.getDimensions() == 0)) {
+            if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
             int[] shape = self.getBufferShape();
@@ -178,9 +181,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getitemEllipsis(PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
-                        @Shared("zeroDim") @Cached ConditionProfile zeroDimProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("zeroDim") @Cached InlinedConditionProfile zeroDimProfile) {
             self.checkReleased(this);
-            if (zeroDimProfile.profile(self.getDimensions() == 0)) {
+            if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 return self;
             }
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
@@ -242,12 +246,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setitem(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis, Object object,
-                        @Cached ConditionProfile zeroDimProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached MemoryViewNodes.WriteItemAtNode writeItemAtNode) {
             self.checkReleased(this);
             checkReadonly(self);
 
-            if (zeroDimProfile.profile(self.getDimensions() == 0)) {
+            if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 writeItemAtNode.execute(frame, self, self.getBufferPointer(), 0, object);
                 return PNone.NONE;
             }
@@ -502,19 +507,21 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString none(PMemoryView self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Shared("p") @Cached ConditionProfile earlyExit,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("p") @Cached InlinedConditionProfile earlyExit,
                         @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
-            return hex(self, (byte) 0, 0, earlyExit, toJavaBytesNode, toHexNode);
+            return hex(self, (byte) 0, 0, inliningTarget, earlyExit, toJavaBytesNode, toHexNode);
         }
 
         @Specialization
         TruffleString hex(PMemoryView self, byte sep, int bytesPerSepGroup,
-                        @Shared("p") @Cached ConditionProfile earlyExit,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("p") @Cached InlinedConditionProfile earlyExit,
                         @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
             self.checkReleased(this);
-            if (earlyExit.profile(self.getLength() == 0)) {
+            if (earlyExit.profile(inliningTarget, self.getLength() == 0)) {
                 return T_EMPTY_STRING;
             }
             byte[] b = toJavaBytesNode.execute(self);
@@ -653,9 +660,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         int len(PMemoryView self,
-                        @Cached ConditionProfile zeroDimProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile zeroDimProfile) {
             self.checkReleased(this);
-            return zeroDimProfile.profile(self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
+            return zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
         }
     }
 
@@ -678,14 +686,15 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         int hash(PMemoryView self,
-                        @Cached ConditionProfile cachedProfile,
-                        @Cached ConditionProfile writableProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile cachedProfile,
+                        @Cached InlinedConditionProfile writableProfile,
                         @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode) {
-            if (cachedProfile.profile(self.getCachedHash() != -1)) {
+            if (cachedProfile.profile(inliningTarget, self.getCachedHash() != -1)) {
                 return self.getCachedHash();
             }
             self.checkReleased(this);
-            if (writableProfile.profile(!self.isReadOnly())) {
+            if (writableProfile.profile(inliningTarget, !self.isReadOnly())) {
                 throw raise(ValueError, ErrorMessages.CANNOT_HASH_WRITEABLE_MEMORYVIEW);
             } else {
                 // TODO avoid copying
@@ -784,9 +793,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(PMemoryView self,
-                        @Cached ConditionProfile nullProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile nullProfile) {
             self.checkReleased(this);
-            if (nullProfile.profile(self.getBufferShape() == null)) {
+            if (nullProfile.profile(inliningTarget, self.getBufferShape() == null)) {
                 return factory().createEmptyTuple();
             }
             return factory().createTuple(new IntSequenceStorage(self.getBufferShape()));
@@ -799,9 +809,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(PMemoryView self,
-                        @Cached ConditionProfile nullProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile nullProfile) {
             self.checkReleased(this);
-            if (nullProfile.profile(self.getBufferStrides() == null)) {
+            if (nullProfile.profile(inliningTarget, self.getBufferStrides() == null)) {
                 return factory().createEmptyTuple();
             }
             return factory().createTuple(new IntSequenceStorage(self.getBufferStrides()));
@@ -814,9 +825,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(PMemoryView self,
-                        @Cached ConditionProfile nullProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile nullProfile) {
             self.checkReleased(this);
-            if (nullProfile.profile(self.getBufferSuboffsets() == null)) {
+            if (nullProfile.profile(inliningTarget, self.getBufferSuboffsets() == null)) {
                 return factory().createEmptyTuple();
             }
             return factory().createTuple(new IntSequenceStorage(self.getBufferSuboffsets()));

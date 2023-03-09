@@ -42,13 +42,14 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 /**
  * <strong>Summary of our implementation of traceback handling</strong>
@@ -121,8 +122,9 @@ public abstract class GetTracebackNode extends Node {
 
     @Fallback
     PTraceback getTraceback(LazyTraceback tb,
+                    @Bind("this") Node inliningTarget,
                     @Cached PythonObjectFactory factory,
-                    @Cached LoopConditionProfile loopConditionProfile) {
+                    @Cached InlinedLoopConditionProfile loopConditionProfile) {
         PTraceback newTraceback = null;
         LazyTraceback current = tb;
         do {
@@ -135,7 +137,7 @@ public abstract class GetTracebackNode extends Node {
                 break;
             }
             current = current.getNextChain();
-        } while (loopConditionProfile.profile(current != null));
+        } while (loopConditionProfile.profile(inliningTarget, current != null));
         tb.setTraceback(newTraceback);
         return newTraceback;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -112,7 +112,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -167,7 +167,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -404,24 +403,26 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromHexNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = "isBuiltinBytesType(cls, isSameType)", limit = "1")
+        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
         PBytes doBytes(Object cls, TruffleString str,
-                        @SuppressWarnings("unused") @Shared("isSameType") @Cached TypeNodes.IsSameTypeNode isSameType,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,
                         @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
             return factory().createBytes(cls, hexStringToBytesNode.execute(str));
         }
 
-        @Specialization(guards = "!isBuiltinBytesType(cls, isSameType)", limit = "1")
+        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)", limit = "1")
         Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
-                        @SuppressWarnings("unused") @Shared("isSameType") @Cached TypeNodes.IsSameTypeNode isSameType,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isSameType") @Cached InlinedIsSameTypeNode isSameType,
                         @Cached CallNode callNode,
                         @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
             PBytes bytes = factory().createBytes(hexStringToBytesNode.execute(str));
             return callNode.execute(frame, cls, bytes);
         }
 
-        protected static boolean isBuiltinBytesType(Object cls, TypeNodes.IsSameTypeNode isSameTypeNode) {
-            return isSameTypeNode.execute(PythonBuiltinClassType.PBytes, cls);
+        protected static boolean isBuiltinBytesType(Node inliningTarget, Object cls, InlinedIsSameTypeNode isSameTypeNode) {
+            return isSameTypeNode.execute(inliningTarget, PythonBuiltinClassType.PBytes, cls);
         }
 
         @Override
@@ -461,8 +462,8 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         PBytesLike add(PBytesLike self, PBytesLike other,
                         @Bind("this") Node node,
-                        @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached BytesNodes.CreateBytesNode create) {
+                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached @Shared BytesNodes.CreateBytesNode create) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             return create.execute(node, factory(), self, res);
         }
@@ -472,8 +473,8 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Bind("this") Node node,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached BytesNodes.CreateBytesNode create) {
+                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached @Shared BytesNodes.CreateBytesNode create) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
@@ -498,8 +499,8 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public PBytesLike mul(VirtualFrame frame, PBytesLike self, int times,
                         @Bind("this") Node node,
-                        @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached BytesNodes.CreateBytesNode create) {
+                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached @Shared BytesNodes.CreateBytesNode create) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             return create.execute(node, factory(), self, res);
         }
@@ -508,8 +509,8 @@ public class BytesBuiltins extends PythonBuiltins {
         public PBytesLike mul(VirtualFrame frame, PBytesLike self, Object times,
                         @Bind("this") Node node,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached BytesNodes.CreateBytesNode create) {
+                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached @Shared BytesNodes.CreateBytesNode create) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), asSizeNode.executeExact(frame, times));
             return create.execute(node, factory(), self, res);
         }
@@ -724,7 +725,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean contains(PBytesLike self, PBytesLike other,
-                        @Cached BytesNodes.FindNode findNode) {
+                        @Cached @Shared BytesNodes.FindNode findNode) {
             int len1 = self.getSequenceStorage().length();
             return findNode.execute(self.getSequenceStorage(), len1, other, 0, len1) != -1;
         }
@@ -732,7 +733,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isBytes(other)")
         boolean contains(VirtualFrame frame, PBytesLike self, Object other,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached BytesNodes.FindNode findNode,
+                        @Cached @Shared BytesNodes.FindNode findNode,
                         @Cached("createCast()") CastToByteNode cast) {
 
             int len1 = self.getSequenceStorage().length();
@@ -770,7 +771,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPTuple(substr)")
         boolean doPrefixStartEnd(VirtualFrame frame, PBytesLike self, Object substr, int start, int end,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached("createToBytes()") BytesNodes.ToBytesNode tobytes) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
             int len = self.getSequenceStorage().length();
@@ -782,7 +783,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doTuplePrefixStartEnd(VirtualFrame frame, PBytesLike self, PTuple substrs, int start, int end,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached("createToBytesFromTuple()") BytesNodes.ToBytesNode tobytes,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
@@ -958,7 +959,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isEmptySep(sep)")
         PTuple partition(VirtualFrame frame, PBytesLike self, PBytesLike sep,
                         @Bind("this") Node node,
-                        @Cached ConditionProfile notFound,
+                        @Cached InlinedConditionProfile notFound,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached BytesNodes.CreateBytesNode createBytesNode) {
             int len = self.getSequenceStorage().length();
@@ -966,7 +967,7 @@ public class BytesBuiltins extends PythonBuiltins {
             byte[] bytes = toBytesNode.execute(self);
             int idx = find(frame, self.getSequenceStorage(), sep, len);
             PBytesLike first, second, third;
-            if (notFound.profile(idx == -1)) {
+            if (notFound.profile(node, idx == -1)) {
                 second = createBytesNode.execute(node, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
                 if (isRight()) {
                     third = createBytesNode.execute(node, factory(), self, bytes);
@@ -1071,7 +1072,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         static int count(PBytesLike self, PBytesLike sub, int start, int end,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytesNode,
-                        @Cached BytesNodes.FindNode findNode) {
+                        @Cached @Shared BytesNodes.FindNode findNode) {
             int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
@@ -1092,7 +1093,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached BytesNodes.FindNode findNode) {
+                        @Cached @Shared BytesNodes.FindNode findNode) {
             int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
@@ -1281,19 +1282,21 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString none(PBytesLike self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Cached.Shared("p") @Cached ConditionProfile earlyExit,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared("p") @Cached InlinedConditionProfile earlyExit,
                         @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached.Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
-            return hex(self, (byte) 0, 0, earlyExit, getBytes, toHexNode);
+            return hex(self, (byte) 0, 0, inliningTarget, earlyExit, getBytes, toHexNode);
         }
 
         @Specialization
         TruffleString hex(PBytesLike self, byte sep, int bytesPerSepGroup,
-                        @Cached.Shared("p") @Cached ConditionProfile earlyExit,
+                        @Bind("this") Node inliningTarget,
+                        @Cached.Shared("p") @Cached InlinedConditionProfile earlyExit,
                         @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached.Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
             int len = self.getSequenceStorage().length();
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return T_EMPTY_STRING;
             }
             byte[] b = getBytes.execute(self.getSequenceStorage());
@@ -1313,10 +1316,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return true;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1336,10 +1340,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return false;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1358,10 +1363,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return false;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1380,10 +1386,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return false;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1402,10 +1409,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return false;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1430,10 +1438,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return false;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1458,10 +1467,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return false;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1480,10 +1490,11 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "2")
         static boolean check(PBytesLike self,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached ConditionProfile earlyExit) {
+                        @Cached InlinedConditionProfile earlyExit) {
             int len = bufferLib.getBufferLength(self);
-            if (earlyExit.profile(len == 0)) {
+            if (earlyExit.profile(inliningTarget, len == 0)) {
                 return false;
             }
             byte[] b = bufferLib.getInternalOrCopiedByteArray(self);
@@ -1542,9 +1553,9 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create,
                         @Cached.Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached ConditionProfile errorProfile) {
+                        @Cached InlinedConditionProfile errorProfile) {
             int len = bufferLib.getBufferLength(self);
-            if (errorProfile.profile(bufferLib.getBufferLength(fill) != 1)) {
+            if (errorProfile.profile(node, bufferLib.getBufferLength(fill) != 1)) {
                 throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
             }
             int width = asSizeNode.executeExact(frame, w);
@@ -1663,22 +1674,22 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toInternalBytes,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.FindNode findNode,
-                        @Cached ConditionProfile selfSubAreEmpty,
-                        @Cached ConditionProfile selfIsEmpty,
-                        @Cached ConditionProfile subIsEmpty,
+                        @Cached InlinedConditionProfile selfSubAreEmpty,
+                        @Cached InlinedConditionProfile selfIsEmpty,
+                        @Cached InlinedConditionProfile subIsEmpty,
                         @Cached BytesNodes.CreateBytesNode create) {
             int len = self.getSequenceStorage().length();
             byte[] bytes = toInternalBytes.execute(self.getSequenceStorage());
             byte[] subBytes = toBytes.execute(substr);
             byte[] replacementBytes = toBytes.execute(replacement);
             int maxcount = count < 0 ? Integer.MAX_VALUE : count;
-            if (selfSubAreEmpty.profile(len == 0 && subBytes.length == 0)) {
+            if (selfSubAreEmpty.profile(inliningTarget, len == 0 && subBytes.length == 0)) {
                 return create.execute(this, factory(), self, replacementBytes);
             }
-            if (selfIsEmpty.profile(len == 0)) {
+            if (selfIsEmpty.profile(inliningTarget, len == 0)) {
                 return create.execute(inliningTarget, factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }
-            if (subIsEmpty.profile(subBytes.length == 0)) {
+            if (subIsEmpty.profile(inliningTarget, subBytes.length == 0)) {
                 return create.execute(inliningTarget, factory(), self, replaceWithEmptySub(bytes, len, replacementBytes, maxcount));
             }
             // byte[] newBytes = doReplace(bytes, subBytes, replacementBytes);
@@ -2837,7 +2848,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
-                        @Cached ConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile) {
 
             Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, this);
             Object prefixBuffer = bufferAcquireLib.acquireReadonly(prefix, frame, this);
@@ -2846,7 +2857,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 int prefixBsLen = bufferLib.getBufferLength(prefixBuffer);
 
                 byte[] selfBs = bufferLib.getInternalOrCopiedByteArray(selfBuffer);
-                if (profile.profile(selfBsLen >= prefixBsLen && prefixBsLen > 0)) {
+                if (profile.profile(node, selfBsLen >= prefixBsLen && prefixBsLen > 0)) {
                     byte[] prefixBs = bufferLib.getInternalOrCopiedByteArray(prefixBuffer);
                     byte[] result = new byte[selfBsLen - prefixBsLen];
                     int j = 0;
@@ -2883,7 +2894,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
-                        @Cached ConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile) {
             Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, this);
             Object suffixBuffer = bufferAcquireLib.acquireReadonly(suffix, frame, this);
             try {
@@ -2891,7 +2902,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 int suffixBsLen = bufferLib.getBufferLength(suffixBuffer);
 
                 byte[] selfBs = bufferLib.getInternalOrCopiedByteArray(selfBuffer);
-                if (profile.profile(selfBsLen >= suffixBsLen && suffixBsLen > 0)) {
+                if (profile.profile(node, selfBsLen >= suffixBsLen && suffixBsLen > 0)) {
                     byte[] suffixBs = bufferLib.getInternalOrCopiedByteArray(suffixBuffer);
                     byte[] result = new byte[selfBsLen - suffixBsLen];
                     int k = 1;

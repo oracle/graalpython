@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,17 +61,20 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIslice})
 public final class IsliceBuiltins extends PythonBuiltins {
@@ -100,19 +103,20 @@ public final class IsliceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(self.getIterable())")
         Object next(VirtualFrame frame, PIslice self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached BranchProfile nextExceptionProfile,
-                        @Cached BranchProfile nextExceptionProfile2,
-                        @Cached BranchProfile setNextProfile) {
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedBranchProfile nextExceptionProfile,
+                        @Cached InlinedBranchProfile nextExceptionProfile2,
+                        @Cached InlinedBranchProfile setNextProfile) {
             Object it = self.getIterable();
             int stop = self.getStop();
             Object item;
-            while (loopProfile.profile(self.getCnt() < self.getNext())) {
+            while (loopProfile.profile(inliningTarget, self.getCnt() < self.getNext())) {
                 try {
                     item = nextNode.execute(frame, it, PNone.NO_VALUE);
                 } catch (PException e) {
-                    nextExceptionProfile.enter();
+                    nextExceptionProfile.enter(inliningTarget);
                     // C code uses any exception to clear the iterator
                     self.setIterable(PNone.NONE);
                     throw e;
@@ -126,7 +130,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
             try {
                 item = nextNode.execute(frame, it, PNone.NO_VALUE);
             } catch (PException e) {
-                nextExceptionProfile2.enter();
+                nextExceptionProfile2.enter(inliningTarget);
                 self.setIterable(PNone.NONE);
                 throw e;
             }
@@ -134,7 +138,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
             int oldNext = self.getNext();
             self.setNext(self.getNext() + self.getStep());
             if (self.getNext() < oldNext || (stop != -1 && self.getNext() > stop)) {
-                setNextProfile.enter();
+                setNextProfile.enter(inliningTarget);
                 self.setNext(stop);
             }
             return item;
@@ -146,18 +150,20 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNone(self.getIterable())")
         Object reduceNoIterable(VirtualFrame frame, PIslice self,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter) {
             // return type(self), (iter([]), 0), 0
-            Object type = getClassNode.execute(self);
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{getIter.execute(frame, factory().createList()), 0});
             return factory().createTuple(new Object[]{type, tuple, 0});
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
         Object reduce(PIslice self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             Object stop = (self.getStop() == -1) ? PNone.NONE : self.getStop();
             PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});
             return factory().createTuple(new Object[]{type, tuple, self.getCnt()});

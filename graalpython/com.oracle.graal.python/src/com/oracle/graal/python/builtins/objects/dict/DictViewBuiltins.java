@@ -111,7 +111,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictItemsView})
 public final class DictViewBuiltins extends PythonBuiltins {
@@ -192,18 +192,19 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
-                        @Cached HashingStorageGetItem getItem) {
+                        @Cached @Shared HashingStorageGetItem getItem) {
             return getItem.hasKey(frame, self.getWrappedDict().getDictStorage(), key);
         }
 
         @Specialization
         static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
-                        @Cached HashingStorageGetItem getItem,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared HashingStorageGetItem getItem,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached ConditionProfile tupleLenProfile,
+                        @Cached InlinedConditionProfile tupleLenProfile,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
             SequenceStorage tupleStorage = key.getSequenceStorage();
-            if (tupleLenProfile.profile(tupleStorage.length() != 2)) {
+            if (tupleLenProfile.profile(inliningTarget, tupleStorage.length() != 2)) {
                 return false;
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
@@ -239,25 +240,27 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self != other"})
         static boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
-                        @Cached HashingStorageLen len,
-                        @Cached ConditionProfile sizeProfile,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached("create(false)") ContainedInNode contained) {
-            return disjointImpl(frame, self, other, len, sizeProfile, sizeNode, contained);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared HashingStorageLen len,
+                        @Cached @Shared InlinedConditionProfile sizeProfile,
+                        @Cached @Shared PyObjectSizeNode sizeNode,
+                        @Cached("create(false)") @Shared ContainedInNode contained) {
+            return disjointImpl(frame, inliningTarget, self, other, len, sizeProfile, sizeNode, contained);
         }
 
         @Specialization
         static boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @Cached HashingStorageLen len,
-                        @Cached ConditionProfile sizeProfile,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached("create(false)") ContainedInNode contained) {
-            return disjointImpl(frame, self, other, len, sizeProfile, sizeNode, contained);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared HashingStorageLen len,
+                        @Cached @Shared InlinedConditionProfile sizeProfile,
+                        @Cached @Shared PyObjectSizeNode sizeNode,
+                        @Cached("create(false)") @Shared ContainedInNode contained) {
+            return disjointImpl(frame, inliningTarget, self, other, len, sizeProfile, sizeNode, contained);
         }
 
-        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, HashingStorageLen len, ConditionProfile sizeProfile, PyObjectSizeNode sizeNode,
-                        ContainedInNode contained) {
-            if (sizeProfile.profile(len.execute(self.getWrappedDict().getDictStorage()) <= sizeNode.execute(frame, other))) {
+        private static boolean disjointImpl(VirtualFrame frame, Node inliningTarget, PDictView self, Object other, HashingStorageLen len, InlinedConditionProfile sizeProfile,
+                        PyObjectSizeNode sizeNode, ContainedInNode contained) {
+            if (sizeProfile.profile(inliningTarget, len.execute(self.getWrappedDict().getDictStorage()) <= sizeNode.execute(frame, other))) {
                 return !contained.execute(frame, self, other);
             } else {
                 return !contained.execute(frame, other, self);

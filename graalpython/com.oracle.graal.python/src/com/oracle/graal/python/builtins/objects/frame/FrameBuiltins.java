@@ -56,15 +56,17 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
@@ -129,13 +131,14 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         int get(VirtualFrame frame, PFrame self,
-                        @Cached ConditionProfile isCurrentFrameProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isCurrentFrameProfile,
                         @Cached MaterializeFrameNode materializeNode) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the location of the frame if and only if 'self' represents the
             // current frame. If 'self' represents another frame on the stack, the location is
             // already set
-            if (isCurrentFrameProfile.profile(frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+            if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
                 PFrame pyFrame = materializeNode.execute(frame, this, false, false);
                 assert pyFrame == self;
             }
@@ -221,14 +224,15 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
-                        @Cached ConditionProfile profile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the values of the frame if and only if 'self' represents the current
             // frame. If 'self' represents another frame on the stack, the values are already
             // refreshed.
-            if (profile.profile(frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+            if (profile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
                 PFrame pyFrame = materializeNode.execute(false, true, frame);
                 assert pyFrame == self;
             }
@@ -241,9 +245,10 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetBackrefNode extends PythonBuiltinNode {
         @Specialization
         Object getBackref(VirtualFrame frame, PFrame self,
-                        @Cached BranchProfile noBackref,
-                        @Cached BranchProfile topRef,
-                        @Cached ConditionProfile notMaterialized,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile noBackref,
+                        @Cached InlinedBranchProfile topRef,
+                        @Cached InlinedConditionProfile notMaterialized,
                         @Cached ReadCallerFrameNode readCallerFrame) {
             PFrame.Reference backref;
             for (PFrame cur = self;; cur = backref.getPyFrame()) {
@@ -253,7 +258,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 }
                 PFrame callerFrame;
                 if (backref == null) {
-                    noBackref.enter();
+                    noBackref.enter(inliningTarget);
                     // The backref is not there. There's three cases:
 
                     // a) self is still on the stack and the caller isn't filled in
@@ -265,7 +270,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // escaped, the caller frame will be escaped when leaving the current function.
 
                     if (callerFrame == null) {
-                        topRef.enter();
+                        topRef.enter(inliningTarget);
                         // so we won't do this again
                         cur.setBackref(PFrame.Reference.EMPTY);
                         return PNone.NONE;
@@ -274,7 +279,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         cur.setBackref(backref);
                     }
                 } else {
-                    callerFrame = materialize(frame, readCallerFrame, backref, notMaterialized);
+                    callerFrame = materialize(frame, inliningTarget, readCallerFrame, backref, notMaterialized);
                 }
                 assert callerFrame.getRef() == backref;
                 RootNode rootNode = callerFrame.getLocation().getRootNode();
@@ -284,8 +289,8 @@ public final class FrameBuiltins extends PythonBuiltins {
             }
         }
 
-        private static PFrame materialize(VirtualFrame frame, ReadCallerFrameNode readCallerFrameNode, PFrame.Reference backref, ConditionProfile notMaterialized) {
-            if (notMaterialized.profile(backref.getPyFrame() == null)) {
+        private static PFrame materialize(VirtualFrame frame, Node inliningTarget, ReadCallerFrameNode readCallerFrameNode, PFrame.Reference backref, InlinedConditionProfile notMaterialized) {
+            if (notMaterialized.profile(inliningTarget, backref.getPyFrame() == null)) {
                 // Special case: the backref's PFrame object is not yet available; this is because
                 // the frame is still on the stack. So we need to find and materialize it.
                 for (int i = 0;; i++) {

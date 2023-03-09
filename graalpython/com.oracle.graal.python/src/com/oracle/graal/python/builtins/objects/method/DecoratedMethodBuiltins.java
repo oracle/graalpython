@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,13 +71,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PClassmethod})
@@ -158,11 +160,12 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
     abstract static class IsAbstractMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean isAbstract(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrue,
-                        @Cached ConditionProfile hasAttrProfile) {
+                        @Cached InlinedConditionProfile hasAttrProfile) {
             Object result = lookup.execute(frame, self.getCallable(), T___ISABSTRACTMETHOD__);
-            if (hasAttrProfile.profile(result != PNone.NO_VALUE)) {
+            if (hasAttrProfile.profile(inliningTarget, result != PNone.NO_VALUE)) {
                 return isTrue.execute(frame, result);
             }
             return false;

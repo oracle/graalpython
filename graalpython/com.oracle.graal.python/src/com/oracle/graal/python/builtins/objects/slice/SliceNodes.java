@@ -70,7 +70,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public abstract class SliceNodes {
     @GenerateUncached
@@ -319,13 +319,14 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "!isPNone(i)")
         protected Object doGeneric(Object i,
-                        @Cached BranchProfile exceptionProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile exceptionProfile,
                         @Cached PRaiseNode raise,
                         @Cached CastToJavaBigIntegerNode cast) {
             try {
                 return cast.execute(i);
             } catch (PException e) {
-                exceptionProfile.enter();
+                exceptionProfile.enter(inliningTarget);
                 throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
             }
         }
@@ -367,14 +368,15 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "!isPNone(i)")
         protected Object doGeneric(Object i,
-                        @Cached BranchProfile exceptionProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile exceptionProfile,
                         @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             if (indexCheckNode.execute(i)) {
                 return asSizeNode.executeLossy(null, i);
             }
-            exceptionProfile.enter();
+            exceptionProfile.enter(inliningTarget);
             throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
 
         }
@@ -413,22 +415,24 @@ public abstract class SliceNodes {
 
         @Specialization
         int doLong(long i,
-                        @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("indexErrorProfile") @Cached InlinedBranchProfile indexErrorProfile) {
             try {
                 return PInt.intValueExact(i);
             } catch (OverflowException e) {
-                indexErrorProfile.enter();
+                indexErrorProfile.enter(inliningTarget);
                 return overflowValue;
             }
         }
 
         @Specialization
         int doPInt(PInt i,
-                        @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared("indexErrorProfile") @Cached InlinedBranchProfile indexErrorProfile) {
             try {
                 return i.intValueExact();
             } catch (OverflowException e) {
-                indexErrorProfile.enter();
+                indexErrorProfile.enter(inliningTarget);
                 return overflowValue;
             }
         }

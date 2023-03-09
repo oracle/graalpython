@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.NeverDefault;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
@@ -142,8 +143,9 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
@@ -757,12 +759,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static Object doForeignArray(Object iterator,
-                        @Cached ConditionProfile notIterator,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile notIterator,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("iterator") InteropLibrary lib,
                         @Cached PForeignToPTypeNode convertNode,
                         @Cached GilNode gil) {
-            if (notIterator.profile(lib.isIterator(iterator))) {
+            if (notIterator.profile(inliningTarget, lib.isIterator(iterator))) {
                 gil.release(true);
                 try {
                     return convertNode.executeConvert(lib.getIteratorNextElement(iterator));
@@ -1039,21 +1042,22 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         Object str(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
-                        @Cached BranchProfile isNull,
-                        @Cached BranchProfile isBoolean,
-                        @Cached BranchProfile isString,
-                        @Cached BranchProfile isLong,
-                        @Cached BranchProfile isDouble,
-                        @Cached BranchProfile isArray,
-                        @Cached BranchProfile defaultCase) {
+                        @Cached InlinedBranchProfile isNull,
+                        @Cached InlinedBranchProfile isBoolean,
+                        @Cached InlinedBranchProfile isString,
+                        @Cached InlinedBranchProfile isLong,
+                        @Cached InlinedBranchProfile isDouble,
+                        @Cached InlinedBranchProfile isArray,
+                        @Cached InlinedBranchProfile defaultCase) {
             try {
                 if (lib.isNull(object)) {
-                    isNull.enter();
+                    isNull.enter(inliningTarget);
                     return getCallStrNode().executeObject(frame, PNone.NONE);
                 } else if (lib.isBoolean(object)) {
-                    isBoolean.enter();
+                    isBoolean.enter(inliningTarget);
                     boolean value;
                     gil.release(true);
                     try {
@@ -1063,7 +1067,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                     return getCallStrNode().executeObject(frame, value);
                 } else if (lib.isString(object)) {
-                    isString.enter();
+                    isString.enter(inliningTarget);
                     TruffleString value;
                     gil.release(true);
                     try {
@@ -1073,7 +1077,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                     return getCallStrNode().executeObject(frame, getSwitchEncodingNode().execute(value, TS_ENCODING));
                 } else if (lib.fitsInLong(object)) {
-                    isLong.enter();
+                    isLong.enter(inliningTarget);
                     long value;
                     gil.release(true);
                     try {
@@ -1083,7 +1087,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                     return getCallStrNode().executeObject(frame, value);
                 } else if (lib.fitsInDouble(object)) {
-                    isDouble.enter();
+                    isDouble.enter(inliningTarget);
                     double value;
                     gil.release(true);
                     try {
@@ -1093,7 +1097,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                     return getCallStrNode().executeObject(frame, value);
                 } else if (lib.hasArrayElements(object)) {
-                    isArray.enter();
+                    isArray.enter(inliningTarget);
                     long size;
                     gil.release(true);
                     try {
@@ -1109,7 +1113,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 // Fall back to the generic impl
             }
-            defaultCase.enter();
+            defaultCase.enter(inliningTarget);
             return defaultConversion(frame, lib, object);
         }
 

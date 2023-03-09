@@ -108,7 +108,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -119,6 +119,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -129,7 +130,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -273,8 +274,8 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "left.getFormat() != right.getFormat()")
         static boolean eqItems(VirtualFrame frame, PArray left, PArray right,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached ArrayNodes.GetValueNode getLeft,
-                        @Cached ArrayNodes.GetValueNode getRight) {
+                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
+                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
                 return false;
             }
@@ -289,8 +290,8 @@ public class ArrayBuiltins extends PythonBuiltins {
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "isFloatingPoint(left.getFormat())"})
         static boolean eqDoubles(PArray left, PArray right,
-                        @Cached ArrayNodes.GetValueNode getLeft,
-                        @Cached ArrayNodes.GetValueNode getRight) {
+                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
+                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
                 return false;
             }
@@ -317,10 +318,10 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
         boolean cmpItems(VirtualFrame frame, PArray left, PArray right,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached("createComparison()") BinaryComparisonNode compareNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
-                        @Cached ArrayNodes.GetValueNode getLeft,
-                        @Cached ArrayNodes.GetValueNode getRight) {
+                        @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") @Shared CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
+                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
             for (int i = 0; i < commonLength; i++) {
                 Object leftValue = getLeft.execute(left, i);
@@ -335,10 +336,10 @@ public class ArrayBuiltins extends PythonBuiltins {
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
         boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right,
-                        @Cached("createComparison()") BinaryComparisonNode compareNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
-                        @Cached ArrayNodes.GetValueNode getLeft,
-                        @Cached ArrayNodes.GetValueNode getRight) {
+                        @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") @Shared CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached @Shared ArrayNodes.GetValueNode getLeft,
+                        @Cached @Shared ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
             for (int i = 0; i < commonLength; i++) {
                 double leftValue = (Double) getLeft.execute(left, i);
@@ -452,9 +453,10 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PArray self,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
-                        @Cached ConditionProfile isEmptyProfile,
-                        @Cached ConditionProfile isUnicodeProfile,
+                        @Cached InlinedConditionProfile isEmptyProfile,
+                        @Cached InlinedConditionProfile isUnicodeProfile,
                         @Cached CastToTruffleStringNode cast,
                         @Cached ToUnicodeNode toUnicodeNode,
                         @Cached ArrayNodes.GetValueNode getValueNode,
@@ -466,8 +468,8 @@ public class ArrayBuiltins extends PythonBuiltins {
             appendStringNode.execute(sb, T_SINGLE_QUOTE);
             appendStringNode.execute(sb, self.getFormatString());
             appendStringNode.execute(sb, T_SINGLE_QUOTE);
-            if (isEmptyProfile.profile(self.getLength() != 0)) {
-                if (isUnicodeProfile.profile(self.getFormat() == BufferFormat.UNICODE)) {
+            if (isEmptyProfile.profile(inliningTarget, self.getLength() != 0)) {
+                if (isUnicodeProfile.profile(inliningTarget, self.getFormat() == BufferFormat.UNICODE)) {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
                 } else {
@@ -503,7 +505,8 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getitem(PArray self, PSlice slice,
-                        @Cached ConditionProfile simpleStepProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
@@ -516,7 +519,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere();
             }
 
-            if (simpleStepProfile.profile(sliceInfo.step == 1)) {
+            if (simpleStepProfile.profile(inliningTarget, sliceInfo.step == 1)) {
                 PythonUtils.arraycopy(self.getBuffer(), sliceInfo.start * itemsize, newArray.getBuffer(), 0, sliceInfo.sliceLength * itemsize);
             } else {
                 for (int i = sliceInfo.start, j = 0; j < sliceInfo.sliceLength; i += sliceInfo.step, j++) {
@@ -543,12 +546,13 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getFormat() == other.getFormat()")
         Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
-                        @Cached ConditionProfile sameArrayProfile,
-                        @Cached ConditionProfile simpleStepProfile,
-                        @Cached ConditionProfile complexDeleteProfile,
-                        @Cached ConditionProfile differentLengthProfile,
-                        @Cached ConditionProfile growProfile,
-                        @Cached ConditionProfile stepAssignProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile sameArrayProfile,
+                        @Cached InlinedConditionProfile simpleStepProfile,
+                        @Cached InlinedConditionProfile complexDeleteProfile,
+                        @Cached InlinedConditionProfile differentLengthProfile,
+                        @Cached InlinedConditionProfile growProfile,
+                        @Cached InlinedConditionProfile stepAssignProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached DelItemNode delItemNode) {
@@ -560,14 +564,14 @@ public class ArrayBuiltins extends PythonBuiltins {
             int itemsize = self.getFormat().bytesize;
             byte[] sourceBuffer = other.getBuffer();
             int needed = other.getLength();
-            if (sameArrayProfile.profile(sourceBuffer == self.getBuffer())) {
+            if (sameArrayProfile.profile(inliningTarget, sourceBuffer == self.getBuffer())) {
                 sourceBuffer = new byte[needed * itemsize];
                 PythonUtils.arraycopy(other.getBuffer(), 0, sourceBuffer, 0, sourceBuffer.length);
             }
-            if (simpleStepProfile.profile(step == 1)) {
-                if (differentLengthProfile.profile(sliceLength != needed)) {
+            if (simpleStepProfile.profile(inliningTarget, step == 1)) {
+                if (differentLengthProfile.profile(inliningTarget, sliceLength != needed)) {
                     self.checkCanResize(this);
-                    if (growProfile.profile(sliceLength < needed)) {
+                    if (growProfile.profile(inliningTarget, sliceLength < needed)) {
                         if (stop < start) {
                             stop = start;
                         }
@@ -582,9 +586,9 @@ public class ArrayBuiltins extends PythonBuiltins {
                     }
                 }
                 PythonUtils.arraycopy(sourceBuffer, 0, self.getBuffer(), start * itemsize, needed * itemsize);
-            } else if (complexDeleteProfile.profile(needed == 0)) {
+            } else if (complexDeleteProfile.profile(inliningTarget, needed == 0)) {
                 delItemNode.executeSlice(frame, self, slice);
-            } else if (stepAssignProfile.profile(needed == sliceLength)) {
+            } else if (stepAssignProfile.profile(inliningTarget, needed == sliceLength)) {
                 for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
                     PythonUtils.arraycopy(sourceBuffer, i * itemsize, self.getBuffer(), cur * itemsize, itemsize);
                 }
@@ -624,7 +628,8 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         Object delitem(PArray self, PSlice slice,
-                        @Cached ConditionProfile simpleStepProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices) {
             self.checkCanResize(this);
@@ -635,7 +640,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             int sliceLength = sliceInfo.sliceLength;
             int itemsize = self.getFormat().bytesize;
             if (sliceLength > 0) {
-                if (simpleStepProfile.profile(step == 1)) {
+                if (simpleStepProfile.profile(inliningTarget, step == 1)) {
                     self.delSlice(start, sliceLength);
                 } else {
                     if (step < 0) {
@@ -685,11 +690,12 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "protocol < 3")
         Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PyObjectLookupAttr lookup,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared PyObjectLookupAttr lookupDict,
                         @Cached ToListNode toListNode) {
-            Object cls = getClassNode.execute(self);
-            Object dict = lookup.execute(frame, self, T___DICT__);
+            Object cls = getClassNode.execute(inliningTarget, self);
+            Object dict = lookupDict.execute(frame, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
@@ -699,14 +705,15 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "protocol >= 3")
         Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PyObjectLookupAttr lookupDict,
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared PyObjectLookupAttr lookupDict,
                         @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode) {
             PythonModule arrayModule = getCore().lookupBuiltinModule(T_ARRAY);
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
-            Object cls = getClassNode.execute(self);
+            Object cls = getClassNode.execute(inliningTarget, self);
             Object dict = lookupDict.execute(frame, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
@@ -791,7 +798,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         Object extend(VirtualFrame frame, PArray self, PSequence value,
-                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Cached @Shared ArrayNodes.PutValueNode putValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(value);
@@ -821,7 +828,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object extend(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Cached @Shared ArrayNodes.PutValueNode putValueNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             Object iter = getIter.execute(frame, value);
@@ -984,11 +991,12 @@ public class ArrayBuiltins extends PythonBuiltins {
     public abstract static class FromFileNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached ConditionProfile nNegativeProfile,
+                        @Cached InlinedConditionProfile nNegativeProfile,
                         @Cached FromBytesNode fromBytesNode) {
-            if (nNegativeProfile.profile(n < 0)) {
+            if (nNegativeProfile.profile(inliningTarget, n < 0)) {
                 throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
             }
             int itemsize = self.getFormat().bytesize;
@@ -1114,11 +1122,12 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class ToUnicodeNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString tounicode(PArray self,
-                        @Cached ConditionProfile formatProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile formatProfile,
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            if (formatProfile.profile(self.getFormat() != BufferFormat.UNICODE)) {
+            if (formatProfile.profile(inliningTarget, self.getFormat() != BufferFormat.UNICODE)) {
                 throw raise(ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
             }
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);

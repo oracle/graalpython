@@ -118,6 +118,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -127,7 +128,9 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -903,12 +906,13 @@ public class ListBuiltins extends PythonBuiltins {
     abstract static class IMulNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doGeneric(VirtualFrame frame, PList list, Object right,
-                        @Cached ConditionProfile updatedProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile updatedProfile,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode) {
 
             SequenceStorage store = list.getSequenceStorage();
             SequenceStorage updated = repeatNode.execute(frame, store, right);
-            if (updatedProfile.profile(store != updated)) {
+            if (updatedProfile.profile(inliningTarget, store != updated)) {
                 list.setSequenceStorage(updated);
             }
             return list;

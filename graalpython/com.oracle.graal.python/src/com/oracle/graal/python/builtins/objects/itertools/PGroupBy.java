@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,8 +45,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PGroupBy extends PythonBuiltinObject {
 
@@ -109,10 +110,10 @@ public final class PGroupBy extends PythonBuiltinObject {
         this.currKey = currKey;
     }
 
-    void groupByStep(VirtualFrame frame, BuiltinFunctions.NextNode nextNode, CallNode callNode, ConditionProfile hasFuncProfile) {
+    void groupByStep(VirtualFrame frame, Node inliningTarget, BuiltinFunctions.NextNode nextNode, CallNode callNode, InlinedConditionProfile hasFuncProfile) {
         Object newValue = nextNode.execute(frame, it, PNone.NO_VALUE);
         Object newKey;
-        if (hasFuncProfile.profile(keyFunc == null)) {
+        if (hasFuncProfile.profile(inliningTarget, keyFunc == null)) {
             newKey = newValue;
         } else {
             newKey = callNode.execute(keyFunc, newValue);

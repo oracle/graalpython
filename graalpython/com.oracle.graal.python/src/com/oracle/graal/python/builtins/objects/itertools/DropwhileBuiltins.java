@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,16 +62,18 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDropwhile})
 public final class DropwhileBuiltins extends PythonBuiltins {
@@ -95,16 +97,17 @@ public final class DropwhileBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object next(VirtualFrame frame, PDropwhile self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrue,
-                        @Cached BranchProfile doneDroppingProfile,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Cached InlinedBranchProfile doneDroppingProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile) {
 
-            while (loopProfile.profile(!self.isDoneDropping())) {
+            while (loopProfile.profile(inliningTarget, !self.isDoneDropping())) {
                 Object n = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
                 if (!isTrue.execute(frame, callNode.execute(self.getPredicate(), n))) {
-                    doneDroppingProfile.enter();
+                    doneDroppingProfile.enter(inliningTarget);
                     self.setDoneDropping(true);
                     return n;
                 }
@@ -118,8 +121,9 @@ public final class DropwhileBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PDropwhile self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getPredicate(), self.getIterable()});
             return factory().createTuple(new Object[]{type, tuple, self.isDoneDropping()});
         }

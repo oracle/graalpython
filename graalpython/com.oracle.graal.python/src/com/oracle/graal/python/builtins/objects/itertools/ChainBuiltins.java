@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -78,9 +78,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PChain})
 public final class ChainBuiltins extends PythonBuiltins {
@@ -108,16 +108,16 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
-                        @Cached BranchProfile nextExceptioProfile,
-                        @Cached LoopConditionProfile loopProfile) {
-            while (loopProfile.profile(self.getSource() != PNone.NONE)) {
+                        @Cached InlinedBranchProfile nextExceptioProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile) {
+            while (loopProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
                 if (self.getActive() == PNone.NONE) {
                     try {
                         Object next = nextNode.execute(frame, self.getSource(), PNone.NO_VALUE);
                         Object iter = getIter.execute(frame, next);
                         self.setActive(iter);
                     } catch (PException e) {
-                        nextExceptioProfile.enter();
+                        nextExceptioProfile.enter(inliningTarget);
                         self.setSource(PNone.NONE);
                         throw e;
                     }
@@ -151,13 +151,14 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reducePos(PChain self,
-                        @Cached GetClassNode getClass,
-                        @Cached ConditionProfile hasSourceProfile,
-                        @Cached ConditionProfile hasActiveProfile) {
-            Object type = getClass.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClass,
+                        @Cached InlinedConditionProfile hasSourceProfile,
+                        @Cached InlinedConditionProfile hasActiveProfile) {
+            Object type = getClass.execute(inliningTarget, self);
             PTuple empty = factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
-            if (hasSourceProfile.profile(self.getSource() != PNone.NONE)) {
-                if (hasActiveProfile.profile(self.getActive() != PNone.NONE)) {
+            if (hasSourceProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
+                if (hasActiveProfile.profile(inliningTarget, self.getActive() != PNone.NONE)) {
                     PTuple tuple = factory().createTuple(new Object[]{self.getSource(), self.getActive()});
                     return factory().createTuple(new Object[]{type, empty, tuple});
                 } else {
@@ -177,10 +178,11 @@ public final class ChainBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setState(VirtualFrame frame, PChain self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached PyObjectLookupAttr getAttrNode,
-                        @Cached BranchProfile len2Profile) {
+                        @Cached InlinedBranchProfile len2Profile) {
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
@@ -192,7 +194,7 @@ public final class ChainBuiltins extends PythonBuiltins {
             checkIterator(frame, getAttrNode, source);
             self.setSource(source);
             if (len == 2) {
-                len2Profile.enter();
+                len2Profile.enter(inliningTarget);
                 Object active = getItemNode.execute(frame, state, 1);
                 checkIterator(frame, getAttrNode, active);
                 self.setActive(active);

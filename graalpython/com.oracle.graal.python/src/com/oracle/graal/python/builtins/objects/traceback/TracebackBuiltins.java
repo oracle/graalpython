@@ -56,6 +56,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -64,8 +65,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
 public final class TracebackBuiltins extends PythonBuiltins {
@@ -184,16 +185,17 @@ public final class TracebackBuiltins extends PythonBuiltins {
         // stack
         @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "!isMaterialized(tb.getFrameInfo())", "hasVisibleFrame(tb)"})
         PFrame doOnStack(VirtualFrame frame, PTraceback tb,
+                        @Bind("this") Node inliningTarget,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
-                        @Cached ConditionProfile isCurFrameProfile) {
+                        @Cached InlinedConditionProfile isCurFrameProfile) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
 
             PFrame escapedFrame;
 
             // case 2.1: the frame info refers to the current frame
-            if (isCurFrameProfile.profile(PArguments.getCurrentFrameInfo(frame) == frameInfo)) {
+            if (isCurFrameProfile.profile(inliningTarget, PArguments.getCurrentFrameInfo(frame) == frameInfo)) {
                 // materialize the current frame; marking is not necessary (already done);
                 // refreshing
                 // values is also not necessary (will be done on access to the locals or when
@@ -253,11 +255,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(next)")
         Object set(PTraceback self, PTraceback next,
-                        @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             // Check for loops
             PTraceback tb = next;
-            while (loopProfile.profile(tb != null)) {
+            while (loopProfile.profile(inliningTarget, tb != null)) {
                 if (tb == self) {
                     throw raise(ValueError, ErrorMessages.TRACEBACK_LOOP_DETECTED);
                 }

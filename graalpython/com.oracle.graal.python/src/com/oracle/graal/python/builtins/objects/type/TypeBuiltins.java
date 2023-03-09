@@ -192,6 +192,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -315,9 +316,10 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
         Object doit(Object klass,
+                        @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.GetMroNode getMroNode,
-                        @Cached ConditionProfile notInitialized) {
-            if (notInitialized.profile(klass instanceof PythonManagedClass && !((PythonManagedClass) klass).isMROInitialized())) {
+                        @Cached InlinedConditionProfile notInitialized) {
+            if (notInitialized.profile(inliningTarget, klass instanceof PythonManagedClass && !((PythonManagedClass) klass).isMROInitialized())) {
                 return PNone.NONE;
             }
             PythonAbstractClass[] mro = getMroNode.execute(klass);

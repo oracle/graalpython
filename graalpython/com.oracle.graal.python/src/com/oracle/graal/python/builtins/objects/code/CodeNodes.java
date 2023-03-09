@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.code;
 
 import java.util.Arrays;
 
+import com.oracle.truffle.api.dsl.Bind;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -74,6 +75,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -262,12 +264,13 @@ public abstract class CodeNodes {
 
         @Specialization(replaces = "doCached")
         protected static Signature doCode(PCode code,
-                        @Cached ConditionProfile signatureProfile,
-                        @Cached ConditionProfile ctProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile signatureProfile,
+                        @Cached InlinedConditionProfile ctProfile) {
             Signature signature = code.signature;
-            if (signatureProfile.profile(signature == null)) {
+            if (signatureProfile.profile(inliningTarget, signature == null)) {
                 RootCallTarget ct = code.callTarget;
-                if (ctProfile.profile(ct == null)) {
+                if (ctProfile.profile(inliningTarget, ct == null)) {
                     ct = code.initializeCallTarget();
                 }
                 signature = code.initializeSignature(ct);

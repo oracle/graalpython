@@ -100,8 +100,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCoroutine, PythonBuiltinClassType.PGenerator})
 public class CommonGeneratorBuiltins extends PythonBuiltins {
@@ -158,7 +158,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
         Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Bind("this") Node inliningTarget,
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
-                        @Cached BranchProfile returnProfile,
+                        @Cached InlinedBranchProfile returnProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
@@ -172,7 +172,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
-                returnProfile.enter();
+                returnProfile.enter(inliningTarget);
                 throw handleReturn(self, e, raiseNode);
             } finally {
                 self.setRunning(false);
@@ -184,9 +184,9 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
         @Megamorphic
         Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Bind("this") Node inliningTarget,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached InlinedConditionProfile hasFrameProfile,
                         @Cached GenericInvokeNode call,
-                        @Cached BranchProfile returnProfile,
+                        @Cached InlinedBranchProfile returnProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
@@ -196,7 +196,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             }
             GeneratorYieldResult result;
             try {
-                if (hasFrameProfile.profile(frame != null)) {
+                if (hasFrameProfile.profile(inliningTarget, frame != null)) {
                     result = (GeneratorYieldResult) call.execute(frame, self.getCurrentCallTarget(), arguments);
                 } else {
                     result = (GeneratorYieldResult) call.execute(self.getCurrentCallTarget(), arguments);
@@ -204,7 +204,7 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
-                returnProfile.enter();
+                returnProfile.enter(inliningTarget);
                 throw handleReturn(self, e, raiseNode);
             } finally {
                 self.setRunning(false);
@@ -285,15 +285,16 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
 
             @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
             PBaseException doException(VirtualFrame frame, Object type, PBaseException value,
+                            @Bind("this") Node inliningTarget,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
-                            @Cached BranchProfile isNotInstanceProfile,
+                            @Cached InlinedBranchProfile isNotInstanceProfile,
                             @Shared("callCtor") @Cached CallNode callConstructor) {
                 if (isInstanceNode.executeWith(frame, value, type)) {
                     checkExceptionClass(type);
                     return value;
                 } else {
-                    isNotInstanceProfile.enter();
+                    isNotInstanceProfile.enter(inliningTarget);
                     return doCreateObject(frame, type, value, isTypeNode, callConstructor);
                 }
             }
@@ -450,14 +451,15 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object close(VirtualFrame frame, PGenerator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsBuiltinClassProfile isGeneratorExit,
                         @Cached IsBuiltinClassProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
-                        @Cached ConditionProfile isStartedPorfile) {
+                        @Cached InlinedConditionProfile isStartedPorfile) {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
-            if (isStartedPorfile.profile(self.isStarted() && !self.isFinished())) {
+            if (isStartedPorfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 PBaseException pythonException = factory().createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there

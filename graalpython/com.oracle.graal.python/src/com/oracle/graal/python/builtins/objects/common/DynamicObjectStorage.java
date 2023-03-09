@@ -74,8 +74,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.object.ShapeImpl;
 
@@ -189,10 +189,11 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization
         static Object string(DynamicObjectStorage self, TruffleString key, @SuppressWarnings("unused") long keyHash,
+                        @Bind("this") Node inliningTarget,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
-                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
+                        @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {
             Object result = readKey.execute(self.store, key);
-            return noValueProfile.profile(result == PNone.NO_VALUE) ? null : result;
+            return noValueProfile.profile(inliningTarget, result == PNone.NO_VALUE) ? null : result;
         }
 
         @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
@@ -201,8 +202,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Cached CastToTruffleStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinObjectProfile profile,
-                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
-            return string(self, castStr.execute(key), -1, readKey, noValueProfile);
+                        @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {
+            return string(self, castStr.execute(key), -1, inliningTarget, readKey, noValueProfile);
         }
 
         @Specialization(guards = {"cachedShape == self.store.getShape()", "keyList.length < EXPLODE_LOOP_SIZE_LIMIT", "!isBuiltinString(inliningTarget, key, profile)"}, limit = "1")
@@ -215,14 +216,14 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("builtinStringProfile") @Cached IsBuiltinObjectProfile profile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState,
-                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
+                        @Shared("gotState") @Cached InlinedConditionProfile gotState,
+                        @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {
             long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;
             for (Object currentKey : keyList) {
                 if (currentKey instanceof TruffleString) {
                     long keyHash = hashNode.execute(frame, currentKey);
                     if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
-                        return string(self, (TruffleString) currentKey, -1, readKey, noValueProfile);
+                        return string(self, (TruffleString) currentKey, -1, inliningTarget, readKey, noValueProfile);
                     }
                 }
             }
@@ -236,8 +237,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("builtinStringProfile") @Cached IsBuiltinObjectProfile profile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState,
-                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
+                        @Shared("gotState") @Cached InlinedConditionProfile gotState,
+                        @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {
             long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;
             Iterator<Object> keys = getKeysIterator(self.store.getShape());
             while (hasNext(keys)) {
@@ -245,7 +246,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                 if (currentKey instanceof TruffleString) {
                     long keyHash = hashNode.execute(frame, currentKey);
                     if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
-                        return string(self, (TruffleString) currentKey, -1, readKey, noValueProfile);
+                        return string(self, (TruffleString) currentKey, -1, inliningTarget, readKey, noValueProfile);
                     }
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,8 +57,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.LoopNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
@@ -132,12 +132,12 @@ public class EconomicMapStorage extends HashingStorage {
         return new EconomicMapStorage(this.map, true);
     }
 
-    protected void setValueForAllKeys(VirtualFrame frame, Object value, PutNode putNode, ConditionProfile hasFrame, LoopConditionProfile loopProfile) {
+    protected void setValueForAllKeys(VirtualFrame frame, Node inliningTarget, Object value, PutNode putNode, InlinedLoopConditionProfile loopProfile) {
         MapCursor cursor = map.getEntries();
         final int size = map.size();
-        loopProfile.profileCounted(size);
+        loopProfile.profileCounted(inliningTarget, size);
         LoopNode.reportLoopCount(putNode, size);
-        while (loopProfile.inject(advance(cursor))) {
+        while (loopProfile.inject(inliningTarget, advance(cursor))) {
             putNode.put(frame, map, getDictKey(cursor), value);
         }
     }

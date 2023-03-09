@@ -74,7 +74,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -84,6 +84,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -93,8 +94,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -125,15 +126,15 @@ public abstract class IteratorNodes {
         int length(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("iterable") InteropLibrary iLib,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("create(Len)") LookupCallableSlotInMRONode lenNode,
                         @Cached("create(LengthHint)") LookupSpecialMethodSlotNode lenHintNode,
                         @Cached CallUnaryMethodNode dispatchLenOrLenHint,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached ConditionProfile hasLenProfile,
-                        @Cached ConditionProfile hasLengthHintProfile,
+                        @Cached InlinedConditionProfile hasLenProfile,
+                        @Cached InlinedConditionProfile hasLengthHintProfile,
                         @Cached PRaiseNode raiseNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -148,9 +149,9 @@ public abstract class IteratorNodes {
                     gil.acquire();
                 }
             }
-            Object clazz = getClassNode.execute(iterable);
+            Object clazz = getClassNode.execute(inliningTarget, iterable);
             Object attrLenObj = lenNode.execute(clazz);
-            if (hasLenProfile.profile(attrLenObj != PNone.NO_VALUE)) {
+            if (hasLenProfile.profile(inliningTarget, attrLenObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {
                     len = dispatchLenOrLenHint.executeObject(frame, attrLenObj, iterable);
@@ -170,7 +171,7 @@ public abstract class IteratorNodes {
                 }
             }
             Object attrLenHintObj = lenHintNode.execute(frame, clazz, iterable);
-            if (hasLengthHintProfile.profile(attrLenHintObj != PNone.NO_VALUE)) {
+            if (hasLengthHintProfile.profile(inliningTarget, attrLenHintObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {
                     len = dispatchLenOrLenHint.executeObject(frame, attrLenHintObj, iterable);
@@ -206,7 +207,7 @@ public abstract class IteratorNodes {
          * or if the iterator is not pointing to the first item in the storage.
          */
         public final SequenceStorage execute(PBuiltinIterator iterator) {
-            assert GetClassNode.getUncached().execute(iterator) == PIterator;
+            assert InlinedGetClassNode.executeUncached(iterator) == PIterator;
             assert iterator.index == 0 && !iterator.isExhausted();
             return executeInternal(iterator);
         }
@@ -256,7 +257,7 @@ public abstract class IteratorNodes {
          * available and rewrites itself to generic fallback that always returns {@code -1}.
          */
         public final int execute(PBuiltinIterator iterator) {
-            assert GetClassNode.getUncached().execute(iterator) == PIterator;
+            assert InlinedGetClassNode.executeUncached(iterator) == PIterator;
             return executeInternal(iterator);
         }
 
@@ -325,16 +326,17 @@ public abstract class IteratorNodes {
 
         @Specialization
         public static Object[] doIt(TruffleString iterable,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
+                        @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached @Shared TruffleStringIterator.NextNode nextNode,
+                        @Cached @Shared TruffleString.FromCodePointNode fromCodePointNode) {
             Object[] result = new Object[codePointLengthNode.execute(iterable, TS_ENCODING)];
-            loopProfile.profileCounted(result.length);
+            loopProfile.profileCounted(inliningTarget, result.length);
             TruffleStringIterator it = createCodePointIteratorNode.execute(iterable, TS_ENCODING);
             int i = 0;
-            while (loopProfile.inject(it.hasNext())) {
+            while (loopProfile.inject(inliningTarget, it.hasNext())) {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
                 result[i++] = fromCodePointNode.execute(nextNode.execute(it), TS_ENCODING, true);
             }
@@ -343,13 +345,14 @@ public abstract class IteratorNodes {
 
         @Specialization
         public static Object[] doIt(PString iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            return doIt(castToStringNode.execute(iterable), loopProfile, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
+                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
+                        @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached @Shared TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached @Shared TruffleStringIterator.NextNode nextNode,
+                        @Cached @Shared TruffleString.FromCodePointNode fromCodePointNode) {
+            return doIt(castToStringNode.execute(iterable), inliningTarget, loopProfile, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization

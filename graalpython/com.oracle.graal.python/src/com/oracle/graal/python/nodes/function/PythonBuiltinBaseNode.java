@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
@@ -83,6 +85,14 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
 
     public final Object getPythonClass(Object lazyClass, ConditionProfile profile) {
         if (profile.profile(lazyClass instanceof PythonBuiltinClassType)) {
+            return getCore().lookupType((PythonBuiltinClassType) lazyClass);
+        } else {
+            return lazyClass;
+        }
+    }
+
+    public final Object getPythonClass(Node inliningTarget, Object lazyClass, InlinedConditionProfile profile) {
+        if (profile.profile(inliningTarget, lazyClass instanceof PythonBuiltinClassType)) {
             return getCore().lookupType((PythonBuiltinClassType) lazyClass);
         } else {
             return lazyClass;

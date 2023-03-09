@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -71,7 +72,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class BufferStorageNodes {
@@ -116,10 +117,11 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == UINT_64")
         static Object unpackUnsignedLong(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset,
-                        @Cached ConditionProfile needsPIntProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile needsPIntProfile,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             long signedLong = PythonUtils.arrayAccessor.getLong(bytes, offset);
-            if (needsPIntProfile.profile(signedLong < 0)) {
+            if (needsPIntProfile.profile(inliningTarget, signedLong < 0)) {
                 return factory.createInt(PInt.longToUnsignedBigInteger(signedLong));
             } else {
                 return signedLong;

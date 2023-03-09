@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,16 +59,19 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PProduct})
 public final class ProductBuiltins extends PythonBuiltins {
@@ -93,10 +96,11 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
         Object next(PProduct self,
-                        @Cached LoopConditionProfile loopProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedLoopConditionProfile loopProfile) {
             Object[] lst = new Object[self.getGears().length];
-            loopProfile.profileCounted(lst.length);
-            for (int i = 0; loopProfile.inject(i < lst.length); i++) {
+            loopProfile.profileCounted(inliningTarget, lst.length);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < lst.length); i++) {
                 lst[i] = self.getGears()[i][0];
             }
             self.setLst(lst);
@@ -105,31 +109,32 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
         Object next(PProduct self,
-                        @Cached ConditionProfile gearsProfile,
-                        @Cached ConditionProfile indexProfile,
-                        @Cached BranchProfile wasStoppedProfile,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached BranchProfile doneProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile gearsProfile,
+                        @Cached InlinedConditionProfile indexProfile,
+                        @Cached InlinedBranchProfile wasStoppedProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached InlinedBranchProfile doneProfile) {
 
             Object[][] gears = self.getGears();
             int x = gears.length - 1;
-            if (gearsProfile.profile(x >= 0)) {
+            if (gearsProfile.profile(inliningTarget, x >= 0)) {
                 Object[] gear = gears[x];
                 int[] indices = self.getIndices();
                 int index = indices[x] + 1;
-                if (indexProfile.profile(index < gear.length)) {
+                if (indexProfile.profile(inliningTarget, index < gear.length)) {
                     // no carry: done
                     self.getLst()[x] = gear[index];
                     indices[x] = index;
                 } else {
-                    rotatePreviousGear(self, loopProfile, doneProfile);
+                    rotatePreviousGear(inliningTarget, self, loopProfile, doneProfile);
                 }
             } else {
                 self.setStopped(true);
             }
 
             if (self.isStopped()) {
-                wasStoppedProfile.enter();
+                wasStoppedProfile.enter(inliningTarget);
                 throw raiseStopIteration();
             }
 
@@ -145,7 +150,7 @@ public final class ProductBuiltins extends PythonBuiltins {
             throw raiseStopIteration();
         }
 
-        private static void rotatePreviousGear(PProduct self, LoopConditionProfile loopProfile, BranchProfile doneProfile) {
+        private static void rotatePreviousGear(Node inliningTarget, PProduct self, InlinedLoopConditionProfile loopProfile, InlinedBranchProfile doneProfile) {
             Object[] lst = self.getLst();
             Object[][] gears = self.getGears();
             int x = gears.length - 1;
@@ -153,13 +158,13 @@ public final class ProductBuiltins extends PythonBuiltins {
             int[] indices = self.getIndices();
             indices[x] = 0;
             x = x - 1;
-            // the outer loop runs as long as a we have a carry
-            while (loopProfile.profile(x >= 0)) {
+            // the outer loop runs as long as we have a carry
+            while (loopProfile.profile(inliningTarget, x >= 0)) {
                 Object[] gear = gears[x];
                 int index = indices[x] + 1;
                 if (index < gear.length) {
                     // no carry: done
-                    doneProfile.enter();
+                    doneProfile.enter(inliningTarget);
                     lst[x] = gear[index];
                     indices[x] = index;
                     return;
@@ -182,16 +187,18 @@ public final class ProductBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
         Object reduce(PProduct self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple gearTuples = createGearTuple(self);
             return factory().createTuple(new Object[]{type, gearTuples});
         }
 
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
         Object reduceLst(PProduct self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple gearTuples = createGearTuple(self);
             PTuple indicesTuple = factory().createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
             return factory().createTuple(new Object[]{type, gearTuples, indicesTuple});
@@ -207,8 +214,9 @@ public final class ProductBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isStopped()")
         Object reduceStopped(PProduct self,
-                        @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClassNode) {
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple empty = factory().createEmptyTuple();
             return factory().createTuple(new Object[]{type, factory().createTuple(new Object[]{empty})});
         }
@@ -223,25 +231,26 @@ public final class ProductBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PProduct self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode,
-                        @Cached LoopConditionProfile loopProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PyLongAsIntNode pyLongAsIntNode,
-                        @Cached BranchProfile stoppedProfile,
-                        @Cached ConditionProfile indexProfile) {
+                        @Cached InlinedBranchProfile stoppedProfile,
+                        @Cached InlinedConditionProfile indexProfile) {
             Object[][] gears = self.getGears();
             Object[] lst = new Object[gears.length];
             int[] indices = self.getIndices();
-            loopProfile.profileCounted(gears.length);
-            for (int i = 0; loopProfile.inject(i < gears.length); i++) {
+            loopProfile.profileCounted(inliningTarget, gears.length);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < gears.length); i++) {
                 Object o = getItemNode.execute(frame, state, i);
                 int index = pyLongAsIntNode.execute(frame, o);
                 int gearSize = gears[i].length;
                 if (indices == null || gearSize == 0) {
-                    stoppedProfile.enter();
+                    stoppedProfile.enter(inliningTarget);
                     self.setStopped(true);
                     return PNone.NONE;
                 }
-                if (indexProfile.profile(index < 0)) {
+                if (indexProfile.profile(inliningTarget, index < 0)) {
                     index = 0;
                 } else if (index > gearSize - 1) {
                     index = gearSize - 1;

@@ -59,18 +59,18 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PZipLongest})
 public final class ZipLongestBuiltins extends PythonBuiltins {
@@ -105,7 +105,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noItProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
-                        /* @Shared */ @Cached LoopConditionProfile loopProfile) {
+                        /* @Shared */ @Cached InlinedLoopConditionProfile loopProfile) {
             return next(frame, inliningTarget, self, PNone.NONE, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
         }
 
@@ -116,15 +116,15 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         /* @Shared */ @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noItProfile,
                         /* @Shared */ @Cached InlinedConditionProfile noActiveProfile,
-                        /* @Shared */ @Cached LoopConditionProfile loopProfile) {
+                        /* @Shared */ @Cached InlinedLoopConditionProfile loopProfile) {
             return next(frame, inliningTarget, self, self.getFillValue(), nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
         }
 
         private Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
-                        LoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile) {
+                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile) {
             Object[] result = new Object[self.getItTuple().length];
-            loopProfile.profileCounted(result.length);
-            for (int i = 0; loopProfile.inject(i < result.length); i++) {
+            loopProfile.profileCounted(inliningTarget, result.length);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
                 Object it = self.getItTuple()[i];
                 Object item;
                 if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
@@ -166,27 +166,29 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNullFillValue(self)")
         Object reduceNoFillValue(PZipLongest self,
-                        @Cached GetClassNode getClass,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached ConditionProfile noItProfile) {
-            return reduce(getClass, self, PNone.NONE, loopProfile, noItProfile);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClass,
+                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
+                        @Cached @Shared InlinedConditionProfile noItProfile) {
+            return reduce(inliningTarget, getClass, self, PNone.NONE, loopProfile, noItProfile);
         }
 
         @Specialization(guards = "!isNullFillValue(self)")
         Object reducePos(PZipLongest self,
-                        @Cached GetClassNode getClass,
-                        @Cached LoopConditionProfile loopProfile,
-                        @Cached ConditionProfile noItProfile) {
-            return reduce(getClass, self, self.getFillValue(), loopProfile, noItProfile);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Shared InlinedGetClassNode getClass,
+                        @Cached @Shared InlinedLoopConditionProfile loopProfile,
+                        @Cached @Shared InlinedConditionProfile noItProfile) {
+            return reduce(inliningTarget, getClass, self, self.getFillValue(), loopProfile, noItProfile);
         }
 
-        private Object reduce(GetClassNode getClass, PZipLongest self, Object fillValue, LoopConditionProfile loopProfile, ConditionProfile noItProfile) {
-            Object type = getClass.execute(self);
+        private Object reduce(Node inliningTarget, InlinedGetClassNode getClass, PZipLongest self, Object fillValue, InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile) {
+            Object type = getClass.execute(inliningTarget, self);
             Object[] its = new Object[self.getItTuple().length];
-            loopProfile.profileCounted(its.length);
-            for (int i = 0; loopProfile.profile(i < its.length); i++) {
+            loopProfile.profileCounted(inliningTarget, its.length);
+            for (int i = 0; loopProfile.profile(inliningTarget, i < its.length); i++) {
                 Object it = self.getItTuple()[i];
-                if (noItProfile.profile(it == PNone.NONE)) {
+                if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
                     its[i] = factory().createEmptyTuple();
                 } else {
                     its[i] = it;
