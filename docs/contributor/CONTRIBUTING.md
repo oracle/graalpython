@@ -235,9 +235,9 @@ another double-dash:
 Note that there may be a little confusion about the configuration names of
 benchmarks.
 
-##### GraalVM Community and GraalVM Enterprise configurations
+##### GraalVM Community Edition and Oracle GraalVM configurations
 
-We have benchmarks for GraalVM Community and Enterprise. For historical reasons,
+We have benchmarks for GraalVM Community Edition and Oracle GraalVM. For historical reasons,
 these are sometimes referred to in some config files as *CE* and *EE*; *core*
 and *enterprise*; *graalvm_ce* and *graalvm_ee*; or *graalpython_core* and
 *graalpython_enterprise*, respectively.
@@ -252,9 +252,7 @@ via the `--python-vm-config` parameter:
  * `native` - same as `default`, its name is due to the fact that it runs C
    extensions using a mixture of LLVM bitcode interpreted and compiled via
    GraalVM and real native libraries
- * `sandboxed` - this name is historical - this configuration requires a GraalVM
-   Enterprise and runs all C extensions purely as LLVM bitcode on the GraalVM,
-   without any access to the native OS libraries, i.e., using the
+ * `sandboxed` - this name is historical - this configuration requires Oracle  GraalVM and runs all C extensions purely as LLVM bitcode on the GraalVM, without any access to the native OS libraries, i.e., using the
    `--llvm.managed` option for GraalVM.
 
 ##### Configuration of the underlying GraalVM runtime

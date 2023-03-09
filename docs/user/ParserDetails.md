@@ -83,7 +83,7 @@ these language options:
 Note that a Python context will not enable writing `.pyc` files by default.
 The `graalpy` launcher enables it by default, but if this is desired in the embedding use case, care should be taken to ensure that the `__pycache__` location is properly managed and the files in that location are secured against manipulation just like the source `.py` files they were derived from.
 
-Note also that to upgrade the application sources to GraalVM Enteprise's Python runtime, old `.pyc`
+Note also that to upgrade the application sources to Oracle GraalVM Python runtime, old `.pyc`
 files must be removed by the embedder as required.
 
 ## Security Considerations
