@@ -270,13 +270,13 @@ index 4fb4d4b..a721a60 100644
              return -1;
          }
 -        *out_objs = PySequence_Fast_ITEMS(seq);
--        *out_kwd_obj = seq;
-+        *out_kwd_obj = PyTuple_Pack(1, *out_kwd_obj);
+         *out_kwd_obj = seq;
          return PySequence_Fast_GET_SIZE(seq);
      }
      else {
-         Py_INCREF(*out_kwd_obj);
+-        Py_INCREF(*out_kwd_obj);
 -        *out_objs = out_kwd_obj;
++        *out_kwd_obj = PyTuple_Pack(1, *out_kwd_obj);
          return 1;
      }
  }
