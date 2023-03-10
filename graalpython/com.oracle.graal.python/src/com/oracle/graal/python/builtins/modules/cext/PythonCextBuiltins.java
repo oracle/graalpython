@@ -649,7 +649,8 @@ public final class PythonCextBuiltins {
                 try {
                     SignatureContainerRootNode container = (SignatureContainerRootNode) context.signatureContainer.getRootNode();
                     // create NFI closure and get its address
-                    StringBuilder signature = new StringBuilder("with panama (");
+                    boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+                    StringBuilder signature = new StringBuilder(panama ? "with panama (" : "(");
                     for (int i = 0; i < args.length; i++) {
                         signature.append(i == 0 ? "" : ",");
                         signature.append(args[i].getNFISignature());
