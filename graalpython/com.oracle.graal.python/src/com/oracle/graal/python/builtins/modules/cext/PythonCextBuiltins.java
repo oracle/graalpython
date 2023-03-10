@@ -167,6 +167,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -1321,52 +1322,6 @@ public final class PythonCextBuiltins {
         }
     }
 
-    // moved to native code:
-    /*-
-    @CApiBuiltin(ret = Int, args = {Pointer, ArgDescriptor.Long}, call = Ignored)
-    public abstract static class PyTruffle_Object_Alloc extends CApiBinaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Alloc.class);
-
-        @Specialization
-        Object alloc(Object allocatedObject, long objectSize,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached(value = "getAllocationReporter(getContext())", allowUncached = true) AllocationReporter reporter) {
-            // memory management
-            PythonContext context = getContext();
-            CApiContext cApiContext = context.getCApiContext();
-            cApiContext.increaseMemoryPressure(objectSize, lib);
-
-            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
-            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
-            boolean reportAllocation = reporter.isActive();
-            if (isLoggable || traceNativeMemory || reportAllocation) {
-                if (isLoggable) {
-                    LOGGER.finer(() -> PythonUtils.formatJString("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
-                }
-                if (traceNativeMemory) {
-                    PFrame.Reference ref = null;
-                    if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
-                        ref = getCurrentFrameRef.execute(null);
-                        ref.markAsEscaped();
-                    }
-                    cApiContext.traceAlloc(CApiContext.asPointer(allocatedObject, lib), ref, null, objectSize);
-                }
-                if (reportAllocation) {
-                    reporter.onEnter(null, 0, objectSize);
-                    reporter.onReturnValue(allocatedObject, 0, objectSize);
-                }
-                return 0;
-            }
-            return -2;
-        }
-
-        static AllocationReporter getAllocationReporter(PythonContext context) {
-            return context.getEnv().lookup(AllocationReporter.class);
-        }
-    }
-    */
-
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
     @ImportStatic(CApiGuards.class)
     public abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
@@ -1532,10 +1487,12 @@ public final class PythonCextBuiltins {
             return PNone.NO_VALUE;
         }
 
+        @NonIdempotent
         static boolean traceMem(PythonContext context) {
             return context.getOption(PythonOptions.TraceNativeMemory);
         }
 
+        @NonIdempotent
         static boolean traceCalls(PythonContext context) {
             return context.getOption(PythonOptions.TraceNativeMemoryCalls);
         }
@@ -1633,81 +1590,6 @@ public final class PythonCextBuiltins {
             return PNone.NO_VALUE;
         }
     }
-
-    // moved to native code:
-    /**
-     * This will be called right before the call to stdlib's {@code free} function.
-     */
-    /*-
-    @CApiBuiltin(ret = Int, args = {Pointer, Py_ssize_t}, call = Ignored)
-    abstract static class _PyTruffle_Trace_Free extends CApiBinaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(_PyTruffle_Trace_Free.class);
-
-        @Specialization(limit = "2")
-        static int doNativeWrapperLong(Object ptr, long size,
-                        @CachedLibrary("ptr") InteropLibrary lib,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
-
-            PythonContext context = PythonContext.get(lib);
-            CApiContext cApiContext = context.getCApiContext();
-            cApiContext.reduceMemoryPressure(size);
-
-            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
-            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
-            if (!lib.isNull(ptr)) {
-                Object maybeLong = CApiContext.asPointer(ptr, lib);
-                if (maybeLong instanceof Long) {
-                    assert CApiTransitions.nativeLookupGet(context.nativeContext, (long) maybeLong) == null;
-                }
-                if (isLoggable || traceNativeMemory) {
-                    boolean traceNativeMemoryCalls = context.getOption(PythonOptions.TraceNativeMemoryCalls);
-                    if (traceNativeMemory) {
-                        PFrame.Reference ref = null;
-                        if (traceNativeMemoryCalls) {
-                            ref = getCurrentFrameRef.execute(null);
-                        }
-                        AllocInfo allocLocation = cApiContext.traceFree(maybeLong, ref, null);
-                        if (allocLocation != null) {
-                            LOGGER.finer(() -> PythonUtils.formatJString("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
-
-                            if (traceNativeMemoryCalls) {
-                                Reference left = allocLocation.allocationSite;
-                                PFrame pyFrame = null;
-                                while (pyFrame == null && left != null) {
-                                    pyFrame = left.getPyFrame();
-                                    left = left.getCallerInfo();
-                                }
-                                if (pyFrame != null) {
-                                    final PFrame f = pyFrame;
-                                    LOGGER.finer(() -> PythonUtils.formatJString("Free'd pointer was allocated at: %s", f.getTarget()));
-                                }
-                            }
-                        }
-                    } else {
-                        assert isLoggable;
-                        LOGGER.finer(() -> PythonUtils.formatJString("Freeing pointer: %s", CApiContext.asHex(ptr)));
-                    }
-                }
-            }
-            return 0;
-        }
-
-        @Specialization(limit = "2", replaces = "doNativeWrapperLong")
-        static int doNativeWrapper(Object ptr, Object sizeObject,
-                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
-                        @CachedLibrary("ptr") InteropLibrary lib,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
-            long size;
-            try {
-                size = castToJavaLongNode.execute(sizeObject);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
-            }
-            return doNativeWrapperLong(ptr, size, lib, getCurrentFrameRef);
-        }
-    }
-    */
 
     @CApiBuiltin(ret = Void, args = {}, call = Direct)
     abstract static class PyTruffle_DebugTrace extends CApiNullaryBuiltinNode {
