@@ -44,7 +44,6 @@ import static java.util.stream.Collectors.summingLong;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.ImageInfo;
