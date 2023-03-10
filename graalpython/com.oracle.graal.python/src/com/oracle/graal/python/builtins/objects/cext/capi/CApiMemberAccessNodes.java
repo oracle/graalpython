@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PCallCapiFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeTransferNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsFixedNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeBooleanNodeGen;
@@ -270,7 +270,7 @@ public class CApiMemberAccessNodes {
                 return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, false);
             case T_OBJECT:
             case T_OBJECT_EX:
-                return PythonToNativeTransferNodeGen.create();
+                return PythonToNativeNewRefNodeGen.create();
             case T_NONE:
             case T_STRING:
             case T_STRING_INPLACE:

@@ -63,9 +63,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeTransferNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -716,7 +716,7 @@ public class CApiTransitions {
      * </p>
      */
     @GenerateUncached
-    public abstract static class PythonToNativeTransferNode extends PythonToNativeNode {
+    public abstract static class PythonToNativeNewRefNode extends PythonToNativeNode {
 
         @Specialization
         static Object dummy(@SuppressWarnings("unused") Void dummy) {
@@ -726,7 +726,7 @@ public class CApiTransitions {
 
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
-            return PythonToNativeTransferNodeGen.getUncached().execute(obj);
+            return PythonToNativeNewRefNodeGen.getUncached().execute(obj);
         }
 
         @Override
@@ -865,7 +865,7 @@ public class CApiTransitions {
     }
 
     @GenerateUncached
-    public abstract static class NativeToPythonTransferNode extends NativeToPythonNode {
+    public abstract static class NativeToPythonStealingNode extends NativeToPythonNode {
 
         @Specialization
         static Object dummy(@SuppressWarnings("unused") Void dummy) {
@@ -875,7 +875,7 @@ public class CApiTransitions {
 
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
-            return NativeToPythonTransferNodeGen.getUncached().execute(obj);
+            return NativeToPythonStealingNodeGen.getUncached().execute(obj);
         }
 
         @Override
@@ -982,7 +982,7 @@ public class CApiTransitions {
         @SuppressWarnings("static-method")
         @ExportMessage
         public Object execute(Object[] args,
-                        @Cached PythonToNativeTransferNode toNative) {
+                        @Cached PythonToNativeNewRefNode toNative) {
             assert args.length == 1;
             return toNative.execute(args[0]);
         }

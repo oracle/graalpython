@@ -54,16 +54,16 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeTransferNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
-    PyObject("POINTER", "J", "jlong", "long", PythonToNativeNodeGen::create, NativeToPythonNodeGen::create, PythonToNativeTransferNodeGen::create, NativeToPythonTransferNodeGen::create, null),
+    PyObject("POINTER", "J", "jlong", "long", PythonToNativeNodeGen::create, NativeToPythonNodeGen::create, PythonToNativeNewRefNodeGen::create, NativeToPythonStealingNodeGen::create, null),
     PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNodeGen::create, null, null, null),
     PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::new, null, null, null),
     PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::new, null, null, null),
