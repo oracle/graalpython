@@ -103,7 +103,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolver;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
@@ -2569,7 +2569,7 @@ public abstract class CExtNodes {
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
-                        @Cached NativeToPythonTransferNode toJavaNode,
+                        @Cached NativeToPythonStealingNode toJavaNode,
                         @Cached PRaiseNode raiseNode) {
             // call to type the pointer
             Object moduleDef = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;

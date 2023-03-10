@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
@@ -1637,7 +1637,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static NativeSequenceStorage doObject(Object[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode,
-                        @Exclusive @Cached PythonToNativeTransferNode toSulongNode) {
+                        @Exclusive @Cached PythonToNativeNewRefNode toSulongNode) {
             Object[] wrappedValues = new Object[arr.length];
             for (int i = 0; i < wrappedValues.length; i++) {
                 wrappedValues[i] = toSulongNode.execute(arr[i]);

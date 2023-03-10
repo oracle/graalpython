@@ -110,7 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateT
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -1687,7 +1687,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @Cached PythonAbstractObject.PExecuteNode executeNode,
                     @Cached AllToJavaNode allToJavaNode,
                     @Cached NativeToPythonNode selfToJava,
-                    @Cached PythonToNativeTransferNode toNewRefNode,
+                    @Cached PythonToNativeNewRefNode toNewRefNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();

@@ -80,7 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransfer;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -929,7 +929,7 @@ public final class CApiContext extends CExtContext {
                     return InteropLibrary.getUncached().asPointer(result);
                 }
                 if (result != null) {
-                    result = PythonToNativeTransferNode.executeUncached(result);
+                    result = PythonToNativeNewRefNode.executeUncached(result);
                     long l;
                     if (result instanceof Long) {
                         l = (long) result;

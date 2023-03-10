@@ -98,7 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
@@ -1514,7 +1514,7 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsPythonObjectNode handleAsPythonObjectNode,
-                        @Cached PythonToNativeTransferNode toPyObjectPointerNode) throws ArityException {
+                        @Cached PythonToNativeNewRefNode toPyObjectPointerNode) throws ArityException {
             checkArity(arguments, 2);
             Object object = handleAsPythonObjectNode.execute(arguments[1]);
             return toPyObjectPointerNode.execute(object);
