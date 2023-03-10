@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-public abstract class ConversionNodeSupplier {
+public interface ConversionNodeSupplier {
 
-    public abstract CExtToNativeNode createToNativeNode();
+    CExtToNativeNode createToNativeNode();
 
-    public abstract CExtToNativeNode getUncachedToNativeNode();
+    CExtToNativeNode getUncachedToNativeNode();
 
-    public abstract CExtToJavaNode createToJavaNode();
+    CExtToJavaNode createToJavaNode();
 
-    public abstract CExtToJavaNode getUncachedToJavaNode();
+    CExtToJavaNode getUncachedToJavaNode();
 
 }

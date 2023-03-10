@@ -219,14 +219,14 @@ public final class CApiContext extends CExtContext {
      * Private dummy constructor just for {@link #LAZY_CONTEXT}.
      */
     private CApiContext() {
-        super(null, null, null);
+        super(null, null);
         primitiveNativeWrapperCache = null;
         promotedTruffleStringCache = null;
         llvmTypeCache = null;
     }
 
     public CApiContext(PythonContext context, Object llvmLibrary) {
-        super(context, llvmLibrary, CAPIConversionNodeSupplier.INSTANCE);
+        super(context, llvmLibrary);
 
         // initialize primitive and pointer type cache
         llvmTypeCache = new Object[LLVMType.values().length];
