@@ -1100,7 +1100,8 @@ public final class CApiContext extends CExtContext {
 
     public long registerClosure(String nfiSignature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
-        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", "with panama " + nfiSignature, "exec").build()).call();
+        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
         Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
         long pointer = PythonNativeWrapper.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);

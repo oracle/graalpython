@@ -359,7 +359,7 @@ public abstract class ExternalFunctionNodes {
             this.returnValue = returnValue;
             this.arguments = arguments;
 
-            StringBuilder s = new StringBuilder("with panama (");
+            StringBuilder s = new StringBuilder("(");
             for (int i = 0; i < arguments.length; i++) {
                 s.append(i == 0 ? "" : ",");
                 s.append(arguments[i].getNFISignature());
@@ -755,7 +755,8 @@ public abstract class ExternalFunctionNodes {
                 if (!lib.isExecutable(callable)) {
                     if (signature == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        signature = getContext().getEnv().parseInternal(Source.newBuilder("nfi", provider.signature, "exec").build()).call();
+                        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+                        signature = getContext().getEnv().parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + provider.signature, "exec").build()).call();
                     }
                     if (signatureLib == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
