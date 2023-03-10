@@ -655,6 +655,7 @@ public final class PythonCextBuiltins {
                         signature.append(args[i].getNFISignature());
                     }
                     signature.append("):").append(ret.getNFISignature());
+
                     Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", signature.toString(), "exec").build()).call();
                     Object closure = container.getLibrary(name).createClosure(nfiSignature, this);
                     InteropLibrary.getUncached().toNative(closure);
@@ -663,7 +664,7 @@ public final class PythonCextBuiltins {
                     } catch (UnsupportedMessageException e) {
                         throw CompilerDirectives.shouldNotReachHere(e);
                     }
-                    context.setClosurePointer(this, closure, pointer);
+                    context.setClosurePointer(closure, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
                     t.printStackTrace(new PrintStream(PythonContext.get(null).getEnv().err()));
