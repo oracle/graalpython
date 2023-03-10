@@ -104,14 +104,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNative
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -1687,8 +1686,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     protected Object execute(Object[] arguments,
                     @Cached PythonAbstractObject.PExecuteNode executeNode,
                     @Cached AllToJavaNode allToJavaNode,
-                    @Cached ToJavaNode selfToJava,
-                    @Cached ToNewRefNode toNewRefNode,
+                    @Cached NativeToPythonNode selfToJava,
+                    @Cached PythonToNativeTransferNode toNewRefNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();

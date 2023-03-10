@@ -164,7 +164,7 @@ public final class CApiTiming {
     }
 
     private static String stars(long percent, long time) {
-        if (percent == 0) {
+        if (percent <= 0 || percent > 100) {
             return "";
         }
         String STARS = "****************************************************************************************************";

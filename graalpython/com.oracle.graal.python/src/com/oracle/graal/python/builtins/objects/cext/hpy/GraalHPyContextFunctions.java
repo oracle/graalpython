@@ -94,11 +94,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDo
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
@@ -1473,7 +1473,7 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsPythonObjectNode handleAsPythonObjectNode,
-                        @Cached ToNewRefNode toPyObjectPointerNode) throws ArityException {
+                        @Cached PythonToNativeTransferNode toPyObjectPointerNode) throws ArityException {
             checkArity(arguments, 2);
             Object object = handleAsPythonObjectNode.execute(arguments[1]);
             return toPyObjectPointerNode.execute(object);
@@ -1872,7 +1872,7 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             // IMPORTANT: this is not stealing the reference. The CPython implementation

@@ -73,15 +73,15 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CharPtrToJavaObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -156,42 +157,10 @@ public final class PythonCextTypeBuiltins {
     @ImportStatic(PythonOptions.class)
     abstract static class PyType_IsSubtype extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"isSingleContext()", "a == cachedA", "b == cachedB"})
-        static int doCached(@SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
-                        @Cached(value = "a", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedA,
-                        @Cached(value = "b", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedB,
-                        @Cached("doSlow(a, b)") int result) {
-            return result;
-        }
-
-        protected static Class<?> getClazz(Object v) {
-            return v.getClass();
-        }
-
-        @Specialization(replaces = "doCached", guards = {"cachedClassA == getClazz(a)", "cachedClassB == getClazz(b)"}, limit = "getVariableArgumentInlineCacheLimit()")
-        static int doCachedClass(Object a, Object b,
-                        @Cached("getClazz(a)") Class<?> cachedClassA,
-                        @Cached("getClazz(b)") Class<?> cachedClassB,
-                        @Cached CExtNodes.ToJavaNode leftToJavaNode,
-                        @Cached CExtNodes.ToJavaNode rightToJavaNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            Object ua = leftToJavaNode.execute(cachedClassA.cast(a));
-            Object ub = rightToJavaNode.execute(cachedClassB.cast(b));
-            return isSubtypeNode.execute(ua, ub) ? 1 : 0;
-        }
-
-        @Specialization(replaces = {"doCached", "doCachedClass"})
+        @Specialization
         static int doGeneric(Object a, Object b,
-                        @Cached CExtNodes.ToJavaNode leftToJavaNode,
-                        @Cached CExtNodes.ToJavaNode rightToJavaNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
-            Object ua = leftToJavaNode.execute(a);
-            Object ub = rightToJavaNode.execute(b);
-            return isSubtypeNode.execute(ua, ub) ? 1 : 0;
-        }
-
-        static int doSlow(Object derived, Object cls) {
-            return doGeneric(derived, cls, ToJavaNodeGen.getUncached(), ToJavaNodeGen.getUncached(), IsSubtypeNodeGen.getUncached());
+            return PInt.intValue(isSubtypeNode.execute(a, b));
         }
     }
 

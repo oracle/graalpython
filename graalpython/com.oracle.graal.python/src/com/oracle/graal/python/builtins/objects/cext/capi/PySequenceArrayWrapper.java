@@ -49,8 +49,8 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSub
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -364,7 +364,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization
         void doList(PList s, long idx, Object value,
-                        @Shared("toJavaNode") @Cached ToJavaStealingNode toJavaNode,
+                        @Shared("toJavaNode") @Cached NativeToPythonTransferNode toJavaNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode,
                         @Cached ConditionProfile updateStorageProfile) {
             SequenceStorage storage = s.getSequenceStorage();
@@ -376,14 +376,14 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization
         void doTuple(PTuple s, long idx, Object value,
-                        @Shared("toJavaNode") @Cached ToJavaStealingNode toJavaNode,
+                        @Shared("toJavaNode") @Cached NativeToPythonTransferNode toJavaNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode) {
             setListItemNode.execute(null, NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, toJavaNode.execute(value));
         }
 
         @Specialization
         void doGeneric(PythonAbstractObject sequence, Object idx, Object value,
-                        @Shared("toJavaNode") @Cached ToJavaStealingNode toJavaNode,
+                        @Shared("toJavaNode") @Cached NativeToPythonTransferNode toJavaNode,
                         @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException {
             setItemNode.execute(sequence, idx, toJavaNode.execute(value));
         }

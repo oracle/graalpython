@@ -58,10 +58,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
@@ -685,7 +685,7 @@ public abstract class SequenceStorageNodes {
         protected static Object doNativeObject(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
                         @Shared("getElementType") @Cached @SuppressWarnings("unused") GetElementType getElementType,
-                        @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx));
@@ -800,7 +800,7 @@ public abstract class SequenceStorageNodes {
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached CExtNodes.ToJavaNode toJavaNode) {
+                        @Cached NativeToPythonNode toJavaNode) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = toJavaNode.execute(readNativeElement(lib, storage.getPtr(), i, raise));
@@ -1286,7 +1286,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isObjectStorage(storage)")
         protected static void doNativeObject(NativeSequenceStorage storage, int idx, Object value,
                         @Cached PCallCapiFunction call,
-                        @Cached ToNewRefNode toSulongNode) {
+                        @Cached PythonToNativeTransferNode toSulongNode) {
             call.call(FUN_PY_TRUFFLE_SET_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
         }
 
@@ -1637,7 +1637,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static NativeSequenceStorage doObject(Object[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode,
-                        @Exclusive @Cached ToNewRefNode toSulongNode) {
+                        @Exclusive @Cached PythonToNativeTransferNode toSulongNode) {
             Object[] wrappedValues = new Object[arr.length];
             for (int i = 0; i < wrappedValues.length; i++) {
                 wrappedValues[i] = toSulongNode.execute(arr[i]);

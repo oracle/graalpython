@@ -78,11 +78,10 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -161,7 +160,7 @@ public class PythonCextObjectBuiltins {
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
-                        @Cached CExtNodes.ToJavaNode toJavaNode) {
+                        @Cached NativeToPythonNode toJavaNode) {
             return callFunction(callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
 
@@ -169,7 +168,7 @@ public class PythonCextObjectBuiltins {
                         GetNextVaArgNode getVaArgs,
                         InteropLibrary argLib,
                         CallNode callNode,
-                        CExtNodes.ToJavaNode toJavaNode) {
+                        NativeToPythonNode toJavaNode) {
             /*
              * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains just
              * 'PyObject *' and is terminated by 'NULL'.
@@ -207,7 +206,7 @@ public class PythonCextObjectBuiltins {
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached GetAnyAttributeNode getAnyAttributeNode,
-                        @Cached CExtNodes.ToJavaNode toJavaNode) {
+                        @Cached NativeToPythonNode toJavaNode) {
 
             Object method = getAnyAttributeNode.executeObject(null, receiver, methodName);
             return PyTruffleObject_CallFunctionObjArgs.callFunction(method, vaList, getVaArgs, argLib, callNode, toJavaNode);
@@ -238,7 +237,7 @@ public class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(Object callable, Object argsArray, int nargs, Object kwargsObj, Object kwvalues,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
@@ -567,7 +566,7 @@ public class PythonCextObjectBuiltins {
             } else {
                 refCnt = GetRefCntNodeGen.getUncached().execute(cApiContext, ptrObject);
             }
-            pythonObject = CApiTransitions.nativeToPython(ptrObject, false);
+            pythonObject = NativeToPythonNode.executeUncached(ptrObject);
 
             // first, write fields which are the least likely to crash
             stderr.println("ptrObject address  : " + ptrObject);
