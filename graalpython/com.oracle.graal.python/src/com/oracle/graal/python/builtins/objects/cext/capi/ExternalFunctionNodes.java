@@ -1973,9 +1973,10 @@ public abstract class ExternalFunctionNodes {
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization
-        static Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                        @Cached DefaultCheckFunctionResultNode recursive) {
-            return recursive.execute(context, name, result.getDelegate());
+        Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(this, name, false, true, context, errOccurredProfile);
+            return result;
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
