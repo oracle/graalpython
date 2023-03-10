@@ -117,6 +117,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_FLOAT_AS_DOUBLE("truffle_read_ob_fval"),
     FUN_GET_OB_TYPE("get_ob_type"),
     FUN_GET_OB_REFCNT("get_ob_refcnt"),
+    FUN_GET_OB_SIZE("get_ob_size"),
     FUN_GET_TP_DICT("get_tp_dict"),
     FUN_GET_TP_BASE("get_tp_base"),
     FUN_GET_TP_BASES("get_tp_bases"),
