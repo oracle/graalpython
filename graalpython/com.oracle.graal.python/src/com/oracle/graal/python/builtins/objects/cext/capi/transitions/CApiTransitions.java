@@ -761,6 +761,8 @@ public class CApiTransitions {
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached ConditionProfile isNullProfile,
                         @Cached ConditionProfile isZeroProfile,
+                        @Cached ConditionProfile createNativeProfile,
+                        @Cached ConditionProfile isNativeWrapperProfile,
                         @Cached ConditionProfile isHandleSpaceProfile,
                         @Cached ConditionProfile isPrimitiveProfile) {
             assert !(value instanceof TruffleString);
@@ -803,11 +805,11 @@ public class CApiTransitions {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
                 if (lookup != null) {
                     Object ref = lookup.get();
-                    if (ref == null) {
+                    if (createNativeProfile.profile(ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         return createAbstractNativeObject(value, needsTransfer(), pointer);
                     }
-                    if (ref instanceof PythonNativeWrapper) {
+                    if (isNativeWrapperProfile.profile(ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;

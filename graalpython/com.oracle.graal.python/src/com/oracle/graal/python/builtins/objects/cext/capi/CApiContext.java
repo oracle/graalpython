@@ -198,8 +198,15 @@ public final class CApiContext extends CExtContext {
      */
     private final AtomicLong nextTssKey = new AtomicLong();
 
-    private final HashMap<Object, Long> callableClosurePointers = new HashMap<>();
-    private final HashSet<Object> callableClosures = new HashSet<>();
+    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
+    }
+
+    /*
+     * The key is the executable instance, i.e., an instance of a class that exports the
+     * InteropLibrary.
+     */
+    private final HashMap<Object, ClosureInfo> callableClosureByExecutable = new HashMap<>();
+    private final HashMap<Long, ClosureInfo> callableClosures = new HashMap<>();
     private Object nativeLibrary;
     private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
@@ -1071,19 +1078,33 @@ public final class CApiContext extends CExtContext {
         return -1;
     }
 
-    @TruffleBoundary
-    public long getClosurePointer(Object callable) {
-        return callableClosurePointers.getOrDefault(callable, -1L);
-    }
-
-    public void setClosurePointer(Object callable, Object closure, long pointer) {
+    public long getClosurePointer(Object executable) {
         CompilerAsserts.neverPartOfCompilation();
-        callableClosurePointers.put(callable, pointer);
-        callableClosures.add(closure);
+        ClosureInfo info = callableClosureByExecutable.get(executable);
+        return info == null ? -1 : info.pointer;
     }
 
-    public void retainClosure(Object closure) {
-        callableClosures.add(closure);
+    public Object getClosureDelegate(long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        ClosureInfo info = callableClosures.get(pointer);
+        return info == null ? null : info.delegate;
+    }
+
+    public void setClosurePointer(Object closure, Object delegate, Object executable, long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        var info = new ClosureInfo(closure, delegate, executable, pointer);
+        callableClosureByExecutable.put(executable, info);
+        callableClosures.put(pointer, info);
+        LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
+    }
+
+    public long registerClosure(String nfiSignature, Object executable, Object delegate) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", "with panama " + nfiSignature, "exec").build()).call();
+        Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
+        long pointer = PythonNativeWrapper.coerceToLong(closure, InteropLibrary.getUncached());
+        setClosurePointer(closure, delegate, executable, pointer);
+        return pointer;
     }
 
     private record ProcCacheItem(ArgDescriptor signature, Object callable) {

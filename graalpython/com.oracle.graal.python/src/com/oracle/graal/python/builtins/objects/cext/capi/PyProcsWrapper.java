@@ -66,6 +66,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -76,19 +77,19 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyProcsWrapper.class);
+
     protected final CApiTiming timing;
 
     public PyProcsWrapper(Object delegate) {
         super(delegate);
-        this.timing = CApiTiming.create(true, delegate);
+        this.timing = CApiTiming.create(false, delegate);
     }
 
     @ExportMessage
@@ -133,10 +134,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     @TruffleBoundary
     protected void toNative() {
         if (!isPointer()) {
-            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", "with panama " + getSignature(), "exec").build()).call();
-            Object result = SignatureLibrary.getUncached().createClosure(signature, this);
-            PythonContext.get(null).getCApiContext().retainClosure(result);
-            setNativePointer(coerceToLong(result, InteropLibrary.getUncached()));
+            setNativePointer(PythonContext.get(null).getCApiContext().registerClosure(getSignature(), this, getDelegate()));
         }
     }
 

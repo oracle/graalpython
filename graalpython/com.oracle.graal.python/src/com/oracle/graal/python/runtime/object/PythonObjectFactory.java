@@ -618,18 +618,9 @@ public abstract class PythonObjectFactory extends Node {
                         codeStableAssumption, defaultsStableAssumption));
     }
 
-    public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, int numDefaults, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, 0, callTarget));
-    }
-
     public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type,
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
-    }
-
-    public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type, defaults, kw, 0, callTarget));
     }
 
     public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {

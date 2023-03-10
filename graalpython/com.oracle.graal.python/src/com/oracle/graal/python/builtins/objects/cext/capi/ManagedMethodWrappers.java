@@ -60,12 +60,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wrappers for methods used by native code.
@@ -96,18 +93,12 @@ public abstract class ManagedMethodWrappers {
         @ExportMessage
         @TruffleBoundary
         public void toNative() {
-            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", getSignature(), "exec").build()).call();
-            Object result = SignatureLibrary.getUncached().createClosure(signature, this);
-            try {
-                setNativePointer(InteropLibrary.getUncached(result).asPointer(result));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+            if (!isPointer()) {
+                setNativePointer(PythonContext.get(null).getCApiContext().registerClosure(getSignature(), this, getDelegate()));
             }
-            // the closure needs to stay alive indefinitely
-            PythonContext.get(null).getCApiContext().retainClosure(result);
         }
 
-        protected abstract CharSequence getSignature();
+        protected abstract String getSignature();
 
         @ExportMessage
         @SuppressWarnings("static-method")
@@ -174,7 +165,7 @@ public abstract class ManagedMethodWrappers {
         }
 
         @Override
-        protected CharSequence getSignature() {
+        protected String getSignature() {
             return "(POINTER,POINTER,POINTER):POINTER";
         }
     }
@@ -221,7 +212,7 @@ public abstract class ManagedMethodWrappers {
         }
 
         @Override
-        protected CharSequence getSignature() {
+        protected String getSignature() {
             return "(POINTER):POINTER";
         }
 
