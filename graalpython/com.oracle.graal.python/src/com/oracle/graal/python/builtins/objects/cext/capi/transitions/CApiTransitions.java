@@ -762,6 +762,7 @@ public class CApiTransitions {
                         @Cached ConditionProfile isNullProfile,
                         @Cached ConditionProfile isZeroProfile,
                         @Cached ConditionProfile createNativeProfile,
+                        @Cached ConditionProfile isNativeProfile,
                         @Cached ConditionProfile isNativeWrapperProfile,
                         @Cached ConditionProfile isHandleSpaceProfile,
                         @Cached ConditionProfile isPrimitiveProfile) {
@@ -803,7 +804,7 @@ public class CApiTransitions {
                 }
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
-                if (lookup != null) {
+                if (isNativeProfile.profile(lookup != null)) {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));

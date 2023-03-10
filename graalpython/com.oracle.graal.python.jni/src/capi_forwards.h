@@ -3998,10 +3998,6 @@ PyAPI_FUNC(PyObject*) PyType_GenericNew(PyTypeObject* a, PyObject* b, PyObject* 
     PyObject* result = (PyObject*) __target__PyType_GenericNew(a, b, c);
     return result;
 }
-PyAPI_FUNC(unsigned long) PyType_GetFlags(PyTypeObject* a) {
-    unsigned long result = (unsigned long) GraalPyType_GetFlags(a);
-    return result;
-}
 PyObject* (*__target__PyType_GetModule)(PyTypeObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyType_GetModule(PyTypeObject* a) {
     PyObject* result = (PyObject*) __target__PyType_GetModule(a);
