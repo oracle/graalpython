@@ -60,8 +60,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
@@ -281,7 +283,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached WriteNextVaArgNode writeOutVarNode,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Cached ToSulongNode toNativeNode,
                         @Cached PRaiseNativeNode raiseNode,
                         @Cached ConvertParArgNode convertParArgNode,
                         @Cached ConvertExtendedArgNode convertExtendedArgNode,
@@ -547,22 +549,6 @@ public abstract class CExtParseArgumentsNode {
         private static int codePoint(TruffleString format, int formatIdx, TruffleString.CodePointAtIndexNode codepointAtIndexNode) {
             return codepointAtIndexNode.execute(format, formatIdx, TS_ENCODING);
         }
-
-        public CExtToNativeNode createTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().createToNativeNode();
-        }
-
-        public CExtToNativeNode getUncachedTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().getUncachedToNativeNode();
-        }
-
-        public CExtToJavaNode createTJ() {
-            return PythonContext.get(this).getCApiContext().getSupplier().createToJavaNode();
-        }
-
-        public CExtToJavaNode getUncachedTJ() {
-            return PythonContext.get(this).getCApiContext().getSupplier().getUncachedToJavaNode();
-        }
     }
 
     private static boolean skipOptionalArg(Object arg, boolean optional) {
@@ -635,7 +621,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached PCallCExtFunction callGetBufferRwNode,
                         @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
-                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode argToSulongNode,
+                        @Cached ToSulongNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
             if (la == '*') {
                 /* formatIdx++; */
@@ -659,7 +645,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached AsCharPointerNode asCharPointerNode,
                         @Cached StringLenNode stringLenNode,
                         @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
-                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Cached ToSulongNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la == '*') {
                 /* formatIdx++; */
@@ -699,8 +685,8 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Cached(value = "createTJ()", uncached = "getUncachedTJ()") CExtToJavaNode typeToJavaNode,
-                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Cached NativeToPythonNode typeToJavaNode,
+                        @Cached ToSulongNode toNativeNode,
                         @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la == '!') {
@@ -727,7 +713,7 @@ public abstract class CExtParseArgumentsNode {
         void doBufferRW(@SuppressWarnings("unused") int c, int la, Object arg, Object varargs,
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached PCallCExtFunction callGetBufferRwNode,
-                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Cached ToSulongNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la != '*') {
                 throw raise(raiseNode, TypeError, ErrorMessages.INVALID_USE_OF_W_FORMAT_CHAR);
@@ -786,22 +772,6 @@ public abstract class CExtParseArgumentsNode {
             CompilerDirectives.transferToInterpreter();
             raiseNode.executeInt(null, 0, errType, format, arguments);
             throw ParseArgumentsException.raise();
-        }
-
-        public CExtToNativeNode createTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().createToNativeNode();
-        }
-
-        public CExtToNativeNode getUncachedTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().getUncachedToNativeNode();
-        }
-
-        public CExtToJavaNode createTJ() {
-            return PythonContext.get(this).getCApiContext().getSupplier().createToJavaNode();
-        }
-
-        public CExtToJavaNode getUncachedTJ() {
-            return PythonContext.get(this).getCApiContext().getSupplier().getUncachedToJavaNode();
         }
     }
 
@@ -877,7 +847,7 @@ public abstract class CExtParseArgumentsNode {
         void doEncodedString(@SuppressWarnings("unused") int c, int la1, int la2, Object arg, Object varargs,
                         @Cached AsCharPointerNode asCharPointerNode,
                         @Cached GetNextVaArgNode getVaArgNode,
-                        @Cached(value = "createTJ()", uncached = "getUncachedTJ()") CExtToJavaNode argToJavaNode,
+                        @Cached NativeToPythonNode argToJavaNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached WriteNextVaArgNode writeOutVarNode,
                         @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
@@ -903,14 +873,6 @@ public abstract class CExtParseArgumentsNode {
             CompilerDirectives.transferToInterpreter();
             raiseNode.executeInt(null, 0, errType, format, arguments);
             throw ParseArgumentsException.raise();
-        }
-
-        public CExtToJavaNode createTJ() {
-            return PythonContext.get(this).getCApiContext().getSupplier().createToJavaNode();
-        }
-
-        public CExtToJavaNode getUncachedTJ() {
-            return PythonContext.get(this).getCApiContext().getSupplier().getUncachedToJavaNode();
         }
     }
 
@@ -1003,7 +965,7 @@ public abstract class CExtParseArgumentsNode {
                         @CachedLibrary("signature") SignatureLibrary signatureLib,
                         @CachedLibrary(limit = "1") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Cached ToSulongNode toNativeNode,
                         @Exclusive @Cached PRaiseNativeNode raiseNode,
                         @Exclusive @Cached ConverterCheckResultNode checkResultNode) {
             Object boundConverter = signatureLib.bind(signature, converter);
@@ -1014,7 +976,7 @@ public abstract class CExtParseArgumentsNode {
         static void doExecuteConverterGeneric(Object converter, Object inputArgument, Object outputArgument,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Cached ToSulongNode toNativeNode,
                         @Exclusive @Cached PRaiseNativeNode raiseNode,
                         @Exclusive @Cached ConverterCheckResultNode checkResultNode) {
             try {
@@ -1041,14 +1003,6 @@ public abstract class CExtParseArgumentsNode {
 
         static Object parseSignature() {
             return PythonContext.get(null).getEnv().parseInternal(NFI_SIGNATURE).call();
-        }
-
-        static CExtToNativeNode createTN() {
-            return PythonContext.get(null).getCApiContext().getSupplier().createToNativeNode();
-        }
-
-        static CExtToNativeNode getUncachedTN() {
-            return PythonContext.get(null).getCApiContext().getSupplier().getUncachedToNativeNode();
         }
     }
 
