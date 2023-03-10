@@ -57,8 +57,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -134,7 +134,7 @@ public final class PythonCextCEvalBuiltins {
                         Object argumentArrayPtr, Object kwsPtr, Object defaultValueArrayPtr,
                         Object kwdefaultsWrapper, Object closureObj,
                         @CachedLibrary(limit = "2") InteropLibrary ptrLib,
-                        @Cached CExtNodes.ToJavaNode elementToJavaNode,
+                        @Cached NativeToPythonNode elementToJavaNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -180,7 +180,7 @@ public final class PythonCextCEvalBuiltins {
             return invokeNode.execute(rootCallTarget, pArguments);
         }
 
-        private static Object[] unwrapArray(Object ptr, InteropLibrary ptrLib, CExtNodes.ToJavaNode elementToJavaNode) {
+        private static Object[] unwrapArray(Object ptr, InteropLibrary ptrLib, NativeToPythonNode elementToJavaNode) {
             if (ptrLib.hasArrayElements(ptr)) {
                 try {
                     int size = PInt.intValueExact(ptrLib.getArraySize(ptr));

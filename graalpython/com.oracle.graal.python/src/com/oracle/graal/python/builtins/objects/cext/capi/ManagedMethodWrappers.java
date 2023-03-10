@@ -43,8 +43,9 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -135,8 +136,8 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Exclusive @Cached NativeToPythonNode toJavaNode,
+                        @Exclusive @Cached PythonToNativeTransferNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
@@ -193,8 +194,8 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Exclusive @Cached NativeToPythonNode toJavaNode,
+                        @Exclusive @Cached PythonToNativeTransferNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Exclusive @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {

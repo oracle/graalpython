@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins.CFunctionNewExMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -173,11 +172,10 @@ public final class PythonCextModuleBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isModuleSubtype(m, getClassNode, isSubtypeNode)")
-        public static Object pop(Object m, Object key, Object defaultValue,
+        public Object pop(Object m, Object key, Object defaultValue,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(null, -1, TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            throw raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
         }
 
         protected boolean isModuleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {

@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
@@ -65,11 +65,11 @@ public class CAPIConversionNodeSupplier extends ConversionNodeSupplier {
 
     @Override
     public CExtToJavaNode createToJavaNode() {
-        return ToJavaNodeGen.create();
+        return NativeToPythonNodeGen.create();
     }
 
     @Override
     public CExtToJavaNode getUncachedToJavaNode() {
-        return ToJavaNodeGen.getUncached();
+        return NativeToPythonNodeGen.getUncached();
     }
 }

@@ -54,11 +54,11 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeOtherNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -328,7 +328,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                     @Exclusive @Cached GilNode gil,
                     @Cached AllToJavaNode allToJavaNode,
                     @Cached CallVarargsMethodNode callNode,
-                    @Exclusive @Cached ToNewRefNode toSulongNode,
+                    @Exclusive @Cached PythonToNativeTransferNode toSulongNode,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached CExtNodes.PRaiseNativeNode raiseNode,
                     @Cached ConditionProfile profile,
@@ -356,7 +356,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     void writeMember(String member, Object value,
-                    @Exclusive @Cached ToJavaNode toJavaNode,
+                    @Exclusive @Cached NativeToPythonNode toJavaNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
@@ -452,11 +452,11 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
             this.signature = signature;
         }
 
-        protected abstract Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode);
+        protected abstract Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, PythonToNativeTransferNode toSulongNode);
 
         @ExportMessage
         protected Object execute(Object[] args,
-                        @Cached ToNewRefNode toSulongNode,
+                        @Cached PythonToNativeTransferNode toSulongNode,
                         @Cached AllToJavaNode allToJavaNode,
                         @Cached CallVarargsMethodNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -484,7 +484,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         }
 
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, PythonToNativeTransferNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
             Object[] callArgs = PythonUtils.arrayCopyOf(convertedArgs, convertedArgs.length - 1);
             Object type = convertedArgs[convertedArgs.length - 1];
@@ -498,7 +498,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         }
 
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, PythonToNativeTransferNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
             // see _datetime.c/new_delta_ex() - construct delta from days, seconds, microseconds
             Object[] callArgs = PythonUtils.arrayCopyOf(convertedArgs, 3);
@@ -513,7 +513,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         }
 
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, PythonToNativeTransferNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
             Object[] callArgs = PythonUtils.arrayCopyOf(convertedArgs, convertedArgs.length - 2);
             Object type = convertedArgs[convertedArgs.length - 1];
@@ -531,7 +531,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         }
 
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, PythonToNativeTransferNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
             return toSulongNode.execute(callNode.execute(null, timezoneType, convertedArgs, PKeyword.EMPTY_KEYWORDS));
         }
@@ -575,7 +575,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         }
 
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, PythonToNativeTransferNode toSulongNode) {
             throw new IllegalStateException();
         }
     }

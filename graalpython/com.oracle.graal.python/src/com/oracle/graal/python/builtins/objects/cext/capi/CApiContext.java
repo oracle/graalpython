@@ -73,14 +73,14 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransfer;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -735,7 +735,7 @@ public final class CApiContext extends CExtContext {
 
         checkFunctionResultNode.execute(context, initFuncName, nativeResult);
 
-        Object result = CApiTransitions.nativeToPython(nativeResult, false);
+        Object result = NativeToPythonNode.executeUncached(nativeResult);
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
 
@@ -891,7 +891,7 @@ public final class CApiContext extends CExtContext {
                     case "capsule":
                         result = InteropLibrary.getUncached().readMember(llvmLibrary, "getPyCapsuleTypeReference");
                         result = InteropLibrary.getUncached().execute(result);
-                        result = ToJavaNodeGen.getUncached().execute(result);
+                        result = NativeToPythonNode.executeUncached(result);
                         break;
                 }
                 if (result == null) {
@@ -922,7 +922,7 @@ public final class CApiContext extends CExtContext {
                     return InteropLibrary.getUncached().asPointer(result);
                 }
                 if (result != null) {
-                    result = ToNewRefNodeGen.getUncached().execute(result);
+                    result = PythonToNativeTransferNode.executeUncached(result);
                     long l;
                     if (result instanceof Long) {
                         l = (long) result;
