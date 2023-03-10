@@ -347,6 +347,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyFloat_Unpack4", ret = Double, args = {CONST_UNSIGNED_CHAR_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "_PyFloat_Unpack8", ret = Double, args = {CONST_UNSIGNED_CHAR_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "PyFloat_AsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyType_GetFlags", ret = UNSIGNED_LONG, args = {PyTypeObject}, call = CImpl)
 
     /*
      * Functions that are implemented in C code that needs to run on Sulong:

@@ -343,13 +343,14 @@ CAPI_BUILTINS
 	printf("options: %x\n", Py_Truffle_Options);
     initializeCAPIForwards(getAPI);
 
+    // send the locations of these values to Sulong - the values need to be shared
     initialize_native_locations(&PyTruffle_AllocatedMemory, &PyTruffle_MaxNativeMemory, &PyTruffle_NativeMemoryGCBarrier);
 
     if (PyTruffle_Log_Fine()) {
     	// provide some timing info for native/Java boundary
 
         clock_t start;
-        for (int run = 0; run < 2000; run++) {
+        for (int run = 0; run < 1000; run++) {
 			start = clock();
 			int COUNT = 10000;
 			for (int i = 0; i < COUNT; i++) {
@@ -618,6 +619,7 @@ static int polyglot_is_value(const void *value) {
 #include "object_shared.c"
 #include "obmalloc.c"
 #include "pylifecycle.c"
+#include "typeobject_shared.c"
 
 /*
  * This mirrors the definition in capi.c that we us on Sulong, and needs to be

@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -125,16 +123,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonCextTypeBuiltins {
-
-    @CApiBuiltin(ret = UNSIGNED_LONG, args = {PyTypeObject}, call = Direct)
-    abstract static class PyType_GetFlags extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        public long get(Object object,
-                        @Cached GetTypeFlagsNode getTypeFlagsNode) {
-            return getTypeFlagsNode.execute(object);
-        }
-    }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject, PyObject}, call = Direct)
     abstract static class _PyType_Lookup extends CApiBinaryBuiltinNode {

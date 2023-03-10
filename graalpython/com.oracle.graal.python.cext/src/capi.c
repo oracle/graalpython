@@ -1233,6 +1233,10 @@ void* truffle_get_constant(int entry) {
 	return NULL;
 }
 
+/*
+ * These locations need to be shared between native and Sulong - if the native parts are initialized,
+ * we assign_managed them to share them.
+ */
 PyAPI_FUNC(void) initialize_native_locations(void* allocateMemory, void* maxNativeMemory, void* nativeMemoryGCBarrier) {
 	truffle_assign_managed(&PyTruffle_AllocatedMemory, allocateMemory);
 	truffle_assign_managed(&PyTruffle_MaxNativeMemory, maxNativeMemory);
@@ -2017,10 +2021,6 @@ PyAPI_FUNC(int) PyTuple_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
 #undef PyTuple_Size
 PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
     return GraalPyTuple_Size(a);
-}
-#undef PyType_GetFlags
-PyAPI_FUNC(unsigned long) PyType_GetFlags(PyTypeObject* a) {
-    return GraalPyType_GetFlags(a);
 }
 #undef PyType_IsSubtype
 PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
