@@ -56,8 +56,8 @@ def _get_posix_vars():
         so_ext = ".so"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 
-    use_native_toolchain = os.environ.get('NATIVE_TOOLCHAIN', '').lower() in {'1', 'true'}
-    if use_native_toolchain:
+    use_system_toolchain = __graalpython__.use_system_toolchain
+    if use_system_toolchain:
         def get_toolchain(name):
             return dict(CC='cc',CXX='c++',AR='ar',RANLIB='ranlib',LD='ld',NM='nm')[name]
     else:
@@ -78,7 +78,7 @@ def _get_posix_vars():
     g['CC'] = get_toolchain('CC')
     g['CXX'] = toolchain_cxx if have_cxx else get_toolchain('CC') + ' --driver-mode=g++'
     opt_flags = ["-DNDEBUG"]
-    if not use_native_toolchain:
+    if not use_system_toolchain:
         opt_flags += ["-stdlib=libc++"]
     g['OPT'] = ' '.join(opt_flags)
     g['INCLUDEPY'] = python_inc
@@ -87,7 +87,7 @@ def _get_posix_vars():
     gnu_source = "-D_GNU_SOURCE=1"
     g['USE_GNU_SOURCE'] = gnu_source
     cflags_default = list(opt_flags)
-    if not use_native_toolchain:
+    if not use_system_toolchain:
         cflags_default += ["-Wno-unused-command-line-argument", "-DGRAALVM_PYTHON_LLVM"]
     if win32_native:
         cflags_default += ["-DMS_WINDOWS", "-DPy_ENABLE_SHARED", "-DHAVE_DECLSPEC_DLL"]

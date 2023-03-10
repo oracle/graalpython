@@ -562,3 +562,9 @@ char _PyByteArray_empty_string[] = "";
 #include "complexobject.c"
 #include "dictobject.c"
 #include "modsupport_shared.c"
+
+/*
+ * This mirrors the definition in capi.c that we us on Sulong, and needs to be
+ * fixed when that is.
+ */
+const char *Py_FileSystemDefaultEncoding = "utf-8";
