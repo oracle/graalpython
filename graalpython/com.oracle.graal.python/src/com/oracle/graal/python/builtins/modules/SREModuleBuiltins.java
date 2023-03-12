@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.BufferToTruffleStringNode;
@@ -93,6 +95,7 @@ import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -106,6 +109,157 @@ public class SREModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
         addBuiltinConstant("_with_sre", core.getContext().getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback));
         super.initialize(core);
+    }
+
+    private static final int METHOD_SEARCH = 0;
+    private static final int METHOD_MATCH = 1;
+    private static final int METHOD_FULLMATCH = 2;
+
+    public static final class TRegexCache {
+
+        private final Object pattern;
+        private final TruffleString flags;
+
+        private Object searchRegexp;
+        private Object matchRegexp;
+        private Object fullMatchRegexp;
+
+        private Object mustAdvanceSearchRegexp;
+        private Object mustAdvanceMatchRegexp;
+        private Object mustAdvanceFullMatchRegexp;
+
+        private EconomicMap<RegexKey, Object> localeSensitiveRegexps;
+
+        private static final TruffleString T_PYTHON_METHOD_SEARCH = tsLiteral("PythonMethod=search");
+        private static final TruffleString T_PYTHON_METHOD_MATCH = tsLiteral("PythonMethod=match");
+        private static final TruffleString T_PYTHON_METHOD_FULLMATCH = tsLiteral("PythonMethod=fullmatch");
+        private static final TruffleString T_MUST_ADVANCE_TRUE = tsLiteral("MustAdvance=true");
+
+        public TRegexCache(Object pattern, TruffleString flags) {
+            this.pattern = pattern;
+            this.flags = flags;
+        }
+
+        public Object getRegexp(int method, boolean mustAdvance) {
+            switch (method) {
+                case METHOD_SEARCH:
+                    if (mustAdvance) {
+                        return mustAdvanceSearchRegexp;
+                    } else {
+                        return searchRegexp;
+                    }
+                case METHOD_MATCH:
+                    if (mustAdvance) {
+                        return mustAdvanceMatchRegexp;
+                    } else {
+                        return matchRegexp;
+                    }
+                case METHOD_FULLMATCH:
+                    if (mustAdvance) {
+                        return mustAdvanceFullMatchRegexp;
+                    } else {
+                        return fullMatchRegexp;
+                    }
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        public void setRegexp(int method, boolean mustAdvance, Object regexp) {
+            switch (method) {
+                case METHOD_SEARCH:
+                    if (mustAdvance) {
+                        mustAdvanceSearchRegexp = regexp;
+                    } else {
+                        searchRegexp = regexp;
+                    }
+                    break;
+                case METHOD_MATCH:
+                    if (mustAdvance) {
+                        mustAdvanceMatchRegexp = regexp;
+                    } else {
+                        matchRegexp = regexp;
+                    }
+                    break;
+                case METHOD_FULLMATCH:
+                    if (mustAdvance) {
+                        mustAdvanceFullMatchRegexp = regexp;
+                    } else {
+                        fullMatchRegexp = regexp;
+                    }
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @TruffleBoundary
+        private TruffleString getOptionsUncached(int pythonMethod, boolean mustAdvance) {
+            TruffleStringBuilder options = TruffleStringBuilder.create(TS_ENCODING);
+            switch (pythonMethod) {
+                case METHOD_SEARCH:
+                    options.appendStringUncached(T_PYTHON_METHOD_SEARCH);
+                    break;
+                case METHOD_MATCH:
+                    options.appendStringUncached(T_PYTHON_METHOD_MATCH);
+                    break;
+                case METHOD_FULLMATCH:
+                    options.appendStringUncached(T_PYTHON_METHOD_FULLMATCH);
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+            if (mustAdvance) {
+                options.appendStringUncached(T_COMMA);
+                options.appendStringUncached(T_MUST_ADVANCE_TRUE);
+            }
+            return options.toStringUncached();
+        }
+
+        public Object compile(VirtualFrame frame, int method, boolean mustAdvance, TRegexCompileInternalNode tRegexCompileInternalNode) {
+            final Object regexp = tRegexCompileInternalNode.execute(frame, pattern, flags, getOptionsUncached(method, mustAdvance));
+            setRegexp(method, mustAdvance, regexp);
+            return regexp;
+        }
+
+        private static final class RegexKey {
+            private final String pythonMethod;
+            private final boolean mustAdvance;
+            private final String pythonLocale;
+
+            RegexKey(String pythonMethod, boolean mustAdvance, String pythonLocale) {
+                this.pythonMethod = pythonMethod;
+                this.mustAdvance = mustAdvance;
+                this.pythonLocale = pythonLocale;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (!(obj instanceof RegexKey)) {
+                    return false;
+                }
+                RegexKey other = (RegexKey) obj;
+                return this.pythonMethod.equals(other.pythonMethod) && this.mustAdvance == other.mustAdvance && this.pythonLocale.equals(other.pythonLocale);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(pythonMethod, mustAdvance, pythonLocale);
+            }
+        }
+    }
+
+    @Builtin(name = "tregex_init_cache", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class TRegexInitCache extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object call(VirtualFrame frame, Object pattern, Object flags,
+                    @Cached CastToTruffleStringNode flagsToStringNode) {
+            TruffleString flagsStr = flagsToStringNode.execute(flags);
+            return new TRegexCache(pattern, flagsStr);
+        }
     }
 
     abstract static class ToRegexSourceNode extends PNodeWithRaiseAndIndirectCall {
@@ -186,20 +340,20 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_compile_internal", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
+    abstract static class TRegexCompileInternalNode extends PythonTernaryBuiltinNode {
 
         @Specialization
         Object call(VirtualFrame frame, Object pattern, Object flags, Object options,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedBranchProfile potentialSyntaxError,
-                        @Cached InlinedBranchProfile syntaxError,
-                        @Cached InlinedBranchProfile unsupportedRegexError,
-                        @Cached CastToTruffleStringNode flagsToStringNode,
-                        @Cached CastToTruffleStringNode optionsToStringNode,
-                        @Cached ToRegexSourceNode toRegexSourceNode,
-                        @CachedLibrary(limit = "2") InteropLibrary exceptionLib,
-                        @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedBranchProfile potentialSyntaxError,
+                    @Cached InlinedBranchProfile syntaxError,
+                    @Cached InlinedBranchProfile unsupportedRegexError,
+                    @Cached CastToTruffleStringNode flagsToStringNode,
+                    @Cached CastToTruffleStringNode optionsToStringNode,
+                    @Cached ToRegexSourceNode toRegexSourceNode,
+                    @CachedLibrary(limit = "2") InteropLibrary exceptionLib,
+                    @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib,
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
                 TruffleString flagsStr = flagsToStringNode.execute(flags);
                 TruffleString optionsStr = optionsToStringNode.execute(options);
@@ -217,7 +371,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         private Object handleError(RuntimeException e, Node inliningTarget, InlinedBranchProfile syntaxError, InlinedBranchProfile potentialSyntaxError, InteropLibrary lib,
-                        TruffleString.SwitchEncodingNode switchEncodingNode) {
+                                   TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
                 if (lib.isException(e)) {
                     potentialSyntaxError.enter(inliningTarget);
@@ -235,6 +389,25 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
             // just re-throw
             throw e;
+        }
+    }
+
+    @Builtin(name = "tregex_compile", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class TRegexCompileNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance" }, limit = "6")
+        Object compile(VirtualFrame frame, TRegexCache tRegexCache, int method, boolean mustAdvance,
+                      @Cached TRegexCompileInternalNode tRegexCompileInternalNode,
+                      @Cached("method") int cachedMethod,
+                      @Cached("mustAdvance") boolean cachedMustAdvance) {
+            final Object tRegex = tRegexCache.getRegexp(method, mustAdvance);
+            if (tRegex != null) {
+                return tRegex;
+            } else {
+                return tRegexCache.compile(frame, method, mustAdvance, tRegexCompileInternalNode);
+            }
         }
     }
 
