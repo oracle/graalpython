@@ -80,6 +80,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -216,7 +217,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return options.toStringUncached();
         }
 
-        public Object compile(VirtualFrame frame, int method, boolean mustAdvance, TRegexCompileInternalNode tRegexCompileInternalNode) {
+        @TruffleBoundary
+        public Object compile(MaterializedFrame frame, int method, boolean mustAdvance, TRegexCompileInternalNode tRegexCompileInternalNode) {
             final Object regexp = tRegexCompileInternalNode.execute(frame, pattern, flags, getOptionsUncached(method, mustAdvance));
             setRegexp(method, mustAdvance, regexp);
             return regexp;
@@ -406,7 +408,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(frame, method, mustAdvance, tRegexCompileInternalNode);
+                return tRegexCache.compile(frame.materialize(), method, mustAdvance, tRegexCompileInternalNode);
             }
         }
     }
