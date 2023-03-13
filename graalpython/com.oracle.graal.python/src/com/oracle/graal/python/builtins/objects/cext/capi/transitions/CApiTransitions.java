@@ -652,10 +652,9 @@ public class CApiTransitions {
         }
 
         @Specialization
-        static Object doNative(PythonAbstractNativeObject obj,
+        Object doNative(PythonAbstractNativeObject obj,
                         @Cached PCallCapiFunction callAddRef) {
-            boolean transfer = false;
-            if (transfer) {
+            if (needsTransfer()) {
                 callAddRef.call(NativeCAPISymbol.FUN_ADDREF, obj.object, 1);
             }
             return obj.getPtr();
@@ -892,9 +891,10 @@ public class CApiTransitions {
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
 
-        refCount += refCntDelta;
-        UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount);
-        return refCount;
+        LOGGER.finest(() -> PythonUtils.formatJString("addNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
+
+        UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount + refCntDelta);
+        return refCount + refCntDelta;
     }
 
     private static long subNativeRefCount(long pointer, long refCntDelta) {
@@ -902,9 +902,10 @@ public class CApiTransitions {
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
 
-        refCount -= refCntDelta;
-        UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount);
-        return refCount;
+        LOGGER.finest(() -> PythonUtils.formatJString("subNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
+
+        UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount - refCntDelta);
+        return refCount - refCntDelta;
     }
 
     private static Object createAbstractNativeObject(Object obj, boolean transfer, long pointer) {
