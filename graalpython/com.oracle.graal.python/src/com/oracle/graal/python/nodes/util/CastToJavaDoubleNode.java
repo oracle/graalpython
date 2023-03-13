@@ -63,6 +63,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Casts a Python "number" to a Java double without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -86,14 +87,19 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    static double toLong(long x) {
-        return x;
-    }
-
-    @Specialization
     static double toPInt(PInt x,
                     @Cached PRaiseNode raise) {
         return x.doubleValueWithOverflow(raise);
+    }
+
+    @Specialization
+    static double doString(@SuppressWarnings("unused") TruffleString object) {
+        throw CannotCastException.INSTANCE;
+    }
+
+    @Specialization
+    static double doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        throw CannotCastException.INSTANCE;
     }
 
     @Specialization
@@ -111,9 +117,8 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
         throw CannotCastException.INSTANCE;
     }
 
-    @Specialization(guards = "!isNumber(obj)")
-    static double doGeneric(Object obj,
-                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+    public static Double doInterop(Object obj,
+                    InteropLibrary interopLibrary) {
         try {
             if (interopLibrary.fitsInDouble(obj)) {
                 return interopLibrary.asDouble(obj);
@@ -126,6 +131,16 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
             }
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
+        }
+        return null;
+    }
+
+    @Specialization(guards = "!isNumber(obj)")
+    static double doGeneric(Object obj,
+                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+        Double d = doInterop(obj, interopLibrary);
+        if (d != null) {
+            return d;
         }
         throw CannotCastException.INSTANCE;
     }
