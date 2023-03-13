@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateEmptyNodeGen;
@@ -1286,7 +1287,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isObjectStorage(storage)")
         protected static void doNativeObject(NativeSequenceStorage storage, int idx, Object value,
                         @Cached PCallCapiFunction call,
-                        @Cached PythonToNativeTransferNode toSulongNode) {
+                        @Cached PythonToNativeNewRefNode toSulongNode) {
             call.call(FUN_PY_TRUFFLE_SET_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
         }
 
