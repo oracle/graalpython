@@ -78,10 +78,12 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 public final class PythonCextSetBuiltins {
@@ -259,8 +261,9 @@ public final class PythonCextSetBuiltins {
 
         @Specialization
         static int add(PBaseSet self, Object o,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(null, self, o, PNone.NO_VALUE);
+            setItemNode.execute(null, inliningTarget, self, o, PNone.NO_VALUE);
             return 0;
         }
 

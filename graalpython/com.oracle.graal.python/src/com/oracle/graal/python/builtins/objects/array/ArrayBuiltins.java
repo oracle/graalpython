@@ -273,6 +273,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "left.getFormat() != right.getFormat()")
         static boolean eqItems(VirtualFrame frame, PArray left, PArray right,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached @Shared ArrayNodes.GetValueNode getLeft,
                         @Cached @Shared ArrayNodes.GetValueNode getRight) {
@@ -280,7 +281,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 return false;
             }
             for (int i = 0; i < left.getLength(); i++) {
-                if (!eqNode.execute(frame, getLeft.execute(left, i), getRight.execute(right, i))) {
+                if (!eqNode.execute(frame, getLeft.execute(inliningTarget, left, i), getRight.execute(inliningTarget, right, i))) {
                     return false;
                 }
             }
@@ -290,14 +291,15 @@ public class ArrayBuiltins extends PythonBuiltins {
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"left.getFormat() == right.getFormat()", "isFloatingPoint(left.getFormat())"})
         static boolean eqDoubles(PArray left, PArray right,
+                        @Bind("this") Node inliningTarget,
                         @Cached @Shared ArrayNodes.GetValueNode getLeft,
                         @Cached @Shared ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
                 return false;
             }
             for (int i = 0; i < left.getLength(); i++) {
-                double leftValue = (Double) getLeft.execute(left, i);
-                double rightValue = (Double) getRight.execute(right, i);
+                double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
+                double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
                     return false;
                 }
@@ -317,6 +319,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
         boolean cmpItems(VirtualFrame frame, PArray left, PArray right,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") @Shared CoerceToBooleanNode coerceToBooleanNode,
@@ -324,8 +327,8 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
             for (int i = 0; i < commonLength; i++) {
-                Object leftValue = getLeft.execute(left, i);
-                Object rightValue = getRight.execute(right, i);
+                Object leftValue = getLeft.execute(inliningTarget, left, i);
+                Object rightValue = getRight.execute(inliningTarget, right, i);
                 if (!eqNode.execute(frame, leftValue, rightValue)) {
                     return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, leftValue, rightValue));
                 }
@@ -336,14 +339,15 @@ public class ArrayBuiltins extends PythonBuiltins {
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
         boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") @Shared CoerceToBooleanNode coerceToBooleanNode,
                         @Cached @Shared ArrayNodes.GetValueNode getLeft,
                         @Cached @Shared ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
             for (int i = 0; i < commonLength; i++) {
-                double leftValue = (Double) getLeft.execute(left, i);
-                double rightValue = (Double) getRight.execute(right, i);
+                double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
+                double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
                     return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, leftValue, rightValue));
                 }
@@ -437,10 +441,11 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean contains(VirtualFrame frame, PArray self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
+                if (eqNode.execute(frame, getValueNode.execute(inliningTarget, self, i), value)) {
                     return true;
                 }
             }
@@ -479,7 +484,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         if (i > 0) {
                             appendStringNode.execute(sb, T_COMMA_SPACE);
                         }
-                        Object value = getValueNode.execute(self, i);
+                        Object value = getValueNode.execute(inliningTarget, self, i);
                         appendStringNode.execute(sb, cast.execute(reprNode.executeObject(frame, value)));
                     }
                     appendStringNode.execute(sb, T_RBRACKET);
@@ -496,11 +501,12 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(idx)")
         static Object getitem(VirtualFrame frame, PArray self, Object idx,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("forArray()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
-            return getValueNode.execute(self, index);
+            return getValueNode.execute(inliningTarget, self, index);
         }
 
         @Specialization
@@ -536,15 +542,17 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(idx)")
         static Object setitem(VirtualFrame frame, PArray self, Object idx, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
-            putValueNode.execute(frame, self, index, value);
+            putValueNode.execute(frame, inliningTarget, self, index, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.getFormat() == other.getFormat()")
+        @SuppressWarnings("truffle-static-method")
         Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile sameArrayProfile,
@@ -760,13 +768,14 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class AppendNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object append(VirtualFrame frame, PArray self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             try {
                 int index = self.getLength();
                 int newLength = PythonUtils.addExact(index, 1);
                 self.checkCanResize(this);
                 self.resize(newLength);
-                putValueNode.execute(frame, self, index, value);
+                putValueNode.execute(frame, inliningTarget, self, index, value);
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -798,6 +807,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         Object extend(VirtualFrame frame, PArray self, PSequence value,
+                        @Bind("this") Node inliningTarget,
                         @Cached @Shared ArrayNodes.PutValueNode putValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
@@ -817,7 +827,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             for (int i = 0; i < storageLength; i++) {
                 // The whole extend is not atomic, just individual inserts are. That's the same as
                 // in CPython
-                putValueNode.execute(frame, self, length, getItemNode.execute(storage, i));
+                putValueNode.execute(frame, inliningTarget, self, length, getItemNode.execute(storage, i));
                 self.setLength(++length);
             }
 
@@ -825,6 +835,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isArray(value)")
+        @SuppressWarnings("truffle-static-method")
         Object extend(VirtualFrame frame, PArray self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
@@ -851,7 +862,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raise(MemoryError);
                 }
-                putValueNode.execute(frame, self, length - 1, nextValue);
+                putValueNode.execute(frame, inliningTarget, self, length - 1, nextValue);
                 self.setLength(length);
             }
 
@@ -873,6 +884,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         Object insert(VirtualFrame frame, PArray self, int inputIndex, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached("create(false)") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.CheckValueNode checkValueNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
@@ -884,7 +896,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
             // Need to check the validity of the value before moving the memory around to ensure the
             // operation can fail atomically
-            checkValueNode.execute(frame, self, value);
+            checkValueNode.execute(frame, inliningTarget, self, value);
             self.checkCanResize(this);
             try {
                 self.shift(index, 1);
@@ -892,7 +904,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raise(MemoryError);
             }
-            putValueNode.execute(frame, self, index, value);
+            putValueNode.execute(frame, inliningTarget, self, index, value);
             return PNone.NONE;
         }
 
@@ -907,10 +919,11 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object remove(VirtualFrame frame, PArray self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                Object item = getValueNode.execute(self, i);
+                Object item = getValueNode.execute(inliningTarget, self, i);
                 if (eqNode.execute(frame, item, value)) {
                     self.checkCanResize(this);
                     self.delSlice(i, 1);
@@ -927,13 +940,14 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class PopNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         Object pop(PArray self, int inputIndex,
+                        @Bind("this") Node inliningTarget,
                         @Cached("forPop()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             if (self.getLength() == 0) {
                 throw raise(IndexError, ErrorMessages.POP_FROM_EMPTY_ARRAY);
             }
             int index = normalizeIndexNode.execute(inputIndex, self.getLength());
-            Object value = getValueNode.execute(self, index);
+            Object value = getValueNode.execute(inliningTarget, self, index);
             self.checkCanResize(this);
             self.delSlice(index, 1);
             return value;
@@ -1027,6 +1041,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class FromListNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object fromlist(VirtualFrame frame, PArray self, PList list,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
@@ -1037,7 +1052,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 self.checkCanResize(this);
                 self.resizeStorage(newLength);
                 for (int i = 0; i < length; i++) {
-                    putValueNode.execute(frame, self, self.getLength() + i, getItemScalarNode.execute(storage, i));
+                    putValueNode.execute(frame, inliningTarget, self, self.getLength() + i, getItemScalarNode.execute(storage, i));
                 }
                 self.setLength(newLength);
                 return PNone.NONE;
@@ -1060,6 +1075,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     public abstract static class FromUnicodeNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         Object fromunicode(VirtualFrame frame, PArray self, TruffleString str,
+                        @Bind("this") Node inliningTarget,
                         @Cached ArrayNodes.PutValueNode putValueNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
@@ -1074,7 +1090,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 int codePointIndex = 0;
                 while (it.hasNext()) {
                     TruffleString value = fromCodePointNode.execute(nextNode.execute(it), TS_ENCODING, true);
-                    putValueNode.execute(frame, self, self.getLength() + codePointIndex++, value);
+                    putValueNode.execute(frame, inliningTarget, self, self.getLength() + codePointIndex++, value);
                 }
                 self.setLength(newLength);
                 return PNone.NONE;
@@ -1132,7 +1148,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             for (int i = 0; i < self.getLength(); i++) {
-                appendStringNode.execute(sb, (TruffleString) getValueNode.execute(self, i));
+                appendStringNode.execute(sb, (TruffleString) getValueNode.execute(inliningTarget, self, i));
             }
             return toStringNode.execute(sb);
         }
@@ -1214,6 +1230,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization
         int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             if (start < 0) {
@@ -1226,7 +1243,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 stop += self.getLength();
             }
             for (int i = start; i < stop && i < self.getLength(); i++) {
-                if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
+                if (eqNode.execute(frame, getValueNode.execute(inliningTarget, self, i), value)) {
                     return i;
                 }
             }
@@ -1244,11 +1261,12 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class CountNode extends PythonBinaryBuiltinNode {
         @Specialization
         static int count(VirtualFrame frame, PArray self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             int count = 0;
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
+                if (eqNode.execute(frame, getValueNode.execute(inliningTarget, self, i), value)) {
                     count++;
                 }
             }

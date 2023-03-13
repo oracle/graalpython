@@ -388,7 +388,7 @@ public class StructSequence {
                 e.expect(inliningTarget, TypeError, notASequenceProfile);
                 throw raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
             }
-            return toArrayNode.execute(seq.getSequenceStorage());
+            return toArrayNode.execute(inliningTarget, seq.getSequenceStorage());
         }
 
         private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile) {

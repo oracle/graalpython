@@ -132,7 +132,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
         // If the codec returns a buffer, raise a warning and convert to bytes
         if (isByteArrayProfile.profile(inliningTarget, v instanceof PByteArray)) {
             warnNode.warnFormat(frame, RuntimeWarning, ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES, encoding, "bytearray");
-            return getContext().factory().createBytes(copyNode.execute(((PByteArray) v).getSequenceStorage()));
+            return getContext().factory().createBytes(copyNode.execute(inliningTarget, ((PByteArray) v).getSequenceStorage()));
         }
 
         throw raise(TypeError, S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, v);

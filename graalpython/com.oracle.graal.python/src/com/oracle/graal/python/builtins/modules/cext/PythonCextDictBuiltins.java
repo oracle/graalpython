@@ -126,6 +126,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = "pos < size(dict, sizeNode)", limit = "1")
         Object run(PDict dict, long pos,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
@@ -155,7 +156,7 @@ public final class PythonCextDictBuiltins {
                 // 'test_capi.py::test_dict_iteration' once fixed)
             }
             if (promotedValue != null) {
-                setItemNode.execute(null, dict, key, value = promotedValue);
+                setItemNode.execute(null, inliningTarget, dict, key, value = promotedValue);
             }
             return factory().createTuple(new Object[]{key, value, itKeyHash.execute(storage, it)});
         }
@@ -233,6 +234,7 @@ public final class PythonCextDictBuiltins {
 
         @Specialization
         Object getItem(PDict dict, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
@@ -245,7 +247,7 @@ public final class PythonCextDictBuiltins {
                 }
                 Object promotedValue = promoteNode.execute(res);
                 if (promotedValue != null) {
-                    setItemNode.execute(null, dict, key, promotedValue);
+                    setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                     return promotedValue;
                 }
                 return res;
@@ -270,6 +272,7 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
         Object getItem(PDict dict, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached SetItemNode setItemNode,
@@ -281,7 +284,7 @@ public final class PythonCextDictBuiltins {
             }
             Object promotedValue = promoteNode.execute(res);
             if (promotedValue != null) {
-                setItemNode.execute(null, dict, key, promotedValue);
+                setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                 return promotedValue;
             }
             return res;
@@ -297,8 +300,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static int setItem(PDict dict, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetItemNode setItemNode) {
-            setItemNode.execute(null, dict, key, value);
+            setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
         }
 
@@ -313,6 +317,7 @@ public final class PythonCextDictBuiltins {
     abstract static class _PyDict_SetItem_KnownHash extends CApiQuaternaryBuiltinNode {
         @Specialization
         int setItem(PDict dict, Object key, Object value, Object givenHash,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaLongExactNode castToLong,
                         @Cached SetItemNode setItemNode,
@@ -321,7 +326,7 @@ public final class PythonCextDictBuiltins {
                 wrongHashProfile.enter();
                 throw raise(PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
             }
-            setItemNode.execute(null, dict, key, value);
+            setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
         }
 

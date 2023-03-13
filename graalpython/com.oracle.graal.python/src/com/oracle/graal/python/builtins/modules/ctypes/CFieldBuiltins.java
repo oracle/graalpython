@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -640,6 +641,7 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "setfunc == s_set")
         Object s_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, int length,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ToBytesWithoutFrameNode getBytes,
@@ -651,7 +653,8 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_BYTES_S_FOUND, getNameNode.execute(getClassNode.execute(value)));
             }
 
-            data = getBytes.execute(value); // a copy is expected.. no need for memcpy
+            // a copy is expected.. no need for memcpy
+            data = getBytes.execute(inliningTarget, value);
             size = data.length; /* XXX Why not Py_SIZE(value)? */
             if (size < length) {
                 /*
@@ -669,6 +672,7 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "setfunc == z_set")
         Object z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @Cached PyLongCheckNode longCheckNode,
@@ -679,10 +683,10 @@ public class CFieldBuiltins extends PythonBuiltins {
                 return value;
             }
             if (PGuards.isPBytes(value)) {
-                ptr.writeBytesArrayElement(getBytes.execute(value));
+                ptr.writeBytesArrayElement(getBytes.execute(inliningTarget, value));
                 return value;
             } else if (value instanceof PythonNativeVoidPtr) {
-                ptr.writeBytesArrayElement(getBytes.execute(((PythonNativeVoidPtr) value).getPointerObject()));
+                ptr.writeBytesArrayElement(getBytes.execute(inliningTarget, ((PythonNativeVoidPtr) value).getPointerObject()));
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
                 // *(char **)ptr = (char *)PyLong_AsUnsignedLongMask(value);

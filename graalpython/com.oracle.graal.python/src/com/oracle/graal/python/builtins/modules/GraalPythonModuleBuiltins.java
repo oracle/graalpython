@@ -67,6 +67,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.nodes.Node;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -411,7 +413,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public TruffleString doIt(PCode code) {
-            return toTruffleStringUncached(NodeUtil.printTreeToString(CodeNodes.GetCodeRootNode.getUncached().execute(code)));
+            return toTruffleStringUncached(NodeUtil.printTreeToString(CodeNodes.GetCodeRootNode.executeUncached(code)));
         }
 
         @Fallback
@@ -478,7 +480,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
-            RootNode rootNode = CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
+            RootNode rootNode = CodeNodes.GetCodeRootNode.executeUncached(func.getCode());
             if (rootNode instanceof PBytecodeRootNode) {
                 ((PBytecodeRootNode) rootNode).setPythonInternal(true);
             }
@@ -492,8 +494,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class BuiltinMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doIt(PFunction func,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodeNodes.GetCodeRootNode getRootNode) {
-            RootNode rootNode = getRootNode.execute(func.getCode());
+            RootNode rootNode = getRootNode.execute(inliningTarget, func.getCode());
             if (rootNode instanceof PBytecodeRootNode) {
                 ((PBytecodeRootNode) rootNode).setPythonInternal(true);
             }

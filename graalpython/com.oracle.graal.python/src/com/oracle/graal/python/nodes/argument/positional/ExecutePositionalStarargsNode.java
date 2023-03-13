@@ -84,14 +84,16 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] doTuple(PTuple starargs,
+                    @Bind("this") Node inliningTarget,
                     @Shared("toArray") @Cached SequenceStorageNodes.ToArrayNode toArray) {
-        return toArray.execute(starargs.getSequenceStorage());
+        return toArray.execute(inliningTarget, starargs.getSequenceStorage());
     }
 
     @Specialization
     static Object[] doList(PList starargs,
+                    @Bind("this") Node inliningTarget,
                     @Shared("toArray") @Cached SequenceStorageNodes.ToArrayNode toArray) {
-        return toArray.execute(starargs.getSequenceStorage());
+        return toArray.execute(inliningTarget, starargs.getSequenceStorage());
     }
 
     // Separate PDict and PSet specializations to avoid instanceof checks on non-leaf class

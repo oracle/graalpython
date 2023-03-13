@@ -2990,10 +2990,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static void doTuple(PTuple tuple,
+                        @Bind("this") Node inliningTarget,
                         @Cached ToArrayNode toArrayNode,
                         @Cached SubRefCntNode subRefCntNode) {
 
-            Object[] values = toArrayNode.execute(tuple.getSequenceStorage());
+            Object[] values = toArrayNode.execute(inliningTarget, tuple.getSequenceStorage());
             for (int i = 0; i < values.length; i++) {
                 Object value = values[i];
                 if (value instanceof PythonObject) {

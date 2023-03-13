@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.code;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -62,12 +63,13 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -183,22 +185,28 @@ public abstract class CodeNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetCodeCallTargetNode extends PNodeWithContext {
 
         GetCodeCallTargetNode() {
         }
 
-        public abstract RootCallTarget execute(PCode code);
+        public abstract RootCallTarget execute(Node node, PCode code);
+
+        public static RootCallTarget executeUncached(PCode code) {
+            return GetCodeCallTargetNodeGen.getUncached().execute(null, code);
+        }
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
-        final RootCallTarget doCachedCode(@SuppressWarnings("unused") PCode code,
+        static RootCallTarget doCachedCode(Node node, @SuppressWarnings("unused") PCode code,
                         @SuppressWarnings("unused") @Cached("code") PCode cachedCode,
                         @Cached("code.initializeCallTarget()") RootCallTarget cachedRootCallTarget) {
             return cachedRootCallTarget;
         }
 
         @Specialization(replaces = "doCachedCode")
-        final RootCallTarget doGeneric(PCode code,
+        static RootCallTarget doGeneric(Node node, PCode code,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasCtProfile) {
             RootCallTarget ct = code.callTarget;
@@ -207,25 +215,17 @@ public abstract class CodeNodes {
             }
             return ct;
         }
-
-        @NeverDefault
-        public static GetCodeCallTargetNode create() {
-            return GetCodeCallTargetNodeGen.create();
-        }
-
-        @NeverDefault
-        public static GetCodeCallTargetNode getUncached() {
-            return GetCodeCallTargetNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetCodeSignatureNode extends PNodeWithContext {
-        public abstract Signature execute(PCode code);
+        public abstract Signature execute(Node node, PCode code);
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isSingleContext()", "cachedCode == code"}, limit = "2")
-        protected static Signature doCached(PCode code,
+        protected static Signature doCached(Node node, PCode code,
                         @Cached("code") PCode cachedCode,
                         @Cached("code.initializeCallTarget()") RootCallTarget ct,
                         @Cached("code.initializeSignature(ct)") Signature signature) {
@@ -233,7 +233,7 @@ public abstract class CodeNodes {
         }
 
         @Specialization(replaces = "doCached")
-        protected static Signature doCode(PCode code,
+        protected static Signature doCode(Node node, PCode code,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile signatureProfile,
                         @Cached InlinedConditionProfile ctProfile) {
@@ -249,39 +249,22 @@ public abstract class CodeNodes {
         }
     }
 
-    public static final class GetCodeRootNode extends Node {
-        private static final GetCodeRootNode UNCACHED = new GetCodeRootNode(false);
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetCodeRootNode extends Node {
 
-        private final boolean isAdoptable;
-        @Child private GetCodeCallTargetNode getCodeCallTargetNode;
+        public abstract RootNode execute(Node node, PCode code);
 
-        private GetCodeRootNode(boolean isAdoptable) {
-            this.isAdoptable = isAdoptable;
-            if (!isAdoptable) {
-                getCodeCallTargetNode = GetCodeCallTargetNode.getUncached();
-            }
+        public static RootNode executeUncached(PCode code) {
+            return GetCodeRootNodeGen.getUncached().execute(null, code);
         }
 
-        @Override
-        public boolean isAdoptable() {
-            return isAdoptable;
-        }
-
-        public RootNode execute(PCode code) {
-            if (getCodeCallTargetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getCodeCallTargetNode = insert(GetCodeCallTargetNode.create());
-            }
-            return getCodeCallTargetNode.execute(code).getRootNode();
-        }
-
-        @NeverDefault
-        public static GetCodeRootNode create() {
-            return new GetCodeRootNode(true);
-        }
-
-        public static GetCodeRootNode getUncached() {
-            return UNCACHED;
+        @Specialization
+        static RootNode doIt(Node node, PCode code,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetCodeCallTargetNode getCodeCallTargetNode) {
+            return getCodeCallTargetNode.execute(inliningTarget, code).getRootNode();
         }
     }
 }

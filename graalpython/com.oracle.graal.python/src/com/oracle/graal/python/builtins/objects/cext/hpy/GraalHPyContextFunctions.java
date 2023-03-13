@@ -223,6 +223,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -237,6 +238,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -1531,6 +1533,7 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached SequenceNodes.LenNode lenNode,
@@ -1538,7 +1541,7 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 2);
             Object object = asPythonObjectNode.execute(arguments[1]);
             if (object instanceof PBytes) {
-                return lenNode.execute((PSequence) object);
+                return lenNode.execute(inliningTarget, (PSequence) object);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             return raiseNode.raiseIntWithoutFrame(context, -1, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, object);

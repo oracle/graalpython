@@ -416,7 +416,7 @@ public class ListBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.CopyNode copy,
                         @Cached InlinedGetClassNode getClassNode) {
-            return factory().createList(getClassNode.execute(inliningTarget, self), copy.execute(self.getSequenceStorage()));
+            return factory().createList(getClassNode.execute(inliningTarget, self), copy.execute(inliningTarget, self.getSequenceStorage()));
         }
 
     }
@@ -459,9 +459,10 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNotSpecialCase(list, value)")
         PNone insert(PList list, int index, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.InsertItemNode insertItem) {
             SequenceStorage store = list.getSequenceStorage();
-            list.setSequenceStorage(insertItem.execute(store, normalizeIndex(index, store.length()), value));
+            list.setSequenceStorage(insertItem.execute(inliningTarget, store, normalizeIndex(index, store.length()), value));
             return PNone.NONE;
         }
 

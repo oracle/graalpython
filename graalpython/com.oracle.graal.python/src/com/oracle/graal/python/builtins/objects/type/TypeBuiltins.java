@@ -786,6 +786,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setBases(VirtualFrame frame, PythonClass cls, PTuple value,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNameNode getName,
                         @Cached GetObjectArrayNode getArray,
                         @Cached GetBaseClassNode getBase,
@@ -795,7 +796,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetMroNode getMroNode) {
 
-            Object[] a = getArray.execute(value);
+            Object[] a = getArray.execute(inliningTarget, value);
             if (a.length == 0) {
                 throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P, cls);
             }
@@ -931,8 +932,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Fallback
         boolean isInstance(VirtualFrame frame, Object cls, Object instance,
-                           @Bind("this") Node inliningTarget,
-                           @Cached InlinedConditionProfile typeErrorProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile typeErrorProfile) {
             if (typeErrorProfile.profile(inliningTarget, getBasesNode.execute(frame, cls) == null)) {
                 throw raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE, instance);
             }
@@ -1446,17 +1447,18 @@ public class TypeBuiltins extends PythonBuiltins {
     public abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dir(VirtualFrame frame, Object klass,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
                         @Cached ToArrayNode toArrayNode,
                         @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode,
                         @Cached DirNode dirNode) {
-            PSet names = dir(frame, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, dirNode);
+            PSet names = dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, dirNode);
             return names;
         }
 
-        private PSet dir(VirtualFrame frame, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode, GetFixedAttributeNode getBasesNode,
-                        ToArrayNode toArrayNode, DirNode dirNode) {
+        private PSet dir(VirtualFrame frame, Node inliningTarget, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode,
+                        GetFixedAttributeNode getBasesNode, ToArrayNode toArrayNode, DirNode dirNode) {
             PSet names = factory().createSet();
             Object updateCallable = lookupAttrNode.execute(frame, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, klass, T___DICT__);
@@ -1465,11 +1467,11 @@ public class TypeBuiltins extends PythonBuiltins {
             }
             Object basesAttr = getBasesNode.execute(frame, klass);
             if (basesAttr instanceof PTuple) {
-                Object[] bases = toArrayNode.execute(((PTuple) basesAttr).getSequenceStorage());
+                Object[] bases = toArrayNode.execute(inliningTarget, ((PTuple) basesAttr).getSequenceStorage());
                 for (Object cls : bases) {
                     // Note that since we are only interested in the keys, the order
                     // we merge classes is unimportant
-                    Object baseNames = dir(frame, cls, lookupAttrNode, callNode, getBasesNode, toArrayNode, dirNode);
+                    Object baseNames = dir(frame, inliningTarget, cls, lookupAttrNode, callNode, getBasesNode, toArrayNode, dirNode);
                     callNode.execute(frame, updateCallable, baseNames);
                 }
             }

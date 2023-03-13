@@ -75,6 +75,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -252,12 +253,13 @@ public abstract class SortNodes {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         void sortObjSeqStorage(VirtualFrame frame, ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile isStringOnlyProfile,
                         @Cached InlinedLoopConditionProfile isStringOnlyLoopProfile,
                         @Cached InlinedCountingConditionProfile isStringOnlyBreakProfile,
-                        @Cached CallContext callContext) {
+                        @Shared @Cached CallContext callContext) {
             if (isStringOnlyProfile.profile(inliningTarget, isStringOnly(inliningTarget, storage, isStringOnlyLoopProfile, isStringOnlyBreakProfile))) {
                 // Sorting of strings seems to be so much faster (especially on SVM) that it is
                 // worth always checking for string only sequences and not replacing the strings
@@ -270,15 +272,15 @@ public abstract class SortNodes {
 
         @Specialization(guards = "!isPNone(keyfunc)")
         void sort(VirtualFrame frame, ObjectSequenceStorage storage, Object keyfunc, boolean reverse,
-                        @Cached CallNode callNode,
-                        @Cached CallContext callContext) {
+                        @Shared @Cached CallNode callNode,
+                        @Shared @Cached CallContext callContext) {
             sortWithKey(frame, storage.getInternalArray(), storage.length(), keyfunc, reverse, callNode, callContext);
         }
 
         @Fallback
         void sort(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse,
-                        @Cached CallContext callContext,
-                        @Cached CallNode callNode,
+                        @Shared @Cached CallContext callContext,
+                        @Shared @Cached CallNode callNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
             int len = storage.length();

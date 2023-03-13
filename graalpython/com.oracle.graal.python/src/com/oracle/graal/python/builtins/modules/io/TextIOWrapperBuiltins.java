@@ -858,7 +858,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         "hasDecoderAndSnapshot(self)", //
                         "hasUsedDecodedChar(self)" //
         })
+        @SuppressWarnings("truffle-static-method")
         Object tell(VirtualFrame frame, PTextIO self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("writeFlush") @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -890,7 +892,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 PBytes in = factory().createBytes(snapshotNextInput, skipBytes);
                 int charsDecoded = decoderDecode(frame, self, in, callMethodDecode, toString, codePointLengthNode);
                 if (charsDecoded <= decodedCharsUsed) {
-                    Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState);
+                    Object[] state = decoderGetstate(frame, self, savedState, inliningTarget, getObjectArrayNode, callMethodGetState, callMethodSetState);
                     int decFlags = asSizeNode.executeExact(frame, state[1]);
                     int decBufferLen = sizeNode.execute(frame, state[0]);
                     if (decBufferLen == 0) {
@@ -932,7 +934,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 /* We got n chars for 1 byte */
                 charsDecoded += n;
                 cookie.bytesToFeed += 1;
-                Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState);
+                Object[] state = decoderGetstate(frame, self, savedState, inliningTarget, getObjectArrayNode, callMethodGetState, callMethodSetState);
                 int decFlags = asSizeNode.executeExact(frame, state[1]);
                 int decBufferLen = sizeNode.execute(frame, state[0]);
 
@@ -980,6 +982,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         Object[] decoderGetstate(VirtualFrame frame, PTextIO self, Object saved_state,
+                        Node inliningTarget,
                         SequenceNodes.GetObjectArrayNode getArray,
                         PyObjectCallMethodObjArgs callMethodGetState,
                         PyObjectCallMethodObjArgs callMethodSetState) {
@@ -988,7 +991,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 fail(frame, self, saved_state, callMethodSetState);
                 throw raise(TypeError, ILLEGAL_DECODER_STATE);
             }
-            Object[] array = getArray.execute(state);
+            Object[] array = getArray.execute(inliningTarget, state);
             if (array.length < 2) {
                 fail(frame, self, saved_state, callMethodSetState);
                 throw raise(TypeError, ILLEGAL_DECODER_STATE);

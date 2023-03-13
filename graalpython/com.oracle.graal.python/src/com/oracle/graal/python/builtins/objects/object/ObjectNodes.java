@@ -700,7 +700,7 @@ public abstract class ObjectNodes {
                 Object[] names = EMPTY_OBJECT_ARRAY;
                 if (!PGuards.isNone(slotnames)) {
                     SequenceStorage sequenceStorage = getSequenceStorageNode.execute(slotnames);
-                    names = toArrayNode.execute(sequenceStorage);
+                    names = toArrayNode.execute(inliningTarget, sequenceStorage);
                 }
 
                 if (required && !checkBasesize.execute(obj, type, names.length)) {
@@ -800,7 +800,7 @@ public abstract class ObjectNodes {
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(inliningTarget, hasargs)) {
                     SequenceStorage sequenceStorage = getSequenceStorageNode.execute(args);
-                    Object[] vals = toArrayNode.execute(sequenceStorage);
+                    Object[] vals = toArrayNode.execute(inliningTarget, sequenceStorage);
                     newargsVals = new Object[vals.length + 1];
                     newargsVals[0] = cls;
                     System.arraycopy(vals, 0, newargsVals, 1, vals.length);

@@ -252,8 +252,8 @@ public class RangeBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PRange self,
-                      @Bind("this") Node inliningTarget,
-                      @Cached InlinedGetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode) {
             PTuple args = factory().createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
             return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }

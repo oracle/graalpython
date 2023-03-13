@@ -69,7 +69,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -741,7 +741,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                     writeString(((PString) v).getValueUncached());
                 } else if (PyTupleCheckExactNodeGen.getUncached().execute(v)) {
-                    Object[] items = GetObjectArrayNodeGen.getUncached().execute(v);
+                    Object[] items = GetObjectArrayNode.executeUncached(v);
                     if (version >= 4 && items.length < 256) {
                         writeByte(TYPE_SMALL_TUPLE | flag);
                         writeByte(items.length);

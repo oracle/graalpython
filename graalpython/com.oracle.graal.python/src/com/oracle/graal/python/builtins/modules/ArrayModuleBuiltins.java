@@ -183,6 +183,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
             @Specialization
             PArray arrayWithRangeInitializer(Object cls, TruffleString typeCode, PIntRange range,
+                            @Bind("this") Node inliningTarget,
                             @Shared @Cached ArrayNodes.PutValueNode putValueNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
@@ -200,7 +201,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 int len = range.getIntLength();
 
                 for (int index = 0, value = start; index < len; index++, value += step) {
-                    putValueNode.execute(null, array, index, value);
+                    putValueNode.execute(null, inliningTarget, array, index, value);
                 }
 
                 return array;
@@ -231,7 +232,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization
+            @SuppressWarnings("truffle-static-method")
             PArray arrayArrayInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PArray initializer,
+                            @Bind("this") Node inliningTarget,
                             @Shared @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached ArrayNodes.GetValueNode getValueNode,
                             @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
@@ -240,7 +243,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     PArray array = getFactory().createArray(cls, typeCode, format, initializer.getLength());
                     for (int i = 0; i < initializer.getLength(); i++) {
-                        putValueNode.execute(frame, array, i, getValueNode.execute(initializer, i));
+                        putValueNode.execute(frame, inliningTarget, array, i, getValueNode.execute(inliningTarget, initializer, i));
                     }
                     return array;
                 } catch (OverflowException e) {
@@ -250,7 +253,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization(guards = "!isBytes(initializer)")
+            @SuppressWarnings("truffle-static-method")
             PArray arraySequenceInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PSequence initializer,
+                            @Bind("this") Node inliningTarget,
                             @Shared @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
@@ -262,7 +267,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     PArray array = getFactory().createArray(cls, typeCode, format, length);
                     for (int i = 0; i < length; i++) {
-                        putValueNode.execute(frame, array, i, getItemNode.execute(storage, i));
+                        putValueNode.execute(frame, inliningTarget, array, i, getItemNode.execute(storage, i));
                     }
                     return array;
                 } catch (OverflowException e) {
@@ -302,7 +307,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raise(MemoryError);
                     }
-                    putValueNode.execute(frame, array, length - 1, nextValue);
+                    putValueNode.execute(frame, inliningTarget, array, length - 1, nextValue);
                 }
 
                 array.setLength(length);

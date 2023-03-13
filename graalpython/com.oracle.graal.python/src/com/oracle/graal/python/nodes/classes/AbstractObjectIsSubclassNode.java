@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.NeverDefault;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -57,6 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @GenerateUncached
@@ -95,6 +97,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
 
     @Specialization(guards = {"depth < MAX_RECURSION", "!isSameMetaObject(isSameTypeNode, derived, cls)", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static boolean doSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls, int depth,
+                    @Bind("this") Node inliningTarget,
                     @Cached(value = "observedSize()", dimensions = 1) int[] observedSizeArray,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
@@ -107,7 +110,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         if (bases == null || isEmpty(bases)) {
             return false;
         }
-        Object[] basesAry = getObjectArrayNode.execute(bases);
+        Object[] basesAry = getObjectArrayNode.execute(inliningTarget, bases);
         if (observedSizeArray[0] == 0) {
             // first time, the array isn't length 0! (guard above)
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -145,6 +148,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
 
     @Specialization(replaces = {"doSubclass", "doSameClass"})
     static boolean doGeneric(VirtualFrame frame, Object derived, Object cls, int depth,
+                    @Bind("this") Node inliningTarget,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached("createRecursive(depth)") AbstractObjectIsSubclassNode isSubclassNode,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode,
@@ -159,7 +163,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
             return false;
         }
 
-        for (Object baseCls : getObjectArrayNode.execute(bases)) {
+        for (Object baseCls : getObjectArrayNode.execute(inliningTarget, bases)) {
             if (isSubclassNode.executeInternal(frame, baseCls, cls, depth + 1)) {
                 return true;
             }

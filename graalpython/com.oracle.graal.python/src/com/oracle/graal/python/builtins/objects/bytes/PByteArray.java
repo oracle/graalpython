@@ -40,6 +40,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -48,6 +49,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @SuppressWarnings("truffle-abstract-export")
@@ -101,7 +103,7 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -131,7 +133,7 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -149,7 +151,7 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -166,12 +168,13 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     public void removeArrayElement(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                delItem.execute(store, PInt.intValueExact(index));
+                delItem.execute(inliningTarget, store, PInt.intValueExact(index));
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);

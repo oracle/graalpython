@@ -101,6 +101,7 @@ public final class AstBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwArgs,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyObjectSetAttr setAttrNode,
@@ -113,7 +114,7 @@ public final class AstBuiltins extends PythonBuiltins {
                 if (!(fieldsObj instanceof PSequence)) {
                     throw raise(TypeError, IS_NOT_A_SEQUENCE, fieldsObj);
                 }
-                fields = getObjectArrayNode.execute(fieldsObj);
+                fields = getObjectArrayNode.execute(inliningTarget, fieldsObj);
             }
             if (fields.length < args.length) {
                 throw raise(TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, fields.length, fields.length == 1 ? "" : "s");

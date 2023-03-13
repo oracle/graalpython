@@ -151,8 +151,9 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "format != OTHER")
         static Object unpack(BufferFormat format, @SuppressWarnings("unused") TruffleString formatStr, byte[] bytes, int offset,
+                        @Bind("this") Node inliningTarget,
                         @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
-            return unpackValueNode.execute(format, bytes, offset);
+            return unpackValueNode.execute(inliningTarget, format, bytes, offset);
         }
 
         @Fallback

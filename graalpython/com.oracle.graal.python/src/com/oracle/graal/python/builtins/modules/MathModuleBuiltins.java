@@ -2371,8 +2371,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile trivialProfile) {
             // adapted from CPython math_dist_impl and vector_norm
-            Object[] ps = getObjectArray.execute(tupleCtor.execute(frame, p));
-            Object[] qs = getObjectArray.execute(tupleCtor.execute(frame, q));
+            Object[] ps = getObjectArray.execute(inliningTarget, tupleCtor.execute(frame, p));
+            Object[] qs = getObjectArray.execute(inliningTarget, tupleCtor.execute(frame, q));
             int len = ps.length;
             if (len != qs.length) {
                 throw raise(ValueError, ErrorMessages.BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS);

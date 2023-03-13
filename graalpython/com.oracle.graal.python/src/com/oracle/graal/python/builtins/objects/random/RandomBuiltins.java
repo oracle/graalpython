@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -76,6 +77,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
@@ -151,9 +153,10 @@ public class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone setstate(PRandom random, PTuple tuple,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToJavaUnsignedLongNode castNode) {
-            Object[] arr = getObjectArrayNode.execute(tuple);
+            Object[] arr = getObjectArrayNode.execute(inliningTarget, tuple);
             if (arr.length != PRandom.N + 1) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }

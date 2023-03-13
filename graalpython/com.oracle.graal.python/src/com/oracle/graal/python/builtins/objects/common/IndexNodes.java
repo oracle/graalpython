@@ -51,6 +51,8 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -66,7 +68,7 @@ public abstract class IndexNodes {
 
         private final TruffleString errorMessage;
 
-        public NormalizeIndexNode(TruffleString errorMessage, boolean boundsCheck) {
+        private NormalizeIndexNode(TruffleString errorMessage, boolean boundsCheck) {
             this.errorMessage = errorMessage;
             if (boundsCheck) {
                 subNode = NormalizeIndexWithBoundsCheckNodeGen.create();
@@ -204,15 +206,16 @@ public abstract class IndexNodes {
             if (negativeIndexProfile.profile(inliningTarget, normalizedIndex < 0)) {
                 normalizedIndex += length;
             }
-            boundsCheckNode.execute(errorMessage, normalizedIndex, length);
+            boundsCheckNode.execute(inliningTarget, errorMessage, normalizedIndex, length);
             return normalizedIndex;
         }
 
         @Specialization
         static int doBool(boolean bIndex, int length, TruffleString errorMessage,
+                        @Bind("this") Node inliningTarget,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
             int index = PInt.intValue(bIndex);
-            boundsCheckNode.execute(errorMessage, index, length);
+            boundsCheckNode.execute(inliningTarget, errorMessage, index, length);
             return index;
         }
 
@@ -269,7 +272,7 @@ public abstract class IndexNodes {
             if (negativeIndexProfile.profile(inliningTarget, normalizedIndex < 0)) {
                 normalizedIndex += length;
             }
-            boundsCheckNode.execute(errorMessage, normalizedIndex, length);
+            boundsCheckNode.execute(inliningTarget, errorMessage, normalizedIndex, length);
             return normalizedIndex;
         }
 
@@ -347,29 +350,31 @@ public abstract class IndexNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class BoundsCheckNode extends Node {
 
-        public abstract void execute(TruffleString errorMessage, int idx, int length);
+        public abstract void execute(Node node, TruffleString errorMessage, int idx, int length);
 
-        public abstract void execute(TruffleString errorMessage, long idx, long length);
+        public abstract void execute(Node node, TruffleString errorMessage, long idx, long length);
 
         @Specialization
-        static void doBoundsCheck(TruffleString errorMessage, int idx, int length,
+        static void doBoundsCheck(Node node, TruffleString errorMessage, int idx, int length,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile outOfBoundsProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached InlinedConditionProfile outOfBoundsProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (outOfBoundsProfile.profile(inliningTarget, idx < 0 || idx >= length)) {
-                throw raiseNode.raise(PythonBuiltinClassType.IndexError, errorMessage);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, errorMessage);
             }
         }
 
         @Specialization
-        static void doBoundsCheck(TruffleString errorMessage, long idx, long length,
+        static void doBoundsCheck(Node node, TruffleString errorMessage, long idx, long length,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile outOfBoundsProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached InlinedConditionProfile outOfBoundsProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (outOfBoundsProfile.profile(inliningTarget, idx < 0 || idx >= length)) {
-                throw raiseNode.raise(PythonBuiltinClassType.IndexError, errorMessage);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, errorMessage);
             }
         }
 

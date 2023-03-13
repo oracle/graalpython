@@ -215,6 +215,7 @@ public class PartialBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object setState(VirtualFrame frame, PPartial self, PTuple state,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDictNode,
                         @Cached DeleteDictNode deleteDictNode,
                         @Cached SequenceNodes.GetSequenceStorageNode storageNode,
@@ -249,7 +250,7 @@ public class PartialBuiltins extends PythonBuiltins {
             } else {
                 fnArgsTuple = (PTuple) fnArgs;
             }
-            self.setArgs(fnArgsTuple, storageNode, arrayNode);
+            self.setArgs(inliningTarget, fnArgsTuple, storageNode, arrayNode);
 
             final PDict fnKwargsDict;
             if (fnKwargs == PNone.NONE) {
