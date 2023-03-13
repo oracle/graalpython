@@ -310,6 +310,10 @@ public final class PythonCextBuiltins {
             return getContext();
         }
 
+        protected final CApiContext getCApiContext() {
+            return getContext().getCApiContext();
+        }
+
         protected final PException badInternalCall(String argName) {
             CompilerDirectives.transferToInterpreter();
             throw raise(SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
@@ -1399,7 +1403,7 @@ public final class PythonCextBuiltins {
 
             // this will also be called if the allocation failed
             if (!lib.isNull(pointerObject)) {
-                CApiContext cApiContext = getContext().getCApiContext();
+                CApiContext cApiContext = getCApiContext();
                 cApiContext.getTraceMallocDomain(cachedDomainIdx).track(pointerObject, size);
                 cApiContext.increaseMemoryPressure(null, getThreadStateNode, this, size);
                 if (LOGGER.isLoggable(Level.FINE)) {
@@ -1417,7 +1421,7 @@ public final class PythonCextBuiltins {
         }
 
         int lookupDomain(int domain) {
-            return getContext().getCApiContext().findOrCreateTraceMallocDomain(domain);
+            return getCApiContext().findOrCreateTraceMallocDomain(domain);
         }
     }
 
@@ -1431,7 +1435,7 @@ public final class PythonCextBuiltins {
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
 
-            CApiContext cApiContext = getContext().getCApiContext();
+            CApiContext cApiContext = getCApiContext();
             long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(pointerObject);
             cApiContext.reduceMemoryPressure(trackedMemorySize);
             if (LOGGER.isLoggable(Level.FINE)) {
@@ -1446,7 +1450,7 @@ public final class PythonCextBuiltins {
         }
 
         int lookupDomain(int domain) {
-            return getContext().getCApiContext().findOrCreateTraceMallocDomain(domain);
+            return getCApiContext().findOrCreateTraceMallocDomain(domain);
         }
     }
 

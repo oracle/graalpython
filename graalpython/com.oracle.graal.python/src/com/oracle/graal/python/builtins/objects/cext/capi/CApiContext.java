@@ -198,6 +198,8 @@ public final class CApiContext extends CExtContext {
      */
     private final AtomicLong nextTssKey = new AtomicLong();
 
+    public Object timezoneType;
+
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
 

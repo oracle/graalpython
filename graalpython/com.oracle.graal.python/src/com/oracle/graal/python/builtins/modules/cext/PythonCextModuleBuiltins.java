@@ -89,8 +89,7 @@ public final class PythonCextModuleBuiltins {
 
         @Specialization
         long doIt() {
-            CApiContext nativeContext = getContext().getCApiContext();
-            return nativeContext.getAndIncMaxModuleNumber();
+            return getCApiContext().getAndIncMaxModuleNumber();
         }
     }
 

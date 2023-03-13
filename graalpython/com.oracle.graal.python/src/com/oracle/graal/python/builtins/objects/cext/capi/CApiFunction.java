@@ -200,6 +200,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextClassBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextContextBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextDateTimeBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins;
@@ -1408,6 +1409,7 @@ public final class CApiFunction {
         addCApiBuiltins(result, PythonCextCodeBuiltins.class);
         addCApiBuiltins(result, PythonCextComplexBuiltins.class);
         addCApiBuiltins(result, PythonCextContextBuiltins.class);
+        addCApiBuiltins(result, PythonCextDateTimeBuiltins.class);
         addCApiBuiltins(result, PythonCextDescrBuiltins.class);
         addCApiBuiltins(result, PythonCextDictBuiltins.class);
         addCApiBuiltins(result, PythonCextErrBuiltins.class);

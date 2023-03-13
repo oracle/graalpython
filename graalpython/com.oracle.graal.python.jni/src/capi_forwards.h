@@ -160,6 +160,15 @@ void unimplemented(const char* name) {
 #undef PyContext_Exit
 #undef PyContext_New
 #undef PyCoro_New
+#undef PyDateTimeCAPI_DateTime_FromDateAndTime
+#undef PyDateTimeCAPI_DateTime_FromDateAndTimeAndFold
+#undef PyDateTimeCAPI_DateTime_FromTimestamp
+#undef PyDateTimeCAPI_Date_FromDate
+#undef PyDateTimeCAPI_Date_FromTimestamp
+#undef PyDateTimeCAPI_Delta_FromDelta
+#undef PyDateTimeCAPI_TimeZone_FromTimeZone
+#undef PyDateTimeCAPI_Time_FromTime
+#undef PyDateTimeCAPI_Time_FromTimeAndFold
 #undef PyDescrObject_GetName
 #undef PyDescrObject_GetType
 #undef PyDescr_IsData

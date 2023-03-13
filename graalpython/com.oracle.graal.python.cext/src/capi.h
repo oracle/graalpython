@@ -122,6 +122,15 @@ typedef struct {
     BUILTIN(PyComplex_RealAsDouble, double, PyObject*) \
     BUILTIN(PyContextVar_New, PyObject*, const char*, PyObject*) \
     BUILTIN(PyContextVar_Set, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDateTimeCAPI_DateTime_FromDateAndTime, PyObject*, int, int, int, int, int, int, int, PyObject*, PyTypeObject*) \
+    BUILTIN(PyDateTimeCAPI_DateTime_FromDateAndTimeAndFold, PyObject*, int, int, int, int, int, int, int, PyObject*, int, PyTypeObject*) \
+    BUILTIN(PyDateTimeCAPI_DateTime_FromTimestamp, PyObject*, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDateTimeCAPI_Date_FromDate, PyObject*, int, int, int, PyTypeObject*) \
+    BUILTIN(PyDateTimeCAPI_Date_FromTimestamp, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDateTimeCAPI_Delta_FromDelta, PyObject*, int, int, int, int, PyTypeObject*) \
+    BUILTIN(PyDateTimeCAPI_TimeZone_FromTimeZone, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyDateTimeCAPI_Time_FromTime, PyObject*, int, int, int, int, PyObject*, PyTypeObject*) \
+    BUILTIN(PyDateTimeCAPI_Time_FromTimeAndFold, PyObject*, int, int, int, int, PyObject*, int, PyTypeObject*) \
     BUILTIN(PyDictProxy_New, PyObject*, PyObject*) \
     BUILTIN(PyDict_Clear, void, PyObject*) \
     BUILTIN(PyDict_Contains, int, PyObject*, PyObject*) \

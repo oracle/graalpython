@@ -130,7 +130,7 @@ public final class PythonCextPyStateBuiltins {
         Object doGeneric(long mIndex) {
             try {
                 int i = PInt.intValueExact(mIndex);
-                Object result = getContext().getCApiContext().getModuleByIndex(i);
+                Object result = getCApiContext().getModuleByIndex(i);
                 if (result == null) {
                     return getNativeNull();
                 }

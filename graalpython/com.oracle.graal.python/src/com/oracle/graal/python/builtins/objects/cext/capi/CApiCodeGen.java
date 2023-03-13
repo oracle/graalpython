@@ -429,11 +429,16 @@ public final class CApiCodeGen {
     private static boolean generateBuiltinRegistry(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
 
+        lines.add("    //@formatter:off");
+        for (var builtin : javaBuiltins) {
+            String argString = Arrays.stream(builtin.arguments).map(b -> "ArgDescriptor." + b).collect(Collectors.joining(", "));
+            lines.add("    public static final CApiBuiltinExecutable " + builtin.name + " = new CApiBuiltinExecutable(\"" + builtin.name + "\", CApiCallPath." + builtin.call + ", ArgDescriptor." +
+                            builtin.returnType + ", new ArgDescriptor[]{" + argString + "}, " + builtin.id + ");");
+        }
+        lines.add("");
         lines.add("    public static final CApiBuiltinExecutable[] builtins = {");
         for (var builtin : javaBuiltins) {
-            lines.add("                    new CApiBuiltinExecutable(\"" + builtin.name + "\", " + builtin.call + ", " + builtin.returnType + ",");
-            String argString = Arrays.stream(builtin.arguments).map(Object::toString).collect(Collectors.joining(", "));
-            lines.add("                                    new ArgDescriptor[]{" + argString + "}, " + builtin.id + "),");
+            lines.add("                    " + builtin.name + ",");
         }
         lines.add("    };");
         lines.add("");
@@ -463,6 +468,7 @@ public final class CApiCodeGen {
         lines.add("        }");
         lines.add("        return null;");
         lines.add("    }");
+        lines.add("    //@formatter:on");
 
         return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCextBuiltinRegistry.java"), lines);
     }
