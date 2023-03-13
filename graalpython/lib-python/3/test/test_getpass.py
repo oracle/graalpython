@@ -103,8 +103,7 @@ class UnixGetpassTest(unittest.TestCase):
             # fully if an alternate implementation works differently.
             open.return_value = None
             getpass.unix_getpass()
-            open.assert_called_once_with('/dev/tty',
-                                         os.O_RDWR | os.O_NOCTTY)
+            open.assert_called_once_with('/dev/tty', os.O_RDWR)
             fileio.assert_called_once_with(open.return_value, 'w+')
             textio.assert_called_once_with(fileio.return_value)
 
