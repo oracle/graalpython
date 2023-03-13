@@ -72,7 +72,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextDateTimeBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, PyTypeObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_Date_FromDate extends CApiQuaternaryBuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_Date_FromDate extends CApiQuaternaryBuiltinNode {
         @Specialization
         public static Object values(int year, int month, int day, Object type,
                         @Cached CallVarargsMethodNode call) {
@@ -81,7 +81,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, Int, Int, Int, PyObject, PyTypeObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_DateTime_FromDateAndTime extends CApi9BuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_DateTime_FromDateAndTime extends CApi9BuiltinNode {
         @Specialization
         public static Object values(int year, int month, int day, int hour, int minute, int second, int usecond, Object tzinfo, Object type,
                         @Cached CallVarargsMethodNode call) {
@@ -90,7 +90,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, PyObject, PyTypeObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_Time_FromTime extends CApi6BuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_Time_FromTime extends CApi6BuiltinNode {
         @Specialization
         public static Object values(int hour, int minute, int second, int usecond, Object tzinfo, Object type,
                         @Cached CallVarargsMethodNode call) {
@@ -99,7 +99,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, PyTypeObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_Delta_FromDelta extends CApi5BuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_Delta_FromDelta extends CApi5BuiltinNode {
         @Specialization
         public static Object values(int days, int seconds, int useconds, @SuppressWarnings("unused") int normalize, Object type,
                         @Cached CallVarargsMethodNode call) {
@@ -109,7 +109,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_TimeZone_FromTimeZone extends CApiBinaryBuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_TimeZone_FromTimeZone extends CApiBinaryBuiltinNode {
         @Specialization
         public Object values(Object offset, Object name,
                         @Cached CallVarargsMethodNode call) {
@@ -118,7 +118,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_DateTime_FromTimestamp extends CApiTernaryBuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_DateTime_FromTimestamp extends CApiTernaryBuiltinNode {
         @Specialization
         public static Object values(Object type, Object args, Object kwargs,
                         @Cached ExecutePositionalStarargsNode starArgsNode,
@@ -133,7 +133,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_Date_FromTimestamp extends CApiBinaryBuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_Date_FromTimestamp extends CApiBinaryBuiltinNode {
         @Specialization
         public static Object values(Object type, Object args,
                         @Cached ExecutePositionalStarargsNode starArgsNode,
@@ -146,7 +146,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, Int, Int, Int, PyObject, Int, PyTypeObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_DateTime_FromDateAndTimeAndFold extends CApi10BuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold extends CApi10BuiltinNode {
         @Specialization
         public static Object values(int year, int month, int day, int hour, int minute, int second, int usecond, Object tzinfo, int fold, Object type,
                         @Cached CallVarargsMethodNode call) {
@@ -155,7 +155,7 @@ public final class PythonCextDateTimeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Int, Int, Int, Int, PyObject, Int, PyTypeObject}, call = Ignored)
-    public abstract static class PyDateTimeCAPI_Time_FromTimeAndFold extends CApi7BuiltinNode {
+    public abstract static class PyTruffleDateTimeCAPI_Time_FromTimeAndFold extends CApi7BuiltinNode {
         @Specialization
         public static Object values(int hour, int minute, int second, int usecond, Object tzinfo, int fold, Object type,
                         @Cached CallVarargsMethodNode call) {

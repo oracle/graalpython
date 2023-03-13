@@ -122,15 +122,6 @@ typedef struct {
     BUILTIN(PyComplex_RealAsDouble, double, PyObject*) \
     BUILTIN(PyContextVar_New, PyObject*, const char*, PyObject*) \
     BUILTIN(PyContextVar_Set, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(PyDateTimeCAPI_DateTime_FromDateAndTime, PyObject*, int, int, int, int, int, int, int, PyObject*, PyTypeObject*) \
-    BUILTIN(PyDateTimeCAPI_DateTime_FromDateAndTimeAndFold, PyObject*, int, int, int, int, int, int, int, PyObject*, int, PyTypeObject*) \
-    BUILTIN(PyDateTimeCAPI_DateTime_FromTimestamp, PyObject*, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(PyDateTimeCAPI_Date_FromDate, PyObject*, int, int, int, PyTypeObject*) \
-    BUILTIN(PyDateTimeCAPI_Date_FromTimestamp, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(PyDateTimeCAPI_Delta_FromDelta, PyObject*, int, int, int, int, PyTypeObject*) \
-    BUILTIN(PyDateTimeCAPI_TimeZone_FromTimeZone, PyObject*, PyObject*, PyObject*) \
-    BUILTIN(PyDateTimeCAPI_Time_FromTime, PyObject*, int, int, int, int, PyObject*, PyTypeObject*) \
-    BUILTIN(PyDateTimeCAPI_Time_FromTimeAndFold, PyObject*, int, int, int, int, PyObject*, int, PyTypeObject*) \
     BUILTIN(PyDictProxy_New, PyObject*, PyObject*) \
     BUILTIN(PyDict_Clear, void, PyObject*) \
     BUILTIN(PyDict_Contains, int, PyObject*, PyObject*) \
@@ -288,6 +279,15 @@ typedef struct {
     BUILTIN(PyTruffleCMethod_NewEx, PyObject*, PyMethodDef*, const char*, void*, int, int, PyObject*, PyObject*, PyTypeObject*, const char*) \
     BUILTIN(PyTruffleComplex_AsCComplex, PyObject*, PyObject*) \
     BUILTIN(PyTruffleContextVar_Get, PyObject*, PyObject*, PyObject*, void*) \
+    BUILTIN(PyTruffleDateTimeCAPI_DateTime_FromDateAndTime, PyObject*, int, int, int, int, int, int, int, PyObject*, PyTypeObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold, PyObject*, int, int, int, int, int, int, int, PyObject*, int, PyTypeObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_DateTime_FromTimestamp, PyObject*, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_Date_FromDate, PyObject*, int, int, int, PyTypeObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_Date_FromTimestamp, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_Delta_FromDelta, PyObject*, int, int, int, int, PyTypeObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_TimeZone_FromTimeZone, PyObject*, PyObject*, PyObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_Time_FromTime, PyObject*, int, int, int, int, PyObject*, PyTypeObject*) \
+    BUILTIN(PyTruffleDateTimeCAPI_Time_FromTimeAndFold, PyObject*, int, int, int, int, PyObject*, int, PyTypeObject*) \
     BUILTIN(PyTruffleDescr_NewClassMethod, PyObject*, void*, const char*, const char*, int, int, void*, PyTypeObject*) \
     BUILTIN(PyTruffleDescr_NewGetSet, PyObject*, const char*, PyTypeObject*, void*, void*, const char*, void*) \
     BUILTIN(PyTruffleDict_Next, PyObject*, PyObject*, Py_ssize_t) \
