@@ -73,7 +73,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
@@ -92,7 +91,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class MemoryViewNodes {
@@ -466,14 +465,13 @@ public class MemoryViewNodes {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
         @Child private PyIndexCheckNode indexCheckNode;
         @Child private PyNumberAsSizeNode asSizeNode;
-        @CompilationFinal private ConditionProfile hasSuboffsetsProfile;
 
         // index can be a tuple, int or int-convertible
         public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, Object index);
 
         public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, int index);
 
-        private void lookupDimension(PMemoryView self, MemoryPointer ptr, int dim, int initialIndex) {
+        private void lookupDimension(Node inliningTarget, PMemoryView self, MemoryPointer ptr, int dim, int initialIndex, InlinedConditionProfile hasSuboffsetsProfile) {
             int index = initialIndex;
             int[] shape = self.getBufferShape();
             int nitems = shape[dim];
@@ -487,7 +485,7 @@ public class MemoryViewNodes {
             ptr.offset += self.getBufferStrides()[dim] * index;
 
             int[] suboffsets = self.getBufferSuboffsets();
-            if (getHasSuboffsetsProfile().profile(suboffsets != null) && suboffsets[dim] >= 0) {
+            if (hasSuboffsetsProfile.profile(inliningTarget, suboffsets != null) && suboffsets[dim] >= 0) {
                 // The length may be out of bounds, but sulong shouldn't care if we don't
                 // access the out-of-bound part
                 ptr.ptr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr.ptr, ptr.offset, suboffsets[dim], self.getLength());
@@ -496,9 +494,11 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "self.getDimensions() == 1")
-        MemoryPointer resolveInt(PMemoryView self, int index) {
+        MemoryPointer resolveInt(PMemoryView self, int index,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile) {
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
-            lookupDimension(self, ptr, 0, index);
+            lookupDimension(inliningTarget, self, ptr, 0, index, hasSuboffsetsProfile);
             return ptr;
         }
 
@@ -514,24 +514,28 @@ public class MemoryViewNodes {
         @Specialization(guards = {"cachedDimensions == self.getDimensions()", "cachedDimensions <= 8"})
         @ExplodeLoop
         MemoryPointer resolveTupleCached(VirtualFrame frame, PMemoryView self, PTuple indices,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Cached("self.getDimensions()") int cachedDimensions,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             checkTupleLength(indicesStorage, cachedDimensions);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < cachedDimensions; dim++) {
                 Object indexObj = getItemNode.execute(indicesStorage, dim);
                 int index = convertIndex(frame, indexObj);
-                lookupDimension(self, ptr, dim, index);
+                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile);
             }
             return ptr;
         }
 
         @Specialization(replaces = "resolveTupleCached")
         MemoryPointer resolveTupleGeneric(VirtualFrame frame, PMemoryView self, PTuple indices,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
+                        @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             int ndim = self.getDimensions();
             checkTupleLength(indicesStorage, ndim);
@@ -539,16 +543,18 @@ public class MemoryViewNodes {
             for (int dim = 0; dim < ndim; dim++) {
                 Object indexObj = getItemNode.execute(indicesStorage, dim);
                 int index = convertIndex(frame, indexObj);
-                lookupDimension(self, ptr, dim, index);
+                lookupDimension(inliningTarget, self, ptr, dim, index, hasSuboffsetsProfile);
             }
             return ptr;
         }
 
         @Specialization(guards = "!isPTuple(indexObj)")
-        MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj) {
+        MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile) {
             final int index = convertIndex(frame, indexObj);
             if (self.getDimensions() == 1) {
-                return resolveInt(self, index);
+                return resolveInt(self, index, inliningTarget, hasSuboffsetsProfile);
             } else {
                 return resolveIntError(self, index);
             }
@@ -591,14 +597,6 @@ public class MemoryViewNodes {
                 asSizeNode = insert(PyNumberAsSizeNode.create());
             }
             return asSizeNode;
-        }
-
-        private ConditionProfile getHasSuboffsetsProfile() {
-            if (hasSuboffsetsProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hasSuboffsetsProfile = ConditionProfile.create();
-            }
-            return hasSuboffsetsProfile;
         }
 
         private CExtNodes.PCallCapiFunction getCallCapiFunction() {

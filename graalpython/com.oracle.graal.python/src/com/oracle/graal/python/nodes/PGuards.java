@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -609,6 +610,12 @@ public abstract class PGuards {
     @InliningCutoff
     public static boolean cannotBeOverridden(Object object, GetClassNode getClassNode) {
         Object clazz = getClassNode.execute(object);
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
+    @InliningCutoff
+    public static boolean cannotBeOverridden(Object object, Node inliningTarget, InlinedGetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(inliningTarget, object);
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
