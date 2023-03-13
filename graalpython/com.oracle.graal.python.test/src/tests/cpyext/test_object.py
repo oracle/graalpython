@@ -109,6 +109,38 @@ class TestObject(object):
         tester = TestInt()
         assert int(tester) == 42
 
+    def test_float_binops(self):
+        TestFloatBinop = CPyExtType("TestFloatBinop",
+                             """
+                             PyObject* test_float(PyObject* self) {
+                                 PyErr_SetString(PyExc_RuntimeError, "Should not call __float__");
+                                 return NULL;
+                             }
+                             PyObject* test_add(PyObject* a, PyObject* b) {
+                                 return PyLong_FromLong(42);
+                             }
+                             PyObject* test_sub(PyObject* a, PyObject* b) {
+                                 return PyLong_FromLong(4242);
+                             }
+                             PyObject* test_mul(PyObject* a, PyObject* b) {
+                                 return PyLong_FromLong(424242);
+                             }
+                             PyObject* test_pow(PyObject* a, PyObject* b, PyObject* c) {
+                                 return PyLong_FromLong(42424242);
+                             }
+                             """,
+                             nb_float="test_float",
+                             nb_add="test_add",
+                             nb_subtract="test_sub",
+                             nb_multiply="test_mul",
+                             nb_power="test_pow"
+        )
+        x = TestFloatBinop()
+        assert 10.0 + x == 42
+        assert 10.0 - x == 4242
+        assert 10.0 * x == 424242
+        assert 10.0 ** x == 42424242
+
     def test_index(self):
         TestIndex = CPyExtType("TestIndex",
                              """
