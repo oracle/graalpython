@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -77,6 +76,8 @@ import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -103,8 +104,8 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(self);
-            Object right = getRefR.execute(other);
+            Object left = getRefL.execute(inliningTarget, self);
+            Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
                 return eqNode.execute(frame, left, right);
             }
@@ -131,8 +132,8 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(self);
-            Object right = getRefR.execute(other);
+            Object left = getRefL.execute(inliningTarget, self);
+            Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
                 return neNode.execute(frame, left, right);
             }
@@ -159,8 +160,8 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(self);
-            Object right = getRefR.execute(other);
+            Object left = getRefL.execute(inliningTarget, self);
+            Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
                 return ltNode.execute(frame, left, right);
             }
@@ -187,8 +188,8 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(self);
-            Object right = getRefR.execute(other);
+            Object left = getRefL.execute(inliningTarget, self);
+            Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
                 return leNode.execute(frame, left, right);
             }
@@ -215,8 +216,8 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(self);
-            Object right = getRefR.execute(other);
+            Object left = getRefL.execute(inliningTarget, self);
+            Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
                 return gtNode.execute(frame, left, right);
             }
@@ -243,8 +244,8 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
-            Object left = getRefL.execute(self);
-            Object right = getRefR.execute(other);
+            Object left = getRefL.execute(inliningTarget, self);
+            Object right = getRefR.execute(inliningTarget, other);
             if (nonEmptyProfile.profile(inliningTarget, left != null && right != null)) {
                 return geNode.execute(frame, left, right);
             }
@@ -271,7 +272,7 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object ref = getRef.execute(self);
+            Object ref = getRef.execute(inliningTarget, self);
             if (ref == null) {
                 return simpleTruffleStringFormatNode.format("<cell at 0x%s: empty>", PythonAbstractObject.systemHashCodeAsHexString(self));
             }
@@ -294,8 +295,9 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         Object get(PCell self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetRefNode getRef) {
-            Object ref = getRef.execute(self);
+            Object ref = getRef.execute(inliningTarget, self);
             if (ref == null) {
                 throw raise(ValueError, ErrorMessages.IS_EMPTY, "Cell");
             }
@@ -315,8 +317,10 @@ public class CellBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetRefNode extends PNodeWithContext {
-        public abstract Object execute(PCell self);
+        public abstract Object execute(Node inliningTarget, PCell self);
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.isEffectivelyFinalAssumption()"}, limit = "1")
         Object cached(@NeverDefault @SuppressWarnings("unused") PCell self,
@@ -328,11 +332,6 @@ public class CellBuiltins extends PythonBuiltins {
         @Specialization(replaces = "cached")
         Object uncached(PCell self) {
             return self.getRef();
-        }
-
-        @NeverDefault
-        public static GetRefNode create() {
-            return GetRefNodeGen.create();
         }
     }
 

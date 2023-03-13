@@ -251,8 +251,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectDelItem> NODE_OBJECT_DEL_ITEM = PyObjectDelItem::create;
     private static final PyObjectDelItem UNCACHED_OBJECT_DEL_ITEM = PyObjectDelItem.getUncached();
 
-    private static final NodeSupplier<SetItemNode> NODE_SET_ITEM = HashingCollectionNodes.SetItemNode::create;
-    private static final SetItemNode UNCACHED_SET_ITEM = HashingCollectionNodes.SetItemNode.getUncached();
+    private static final NodeSupplier<SetItemNode.NonInlined> NODE_SET_ITEM = HashingCollectionNodes.SetItemNode.NonInlined::create;
+    private static final SetItemNode.NonInlined UNCACHED_SET_ITEM = HashingCollectionNodes.SetItemNode.NonInlined.getUncached();
     private static final NodeSupplier<CastToJavaIntExactNode> NODE_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode::create;
     private static final CastToJavaIntExactNode UNCACHED_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode.getUncached();
     private static final ImportNode UNCACHED_IMPORT = ImportNode.getUncached();
@@ -5349,8 +5349,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case CollectionBits.KIND_SET: {
                 PSet set = factory.createSet();
-                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
-                                useCachedNodes);
+                HashingCollectionNodes.SetItemNode.NonInlined newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.NonInlinedNodeGen.class,
+                                NODE_SET_ITEM, useCachedNodes);
                 for (int i = stackTop - count + 1; i <= stackTop; i++) {
                     newNode.execute(virtualFrame, set, virtualFrame.getObject(i), PNone.NONE);
                     virtualFrame.setObject(i, null);
@@ -5360,7 +5360,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case CollectionBits.KIND_DICT: {
                 PDict dict = factory.createDict();
-                HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
+                HashingCollectionNodes.SetItemNode.NonInlined setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.NonInlinedNodeGen.class,
+                                NODE_SET_ITEM,
                                 useCachedNodes);
                 assert count % 2 == 0;
                 for (int i = stackTop - count + 1; i <= stackTop; i += 2) {
@@ -5511,7 +5512,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case CollectionBits.KIND_DICT: {
                 Object key = virtualFrame.getObject(stackTop - 1);
-                HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
+                HashingCollectionNodes.SetItemNode.NonInlined setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.NonInlinedNodeGen.class,
+                                NODE_SET_ITEM,
                                 useCachedNodes);
                 setItem.execute(virtualFrame, (PDict) collection, key, item);
                 virtualFrame.setObject(stackTop--, null);

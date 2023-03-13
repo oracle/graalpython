@@ -60,6 +60,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
+@SuppressWarnings("truffle-inlining")
 public abstract class GetAwaitableNode extends Node {
     public abstract Object execute(Frame frame, Object arg);
 

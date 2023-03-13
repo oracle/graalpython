@@ -44,6 +44,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode.NonInlined;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetClonedHashingStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -69,6 +71,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -83,36 +87,52 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 public abstract class HashingCollectionNodes {
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(PGuards.class)
     public abstract static class SetItemNode extends PNodeWithContext {
-        public abstract void execute(Frame frame, PHashingCollection c, Object key, Object value);
+        public abstract void execute(Frame frame, Node node, PHashingCollection c, Object key, Object value);
 
         @Specialization
         static void doSetItem(Frame frame, PHashingCollection c, Object key, Object value,
-                        @Cached HashingStorageSetItem setItem) {
+                        @Cached(inline = false) HashingStorageSetItem setItem) {
             HashingStorage storage = c.getDictStorage();
             storage = setItem.execute(frame, storage, key, value);
             c.setDictStorage(storage);
         }
 
-        @NeverDefault
-        public static SetItemNode create() {
-            return SetItemNodeGen.create();
-        }
+        @GenerateUncached
+        @SuppressWarnings("truffle-inlining")
+        public abstract static class NonInlined extends Node {
+            public abstract void execute(Frame frame, PHashingCollection c, Object key, Object value);
 
-        public static SetItemNode getUncached() {
-            return SetItemNodeGen.getUncached();
+            @Specialization
+            void doIt(Frame frame, PHashingCollection c, Object key, Object value,
+                            @Cached SetItemNode setItemNode) {
+                setItemNode.execute(frame, this, c, key, value);
+            }
+
+            @NeverDefault
+            public static NonInlined create() {
+                return SetItemNodeGen.NonInlinedNodeGen.create();
+            }
+
+            public static NonInlined getUncached() {
+                return SetItemNodeGen.NonInlinedNodeGen.getUncached();
+            }
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PGuards.class})
     abstract static class SetValueHashingStorageNode extends PNodeWithContext {
-        abstract HashingStorage execute(VirtualFrame frame, HashingStorage iterator, Object value);
+        abstract HashingStorage execute(VirtualFrame frame, Node node, HashingStorage iterator, Object value);
 
         @Specialization
-        HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
+        static HashingStorage doEconomicStorage(VirtualFrame frame, Node node, EconomicMapStorage map, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ObjectHashMap.PutNode putNode,
+                        @Cached(inline = false) ObjectHashMap.PutNode putNode,
                         @Cached InlinedLoopConditionProfile loopProfile) {
             // We want to avoid calling __hash__() during map.put
             map.setValueForAllKeys(frame, inliningTarget, value, putNode, loopProfile);
@@ -120,11 +140,11 @@ public abstract class HashingCollectionNodes {
         }
 
         @Specialization(guards = "!isEconomicMapStorage(map)")
-        static HashingStorage doGeneric(VirtualFrame frame, HashingStorage map, Object value,
-                        @Cached HashingStorageSetItem setItem,
-                        @Cached HashingStorageGetIterator getIterator,
-                        @Cached HashingStorageIteratorNext itNext,
-                        @Cached HashingStorageIteratorKey itKey) {
+        static HashingStorage doGeneric(VirtualFrame frame, Node node, HashingStorage map, Object value,
+                        @Cached(inline = false) HashingStorageSetItem setItem,
+                        @Cached(inline = false) HashingStorageGetIterator getIterator,
+                        @Cached(inline = false) HashingStorageIteratorNext itNext,
+                        @Cached(inline = false) HashingStorageIteratorKey itKey) {
             HashingStorageIterator it = getIterator.execute(map);
             HashingStorage storage = map;
             while (itNext.execute(map, it)) {
@@ -144,48 +164,60 @@ public abstract class HashingCollectionNodes {
      * guarantees about the values if {@link PNone#NO_VALUE} is passed as {@code value}.
      */
     @ImportStatic({PGuards.class, PythonOptions.class})
+    @GenerateInline
+    // TODO @GenerateCached(false)
     public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
-        public abstract HashingStorage execute(VirtualFrame frame, Object iterator, Object value);
+        public abstract HashingStorage execute(VirtualFrame frame, Node node, Object iterator, Object value);
 
+        public final HashingStorage doNoValue(VirtualFrame frame, Node node, Object iterator) {
+            return execute(frame, node, iterator, PNone.NO_VALUE);
+        }
+
+        /**
+         * Use {@link GetClonedHashingStorageNode.NonInlined} node instead.
+         */
+        @Deprecated
         public final HashingStorage doNoValue(VirtualFrame frame, Object iterator) {
-            return execute(frame, iterator, PNone.NO_VALUE);
+            return execute(frame, null, iterator, PNone.NO_VALUE);
         }
 
         @Specialization(guards = "isNoValue(value)")
         static HashingStorage doHashingCollectionNoValue(PHashingCollection other, @SuppressWarnings("unused") Object value,
-                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+                        @Shared("copyNode") @Cached(inline = false) HashingStorageCopy copyNode) {
             return copyNode.execute(other.getDictStorage());
         }
 
         @Specialization(guards = "isNoValue(value)")
         static HashingStorage doPDictKeyViewNoValue(PDictView.PDictKeysView other, Object value,
-                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+                        @Shared("copyNode") @Cached(inline = false) HashingStorageCopy copyNode) {
             return doHashingCollectionNoValue(other.getWrappedDict(), value, copyNode);
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object value,
-                        @Cached SetValueHashingStorageNode setValue,
-                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+        static HashingStorage doHashingCollection(VirtualFrame frame, @SuppressWarnings("unused") Node node, PHashingCollection other, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SetValueHashingStorageNode setValue,
+                        @Shared("copyNode") @Cached(inline = false) HashingStorageCopy copyNode) {
             HashingStorage storage = copyNode.execute(other.getDictStorage());
-            storage = setValue.execute(frame, storage, value);
+            storage = setValue.execute(frame, inliningTarget, storage, value);
             return storage;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        static HashingStorage doPDictView(VirtualFrame frame, PDictView.PDictKeysView other, Object value,
-                        @Cached SetValueHashingStorageNode setValue,
-                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
-            return doHashingCollection(frame, other.getWrappedDict(), value, setValue, copyNode);
+        static HashingStorage doPDictView(VirtualFrame frame, Node node, PDictView.PDictKeysView other, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SetValueHashingStorageNode setValue,
+                        @Shared("copyNode") @Cached(inline = false) HashingStorageCopy copyNode) {
+            return doHashingCollection(frame, node, other.getWrappedDict(), value, inliningTarget, setValue, copyNode);
         }
 
         @Specialization
         static HashingStorage doString(TruffleString str, Object value,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Shared("setStorageItem") @Cached(inline = false) HashingStorageSetItem setStorageItem,
+                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached(inline = false) TruffleString.FromCodePointNode fromCodePointNode) {
             HashingStorage storage = PDict.createNewStorage(codePointLengthNode.execute(str, TS_ENCODING));
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
@@ -200,22 +232,22 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doString(PString pstr, Object value,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Shared("setStorageItem") @Cached(inline = false) HashingStorageSetItem setStorageItem,
+                        @Cached(inline = false) CastToTruffleStringNode castToStringNode,
+                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached(inline = false) TruffleString.FromCodePointNode fromCodePointNode) {
             return doString(castToStringNode.execute(pstr), value, setStorageItem, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"})
-        static HashingStorage doIterable(VirtualFrame frame, Object other, Object value,
+        static HashingStorage doIterable(VirtualFrame frame, @SuppressWarnings("unused") Node node, Object other, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
+                        @Cached(inline = false) PyObjectGetIter getIter,
+                        @Cached(inline = false) GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem) {
+                        @Shared("setStorageItem") @Cached(inline = false) HashingStorageSetItem setStorageItem) {
             HashingStorage curStorage = EmptyStorage.INSTANCE;
             Object iterator = getIter.execute(frame, other);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
@@ -232,9 +264,29 @@ public abstract class HashingCollectionNodes {
         }
 
         @Fallback
-        HashingStorage fail(Object other, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raise) {
+        static HashingStorage fail(Object other, @SuppressWarnings("unused") Object value,
+                        @Cached(inline = false) PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
+        }
+
+        @SuppressWarnings("truffle-inlining")
+        public abstract static class NonInlined extends Node {
+            public abstract HashingStorage execute(VirtualFrame frame, Object iterator, Object value);
+
+            public final HashingStorage doNoValue(VirtualFrame frame, Object iterator) {
+                return execute(frame, iterator, PNone.NO_VALUE);
+            }
+
+            @Specialization
+            HashingStorage doIt(VirtualFrame frame, Object iterator, Object value,
+                            @Cached(inline = true) GetClonedHashingStorageNode getClonedHashingStorageNode) {
+                return getClonedHashingStorageNode.execute(frame, this, iterator, value);
+            }
+
+            @NeverDefault
+            public static NonInlined create() {
+                return GetClonedHashingStorageNodeGen.NonInlinedNodeGen.create();
+            }
         }
     }
 
@@ -259,8 +311,9 @@ public abstract class HashingCollectionNodes {
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)"})
         static HashingStorage doGeneric(VirtualFrame frame, Object other,
-                        @Cached GetClonedHashingStorageNode getHashingStorageNode) {
-            return getHashingStorageNode.doNoValue(frame, other);
+                        @Bind("this") Node inliningTarget,
+                        @Cached(inline = true) GetClonedHashingStorageNode getHashingStorageNode) {
+            return getHashingStorageNode.doNoValue(frame, inliningTarget, other);
         }
     }
 }

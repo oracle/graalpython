@@ -444,7 +444,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached BytesNodes.BytesJoinNode bytesJoinNode,
                         @Cached BytesNodes.CreateBytesNode create) {
-            byte[] res = bytesJoinNode.execute(frame, toByteArrayNode.execute(self.getSequenceStorage()), iterable);
+            byte[] res = bytesJoinNode.execute(frame, node, toByteArrayNode.execute(self.getSequenceStorage()), iterable);
             return create.execute(node, factory(), self, res);
         }
 
@@ -469,6 +469,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(other)", limit = "3")
+        @SuppressWarnings("truffle-static-method")
         PBytesLike add(VirtualFrame frame, PBytesLike self, Object other,
                         @Bind("this") Node node,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -525,9 +526,10 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hash(PBytes bytes,
+        static long hash(PBytes bytes,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.HashBufferNode hashBufferNode) {
-            return hashBufferNode.execute(bytes);
+            return hashBufferNode.execute(inliningTarget, bytes);
         }
     }
 
@@ -569,25 +571,14 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class CmpNode extends PythonBinaryBuiltinNode {
-        @Child private BytesNodes.CmpNode cmpNode;
-
-        int cmp(VirtualFrame frame, PBytesLike self, PBytesLike other) {
-            if (cmpNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                cmpNode = insert(BytesNodes.CmpNode.create());
-            }
-            return cmpNode.execute(frame, self, other);
-        }
-
-    }
-
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends CmpNode {
+    abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other) {
-            return cmp(frame, self, other) < 0;
+        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BytesNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, inliningTarget, self, other) < 0;
         }
 
         @Fallback
@@ -599,10 +590,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LeNode extends CmpNode {
+    abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other) {
-            return cmp(frame, self, other) <= 0;
+        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BytesNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, inliningTarget, self, other) <= 0;
         }
 
         @Fallback
@@ -614,10 +607,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GtNode extends CmpNode {
+    abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other) {
-            return cmp(frame, self, other) > 0;
+        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BytesNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, inliningTarget, self, other) > 0;
         }
 
         @Fallback
@@ -629,10 +624,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GeNode extends CmpNode {
+    abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other) {
-            return cmp(frame, self, other) >= 0;
+        boolean doBytes(VirtualFrame frame, PBytesLike self, PBytesLike other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BytesNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, inliningTarget, self, other) >= 0;
         }
 
         @Fallback
@@ -680,6 +677,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class ModNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "2")
+        @SuppressWarnings("truffle-static-method")
         Object mod(VirtualFrame frame, PBytesLike self, Object right,
                         @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
@@ -783,6 +781,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doTuplePrefixStartEnd(VirtualFrame frame, PBytesLike self, PTuple substrs, int start, int end,
+                        @Bind("this") Node inliningTarget,
                         @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached("createToBytesFromTuple()") BytesNodes.ToBytesNode tobytes,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
@@ -790,7 +789,7 @@ public class BytesBuiltins extends PythonBuiltins {
             int len = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return doIt(frame, bytes, substrs, begin, last, tobytes, getObjectArrayNode);
+            return doIt(frame, bytes, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
         }
 
         @Fallback
@@ -807,9 +806,10 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         private boolean doIt(VirtualFrame frame, byte[] self, PTuple substrs, int start, int stop,
+                        Node inliningTarget,
                         BytesNodes.ToBytesNode tobytes,
                         SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
-            for (Object element : getObjectArrayNode.execute(substrs)) {
+            for (Object element : getObjectArrayNode.execute(inliningTarget, substrs)) {
                 byte[] bytes = tobytes.execute(frame, element);
                 if (doIt(self, bytes, start, stop)) {
                     return true;
@@ -1541,7 +1541,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached.Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             int len = bufferLib.getBufferLength(self);
             if (checkSkip(len, width)) {
-                return create.execute(node, factory(), self, copyNode.execute(self.getSequenceStorage()));
+                return create.execute(node, factory(), self, copyNode.execute(node, self.getSequenceStorage()));
             }
             return create.execute(node, factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, (byte) ' '));
         }
@@ -1560,7 +1560,7 @@ public class BytesBuiltins extends PythonBuiltins {
             }
             int width = asSizeNode.executeExact(frame, w);
             if (checkSkip(len, width)) {
-                return create.execute(node, factory(), self, copyNode.execute(self.getSequenceStorage()));
+                return create.execute(node, factory(), self, copyNode.execute(node, self.getSequenceStorage()));
             }
             return create.execute(node, factory(), self, make(bufferLib.getCopiedByteArray(self), len, width, bufferLib.readByte(fill, 0)));
         }
@@ -2549,6 +2549,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class CapitalizeNode extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "2")
+        @SuppressWarnings("truffle-static-method")
         PBytesLike capitalize(PBytesLike self,
                         @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
@@ -2571,6 +2572,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class TitleNode extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "2")
+        @SuppressWarnings("truffle-static-method")
         PBytesLike title(PBytesLike self,
                         @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
@@ -2609,6 +2611,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class SwapCaseNode extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "2")
+        @SuppressWarnings("truffle-static-method")
         PBytesLike swapcase(PBytesLike self,
                         @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
@@ -2640,6 +2643,7 @@ public class BytesBuiltins extends PythonBuiltins {
         private static final byte S = ' ';
 
         @Specialization(limit = "2")
+        @SuppressWarnings("truffle-static-method")
         PBytesLike expandtabs(PBytesLike self, int tabsize,
                         @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
@@ -2714,6 +2718,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class ZFillNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization(limit = "2")
+        @SuppressWarnings("truffle-static-method")
         PBytesLike zfill(PBytesLike self, int width,
                         @Bind("this") Node node,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
@@ -2769,6 +2774,7 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")
     public abstract static class BytesLikeNoGeneralizationNode extends SequenceStorageNodes.NoGeneralizationNode {
 
         public static final SequenceStorageNodes.GenNodeSupplier SUPPLIER = new SequenceStorageNodes.GenNodeSupplier() {

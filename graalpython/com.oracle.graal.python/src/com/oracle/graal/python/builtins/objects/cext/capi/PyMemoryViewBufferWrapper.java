@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -165,6 +166,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(J_BUF, key)", "object.getBufferPointer() == null"})
         static Object getBufManaged(PMemoryView object, @SuppressWarnings("unused") String key,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
                         @Shared("pointerAdd") @Cached CExtNodes.PointerAddNode pointerAddNode,
@@ -175,7 +177,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
             if (nativeStorage == null) {
                 throw CompilerDirectives.shouldNotReachHere("cannot allocate native storage");
             }
-            setStorage.execute(owner, nativeStorage);
+            setStorage.execute(inliningTarget, owner, nativeStorage);
             Object pointer = nativeStorage.getPtr();
             if (object.getOffset() == 0) {
                 return pointer;

@@ -217,12 +217,13 @@ public abstract class IsNode extends Node implements BinaryOp {
     // code
     @Specialization
     static boolean doCode(PCode left, PCode right,
+                    @Bind("this") Node inliningTarget,
                     @Cached CodeNodes.GetCodeCallTargetNode getCt) {
         // Special case for code objects: Frames create them on-demand even if they refer to the
         // same function. So we need to compare the root nodes.
         if (left != right) {
-            RootCallTarget leftCt = getCt.execute(left);
-            RootCallTarget rightCt = getCt.execute(right);
+            RootCallTarget leftCt = getCt.execute(inliningTarget, left);
+            RootCallTarget rightCt = getCt.execute(inliningTarget, right);
             if (leftCt != null && rightCt != null) {
                 RootNode leftRootNode = leftCt.getRootNode();
                 RootNode rightRootNode = rightCt.getRootNode();

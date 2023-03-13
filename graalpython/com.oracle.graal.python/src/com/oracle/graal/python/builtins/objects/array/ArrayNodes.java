@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,38 +41,52 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class ArrayNodes {
+    @GenerateInline
+    @GenerateUncached(false)
+    @GenerateCached(false)
     public abstract static class GetValueNode extends Node {
-        public abstract Object execute(PArray array, int index);
+        public abstract Object execute(Node inliningTarget, PArray array, int index);
 
         @Specialization
-        static Object get(PArray array, int index,
+        static Object get(Node node, PArray array, int index,
+                        @Bind("this") Node inliningTarget,
                         @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
-            return unpackValueNode.execute(array.getFormat(), array.getBuffer(), index * array.getFormat().bytesize);
+            return unpackValueNode.execute(inliningTarget, array.getFormat(), array.getBuffer(), index * array.getFormat().bytesize);
         }
     }
 
+    @GenerateInline
+    @GenerateUncached(false)
+    @GenerateCached(false)
     public abstract static class PutValueNode extends Node {
-        public abstract void execute(VirtualFrame frame, PArray array, int index, Object value);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PArray array, int index, Object value);
 
         @Specialization
         static void put(VirtualFrame frame, PArray array, int index, Object value,
-                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+                        @Cached(inline = false) BufferStorageNodes.PackValueNode packValueNode) {
             packValueNode.execute(frame, array.getFormat(), value, array.getBuffer(), index * array.getFormat().bytesize);
         }
     }
 
+    @GenerateInline
+    @GenerateUncached(false)
+    @GenerateCached(false)
     public abstract static class CheckValueNode extends Node {
-        public abstract void execute(VirtualFrame frame, PArray array, Object value);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PArray array, Object value);
 
         @Specialization
         static void check(VirtualFrame frame, PArray array, Object value,
-                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+                        @Cached(inline = false) BufferStorageNodes.PackValueNode packValueNode) {
             packValueNode.execute(frame, array.getFormat(), value, new byte[8], 0);
         }
     }

@@ -169,7 +169,7 @@ public final class PFrame extends PythonBuiltinObject {
         Reference curFrameInfo = new Reference(null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.location = GetCodeRootNode.getUncached().execute(code);
+        this.location = GetCodeRootNode.executeUncached(code);
         this.line = this.location == null ? code.getFirstLineNo() : -2;
         this.arguments = frameArgs;
         this.locals = null;

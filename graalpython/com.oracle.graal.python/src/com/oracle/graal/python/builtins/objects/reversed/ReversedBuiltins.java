@@ -139,8 +139,9 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         public int lengthHint(PSequenceReverseIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.LenNode lenNode) {
-            int len = lenNode.execute(self.getPSequence());
+            int len = lenNode.execute(inliningTarget, self.getPSequence());
             if (len == -1) {
                 throw raise(TypeError, OBJ_HAS_NO_LEN, self);
             }

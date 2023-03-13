@@ -339,8 +339,9 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
         static Object run(VirtualFrame frame, PDict self, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(frame, self, key, value);
+            setItemNode.execute(frame, inliningTarget, self, key, value);
             return PNone.NONE;
         }
     }
@@ -513,9 +514,10 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isBuiltinDict(cls, isSameTypeNode)", limit = "1")
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
-            HashingStorage s = getHashingStorageNode.execute(frame, iterable, value);
+            HashingStorage s = getHashingStorageNode.execute(frame, inliningTarget, iterable, value);
             return factory().createDict(cls, s);
         }
 

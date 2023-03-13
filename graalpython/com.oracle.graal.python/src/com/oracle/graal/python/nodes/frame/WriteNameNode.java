@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class WriteNameNode extends PNodeWithContext implements AccessNameNode {
@@ -71,9 +73,10 @@ public abstract class WriteNameNode extends PNodeWithContext implements AccessNa
 
     @Specialization(guards = "hasLocalsDict(frame)")
     protected void writeLocalsDict(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
-        setItem.execute(frame, frameLocals, attributeId, value);
+        setItem.execute(frame, inliningTarget, frameLocals, attributeId, value);
     }
 
     @Specialization(guards = "hasLocals(frame)")

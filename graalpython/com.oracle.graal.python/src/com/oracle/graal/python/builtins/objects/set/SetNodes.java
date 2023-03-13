@@ -81,6 +81,7 @@ public abstract class SetNodes {
 
         @Specialization
         static PSet setString(VirtualFrame frame, Object cls, TruffleString arg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("setItem") @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
@@ -91,7 +92,7 @@ public abstract class SetNodes {
             while (it.hasNext()) {
                 int cp = nextNode.execute(it);
                 TruffleString s = fromCodePointNode.execute(cp, TS_ENCODING, true);
-                setItemNode.execute(frame, set, s, PNone.NONE);
+                setItemNode.execute(frame, inliningTarget, set, s, PNone.NONE);
             }
             return set;
         }
@@ -114,7 +115,7 @@ public abstract class SetNodes {
             Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
-                    setItemNode.execute(frame, set, nextNode.execute(frame, iterator), PNone.NONE);
+                    setItemNode.execute(frame, inliningTarget, set, nextNode.execute(frame, iterator), PNone.NONE);
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     return set;
@@ -144,8 +145,9 @@ public abstract class SetNodes {
 
         @Specialization
         public static void add(VirtualFrame frame, PSet self, Object o,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(frame, self, o, PNone.NONE);
+            setItemNode.execute(frame, inliningTarget, self, o, PNone.NONE);
         }
 
         @NeverDefault

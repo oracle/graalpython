@@ -129,7 +129,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -316,13 +315,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, bytes);
                 }
             }
-            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
+            return factory().createBytes(cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
         }
 
         @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
         PBytes dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached BytesNodes.BytesInitNode bytesInitNode) {
-            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
+            return factory().createBytes(cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
         }
     }
 
@@ -1054,8 +1054,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
         public PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
-            HashingStorage storage = getHashingStorageNode.doNoValue(frame, iterable);
+            HashingStorage storage = getHashingStorageNode.doNoValue(frame, inliningTarget, iterable);
             return factory().createFrozenSet(cls, storage);
         }
     }
@@ -2311,8 +2312,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         PTuple closure,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
         }
 
         @Specialization
@@ -2324,30 +2326,34 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
         }
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, PTuple defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(code.getName(), code, globals, getObjectArrayNode.execute(defaultArgs), null, null);
+            return factory().createFunction(code.getName(), code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
         }
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, code, globals, getObjectArrayNode.execute(defaultArgs), null, null);
+            return factory().createFunction(name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
         }
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, PTuple closure,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, code, globals, getObjectArrayNode.execute(defaultArgs), null, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
         }
 
         @Fallback
@@ -2373,7 +2379,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
-        @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private IsAcceptableBaseNode isAcceptableBaseNode;
 
         public abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
@@ -2409,11 +2414,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupMroEntriesNode,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached CallNode callNewFuncNode,
-                        @Cached CreateTypeNode createType) {
+                        @Cached CreateTypeNode createType,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
             // Determine the proper metatype to deal with this
             TruffleString name = castStr.execute(wName);
             Object metaclass = cls;
-            Object winner = calculateMetaclass(frame, inliningTarget, metaclass, bases, getClassNode, isTypeNode, lookupMroEntriesNode);
+            Object winner = calculateMetaclass(frame, inliningTarget, metaclass, bases, getClassNode, isTypeNode, lookupMroEntriesNode, getObjectArrayNode);
             if (winner != metaclass) {
                 Object newFunc = getNewFuncNode.execute(winner);
                 if (newFunc instanceof PBuiltinMethod && (((PBuiltinMethod) newFunc).getFunction().getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
@@ -2440,9 +2446,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private Object calculateMetaclass(VirtualFrame frame, Node inliningTarget, Object cls, PTuple bases, InlinedGetClassNode getClassNode, IsTypeNode isTypeNode,
-                        PyObjectLookupAttr lookupMroEntries) {
+                        PyObjectLookupAttr lookupMroEntries, GetObjectArrayNode getObjectArrayNode) {
             Object winner = cls;
-            for (Object base : ensureGetObjectArrayNode().execute(bases)) {
+            for (Object base : getObjectArrayNode.execute(inliningTarget, bases)) {
                 if (!isTypeNode.execute(base) && lookupMroEntries.execute(frame, base, T___MRO_ENTRIES__) != PNone.NO_VALUE) {
                     throw raise(TypeError, ErrorMessages.TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION);
                 }
@@ -2489,14 +2495,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(NotImplementedError, ErrorMessages.CREATING_CLASS_NON_CLS_META_CLS);
             }
             return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
-        }
-
-        private GetObjectArrayNode ensureGetObjectArrayNode() {
-            if (getObjectArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
-            }
-            return getObjectArrayNode;
         }
 
         private IsAcceptableBaseNode ensureIsAcceptableBaseNode() {
@@ -2790,6 +2788,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, TruffleString filename, TruffleString name,
                         int firstlineno, PBytes linetable,
                         PTuple freevars, PTuple cellvars,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
@@ -2797,11 +2796,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             byte[] codeBytes = bufferLib.getCopiedByteArray(codestring);
             byte[] linetableBytes = bufferLib.getCopiedByteArray(linetable);
 
-            Object[] constantsArr = getObjectArrayNode.execute(constants);
-            TruffleString[] namesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(names), castToTruffleStringNode);
-            TruffleString[] varnamesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(varnames), castToTruffleStringNode);
-            TruffleString[] freevarsArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(freevars), castToTruffleStringNode);
-            TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(cellvars), castToTruffleStringNode);
+            Object[] constantsArr = getObjectArrayNode.execute(inliningTarget, constants);
+            TruffleString[] namesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(inliningTarget, names), castToTruffleStringNode);
+            TruffleString[] varnamesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(inliningTarget, varnames), castToTruffleStringNode);
+            TruffleString[] freevarsArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(inliningTarget, freevars), castToTruffleStringNode);
+            TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(inliningTarget, cellvars), castToTruffleStringNode);
 
             return createCodeNode.execute(frame, argcount, posonlyargcount, kwonlyargcount,
                             nlocals, stacksize, flags,

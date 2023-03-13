@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -35,6 +35,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -43,6 +44,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -119,8 +121,9 @@ public abstract class CallDispatchNode extends PNodeWithContext {
     }
 
     // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
-    @Specialization(guards = {"getCt.execute(callee.getCode()) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
+    @Specialization(guards = {"getCt.execute(inliningTarget, callee.getCode()) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("getCallTargetUncached(callee)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached GetCodeCallTargetNode getCt,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {

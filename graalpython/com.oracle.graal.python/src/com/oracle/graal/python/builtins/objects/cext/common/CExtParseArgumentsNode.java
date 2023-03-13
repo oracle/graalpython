@@ -91,6 +91,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -923,13 +924,14 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = {"kwds == null", "!keywordsOnly"})
         @SuppressWarnings("unused")
         static Object doNoKeywords(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
+                        @Bind("this") Node inliningTarget,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) {
 
             Object out = null;
             assert !keywordsOnly;
-            int l = lenNode.execute(state.v.argv);
+            int l = lenNode.execute(inliningTarget, state.v.argv);
             if (state.v.argnum < l) {
                 out = getItemNode.execute(state.v.argv, state.v.argnum);
             }
@@ -943,6 +945,7 @@ public abstract class CExtParseArgumentsNode {
 
         @Specialization(replaces = "doNoKeywords")
         Object doGeneric(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
+                        @Bind("this") Node inliningTarget,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
@@ -952,7 +955,7 @@ public abstract class CExtParseArgumentsNode {
 
             Object out = null;
             if (!keywordsOnly) {
-                int l = lenNode.execute(state.v.argv);
+                int l = lenNode.execute(inliningTarget, state.v.argv);
                 if (state.v.argnum < l) {
                     out = getItemNode.execute(state.v.argv, state.v.argnum);
                 }

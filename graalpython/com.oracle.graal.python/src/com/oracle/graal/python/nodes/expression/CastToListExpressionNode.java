@@ -126,10 +126,11 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(v, getClassNode)", limit = "1")
         protected PList starredTuple(PTuple v,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached PythonObjectFactory factory,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory.createList(getObjectArrayNode.execute(v).clone());
+            return factory.createList(getObjectArrayNode.execute(inliningTarget, v).clone());
         }
 
         @Specialization(guards = "cannotBeOverridden(v, getClassNode)", limit = "1")
