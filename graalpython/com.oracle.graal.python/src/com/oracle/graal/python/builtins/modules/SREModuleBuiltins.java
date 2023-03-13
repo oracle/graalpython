@@ -160,7 +160,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
                 return doString(cast.execute(pattern), flags, options, inliningTarget, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
             } catch (CannotCastException ce) {
@@ -173,7 +174,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 try {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                     int bytesLen = bufferLib.getBufferLength(buffer);
-                    TruffleString patternStr = fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
+                    TruffleString patternStr = switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false), TS_ENCODING);
                     return constructRegexSource(inliningTarget, T_ENCODING_LATIN_1, options, patternStr, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
                 } finally {
                     bufferLib.release(buffer, frame, this);
