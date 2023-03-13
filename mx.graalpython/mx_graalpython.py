@@ -2758,6 +2758,7 @@ mx.update_commands(SUITE, {
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [no_return(python_svm), ''],
     'python-gvm': [no_return(python_gvm), ''],
+    'python-managed-gvm': [no_return(python_managed_gvm), ''],
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
