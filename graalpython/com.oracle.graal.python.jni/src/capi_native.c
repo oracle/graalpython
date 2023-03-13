@@ -346,23 +346,23 @@ CAPI_BUILTINS
     // send the locations of these values to Sulong - the values need to be shared
     initialize_native_locations(&PyTruffle_AllocatedMemory, &PyTruffle_MaxNativeMemory, &PyTruffle_NativeMemoryGCBarrier);
 
-    if (PyTruffle_Log_Fine()) {
-    	// provide some timing info for native/Java boundary
-
-        clock_t start;
-        for (int run = 0; run < 1000; run++) {
-			start = clock();
-			int COUNT = 10000;
-			for (int i = 0; i < COUNT; i++) {
-				GraalPyTruffleLong_Zero();
-			}
-			double delta = ((double) (clock() - start)) / CLOCKS_PER_SEC;
-			if ((run % 100) == 0) {
-				PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "C API Timing probe: %.0fns", delta * 1000000000 / COUNT);
-			}
-        }
-        PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
-    }
+//    if (PyTruffle_Log_Fine()) {
+//    	// provide some timing info for native/Java boundary
+//
+//        clock_t start;
+//        for (int run = 0; run < 1000; run++) {
+//			start = clock();
+//			int COUNT = 10000;
+//			for (int i = 0; i < COUNT; i++) {
+//				GraalPyTruffleLong_Zero();
+//			}
+//			double delta = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+//			if ((run % 100) == 0) {
+//				PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "C API Timing probe: %.0fns", delta * 1000000000 / COUNT);
+//			}
+//        }
+//        PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+//    }
 
     return 1;
 }
