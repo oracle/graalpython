@@ -137,7 +137,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -167,7 +167,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
@@ -182,11 +181,9 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     private abstract static class IntBinaryBuiltinNode extends PythonBinaryBuiltinNode {
-        private final BranchProfile divisionByZeroProfile = BranchProfile.create();
-
-        protected void raiseDivisionByZero(boolean cond) {
+        protected void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile) {
             if (cond) {
-                divisionByZeroProfile.enter();
+                divisionByZeroProfile.enter(inliningTarget);
                 throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
             }
         }
@@ -628,34 +625,44 @@ public final class IntBuiltins extends PythonBuiltins {
         public abstract Object execute(int left, int right);
 
         @Specialization
-        int doII(int left, int right) {
-            raiseDivisionByZero(right == 0);
+        int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return Math.floorDiv(left, right);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doLL(long left, long right) throws OverflowException {
+        long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
             if (left == Long.MIN_VALUE && right == -1) {
                 throw OverflowException.INSTANCE;
             }
-            raiseDivisionByZero(right == 0);
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return Math.floorDiv(left, right);
         }
 
         @Specialization(replaces = "doLL")
-        PInt doLLOverflow(long left, long right) {
-            return doPiPi(factory().createInt(left), factory().createInt(right));
+        PInt doLLOverflow(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            return doPiPi(factory().createInt(left), factory().createInt(right), inliningTarget, divisionByZeroProfile);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        int doIPi(int left, PInt right) throws OverflowException {
-            raiseDivisionByZero(right.isZero());
+        int doIPi(int left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return Math.floorDiv(left, right.intValueExact());
         }
 
         @Specialization(replaces = "doIPi")
-        int doIPiOvf(int left, PInt right) {
-            raiseDivisionByZero(right.isZero());
+        int doIPiOvf(int left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             try {
                 return Math.floorDiv(left, right.intValueExact());
             } catch (OverflowException e) {
@@ -664,14 +671,18 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doLPi(long left, PInt right) throws OverflowException {
-            raiseDivisionByZero(right.isZero());
+        long doLPi(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return Math.floorDiv(left, right.longValueExact());
         }
 
         @Specialization(replaces = "doLPi")
-        long doLPiOvf(long left, PInt right) {
-            raiseDivisionByZero(right.isZero());
+        long doLPiOvf(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             try {
                 return Math.floorDiv(left, right.longValueExact());
             } catch (OverflowException e) {
@@ -680,38 +691,50 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPiIAndNarrow(PInt left, int right) throws OverflowException {
-            raiseDivisionByZero(right == 0);
+        long doPiIAndNarrow(PInt left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(replaces = "doPiIAndNarrow")
-        PInt doPiI(PInt left, int right) {
-            raiseDivisionByZero(right == 0);
+        PInt doPiI(PInt left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPiLAndNarrow(PInt left, long right) throws OverflowException {
-            raiseDivisionByZero(right == 0);
+        long doPiLAndNarrow(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(replaces = "doPiLAndNarrow")
-        PInt doPiL(PInt left, long right) {
-            raiseDivisionByZero(right == 0);
+        PInt doPiL(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPiPiAndNarrow(PInt left, PInt right) throws OverflowException {
-            raiseDivisionByZero(right.isZero());
+        long doPiPiAndNarrow(PInt left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
         @Specialization(replaces = "doPiPiAndNarrow")
-        PInt doPiPi(PInt left, PInt right) {
-            raiseDivisionByZero(right.isZero());
+        PInt doPiPi(PInt left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return factory().createInt(op(left.getValue(), right.getValue()));
         }
 
@@ -744,14 +767,18 @@ public final class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DivModNode extends IntBinaryBuiltinNode {
         @Specialization
-        PTuple doLL(int left, int right) {
-            raiseDivisionByZero(right == 0);
+        PTuple doLL(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return factory().createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
         @Specialization
-        PTuple doLL(long left, long right) {
-            raiseDivisionByZero(right == 0);
+        PTuple doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return factory().createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
         }
 
@@ -782,74 +809,98 @@ public final class IntBuiltins extends PythonBuiltins {
         public abstract Object execute(int left, int right);
 
         @Specialization
-        int doII(int left, int right) {
-            raiseDivisionByZero(right == 0);
+        int doII(int left, int right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return Math.floorMod(left, right);
         }
 
         @Specialization
-        long doLL(long left, long right) {
-            raiseDivisionByZero(right == 0);
+        long doLL(long left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return Math.floorMod(left, right);
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
-        long doLPiAndNarrow(long left, PInt right) throws OverflowException {
-            raiseDivisionByZero(right.isZero());
+        long doLPiAndNarrow(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", replaces = "doLPiAndNarrow")
-        PInt doLPi(long left, PInt right) {
-            raiseDivisionByZero(right.isZero());
+        PInt doLPi(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = OverflowException.class)
-        long doLPiNegativeAndNarrow(long left, PInt right) throws OverflowException {
-            raiseDivisionByZero(right.isZero());
+        long doLPiNegativeAndNarrow(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return PInt.longValueExact(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()", replaces = "doLPiNegativeAndNarrow")
-        PInt doLPiNegative(long left, PInt right) {
-            raiseDivisionByZero(right.isZero());
+        PInt doLPiNegative(long left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return factory().createInt(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = OverflowException.class)
-        long doPiLAndNarrow(PInt left, long right) throws OverflowException {
-            raiseDivisionByZero(right == 0);
+        long doPiLAndNarrow(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right >= 0", replaces = "doPiLAndNarrow")
-        PInt doPiL(PInt left, long right) {
-            raiseDivisionByZero(right == 0);
+        PInt doPiL(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right < 0", rewriteOn = OverflowException.class)
-        long doPiLNegAndNarrow(PInt left, long right) throws OverflowException {
-            raiseDivisionByZero(right == 0);
+        long doPiLNegAndNarrow(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return PInt.longValueExact(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right < 0", replaces = "doPiLNegAndNarrow")
-        PInt doPiLNeg(PInt left, long right) {
-            raiseDivisionByZero(right == 0);
+        PInt doPiLNeg(PInt left, long right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile);
             return factory().createInt(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
-        long doPiPiAndNarrow(PInt left, PInt right) throws OverflowException {
-            raiseDivisionByZero(right.isZero());
+        long doPiPiAndNarrow(PInt left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) throws OverflowException {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", replaces = "doPiPiAndNarrow")
-        PInt doPiPi(PInt left, PInt right) {
-            raiseDivisionByZero(right.isZero());
+        PInt doPiPi(PInt left, PInt right,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile);
             return factory().createInt(op(left.getValue(), right.getValue()));
         }
 
@@ -3078,27 +3129,31 @@ public final class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "cannotBeOverridden(self, getClassNode)", limit = "1")
+        @Specialization(guards = "cannotBeOverridden(self, inliningTarget, getClassNode)", limit = "1")
         static PInt doPInt(PInt self,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) {
             return self;
         }
 
-        @Specialization(guards = "!cannotBeOverridden(self, getClassNode)", rewriteOn = OverflowException.class, limit = "1")
+        @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", rewriteOn = OverflowException.class, limit = "1")
         static int doPIntOverridenNarrowInt(PInt self,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) throws OverflowException {
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) throws OverflowException {
             return self.intValueExact();
         }
 
-        @Specialization(guards = "!cannotBeOverridden(self, getClassNode)", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class, limit = "1")
+        @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class, limit = "1")
         static long doPIntOverridenNarrowLong(PInt self,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) throws OverflowException {
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) throws OverflowException {
             return self.longValueExact();
         }
 
-        @Specialization(guards = "!cannotBeOverridden(self, getClassNode)", replaces = "doPIntOverridenNarrowLong", limit = "1")
+        @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", replaces = "doPIntOverridenNarrowLong", limit = "1")
         PInt doPIntOverriden(PInt self,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) {
             return factory().createInt(self.getValue());
         }
 

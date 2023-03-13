@@ -104,7 +104,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -129,7 +129,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -321,21 +320,23 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        private final ConditionProfile generalizedProfile = ConditionProfile.create();
-
         @Specialization
         protected Object doInt(PList self, int index, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile generalizedProfile,
                         @Shared("setItem") @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(self, setItemNode.execute(self.getSequenceStorage(), index, value));
+            updateStorage(inliningTarget, self, setItemNode.execute(self.getSequenceStorage(), index, value), generalizedProfile);
             return PNone.NONE;
         }
 
         @InliningCutoff
         @Specialization(guards = "isIndexOrSlice(indexCheckNode, key)", limit = "1")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile generalizedProfile,
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Shared("setItem") @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
+            updateStorage(inliningTarget, primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value), generalizedProfile);
             return PNone.NONE;
         }
 
@@ -347,8 +348,8 @@ public class ListBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
-        private void updateStorage(PList primary, SequenceStorage newStorage) {
-            if (this.generalizedProfile.profile(primary.getSequenceStorage() != newStorage)) {
+        private static void updateStorage(Node inliningTarget, PList primary, SequenceStorage newStorage, InlinedConditionProfile generalizedProfile) {
+            if (generalizedProfile.profile(inliningTarget, primary.getSequenceStorage() != newStorage)) {
                 primary.setSequenceStorage(newStorage);
             }
         }
@@ -412,9 +413,10 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PList copySequence(PList self,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.CopyNode copy,
-                        @Cached GetClassNode getClassNode) {
-            return factory().createList(getClassNode.execute(self), copy.execute(self.getSequenceStorage()));
+                        @Cached InlinedGetClassNode getClassNode) {
+            return factory().createList(getClassNode.execute(inliningTarget, self), copy.execute(self.getSequenceStorage()));
         }
 
     }
@@ -837,10 +839,11 @@ public class ListBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
         PList doPList(PList left, PList other,
-                        @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
-            return factory().createList(getClassNode.execute(left), newStore);
+            return factory().createList(getClassNode.execute(inliningTarget, left), newStore);
         }
 
         @Specialization(guards = "!isList(right)")
