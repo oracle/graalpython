@@ -215,15 +215,15 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         Object timezoneType = capiContext.timezoneType = getAttr.execute(null, datetime, T_TIMEZONE);
         wrapper.timezoneUTC = toSulongNode.execute(getAttr.execute(null, timezoneType, T_UTC));
 
-        wrapper.dateFromDateWrapper = PythonCextBuiltinRegistry.PyDateTimeCAPI_Date_FromDate;
-        wrapper.datetimeFromDateAndTimeWrapper = PythonCextBuiltinRegistry.PyDateTimeCAPI_DateTime_FromDateAndTime;
-        wrapper.timeFromTimeWrapper = PythonCextBuiltinRegistry.PyDateTimeCAPI_Time_FromTime;
-        wrapper.deltaFromDeltaWrapper = PythonCextBuiltinRegistry.PyDateTimeCAPI_Delta_FromDelta;
-        wrapper.timezoneFromTimezoneWrapper = PythonCextBuiltinRegistry.PyDateTimeCAPI_TimeZone_FromTimeZone;
-        wrapper.datetimeFromTimestamp = PythonCextBuiltinRegistry.PyDateTimeCAPI_DateTime_FromTimestamp;
-        wrapper.dateFromTimestamp = PythonCextBuiltinRegistry.PyDateTimeCAPI_Date_FromTimestamp;
-        wrapper.datetimeFromDateAndTimeAdFoldWrapper = PythonCextBuiltinRegistry.PyDateTimeCAPI_DateTime_FromDateAndTimeAndFold;
-        wrapper.timeFromTimeAndFold = PythonCextBuiltinRegistry.PyDateTimeCAPI_Time_FromTimeAndFold;
+        wrapper.dateFromDateWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromDate;
+        wrapper.datetimeFromDateAndTimeWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTime;
+        wrapper.timeFromTimeWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTime;
+        wrapper.deltaFromDeltaWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Delta_FromDelta;
+        wrapper.timezoneFromTimezoneWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_TimeZone_FromTimeZone;
+        wrapper.datetimeFromTimestamp = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromTimestamp;
+        wrapper.dateFromTimestamp = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Date_FromTimestamp;
+        wrapper.datetimeFromDateAndTimeAdFoldWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold;
+        wrapper.timeFromTimeAndFold = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTimeAndFold;
 
         wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
                         toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
