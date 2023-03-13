@@ -41,11 +41,11 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -54,8 +54,9 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PyFloat_Check}.
  */
 @GenerateUncached
+@GenerateInline
 public abstract class PyFloatCheckNode extends Node {
-    public abstract boolean execute(Object object);
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doDouble(@SuppressWarnings("unused") Double object) {
@@ -63,16 +64,16 @@ public abstract class PyFloatCheckNode extends Node {
     }
 
     @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlineIsBuiltinClassProfile isBuiltinClass,
+    static boolean doPFloat(@SuppressWarnings("unused") PFloat object) {
+        return true;
+    }
+
+    @Specialization
+    static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached InlinedGetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        Object clazz = getClassNode.execute(inliningTarget, object);
-        if (isBuiltinClass.profileIsBuiltinClass(inliningTarget, clazz, PythonBuiltinClassType.PFloat)) {
-            return true;
-        }
-        return isSubtypeNode.execute(clazz, PythonBuiltinClassType.PFloat);
+        // PyFloat_CheckExact is implicitly checked in IsSubtypeNode
+        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PFloat);
     }
 
     public static PyFloatCheckNode getUncached() {

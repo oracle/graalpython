@@ -343,7 +343,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
                         @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
-            if (floatCheckNode.execute(obj)) {
+            if (floatCheckNode.execute(inliningTarget, obj)) {
                 return DOUBLE_TYPE;
             }
             if (longCheckNode.execute(obj)) {
