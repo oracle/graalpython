@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -346,8 +347,8 @@ public final class PythonCextTypeBuiltins {
                         PythonLanguage language,
                         PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                        @Cached CharPtrToJavaObjectNode fromCharPointerNode,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
+            assert !(doc instanceof CArrayWrapper);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
             if (!interopLibrary.isNull(getter)) {
@@ -364,8 +365,7 @@ public final class PythonCextTypeBuiltins {
 
             // create get-set descriptor
             GetSetDescriptor descriptor = factory.createGetSetDescriptor(get, set, name, cls, hasSetter);
-            Object memberDoc = fromCharPointerNode.execute(doc);
-            dylib.put(descriptor.getStorage(), T___DOC__, memberDoc);
+            dylib.put(descriptor.getStorage(), T___DOC__, doc);
             return descriptor;
         }
 
@@ -387,9 +387,10 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
+                        @Cached CharPtrToJavaObjectNode fromCharPointerNode,
                         @Cached CreateGetSetNode createGetSetNode,
                         @Cached PyDictSetItem dictSetItem) {
-            GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure, getLanguage(), factory());
+            GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, fromCharPointerNode.execute(doc), closure, getLanguage(), factory());
             dictSetItem.execute(null, dict, name, descr);
             return 0;
         }
