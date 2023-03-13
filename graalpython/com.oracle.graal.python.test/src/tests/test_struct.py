@@ -99,9 +99,9 @@ def test_new_features():
             res = struct.pack(xfmt, arg)
             assert res == exp
             assert struct.calcsize(xfmt) == len(res)
-#            rev = struct.unpack(xfmt, res)[0]
-#            if rev != arg:
-#                assert asy
+            rev = struct.unpack(xfmt, res)[0]
+            if rev != arg:
+                assert asy
 
 
 def test_pack_unpack():
@@ -138,8 +138,8 @@ def test_pack_unpack():
 
     # floats
     cases = [
-        # ('f', 1.12123123, 1.121231198310852),
-        # ('d', 1.12123123, 1.12123123),
+        ('f', 1.12123123, 1.121231198310852),
+        ('d', 1.12123123, 1.12123123),
         ('e', 1.12345678912345, 1.123046875),
         ('e', -145.12345678912345, -145.125),
     ]
