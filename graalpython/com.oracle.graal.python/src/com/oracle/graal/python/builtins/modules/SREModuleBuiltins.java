@@ -40,12 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
-import static com.oracle.graal.python.nodes.StringLiterals.T_SLASH;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 import java.util.Objects;
@@ -59,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -73,14 +70,11 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -88,14 +82,10 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_sre")
@@ -130,11 +120,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private Object mustAdvanceFullMatchRegexp;
 
         private EconomicMap<RegexKey, Object> localeSensitiveRegexps;
-
-        private static final TruffleString T_PYTHON_METHOD_SEARCH = tsLiteral("PythonMethod=search");
-        private static final TruffleString T_PYTHON_METHOD_MATCH = tsLiteral("PythonMethod=match");
-        private static final TruffleString T_PYTHON_METHOD_FULLMATCH = tsLiteral("PythonMethod=fullmatch");
-        private static final TruffleString T_MUST_ADVANCE_TRUE = tsLiteral("MustAdvance=true");
+        private static final String ENCODING_UTF_32 = "Encoding=UTF-32";
+        private static final String ENCODING_LATIN_1 = "Encoding=LATIN-1";
 
         public TRegexCache(Object pattern, TruffleString flags) {
             this.pattern = pattern;
@@ -194,34 +181,99 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
-        private TruffleString getOptionsUncached(int pythonMethod, boolean mustAdvance) {
-            TruffleStringBuilder options = TruffleStringBuilder.create(TS_ENCODING);
+        private String getOptions(int pythonMethod, boolean mustAdvance) {
+            StringBuilder sb = new StringBuilder();
             switch (pythonMethod) {
                 case METHOD_SEARCH:
-                    options.appendStringUncached(T_PYTHON_METHOD_SEARCH);
+                    sb.append("PythonMethod=search");
                     break;
                 case METHOD_MATCH:
-                    options.appendStringUncached(T_PYTHON_METHOD_MATCH);
+                    sb.append("PythonMethod=match");
                     break;
                 case METHOD_FULLMATCH:
-                    options.appendStringUncached(T_PYTHON_METHOD_FULLMATCH);
+                    sb.append("PythonMethod=fullmatch");
                     break;
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }
             if (mustAdvance) {
-                options.appendStringUncached(T_COMMA);
-                options.appendStringUncached(T_MUST_ADVANCE_TRUE);
+                sb.append(',');
+                sb.append("MustAdvance=true");
             }
-            return options.toStringUncached();
+            return sb.toString();
         }
 
         @TruffleBoundary
-        public Object compile(MaterializedFrame frame, int method, boolean mustAdvance, TRegexCompileInternalNode tRegexCompileInternalNode) {
-            final Object regexp = tRegexCompileInternalNode.execute(frame, pattern, flags, getOptionsUncached(method, mustAdvance));
+        public Object compile(PythonContext context, int method, boolean mustAdvance) {
+            String options = getOptions(method, mustAdvance);
+            InteropLibrary lib = InteropLibrary.getUncached();
+            Object regexp;
+            try {
+                Source regexSource = buildSource(options);
+                Object compiledRegex = context.getEnv().parseInternal(regexSource).call();
+                if (lib.isNull(compiledRegex)) {
+                    regexp = PNone.NONE;
+                } else {
+                    regexp = compiledRegex;
+                }
+            } catch (RuntimeException e) {
+                try {
+                    if (lib.isException(e)) {
+                        if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
+                            TruffleString reason = lib.asTruffleString(lib.getExceptionMessage(e)).switchEncodingUncached(TS_ENCODING);
+                            SourceSection sourceSection = lib.getSourceLocation(e);
+                            int position = sourceSection.getCharIndex();
+                            // passed like Object array concats the values
+                            throw PRaiseNode.getUncached().raise(ValueError, new Object[]{reason, position});
+                        }
+                    }
+                } catch (UnsupportedMessageException e1) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                // just re-throw
+                throw e;
+            }
             setRegexp(method, mustAdvance, regexp);
             return regexp;
+        }
+
+        private Source buildSource(String options) {
+            try {
+                TruffleString patternStr = CastToTruffleStringNode.getUncached().execute(pattern);
+                return constructSource(ENCODING_UTF_32, options, patternStr.toJavaStringUncached(), flags.toJavaStringUncached());
+            } catch (CannotCastException ce) {
+                Object buffer;
+                try {
+                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(pattern);
+                } catch (PException e) {
+                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
+                }
+                PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
+                try {
+                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    int bytesLen = bufferLib.getBufferLength(buffer);
+                    TruffleString patternStr = TruffleString.fromByteArrayUncached(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
+                    return constructSource(ENCODING_LATIN_1, options, patternStr.toJavaStringUncached(), flags.toJavaStringUncached());
+                } finally {
+                    bufferLib.release(buffer);
+                }
+            }
+        }
+
+        private static Source constructSource(String encoding, String options, String pattern, String flags) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Flavor=Python");
+            sb.append(',');
+            sb.append(encoding);
+            if (!options.isEmpty()) {
+                sb.append(',');
+                sb.append(options);
+            }
+            sb.append('/');
+            sb.append(pattern);
+            sb.append('/');
+            sb.append(flags);
+            return Source.newBuilder("regex", sb.toString(), "re").mimeType("application/tregex").internal(true).build();
         }
 
         private static final class RegexKey {
@@ -264,136 +316,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class ToRegexSourceNode extends PNodeWithRaiseAndIndirectCall {
-
-        private static final TruffleString T_FLAVOR_PYTHON = tsLiteral("Flavor=Python");
-        private static final TruffleString T_ENCODING_UTF_32 = tsLiteral("Encoding=UTF-32");
-        private static final TruffleString T_ENCODING_LATIN_1 = tsLiteral("Encoding=LATIN-1");
-
-        public abstract Source execute(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options);
-
-        private static Source constructRegexSource(Node inliningTarget, TruffleString encoding, TruffleString options, TruffleString pattern, TruffleString flags,
-                        InlinedConditionProfile nonEmptyOptionsProfile,
-                        TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode, TruffleString.ToJavaStringNode toJavaStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            appendStringNode.execute(sb, T_FLAVOR_PYTHON);
-            appendStringNode.execute(sb, T_COMMA);
-            appendStringNode.execute(sb, encoding);
-            if (nonEmptyOptionsProfile.profile(inliningTarget, !options.isEmpty())) {
-                appendStringNode.execute(sb, T_COMMA);
-                appendStringNode.execute(sb, options);
-            }
-            appendStringNode.execute(sb, T_SLASH);
-            appendStringNode.execute(sb, pattern);
-            appendStringNode.execute(sb, T_SLASH);
-            appendStringNode.execute(sb, flags);
-            return createSourceBoundary(toJavaStringNode.execute(toStringNode.execute(sb)));
-        }
-
-        @TruffleBoundary
-        private static Source createSourceBoundary(String regexSourceStr) {
-            return Source.newBuilder("regex", regexSourceStr, "re").mimeType("application/tregex").internal(true).build();
-        }
-
-        @Specialization
-        protected Source doString(TruffleString pattern, TruffleString flags, TruffleString options,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("nonEmptyOptions") @Cached InlinedConditionProfile nonEmptyOptionsProfile,
-                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return constructRegexSource(inliningTarget, T_ENCODING_UTF_32, options, pattern, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
-        }
-
-        @Specialization
-        @SuppressWarnings("truffle-static-method")
-        protected Source doGeneric(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("nonEmptyOptions") @Cached InlinedConditionProfile nonEmptyOptionsProfile,
-                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached CastToTruffleStringNode cast,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            try {
-                return doString(cast.execute(pattern), flags, options, inliningTarget, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
-            } catch (CannotCastException ce) {
-                Object buffer;
-                try {
-                    buffer = bufferAcquireLib.acquireReadonly(pattern, frame, this);
-                } catch (PException e) {
-                    throw raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
-                }
-                try {
-                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                    int bytesLen = bufferLib.getBufferLength(buffer);
-                    TruffleString patternStr = switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false), TS_ENCODING);
-                    return constructRegexSource(inliningTarget, T_ENCODING_LATIN_1, options, patternStr, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
-                } finally {
-                    bufferLib.release(buffer, frame, this);
-                }
-            }
-        }
-    }
-
-    @Builtin(name = "tregex_compile_internal", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class TRegexCompileInternalNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        Object call(VirtualFrame frame, Object pattern, Object flags, Object options,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedBranchProfile potentialSyntaxError,
-                    @Cached InlinedBranchProfile syntaxError,
-                    @Cached InlinedBranchProfile unsupportedRegexError,
-                    @Cached CastToTruffleStringNode flagsToStringNode,
-                    @Cached CastToTruffleStringNode optionsToStringNode,
-                    @Cached ToRegexSourceNode toRegexSourceNode,
-                    @CachedLibrary(limit = "2") InteropLibrary exceptionLib,
-                    @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib,
-                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            try {
-                TruffleString flagsStr = flagsToStringNode.execute(flags);
-                TruffleString optionsStr = optionsToStringNode.execute(options);
-                Source regexSource = toRegexSourceNode.execute(frame, pattern, flagsStr, optionsStr);
-                Object compiledRegex = getContext().getEnv().parseInternal(regexSource).call();
-                if (compiledRegexLib.isNull(compiledRegex)) {
-                    unsupportedRegexError.enter(inliningTarget);
-                    return PNone.NONE;
-                } else {
-                    return compiledRegex;
-                }
-            } catch (RuntimeException e) {
-                return handleError(e, inliningTarget, syntaxError, potentialSyntaxError, exceptionLib, switchEncodingNode);
-            }
-        }
-
-        private Object handleError(RuntimeException e, Node inliningTarget, InlinedBranchProfile syntaxError, InlinedBranchProfile potentialSyntaxError, InteropLibrary lib,
-                                   TruffleString.SwitchEncodingNode switchEncodingNode) {
-            try {
-                if (lib.isException(e)) {
-                    potentialSyntaxError.enter(inliningTarget);
-                    if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
-                        syntaxError.enter(inliningTarget);
-                        TruffleString reason = switchEncodingNode.execute(lib.asTruffleString(lib.getExceptionMessage(e)), TS_ENCODING);
-                        SourceSection sourceSection = lib.getSourceLocation(e);
-                        int position = sourceSection.getCharIndex();
-                        // passed like Object array concats the values
-                        throw raise(ValueError, new Object[]{reason, position});
-                    }
-                }
-            } catch (UnsupportedMessageException e1) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            // just re-throw
-            throw e;
-        }
-    }
-
     @Builtin(name = "tregex_compile", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -401,14 +323,13 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance" }, limit = "6")
         Object compile(VirtualFrame frame, TRegexCache tRegexCache, int method, boolean mustAdvance,
-                      @Cached TRegexCompileInternalNode tRegexCompileInternalNode,
                       @Cached("method") int cachedMethod,
                       @Cached("mustAdvance") boolean cachedMustAdvance) {
             final Object tRegex = tRegexCache.getRegexp(method, mustAdvance);
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(frame.materialize(), method, mustAdvance, tRegexCompileInternalNode);
+                return tRegexCache.compile(getContext(), method, mustAdvance);
             }
         }
     }
