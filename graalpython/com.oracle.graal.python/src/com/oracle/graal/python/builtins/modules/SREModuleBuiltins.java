@@ -43,31 +43,38 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonSeptenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.BufferToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -79,13 +86,15 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_sre")
@@ -108,8 +117,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     public static final class TRegexCache {
 
-        private final Object pattern;
-        private final TruffleString flags;
+        private final String pattern;
+        private final String flags;
+        public final boolean binary;
 
         private Object searchRegexp;
         private Object matchRegexp;
@@ -123,9 +133,32 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private static final String ENCODING_UTF_32 = "Encoding=UTF-32";
         private static final String ENCODING_LATIN_1 = "Encoding=LATIN-1";
 
+        @TruffleBoundary
         public TRegexCache(Object pattern, TruffleString flags) {
-            this.pattern = pattern;
-            this.flags = flags;
+            String patternStr;
+            boolean binary = true;
+            try {
+                patternStr = CastToTruffleStringNode.getUncached().execute(pattern).toJavaStringUncached();
+                binary = false;
+            } catch (CannotCastException ce) {
+                Object buffer;
+                try {
+                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(pattern);
+                } catch (PException e) {
+                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
+                }
+                PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
+                try {
+                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    int bytesLen = bufferLib.getBufferLength(buffer);
+                    patternStr = new String(bytes, 0, bytesLen, StandardCharsets.ISO_8859_1);
+                } finally {
+                    bufferLib.release(buffer);
+                }
+            }
+            this.pattern = patternStr;
+            this.binary = binary;
+            this.flags = flags.toJavaStringUncached();
         }
 
         public Object getRegexp(int method, boolean mustAdvance) {
@@ -209,7 +242,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             InteropLibrary lib = InteropLibrary.getUncached();
             Object regexp;
             try {
-                Source regexSource = buildSource(options);
+                Source regexSource = constructSource(binary ? ENCODING_LATIN_1 : ENCODING_UTF_32, options, pattern, flags);
                 Object compiledRegex = context.getEnv().parseInternal(regexSource).call();
                 if (lib.isNull(compiledRegex)) {
                     regexp = PNone.NONE;
@@ -235,29 +268,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
             setRegexp(method, mustAdvance, regexp);
             return regexp;
-        }
-
-        private Source buildSource(String options) {
-            try {
-                TruffleString patternStr = CastToTruffleStringNode.getUncached().execute(pattern);
-                return constructSource(ENCODING_UTF_32, options, patternStr.toJavaStringUncached(), flags.toJavaStringUncached());
-            } catch (CannotCastException ce) {
-                Object buffer;
-                try {
-                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(pattern);
-                } catch (PException e) {
-                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
-                }
-                PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
-                try {
-                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                    int bytesLen = bufferLib.getBufferLength(buffer);
-                    TruffleString patternStr = TruffleString.fromByteArrayUncached(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
-                    return constructSource(ENCODING_LATIN_1, options, patternStr.toJavaStringUncached(), flags.toJavaStringUncached());
-                } finally {
-                    bufferLib.release(buffer);
-                }
-            }
         }
 
         private static Source constructSource(String encoding, String options, String pattern, String flags) {
@@ -334,6 +344,77 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "tregex_search", minNumOfPositionalArgs = 7)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class TRegexSearch extends PythonSeptenaryBuiltinNode {
+
+        private static final PTuple SUPPORTED_BINARY_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[] {PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
+        private static final PTuple SUPPORTED_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[] {PythonBuiltinClassType.PString, SUPPORTED_BINARY_INPUT_TYPES});
+        private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");
+        private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
+        private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
+
+        @Specialization(guards = "tRegexCache.binary == binary", limit = "2")
+        Object search(VirtualFrame frame, TRegexCache tRegexCache, Object inputStringOrBytes, int pos, int endPos, int method, boolean mustAdvance, Object matchConstructor,
+                      @Cached("tRegexCache.binary") boolean binary,
+                      @Cached BuiltinFunctions.IsInstanceNode isSupportedNode,
+                      @Cached BuiltinFunctions.IsInstanceNode isExpectedNode,
+                      @Cached ConditionProfile unsupportedInputTypeProfile,
+                      @Cached ConditionProfile unexpectedInputTypeProfile,
+                      @Cached BuiltinFunctions.LenNode lenNode,
+                      @Cached ConditionProfile truncatingInputProfile,
+                      @Cached SliceNodes.CreateSliceNode createSliceNode,
+                      @Cached PyObjectGetItem getItemNode,
+                      @Cached TRegexCompileNode tRegexCompileNode,
+                      @Cached TRegexCallExec tRegexCallExec,
+                      @Cached ConditionProfile matchProfile,
+                      @CachedLibrary(limit = "1") InteropLibrary libRegex,
+                      @CachedLibrary(limit = "1") InteropLibrary libResult,
+                      @Cached CallNode constructResultNode) {
+            if (unsupportedInputTypeProfile.profile(!(boolean) isSupportedNode.execute(frame, inputStringOrBytes, SUPPORTED_INPUT_TYPES))) {
+                throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
+            }
+            if (unexpectedInputTypeProfile.profile(!binary && !(boolean) isExpectedNode.execute(frame, inputStringOrBytes, PythonBuiltinClassType.PString))) {
+                throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
+            }
+            if (unexpectedInputTypeProfile.profile(binary && (boolean) isExpectedNode.execute(frame, inputStringOrBytes, PythonBuiltinClassType.PString))) {
+                throw getRaiseNode().raise(TypeError, T_UNEXPECTED_STR);
+            }
+            int length = (int) lenNode.execute(frame, inputStringOrBytes);
+            if (endPos < 0) {
+                endPos = 0;
+            } else if (endPos > length) {
+                endPos = length;
+            }
+            if (pos < 0) {
+                pos = 0;
+            } else if (pos > length) {
+                pos = length;
+            }
+            Object truncatedInput = inputStringOrBytes;
+            if (truncatingInputProfile.profile(endPos != length)) {
+                truncatedInput = getItemNode.execute(frame, inputStringOrBytes, createSliceNode.execute(0, endPos, 1));
+            }
+            Object compiledRegex = tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance);
+            Object regexResult = null;
+            try {
+                regexResult = tRegexCallExec.execute(frame, libRegex.readMember(compiledRegex, "exec"), truncatedInput, pos);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            try {
+                if (matchProfile.profile((boolean) libResult.readMember(regexResult, "isMatch"))) {
+                    return constructResultNode.execute(matchConstructor, pos, endPos, regexResult);
+                } else {
+                    return PNone.NONE;
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+    }
+
     @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -341,13 +422,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
-                        @Cached CastToTruffleStringNode cast,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached BufferToTruffleStringNode bufferToTruffleStringNode,
-                        @CachedLibrary("callable") InteropLibrary interop) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
+                    @Cached CastToTruffleStringNode cast,
+                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                    @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Cached BufferToTruffleStringNode bufferToTruffleStringNode,
+                    @CachedLibrary("callable") InteropLibrary interop,
+                    @Cached BranchProfile binaryProfile) {
             TruffleString input;
             Object buffer = null;
             try {
@@ -355,17 +435,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     // This would materialize the string if it was native
                     input = cast.execute(inputStringOrBytes);
                 } catch (CannotCastException e1) {
+                    binaryProfile.enter();
                     // It's bytes or other buffer object
                     buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, this);
                     input = bufferToTruffleStringNode.execute(buffer, 0);
                 }
-                Object state = IndirectCallContext.enter(frame, language, context, this);
                 try {
                     return interop.execute(callable, input, fromIndex);
                 } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e2) {
                     throw CompilerDirectives.shouldNotReachHere("could not call TRegex exec method", e2);
-                } finally {
-                    IndirectCallContext.exit(frame, language, context, state);
                 }
             } finally {
                 if (buffer != null) {

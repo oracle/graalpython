@@ -47,11 +47,13 @@ import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinAnyCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinBinaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinQuaternaryCallNode;
+import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinSeptenaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinTernaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinUnaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinVarArgsCallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonSeptenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -344,6 +346,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 } else if (node instanceof PythonQuaternaryBuiltinNode) {
                     assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 4, got " + argumentsList.length;
                     newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]);
+                } else if (node instanceof PythonSeptenaryBuiltinNode) {
+                    assert argumentsList.length == 7 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 7, got " + argumentsList.length;
+                    newBody = new BuiltinSeptenaryCallNode((PythonSeptenaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3], argumentsList[4], argumentsList[5], argumentsList[6]);
                 } else if (node instanceof PythonVarargsBuiltinNode) {
                     assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 3, got " + argumentsList.length;
                     assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;

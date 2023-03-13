@@ -383,20 +383,7 @@ class Pattern():
         return types.GenericAlias(cls, item)
 
     def _search(self, string, pos, endpos, method=_METHOD_SEARCH, must_advance=False):
-        _check_pos(pos)
-        self.__check_input_type(string)
-        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        compiled_regex = tregex_compile(self.__tregex_cache, method, must_advance)
-        if compiled_regex is not None:
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
-            if result.isMatch:
-                return Match(self, pos, endpos, result, string, self.__indexgroup)
-            else:
-                return None
-        else:
-            # We cannot pass must_advance to the SRE fallback implementation.
-            assert not must_advance
-            return getattr(self.__fallback_compile(), method)(string, pos=pos, endpos=endpos)
+        return tregex_search(self.__tregex_cache, string, pos, endpos, method, must_advance, lambda pos, endpos, result: Match(self, pos, endpos, result, string, self.__indexgroup))
 
     def search(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_SEARCH)

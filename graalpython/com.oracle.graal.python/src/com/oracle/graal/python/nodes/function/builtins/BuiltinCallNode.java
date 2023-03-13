@@ -162,6 +162,37 @@ public abstract class BuiltinCallNode extends Node {
         }
     }
 
+    public static final class BuiltinSeptenaryCallNode extends BuiltinCallNode {
+        @Child private PythonSeptenaryBuiltinNode node;
+        @Child private ReadArgumentNode arg1;
+        @Child private ReadArgumentNode arg2;
+        @Child private ReadArgumentNode arg3;
+        @Child private ReadArgumentNode arg4;
+        @Child private ReadArgumentNode arg5;
+        @Child private ReadArgumentNode arg6;
+        @Child private ReadArgumentNode arg7;
+
+        public BuiltinSeptenaryCallNode(PythonSeptenaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3, ReadArgumentNode arg4, ReadArgumentNode arg5, ReadArgumentNode arg6, ReadArgumentNode arg7) {
+            this.node = node;
+            this.arg1 = arg1;
+            this.arg2 = arg2;
+            this.arg3 = arg3;
+            this.arg4 = arg4;
+            this.arg5 = arg5;
+            this.arg6 = arg6;
+            this.arg7 = arg7;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame), arg4.execute(frame), arg5.execute(frame), arg6.execute(frame), arg7.execute(frame));
+        }
+
+        @Override
+        protected PythonBuiltinBaseNode getNode() {
+            return node;
+        }
+    }
     public static final class BuiltinVarArgsCallNode extends BuiltinCallNode {
         @Child private PythonVarargsBuiltinNode node;
         @Child private ReadArgumentNode arg1;
