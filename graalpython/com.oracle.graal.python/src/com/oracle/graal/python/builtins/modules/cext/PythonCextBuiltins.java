@@ -244,9 +244,13 @@ public final class PythonCextBuiltins {
     }
 
     public static PException checkThrowableBeforeNative(Throwable t, String where1, Object where2) {
-        if (t instanceof PException) {
+        if (t instanceof PException pe) {
             // this is ok, and will be handled correctly
-            throw (PException) t;
+            throw pe;
+        }
+        if (t instanceof ThreadDeath td) {
+            // ThreadDeath subclasses are used internally by Truffle
+            throw td;
         }
         // everything else: log and convert to PException (SystemError)
         CompilerDirectives.transferToInterpreter();
