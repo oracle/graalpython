@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.floats;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FLOAT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
@@ -91,12 +92,11 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProvid
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
-import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -111,6 +111,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -130,7 +132,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -297,107 +298,68 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static final int DOUBLE_TYPE = 1;
-    protected static final int LONG_TYPE = 2;
-    protected static final int FOREIGN_TYPE = 3;
-    protected static final int NOT_IMPLEMENTED = 4;
-
     @GenerateUncached
     abstract static class ConvertToDoubleCheckNode extends Node {
-        abstract int execute(Object obj);
+        abstract boolean execute(Object obj);
 
         @Specialization
-        static int doDouble(@SuppressWarnings("unused") Double object) {
-            return DOUBLE_TYPE;
+        static boolean doDouble(@SuppressWarnings("unused") Double object) {
+            return true;
         }
 
         @Specialization
-        static int doInt(@SuppressWarnings("unused") Integer object) {
-            return LONG_TYPE;
+        static boolean doInt(@SuppressWarnings("unused") Integer object) {
+            return true;
         }
 
         @Specialization
-        static int doLong(@SuppressWarnings("unused") Long object) {
-            return LONG_TYPE;
+        static boolean doLong(@SuppressWarnings("unused") Long object) {
+            return true;
         }
 
         @Specialization
-        static int doBoolean(@SuppressWarnings("unused") Boolean object) {
-            return LONG_TYPE;
+        static boolean doBoolean(@SuppressWarnings("unused") Boolean object) {
+            return true;
         }
 
         @Specialization
-        static int doString(@SuppressWarnings("unused") TruffleString object) {
-            return NOT_IMPLEMENTED;
+        static boolean doString(@SuppressWarnings("unused") TruffleString object) {
+            return false;
         }
 
         @Specialization
-        static int doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
-            return NOT_IMPLEMENTED;
+        static boolean doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+            return false;
         }
 
         @Specialization
-        static int typeCheck(Object obj,
+        static boolean typeCheck(Object obj,
                         @Cached PyFloatCheckNode floatCheckNode,
                         @Cached PyLongCheckNode longCheckNode,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
                         @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
-            if (floatCheckNode.execute(inliningTarget, obj)) {
-                return DOUBLE_TYPE;
-            }
-            if (longCheckNode.execute(obj)) {
-                return LONG_TYPE;
+            if (floatCheckNode.execute(inliningTarget, obj) || longCheckNode.execute(obj)) {
+                return true;
             }
             Object type = getClassNode.execute(inliningTarget, obj);
             if (type == PythonBuiltinClassType.ForeignObject) {
                 if (interopLibrary.fitsInDouble(obj) || interopLibrary.fitsInLong(obj) || interopLibrary.isBoolean(obj)) {
-                    return FOREIGN_TYPE;
+                    return true;
                 }
             }
-            return NOT_IMPLEMENTED;
+            return false;
         }
     }
 
-    @ImportStatic(FloatBuiltins.class)
-    @GenerateUncached
-    abstract static class ConvertToDoubleNode extends Node {
-
-        abstract double execute(VirtualFrame frame, int type, Object obj);
-
-        @Specialization(guards = "type == DOUBLE_TYPE")
-        static double doDouble(VirtualFrame frame, @SuppressWarnings("unused") int type, Object obj,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
-            return asDoubleNode.execute(frame, obj);
-        }
-
-        @Specialization(guards = "type == LONG_TYPE")
-        static double doLong(@SuppressWarnings("unused") int type, Object obj,
-                        @Cached PyLongAsDoubleNode asDoubleNode) {
-            Object r = asDoubleNode.execute(obj);
-            assert r != PNotImplemented.NOT_IMPLEMENTED : "Already been checked in ConvertToDoubleCheckNode";
-            return (double) r;
-        }
-
-        @Specialization(guards = "type == FOREIGN_TYPE")
-        static double doForeign(@SuppressWarnings("unused") int type, Object obj,
-                        @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
-            try {
-                if (interopLibrary.fitsInDouble(obj)) {
-
-                    return interopLibrary.asDouble(obj);
-                }
-                if (interopLibrary.fitsInLong(obj)) {
-                    return (double) interopLibrary.asLong(obj);
-                }
-                if (interopLibrary.isBoolean(obj)) {
-                    return interopLibrary.asBoolean(obj) ? 1.0 : 0.0;
-                }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-
-            throw CompilerDirectives.shouldNotReachHere("Should have been checked in ConvertToDoubleCheckNode");
+    static double convertToDouble(Object obj,
+                    CastToJavaDoubleNode asDoubleNode,
+                    PRaiseNode raiseNode) {
+        try {
+            return asDoubleNode.execute(obj);
+        } catch (CannotCastException e) {
+            // This can only happen to values that are expected to be long.
+            throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
         }
     }
 
@@ -449,20 +411,20 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        Object doGeneric(Object left, Object right,
                         @Cached ConvertToDoubleCheckNode convertToDoubleCheckNode,
-                        @Cached ConvertToDoubleNode convertToDoubleNode) {
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
             double leftDouble;
             double rightDouble;
-            int leftType = convertToDoubleCheckNode.execute(left);
-            if (leftType != NOT_IMPLEMENTED) {
-                leftDouble = convertToDoubleNode.execute(frame, leftType, left);
+
+            if (convertToDoubleCheckNode.execute(left)) {
+                leftDouble = convertToDouble(left, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            int rightType = convertToDoubleCheckNode.execute(right);
-            if (rightType != NOT_IMPLEMENTED) {
-                rightDouble = convertToDoubleNode.execute(frame, rightType, right);
+
+            if (convertToDoubleCheckNode.execute(right)) {
+                rightDouble = convertToDouble(right, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -501,20 +463,20 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        Object doGeneric(Object left, Object right,
                         @Cached ConvertToDoubleCheckNode convertToDoubleCheckNode,
-                        @Cached ConvertToDoubleNode convertToDoubleNode) {
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
             double leftDouble;
             double rightDouble;
-            int leftType = convertToDoubleCheckNode.execute(left);
-            if (leftType != NOT_IMPLEMENTED) {
-                leftDouble = convertToDoubleNode.execute(frame, leftType, left);
+
+            if (convertToDoubleCheckNode.execute(left)) {
+                leftDouble = convertToDouble(left, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            int rightType = convertToDoubleCheckNode.execute(right);
-            if (rightType != NOT_IMPLEMENTED) {
-                rightDouble = convertToDoubleNode.execute(frame, rightType, right);
+
+            if (convertToDoubleCheckNode.execute(right)) {
+                rightDouble = convertToDouble(right, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -581,20 +543,20 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        Object doGeneric(Object left, Object right,
                         @Cached ConvertToDoubleCheckNode convertToDoubleCheckNode,
-                        @Cached ConvertToDoubleNode convertToDoubleNode) {
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
             double leftDouble;
             double rightDouble;
-            int leftType = convertToDoubleCheckNode.execute(left);
-            if (leftType != NOT_IMPLEMENTED) {
-                leftDouble = convertToDoubleNode.execute(frame, leftType, left);
+
+            if (convertToDoubleCheckNode.execute(left)) {
+                leftDouble = convertToDouble(left, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            int rightType = convertToDoubleCheckNode.execute(right);
-            if (rightType != NOT_IMPLEMENTED) {
-                rightDouble = convertToDoubleNode.execute(frame, rightType, right);
+
+            if (convertToDoubleCheckNode.execute(right)) {
+                rightDouble = convertToDouble(right, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -712,22 +674,22 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
                         @Cached ConvertToDoubleCheckNode convertToDoubleCheckNode,
-                        @Cached ConvertToDoubleNode convertToDoubleNode,
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
             if (!(mod instanceof PNone)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
             }
             double leftDouble;
             double rightDouble;
-            int leftType = convertToDoubleCheckNode.execute(left);
-            if (leftType != NOT_IMPLEMENTED) {
-                leftDouble = convertToDoubleNode.execute(frame, leftType, left);
+
+            if (convertToDoubleCheckNode.execute(left)) {
+                leftDouble = convertToDouble(left, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            int rightType = convertToDoubleCheckNode.execute(right);
-            if (rightType != NOT_IMPLEMENTED) {
-                rightDouble = convertToDoubleNode.execute(frame, rightType, right);
+
+            if (convertToDoubleCheckNode.execute(right)) {
+                rightDouble = convertToDouble(right, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -812,20 +774,20 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(VirtualFrame frame, Object left, Object right,
+        Object doGeneric(Object left, Object right,
                         @Cached ConvertToDoubleCheckNode convertToDoubleCheckNode,
-                        @Cached ConvertToDoubleNode convertToDoubleNode) {
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
             double leftDouble;
             double rightDouble;
-            int leftType = convertToDoubleCheckNode.execute(left);
-            if (leftType != NOT_IMPLEMENTED) {
-                leftDouble = convertToDoubleNode.execute(frame, leftType, left);
+
+            if (convertToDoubleCheckNode.execute(left)) {
+                leftDouble = convertToDouble(left, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            int rightType = convertToDoubleCheckNode.execute(right);
-            if (rightType != NOT_IMPLEMENTED) {
-                rightDouble = convertToDoubleNode.execute(frame, rightType, right);
+
+            if (convertToDoubleCheckNode.execute(right)) {
+                rightDouble = convertToDouble(right, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -1016,20 +978,20 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(VirtualFrame frame, Object left, Object right,
+        Object doGeneric(Object left, Object right,
                         @Cached ConvertToDoubleCheckNode convertToDoubleCheckNode,
-                        @Cached ConvertToDoubleNode convertToDoubleNode) {
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
             double leftDouble;
             double rightDouble;
-            int leftType = convertToDoubleCheckNode.execute(left);
-            if (leftType != NOT_IMPLEMENTED) {
-                leftDouble = convertToDoubleNode.execute(frame, leftType, left);
+
+            if (convertToDoubleCheckNode.execute(left)) {
+                leftDouble = convertToDouble(left, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            int rightType = convertToDoubleCheckNode.execute(right);
-            if (rightType != NOT_IMPLEMENTED) {
-                rightDouble = convertToDoubleNode.execute(frame, rightType, right);
+
+            if (convertToDoubleCheckNode.execute(right)) {
+                rightDouble = convertToDouble(right, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -1097,20 +1059,20 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(VirtualFrame frame, Object left, Object right,
+        Object doGeneric(Object left, Object right,
                         @Cached ConvertToDoubleCheckNode convertToDoubleCheckNode,
-                        @Cached ConvertToDoubleNode convertToDoubleNode) {
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
             double leftDouble;
             double rightDouble;
-            int leftType = convertToDoubleCheckNode.execute(left);
-            if (leftType != NOT_IMPLEMENTED) {
-                leftDouble = convertToDoubleNode.execute(frame, leftType, left);
+
+            if (convertToDoubleCheckNode.execute(left)) {
+                leftDouble = convertToDouble(left, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            int rightType = convertToDoubleCheckNode.execute(right);
-            if (rightType != NOT_IMPLEMENTED) {
-                rightDouble = convertToDoubleNode.execute(frame, rightType, right);
+
+            if (convertToDoubleCheckNode.execute(right)) {
+                rightDouble = convertToDouble(right, castToJavaDoubleNode, getRaiseNode());
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
