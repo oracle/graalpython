@@ -64,8 +64,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -77,7 +77,10 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -87,7 +90,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 
@@ -587,14 +591,16 @@ public class CApiTransitions {
     private static final InteropLibrary LIB = InteropLibrary.getUncached();
 
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class CharPtrToPythonNode extends CExtToJavaNode {
 
         @Specialization
         static Object doForeign(Object value,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                        @Cached ConditionProfile isNullProfile) {
+                        @Cached InlinedConditionProfile isNullProfile) {
             // this branch is not a shortcut; it actually returns a different object
-            if (isNullProfile.profile(interopLibrary.isNull(value))) {
+            if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(value))) {
                 return PNone.NO_VALUE;
             }
             return nativeCharToJava(value);
@@ -639,6 +645,7 @@ public class CApiTransitions {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(CApiGuards.class)
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
@@ -715,6 +722,7 @@ public class CApiTransitions {
      * </p>
      */
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class PythonToNativeNewRefNode extends PythonToNativeNode {
 
         @Specialization
@@ -735,6 +743,7 @@ public class CApiTransitions {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(CApiGuards.class)
     public abstract static class NativeToPythonNode extends CExtToJavaNode {
 
@@ -751,27 +760,30 @@ public class CApiTransitions {
 
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
-                        @Cached ConditionProfile isPrimitiveProfile) {
-            return handleWrapper(isPrimitiveProfile, false, value);
+                        @Bind("$node") Node inliningTarget,
+                        @Shared("primitive") @Cached InlinedConditionProfile isPrimitiveProfile) {
+            return handleWrapper(inliningTarget, isPrimitiveProfile, false, value);
         }
 
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
+        @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         Object doNonWrapper(Object value,
+                        @Bind("$node") Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached ConditionProfile isNullProfile,
-                        @Cached ConditionProfile isZeroProfile,
-                        @Cached ConditionProfile createNativeProfile,
-                        @Cached ConditionProfile isNativeProfile,
-                        @Cached ConditionProfile isNativeWrapperProfile,
-                        @Cached ConditionProfile isHandleSpaceProfile,
-                        @Cached ConditionProfile isPrimitiveProfile) {
+                        @Cached InlinedConditionProfile isNullProfile,
+                        @Cached InlinedConditionProfile isZeroProfile,
+                        @Cached InlinedConditionProfile createNativeProfile,
+                        @Cached InlinedConditionProfile isNativeProfile,
+                        @Cached InlinedConditionProfile isNativeWrapperProfile,
+                        @Cached InlinedConditionProfile isHandleSpaceProfile,
+                        @Shared("primitive") @Cached InlinedConditionProfile isPrimitiveProfile) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
             assert !(value instanceof PythonAbstractNativeObject);
 
             // this is just a shortcut
-            if (isNullProfile.profile(interopLibrary.isNull(value))) {
+            if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(value))) {
                 return PNone.NO_VALUE;
             }
             PythonNativeWrapper wrapper;
@@ -787,10 +799,10 @@ public class CApiTransitions {
             } catch (final UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
-            if (isZeroProfile.profile(pointer == 0)) {
+            if (isZeroProfile.profile(inliningTarget, pointer == 0)) {
                 return PNone.NO_VALUE;
             }
-            if (isHandleSpaceProfile.profile(HandleTester.pointsToPyHandleSpace(pointer))) {
+            if (isHandleSpaceProfile.profile(inliningTarget, HandleTester.pointsToPyHandleSpace(pointer))) {
                 PythonObjectReference reference = nativeContext.nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE));
                 if (reference == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -803,13 +815,13 @@ public class CApiTransitions {
                 }
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
-                if (isNativeProfile.profile(lookup != null)) {
+                if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
-                    if (createNativeProfile.profile(ref == null)) {
+                    if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         return createAbstractNativeObject(value, needsTransfer(), pointer);
                     }
-                    if (isNativeWrapperProfile.profile(ref instanceof PythonNativeWrapper)) {
+                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
@@ -822,15 +834,15 @@ public class CApiTransitions {
                     return createAbstractNativeObject(value, needsTransfer(), pointer);
                 }
             }
-            return handleWrapper(isPrimitiveProfile, needsTransfer(), wrapper);
+            return handleWrapper(inliningTarget, isPrimitiveProfile, needsTransfer(), wrapper);
         }
 
-        private static Object handleWrapper(ConditionProfile isPrimitiveProfile, boolean transfer, PythonNativeWrapper wrapper) {
+        private static Object handleWrapper(Node node, InlinedConditionProfile isPrimitiveProfile, boolean transfer, PythonNativeWrapper wrapper) {
             if (transfer) {
                 assert wrapper.getRefCount() >= PythonNativeWrapper.MANAGED_REFCNT;
                 decRef(wrapper, 1);
             }
-            if (isPrimitiveProfile.profile(wrapper instanceof PrimitiveNativeWrapper)) {
+            if (isPrimitiveProfile.profile(node, wrapper instanceof PrimitiveNativeWrapper)) {
                 PrimitiveNativeWrapper primitive = (PrimitiveNativeWrapper) wrapper;
                 if (primitive.isBool()) {
                     return primitive.getBool();
@@ -864,6 +876,7 @@ public class CApiTransitions {
     }
 
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class NativeToPythonStealingNode extends NativeToPythonNode {
 
         @Specialization
