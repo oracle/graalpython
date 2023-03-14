@@ -903,7 +903,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffle_FileSystemDefaultEncoding extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_FileSystemDefaultEncoding extends CApiNullaryBuiltinNode {
         @Specialization
         static TruffleString encoding() {
             return GetFileSystemEncodingNode.getFileSystemEncoding();
@@ -1289,7 +1289,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = SIZE_T, args = {}, call = Ignored)
-    public abstract static class PyTruffle_MaxNativeMemory extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_MaxNativeMemory extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         long get() {
@@ -1298,7 +1298,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = SIZE_T, args = {}, call = Ignored)
-    public abstract static class PyTruffle_InitialNativeMemory extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_InitialNativeMemory extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         long get() {
@@ -1307,7 +1307,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {SIZE_T}, call = Ignored)
-    public abstract static class PyTruffle_TriggerGC extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_TriggerGC extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -1328,7 +1328,7 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
     @ImportStatic(CApiGuards.class)
-    public abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Free.class);
 
         @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
@@ -1627,7 +1627,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    public abstract static class PyTruffle_Debug extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_Debug extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         static Object doIt(Object[] args,
@@ -1638,7 +1638,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    public abstract static class PyTruffle_ToNative extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_ToNative extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         int doIt(Object object) {

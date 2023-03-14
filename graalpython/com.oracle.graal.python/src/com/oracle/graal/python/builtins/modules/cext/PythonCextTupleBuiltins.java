@@ -77,7 +77,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class PythonCextTupleBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    public abstract static class PyTuple_New extends CApiUnaryBuiltinNode {
+    abstract static class PyTuple_New extends CApiUnaryBuiltinNode {
 
         @Specialization
         PTuple doGeneric(long size) {
@@ -86,7 +86,7 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
-    public abstract static class PyTuple_SetItem extends CApiTernaryBuiltinNode {
+    abstract static class PyTuple_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PTuple tuple, long index, Object element,
                         @Shared("setItem") @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
@@ -181,7 +181,7 @@ public final class PythonCextTupleBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    public abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
+    abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
         @Specialization
         public static int size(Object tuple,
                         @Cached PyTupleSizeNode pyTupleSizeNode) {

@@ -67,7 +67,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextPyStateBuiltins {
 
     @CApiBuiltin(ret = PY_GIL_STATE_STATE, args = {}, acquiresGIL = false, call = Direct)
-    public abstract static class PyGILState_Ensure extends CApiNullaryBuiltinNode {
+    abstract static class PyGILState_Ensure extends CApiNullaryBuiltinNode {
 
         @Specialization
         Object save(@Cached GilNode gil) {
@@ -78,7 +78,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {}, acquiresGIL = false, call = Direct)
-    public abstract static class PyGILState_Check extends CApiNullaryBuiltinNode {
+    abstract static class PyGILState_Check extends CApiNullaryBuiltinNode {
 
         @Specialization
         Object check() {
@@ -87,7 +87,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PY_GIL_STATE_STATE}, acquiresGIL = false, call = Direct)
-    public abstract static class PyGILState_Release extends CApiUnaryBuiltinNode {
+    abstract static class PyGILState_Release extends CApiUnaryBuiltinNode {
 
         @Specialization
         Object restore(int state,

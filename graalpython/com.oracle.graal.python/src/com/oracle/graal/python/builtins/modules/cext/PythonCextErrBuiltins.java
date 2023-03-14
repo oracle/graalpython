@@ -157,7 +157,7 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
     abstract static class PyTruffleErr_Fetch extends CApiNullaryBuiltinNode {
         @Specialization
-        public Object run(@Cached GetThreadStateNode getThreadStateNode,
+        Object run(@Cached GetThreadStateNode getThreadStateNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetTracebackNode getTracebackNode) {
             PException currentException = getThreadStateNode.getCurrentException();

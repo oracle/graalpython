@@ -161,7 +161,7 @@ public final class PythonCextLongBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(obj, getClassNode, isSubtypeNode)"})
-        public static Object signNative(Object obj,
+        static Object signNative(Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             // function returns int, but -1 is expected result for 'n < 0'
@@ -169,7 +169,7 @@ public final class PythonCextLongBuiltins {
         }
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(obj,getClassNode,isSubtypeNode)"})
-        public static Object sign(@SuppressWarnings("unused") Object obj,
+        static Object sign(@SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             // assert(PyLong_Check(v));
@@ -385,7 +385,7 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffleLong_One extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffleLong_One extends CApiNullaryBuiltinNode {
         @Specialization
         static int run() {
             return 1;
@@ -393,7 +393,7 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffleLong_Zero extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffleLong_Zero extends CApiNullaryBuiltinNode {
         @Specialization
         static int run() {
             return 0;

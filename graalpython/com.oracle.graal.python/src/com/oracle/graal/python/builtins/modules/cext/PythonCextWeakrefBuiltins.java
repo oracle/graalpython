@@ -70,7 +70,7 @@ public final class PythonCextWeakrefBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyWeakref_NewRef extends CApiBinaryBuiltinNode {
         @Specialization
-        public Object refType(Object object, Object callback,
+        Object refType(Object object, Object callback,
                         @Cached ReferenceTypeNode referenceType) {
             return referenceType.execute(null, PythonBuiltinClassType.PReferenceType, object, callback);
         }
@@ -79,7 +79,7 @@ public final class PythonCextWeakrefBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
     abstract static class PyWeakref_GetObject extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object call(PReferenceType self) {
+        Object call(PReferenceType self) {
             return self.getPyObject();
         }
     }

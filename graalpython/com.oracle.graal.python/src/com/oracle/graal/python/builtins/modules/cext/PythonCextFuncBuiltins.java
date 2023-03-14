@@ -53,9 +53,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextFuncBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyStaticMethod_New extends CApiUnaryBuiltinNode {
+    abstract static class PyStaticMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object staticmethod(Object func) {
+        Object staticmethod(Object func) {
             PDecoratedMethod res = factory().createStaticmethod(PythonBuiltinClassType.PStaticmethod);
             res.setCallable(func);
             return res;
@@ -63,9 +63,9 @@ public final class PythonCextFuncBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyClassMethod_New extends CApiUnaryBuiltinNode {
+    abstract static class PyClassMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object staticmethod(Object callable) {
+        Object staticmethod(Object callable) {
             return factory().createClassmethodFromCallableObj(callable);
         }
     }

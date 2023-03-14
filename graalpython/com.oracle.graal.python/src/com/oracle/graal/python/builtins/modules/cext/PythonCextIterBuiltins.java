@@ -55,7 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextIterBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PySeqIter_New extends CApiUnaryBuiltinNode {
+    abstract static class PySeqIter_New extends CApiUnaryBuiltinNode {
         @Specialization
         PSequenceIterator call(Object seq) {
             return factory().createSequenceIterator(seq);
@@ -63,9 +63,9 @@ public final class PythonCextIterBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    public abstract static class PyCallIter_New extends CApiBinaryBuiltinNode {
+    abstract static class PyCallIter_New extends CApiBinaryBuiltinNode {
         @Specialization
-        public Object getItem(Object it, Object sentinel,
+        Object getItem(Object it, Object sentinel,
                         @Cached IterNode iterNode) {
             return iterNode.execute(null, it, sentinel);
         }

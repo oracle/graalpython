@@ -496,7 +496,7 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffle_NotImplemented extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_NotImplemented extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -617,7 +617,7 @@ public class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyObject_Format extends CApiBinaryBuiltinNode {
         @Specialization
-        public static Object ascii(Object obj, Object spec,
+        static Object ascii(Object obj, Object spec,
                         @Cached FormatNode format) {
             return format.execute(null, obj, spec);
         }

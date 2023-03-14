@@ -64,7 +64,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextContextBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    public abstract static class PyContextVar_New extends CApiBinaryBuiltinNode {
+    abstract static class PyContextVar_New extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(TruffleString name, Object def,
                         @Cached CallNode callContextvar) {
@@ -79,7 +79,7 @@ public final class PythonCextContextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Pointer}, call = Ignored)
-    public abstract static class PyTruffleContextVar_Get extends CApiTernaryBuiltinNode {
+    abstract static class PyTruffleContextVar_Get extends CApiTernaryBuiltinNode {
         @Specialization
         Object doGeneric(Object var, Object def, Object marker,
                         @Cached PRaiseNativeNode raiseNative) {
@@ -104,7 +104,7 @@ public final class PythonCextContextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    public abstract static class PyContextVar_Set extends CApiBinaryBuiltinNode {
+    abstract static class PyContextVar_Set extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(Object var, Object val) {
             if (!(var instanceof PContextVar)) {
