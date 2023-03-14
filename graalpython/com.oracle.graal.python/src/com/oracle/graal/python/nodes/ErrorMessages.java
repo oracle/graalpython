@@ -1525,4 +1525,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ASYNC_FOR_NO_ANEXT_INITIAL = tsLiteral("'async for' received an object from __aiter__ that does not implement __anext__: %s");
 
     public static final TruffleString ASYNC_FOR_NO_ANEXT_ITERATION = tsLiteral("'async for' requires an iterator with __anext__ method, got %s");
+    public static final TruffleString CANNOT_REUSE_ASEND = tsLiteral("cannot reuse already awaited __anext__()/asend()");
+    public static final TruffleString AGEN_ALREADY_RUNNING = tsLiteral("anext(): asynchronous generator is already running");
 }

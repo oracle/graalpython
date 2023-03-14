@@ -1511,8 +1511,17 @@ public class Compiler implements SSTreeVisitor<Void> {
             exitScope();
             makeClosure(code, 0);
             generators[0].iter.accept(this);
-            addOp(GET_ITER);
+            if (generators[0].isAsync) {
+                addOp(GET_AITER);
+            } else {
+                addOp(GET_ITER);
+            }
             addOp(CALL_COMPREHENSION);
+            if (generators[0].isAsync) {
+                addOp(GET_AWAITABLE);
+                addOp(LOAD_NONE);
+                addYieldFrom();
+            }
             return null;
         } finally {
             setLocation(savedLocation);
@@ -1527,14 +1536,34 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else {
             /* Create the iterator for nested iteration */
             gen.iter.accept(this);
-            addOp(GET_ITER);
+            if (gen.isAsync) {
+                addOp(GET_AITER);
+            } else {
+                addOp(GET_ITER);
+            }
         }
         Block start = new Block();
         Block ifCleanup = new Block();
         Block anchor = new Block();
+        Block asyncForTry = gen.isAsync ? new Block() : null;
+        Block asyncForExcept = gen.isAsync ? new Block() : null;
+        Block asyncForBody = gen.isAsync ? new Block() : null;
         unit.useNextBlock(start);
-        addOp(FOR_ITER, anchor);
-        gen.target.accept(this);
+        if (gen.isAsync) {
+            addOp(DUP_TOP);
+            unit.useNextBlock(asyncForTry);
+            unit.pushBlock(new BlockInfo.AsyncForLoopExit(asyncForTry, asyncForExcept));
+            addOp(GET_ANEXT);
+            addOp(GET_AWAITABLE);
+            addOp(LOAD_NONE);
+            addYieldFrom();
+            unit.popBlock();
+            unit.useNextBlock(asyncForBody);
+            gen.target.accept(this);
+        } else {
+            addOp(FOR_ITER, anchor);
+            gen.target.accept(this);
+        }
         for (ExprTy ifExpr : gen.ifs) {
             jumpIf(ifExpr, ifCleanup, false);
         }
@@ -1566,6 +1595,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         unit.useNextBlock(ifCleanup);
         addOp(JUMP_BACKWARD, start);
+        if (gen.isAsync) {
+            unit.useNextBlock(asyncForExcept);
+            addOp(END_ASYNC_FOR);
+        }
         unit.useNextBlock(anchor);
     }
 
@@ -2096,20 +2129,19 @@ public class Compiler implements SSTreeVisitor<Void> {
         Block body = new Block();
         Block end = new Block();
         Block except = new Block();
+        Block loopTry = new Block();
         Block orelse = node.orElse != null ? new Block() : null;
         node.iter.accept(this);
         addOp(GET_AITER);
         unit.useNextBlock(head);
         unit.pushBlock(new BlockInfo.AsyncForLoop(head, end));
-        unit.pushBlock(new BlockInfo.AsyncForLoopExit(head, except));
         addOp(DUP_TOP);
         addOp(GET_ANEXT);
+        addOp(GET_AWAITABLE);
+        unit.useNextBlock(loopTry);
+        unit.pushBlock(new BlockInfo.AsyncForLoopExit(loopTry, except));
         addOp(LOAD_NONE);
         addYieldFrom();
-        addOp(JUMP_FORWARD, body);
-        unit.useNextBlock(except);
-        addOp(END_ASYNC_FOR);
-        addOp(JUMP_FORWARD, node.orElse != null ? orelse : end);
         unit.popBlock();
         unit.useNextBlock(body);
         try {
@@ -2119,6 +2151,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         } finally {
             unit.popBlock();
         }
+        addOp(JUMP_FORWARD, node.orElse != null ? orelse : end);
+        unit.useNextBlock(except);
+        addOp(END_ASYNC_FOR);
         if (node.orElse != null) {
             unit.useNextBlock(orelse);
             visitSequence(node.orElse);

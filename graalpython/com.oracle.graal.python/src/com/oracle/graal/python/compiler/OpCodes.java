@@ -742,9 +742,9 @@ public enum OpCodes {
      * Exception handler for async for loops. If the current exception is StopAsyncIteration, handle
      * it, otherwise, reraise.
      *
-     * Pops: exception, then the async iterator
+     * Pops: exception, then the anext coroutine, then the async iterator
      */
-    END_ASYNC_FOR(0, 2, 0),
+    END_ASYNC_FOR(0, 3, 0),
 
     // with statements
     /**

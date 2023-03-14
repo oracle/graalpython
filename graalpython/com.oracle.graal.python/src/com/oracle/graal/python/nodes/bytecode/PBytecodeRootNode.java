@@ -2387,7 +2387,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int bytecodeEndAsyncFor(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int bci) {
         EndAsyncForNode node = insertChildNode(localNodes, bci, UNCACHED_END_ASYNC_FOR, EndAsyncForNodeGen.class, NODE_END_ASYNC_FOR, useCachedNodes);
         node.execute(virtualFrame.getObject(stackTop), frameIsVisibleToPython());
-        return stackTop - 2;
+        virtualFrame.setObject(stackTop, null); // pop the exception
+        virtualFrame.setObject(stackTop - 1, null); // the coroutine that raised the exception
+        virtualFrame.setObject(stackTop - 2, null); // the async iterator
+        return stackTop - 3;
     }
 
     @BytecodeInterpreterSwitch
