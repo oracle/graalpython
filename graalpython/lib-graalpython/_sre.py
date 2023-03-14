@@ -417,7 +417,7 @@ class Pattern():
         must_advance = False
         while pos <= endpos:
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
+            result = tregex_call_exec(compiled_regex, substring, pos)
             if not result.isMatch:
                 break
             else:
@@ -437,7 +437,7 @@ class Pattern():
         must_advance = False
         while pos <= endpos:
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
+            result = tregex_call_exec(compiled_regex, substring, pos)
             if not result.isMatch:
                 break
             elif self.groups == 0:
@@ -477,7 +477,7 @@ class Pattern():
 
         while (count == 0 or n < count) and pos <= len(string):
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = tregex_call_exec(compiled_regex.exec, string, pos)
+            match_result = tregex_call_exec(compiled_regex, string, pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -509,7 +509,7 @@ class Pattern():
         must_advance = False
         while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = tregex_call_exec(compiled_regex.exec, string, search_pos)
+            match_result = tregex_call_exec(compiled_regex, string, search_pos)
             if not match_result.isMatch:
                 break
             n += 1

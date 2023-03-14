@@ -369,7 +369,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
                       @Cached TRegexCompileNode tRegexCompileNode,
                       @Cached TRegexCallExec tRegexCallExec,
                       @Cached ConditionProfile matchProfile,
-                      @CachedLibrary(limit = "1") InteropLibrary libRegex,
                       @CachedLibrary(limit = "1") InteropLibrary libResult,
                       @Cached CallNode constructResultNode) {
             if (unsupportedInputTypeProfile.profile(!(boolean) isSupportedNode.execute(frame, inputStringOrBytes, SUPPORTED_INPUT_TYPES))) {
@@ -397,12 +396,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 truncatedInput = getItemNode.execute(frame, inputStringOrBytes, createSliceNode.execute(0, endPos, 1));
             }
             Object compiledRegex = tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance);
-            Object regexResult = null;
-            try {
-                regexResult = tRegexCallExec.execute(frame, libRegex.readMember(compiledRegex, "exec"), truncatedInput, pos);
-            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+            Object regexResult = tRegexCallExec.execute(frame, compiledRegex, truncatedInput, pos);
             try {
                 if (matchProfile.profile((boolean) libResult.readMember(regexResult, "isMatch"))) {
                     return constructResultNode.execute(matchConstructor, pos, endPos, regexResult);
@@ -441,8 +435,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     input = bufferToTruffleStringNode.execute(buffer, 0);
                 }
                 try {
-                    return interop.execute(callable, input, fromIndex);
-                } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e2) {
+                    return interop.invokeMember(callable, "exec", input, fromIndex);
+                } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException | UnknownIdentifierException e2) {
                     throw CompilerDirectives.shouldNotReachHere("could not call TRegex exec method", e2);
                 }
             } finally {
