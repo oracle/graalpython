@@ -340,7 +340,6 @@ PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(cons
 CAPI_BUILTINS
 #undef BUILTIN
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
-	printf("options: %x\n", Py_Truffle_Options);
     initializeCAPIForwards(getAPI);
 
     // send the locations of these values to Sulong - the values need to be shared
