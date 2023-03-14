@@ -383,7 +383,7 @@ class Pattern():
         return types.GenericAlias(cls, item)
 
     def _search(self, string, pos, endpos, method=_METHOD_SEARCH, must_advance=False):
-        return tregex_search(self.__tregex_cache, string, pos, endpos, method, must_advance, lambda pos, endpos, result: Match(self, pos, endpos, result, string, self.__indexgroup))
+        return tregex_search(self, string, pos, endpos, method, must_advance)
 
     def search(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_SEARCH)

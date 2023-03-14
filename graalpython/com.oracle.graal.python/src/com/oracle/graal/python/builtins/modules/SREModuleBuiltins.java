@@ -57,15 +57,18 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonSeptenaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.BufferToTruffleStringNode;
@@ -79,6 +82,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -344,52 +348,62 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_search", minNumOfPositionalArgs = 7)
+    @Builtin(name = "tregex_search", minNumOfPositionalArgs = 6)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexSearch extends PythonSeptenaryBuiltinNode {
+    abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
 
         private static final PTuple SUPPORTED_BINARY_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[] {PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
-        private static final PTuple SUPPORTED_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[] {PythonBuiltinClassType.PString, SUPPORTED_BINARY_INPUT_TYPES});
         private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
         private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
 
-        @Specialization(guards = "tRegexCache.binary == binary", limit = "2")
-        Object search(VirtualFrame frame, TRegexCache tRegexCache, Object inputStringOrBytes, int pos, int endPos, int method, boolean mustAdvance, Object matchConstructor,
-                      @Cached("tRegexCache.binary") boolean binary,
-                      @Cached BuiltinFunctions.IsInstanceNode isSupportedNode,
-                      @Cached BuiltinFunctions.IsInstanceNode isExpectedNode,
+        private static final TruffleString T__SRE = tsLiteral("_sre");
+        private static final TruffleString T_MATCH = tsLiteral("Match");
+        private static final TruffleString T__PATTERN__TREGEX_CACHE = tsLiteral("_Pattern__tregex_cache");
+        private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
+
+        @Specialization
+        Object search(VirtualFrame frame, Object pattern, Object inputStringOrBytes, int pos, int endPos, int method, boolean mustAdvance,
+                      @Cached PyObjectLookupAttr lookupCacheNode,
+                      @Cached PyObjectLookupAttr lookupIndexGroupNode,
+                      @Cached BuiltinFunctions.IsInstanceNode isStringNode,
+                      @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
                       @Cached ConditionProfile unsupportedInputTypeProfile,
                       @Cached ConditionProfile unexpectedInputTypeProfile,
-                      @Cached BuiltinFunctions.LenNode lenNode,
+                      @Cached PyObjectSizeNode lengthNode,
                       @Cached ConditionProfile truncatingInputProfile,
                       @Cached SliceNodes.CreateSliceNode createSliceNode,
                       @Cached PyObjectGetItem getItemNode,
                       @Cached TRegexCompileNode tRegexCompileNode,
                       @Cached TRegexCallExec tRegexCallExec,
-                      @Cached ConditionProfile matchProfile,
                       @CachedLibrary(limit = "1") InteropLibrary libResult,
+                      @Cached ConditionProfile matchProfile,
+                      @Cached("lookupMatchConstructor()") Object matchConstructor,
                       @Cached CallNode constructResultNode) {
-            if (unsupportedInputTypeProfile.profile(!(boolean) isSupportedNode.execute(frame, inputStringOrBytes, SUPPORTED_INPUT_TYPES))) {
+            TRegexCache tRegexCache = (TRegexCache) lookupCacheNode.execute(frame, pattern, T__PATTERN__TREGEX_CACHE);
+            boolean isString = (boolean) isStringNode.execute(frame, inputStringOrBytes, PythonBuiltinClassType.PString);
+            boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, inputStringOrBytes, SUPPORTED_BINARY_INPUT_TYPES);
+            if (unsupportedInputTypeProfile.profile(!isString && !isBytes)) {
                 throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
-            if (unexpectedInputTypeProfile.profile(!binary && !(boolean) isExpectedNode.execute(frame, inputStringOrBytes, PythonBuiltinClassType.PString))) {
-                throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
+            if (unexpectedInputTypeProfile.profile(tRegexCache.binary != isBytes)) {
+                if (tRegexCache.binary) {
+                    throw getRaiseNode().raise(TypeError, T_UNEXPECTED_STR);
+                } else {
+                    throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
+                }
             }
-            if (unexpectedInputTypeProfile.profile(binary && (boolean) isExpectedNode.execute(frame, inputStringOrBytes, PythonBuiltinClassType.PString))) {
-                throw getRaiseNode().raise(TypeError, T_UNEXPECTED_STR);
-            }
-            int length = (int) lenNode.execute(frame, inputStringOrBytes);
-            if (endPos < 0) {
-                endPos = 0;
-            } else if (endPos > length) {
-                endPos = length;
-            }
+            int length = lengthNode.execute(frame, inputStringOrBytes);
             if (pos < 0) {
                 pos = 0;
             } else if (pos > length) {
                 pos = length;
+            }
+            if (endPos < 0) {
+                endPos = 0;
+            } else if (endPos > length) {
+                endPos = length;
             }
             Object truncatedInput = inputStringOrBytes;
             if (truncatingInputProfile.profile(endPos != length)) {
@@ -399,13 +413,21 @@ public class SREModuleBuiltins extends PythonBuiltins {
             Object regexResult = tRegexCallExec.execute(frame, compiledRegex, truncatedInput, pos);
             try {
                 if (matchProfile.profile((boolean) libResult.readMember(regexResult, "isMatch"))) {
-                    return constructResultNode.execute(matchConstructor, pos, endPos, regexResult);
+                    Object indexGroup = lookupIndexGroupNode.execute(frame, pattern, T__PATTERN__INDEXGROUP);
+                    return constructResultNode.execute(matchConstructor, pattern, pos, endPos, regexResult, inputStringOrBytes, indexGroup);
                 } else {
                     return PNone.NONE;
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        @TruffleBoundary
+        @NeverDefault
+        protected Object lookupMatchConstructor() {
+            PythonModule module = getContext().lookupBuiltinModule(T__SRE);
+            return PyObjectLookupAttr.getUncached().execute(null, module, T_MATCH);
         }
     }
 
