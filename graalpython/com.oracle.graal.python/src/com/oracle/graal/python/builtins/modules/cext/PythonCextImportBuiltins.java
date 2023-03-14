@@ -73,7 +73,7 @@ public final class PythonCextImportBuiltins {
     @CApiBuiltin(name = "PyImport_ImportModuleNoBlock", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyImport_ImportModule extends CApiUnaryBuiltinNode {
         @Specialization
-        Object imp(TruffleString name) {
+        static Object imp(TruffleString name) {
             return AbstractImportNode.importModule(name, T_IMPORT_ALL);
         }
     }

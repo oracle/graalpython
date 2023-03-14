@@ -95,7 +95,7 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
         @Specialization
-        Object save(@Cached GilNode gil) {
+        static Object save(@Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
             PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
             LOGGER.fine("C extension releases GIL");
@@ -109,7 +109,7 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 
         @Specialization
-        Object restore(@SuppressWarnings("unused") Object ptr,
+        static Object restore(@SuppressWarnings("unused") Object ptr,
                         @Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
             PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
@@ -132,7 +132,7 @@ public final class PythonCextCEvalBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, call = Ignored)
     abstract static class _PyTruffleEval_EvalCodeEx extends CApi8BuiltinNode {
         @Specialization
-        Object doGeneric(PCode code, Object globals, Object locals,
+        static Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, Object kwsPtr, Object defaultValueArrayPtr,
                         Object kwdefaultsWrapper, Object closureObj,
                         @Bind("this") Node inliningTarget,

@@ -185,7 +185,7 @@ public final class PythonCextLongBuiltins {
     abstract static class PyLong_FromDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object fromDouble(double d,
+        static Object fromDouble(double d,
                         @Cached IntNode intNode) {
             return intNode.execute(null, d);
         }

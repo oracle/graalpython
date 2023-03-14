@@ -192,14 +192,14 @@ public final class PythonCextTupleBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
     abstract static class PyTuple_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
-        Object getSlice(PTuple tuple, Object iLow, Object iHigh,
+        static Object getSlice(PTuple tuple, Object iLow, Object iHigh,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("newSlice") @Cached PySliceNew sliceNode) {
             return doGetSlice(tuple.getSequenceStorage(), iLow, iHigh, getItemNode, sliceNode);
         }
 
         @Specialization
-        Object doNative(PythonAbstractNativeObject tuple, Object iLow, Object iHigh,
+        static Object doNative(PythonAbstractNativeObject tuple, Object iLow, Object iHigh,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("newSlice") @Cached PySliceNew sliceNode,
                         @Cached GetNativeTupleStorage asNativeStorage) {

@@ -309,7 +309,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PSequence_ob_item extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PSequence object,
+        static Object get(PSequence object,
                         @Cached("createClassProfile()") ValueProfile classProfile) {
             SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
             if (sequenceStorage instanceof NativeSequenceStorage) {
@@ -337,7 +337,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyASCIIObject_length extends CApiUnaryBuiltinNode {
 
         @Specialization
-        long get(Object object,
+        static long get(Object object,
                         @Cached StringLenNode stringLenNode) {
             return stringLenNode.execute(object);
         }
@@ -375,7 +375,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyASCIIObject_state_compact extends CApiUnaryBuiltinNode {
 
         @Specialization
-        int get(@SuppressWarnings("unused") Object object) {
+        static int get(@SuppressWarnings("unused") Object object) {
             return 0;
         }
     }
@@ -384,7 +384,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyASCIIObject_state_kind extends CApiUnaryBuiltinNode {
 
         @Specialization
-        int get(PString object,
+        static int get(PString object,
                         @Cached ConditionProfile storageProfile,
                         @Cached SizeofWCharNode sizeofWcharNode) {
             // important: avoid materialization of native sequences
@@ -399,7 +399,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyASCIIObject_state_ready extends CApiUnaryBuiltinNode {
 
         @Specialization
-        int get(@SuppressWarnings("unused") Object object) {
+        static int get(@SuppressWarnings("unused") Object object) {
             return 1;
         }
     }
@@ -408,7 +408,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyASCIIObject_wstr extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object,
+        static Object get(Object object,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SizeofWCharNode sizeofWcharNode) {
             int elementSize = (int) sizeofWcharNode.execute(PythonContext.get(sizeofWcharNode).getCApiContext());
@@ -513,7 +513,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyCompactUnicodeObject_wstr_length extends CApiUnaryBuiltinNode {
 
         @Specialization
-        long get(Object object,
+        static long get(Object object,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SizeofWCharNode sizeofWcharNode) {
             long sizeofWchar = sizeofWcharNode.execute(PythonContext.get(sizeofWcharNode).getCApiContext());
@@ -526,12 +526,12 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyDescrObject_d_name extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PBuiltinFunction object) {
+        static Object get(PBuiltinFunction object) {
             return object.getCApiName();
         }
 
         @Specialization
-        Object get(GetSetDescriptor object) {
+        static Object get(GetSetDescriptor object) {
             return object.getCApiName();
         }
     }
@@ -546,7 +546,7 @@ public final class PythonCextSlotBuiltins {
         }
 
         @Specialization
-        Object get(GetSetDescriptor object) {
+        static Object get(GetSetDescriptor object) {
             return object.getType();
         }
     }
@@ -554,7 +554,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Ignored)
     abstract static class Py_get_PyFrameObject_f_lineno extends CApiUnaryBuiltinNode {
         @Specialization
-        int get(PFrame frame) {
+        static int get(PFrame frame) {
             return frame.getLine();
         }
     }
@@ -713,7 +713,7 @@ public final class PythonCextSlotBuiltins {
         }
 
         @Specialization
-        Object getMethFromBuiltinFunction(PBuiltinFunction object) {
+        static Object getMethFromBuiltinFunction(PBuiltinFunction object) {
             PKeyword[] kwDefaults = object.getKwDefaults();
             for (int i = 0; i < kwDefaults.length; i++) {
                 if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
@@ -724,7 +724,7 @@ public final class PythonCextSlotBuiltins {
         }
 
         @Specialization
-        Object getMethFromBuiltinMethod(PBuiltinMethod object) {
+        static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
             return getMethFromBuiltinFunction(object.getFunction());
         }
 
@@ -757,7 +757,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonObject object) {
+        static Object get(PythonObject object) {
             return new PyMethodDefWrapper(object);
         }
     }
@@ -1122,7 +1122,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonNativeWrapper wrapper) {
+        static Object get(PythonNativeWrapper wrapper) {
             return wrapper.getRefCount();
         }
     }
@@ -1217,7 +1217,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_alloc extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode) {
             return lookupNativeMemberNode.execute(object, TP_ALLOC, TypeBuiltins.TYPE_ALLOC);
         }
@@ -1265,7 +1265,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_as_number extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object) {
+        static Object get(PythonManagedClass object) {
             // TODO check for type and return 'NULL'
             return new PyNumberMethodsWrapper(object);
         }
@@ -1310,7 +1310,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_basicsize extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, T___BASICSIZE__);
@@ -1330,7 +1330,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_dealloc extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode) {
             return lookupNativeMemberNode.execute(object, TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC);
         }
@@ -1340,7 +1340,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_del extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode) {
             return lookupNativeMemberNode.execute(object, TP_DEL, TypeBuiltins.TYPE_DEL);
         }
@@ -1350,7 +1350,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_dict extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
@@ -1377,7 +1377,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_dictoffset extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
@@ -1411,7 +1411,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_flags extends CApiUnaryBuiltinNode {
 
         @Specialization
-        long get(PythonManagedClass object,
+        static long get(PythonManagedClass object,
                         @Cached GetTypeFlagsNode getTypeFlagsNode) {
             return getTypeFlagsNode.execute(object);
         }
@@ -1425,7 +1425,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_free extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode) {
             return lookupNativeMemberNode.execute(object, TP_FREE, TypeBuiltins.TYPE_FREE);
         }
@@ -1459,7 +1459,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_itemsize extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, T___ITEMSIZE__);
@@ -1492,7 +1492,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_mro extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Cached PythonObjectFactory factory) {
             if (object.mroStore == null) {
@@ -1506,7 +1506,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_name extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object) {
+        static Object get(PythonManagedClass object) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
             return object.getClassNativeWrapper().getNameWrapper();
         }
@@ -1516,7 +1516,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_new extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached ConditionProfile profileNewType,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
                         @Cached PCallCapiFunction callGetNewfuncTypeidNode) {
@@ -1613,7 +1613,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_vectorcall_offset extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             Object val = lookupNativeMemberNode.execute(object, TP_VECTORCALL_OFFSET, TypeBuiltins.TYPE_VECTORCALL_OFFSET);
@@ -1625,7 +1625,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_version_tag extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(@SuppressWarnings("unused") Object object) {
+        static Object get(@SuppressWarnings("unused") Object object) {
             return 0;
         }
     }
@@ -1634,7 +1634,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_weaklistoffset extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
+        static Object get(PythonManagedClass object,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             Object val = getAttrNode.execute(object, T___WEAKLISTOFFSET__);
@@ -1651,7 +1651,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PString object,
+        static Object get(PString object,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SizeofWCharNode sizeofWcharNode) {
             int elementSize = (int) sizeofWcharNode.execute(PythonContext.get(sizeofWcharNode).getCApiContext());
@@ -1677,7 +1677,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyFrameObject, Int}, call = Ignored)
     abstract static class Py_set_PyFrameObject_f_lineno extends CApiBinaryBuiltinNode {
         @Specialization
-        Object set(PFrame frame, int value) {
+        static Object set(PFrame frame, int value) {
             frame.setLine(value);
             return PNone.NONE;
         }
@@ -1705,7 +1705,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_set_PyObject_ob_refcnt extends CApiBinaryBuiltinNode {
 
         @Specialization
-        Object set(PythonNativeWrapper wrapper, long value) {
+        static Object set(PythonNativeWrapper wrapper, long value) {
             CApiTransitions.setRefCount(wrapper, value);
             return PNone.NONE;
         }
@@ -2022,7 +2022,7 @@ public final class PythonCextSlotBuiltins {
                     return wrappedPtr;
                 }
             }
-            CApiContext cApiContext = PythonContext.get(this).getCApiContext();
+            CApiContext cApiContext = getCApiContext();
             return cApiContext.getOrCreateProcWrapper(getRetDescriptor(), value, PyGetTypeSlotNode::createProcsWrapper);
         }
 
@@ -2081,7 +2081,7 @@ public final class PythonCextSlotBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object set(Object object, Object value) {
+        static Object set(Object object, Object value) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
