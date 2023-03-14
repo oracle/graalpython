@@ -65,9 +65,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextDescrBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyDictProxy_New extends CApiUnaryBuiltinNode {
+    abstract static class PyDictProxy_New extends CApiUnaryBuiltinNode {
         @Specialization
-        public static Object values(Object obj,
+        static Object values(Object obj,
                         @Cached BuiltinConstructors.MappingproxyNode mappingNode) {
             return mappingNode.execute(null, PythonBuiltinClassType.PMappingproxy, obj);
         }

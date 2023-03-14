@@ -71,25 +71,25 @@ public final class PythonCextImportBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
     @CApiBuiltin(name = "PyImport_Import", ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
     @CApiBuiltin(name = "PyImport_ImportModuleNoBlock", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    public abstract static class PyImport_ImportModule extends CApiUnaryBuiltinNode {
+    abstract static class PyImport_ImportModule extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object imp(TruffleString name) {
+        Object imp(TruffleString name) {
             return AbstractImportNode.importModule(name, T_IMPORT_ALL);
         }
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
-    public abstract static class PyImport_GetModuleDict extends CApiNullaryBuiltinNode {
+    abstract static class PyImport_GetModuleDict extends CApiNullaryBuiltinNode {
         @Specialization
-        public Object getModuleDict() {
+        Object getModuleDict() {
             return getContext().getSysModules();
         }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, PyObject, PyObject, PyObject, Int}, call = Direct)
-    public abstract static class PyImport_ImportModuleLevelObject extends CApi5BuiltinNode {
+    abstract static class PyImport_ImportModuleLevelObject extends CApi5BuiltinNode {
         @Specialization
-        public Object importModuleLevelObject(TruffleString name, Object globals, Object locals, Object fromlist, int level,
+        Object importModuleLevelObject(TruffleString name, Object globals, Object locals, Object fromlist, int level,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode) {
             // Get the __import__ function from the builtins

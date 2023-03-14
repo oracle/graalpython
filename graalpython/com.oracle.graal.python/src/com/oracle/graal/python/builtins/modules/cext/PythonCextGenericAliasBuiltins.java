@@ -53,7 +53,7 @@ public final class PythonCextGenericAliasBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class Py_GenericAlias extends CApiBinaryBuiltinNode {
         @Specialization
-        public Object genericAlias(Object origin, Object args) {
+        Object genericAlias(Object origin, Object args) {
             return factory().createGenericAlias(origin, args);
         }
     }

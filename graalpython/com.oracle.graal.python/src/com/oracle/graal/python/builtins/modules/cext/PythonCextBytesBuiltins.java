@@ -119,7 +119,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    public abstract static class PyBytes_Size extends CApiUnaryBuiltinNode {
+    abstract static class PyBytes_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static int doPBytes(PBytes obj,
                         @Cached PyObjectSizeNode sizeNode) {
@@ -147,9 +147,9 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    public abstract static class PyTruffleBytes_Concat extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffleBytes_Concat extends CApiBinaryBuiltinNode {
         @Specialization
-        public Object concat(PBytes original, Object newPart,
+        Object concat(PBytes original, Object newPart,
                         @Cached BytesBuiltins.AddNode addNode) {
             return addNode.execute(null, original, newPart);
         }
@@ -161,9 +161,9 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    public abstract static class _PyBytes_Join extends CApiBinaryBuiltinNode {
+    abstract static class _PyBytes_Join extends CApiBinaryBuiltinNode {
         @Specialization
-        public Object join(PBytes original, Object newPart,
+        Object join(PBytes original, Object newPart,
                         @Cached BytesBuiltins.JoinNode joinNode) {
             return joinNode.execute(null, original, newPart);
         }
@@ -175,9 +175,9 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
-    public abstract static class PyTruffleBytes_FromFormat extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffleBytes_FromFormat extends CApiBinaryBuiltinNode {
         @Specialization
-        public Object fromFormat(TruffleString fmt, Object args,
+        Object fromFormat(TruffleString fmt, Object args,
                         @Cached ModNode modeNode,
                         @Cached EncodeNode encodeNode) {
             Object formated = modeNode.execute(null, fmt, args);
@@ -186,9 +186,9 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
+    abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object fromObject(Object obj,
+        Object fromObject(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
@@ -283,7 +283,7 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored)
-    public abstract static class _PyTruffleBytes_Resize extends CApiBinaryBuiltinNode {
+    abstract static class _PyTruffleBytes_Resize extends CApiBinaryBuiltinNode {
 
         @Specialization
         static int resize(PBytesLike self, long newSizeL,

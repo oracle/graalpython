@@ -123,7 +123,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, PY_CAPSULE_DESTRUCTOR}, call = Direct)
-    public abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
+    abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
         @Specialization
         Object doGeneric(Object pointer, Object name, Object destructor,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
@@ -156,7 +156,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    public abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
+    abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         Object doCapsule(PyCapsule o, Object name,
                         @Cached NameMatchesNode nameMatchesNode) {
@@ -176,7 +176,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
-    public abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
+    abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
         private void checkLegalCapsule(PyCapsule capsule) {
             if (capsule.getPointer() == null) {
                 throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
@@ -229,7 +229,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObject}, call = Direct)
-    public abstract static class PyCapsule_GetDestructor extends CApiUnaryBuiltinNode {
+    abstract static class PyCapsule_GetDestructor extends CApiUnaryBuiltinNode {
         @Specialization
         Object doCapsule(PyCapsule o) {
             if (o.getPointer() == null) {
@@ -248,7 +248,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
-    public abstract static class PyCapsule_GetContext extends CApiUnaryBuiltinNode {
+    abstract static class PyCapsule_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         Object doCapsule(PyCapsule o) {
             if (o.getPointer() == null) {
@@ -267,7 +267,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
-    public abstract static class PyCapsule_SetPointer extends CApiBinaryBuiltinNode {
+    abstract static class PyCapsule_SetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         int doCapsule(PyCapsule o, Object pointer,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
@@ -290,7 +290,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    public abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
+    abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
         @Specialization
         int doCapsuleTruffleString(PyCapsule o, TruffleString name) {
             if (o.getPointer() == null) {
@@ -317,7 +317,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PY_CAPSULE_DESTRUCTOR}, call = Direct)
-    public abstract static class PyCapsule_SetDestructor extends CApiBinaryBuiltinNode {
+    abstract static class PyCapsule_SetDestructor extends CApiBinaryBuiltinNode {
         @Specialization
         int doCapsule(PyCapsule o, Object destructor) {
             if (o.getPointer() == null) {
@@ -334,7 +334,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
-    public abstract static class PyCapsule_SetContext extends CApiBinaryBuiltinNode {
+    abstract static class PyCapsule_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         int doCapsule(PyCapsule o, Object context) {
             if (o.getPointer() == null) {
@@ -351,7 +351,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     @CApiBuiltin(ret = Pointer, args = {ConstCharPtrAsTruffleString, Int}, call = Direct)
-    public abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
+    abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(TruffleString name, int noBlock,
                         @Cached NameMatchesNode nameMatchesNode,

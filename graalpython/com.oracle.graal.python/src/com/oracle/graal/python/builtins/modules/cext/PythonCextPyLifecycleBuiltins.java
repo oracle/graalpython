@@ -85,7 +85,7 @@ public final class PythonCextPyLifecycleBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int}, call = Ignored)
-    public abstract static class PyTruffle_FatalErrorFunc extends CApiTernaryBuiltinNode {
+    abstract static class PyTruffle_FatalErrorFunc extends CApiTernaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary

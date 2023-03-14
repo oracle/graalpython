@@ -91,7 +91,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextCEvalBuiltins {
 
     @CApiBuiltin(ret = PyThreadState, args = {}, acquiresGIL = false, call = Direct)
-    public abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
+    abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
         @Specialization
@@ -105,7 +105,7 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyThreadState}, acquiresGIL = false, call = Direct)
-    public abstract static class PyEval_RestoreThread extends CApiUnaryBuiltinNode {
+    abstract static class PyEval_RestoreThread extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 
         @Specialization
@@ -120,9 +120,9 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
-    public abstract static class PyEval_GetBuiltins extends CApiNullaryBuiltinNode {
+    abstract static class PyEval_GetBuiltins extends CApiNullaryBuiltinNode {
         @Specialization
-        public Object release(
+        Object release(
                         @Cached GetDictIfExistsNode getDictNode) {
             PythonModule cext = getCore().getBuiltins();
             return getDictNode.execute(cext);

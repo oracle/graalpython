@@ -57,9 +57,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextSliceBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    public abstract static class PySlice_New extends CApiTernaryBuiltinNode {
+    abstract static class PySlice_New extends CApiTernaryBuiltinNode {
         @Specialization
-        public static Object slice(Object start, Object stop, Object step,
+        static Object slice(Object start, Object stop, Object step,
                         @Cached PySliceNew sliceNode) {
             return sliceNode.execute(prepare(start), prepare(stop), prepare(step));
         }
@@ -73,7 +73,7 @@ public final class PythonCextSliceBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffle_Ellipsis extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_Ellipsis extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
             return PEllipsis.INSTANCE;

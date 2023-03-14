@@ -89,24 +89,24 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 public final class PythonCextSetBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PySet_New extends CApiUnaryBuiltinNode {
+    abstract static class PySet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        public Object newSet(Object iterable,
+        Object newSet(Object iterable,
                         @Cached ConstructSetNode constructSetNode) {
             return constructSetNode.executeWith(null, iterable);
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        public Object newSet(PNone iterable) {
+        Object newSet(PNone iterable) {
             return factory().createSet();
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    public abstract static class PySet_Contains extends CApiBinaryBuiltinNode {
+    abstract static class PySet_Contains extends CApiBinaryBuiltinNode {
         @Specialization
-        public static int contains(PSet anyset, Object item,
+        static int contains(PSet anyset, Object item,
                         @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
@@ -114,7 +114,7 @@ public final class PythonCextSetBuiltins {
         }
 
         @Specialization
-        public static int contains(PFrozenSet anyset, Object item,
+        static int contains(PFrozenSet anyset, Object item,
                         @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
@@ -129,7 +129,7 @@ public final class PythonCextSetBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     @TypeSystemReference(PythonTypes.class)
-    public abstract static class _PyTruffleSet_NextEntry extends CApiBinaryBuiltinNode {
+    abstract static class _PyTruffleSet_NextEntry extends CApiBinaryBuiltinNode {
         @Specialization(guards = "pos < size(set, sizeNode)", limit = "3")
         Object nextEntry(PSet set, long pos,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
@@ -159,14 +159,14 @@ public final class PythonCextSetBuiltins {
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(anyset, getClassNode, isSubtypeNode)"})
-        public Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
+        Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             throw raise(PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(anyset, getClassNode, isSubtypeNode)"})
-        public Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
+        Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode) {
@@ -198,7 +198,7 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PySet_Pop extends CApiUnaryBuiltinNode {
+    abstract static class PySet_Pop extends CApiUnaryBuiltinNode {
         @Specialization
         Object pop(PSet set,
                         @Cached com.oracle.graal.python.builtins.objects.set.SetBuiltins.PopNode popNode) {
@@ -212,25 +212,25 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyFrozenSet_New extends CApiUnaryBuiltinNode {
+    abstract static class PyFrozenSet_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        public Object newFrozenSet(Object iterable,
+        Object newFrozenSet(Object iterable,
                         @Cached FrozenSetNode frozenSetNode) {
             return frozenSetNode.execute(null, PythonBuiltinClassType.PFrozenSet, iterable);
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        public Object newFrozenSet(PNone iterable) {
+        Object newFrozenSet(PNone iterable) {
             return factory().createFrozenSet(PythonBuiltinClassType.PFrozenSet);
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    public abstract static class PySet_Discard extends CApiBinaryBuiltinNode {
+    abstract static class PySet_Discard extends CApiBinaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
-        public static Object discard(PSet s, Object key,
+        static Object discard(PSet s, Object key,
                         @Cached DiscardNode discardNode) {
             return discardNode.execute(null, s, key) ? 1 : 0;
         }
@@ -242,10 +242,10 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    public abstract static class PySet_Clear extends CApiUnaryBuiltinNode {
+    abstract static class PySet_Clear extends CApiUnaryBuiltinNode {
 
         @Specialization(guards = {"!isNone(s)", "!isNoValue(s)"})
-        public static Object clear(PSet s,
+        static Object clear(PSet s,
                         @Cached ClearNode clearNode) {
             clearNode.execute(null, s);
             return 0;
@@ -258,7 +258,7 @@ public final class PythonCextSetBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    public abstract static class PySet_Add extends CApiBinaryBuiltinNode {
+    abstract static class PySet_Add extends CApiBinaryBuiltinNode {
 
         @Specialization
         static int add(PBaseSet self, Object o,

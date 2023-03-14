@@ -60,10 +60,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextSysBuiltins {
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    public abstract static class PySys_GetObject extends CApiUnaryBuiltinNode {
+    abstract static class PySys_GetObject extends CApiUnaryBuiltinNode {
 
         @Specialization
-        public Object getObject(TruffleString name,
+        Object getObject(TruffleString name,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached PyObjectSetAttr setAttrNode) {

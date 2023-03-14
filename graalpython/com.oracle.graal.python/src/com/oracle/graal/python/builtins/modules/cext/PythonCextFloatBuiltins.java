@@ -66,7 +66,7 @@ public final class PythonCextFloatBuiltins {
         }
 
         @Specialization(guards = "!isDouble(obj)")
-        public Object fromDouble(Object obj,
+        Object fromDouble(Object obj,
                         @Cached StrNode strNode) {
             // cpython PyFloat_FromDouble takes only 'double'
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);

@@ -150,7 +150,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    public abstract static class PyTruffle_Compute_Mro extends CApiBinaryBuiltinNode {
+    abstract static class PyTruffle_Compute_Mro extends CApiBinaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -161,7 +161,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Ignored)
-    public abstract static class PyTruffle_NewTypeDict extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_NewTypeDict extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -174,7 +174,7 @@ public final class PythonCextTypeBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyTypeObject, ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
-    public abstract static class PyTruffle_Type_Modified extends CApiTernaryBuiltinNode {
+    abstract static class PyTruffle_Type_Modified extends CApiTernaryBuiltinNode {
 
         @TruffleBoundary
         @Specialization(guards = "isNoValue(mroTuple)")

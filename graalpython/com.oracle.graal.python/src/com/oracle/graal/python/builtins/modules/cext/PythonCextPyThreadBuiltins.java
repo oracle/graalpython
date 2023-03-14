@@ -68,7 +68,7 @@ public final class PythonCextPyThreadBuiltins {
     private static final long LOCK_MASK = 0xA10C000000000000L;
 
     @CApiBuiltin(ret = PY_THREAD_TYPE_LOCK, args = {}, call = Direct)
-    public abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
+    abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         public long allocate() {
@@ -81,7 +81,7 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PY_THREAD_TYPE_LOCK, Int}, call = Direct)
-    public abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
+    abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         public int acquire(long id, int waitflag,
@@ -95,7 +95,7 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = Direct)
-    public abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
+    abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         public Object release(long id,

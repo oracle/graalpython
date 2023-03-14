@@ -79,7 +79,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
-        public Object dir(@SuppressWarnings("unused") PTraceback self) {
+        Object dir(@SuppressWarnings("unused") PTraceback self) {
             return factory().createList(PTraceback.getTbFieldNames());
         }
     }
