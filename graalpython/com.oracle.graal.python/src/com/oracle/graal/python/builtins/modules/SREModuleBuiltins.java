@@ -60,6 +60,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -364,7 +366,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
 
         @Specialization
-        Object search(VirtualFrame frame, Object pattern, Object inputStringOrBytes, int pos, int endPos, int method, boolean mustAdvance,
+        Object search(VirtualFrame frame, Object pattern, Object inputStringOrBytes, Object posArg, Object endPosArg, int method, boolean mustAdvance,
+                      @Cached PyNumberIndexNode indexNode,
+                      @Cached PyNumberAsSizeNode asSizeNode,
                       @Cached PyObjectLookupAttr lookupCacheNode,
                       @Cached PyObjectLookupAttr lookupIndexGroupNode,
                       @Cached BuiltinFunctions.IsInstanceNode isStringNode,
@@ -381,6 +385,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
                       @Cached ConditionProfile matchProfile,
                       @Cached("lookupMatchConstructor()") Object matchConstructor,
                       @Cached CallNode constructResultNode) {
+            int pos = asSizeNode.executeExact(frame, indexNode.execute(frame, posArg));
+            int endPos = asSizeNode.executeExact(frame, indexNode.execute(frame, endPosArg));
             TRegexCache tRegexCache = (TRegexCache) lookupCacheNode.execute(frame, pattern, T__PATTERN__TREGEX_CACHE);
             boolean isString = (boolean) isStringNode.execute(frame, inputStringOrBytes, PythonBuiltinClassType.PString);
             boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, inputStringOrBytes, SUPPORTED_BINARY_INPUT_TYPES);
