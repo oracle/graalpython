@@ -190,14 +190,18 @@ void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
 }
 
 void* PyMem_RawRealloc(void *ptr, size_t new_size) {
-	mem_head_t* old = ptr != NULL ? AS_MEM_HEAD(ptr) : NULL;
+	mem_head_t* old;
 
-	// account for the difference in size
-	if (old->size >= new_size) {
-		PyTruffle_FreeMemory(old->size - new_size);
-	} else {
-		if (PyTruffle_AllocMemory(new_size - old->size)) {
-			return NULL;
+	if (ptr != NULL) {
+		ptr = AS_MEM_HEAD(ptr);
+
+		// account for the difference in size
+		if (old->size >= new_size) {
+			PyTruffle_FreeMemory(old->size - new_size);
+		} else {
+			if (PyTruffle_AllocMemory(new_size - old->size)) {
+				return NULL;
+			}
 		}
 	}
 
