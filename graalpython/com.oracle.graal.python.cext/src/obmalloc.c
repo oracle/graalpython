@@ -193,7 +193,7 @@ void* PyMem_RawRealloc(void *ptr, size_t new_size) {
 	mem_head_t* old;
 
 	if (ptr != NULL) {
-		ptr = AS_MEM_HEAD(ptr);
+		old = AS_MEM_HEAD(ptr);
 
 		// account for the difference in size
 		if (old->size >= new_size) {
@@ -203,6 +203,8 @@ void* PyMem_RawRealloc(void *ptr, size_t new_size) {
 				return NULL;
 			}
 		}
+	} else {
+		old = NULL;
 	}
 
     mem_head_t* ptr_with_head = (mem_head_t*) realloc(old, new_size + sizeof(mem_head_t));
