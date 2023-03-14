@@ -152,7 +152,7 @@ public final class PythonCextModuleBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
-        Object getName(Object o,
+        static Object getName(Object o,
                         @Cached PyObjectLookupAttr lookupAttrNode) {
             return lookupAttrNode.execute(null, o, T___NAME__);
         }

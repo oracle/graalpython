@@ -189,7 +189,7 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class _PyDict_Pop extends CApiTernaryBuiltinNode {
         @Specialization
-        Object pop(PDict dict, Object key, Object defaultValue,
+        static Object pop(PDict dict, Object key, Object defaultValue,
                         @Cached PopNode popNode) {
             return popNode.execute(null, dict, key, defaultValue);
         }
@@ -335,7 +335,7 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class PyDict_SetDefault extends CApiTernaryBuiltinNode {
         @Specialization
-        Object setItem(PDict dict, Object key, Object value,
+        static Object setItem(PDict dict, Object key, Object value,
                         @Cached DictBuiltins.SetDefaultNode setItemNode) {
             return setItemNode.execute(null, dict, key, value);
         }
@@ -393,7 +393,7 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct)
     abstract static class PyDict_Clear extends CApiUnaryBuiltinNode {
         @Specialization
-        Object keys(PDict dict,
+        static Object keys(PDict dict,
                         @Cached ClearNode clearNode) {
             return clearNode.execute(null, dict);
         }

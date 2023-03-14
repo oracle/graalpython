@@ -149,7 +149,7 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
     abstract static class PyTruffleBytes_Concat extends CApiBinaryBuiltinNode {
         @Specialization
-        Object concat(PBytes original, Object newPart,
+        static Object concat(PBytes original, Object newPart,
                         @Cached BytesBuiltins.AddNode addNode) {
             return addNode.execute(null, original, newPart);
         }
@@ -163,7 +163,7 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class _PyBytes_Join extends CApiBinaryBuiltinNode {
         @Specialization
-        Object join(PBytes original, Object newPart,
+        static Object join(PBytes original, Object newPart,
                         @Cached BytesBuiltins.JoinNode joinNode) {
             return joinNode.execute(null, original, newPart);
         }
@@ -177,7 +177,7 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
     abstract static class PyTruffleBytes_FromFormat extends CApiBinaryBuiltinNode {
         @Specialization
-        Object fromFormat(TruffleString fmt, Object args,
+        static Object fromFormat(TruffleString fmt, Object args,
                         @Cached ModNode modeNode,
                         @Cached EncodeNode encodeNode) {
             Object formated = modeNode.execute(null, fmt, args);

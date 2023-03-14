@@ -94,9 +94,8 @@ public final class PythonCextSetBuiltins {
             return constructSetNode.executeWith(null, iterable);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object newSet(PNone iterable) {
+        Object newSet(@SuppressWarnings("unused") PNone iterable) {
             return factory().createSet();
         }
     }
@@ -198,7 +197,7 @@ public final class PythonCextSetBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PySet_Pop extends CApiUnaryBuiltinNode {
         @Specialization
-        Object pop(PSet set,
+        static Object pop(PSet set,
                         @Cached com.oracle.graal.python.builtins.objects.set.SetBuiltins.PopNode popNode) {
             return popNode.execute(null, set);
         }

@@ -65,7 +65,7 @@ public final class PythonCextIterBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyCallIter_New extends CApiBinaryBuiltinNode {
         @Specialization
-        Object getItem(Object it, Object sentinel,
+        static Object getItem(Object it, Object sentinel,
                         @Cached IterNode iterNode) {
             return iterNode.execute(null, it, sentinel);
         }

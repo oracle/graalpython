@@ -119,7 +119,7 @@ public final class PythonCextMemoryViewBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyMemoryView_FromObject extends CApiUnaryBuiltinNode {
         @Specialization
-        Object wrap(Object object,
+        static Object wrap(Object object,
                         @Cached PyMemoryViewFromObject memoryViewNode) {
             return memoryViewNode.execute(null, object);
         }

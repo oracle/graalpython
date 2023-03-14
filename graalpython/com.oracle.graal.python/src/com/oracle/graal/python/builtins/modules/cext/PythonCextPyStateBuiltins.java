@@ -70,7 +70,7 @@ public final class PythonCextPyStateBuiltins {
     abstract static class PyGILState_Ensure extends CApiNullaryBuiltinNode {
 
         @Specialization
-        Object save(@Cached GilNode gil) {
+        static Object save(@Cached GilNode gil) {
             // TODO allow acquiring from foreign thread
             boolean acquired = gil.acquire();
             return acquired ? 1 : 0;
@@ -90,7 +90,7 @@ public final class PythonCextPyStateBuiltins {
     abstract static class PyGILState_Release extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object restore(int state,
+        static Object restore(int state,
                         @Cached GilNode gil) {
             gil.release(state == 1);
             return 0;

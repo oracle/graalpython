@@ -120,6 +120,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -396,7 +397,7 @@ public class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
     abstract static class PyTruffleObject_GenericGetAttr extends CApiBinaryBuiltinNode {
         @Specialization
-        Object getAttr(Object obj, Object attr,
+        static Object getAttr(Object obj, Object attr,
                         @Cached GetAttributeNode getAttrNode) {
             return getAttrNode.execute(null, obj, attr);
         }
@@ -523,7 +524,7 @@ public class PythonCextObjectBuiltins {
     abstract static class _PyObject_Dump extends CApiUnaryBuiltinNode {
 
         @Specialization
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         int doGeneric(Object ptrObject) {
             PythonContext context = getContext();
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
@@ -608,7 +609,7 @@ public class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyObject_Type extends CApiUnaryBuiltinNode {
         @Specialization
-        Object type(Object obj,
+        static Object type(Object obj,
                         @Cached GetClassNode getClass) {
             return getClass.execute(obj);
         }
