@@ -879,9 +879,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCoroutineWrapper(getLanguage(), generator));
     }
 
-    public final Object createAsyncGenerator() {
-        // TODO implement this properly, this is just a placeholder so that typing stuff works
-        return createPythonObject(PythonBuiltinClassType.PAsyncGenerator);
+    public final PGenerator createAsyncGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PAsyncGenerator));
     }
 
     public final PMappingproxy createMappingproxy(Object object) {
@@ -1517,8 +1516,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new MultibyteCodecObject(type, getShape(type), codec));
     }
 
-    public PAsyncGenASend createAsyncGeneratorASend() {
-        return trace(new PAsyncGenASend(getLanguage()));
+    public PAsyncGenASend createAsyncGeneratorASend(PGenerator receiver, Object message) {
+        return trace(new PAsyncGenASend(getLanguage(), receiver, message));
     }
 
     public PAsyncGenAThrow createAsyncGeneratorAThrow() {

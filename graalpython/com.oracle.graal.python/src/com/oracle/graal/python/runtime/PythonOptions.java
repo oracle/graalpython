@@ -174,7 +174,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.", usageSyntax = "<path>[:<path>]", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PythonPath = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
-    @EngineOption @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONIOENCODING environment variable for the standard launcher.", usageSyntax = "<Encoding>[:<errors>]", stability = OptionStability.STABLE) //
+    @EngineOption
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONIOENCODING environment variable for the standard launcher.", usageSyntax = "<Encoding>[:<errors>]", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> StandardStreamEncoding = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
@@ -231,7 +232,8 @@ public final class PythonOptions {
                         }
                     }));
 
-    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm") //
+    @EngineOption
+    @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm") //
     public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
@@ -248,10 +250,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> CAPI = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
-    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks", usageSyntax = "true|false") //
+    @EngineOption
+    @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks", usageSyntax = "true|false") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
-    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace. Possible modes:" +
+    @EngineOption
+    @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace. Possible modes:" +
                     "    1   Print Java stacktrace for Java exceptions only." +
                     "    2   Print Java stacktrace for Python exceptions only (ATTENTION: this will have a notable performance impact)." +
                     "    3   Combines 1 and 2.", usageSyntax = "1|2|3") //

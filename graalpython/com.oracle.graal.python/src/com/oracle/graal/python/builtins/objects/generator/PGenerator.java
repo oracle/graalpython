@@ -64,6 +64,8 @@ public final class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
+    private boolean runningAsync;
+
     private final boolean isCoroutine;
 
     // An explicit isIterableCoroutine argument is needed for iterable coroutines (generally created
@@ -189,5 +191,13 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public boolean isCoroutine() {
         return isCoroutine;
+    }
+
+    public boolean isRunningAsync() {
+        return runningAsync;
+    }
+
+    public void setRunningAsync(boolean runningAsync) {
+        this.runningAsync = runningAsync;
     }
 }

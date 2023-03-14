@@ -116,7 +116,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ASend extends PythonBinaryBuiltinNode {
         @Specialization
         public Object aSend(PGenerator self, Object sent) {
-            return factory().createAsyncGeneratorASend();
+            return factory().createAsyncGeneratorASend(self, sent);
         }
     }
 
@@ -143,7 +143,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ANext extends PythonUnaryBuiltinNode {
         @Specialization
         public Object aNext(PGenerator self) {
-            return factory().createAsyncGeneratorASend();
+            return factory().createAsyncGeneratorASend(self, PNone.NONE);
         }
     }
 

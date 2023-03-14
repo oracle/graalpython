@@ -42,11 +42,32 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
 
 public class PAsyncGenASend extends PythonBuiltinObject {
-    public PAsyncGenASend(PythonLanguage lang) {
-        super(PythonBuiltinClassType.PAsyncGenASend, PythonBuiltinClassType.PAsyncGenASend.getInstanceShape(lang));
+    public AwaitableState getState() {
+        return state;
     }
+
+    public void setState(AwaitableState state) {
+        this.state = state;
+    }
+
+    public enum AwaitableState {
+        INIT, /* yet to be iterated */
+        ITER, /* iterated at this time */
+        CLOSED
+    }
+
+    public final PGenerator receiver;
+    public final Object message;
+    private AwaitableState state = AwaitableState.INIT;
+
+    public PAsyncGenASend(PythonLanguage lang, PGenerator receiver, Object message) {
+        super(PythonBuiltinClassType.PAsyncGenASend, PythonBuiltinClassType.PAsyncGenASend.getInstanceShape(lang));
+        this.receiver = receiver;
+        this.message = message;
+    }
+
 }
