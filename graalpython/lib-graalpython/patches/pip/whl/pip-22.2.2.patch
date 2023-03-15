@@ -58,16 +58,18 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..59a5cdb
+index 0000000..a54f11a
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,189 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
 +import re
 +from pathlib import Path
 +
++from pip._vendor import tomli
++from pip._vendor.packaging.specifiers import Specifier
 +from pip._vendor.packaging.version import VERSION_PATTERN
 +
 +PATCHES_BASE_DIRS = [os.path.join(__graalpython__.core_home, "patches")]
@@ -92,22 +94,44 @@ index 0000000..59a5cdb
 +            for package_dir in Path(base_dir).iterdir():
 +                denormalized_name = package_dir.name
 +                normalized_name = normalize_name(denormalized_name)
-+                entry = {}
-+                for dist_type in ('whl', 'sdist'):
-+                    typedir = package_dir / dist_type
-+                    if typedir.is_dir():
-+                        versions = {}
-+                        subentry = {'versions': versions}
-+                        for file in typedir.iterdir():
-+                            if file.suffix == '.patch':
-+                                if file.stem == denormalized_name:
-+                                    versions[None] = file
-+                                elif (version := file.stem.removeprefix(f'{denormalized_name}-')) != file.stem:
-+                                    versions[version] = file
-+                            elif file.suffix == '.dir':
-+                                subentry['dir'] = file
-+                        entry[dist_type] = subentry
-+                self._repository[normalized_name] = entry
++                metadata = {}
++                if (metadata_path := package_dir / 'metadata.toml').is_file():
++                    with open(metadata_path, 'rb') as f:
++                        metadata = tomli.load(f)
++                    metadata.setdefault('patches', [])
++                    for patch_rule in metadata['patches']:
++                        patch_rule['patch'] = package_dir / patch_rule['patch']
++                    metadata['prefer-versions'] = frozenset(metadata.get('prefer-versions', []))
++                else:
++                    # TODO legacy structure, simplify when we get rid of ginstall
++                    metadata['patches'] = []
++                    for dist_type in ('whl', 'sdist'):
++                        typedir = package_dir / dist_type
++                        if typedir.is_dir():
++                            files = sorted(typedir.iterdir(), key=lambda f: len(f.name), reverse=True)
++                            for file in files:
++                                if file.suffix == '.patch':
++                                    if file.stem == denormalized_name:
++                                        metadata['patches'].append({
++                                            'patch': str(file),
++                                            'type': dist_type,
++                                        })
++                                    elif (version := file.stem.removeprefix(f'{denormalized_name}-')) != file.stem:
++                                        metadata['patches'].append({
++                                            'version': f'== {version}',
++                                            'patch': file,
++                                            'type': dist_type,
++                                        })
++                            for file in files:
++                                if file.suffix == '.dir':
++                                    with open(file) as f:
++                                        subdir = f.read().strip()
++                                    for patch_rule in metadata['patches']:
++                                        patch_rule['subdir'] = subdir
++                        metadata['prefer-versions'] = {rule.get('version') for rule in metadata['patches']}
++                        if None in metadata['prefer-versions']:
++                            metadata['prefer-versions'] = None
++                self._repository[normalized_name] = metadata
 +
 +    def _deep_get(self, *args):
 +        res = self._repository
@@ -117,32 +141,31 @@ index 0000000..59a5cdb
 +                return None
 +        return res
 +
-+    def get_patch_versions(self, name, dist_types=('whl', 'sdist')):
++    def _get_metadata(self, name):
++        return self._repository.get(normalize_name(name))
++
++    def get_preferred_version_specs(self, name):
++        if metadata := self._get_metadata(name):
++            return metadata['prefer-versions']
++
++    def get_patch_version_specs(self, name):
 +        versions = set()
-+        for dist_type in dist_types:
-+            versions |= set(self._deep_get(normalize_name(name), dist_type, 'versions') or {})
++        if metadata := self._get_metadata(name):
++            for patch_rule in metadata['patches']:
++                if version := patch_rule.get('version'):
++                    versions.add(version)
 +        return versions
 +
-+    def get_patch(self, name, requested_version, dist_type):
-+        versions = self._deep_get(normalize_name(name), dist_type, 'versions')
-+        if not versions:
-+            return None
-+        while True:
-+            if patch := versions.get(requested_version):
-+                return patch
-+            if not requested_version:
-+                return None
-+            split = requested_version.rsplit('.', 1)
-+            if len(split) == 2:
-+                requested_version = split[0]
++    def get_patch_rule(self, name, requested_version, dist_type):
++        if metadata := self._get_metadata(name):
++            for patch_rule in metadata['patches']:
++                if patch_rule.get('dist-type', dist_type) != dist_type:
++                    continue
++                if patch_rule.get('version') and not Specifier(patch_rule['version']).contains(requested_version):
++                    continue
++                return patch_rule
 +            else:
-+                requested_version = None
-+
-+    def get_patch_subdir(self, name):
-+        dir_file = self._deep_get(normalize_name(name), 'whl', 'dir')
-+        if dir_file:
-+            with open(dir_file) as f:
-+                return f.read().strip()
++                return None
 +
 +
 +__PATCH_REPOSITORY = None
@@ -176,7 +199,7 @@ index 0000000..59a5cdb
 +        return
 +
 +    name = name_ver_match.group('name')
-+    version = name_ver_match.group('version')
++    version_spec = name_ver_match.group('version')
 +    suffix = name_ver_match.group('suffix')
 +    is_wheel = suffix == "whl"
 +
@@ -188,44 +211,32 @@ index 0000000..59a5cdb
 +    repository = get_patch_repository()
 +
 +    if is_wheel:
-+        query_dist_types = ('whl',)
 +        # patches intended for binary distribution:
-+        patch = repository.get_patch(name, version, 'whl')
++        patch_rule = repository.get_patch_rule(name, version_spec, 'wheel')
 +    else:
-+        query_dist_types = ('sdist', 'whl')
 +        # patches intended for source distribution if applicable
-+        patch = repository.get_patch(name, version, 'sdist')
-+        if not patch:
-+            patch = repository.get_patch(name, version, 'whl')
-+            if subdir := repository.get_patch_subdir(name):
-+                # we may need to change wd if we are actually patching a source distribution
-+                # with a patch intended for a binary distribution, because in the source
-+                # distribution the actual deployed sources may be in a subdirectory (typically "src")
-+                location = os.path.join(location, subdir)
-+    if patch:
-+        print(f"Patching package {name} using {patch}")
++        patch_rule = repository.get_patch_rule(name, version_spec, 'sdist')
++        if not patch_rule:
++            patch_rule = repository.get_patch_rule(name, version_spec, 'wheel')
++        if patch_rule and (subdir := patch_rule.get('subdir')):
++            # we may need to change wd if we are actually patching a source distribution
++            # with a patch intended for a binary distribution, because in the source
++            # distribution the actual deployed sources may be in a subdirectory (typically "src")
++            location = os.path.join(location, subdir)
++    if patch_rule:
++        print(f"Patching package {name} using {patch_rule['patch']}")
 +        try:
-+            subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", str(patch)], check=True)
++            subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", str(patch_rule['patch'])], check=True)
 +        except FileNotFoundError:
 +            print(
 +                "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
 +        except subprocess.CalledProcessError:
 +            print(f"Applying GraalPy patch failed for {name}. The package may still work.")
-+    elif versions := repository.get_patch_versions(name, dist_types=query_dist_types):
++    elif version_specs := repository.get_patch_version_specs(name):
 +        print("We have patches to make this package work on GraalVM for some version(s).")
 +        print("If installing or running fails, consider using one of the versions that we have patches for:")
-+        for version in versions:
-+            print(f'- {version}')
-+
-+
-+def version_match(v1, v2):
-+    if v2 is None:
-+        # Unversioned patch matches everything
-+        return True
-+    for c1, c2 in zip(v1.split('.'), v2.split('.')):
-+        if c1 != c2:
-+            return False
-+    return True
++        for version_spec in version_specs:
++            print(f'{name} {version_spec}')
 +
 +
 +def apply_graalpy_sort_order(sort_key_func):
@@ -233,11 +244,11 @@ index 0000000..59a5cdb
 +        default_sort_key = sort_key_func(self, candidate)
 +        name = candidate.name
 +        version = str(candidate.version)
-+        patched_version_candidates = get_patch_repository().get_patch_versions(name)
-+        for patched_version in patched_version_candidates:
-+            if version_match(version, patched_version):
-+                return (1,) + default_sort_key
-+        return (0,) + default_sort_key
++        if preferred_versions := get_patch_repository().get_preferred_version_specs(name):
++            for preferred_version in preferred_versions:
++                if Specifier(preferred_version).contains(version):
++                    return 1, default_sort_key
++        return 0, default_sort_key
 +
 +    return wrapper
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
