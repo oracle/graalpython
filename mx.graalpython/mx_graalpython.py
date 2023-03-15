@@ -270,7 +270,11 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
 
 def _pythonhome_context():
-    return set_env(GRAAL_PYTHONHOME=mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
+    return set_env(GRAAL_PYTHONHOME=_pythonhome())
+
+
+def _pythonhome():
+    return mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output()
 
 
 def _dev_pythonhome_context():
@@ -316,11 +320,11 @@ def punittest(ars, report=False):
             # test leaks with Python code only
             run_leak_launcher(common_args + ["--code", "pass", ]),
             # test leaks when some C module code is involved
-            run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
+            run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
             # test leaks with shared engine Python code only
             run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
             # test leaks with shared engine when some C module code is involved
-            run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+            run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
         ]):
             mx.abort(1)
 
@@ -2679,43 +2683,47 @@ def update_hpy_import_cmd(args):
                 "Provides-Extra: dev\n".format(imported_version).strip())
 
 
-def run_leak_launcher(input_args, out=None):
-    print("mx python-leak-test " + " ".join(input_args))
+def run_leak_launcher(input_args):
+    print(shlex.join(["mx", "python-leak-test", *input_args]))
 
     args = input_args
     capi_home = _get_capi_home()
-    args.insert(0, "--experimental-options")
-    args.insert(0, "--python.CAPI=%s" % capi_home)
+    args = [
+        "--keep-dump",
+        "--experimental-options",
+        f"--python.CAPI={capi_home}",
+        *args,
+    ]
 
     env = os.environ.copy()
-    env.setdefault("GRAAL_PYTHONHOME", _dev_pythonhome())
+    env.setdefault("GRAAL_PYTHONHOME", _pythonhome())
 
     dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
+    vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
     jdk = get_jdk()
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
-    retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=out)
+    out = mx.OutputCapture()
+    retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=mx.TeeOutputCapture(out))
+    dump_path = out.data.strip().partition("Dump file:")[2].strip()
     if retval == 0:
         print("PASSED")
+        if dump_path:
+            print("Removing heapdump for passed test")
+            os.unlink(dump_path)
         return True
-    elif os.environ.get("CI") and "--keep-dump" not in input_args:
-        # rerun once with heap dumping enabled
-        out = mx.OutputCapture()
-        run_leak_launcher(["--keep-dump"] + input_args, out=out)
-        path = out.data.strip().partition("Dump file:")[2].strip()
-        if path:
+    else:
+        print("FAILED")
+        if 'CI' in os.environ and dump_path:
             save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
             try:
                 os.makedirs(save_path)
             except OSError:
                 pass
-            dest = shutil.copy(path, save_path)
-            print("Heapdump file kept in " + dest)
-        return False
-    else:
-        print("FAILED")
+            dest = shutil.copy(dump_path, save_path)
+            print(f"Heapdump file kept in {dest}")
         return False
 
 

@@ -35,6 +35,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SET_STORAGE_ITEM;
 import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextNode.STOP_MARKER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -278,6 +279,11 @@ public abstract class SequenceStorageNodes {
         @InliningCutoff
         protected static boolean isByteStorage(NativeSequenceStorage store) {
             return store.getElementType() == ListStorageType.Byte;
+        }
+
+        @InliningCutoff
+        protected static boolean isObjectStorage(NativeSequenceStorage store) {
+            return store.getElementType() == ListStorageType.Generic;
         }
 
         /**
@@ -678,12 +684,11 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isObject(getElementType, storage)", limit = "1")
         protected static Object doNativeObject(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
-                        @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
                         @Shared("getElementType") @Cached @SuppressWarnings("unused") GetElementType getElementType,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return verifyResult(verifyNativeItemNode, raiseNode, storage, toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx)));
+                return toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 // The 'InvalidArrayIndexException' should really not happen since we did a bounds
                 // check before.
@@ -794,10 +799,11 @@ public abstract class SequenceStorageNodes {
         protected static NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
                         @Cached StorageToNativeNode storageToNativeNode,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CExtNodes.ToJavaNode toJavaNode) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = readNativeElement(lib, storage.getPtr(), i, raise);
+                newArray[j] = toJavaNode.execute(readNativeElement(lib, storage.getPtr(), i, raise));
             }
             return storageToNativeNode.execute(newArray, length);
         }
@@ -1268,25 +1274,30 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isByteStorage(storage)")
         protected static void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToByteNode castToByteNode) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(null, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw raiseNode.raise(SystemError, e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
-        @Specialization
+        @Specialization(guards = "isObjectStorage(storage)")
+        protected static void doNativeObject(NativeSequenceStorage storage, int idx, Object value,
+                        @Cached PCallCapiFunction call,
+                        @Cached ToNewRefNode toSulongNode) {
+            call.call(FUN_PY_TRUFFLE_SET_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
+        }
+
+        @Fallback
         protected static void doNative(NativeSequenceStorage storage, int idx, Object value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached VerifyNativeItemNode verifyNativeItemNode) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value, verifyNativeItemNode));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw raiseNode.raise(SystemError, e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -1829,6 +1840,10 @@ public abstract class SequenceStorageNodes {
             return CmpNodeGen.create(BinaryComparisonNode.EqNode.create());
         }
 
+        @NeverDefault
+        public static CmpNode createNe() {
+            return CmpNodeGen.create(BinaryComparisonNode.NeNode.create());
+        }
     }
 
     /**

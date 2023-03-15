@@ -932,4 +932,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         assert callTarget != null : "Missing call target for builtin slot descriptor " + descriptor;
         return callTarget;
     }
+
+    @Override
+    protected void exitContext(PythonContext context, ExitMode exitMode, int exitCode) {
+        if (context.getCApiContext() != null) {
+            context.getCApiContext().finalizeCapi();
+        }
+    }
 }

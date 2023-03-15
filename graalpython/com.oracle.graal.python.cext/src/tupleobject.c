@@ -79,7 +79,6 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     if (newobj == NULL) {
         return NULL;
     }
-    newobj->ob_item = (PyObject **) ((char *)newobj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
 
     // This polyglot type cast is important such that we can directly read and
     // write members of the pointer from Java code.
@@ -93,15 +92,6 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     }
     Py_DECREF(tmp);
     return (PyObject*) newobj;
-}
-
-int PyTruffle_Tuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
-    PyTuple_SET_ITEM(tuple, position, item);
-    return 0;
-}
-
-PyObject* PyTruffle_Tuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-    return PyTuple_GET_ITEM(tuple, position);
 }
 
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
@@ -118,6 +108,22 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
     	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
     }
     PyObject_INIT_VAR(newObj, cls, nitems);
+    ((PyTupleObject*)newObj)->ob_item = (PyObject **) ((char *)newObj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
     return newObj;
+}
+
+void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
+    Py_ssize_t len =  PyTuple_GET_SIZE(self);
+    if (len > 0) {
+        Py_ssize_t i = len;
+        while (--i >= 0) {
+            Py_XDECREF(self->ob_item[i]);
+        }
+    }
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+void* PyTruffle_NativeTupleItems(PyTupleObject* tuple) {
+    return polyglot_from_PyObjectPtr_array(tuple->ob_item, tuple->ob_base.ob_size);
 }
 

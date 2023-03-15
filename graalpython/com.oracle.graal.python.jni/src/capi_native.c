@@ -422,6 +422,16 @@ void Py_IncRef(PyObject *a) {
 }
 */
 
+/*
+This is a workaround for C++ modules, namely PyTorch, that declare global/static variables with destructors that call
+_Py_DECREF. The destructors get called by libc during exit during which we cannot make upcalls as that would segfault.
+So we rebind them to no-ops when exitting.
+*/
+static void nop_Py_DecRef(PyObject* obj) {}
+void finalizeCAPI() {
+    __target___Py_DecRef = nop_Py_DecRef;
+    __target__Py_DecRef = nop_Py_DecRef;
+}
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     va_list vargs;
@@ -557,11 +567,13 @@ char _PyByteArray_empty_string[] = "";
  * The following source files contain code that can be compiled directly and does not need to be called via stubs in Sulong:
  */
 
+#define COMPILING_NATIVE_CAPI
 #include "_warnings.c"
 #include "boolobject.c"
 #include "complexobject.c"
 #include "dictobject.c"
 #include "modsupport_shared.c"
+#include "pylifecycle.c"
 
 /*
  * This mirrors the definition in capi.c that we us on Sulong, and needs to be

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.lib;
 
-int Py_IsInitialized(void) {
-    return 1;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+
+/**
+ * Equivalent of CPython's {@code PyTuple_Check}.
+ */
+@GenerateInline
+@GenerateUncached
+@GenerateCached(false)
+public abstract class PyTupleCheckNode extends Node {
+    public abstract boolean execute(Node inliningTarget, Object object);
+
+    public static boolean executeUncached(Object object) {
+        return PyTupleCheckNodeGen.getUncached().execute(null, object);
+    }
+
+    @Specialization
+    static boolean doManaged(@SuppressWarnings("unused") PTuple object) {
+        return true;
+    }
+
+    @Specialization
+    static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PTuple);
+    }
 }
-
-#ifndef COMPILING_NATIVE_CAPI
-void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
-	GraalPyTruffle_FatalErrorFunc(func != NULL? truffleString(func): NULL, truffleString(msg), -1);
-	/* If the above upcall returns, then we just fall through to the 'abort' call. */
-	abort();
-}
-#endif // COMPILING_NATIVE_CAPI
-

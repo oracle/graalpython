@@ -287,6 +287,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyModule_AddStringConstant", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyModule_AddType", ret = Int, args = {PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GenericGetDict", ret = PyObject, args = {PyObject, Pointer}, call = CImpl)
+    @CApiBuiltin(name = "Py_IsInitialized", ret = Int, args = {}, call = CImpl)
 
     /*
      * Functions that are implemented in C code:
@@ -581,8 +582,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_SetAttrString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyObject_VectorcallDict", ret = PyObject, args = {PyObject, PyObjectConstPtr, SIZE_T, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyOS_double_to_string", ret = CHAR_PTR, args = {Double, CHAR, Int, Int, INT_LIST}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyOS_InterruptOccurred", ret = Int, args = {}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyOS_setsig", ret = PY_OS_SIGHANDLER, args = {Int, PY_OS_SIGHANDLER}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyOS_snprintf", ret = Int, args = {CHAR_PTR, SIZE_T, ConstCharPtrAsTruffleString, VARARGS}, forwardsTo = "PyOS_vsnprintf", call = PolyglotImpl)
     @CApiBuiltin(name = "PyOS_string_to_double", ret = Double, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyOS_strtol", ret = Long, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST, Int}, call = PolyglotImpl)
@@ -991,7 +990,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "Py_Initialize", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "Py_InitializeEx", ret = Void, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_InitializeFromConfig", ret = PYSTATUS, args = {CONST_PYCONFIG_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "Py_IsInitialized", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "Py_Main", ret = Int, args = {Int, WCHAR_T_PTR_LIST}, call = NotImplemented)
     @CApiBuiltin(name = "Py_MakePendingCalls", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "Py_NewInterpreter", ret = PyThreadState, args = {}, call = NotImplemented)
@@ -1208,9 +1206,11 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyOS_AfterFork_Parent", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_AfterFork", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_BeforeFork", ret = Void, args = {}, call = NotImplemented)
+    @CApiBuiltin(name = "PyOS_InterruptOccurred", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_getsig", ret = PY_OS_SIGHANDLER, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_mystricmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_mystrnicmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)
+    @CApiBuiltin(name = "PyOS_setsig", ret = PY_OS_SIGHANDLER, args = {Int, PY_OS_SIGHANDLER}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_Readline", ret = CHAR_PTR, args = {FILE_PTR, FILE_PTR, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyPickleBuffer_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyPickleBuffer_GetBuffer", ret = CONST_PY_BUFFER, args = {PyObject}, call = NotImplemented)

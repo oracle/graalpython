@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,8 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON, CPyExtType
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -48,6 +50,14 @@ def _reference_getslice(args):
     return t[start:end]
 
 
+def _reference_getitem(args):
+    t = args[0]
+    idx = args[1]
+    if idx < 0 or idx >= len(t):
+        raise IndexError('tuple index out of range')
+    return t[idx]
+
+
 class MyStr(str):
 
     def __init__(self, s):
@@ -55,6 +65,25 @@ class MyStr(str):
 
     def __repr__(self):
         return self.s
+
+
+TupleSubclass = CPyExtType(
+    "TupleSubclass",
+    """
+        static PyObject* tuple_subclass_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+            args = Py_BuildValue("(O)", args);
+            if (args == NULL)
+                return NULL;
+            PyObject* result = PyTuple_Type.tp_new(type, args, kwargs);
+            return result;
+       }
+    """,
+    struct_base='PyTupleObject tuple',
+    tp_base='&PyTuple_Type',
+    tp_new='tuple_subclass_new',
+    tp_alloc='0',
+    tp_free='0',
+)
 
 
 class TestPyTuple(CPyExtTestCase):
@@ -70,6 +99,7 @@ class TestPyTuple(CPyExtTestCase):
             (tuple(),),
             ((1, 2, 3),),
             (("a", "b"),),
+            (TupleSubclass(1, 2, 3),),
         ),
         resultspec="n",
         argspec='O',
@@ -83,6 +113,7 @@ class TestPyTuple(CPyExtTestCase):
             (tuple(),),
             ((1, 2, 3),),
             (("a", "b"),),
+            (TupleSubclass(1, 2, 3),),
             # no type checking, also accepts different objects
             ([1, 2, 3, 4],),
             ({"a": 1, "b":2},),
@@ -90,6 +121,21 @@ class TestPyTuple(CPyExtTestCase):
         resultspec="n",
         argspec='O',
         arguments=["PyObject* tuple"],
+    )
+
+    # PyTuple_GetItem
+    test_PyTuple_GetItem = CPyExtFunctionOutVars(
+        _reference_getitem,
+        lambda: (
+            ((1, 2, 3), 1),
+            (TupleSubclass(1, 2, 3), 1),
+            ((1, 2, 3), -1),
+            ((1, 2, 3), 3),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* tuple", "Py_ssize_t index"],
+        resulttype="PyObject*",
     )
 
     # PyTuple_GetSlice
@@ -100,6 +146,7 @@ class TestPyTuple(CPyExtTestCase):
             ((1, 2, 3), 0, 2),
             ((4, 5, 6), 1, 2),
             ((7, 8, 9), 2, 2),
+            (TupleSubclass(1, 2, 3), 1, 2),
         ),
         resultspec="O",
         argspec='Onn',
@@ -123,6 +170,7 @@ class TestPyTuple(CPyExtTestCase):
         lambda: (
             (tuple(),),
             (("hello", "world"),),
+            (TupleSubclass(1, 2, 3),),
             ((None,),),
             ([],),
             ({},),
@@ -139,6 +187,7 @@ class TestPyTuple(CPyExtTestCase):
         lambda: (
             (tuple(),),
             (("hello", "world"),),
+            (TupleSubclass(1, 2, 3),),
             ((None,),),
             ([],),
             ({},),
@@ -148,3 +197,22 @@ class TestPyTuple(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+
+class TestNativeSubclass(unittest.TestCase):
+    def test_builtins(self):
+        t = TupleSubclass(1, 2, 3)
+        assert t
+        assert len(t) == 3
+        assert t[1] == 2
+        assert t[1:] == (2, 3)
+        assert t == (1, 2, 3)
+        assert t > (1, 2, 2)
+        assert t < (1, 2, 4)
+        assert 2 in t
+        assert t + (4, 5) == (1, 2, 3, 4, 5)
+        assert t * 2 == (1, 2, 3, 1, 2, 3)
+        assert list(t) == [1, 2, 3]
+        assert repr(t) == "(1, 2, 3)"
+        assert t.index(2) == 1
+        assert t.count(2) == 1
