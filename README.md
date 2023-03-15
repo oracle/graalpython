@@ -1,24 +1,22 @@
 # GraalVM Implementation of Python
 
-This is an early-stage experimental implementation of Python. A primary goal is
-to support SciPy and its constituent libraries. GraalPy can usually execute
-pure Python code faster than CPython (but not when C extensions are
-involved). GraalPy currently aims to be compatible
-with Python 3.8, but it is a long way from there, and it is very likely that any
-Python program that uses more features of standard library modules or external
-packages will hit something unsupported. At this point, the Python
-implementation is made available for experimentation and curious end-users.
+This is GraalPy, an implementation of the Python language.
+A primary goal is to support SciPy and its constituent libraries.
+GraalPy can usually execute pure Python code faster than CPython (but not when C extensions are involved).
+GraalPy currently aims to be compatible with Python 3.10, but it is some way from there.
+While your specific workload may function, any Python program that uses external packages could hit something unsupported.
+At this point, the Python implementation is made available for experimentation and curious end-users.
 
 ### Trying It
 
-The easiest option to try GraalPy is
-[Pyenv](https://github.com/pyenv/pyenv/), the Python version manager. It allows
-you to easily install different GraalPy releases. To get version 22.3.0, for
-example, just run `pyenv install graalpy-22.3.0`.
+The easiest option to try GraalPy is [Pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
+It allows you to easily install different GraalPy releases.
+To get version 22.3.0, for example, just run `pyenv install graalpy-22.3.0`.
 
-To try GraalPy with a full GraalVM, including the support for Java embedding
-and interop with other languages, you can use the bundled releases from
-[www.graalvm.org](https://www.graalvm.org/downloads/).
+To try GraalPy with a full GraalVM, including the support for Java embedding and interop with other languages, you can use the bundled releases from [www.graalvm.org](https://www.graalvm.org/downloads/).
+
+Another option is to use [Conda-Forge](https://conda-forge.org/).
+To get an environment with the latest GraalPy, use `conda create -c conda-forge -n graalpy graalpy`.
 
 ### Building from Source
 
@@ -62,30 +60,11 @@ In the venv, multiple executables are available, like `python`, `python3` and `g
 
 ### Installing Packages
 
-Currently, not enough of the standard library is implemented to run the
-standard package installers for many packages. As a convenience, we provide a
-simple module to install packages that we know to be working (including
-potential patches required for those packages). Try the following to find out
-which packages are at least partially supported and tested by us in our CI:
-```
-graalpy -m ginstall install --help
-```
-
-As a slightly exciting example, try:
-```
-graalpy -m ginstall install pandas
-```
-
-If all goes well (also consider native dependencies of NumPy), you should be
-able to `import numpy` and `import pandas` afterwards.
-
-Support for more extension modules is high priority for us. We are actively
-building out our support for the Python C API to make extensions such as NumPy,
-SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully. This work means
-that some other extensions might also already work, but we're not actively
-testing other extensions right now and cannot promise anything. Note that to try
-other extensions on this implementation, you have to download, build, and
-install them manually for now.
+You should be able to use the `pip` command from a GraalPy venv to install packages.
+Our `pip` ships some patches for packages that we test internally, these will be applied automatically where necessary.
+Support for as many extension modules as possible is a high priority for us.
+We are actively building out our support for the Python C API to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully.
+This means that some might already work, but we're still actively working on compatibility especially with native extensions.
 
 ### Polyglot Usage
 
@@ -96,7 +75,7 @@ cross-language interop. This will hopefully give you an idea how to use it.
 
 We are working on a mode that is "mostly compatible" with some of Jython's
 features, minus of course that Jython implements Python 2.7 and we implement
-Python 3.8+. We describe the current status of the compatibility mode
+Python 3.10+. We describe the current status of the compatibility mode
 [here](docs/user/Jython.md).
 
 ### Contributing

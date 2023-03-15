@@ -12,6 +12,15 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Allow excluding the Java-based SSL module that uses classes from `java.security.*`, `org.bouncycastle.*`, `javax.net.ssl.*` and any related classes from the native image by passing `-Dpython.java.ssl=false` to the native image build Java arguments.
 * Allow excluding the Java UnixSystem classes from `com.sun.security.auth.*` by passing `-Dpython.java.auth=false` to the native image build Java arguments. This makes the POSIX calls `getpwuid`, `getpwname`, and `getuid` return less precise results in the Java-based POSIX backend.
 * Allow excluding the use of `sun.misc.Signal` and `sun.misc.SignalHandler` from GraalPy by passing `-Dpython.java.signals=false` to the native image build Java arguments. This removes the `signal` module from the binary.
+* We now run an publish benchmark results from the community's [pyperformance](https://pyperformance.readthedocs.io) benchmark suite on our [website](http://graalvm.org/python). This makes it easier to compare and reproduce our results.
+* Allow building and running basic workloads on Windows. This enables Windows users to build and use GraalPy, especially for embedding into Java.
+* Implement complete support for PEP 622 pattern matching. All features of Python's structural pattern matching should now work.
+* Update the distribution layout of GraalPy to match CPython's. This reduces the number of patches we need for various build systems to discover GraalPy's library locations.
+* Add an option for embedders of GraalPy to poll asynchronous actions explicitly. This prevents GraalPy from creating system threads for collecting Python-level references and instead provides a callback that the embedder calls to do this work at regular intervals. See docs/user/PythonNativeImages.md for details.
+* Remove the intrinsified `zipimport` module in favor of the pure Python version. This fixes subtle incompatibilities with CPython when handling ZIP files.
+* Use the JDK's `MessageDigest` for hashing instead of pure Python implementations. This improves performance and compatibility in Java embeddings.
+* Add initial support for `asyncio`. While not complete, this already allows some async libraries like `aiofiles` to work.
+* Add a new implementation of our Python C API interface that uses fully native execution by default. This improves performance and compatibility with some extensions that spend a lot of time in native code, but can have negative effects in workloads that cross often from Python to native code and back. There are new options to control how extensions are built and run: `python.NativeModules` and `python.UseSystemToolchain`. The new default is to use the host system's toolchain for building extensions rather than the LLVM toolchain that ships with GraalVM, and to run all modules natively.
 
 ## Version 22.3.0
 * Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy` for better integration with other tools.
