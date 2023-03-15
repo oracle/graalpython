@@ -1,0 +1,6 @@
+# Patch already upstreamed, keeping it around for older versions
+prefer-versions = []  # Prefer latest version
+
+[[patches]]
+version = "< 2.1.0"
+patch = "MarkupSafe.patch"
