@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,14 +46,17 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -83,10 +86,11 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
 
     @Specialization
     static boolean doPythonObject(PythonAbstractObject object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
-        Object type = getClassNode.execute(object);
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
+                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+        Object type = getClassNode.execute(inliningTarget, object);
         return lookupFloat.execute(type) != PNone.NO_VALUE || lookupIndex.execute(type) != PNone.NO_VALUE;
     }
 
@@ -107,12 +111,14 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
 
     @Specialization(replaces = "doPythonObject")
     static boolean doGeneric(Object object,
-                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
-                    @Cached GetClassNode getClassNode) {
-        Object type = getClassNode.execute(object);
+                    @Bind("this") Node inliningTarget,
+                    @Cached LazyInteropLibrary lazyInteropLibrary,
+                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
+                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
+                    @Shared @Cached InlinedGetClassNode getClassNode) {
+        Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
+            InteropLibrary interopLibrary = lazyInteropLibrary.get(inliningTarget);
             return interopLibrary.fitsInDouble(object) || interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
         }
         return lookupFloat.execute(type) != PNone.NO_VALUE || lookupIndex.execute(type) != PNone.NO_VALUE;

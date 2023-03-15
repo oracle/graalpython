@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -65,6 +66,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -102,19 +104,20 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
 
     @Specialization(guards = "!isTruffleString(obj)")
     static Object str(VirtualFrame frame, Object obj,
-                    @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "Str") LookupSpecialMethodSlotNode lookupStr,
                     @Cached CallUnaryMethodNode callStr,
-                    @Cached GetClassNode getResultClassNode,
+                    @Cached InlinedGetClassNode getResultClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PRaiseNode raiseNode) {
-        Object type = getClassNode.execute(obj);
+        Object type = getClassNode.execute(inliningTarget, obj);
         Object strDescr = lookupStr.execute(frame, type, obj);
         // All our objects should have __str__
         assert strDescr != PNone.NO_VALUE;
         Object result = callStr.executeObject(frame, strDescr, obj);
         result = assertNoJavaString(result);
-        if (result instanceof TruffleString || isSubtypeNode.execute(getResultClassNode.execute(result), PythonBuiltinClassType.PString)) {
+        if (result instanceof TruffleString || isSubtypeNode.execute(getResultClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PString)) {
             return result;
         } else {
             throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___STR__, result);

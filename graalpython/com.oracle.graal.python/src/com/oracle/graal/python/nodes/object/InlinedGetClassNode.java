@@ -84,6 +84,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateCached(false)
 public abstract class InlinedGetClassNode extends PNodeWithContext {
 
+    public static InlinedGetClassNode getUncached() {
+        return InlinedGetClassNodeGen.getUncached();
+    }
+
     public abstract Object execute(Node inliningTarget, Object object);
 
     public static Object executeUncached(Object object) {

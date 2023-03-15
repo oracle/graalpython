@@ -242,6 +242,7 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doGeneric(VirtualFrame frame, Object a, Object b,
                         @Bind("this") Node inliningTarget,
                         @Cached IsNode isNode,

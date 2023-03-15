@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -123,16 +124,16 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)",
-                    "!isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)"})
+                    "!isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)"}, limit = "1")
     static double doObject(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
                     @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
                     @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
                     @Cached(parameters = "Float") LookupSpecialMethodSlotNode lookup,
                     @Cached CallUnaryMethodNode call,
-                    @Cached InlinedGetClassNode resultClassNode,
-                    @Cached InlineIsBuiltinClassProfile resultProfile,
-                    @Cached IsSubtypeNode resultSubtypeNode,
+                    @Exclusive @Cached InlinedGetClassNode resultClassNode,
+                    @Exclusive @Cached InlineIsBuiltinClassProfile resultProfile,
+                    @Exclusive @Cached IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
                     @Cached CastToJavaDoubleNode cast,

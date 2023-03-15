@@ -1828,6 +1828,8 @@ def _python_checkpatchfiles():
             'setuptools-60.9.patch',
             'setuptools-63.patch',
             'setuptools-65.patch',
+            'wheel-0.33.patch',
+            'wheel-0.34.patch'
         }
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",

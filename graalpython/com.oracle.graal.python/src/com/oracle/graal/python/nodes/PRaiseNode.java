@@ -49,6 +49,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nodes.PRaiseNodeGen.LazyNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -253,6 +254,10 @@ public abstract class PRaiseNode extends Node {
     @GenerateUncached
     @GenerateCached(false)
     public abstract static class Lazy extends Node {
+        public static Lazy getUncached() {
+            return LazyNodeGen.getUncached();
+        }
+
         public final PRaiseNode get(Node inliningTarget) {
             return execute(inliningTarget);
         }

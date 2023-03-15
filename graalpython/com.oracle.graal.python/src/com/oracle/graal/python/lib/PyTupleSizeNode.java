@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,14 +51,16 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 public abstract class PyTupleSizeNode extends PNodeWithContext {
@@ -69,9 +71,10 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
         return tuple.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "isTupleSubtype(tuple, getClassNode, isSubtypeNode)", limit = "1")
+    @Specialization(guards = "isTupleSubtype(tuple, inliningTarget, getClassNode, isSubtypeNode)", limit = "1")
     static int sizeNative(PythonAbstractNativeObject tuple,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                     @Cached CExtNodes.PCallCapiFunction callSizeNode,
                     @Cached CExtNodes.ToSulongNode toSulongNode,
@@ -90,7 +93,7 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
         throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, "PyTuple_Size");
     }
 
-    protected boolean isTupleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PTuple);
+    protected boolean isTupleSubtype(Object obj, Node inliningTarget, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PTuple);
     }
 }

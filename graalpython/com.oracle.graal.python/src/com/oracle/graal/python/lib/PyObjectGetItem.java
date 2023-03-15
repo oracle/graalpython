@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -99,13 +99,14 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
 
     @InliningCutoff // no point inlining the complex case
     @Specialization(replaces = {"doList", "doTuple", "doDict"})
-    Object doGeneric(VirtualFrame frame, Object object, Object key,
-                    @Cached GetClassNode getClassNode,
+    static Object doGeneric(VirtualFrame frame, Object object, Object key,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
                     @Cached CallBinaryMethodNode callGetItem,
                     @Cached PyObjectGetItemClass getItemClass,
-                    @Cached PRaiseNode raise) {
-        Object type = getClassNode.execute(object);
+                    @Cached PRaiseNode.Lazy raise) {
+        Object type = getClassNode.execute(inliningTarget, object);
         Object getItem = lookupGetItem.execute(frame, type, object);
         if (getItem != PNone.NO_VALUE) {
             return callGetItem.executeObject(frame, getItem, object, key);
@@ -114,7 +115,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         if (item != PNone.NO_VALUE) {
             return item;
         }
-        throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, object);
+        throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, object);
     }
 
     @GenerateUncached

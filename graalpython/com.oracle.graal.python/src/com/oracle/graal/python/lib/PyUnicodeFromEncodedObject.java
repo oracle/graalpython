@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -75,8 +76,8 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
     @Specialization
     Object doBytes(VirtualFrame frame, PBytes object, Object encoding, Object errors,
                     @Bind("this") Node inliningTarget,
-                    @Cached InlinedConditionProfile emptyStringProfile,
-                    @Cached PyUnicodeDecode decode) {
+                    @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
+                    @Shared @Cached PyUnicodeDecode decode) {
         // Decoding bytes objects is the most common case and should be fast
         if (emptyStringProfile.profile(inliningTarget, object.getSequenceStorage().length() == 0)) {
             return T_EMPTY_STRING;
@@ -99,10 +100,11 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
     }
 
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
+    @SuppressWarnings("truffle-static-method")
     Object doBuffer(VirtualFrame frame, Object object, Object encoding, Object errors,
                     @Bind("this") Node inliningTarget,
-                    @Cached InlinedConditionProfile emptyStringProfile,
-                    @Cached PyUnicodeDecode decode,
+                    @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
+                    @Shared @Cached PyUnicodeDecode decode,
                     @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
                     @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {

@@ -46,13 +46,15 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -101,26 +103,28 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
 
     @Specialization
     static boolean doPythonObject(PythonAbstractObject object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
-                    @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
-                    @Cached PyComplexCheckNode checkComplex) {
-        Object type = getClassNode.execute(object);
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
+                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
+                    @Shared @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
+                    @Shared @Cached PyComplexCheckNode checkComplex) {
+        Object type = getClassNode.execute(inliningTarget, object);
         return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(object);
     }
 
     @Specialization(replaces = "doPythonObject", guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isNone(object)", "!isString(object)"})
     static boolean doObject(Object object,
-                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
-                    @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
-                    @Cached PyComplexCheckNode checkComplex) {
-        Object type = getClassNode.execute(object);
+                    @Bind("this") Node inliningTarget,
+                    @Cached LazyInteropLibrary interopLibrary,
+                    @Shared @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
+                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
+                    @Shared @Cached(parameters = "Int") LookupCallableSlotInMRONode lookupInt,
+                    @Shared @Cached PyComplexCheckNode checkComplex) {
+        Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
-            return interopLibrary.isNumber(object);
+            return interopLibrary.get(inliningTarget).isNumber(object);
         }
         return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(object);
     }

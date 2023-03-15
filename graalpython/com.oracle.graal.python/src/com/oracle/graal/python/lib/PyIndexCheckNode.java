@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,15 +46,18 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -81,9 +84,10 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     @InliningCutoff
     @Specialization
     static boolean doPythonObject(PythonAbstractObject object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
-        return lookupIndex.execute(getClassNode.execute(object)) != PNone.NO_VALUE;
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+        return lookupIndex.execute(getClassNode.execute(inliningTarget, object)) != PNone.NO_VALUE;
     }
 
     @Specialization
@@ -109,10 +113,11 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     @InliningCutoff
     @Specialization(replaces = "doPythonObject")
     static boolean doGeneric(Object object,
+                    @Bind("this") Node inliningTarget,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
-        Object type = getClassNode.execute(object);
+                    @Shared @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+        Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
         }

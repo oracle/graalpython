@@ -69,6 +69,7 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -82,7 +83,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
 
     @Specialization
     PMemoryView fromMemoryView(PMemoryView object,
-                    @Cached PythonObjectFactory factory) {
+                    @Shared @Cached PythonObjectFactory factory) {
         object.checkReleased(this);
         return factory.createMemoryView(PythonContext.get(this), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
                         object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
@@ -98,13 +99,14 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
 
     @Specialization
     PMemoryView fromMMap(PMMap object,
-                    @Cached PythonObjectFactory factory,
-                    @Cached TruffleString.CodePointLengthNode lengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                    @Shared @Cached PythonObjectFactory factory,
+                    @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
+                    @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
         return factory.createMemoryViewForManagedObject(object, 1, (int) object.getLength(), false, T_UINT_8_TYPE_CODE, lengthNode, atIndexNode);
     }
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
+    @SuppressWarnings("truffle-static-method")
     PMemoryView fromManaged(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -114,10 +116,10 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
                     @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readReleaseBufferNode,
                     @Cached CallNode callNode,
-                    @Cached PythonObjectFactory factory,
+                    @Shared @Cached PythonObjectFactory factory,
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
-                    @Cached TruffleString.CodePointLengthNode lengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                    @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
+                    @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
         if (hasSlotProfile.profile(inliningTarget, getBufferAttr != PNone.NO_VALUE)) {

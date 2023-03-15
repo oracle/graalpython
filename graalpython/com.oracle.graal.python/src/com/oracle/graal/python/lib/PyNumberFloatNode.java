@@ -55,7 +55,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -106,10 +106,10 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)"})
     static double doObject(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
-                    @Cached GetClassNode getClassNode,
+                    @Cached InlinedGetClassNode getClassNode,
                     @Cached(parameters = "Float") LookupSpecialMethodSlotNode lookup,
                     @Cached CallUnaryMethodNode call,
-                    @Cached GetClassNode resultClassNode,
+                    @Cached InlinedGetClassNode resultClassNode,
                     @Cached InlineIsBuiltinClassProfile resultProfile,
                     @Cached IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
@@ -118,10 +118,10 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode,
                     @Cached PyFloatFromString fromString) {
-        Object floatDescr = lookup.execute(frame, getClassNode.execute(object), object);
+        Object floatDescr = lookup.execute(frame, getClassNode.execute(inliningTarget, object), object);
         if (floatDescr != PNone.NO_VALUE) {
             Object result = call.executeObject(frame, floatDescr, object);
-            Object resultType = resultClassNode.execute(result);
+            Object resultType = resultClassNode.execute(inliningTarget, result);
             if (!resultProfile.profileClass(inliningTarget, resultType, PythonBuiltinClassType.PFloat)) {
                 if (!resultSubtypeNode.execute(resultType, PythonBuiltinClassType.PFloat)) {
                     throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);

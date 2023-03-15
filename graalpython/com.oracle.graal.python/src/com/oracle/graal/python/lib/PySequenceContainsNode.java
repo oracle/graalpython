@@ -51,7 +51,6 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -86,7 +85,7 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
                     @Cached PyObjectGetIter getIter,
                     @Cached IsBuiltinObjectProfile noIterProfile,
                     @Cached PRaiseNode raiseNode,
-                    @Cached GetClassNode getIterClass,
+                    @Cached InlinedGetClassNode getIterClass,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupIternext,
                     @Cached IsBuiltinObjectProfile noNextProfile,
                     @Cached CallUnaryMethodNode callNext,
@@ -114,7 +113,7 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
             }
             Object next = PNone.NO_VALUE;
             try {
-                next = lookupIternext.execute(frame, getIterClass.execute(iterator), iterator);
+                next = lookupIternext.execute(frame, getIterClass.execute(inliningTarget, iterator), iterator);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, noNextProfile);
             }

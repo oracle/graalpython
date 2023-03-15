@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,10 +55,12 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -67,6 +69,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -112,35 +115,40 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         return !object.isEmpty();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
     static boolean doList(PList object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
     static boolean doTuple(PTuple object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
     static boolean doDict(PDict object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(object.getDictStorage()) != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
     static boolean doSet(PSet object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @Shared("getObjClassNode") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(object.getDictStorage()) != 0;
     }
 
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, rewriteOn = UnexpectedResultException.class)
     static boolean doObjectUnboxed(VirtualFrame frame, Object object,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
                     @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
                     @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
                     @Shared("callBool") @Cached CallUnaryMethodNode callBool,
@@ -150,7 +158,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
                     @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
                     @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         Object boolDescr = lookupBool.execute(frame, type, object);
         if (boolDescr != PNone.NO_VALUE) {
             try {
@@ -173,7 +181,8 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
 
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, replaces = "doObjectUnboxed")
     static boolean doObject(VirtualFrame frame, Object object,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
                     @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
                     @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
                     @Shared("callBool") @Cached CallUnaryMethodNode callBool,
@@ -183,7 +192,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
                     @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
                     @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
-        Object type = getClassNode.execute(object);
+        Object type = getClassNode.execute(inliningTarget, object);
         Object boolDescr = lookupBool.execute(frame, type, object);
         if (boolDescr != PNone.NO_VALUE) {
             Object result = callBool.executeObject(frame, boolDescr, object);
