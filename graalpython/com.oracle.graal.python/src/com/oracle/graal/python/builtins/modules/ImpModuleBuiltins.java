@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SU;
 import static com.oracle.graal.python.nodes.StringLiterals.T_HPY_SUFFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;

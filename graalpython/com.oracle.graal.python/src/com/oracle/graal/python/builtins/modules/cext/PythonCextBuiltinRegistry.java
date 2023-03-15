@@ -56,7 +56,8 @@ public abstract class PythonCextBuiltinRegistry {
     // This can be re-generated using the 'mx python-capi-forwards' command or
     // by executing the main class CApiCodeGen
 
-    //@formatter:off
+    // @formatter:off
+    // Checkstyle: stop
     public static final CApiBuiltinExecutable PyByteArray_Resize = new CApiBuiltinExecutable("PyByteArray_Resize", CApiCallPath.Direct, ArgDescriptor.Int, new ArgDescriptor[]{ArgDescriptor.PyObject, ArgDescriptor.Py_ssize_t}, 0);
     public static final CApiBuiltinExecutable PyBytes_FromObject = new CApiBuiltinExecutable("PyBytes_FromObject", CApiCallPath.Direct, ArgDescriptor.PyObjectTransfer, new ArgDescriptor[]{ArgDescriptor.PyObject}, 1);
     public static final CApiBuiltinExecutable PyBytes_Size = new CApiBuiltinExecutable("PyBytes_Size", CApiCallPath.Direct, ArgDescriptor.Py_ssize_t, new ArgDescriptor[]{ArgDescriptor.PyObject}, 2);
@@ -2398,6 +2399,6 @@ public abstract class PythonCextBuiltinRegistry {
         }
         return null;
     }
-    //@formatter:on
+    // @formatter:on
     // {{end CAPI_BUILTINS}}
 }

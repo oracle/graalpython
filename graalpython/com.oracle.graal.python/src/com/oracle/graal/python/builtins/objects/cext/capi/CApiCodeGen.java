@@ -429,7 +429,8 @@ public final class CApiCodeGen {
     private static boolean generateBuiltinRegistry(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
 
-        lines.add("    //@formatter:off");
+        lines.add("    // @formatter:off");
+        lines.add("    // Checkstyle: stop");
         for (var builtin : javaBuiltins) {
             String argString = Arrays.stream(builtin.arguments).map(b -> "ArgDescriptor." + b).collect(Collectors.joining(", "));
             lines.add("    public static final CApiBuiltinExecutable " + builtin.name + " = new CApiBuiltinExecutable(\"" + builtin.name + "\", CApiCallPath." + builtin.call + ", ArgDescriptor." +
@@ -468,7 +469,7 @@ public final class CApiCodeGen {
         lines.add("        }");
         lines.add("        return null;");
         lines.add("    }");
-        lines.add("    //@formatter:on");
+        lines.add("    // @formatter:on");
 
         return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCextBuiltinRegistry.java"), lines);
     }
