@@ -58,10 +58,10 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..5fb3801
+index 0000000..fc6a7fa
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,189 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -175,6 +175,9 @@ index 0000000..5fb3801
 +    return __PATCH_REPOSITORY
 +
 +
++__already_patched = set()
++
++
 +def apply_graalpy_patches(filename, location):
 +    """
 +    Applies any GraalPy patches to package extracted from 'filename' into 'location'.
@@ -204,6 +207,10 @@ index 0000000..5fb3801
 +    if is_wheel and is_bundled_wheel(location, name):
 +        return
 +
++    # When we patch a sdist, pip may call us again to process the wheel produced from it
++    if (name, version_spec) in __already_patched:
++        return
++
 +    print(f"Looking for GraalPy patches for {name}")
 +    repository = get_patch_repository()
 +
@@ -229,6 +236,7 @@ index 0000000..5fb3801
 +                "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
 +        except subprocess.CalledProcessError:
 +            print(f"Applying GraalPy patch failed for {name}. The package may still work.")
++        __already_patched.add((name, version_spec))
 +    elif version_specs := repository.get_patch_version_specs(name):
 +        print("We have patches to make this package work on GraalVM for some version(s).")
 +        print("If installing or running fails, consider using one of the versions that we have patches for:")

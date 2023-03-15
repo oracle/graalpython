@@ -170,6 +170,7 @@ if sys.implementation.name == "graalpy":
                 '--find-links', self.index_dir, '--no-index', '--no-cache-dir',
                 package],
                 env=env, universal_newlines=True)
+            assert 'Applying GraalPy patch failed for' not in out
             return re.findall(r'Successfully installed (\S+)', out)
 
         def run_test_fun(self):
