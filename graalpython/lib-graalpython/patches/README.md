@@ -8,8 +8,8 @@ Configuration files are named `metadata.toml` and can contain the following:
 # The file defines an array of tables (dicts) named `patches`. The patch selection process iterates it and picks the
 # first patch one that matches in version and dist type.
 # The next entry will apply to a wheel foo-1.0.0
-[[patches]]
-# Mandatory. Relative path to the patch file
+[[rules]]
+# Optional. Relative path to a patch file. May be omitted when the entry just specifies `install-priority`
 patch = 'foo-1.0.0.patch'
 # Optional. Version specifier according to https://peps.python.org/pep-0440/#version-specifiers. If omitted, it will
 # match any version
@@ -21,6 +21,13 @@ dist-type = 'wheel'
 # when the wheel was built from a subdirectory. When applying a patch on a sdist, this option will cause the patch
 # process to be run from given subdirectory. Has no effect when applying patches on wheels. 
 subdir = 'src'
+# Optional. Can specify preference for or against this version when selecting which version to install. Defaults to 1.
+# When ordering all available versions in the index, each version gets a priority of the first entry it matches in this
+# file. If it doesn't match, it gets priority 0. Versions with higher priority are then prefered for installation. This
+# means that by default, versions with patches are prefered. Set the priority to 0 if you want the version not to be
+# prefered, for example when keeping an old patch that was accepted upstream in a newer version. Set the version to
+# a number greater than 1 if you want given version to be preferred to other entries.
+install-priority = 1
 
 # The next entry will apply to all other artifacts of foo
 [[patches]]

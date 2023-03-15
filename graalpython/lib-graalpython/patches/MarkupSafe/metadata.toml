@@ -1,6 +1,5 @@
 # Patch already upstreamed, keeping it around for older versions
-prefer-versions = []  # Prefer latest version
-
-[[patches]]
+[[rules]]
 version = "< 2.1.0"
 patch = "MarkupSafe.patch"
+install-priority = 0  # Don't make pip install prefer this version

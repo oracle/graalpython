@@ -58,10 +58,10 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..a54f11a
+index 0000000..5fb3801
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,181 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -98,13 +98,13 @@ index 0000000..a54f11a
 +                if (metadata_path := package_dir / 'metadata.toml').is_file():
 +                    with open(metadata_path, 'rb') as f:
 +                        metadata = tomli.load(f)
-+                    metadata.setdefault('patches', [])
-+                    for patch_rule in metadata['patches']:
-+                        patch_rule['patch'] = package_dir / patch_rule['patch']
-+                    metadata['prefer-versions'] = frozenset(metadata.get('prefer-versions', []))
++                    metadata.setdefault('rules', [])
++                    for rule in metadata['rules']:
++                        if 'patch' in rule:
++                            rule['patch'] = package_dir / rule['patch']
 +                else:
 +                    # TODO legacy structure, simplify when we get rid of ginstall
-+                    metadata['patches'] = []
++                    metadata['rules'] = []
 +                    for dist_type in ('whl', 'sdist'):
 +                        typedir = package_dir / dist_type
 +                        if typedir.is_dir():
@@ -112,12 +112,12 @@ index 0000000..a54f11a
 +                            for file in files:
 +                                if file.suffix == '.patch':
 +                                    if file.stem == denormalized_name:
-+                                        metadata['patches'].append({
++                                        metadata['rules'].append({
 +                                            'patch': str(file),
 +                                            'type': dist_type,
 +                                        })
 +                                    elif (version := file.stem.removeprefix(f'{denormalized_name}-')) != file.stem:
-+                                        metadata['patches'].append({
++                                        metadata['rules'].append({
 +                                            'version': f'== {version}',
 +                                            'patch': file,
 +                                            'type': dist_type,
@@ -126,46 +126,43 @@ index 0000000..a54f11a
 +                                if file.suffix == '.dir':
 +                                    with open(file) as f:
 +                                        subdir = f.read().strip()
-+                                    for patch_rule in metadata['patches']:
-+                                        patch_rule['subdir'] = subdir
-+                        metadata['prefer-versions'] = {rule.get('version') for rule in metadata['patches']}
-+                        if None in metadata['prefer-versions']:
-+                            metadata['prefer-versions'] = None
++                                    for rule in metadata['rules']:
++                                        rule['subdir'] = subdir
 +                self._repository[normalized_name] = metadata
 +
-+    def _deep_get(self, *args):
-+        res = self._repository
-+        for arg in args:
-+            res = res.get(arg)
-+            if not res:
-+                return None
-+        return res
++    def get_rules(self, name):
++        if metadata := self._repository.get(normalize_name(name)):
++            return metadata['rules']
 +
-+    def _get_metadata(self, name):
-+        return self._repository.get(normalize_name(name))
++    def get_priority_for_version(self, name, version):
++        if rules := self.get_rules(name):
++            for rule in rules:
++                if self.rule_matches_version(rule, version):
++                    return rule.get('install-priority', 1)
++        return 0
 +
-+    def get_preferred_version_specs(self, name):
-+        if metadata := self._get_metadata(name):
-+            return metadata['prefer-versions']
++    @staticmethod
++    def rule_matches_version(rule, version):
++        return not rule.get('version') or Specifier(rule['version']).contains(version)
 +
 +    def get_patch_version_specs(self, name):
 +        versions = set()
-+        if metadata := self._get_metadata(name):
-+            for patch_rule in metadata['patches']:
-+                if version := patch_rule.get('version'):
++        if rules := self.get_rules(name):
++            for rule in rules:
++                if 'patch' in rule and (version := rule.get('version')):
 +                    versions.add(version)
 +        return versions
 +
 +    def get_patch_rule(self, name, requested_version, dist_type):
-+        if metadata := self._get_metadata(name):
-+            for patch_rule in metadata['patches']:
-+                if patch_rule.get('dist-type', dist_type) != dist_type:
++        if metadata := self.get_rules(name):
++            for rule in metadata:
++                if 'patch' not in rule:
 +                    continue
-+                if patch_rule.get('version') and not Specifier(patch_rule['version']).contains(requested_version):
++                if rule.get('dist-type', dist_type) != dist_type:
 +                    continue
-+                return patch_rule
-+            else:
-+                return None
++                if not self.rule_matches_version(rule, requested_version):
++                    continue
++                return rule
 +
 +
 +__PATCH_REPOSITORY = None
@@ -242,13 +239,8 @@ index 0000000..a54f11a
 +def apply_graalpy_sort_order(sort_key_func):
 +    def wrapper(self, candidate):
 +        default_sort_key = sort_key_func(self, candidate)
-+        name = candidate.name
-+        version = str(candidate.version)
-+        if preferred_versions := get_patch_repository().get_preferred_version_specs(name):
-+            for preferred_version in preferred_versions:
-+                if Specifier(preferred_version).contains(version):
-+                    return 1, default_sort_key
-+        return 0, default_sort_key
++        priority = get_patch_repository().get_priority_for_version(candidate.name, str(candidate.version))
++        return priority, default_sort_key
 +
 +    return wrapper
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py

@@ -117,19 +117,18 @@ if sys.implementation.name == "graalpy":
             shutil.rmtree(self.patch_dir, ignore_errors=True)
             shutil.rmtree(self.index_dir, ignore_errors=True)
 
-        def prepare_patches(self, name, patches, prefer_versions=None):
+        def prepare_config(self, name, rules):
             package_dir = self.patch_dir / name
             package_dir.mkdir(exist_ok=True)
             toml_lines = []
-            if prefer_versions:
-                toml_lines.append(f'prefer-versions = {json.dumps(prefer_versions)}')
-            for patch in patches:
-                toml_lines.append('[[patches]]')
-                for k, v in patch.items():
+            for rule in rules:
+                toml_lines.append('[[rules]]')
+                for k, v in rule.items():
                     if not k.startswith('$'):
                         toml_lines.append(f'{k} = {v!r}')
-                with open(package_dir / patch['patch'], 'w') as f:
-                    f.write(PATCH_TEMPLATE.format(patch.get('$patch-text', 'Patched')))
+                if patch := rule.get('patch'):
+                    with open(package_dir / patch, 'w') as f:
+                        f.write(PATCH_TEMPLATE.format(rule.get('$patch-text', 'Patched')))
             with open(package_dir / 'metadata.toml', 'w') as f:
                 f.write('\n'.join(toml_lines))
 
@@ -171,7 +170,6 @@ if sys.implementation.name == "graalpy":
                 '--find-links', self.index_dir, '--no-index', '--no-cache-dir',
                 package],
                 env=env, universal_newlines=True)
-            print(out)
             return re.findall(r'Successfully installed (\S+)', out)
 
         def run_test_fun(self):
@@ -183,7 +181,7 @@ if sys.implementation.name == "graalpy":
 
         def test_wheel_unpatched_version(self):
             self.add_package_to_index('foo', '1.0.0', 'wheel')
-            self.prepare_patches('foo', [{
+            self.prepare_config('foo', [{
                 'patch': 'foo-1.1.0.patch',
                 'version': '== 1.1.0',
                 'subdir': 'src',
@@ -193,7 +191,7 @@ if sys.implementation.name == "graalpy":
 
         def test_wheel_patched_version(self):
             self.add_package_to_index('foo', '1.1.0', 'wheel')
-            self.prepare_patches('foo', [{
+            self.prepare_config('foo', [{
                 'patch': 'foo-1.1.0.patch',
                 'version': '== 1.1.0',
                 'subdir': 'src',
@@ -203,7 +201,7 @@ if sys.implementation.name == "graalpy":
 
         def test_sdist_unpatched_version(self):
             self.add_package_to_index('foo', '1.0.0', 'sdist')
-            self.prepare_patches('foo', [{
+            self.prepare_config('foo', [{
                 'patch': 'foo-1.1.0.patch',
                 'version': '== 1.1.0',
                 'subdir': 'src',
@@ -213,7 +211,7 @@ if sys.implementation.name == "graalpy":
 
         def test_sdist_patched_version(self):
             self.add_package_to_index('foo', '1.1.0', 'sdist')
-            self.prepare_patches('foo', [{
+            self.prepare_config('foo', [{
                 'patch': 'foo-1.1.0.patch',
                 'version': '== 1.1.0',
                 'subdir': 'src',
@@ -223,7 +221,7 @@ if sys.implementation.name == "graalpy":
 
         def test_sdist_patched_with_wheel_patch(self):
             self.add_package_to_index('foo', '1.1.0', 'wheel')
-            self.prepare_patches('foo', [{
+            self.prepare_config('foo', [{
                 'patch': 'foo-1.1.0.patch',
                 'version': '== 1.1.0',
                 'subdir': 'src',
@@ -233,7 +231,7 @@ if sys.implementation.name == "graalpy":
 
         def test_different_patch_wheel_sdist1(self):
             self.add_package_to_index('foo', '1.1.0', 'sdist')
-            self.prepare_patches('foo', [
+            self.prepare_config('foo', [
                 {
                     'patch': 'foo-1.1.0.patch',
                     'version': '== 1.1.0',
@@ -257,7 +255,7 @@ if sys.implementation.name == "graalpy":
 
         def test_different_patch_wheel_sdist2(self):
             self.add_package_to_index('foo', '1.1.0', 'wheel')
-            self.prepare_patches('foo', [
+            self.prepare_config('foo', [
                 {
                     'patch': 'foo-1.1.0.patch',
                     'version': '== 1.1.0',
@@ -281,7 +279,7 @@ if sys.implementation.name == "graalpy":
 
         def test_rule_matching1(self):
             self.add_package_to_index('foo', '1.1.0', 'wheel')
-            self.prepare_patches('foo', [
+            self.prepare_config('foo', [
                 {
                     'patch': 'foo-1.1.0.patch',
                     'version': '== 1.1.0',
@@ -297,7 +295,7 @@ if sys.implementation.name == "graalpy":
 
         def test_rule_matching2(self):
             self.add_package_to_index('foo', '1.0.0', 'wheel')
-            self.prepare_patches('foo', [
+            self.prepare_config('foo', [
                 {
                     'patch': 'foo-1.1.0.patch',
                     'version': '== 1.1.0',
@@ -313,7 +311,7 @@ if sys.implementation.name == "graalpy":
 
         def test_version_range_inside(self):
             self.add_package_to_index('foo', '1.1.0', 'wheel')
-            self.prepare_patches('foo', [{
+            self.prepare_config('foo', [{
                 'patch': 'foo.patch',
                 'version': '> 1.0.0',
             }])
@@ -322,11 +320,65 @@ if sys.implementation.name == "graalpy":
 
         def test_version_range_outside(self):
             self.add_package_to_index('foo', '1.0.0', 'wheel')
-            self.prepare_patches('foo', [{
-                'patch': 'patched_package',
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
                 'version': '> 1.0.0',
             }])
             self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "Unpatched"
+
+        def test_version_selection_default(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.add_package_to_index('foo', '1.2.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
+                'version': '<= 1.1.0',
+            }])
+            assert self.run_venv_pip_install('foo') == ['foo-1.1.0']
+            assert self.run_venv_pip_install('foo==1.2') == ['foo-1.2.0']
+
+        def test_version_selection_explicit_demoted(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
+                'version': '< 1.1.0',
+                'install-priority': 0,
+            }])
+            assert self.run_venv_pip_install('foo') == ['foo-1.1.0']
+            assert self.run_test_fun() == "Unpatched"
+            assert self.run_venv_pip_install('foo==1.0.0') == ['foo-1.0.0']
+            assert self.run_test_fun() == "Patched"
+
+        def test_version_selection_explicit_promoted(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [
+                {
+                    'patch': 'foo.patch',
+                    'version': '< 1.1.0',
+                    'install-priority': 2,
+                    '$patch-text': 'old patch',
+                },
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    '$patch-text': 'new patch',
+                },
+            ])
+            assert self.run_venv_pip_install('foo') == ['foo-1.0.0']
+            assert self.run_test_fun() == "old patch"
+            assert self.run_venv_pip_install('foo>1.0.0') == ['foo-1.1.0']
+            assert self.run_test_fun() == "new patch"
+
+        def test_version_selection_no_patch(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{
+                'version': '== 1.0.0',
+            }])
+            assert self.run_venv_pip_install('foo') == ['foo-1.0.0']
             assert self.run_test_fun() == "Unpatched"
 
         # Tests for legacy patch structure
