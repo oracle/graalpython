@@ -586,6 +586,8 @@ def update_unittest_tags(args):
 
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
+# These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
+AOT_ONLY_TESTS = ["test_patched_pip.py"]
 
 GINSTALL_GATE_PACKAGES = {
     "numpy": "numpy",
@@ -879,6 +881,8 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     # list of excluded tests
     if aot_compatible:
         exclude += AOT_INCOMPATIBLE_TESTS
+    else:
+        exclude += AOT_ONLY_TESTS
 
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run([python_binary,
