@@ -26,7 +26,8 @@ subdir = 'src'
 # file. If it doesn't match, it gets priority 0. Versions with higher priority are then prefered for installation. This
 # means that by default, versions with patches are prefered. Set the priority to 0 if you want the version not to be
 # prefered, for example when keeping an old patch that was accepted upstream in a newer version. Set the version to
-# a number greater than 1 if you want given version to be preferred to other entries.
+# a number greater than 1 if you want given version to be preferred to other entries. Additionally, if you set the
+# priority to 0, the version will not be shown in the suggestion list we display when we didn't find an applicable patch
 install-priority = 1
 
 # The next entry will apply to all other artifacts of foo

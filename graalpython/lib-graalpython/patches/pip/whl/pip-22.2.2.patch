@@ -58,7 +58,7 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..fc6a7fa
+index 0000000..179c213
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
 @@ -0,0 +1,189 @@
@@ -145,11 +145,11 @@ index 0000000..fc6a7fa
 +    def rule_matches_version(rule, version):
 +        return not rule.get('version') or Specifier(rule['version']).contains(version)
 +
-+    def get_patch_version_specs(self, name):
++    def get_suggested_version_specs(self, name):
 +        versions = set()
 +        if rules := self.get_rules(name):
 +            for rule in rules:
-+                if 'patch' in rule and (version := rule.get('version')):
++                if 'patch' in rule and rule.get('install-priority', 1) > 0 and (version := rule.get('version')):
 +                    versions.add(version)
 +        return versions
 +
@@ -237,7 +237,7 @@ index 0000000..fc6a7fa
 +        except subprocess.CalledProcessError:
 +            print(f"Applying GraalPy patch failed for {name}. The package may still work.")
 +        __already_patched.add((name, version_spec))
-+    elif version_specs := repository.get_patch_version_specs(name):
++    elif version_specs := repository.get_suggested_version_specs(name):
 +        print("We have patches to make this package work on GraalVM for some version(s).")
 +        print("If installing or running fails, consider using one of the versions that we have patches for:")
 +        for version_spec in version_specs:
