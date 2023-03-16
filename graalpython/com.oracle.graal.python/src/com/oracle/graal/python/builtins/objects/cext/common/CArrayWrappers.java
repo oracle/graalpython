@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -99,11 +99,11 @@ public abstract class CArrayWrappers {
      */
     @TruffleBoundary
     public static long byteArrayToNativeInt8(byte[] data, boolean writeNullTerminator) {
-        int size = (data.length + (writeNullTerminator ? 1 : 0)) * Byte.BYTES;
-        long ptr = UNSAFE.allocateMemory(size);
+        int size = data.length * Byte.BYTES;
+        long ptr = UNSAFE.allocateMemory(size + (writeNullTerminator ? Byte.BYTES : 0));
         UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, ptr, size);
         if (writeNullTerminator) {
-            UNSAFE.putByte(ptr + data.length * Byte.BYTES, (byte) 0);
+            UNSAFE.putByte(ptr + size, (byte) 0);
         }
         return ptr;
     }
