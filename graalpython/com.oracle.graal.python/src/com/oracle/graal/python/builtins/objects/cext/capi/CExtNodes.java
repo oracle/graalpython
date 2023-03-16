@@ -99,12 +99,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.Ge
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolver;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
@@ -837,7 +837,7 @@ public abstract class CExtNodes {
                 while (UNSAFE.getByte(pointer + length) != 0) {
                     length++;
                 }
-                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, false);
+                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, true);
             }
 
             return materialize.execute(factory.createString(new NativeCharSequence(charPtr, 1, false)));
