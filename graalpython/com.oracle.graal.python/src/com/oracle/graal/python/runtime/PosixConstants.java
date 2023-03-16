@@ -106,6 +106,7 @@ public final class PosixConstants {
     public static final MandatoryIntConstant O_TRUNC;
     public static final MandatoryIntConstant O_APPEND;
     public static final MandatoryIntConstant O_NONBLOCK;
+    public static final MandatoryIntConstant O_NOCTTY;
     public static final MandatoryIntConstant O_NDELAY;
     public static final MandatoryIntConstant O_DSYNC;
     public static final MandatoryIntConstant O_CLOEXEC;
@@ -359,6 +360,7 @@ public final class PosixConstants {
         O_TRUNC = reg.createMandatoryInt("O_TRUNC");
         O_APPEND = reg.createMandatoryInt("O_APPEND");
         O_NONBLOCK = reg.createMandatoryInt("O_NONBLOCK");
+        O_NOCTTY = reg.createMandatoryInt("O_NOCTTY");
         O_NDELAY = reg.createMandatoryInt("O_NDELAY");
         O_DSYNC = reg.createMandatoryInt("O_DSYNC");
         O_CLOEXEC = reg.createMandatoryInt("O_CLOEXEC");
@@ -558,8 +560,8 @@ public final class PosixConstants {
         OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH");
         SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH");
 
-        openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC, O_TMPFILE,
-                        O_DIRECTORY};
+        openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NOCTTY, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC,
+                        O_TMPFILE, O_DIRECTORY};
         fileType = new IntConstant[]{S_IFMT, S_IFSOCK, S_IFLNK, S_IFREG, S_IFBLK, S_IFDIR, S_IFCHR, S_IFIFO};
         mmapFlags = new IntConstant[]{MAP_SHARED, MAP_PRIVATE, MAP_ANONYMOUS, MAP_DENYWRITE, MAP_EXECUTABLE};
         mmapProtection = new IntConstant[]{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};

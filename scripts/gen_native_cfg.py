@@ -151,6 +151,7 @@ constant_defs = '''
   x O_TRUNC
   x O_APPEND
 0 x O_NONBLOCK
+0 x O_NOCTTY
 0 x O_NDELAY
 0 x O_DSYNC
 0 x O_CLOEXEC
