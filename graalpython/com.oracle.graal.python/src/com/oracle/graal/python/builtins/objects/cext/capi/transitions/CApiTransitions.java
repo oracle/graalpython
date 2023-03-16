@@ -737,7 +737,7 @@ public class CApiTransitions {
         }
 
         @Override
-        protected boolean needsTransfer() {
+        protected final boolean needsTransfer() {
             return true;
         }
     }
@@ -891,7 +891,7 @@ public class CApiTransitions {
         }
 
         @Override
-        protected boolean needsTransfer() {
+        protected final boolean needsTransfer() {
             return true;
         }
     }
