@@ -148,10 +148,10 @@ if sys.implementation.name == "graalpy":
                 subprocess.run([self.venv_python, 'setup.py', 'sdist'],
                                cwd=src_dir, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 dist_dir = src_dir / 'dist'
-                sdist = list(dist_dir.glob(f'{name}-{version}*.tar.gz'))[0]
+                sdist = list(dist_dir.glob(f'*.tar.gz'))[0]
                 subprocess.run([self.venv_python, 'setup.py', 'bdist_wheel'],
                                cwd=src_dir, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                wheel = list(dist_dir.glob(f'{name}-{version}*.whl'))[0]
+                wheel = list(dist_dir.glob(f'*.whl'))[0]
                 self.package_cache[cache_key] = {'sdist': sdist, 'wheel': wheel}
                 return self.package_cache[cache_key]
 
@@ -381,6 +381,26 @@ if sys.implementation.name == "graalpy":
             }])
             assert self.run_venv_pip_install('foo') == ['foo-1.0.0']
             assert self.run_test_fun() == "Unpatched"
+
+        def test_name_with_underscores(self):
+            self.add_package_to_index('package_with_underscores', '1.0.0', 'wheel')
+            self.add_package_to_index('package_with_underscores', '2.0.0', 'wheel')
+            self.prepare_config('package_with_underscores', [{
+                'version': '== 1.0.0',
+                'patch': 'package_with_underscores.patch',
+            }])
+            assert self.run_venv_pip_install('package_with_underscores') == ['package_with_underscores-1.0.0']
+            assert self.run_test_fun() == "Patched"
+
+        def test_name_with_dashes(self):
+            self.add_package_to_index('package-with-dashes', '1.0.0', 'wheel')
+            self.add_package_to_index('package-with-dashes', '2.0.0', 'wheel')
+            self.prepare_config('package-with-dashes', [{
+                'version': '== 1.0.0',
+                'patch': 'package-with-dashes.patch',
+            }])
+            assert self.run_venv_pip_install('package-with-dashes') == ['package-with-dashes-1.0.0']
+            assert self.run_test_fun() == "Patched"
 
         # Tests for legacy patch structure
         def test_wheel_unpatched_version_legacy(self):
