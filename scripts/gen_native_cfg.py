@@ -160,6 +160,16 @@ constant_defs = '''
 * x O_RSYNC
 * x O_TMPFILE
 * x O_DIRECTORY
+* x O_BINARY
+* x O_TEXT
+* x O_XATTR
+* x O_LARGEFILE
+* x O_SHLOCK
+* x O_EXLOCK
+* x O_EXEC
+* x O_SEARCH
+* x O_PATH
+* x O_TTY_INIT
 
 [fileType]
 u x S_IFMT

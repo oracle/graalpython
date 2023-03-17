@@ -115,6 +115,16 @@ public final class PosixConstants {
     public static final OptionalIntConstant O_RSYNC;
     public static final OptionalIntConstant O_TMPFILE;
     public static final OptionalIntConstant O_DIRECTORY;
+    public static final OptionalIntConstant O_BINARY;
+    public static final OptionalIntConstant O_TEXT;
+    public static final OptionalIntConstant O_XATTR;
+    public static final OptionalIntConstant O_LARGEFILE;
+    public static final OptionalIntConstant O_SHLOCK;
+    public static final OptionalIntConstant O_EXLOCK;
+    public static final OptionalIntConstant O_EXEC;
+    public static final OptionalIntConstant O_SEARCH;
+    public static final OptionalIntConstant O_PATH;
+    public static final OptionalIntConstant O_TTY_INIT;
     public static final MandatoryIntConstant S_IFMT;
     public static final MandatoryIntConstant S_IFSOCK;
     public static final MandatoryIntConstant S_IFLNK;
@@ -369,6 +379,16 @@ public final class PosixConstants {
         O_RSYNC = reg.createOptionalInt("O_RSYNC");
         O_TMPFILE = reg.createOptionalInt("O_TMPFILE");
         O_DIRECTORY = reg.createOptionalInt("O_DIRECTORY");
+        O_BINARY = reg.createOptionalInt("O_BINARY");
+        O_TEXT = reg.createOptionalInt("O_TEXT");
+        O_XATTR = reg.createOptionalInt("O_XATTR");
+        O_LARGEFILE = reg.createOptionalInt("O_LARGEFILE");
+        O_SHLOCK = reg.createOptionalInt("O_SHLOCK");
+        O_EXLOCK = reg.createOptionalInt("O_EXLOCK");
+        O_EXEC = reg.createOptionalInt("O_EXEC");
+        O_SEARCH = reg.createOptionalInt("O_SEARCH");
+        O_PATH = reg.createOptionalInt("O_PATH");
+        O_TTY_INIT = reg.createOptionalInt("O_TTY_INIT");
         S_IFMT = reg.createMandatoryInt("S_IFMT");
         S_IFSOCK = reg.createMandatoryInt("S_IFSOCK");
         S_IFLNK = reg.createMandatoryInt("S_IFLNK");
@@ -561,7 +581,7 @@ public final class PosixConstants {
         SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH");
 
         openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NOCTTY, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC,
-                        O_TMPFILE, O_DIRECTORY};
+                        O_TMPFILE, O_DIRECTORY, O_BINARY, O_TEXT, O_XATTR, O_LARGEFILE, O_SHLOCK, O_EXLOCK, O_EXEC, O_SEARCH, O_PATH, O_TTY_INIT};
         fileType = new IntConstant[]{S_IFMT, S_IFSOCK, S_IFLNK, S_IFREG, S_IFBLK, S_IFDIR, S_IFCHR, S_IFIFO};
         mmapFlags = new IntConstant[]{MAP_SHARED, MAP_PRIVATE, MAP_ANONYMOUS, MAP_DENYWRITE, MAP_EXECUTABLE};
         mmapProtection = new IntConstant[]{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};

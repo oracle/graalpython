@@ -87,6 +87,8 @@ class PosixConstantsLinux {
         constants.put("O_RSYNC", 0x00101000);
         constants.put("O_TMPFILE", 0x00410000);
         constants.put("O_DIRECTORY", 0x00010000);
+        constants.put("O_LARGEFILE", 0x00000000);
+        constants.put("O_PATH", 0x00200000);
         constants.put("S_IFMT", 0x0000F000);
         constants.put("S_IFSOCK", 0x0000C000);
         constants.put("S_IFLNK", 0x0000A000);
