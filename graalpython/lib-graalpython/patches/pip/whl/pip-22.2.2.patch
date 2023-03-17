@@ -58,7 +58,7 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..179c213
+index 0000000..b8e849b
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
 @@ -0,0 +1,189 @@
@@ -118,7 +118,7 @@ index 0000000..179c213
 +                                        })
 +                                    elif (version := file.stem.removeprefix(f'{denormalized_name}-')) != file.stem:
 +                                        metadata['rules'].append({
-+                                            'version': f'== {version}',
++                                            'version': f'== {version}.*',
 +                                            'patch': file,
 +                                            'type': dist_type,
 +                                        })
