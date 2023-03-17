@@ -259,7 +259,7 @@ def known_packages():
 
     @pip_package()
     def wheel(**kwargs):
-        install_from_pypi("wheel==0.33.4", **kwargs)
+        install_from_pypi("wheel==0.38.*", **kwargs)
 
     @pip_package()
     def protobuf(**kwargs):

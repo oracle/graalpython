@@ -2067,13 +2067,6 @@ public final class PythonContext extends Python3Core {
                         });
                     }
                     if (isOurThread) {
-                        // Thread#stop is not supported on SVM
-                        if (!ImageInfo.inImageCode()) {
-                            if (thread.isAlive()) {
-                                LOGGER.warning("could not join thread " + thread.getName() + ". Trying to stop it.");
-                            }
-                            thread.stop();
-                        }
                         if (thread.isAlive()) {
                             LOGGER.warning("Could not stop thread " + thread.getName());
                         }

@@ -36,15 +36,42 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import os
+import re
+import shutil
+import subprocess
 import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+SETUP_PY_TEMPLATE = '''
+from setuptools import setup, find_packages
+setup(
+    name={name!r},
+    version={version!r},
+    author='GraalPy developers',
+    author_email='graalvm-users@oss.oracle.com',
+    package_dir={{'': 'src'}},
+    packages=find_packages(where='src'),
+)
+'''
+
+SOURCE_CONTENT = '''
+def test_fun():
+    return 'Unpatched'
+'''
+
+PATCH_TEMPLATE = '''
+--- a/patched_package/__init__.py	2023-01-04 12:36:48.112003339 +0100
++++ b/patched_package/__init__.py	2023-01-04 12:36:19.708004285 +0100
+@@ -1,2 +1,2 @@
+ def test_fun():
+-    return 'Unpatched'
++    return '{}'
+'''
 
 if sys.implementation.name == "graalpy":
-
-    import os
-    import shutil
-    import subprocess
-    import tempfile
 
     PKG_SRC_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'patched_package')
     DIST_DIR = os.path.join(PKG_SRC_DIR, 'dist')
@@ -52,59 +79,340 @@ if sys.implementation.name == "graalpy":
     BDIST_1_1_0 = os.path.join(DIST_DIR, 'patched_package-1.1.0-py3-none-any.whl')
     SDIST_1_0_0 = os.path.join(DIST_DIR, 'patched_package-1.0.0.tar.gz')
     SDIST_1_1_0 = os.path.join(DIST_DIR, 'patched_package-1.1.0.tar.gz')
+    # TODO simplify legacy structure after ginstall is removed
     PATCHES_DIRS = os.path.join(PKG_SRC_DIR, 'patches')
 
 
-    class PipPatchingTest():
+    class PipPatchingTest(unittest.TestCase):
         """
         Checks that our patched pip correctly patches or does not patch a package
-        installed from source or binary distribution. We use package "patched_package"
-        located next to this test file. The distributions of that package must
-        be created manually and are checked into git.
+        installed from source or binary distribution.
         """
+
         def setUpClass(self):
-            self.env_dir = os.path.realpath(tempfile.mkdtemp())
-            subprocess.check_output([sys.executable, "-m", "venv", self.env_dir])
-            self.venv_python = os.path.join(self.env_dir, 'bin', 'python')
-            self.pip_env = os.environ.copy()
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
+            self.venv_dir = Path(tempfile.mkdtemp()).resolve()
+            subprocess.check_output([sys.executable, "-m", "venv", str(self.venv_dir)])
+            self.venv_python = str(self.venv_dir / 'bin' / 'python')
+            subprocess.check_output([self.venv_python, '-m', 'pip', 'install', 'wheel'])
+            self.venv_template_dir = f'{self.venv_dir}.template'
+            self.venv_dir.rename(self.venv_template_dir)
+            self.build_dir = Path(tempfile.mkdtemp()).resolve()
+            self.package_cache = {}
 
         def tearDownClass(self):
-            shutil.rmtree(self.env_dir)
+            shutil.rmtree(self.venv_template_dir, ignore_errors=True)
+            shutil.rmtree(self.build_dir, ignore_errors=True)
+
+        def setUp(self):
+            shutil.copytree(self.venv_template_dir, self.venv_dir, symlinks=True)
+            self.patch_dir = Path(tempfile.mkdtemp()).resolve()
+            self.pip_env = os.environ.copy()
+            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = str(self.patch_dir)
+            self.index_dir = Path(tempfile.mkdtemp()).resolve()
+
+        def tearDown(self):
+            shutil.rmtree(self.venv_dir, ignore_errors=True)
+            shutil.rmtree(self.patch_dir, ignore_errors=True)
+            shutil.rmtree(self.index_dir, ignore_errors=True)
+
+        def prepare_config(self, name, rules):
+            package_dir = self.patch_dir / name
+            package_dir.mkdir(exist_ok=True)
+            toml_lines = []
+            for rule in rules:
+                toml_lines.append('[[rules]]')
+                for k, v in rule.items():
+                    if not k.startswith('$'):
+                        toml_lines.append(f'{k} = {v!r}')
+                if patch := rule.get('patch'):
+                    with open(package_dir / patch, 'w') as f:
+                        f.write(PATCH_TEMPLATE.format(rule.get('$patch-text', 'Patched')))
+            with open(package_dir / 'metadata.toml', 'w') as f:
+                f.write('\n'.join(toml_lines))
+
+        def build_package(self, name, version):
+            cache_key = (name, version)
+            if existing := self.package_cache.get(cache_key):
+                return existing
+            src_dir = self.build_dir / f'{name}-{version}'
+            if not src_dir.exists():
+                src_dir.mkdir()
+                package_dir = src_dir / 'src' / 'patched_package'
+                package_dir.mkdir(parents=True)
+                with open(package_dir / '__init__.py', 'w') as f:
+                    f.write(SOURCE_CONTENT)
+                with open(src_dir / 'setup.py', 'w') as f:
+                    f.write(SETUP_PY_TEMPLATE.format(name=name, version=version))
+                subprocess.run([self.venv_python, 'setup.py', 'sdist'],
+                               cwd=src_dir, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                dist_dir = src_dir / 'dist'
+                sdist = list(dist_dir.glob(f'*.tar.gz'))[0]
+                subprocess.run([self.venv_python, 'setup.py', 'bdist_wheel'],
+                               cwd=src_dir, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                wheel = list(dist_dir.glob(f'*.whl'))[0]
+                self.package_cache[cache_key] = {'sdist': sdist, 'wheel': wheel}
+                return self.package_cache[cache_key]
+
+        def add_package_to_index(self, name, version, dist_type):
+            package = self.build_package(name, version)[dist_type]
+            shutil.copy(package, self.index_dir)
 
         def run_venv_pip_install(self, package, extra_env=None):
             env = self.pip_env.copy()
             if extra_env:
                 env.update(extra_env)
-            subprocess.check_output([
+            out = subprocess.check_output([
                 self.venv_python,
                 '--experimental-options', '--python.EnableDebuggingBuiltins=true',
-                '-m', 'pip', 'install', '--force-reinstall', package],
-                env=env)
+                '-m', 'pip', 'install', '--force-reinstall',
+                '--find-links', self.index_dir, '--no-index', '--no-cache-dir',
+                package],
+                env=env, universal_newlines=True)
+            assert 'Applying GraalPy patch failed for' not in out
+            return re.findall(r'Successfully installed (\S+)', out)
 
         def run_test_fun(self):
             code = "import patched_package; print(patched_package.test_fun())"
-            out = subprocess.check_output([self.venv_python, '-c', code], universal_newlines=True).strip()
-            return out
+            return subprocess.check_output([self.venv_python, '-c', code], universal_newlines=True).strip()
 
         def test_pip_launcher(self):
-            subprocess.check_output([
-                os.path.join(self.env_dir, 'bin', 'pip'),
-                'install', '--help'])
+            subprocess.check_output([str(self.venv_dir / 'bin' / 'pip'), 'install', '--help'])
 
         def test_wheel_unpatched_version(self):
-            self.run_venv_pip_install(BDIST_1_0_0)
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo-1.1.0.patch',
+                'version': '== 1.1.0',
+                'subdir': 'src',
+            }])
+            self.run_venv_pip_install('foo')
             assert self.run_test_fun() == "Unpatched"
 
         def test_wheel_patched_version(self):
-            self.run_venv_pip_install(BDIST_1_1_0)
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo-1.1.0.patch',
+                'version': '== 1.1.0',
+                'subdir': 'src',
+            }])
+            self.run_venv_pip_install('foo')
             assert self.run_test_fun() == "Patched"
 
         def test_sdist_unpatched_version(self):
+            self.add_package_to_index('foo', '1.0.0', 'sdist')
+            self.prepare_config('foo', [{
+                'patch': 'foo-1.1.0.patch',
+                'version': '== 1.1.0',
+                'subdir': 'src',
+            }])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "Unpatched"
+
+        def test_sdist_patched_version(self):
+            self.add_package_to_index('foo', '1.1.0', 'sdist')
+            self.prepare_config('foo', [{
+                'patch': 'foo-1.1.0.patch',
+                'version': '== 1.1.0',
+                'subdir': 'src',
+            }])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "Patched"
+
+        def test_different_patch_wheel_sdist1(self):
+            self.add_package_to_index('foo', '1.1.0', 'sdist')
+            self.prepare_config('foo', [
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    'dist-type': 'wheel',
+                    '$patch-text': 'wheel',
+                },
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    'subdir': 'src',
+                    'dist-type': 'sdist',
+                    '$patch-text': 'sdist',
+                },
+                {
+                    'patch': 'foo.patch',
+                    'subdir': 'src',
+                },
+            ])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "sdist"
+
+        def test_different_patch_wheel_sdist2(self):
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    'dist-type': 'wheel',
+                    '$patch-text': 'wheel',
+                },
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    'subdir': 'src',
+                    'dist-type': 'sdist',
+                    '$patch-text': 'sdist'
+                },
+                {
+                    'patch': 'foo.patch',
+                    'subdir': 'src',
+                },
+            ])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "sdist"
+
+        def test_rule_matching1(self):
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    '$patch-text': 'patch 1',
+                },
+                {
+                    'patch': 'foo.patch',
+                    '$patch-text': 'patch 2',
+                }
+            ])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "patch 1"
+
+        def test_rule_matching2(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.prepare_config('foo', [
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    '$patch-text': 'patch 1',
+                },
+                {
+                    'patch': 'foo.patch',
+                    '$patch-text': 'patch 2',
+                }
+            ])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "patch 2"
+
+        def test_version_range_inside(self):
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
+                'version': '> 1.0.0',
+            }])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "Patched"
+
+        def test_version_range_outside(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
+                'version': '> 1.0.0',
+            }])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "Unpatched"
+
+        def test_version_selection_default(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.add_package_to_index('foo', '1.2.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
+                'version': '<= 1.1.0',
+            }])
+            assert self.run_venv_pip_install('foo') == ['foo-1.1.0']
+            assert self.run_venv_pip_install('foo==1.2') == ['foo-1.2.0']
+
+        def test_version_selection_explicit_demoted(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
+                'version': '< 1.1.0',
+                'install-priority': 0,
+            }])
+            assert self.run_venv_pip_install('foo') == ['foo-1.1.0']
+            assert self.run_test_fun() == "Unpatched"
+            assert self.run_venv_pip_install('foo==1.0.0') == ['foo-1.0.0']
+            assert self.run_test_fun() == "Patched"
+
+        def test_version_selection_explicit_promoted(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [
+                {
+                    'patch': 'foo.patch',
+                    'version': '< 1.1.0',
+                    'install-priority': 2,
+                    '$patch-text': 'old patch',
+                },
+                {
+                    'patch': 'foo-1.1.0.patch',
+                    'version': '== 1.1.0',
+                    '$patch-text': 'new patch',
+                },
+            ])
+            assert self.run_venv_pip_install('foo') == ['foo-1.0.0']
+            assert self.run_test_fun() == "old patch"
+            assert self.run_venv_pip_install('foo>1.0.0') == ['foo-1.1.0']
+            assert self.run_test_fun() == "new patch"
+
+        def test_version_selection_no_patch(self):
+            self.add_package_to_index('foo', '1.0.0', 'wheel')
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{
+                'version': '== 1.0.0',
+            }])
+            assert self.run_venv_pip_install('foo') == ['foo-1.0.0']
+            assert self.run_test_fun() == "Unpatched"
+
+        def test_name_with_underscores(self):
+            self.add_package_to_index('package_with_underscores', '1.0.0', 'wheel')
+            self.add_package_to_index('package_with_underscores', '2.0.0', 'wheel')
+            self.prepare_config('package_with_underscores', [{
+                'version': '== 1.0.0',
+                'patch': 'package_with_underscores.patch',
+            }])
+            assert self.run_venv_pip_install('package_with_underscores') == ['package_with_underscores-1.0.0']
+            assert self.run_test_fun() == "Patched"
+
+        def test_name_with_dashes(self):
+            self.add_package_to_index('package-with-dashes', '1.0.0', 'wheel')
+            self.add_package_to_index('package-with-dashes', '2.0.0', 'wheel')
+            self.prepare_config('package-with-dashes', [{
+                'version': '== 1.0.0',
+                'patch': 'package-with-dashes.patch',
+            }])
+            assert self.run_venv_pip_install('package-with-dashes') == ['package-with-dashes-1.0.0']
+            assert self.run_test_fun() == "Patched"
+
+        # Tests for legacy patch structure
+        def test_wheel_unpatched_version_legacy(self):
+            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
+            self.run_venv_pip_install(BDIST_1_0_0)
+            assert self.run_test_fun() == "Unpatched"
+
+        def test_wheel_patched_version_legacy(self):
+            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
+            self.run_venv_pip_install(BDIST_1_1_0)
+            assert self.run_test_fun() == "Patched"
+
+        def test_sdist_unpatched_version_legacy(self):
+            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
             # Note: PKG_VERSION is used by setup.py
             self.run_venv_pip_install(SDIST_1_0_0, extra_env={'PKG_VERSION': '1.0.0'})
             assert self.run_test_fun() == "Unpatched"
 
-        def test_sdist_patched_version(self):
+        def test_sdist_patched_version_legacy(self):
+            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
+            self.run_venv_pip_install(SDIST_1_1_0, extra_env={'PKG_VERSION': '1.1.0'})
+            assert self.run_test_fun() == "Patched"
+
+        def test_sdist_patched_with_wheel_patch_legacy(self):
+            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = PATCHES_DIRS
             self.run_venv_pip_install(SDIST_1_1_0, extra_env={'PKG_VERSION': '1.1.0'})
             assert self.run_test_fun() == "Patched"
