@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -59,8 +60,10 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Casts a Python "number" to a Java double without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -74,19 +77,39 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     public abstract double execute(Object x);
 
     @Specialization
-    static double toDouble(long x) {
-        return x;
-    }
-
-    @Specialization
     static double toDouble(double x) {
         return x;
     }
 
     @Specialization
-    static double toDouble(PInt x,
+    static double doBoolean(boolean x) {
+        return x ? 1.0 : 0.0;
+    }
+
+    @Specialization
+    static double toInt(int x) {
+        return x;
+    }
+
+    @Specialization
+    static double toLong(long x) {
+        return x;
+    }
+
+    @Specialization
+    static double toPInt(PInt x,
                     @Cached PRaiseNode raise) {
         return x.doubleValueWithOverflow(raise);
+    }
+
+    @Specialization
+    static double doString(@SuppressWarnings("unused") TruffleString object) {
+        throw CannotCastException.INSTANCE;
+    }
+
+    @Specialization
+    static double doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        throw CannotCastException.INSTANCE;
     }
 
     @Specialization
@@ -104,8 +127,31 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
         throw CannotCastException.INSTANCE;
     }
 
-    @Specialization(guards = "!isNumber(x)")
-    static double doUnsupported(@SuppressWarnings("unused") Object x) {
+    public static Double doInterop(Object obj,
+                    InteropLibrary interopLibrary) {
+        try {
+            if (interopLibrary.fitsInDouble(obj)) {
+                return interopLibrary.asDouble(obj);
+            }
+            if (interopLibrary.fitsInLong(obj)) {
+                return (double) interopLibrary.asLong(obj);
+            }
+            if (interopLibrary.isBoolean(obj)) {
+                return interopLibrary.asBoolean(obj) ? 1.0 : 0.0;
+            }
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+        return null;
+    }
+
+    @Specialization(guards = "!isNumber(obj)")
+    static double doGeneric(Object obj,
+                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+        Double d = doInterop(obj, interopLibrary);
+        if (d != null) {
+            return d;
+        }
         throw CannotCastException.INSTANCE;
     }
 
