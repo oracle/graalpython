@@ -299,7 +299,7 @@ typedef struct {
     BUILTIN(PyTruffleObject_GenericGetAttr, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyTruffleObject_GenericSetAttr, int, PyObject*, PyObject*, PyObject*) \
     BUILTIN(PyTruffleObject_GetItemString, PyObject*, PyObject*, const char*) \
-    BUILTIN(PyTruffleState_FindModule, PyObject*, struct PyModuleDef*) \
+    BUILTIN(PyTruffleState_FindModule, PyObject*, Py_ssize_t) \
     BUILTIN(PyTruffleStructSequence_InitType2, int, PyTypeObject*, void*, void*, int) \
     BUILTIN(PyTruffleStructSequence_NewType, PyTypeObject*, const char*, const char*, void*, void*, int) \
     BUILTIN(PyTruffleToCharPointer, void*, PyObject*) \
