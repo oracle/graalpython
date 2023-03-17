@@ -180,12 +180,15 @@ class GraalPySeeder(PipInvoke):
     @contextmanager
     def get_pip_install_cmd(self, exe, for_py_version):
         cmd = [str(exe), "-m", "pip", "-q", "install", "--only-binary", ":all:", "--disable-pip-version-check"]
-        if not self.download:
-            cmd.append("--no-index")
         ensurepip_path = get_ensurepip_path(exe)
         for dist, version in self.distribution_to_versions().items():
-            if ensurepip_path and version == 'bundle' and dist in ('pip', 'setuptools'):
-                wheel = from_dir(dist, None, for_py_version, [ensurepip_path])
+            if ensurepip_path and version == 'bundle':
+                if dist in ('pip', 'setuptools'):
+                    wheel = from_dir(dist, None, for_py_version, [ensurepip_path])
+                else:
+                    # For wheel, install just `wheel` our patching logic should pick the right version
+                    cmd.append(dist)
+                    continue
             else:
                 wheel = get_wheel(
                     distribution=dist,
