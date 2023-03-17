@@ -142,7 +142,7 @@ constant_defs = '''
 * i PIPE_BUF
 
 [openFlags]
-0 x O_ACCMODE
+* x O_ACCMODE
   x O_RDONLY
   x O_WRONLY
   x O_RDWR
@@ -150,15 +150,26 @@ constant_defs = '''
   x O_EXCL
   x O_TRUNC
   x O_APPEND
-0 x O_NONBLOCK
-0 x O_NDELAY
-0 x O_DSYNC
-0 x O_CLOEXEC
-0 x O_SYNC
+* x O_NONBLOCK
+* x O_NOCTTY
+* x O_NDELAY
+* x O_DSYNC
+* x O_CLOEXEC
+* x O_SYNC
 * x O_DIRECT
 * x O_RSYNC
 * x O_TMPFILE
 * x O_DIRECTORY
+* x O_BINARY
+* x O_TEXT
+* x O_XATTR
+* x O_LARGEFILE
+* x O_SHLOCK
+* x O_EXLOCK
+* x O_EXEC
+* x O_SEARCH
+* x O_PATH
+* x O_TTY_INIT
 
 [fileType]
 u x S_IFMT

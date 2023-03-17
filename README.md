@@ -13,8 +13,8 @@ implementation is made available for experimentation and curious end-users.
 
 The easiest option to try GraalPy is
 [Pyenv](https://github.com/pyenv/pyenv/), the Python version manager. It allows
-you to easily install different GraalPy releases. To get version 21.2.0, for
-example, just run `pyenv install graalpy-21.2.0`.
+you to easily install different GraalPy releases. To get version 22.3.0, for
+example, just run `pyenv install graalpy-22.3.0`.
 
 To try GraalPy with a full GraalVM, including the support for Java embedding
 and interop with other languages, you can use the bundled releases from

@@ -603,7 +603,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached BranchProfile errorProfile,
                         @Cached GilNode gil) {
-            int fixedFlags = flags | O_CLOEXEC.value;
+            int fixedFlags = flags;
+            if (O_CLOEXEC.defined) {
+                fixedFlags |= O_CLOEXEC.getValueIfDefined();
+            }
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
             gil.release(true);
             try {
