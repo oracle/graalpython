@@ -590,8 +590,69 @@ class TestAbstractWithNative(object):
         except TypeError:
             assert True
         else:
-            assert False         
-        
+            assert False
+
+    def test_sequence_mapping_inheritance(self):
+        NativeMapping = CPyExtType(
+            "NativeMapping",
+            '''
+            Py_ssize_t mp_length(PyObject* a) {
+                return 1;
+            }
+
+            PyObject* mp_subscript(PyObject* self, PyObject* key) {
+                Py_INCREF(key);
+                return key;
+            }
+
+            PyObject* is_mapping(PyObject* self, PyObject* object) {
+                return PyBool_FromLong(PyMapping_Check(object));
+            }
+            ''',
+            mp_length='mp_length',
+            mp_subscript='mp_subscript',
+            tp_methods='{"is_mapping", (PyCFunction)is_mapping, METH_O | METH_STATIC, ""}',
+        )
+
+        NativeSequence = CPyExtType(
+            "NativeSequence",
+            '''
+            Py_ssize_t sq_length(PyObject* a) {
+                return 1;
+            }
+
+            PyObject* sq_item(PyObject* self, Py_ssize_t index) {
+                return PyLong_FromLong(index);
+            }
+
+            PyObject* is_sequence(PyObject* self, PyObject* object) {
+                return PyBool_FromLong(PySequence_Check(object));
+            }
+            ''',
+            sq_length='sq_length',
+            sq_item='sq_item',
+            tp_methods='{"is_sequence", (PyCFunction)is_sequence, METH_O | METH_STATIC, ""}',
+        )
+
+        class MappingSubclass(NativeMapping):
+            pass
+
+        mapping = MappingSubclass()
+        assert len(mapping) == 1
+        assert mapping['key'] == 'key'
+        assert NativeMapping.is_mapping(mapping)
+        assert not NativeSequence.is_sequence(mapping)
+
+        class SequenceSubclass(NativeSequence):
+            pass
+
+        sequence = SequenceSubclass()
+        assert len(sequence) == 1
+        assert sequence[1] == 1
+        assert NativeSequence.is_sequence(sequence)
+        assert not NativeMapping.is_mapping(sequence)
+
+
 class TestAbstract(CPyExtTestCase):
 
     def compile_module(self, name):
