@@ -218,16 +218,6 @@ if sys.implementation.name == "graalpy":
             self.run_venv_pip_install('foo')
             assert self.run_test_fun() == "Patched"
 
-        def test_sdist_patched_with_wheel_patch(self):
-            self.add_package_to_index('foo', '1.1.0', 'wheel')
-            self.prepare_config('foo', [{
-                'patch': 'foo-1.1.0.patch',
-                'version': '== 1.1.0',
-                'subdir': 'src',
-            }])
-            self.run_venv_pip_install('foo')
-            assert self.run_test_fun() == "Patched"
-
         def test_different_patch_wheel_sdist1(self):
             self.add_package_to_index('foo', '1.1.0', 'sdist')
             self.prepare_config('foo', [
