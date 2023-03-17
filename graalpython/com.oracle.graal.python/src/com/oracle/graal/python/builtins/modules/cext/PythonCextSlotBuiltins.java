@@ -41,10 +41,61 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MP_ASS_SUBSCRIPT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MP_LENGTH;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MP_SUBSCRIPT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_ABSOLUTE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_AND;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_BOOL;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_DIVMOD;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_FLOAT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_FLOOR_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INDEX;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_AND;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_FLOOR_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_LSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_OR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_POWER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_REMAINDER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_RSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_SUBTRACT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_TRUE_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INPLACE_XOR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_INVERT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_LSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_NEGATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_OR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_POSITIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_POWER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_REMAINDER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_RSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_SUBTRACT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_TRUE_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_XOR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_CONCAT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_ITEM;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_REPEAT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_CALL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DEL;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DESCR_GET;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_DESCR_SET;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_FREE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_GETATTRO;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_HASH;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_INIT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ITER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ITERNEXT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_REPR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_RICHCOMPARE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_SETATTRO;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_STR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
@@ -176,7 +227,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.CharsetEncoder;
@@ -193,11 +243,13 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNativeMemberInMRONode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ManagedMethodWrappers;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
@@ -263,11 +315,10 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -280,6 +331,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -292,6 +344,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -635,7 +688,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMappingMethods_mp_ass_subscript extends PyGetTypeSlotNode {
 
         Py_get_PyMappingMethods_mp_ass_subscript() {
-            super(T___SETITEM__);
+            super(MP_ASS_SUBSCRIPT, T___SETITEM__);
         }
     }
 
@@ -643,7 +696,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMappingMethods_mp_length extends PyGetTypeSlotNode {
 
         Py_get_PyMappingMethods_mp_length() {
-            super(T___LEN__);
+            super(MP_LENGTH, T___LEN__);
         }
     }
 
@@ -651,7 +704,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMappingMethods_mp_subscript extends PyGetTypeSlotNode {
 
         Py_get_PyMappingMethods_mp_subscript() {
-            super(T___GETITEM__);
+            super(MP_SUBSCRIPT, T___GETITEM__);
         }
     }
 
@@ -858,7 +911,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_absolute extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_absolute() {
-            super(T___ABS__);
+            super(NB_ABSOLUTE, T___ABS__);
         }
     }
 
@@ -866,7 +919,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_add extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_add() {
-            super(T___ADD__);
+            super(NB_ADD, T___ADD__);
         }
     }
 
@@ -874,7 +927,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_and extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_and() {
-            super(T___AND__);
+            super(NB_AND, T___AND__);
         }
     }
 
@@ -882,7 +935,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_bool extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_bool() {
-            super(T___BOOL__);
+            super(NB_BOOL, T___BOOL__);
         }
     }
 
@@ -890,7 +943,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_divmod extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_divmod() {
-            super(T___DIVMOD__);
+            super(NB_DIVMOD, T___DIVMOD__);
         }
     }
 
@@ -898,7 +951,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_float extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_float() {
-            super(T___FLOAT__);
+            super(NB_FLOAT, T___FLOAT__);
         }
     }
 
@@ -906,7 +959,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_floor_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_floor_divide() {
-            super(T___FLOORDIV__);
+            super(NB_FLOOR_DIVIDE, T___FLOORDIV__);
         }
     }
 
@@ -914,7 +967,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_index extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_index() {
-            super(T___INDEX__);
+            super(NB_INDEX, T___INDEX__);
         }
     }
 
@@ -922,7 +975,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_add extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_add() {
-            super(T___IADD__);
+            super(NB_INPLACE_ADD, T___IADD__);
         }
     }
 
@@ -930,7 +983,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_and extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_and() {
-            super(T___IAND__);
+            super(NB_INPLACE_AND, T___IAND__);
         }
     }
 
@@ -938,7 +991,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_floor_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_floor_divide() {
-            super(T___IFLOORDIV__);
+            super(NB_INPLACE_FLOOR_DIVIDE, T___IFLOORDIV__);
         }
     }
 
@@ -946,7 +999,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_lshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_lshift() {
-            super(T___ILSHIFT__);
+            super(NB_INPLACE_LSHIFT, T___ILSHIFT__);
         }
     }
 
@@ -954,7 +1007,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_multiply extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_multiply() {
-            super(T___IMUL__);
+            super(NB_INPLACE_MULTIPLY, T___IMUL__);
         }
     }
 
@@ -962,7 +1015,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_or extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_or() {
-            super(T___IOR__);
+            super(NB_INPLACE_OR, T___IOR__);
         }
     }
 
@@ -970,7 +1023,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_power extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_power() {
-            super(T___IPOW__);
+            super(NB_INPLACE_POWER, T___IPOW__);
         }
     }
 
@@ -978,7 +1031,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_remainder extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_remainder() {
-            super(T___IMOD__);
+            super(NB_INPLACE_REMAINDER, T___IMOD__);
         }
     }
 
@@ -986,7 +1039,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_rshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_rshift() {
-            super(T___IRSHIFT__);
+            super(NB_INPLACE_RSHIFT, T___IRSHIFT__);
         }
     }
 
@@ -994,7 +1047,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_subtract extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_subtract() {
-            super(T___ISUB__);
+            super(NB_INPLACE_SUBTRACT, T___ISUB__);
         }
     }
 
@@ -1002,7 +1055,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_true_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_true_divide() {
-            super(T___ITRUEDIV__);
+            super(NB_INPLACE_TRUE_DIVIDE, T___ITRUEDIV__);
         }
     }
 
@@ -1010,7 +1063,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_xor extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_inplace_xor() {
-            super(T___IXOR__);
+            super(NB_INPLACE_XOR, T___IXOR__);
         }
     }
 
@@ -1018,7 +1071,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_int extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_int() {
-            super(T___INT__);
+            super(NB_INT, T___INT__);
         }
     }
 
@@ -1026,7 +1079,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_invert extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_invert() {
-            super(T___INVERT__);
+            super(NB_INVERT, T___INVERT__);
         }
     }
 
@@ -1034,7 +1087,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_lshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_lshift() {
-            super(T___LSHIFT__);
+            super(NB_LSHIFT, T___LSHIFT__);
         }
     }
 
@@ -1042,7 +1095,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_multiply extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_multiply() {
-            super(T___MUL__);
+            super(NB_MULTIPLY, T___MUL__);
         }
     }
 
@@ -1050,7 +1103,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_negative extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_negative() {
-            super(T___NEG__);
+            super(NB_NEGATIVE, T___NEG__);
         }
     }
 
@@ -1058,7 +1111,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_or extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_or() {
-            super(T___OR__);
+            super(NB_OR, T___OR__);
         }
     }
 
@@ -1066,7 +1119,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_positive extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_positive() {
-            super(T___POS__);
+            super(NB_POSITIVE, T___POS__);
         }
     }
 
@@ -1074,7 +1127,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_power extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_power() {
-            super(T___POW__);
+            super(NB_POWER, T___POW__);
         }
     }
 
@@ -1082,7 +1135,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_remainder extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_remainder() {
-            super(T___MOD__);
+            super(NB_REMAINDER, T___MOD__);
         }
     }
 
@@ -1090,7 +1143,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_rshift extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_rshift() {
-            super(T___RSHIFT__);
+            super(NB_RSHIFT, T___RSHIFT__);
         }
     }
 
@@ -1098,7 +1151,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_subtract extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_subtract() {
-            super(T___SUB__);
+            super(NB_SUBTRACT, T___SUB__);
         }
     }
 
@@ -1106,7 +1159,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_true_divide extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_true_divide() {
-            super(T___TRUEDIV__);
+            super(NB_TRUE_DIVIDE, T___TRUEDIV__);
         }
     }
 
@@ -1114,7 +1167,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_xor extends PyGetTypeSlotNode {
 
         Py_get_PyNumberMethods_nb_xor() {
-            super(T___XOR__);
+            super(NB_XOR, T___XOR__);
         }
     }
 
@@ -1143,7 +1196,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PySequenceMethods_sq_concat extends PyGetTypeSlotNode {
 
         Py_get_PySequenceMethods_sq_concat() {
-            super(T___MUL__);
+            super(SQ_CONCAT, T___MUL__);
         }
     }
 
@@ -1151,7 +1204,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PySequenceMethods_sq_item extends PyGetTypeSlotNode {
 
         Py_get_PySequenceMethods_sq_item() {
-            super(T___GETITEM__);
+            super(SQ_ITEM, T___GETITEM__);
         }
     }
 
@@ -1159,7 +1212,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PySequenceMethods_sq_repeat extends PyGetTypeSlotNode {
 
         Py_get_PySequenceMethods_sq_repeat() {
-            super(T___MUL__);
+            super(SQ_REPEAT, T___MUL__);
         }
     }
 
@@ -1250,14 +1303,8 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_as_mapping extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
-                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetitem,
-                        @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen) {
-            if (lookupGetitem.execute(object) != PNone.NO_VALUE && lookupLen.execute(object) != PNone.NONE) {
-                return new PyMappingMethodsWrapper(object);
-            } else {
-                return getNULL();
-            }
+        public Object get(PythonManagedClass object) {
+            return new PyMappingMethodsWrapper(object);
         }
     }
 
@@ -1275,13 +1322,8 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_as_sequence extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
-                        @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen) {
-            if (lookupLen.execute(object) != PNone.NO_VALUE) {
-                return new PySequenceMethodsWrapper(object);
-            } else {
-                return getNULL();
-            }
+        public Object get(PythonManagedClass object) {
+            return new PySequenceMethodsWrapper(object);
         }
     }
 
@@ -1322,7 +1364,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_call extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_call() {
-            super(T___CALL__);
+            super(TP_CALL, T___CALL__);
         }
     }
 
@@ -1435,7 +1477,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_getattro extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_getattro() {
-            super(T___GETATTRIBUTE__);
+            super(TP_GETATTRO, T___GETATTRIBUTE__);
         }
     }
 
@@ -1443,7 +1485,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_hash extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_hash() {
-            super(T___HASH__);
+            super(TP_HASH, T___HASH__);
         }
     }
 
@@ -1451,7 +1493,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_init extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_init() {
-            super(T___INIT__);
+            super(TP_INIT, T___INIT__);
         }
     }
 
@@ -1476,7 +1518,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_iter extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_iter() {
-            super(T___ITER__);
+            super(TP_ITER, T___ITER__);
         }
     }
 
@@ -1484,7 +1526,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_iternext extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_iternext() {
-            super(T___NEXT__);
+            super(TP_ITERNEXT, T___NEXT__);
         }
     }
 
@@ -1534,7 +1576,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_repr extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_repr() {
-            super(T___REPR__);
+            super(TP_REPR, T___REPR__);
         }
     }
 
@@ -1542,7 +1584,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_richcompare extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_richcompare() {
-            super(T_RICHCMP);
+            super(TP_RICHCOMPARE, T_RICHCMP);
         }
     }
 
@@ -1550,7 +1592,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_setattro extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_setattro() {
-            super(T___SETATTR__);
+            super(TP_SETATTRO, T___SETATTR__);
         }
     }
 
@@ -1558,7 +1600,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_str extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_str() {
-            super(T___STR__);
+            super(TP_STR, T___STR__);
         }
     }
 
@@ -1576,7 +1618,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_descr_get extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_descr_get() {
-            super(T___GET__);
+            super(TP_DESCR_GET, T___GET__);
         }
     }
 
@@ -1584,7 +1626,7 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyTypeObject_tp_descr_set extends PyGetTypeSlotNode {
 
         Py_get_PyTypeObject_tp_descr_set() {
-            super(T___SET__);
+            super(TP_DESCR_SET, T___SET__);
         }
     }
 
@@ -1983,12 +2025,12 @@ public final class PythonCextSlotBuiltins {
     }
 
     abstract static class PyGetTypeSlotNode extends CApiUnaryBuiltinNode {
+        private final NativeMember slot;
         private final TruffleString name;
-        private @Child LookupAttributeInMRONode lookup;
 
-        PyGetTypeSlotNode(TruffleString name) {
+        PyGetTypeSlotNode(NativeMember slot, TruffleString name) {
+            this.slot = slot;
             this.name = name;
-            lookup = LookupAttributeInMRONode.create(name);
         }
 
         @Specialization
@@ -2003,27 +2045,26 @@ public final class PythonCextSlotBuiltins {
 
         @TruffleBoundary
         private Object getProcsWrapper(Object type) {
-            Object value = lookup.execute(type);
-            if (value instanceof PNone) {
-                // both None and NO_VALUE can appear
-                return getNULL();
-            }
-            /*
-             * The method can be a slot wrapper that already wraps a native slot function. If it
-             * matches in type and slot name, we should unwrap it to avoid nesting multiple
-             * wrappers.
-             */
-            if (value instanceof PBuiltinFunction function) {
-                Object wrappedPtr = ExternalFunctionNodes.tryGetHiddenCallable(function);
-                // TODO also check that the signature matches
-                if (wrappedPtr != null && name.equalsUncached(function.getName(), TS_ENCODING) &&
-                                function.getEnclosingType() != null && IsSubtypeNode.getUncached().execute(type,
-                                                function.getEnclosingType())) {
-                    return wrappedPtr;
+            MroSequenceStorage mro = GetMroStorageNode.getUncached().execute(type);
+            for (int i = 0; i < mro.length(); i++) {
+                Object currentType = mro.getItemNormalized(i);
+                if (currentType instanceof PythonNativeClass) {
+                    Object value = PCallCapiFunction.getUncached().call(slot.getGetterFunctionName(), ToSulongNode.getUncached().execute(currentType));
+                    if (!InteropLibrary.getUncached().isNull(value)) {
+                        return value;
+                    }
+                } else {
+                    Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(currentType, name);
+                    if (value != PNone.NO_VALUE) {
+                        if (value == PNone.NONE) {
+                            return getNULL();
+                        }
+                        CApiContext cApiContext = getCApiContext();
+                        return cApiContext.getOrCreateProcWrapper(getRetDescriptor(), value, PyGetTypeSlotNode::createProcsWrapper);
+                    }
                 }
             }
-            CApiContext cApiContext = getCApiContext();
-            return cApiContext.getOrCreateProcWrapper(getRetDescriptor(), value, PyGetTypeSlotNode::createProcsWrapper);
+            return getNULL();
         }
 
         private static Object createProcsWrapper(ArgDescriptor signature, Object value) {
