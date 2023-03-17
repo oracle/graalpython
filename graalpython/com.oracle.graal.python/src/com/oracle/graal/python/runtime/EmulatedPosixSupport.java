@@ -77,7 +77,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NAMEREQD;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICSERV;
-import static com.oracle.graal.python.runtime.PosixConstants.O_ACCMODE;
 import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
 import static com.oracle.graal.python.runtime.PosixConstants.O_DIRECT;
@@ -4168,7 +4167,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary(allowInlining = true)
     private static Set<StandardOpenOption> flagsToOptions(int flags) {
         Set<StandardOpenOption> options = new HashSet<>();
-        int maskedFlags = flags & O_ACCMODE.value;
+        int maskedFlags = flags & (O_RDONLY.value | O_WRONLY.value | O_RDWR.value);
         if ((flags & O_APPEND.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.APPEND);
@@ -4197,10 +4196,10 @@ public final class EmulatedPosixSupport extends PosixResources {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.CREATE_NEW);
         }
-        if ((flags & O_NDELAY.value) != 0 || (O_DIRECT.defined && (flags & O_DIRECT.getValueIfDefined()) != 0)) {
+        if ((O_NDELAY.defined && (flags & O_NDELAY.getValueIfDefined()) != 0) || (O_DIRECT.defined && (flags & O_DIRECT.getValueIfDefined()) != 0)) {
             options.add(StandardOpenOption.DSYNC);
         }
-        if ((flags & O_SYNC.value) != 0) {
+        if (O_SYNC.defined && (flags & O_SYNC.getValueIfDefined()) != 0) {
             options.add(StandardOpenOption.SYNC);
         }
         if ((flags & O_TRUNC.value) != 0) {
