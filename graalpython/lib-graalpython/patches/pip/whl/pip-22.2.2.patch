@@ -58,10 +58,10 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..b8e849b
+index 0000000..dd8f441
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,188 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -153,11 +153,9 @@ index 0000000..b8e849b
 +                    versions.add(version)
 +        return versions
 +
-+    def get_patch_rule(self, name, requested_version, dist_type):
++    def get_matching_rule(self, name, requested_version, dist_type):
 +        if metadata := self.get_rules(name):
 +            for rule in metadata:
-+                if 'patch' not in rule:
-+                    continue
 +                if rule.get('dist-type', dist_type) != dist_type:
 +                    continue
 +                if not self.rule_matches_version(rule, requested_version):
@@ -199,7 +197,7 @@ index 0000000..b8e849b
 +        return
 +
 +    name = name_ver_match.group('name')
-+    version_spec = name_ver_match.group('version')
++    version = name_ver_match.group('version')
 +    suffix = name_ver_match.group('suffix')
 +    is_wheel = suffix == "whl"
 +
@@ -208,7 +206,7 @@ index 0000000..b8e849b
 +        return
 +
 +    # When we patch a sdist, pip may call us again to process the wheel produced from it
-+    if (name, version_spec) in __already_patched:
++    if (name, version) in __already_patched:
 +        return
 +
 +    print(f"Looking for GraalPy patches for {name}")
@@ -216,27 +214,28 @@ index 0000000..b8e849b
 +
 +    if is_wheel:
 +        # patches intended for binary distribution:
-+        patch_rule = repository.get_patch_rule(name, version_spec, 'wheel')
++        rule = repository.get_matching_rule(name, version, 'wheel')
 +    else:
 +        # patches intended for source distribution if applicable
-+        patch_rule = repository.get_patch_rule(name, version_spec, 'sdist')
-+        if not patch_rule:
-+            patch_rule = repository.get_patch_rule(name, version_spec, 'wheel')
-+        if patch_rule and (subdir := patch_rule.get('subdir')):
++        rule = repository.get_matching_rule(name, version, 'sdist')
++        if not rule:
++            rule = repository.get_matching_rule(name, version, 'wheel')
++        if rule and (subdir := rule.get('subdir')):
 +            # we may need to change wd if we are actually patching a source distribution
 +            # with a patch intended for a binary distribution, because in the source
 +            # distribution the actual deployed sources may be in a subdirectory (typically "src")
 +            location = os.path.join(location, subdir)
-+    if patch_rule:
-+        print(f"Patching package {name} using {patch_rule['patch']}")
-+        try:
-+            subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", str(patch_rule['patch'])], check=True)
-+        except FileNotFoundError:
-+            print(
-+                "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
-+        except subprocess.CalledProcessError:
-+            print(f"Applying GraalPy patch failed for {name}. The package may still work.")
-+        __already_patched.add((name, version_spec))
++    if rule:
++        if patch := rule.get('patch'):
++            print(f"Patching package {name} using {patch}")
++            try:
++                subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", str(patch)], check=True)
++            except FileNotFoundError:
++                print(
++                    "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
++            except subprocess.CalledProcessError:
++                print(f"Applying GraalPy patch failed for {name}. The package may still work.")
++            __already_patched.add((name, version))
 +    elif version_specs := repository.get_suggested_version_specs(name):
 +        print("We have patches to make this package work on GraalVM for some version(s).")
 +        print("If installing or running fails, consider using one of the versions that we have patches for:")
