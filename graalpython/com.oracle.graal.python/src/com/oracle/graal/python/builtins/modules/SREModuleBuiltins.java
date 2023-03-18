@@ -67,6 +67,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -120,6 +121,10 @@ public class SREModuleBuiltins extends PythonBuiltins {
     private static final int METHOD_SEARCH = 0;
     private static final int METHOD_MATCH = 1;
     private static final int METHOD_FULLMATCH = 2;
+
+    private static final TruffleString T_SEARCH = tsLiteral("search");
+    private static final TruffleString T_MATCH = tsLiteral("match");
+    private static final TruffleString T_FULLMATCH = tsLiteral("fullmatch");
 
     public static final class TRegexCache {
 
@@ -361,12 +366,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
 
         private static final TruffleString T__SRE = tsLiteral("_sre");
-        private static final TruffleString T_MATCH = tsLiteral("Match");
+        private static final TruffleString T_MATCH_CONSTRUCTOR = tsLiteral("Match");
         private static final TruffleString T__PATTERN__TREGEX_CACHE = tsLiteral("_Pattern__tregex_cache");
         private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
+        protected static final TruffleString T__PATTERN__FALLBACK_COMPILE = tsLiteral("_Pattern__fallback_compile");
 
-        @Specialization
+        @Specialization(guards = "method == cachedMethod", limit = "3")
         Object search(VirtualFrame frame, Object pattern, Object inputStringOrBytes, Object posArg, Object endPosArg, int method, boolean mustAdvance,
+                      @Cached("method") int cachedMethod,
                       @Cached PyNumberIndexNode indexNode,
                       @Cached PyNumberAsSizeNode asSizeNode,
                       @Cached PyObjectLookupAttr lookupCacheNode,
@@ -380,6 +387,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
                       @Cached SliceNodes.CreateSliceNode createSliceNode,
                       @Cached PyObjectGetItem getItemNode,
                       @Cached TRegexCompileNode tRegexCompileNode,
+                      @CachedLibrary(limit = "1") InteropLibrary libCompiledRegex,
+                      @Cached ConditionProfile fallbackProfile,
+                      @Cached("create(T__PATTERN__FALLBACK_COMPILE)") GetAttributeNode getFallbackCompileNode,
+                      @Cached CallNode callFallbackCompileNode,
+                      @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
+                      @Cached CallNode callFallbackMethodNode,
                       @Cached TRegexCallExec tRegexCallExec,
                       @CachedLibrary(limit = "1") InteropLibrary libResult,
                       @Cached ConditionProfile matchProfile,
@@ -416,6 +429,10 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 truncatedInput = getItemNode.execute(frame, inputStringOrBytes, createSliceNode.execute(0, endPos, 1));
             }
             Object compiledRegex = tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance);
+            if (fallbackProfile.profile(libCompiledRegex.isNull(compiledRegex))) {
+                Object fallbackRegex = callFallbackCompileNode.execute(getFallbackCompileNode.executeObject(frame, pattern));
+                return callFallbackMethodNode.execute(getFallbackMethodNode.executeObject(frame, fallbackRegex), inputStringOrBytes, pos, endPos);
+            }
             Object regexResult = tRegexCallExec.execute(frame, compiledRegex, truncatedInput, pos);
             try {
                 if (matchProfile.profile((boolean) libResult.readMember(regexResult, "isMatch"))) {
@@ -429,11 +446,24 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        protected static TruffleString getMethodName(int method) {
+            switch (method) {
+                case METHOD_SEARCH:
+                    return T_SEARCH;
+                case METHOD_MATCH:
+                    return T_MATCH;
+                case METHOD_FULLMATCH:
+                    return T_FULLMATCH;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
         @TruffleBoundary
         @NeverDefault
         protected Object lookupMatchConstructor() {
             PythonModule module = getContext().lookupBuiltinModule(T__SRE);
-            return PyObjectLookupAttr.getUncached().execute(null, module, T_MATCH);
+            return PyObjectLookupAttr.getUncached().execute(null, module, T_MATCH_CONSTRUCTOR);
         }
     }
 
