@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -106,6 +107,9 @@ import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T__SRE = tsLiteral("_sre");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SREModuleBuiltinsFactory.getFactories();
@@ -149,6 +153,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     public static final class TRegexCache {
 
+        private final Object patternOrig;
         private final String pattern;
         private final String flags;
         public final boolean binary;
@@ -164,6 +169,11 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private EconomicMap<RegexKey, Object> localeSensitiveRegexps;
         private static final String ENCODING_UTF_32 = "Encoding=UTF-32";
         private static final String ENCODING_LATIN_1 = "Encoding=LATIN-1";
+        private static final TruffleString T_ERROR = tsLiteral("error");
+        private static final TruffleString T_VALUE_ERROR_UNICODE_FLAG_BYTES_PATTERN = tsLiteral("cannot use UNICODE flag with a bytes pattern");
+        private static final TruffleString T_VALUE_ERROR_LOCALE_FLAG_STR_PATTERN = tsLiteral("cannot use LOCALE flag with a str pattern");
+        private static final TruffleString T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE = tsLiteral("ASCII and UNICODE flags are incompatible");
+        private static final TruffleString T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE = tsLiteral("ASCII and LOCALE flags are incompatible");
 
         @TruffleBoundary
         public TRegexCache(Object pattern, TruffleString flags) {
@@ -188,6 +198,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     bufferLib.release(buffer);
                 }
             }
+            this.patternOrig = pattern;
             this.pattern = patternStr;
             this.binary = binary;
             this.flags = flags.toJavaStringUncached();
@@ -272,10 +283,19 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     if (lib.isException(e)) {
                         if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
                             TruffleString reason = lib.asTruffleString(lib.getExceptionMessage(e)).switchEncodingUncached(TS_ENCODING);
-                            SourceSection sourceSection = lib.getSourceLocation(e);
-                            int position = sourceSection.getCharIndex();
-                            // passed like Object array concats the values
-                            throw PRaiseNode.getUncached().raise(ValueError, new Object[]{reason, position});
+                            if (reason.equalsUncached(T_VALUE_ERROR_UNICODE_FLAG_BYTES_PATTERN, TS_ENCODING) ||
+                                    reason.equalsUncached(T_VALUE_ERROR_LOCALE_FLAG_STR_PATTERN, TS_ENCODING) ||
+                                    reason.equalsUncached(T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE, TS_ENCODING) ||
+                                    reason.equalsUncached(T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE, TS_ENCODING)) {
+                                throw PRaiseNode.getUncached().raise(ValueError, reason);
+                            } else {
+                                SourceSection sourceSection = lib.getSourceLocation(e);
+                                int position = sourceSection.getCharIndex();
+                                PythonModule module = context.lookupBuiltinModule(T__SRE);
+                                Object errorConstructor = PyObjectLookupAttr.getUncached().execute(null, module, T_ERROR);
+                                PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, patternOrig, position);
+                                throw PRaiseNode.getUncached().raiseExceptionObject(exception);
+                            }
                         }
                     }
                 } catch (UnsupportedMessageException e1) {
@@ -377,7 +397,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
         private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
 
-        private static final TruffleString T__SRE = tsLiteral("_sre");
         private static final TruffleString T_MATCH_CONSTRUCTOR = tsLiteral("Match");
         private static final TruffleString T__PATTERN__TREGEX_CACHE = tsLiteral("_Pattern__tregex_cache");
         private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
