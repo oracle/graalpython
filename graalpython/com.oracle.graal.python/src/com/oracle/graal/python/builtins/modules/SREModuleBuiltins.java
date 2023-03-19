@@ -115,16 +115,37 @@ public class SREModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
         addBuiltinConstant("_with_sre", core.getContext().getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback));
+        addBuiltinConstant("_METHOD_SEARCH", PythonMethod.search.ordinal());
+        addBuiltinConstant("_METHOD_MATCH", PythonMethod.match.ordinal());
+        addBuiltinConstant("_METHOD_FULLMATCH", PythonMethod.fullmatch.ordinal());
         super.initialize(core);
     }
 
-    private static final int METHOD_SEARCH = 0;
-    private static final int METHOD_MATCH = 1;
-    private static final int METHOD_FULLMATCH = 2;
+    public enum PythonMethod {
+        search(tsLiteral("search")),
+        match(tsLiteral("match")),
+        fullmatch(tsLiteral("fullmatch"));
 
-    private static final TruffleString T_SEARCH = tsLiteral("search");
-    private static final TruffleString T_MATCH = tsLiteral("match");
-    private static final TruffleString T_FULLMATCH = tsLiteral("fullmatch");
+        private final TruffleString name;
+
+        private static final PythonMethod[] VALUES = PythonMethod.values();
+
+        PythonMethod(TruffleString name) {
+            this.name = name;
+        }
+
+        public static PythonMethod fromOrdinal(int ordinal) {
+            return VALUES[ordinal];
+        }
+
+        public TruffleString getMethodName() {
+            return name;
+        }
+
+        public String getTRegexOption() {
+            return "PythonMethod=" + name.toJavaStringUncached();
+        }
+    }
 
     public static final class TRegexCache {
 
@@ -172,21 +193,21 @@ public class SREModuleBuiltins extends PythonBuiltins {
             this.flags = flags.toJavaStringUncached();
         }
 
-        public Object getRegexp(int method, boolean mustAdvance) {
+        public Object getRegexp(PythonMethod method, boolean mustAdvance) {
             switch (method) {
-                case METHOD_SEARCH:
+                case search:
                     if (mustAdvance) {
                         return mustAdvanceSearchRegexp;
                     } else {
                         return searchRegexp;
                     }
-                case METHOD_MATCH:
+                case match:
                     if (mustAdvance) {
                         return mustAdvanceMatchRegexp;
                     } else {
                         return matchRegexp;
                     }
-                case METHOD_FULLMATCH:
+                case fullmatch:
                     if (mustAdvance) {
                         return mustAdvanceFullMatchRegexp;
                     } else {
@@ -197,49 +218,35 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        public void setRegexp(int method, boolean mustAdvance, Object regexp) {
+        public void setRegexp(PythonMethod method, boolean mustAdvance, Object regexp) {
             switch (method) {
-                case METHOD_SEARCH:
+                case search:
                     if (mustAdvance) {
                         mustAdvanceSearchRegexp = regexp;
                     } else {
                         searchRegexp = regexp;
                     }
                     break;
-                case METHOD_MATCH:
+                case match:
                     if (mustAdvance) {
                         mustAdvanceMatchRegexp = regexp;
                     } else {
                         matchRegexp = regexp;
                     }
                     break;
-                case METHOD_FULLMATCH:
+                case fullmatch:
                     if (mustAdvance) {
                         mustAdvanceFullMatchRegexp = regexp;
                     } else {
                         fullMatchRegexp = regexp;
                     }
                     break;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
-        private String getOptions(int pythonMethod, boolean mustAdvance) {
+        private String getOptions(PythonMethod pythonMethod, boolean mustAdvance) {
             StringBuilder sb = new StringBuilder();
-            switch (pythonMethod) {
-                case METHOD_SEARCH:
-                    sb.append("PythonMethod=search");
-                    break;
-                case METHOD_MATCH:
-                    sb.append("PythonMethod=match");
-                    break;
-                case METHOD_FULLMATCH:
-                    sb.append("PythonMethod=fullmatch");
-                    break;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
+            sb.append(pythonMethod.getTRegexOption());
             if (mustAdvance) {
                 sb.append(',');
                 sb.append("MustAdvance=true");
@@ -248,7 +255,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public Object compile(PythonContext context, int method, boolean mustAdvance) {
+        public Object compile(PythonContext context, PythonMethod method, boolean mustAdvance) {
             String options = getOptions(method, mustAdvance);
             InteropLibrary lib = InteropLibrary.getUncached();
             Object regexp;
@@ -345,13 +352,18 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance" }, limit = "6")
         Object compile(VirtualFrame frame, TRegexCache tRegexCache, int method, boolean mustAdvance,
                       @Cached("method") int cachedMethod,
-                      @Cached("mustAdvance") boolean cachedMustAdvance) {
-            final Object tRegex = tRegexCache.getRegexp(method, mustAdvance);
+                      @Cached("mustAdvance") boolean cachedMustAdvance,
+                      @Cached("fromOrdinal(method)") PythonMethod pythonMethod) {
+            final Object tRegex = tRegexCache.getRegexp(pythonMethod, mustAdvance);
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(getContext(), method, mustAdvance);
+                return tRegexCache.compile(getContext(), pythonMethod, mustAdvance);
             }
+        }
+
+        protected static PythonMethod fromOrdinal(int ordinal) {
+            return PythonMethod.fromOrdinal(ordinal);
         }
     }
 
@@ -447,16 +459,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         protected static TruffleString getMethodName(int method) {
-            switch (method) {
-                case METHOD_SEARCH:
-                    return T_SEARCH;
-                case METHOD_MATCH:
-                    return T_MATCH;
-                case METHOD_FULLMATCH:
-                    return T_FULLMATCH;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere();
-            }
+            return PythonMethod.fromOrdinal(method).getMethodName();
         }
 
         @TruffleBoundary

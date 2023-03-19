@@ -120,10 +120,6 @@ FLAG_NAMES = [
     (FLAG_ASCII, "ASCII"),
 ]
 
-_METHOD_SEARCH = 0
-_METHOD_MATCH = 1
-_METHOD_FULLMATCH = 2
-
 class Match():
     def __init__(self, pattern, pos, endpos, result, input_str, indexgroup):
         self.__result = result
