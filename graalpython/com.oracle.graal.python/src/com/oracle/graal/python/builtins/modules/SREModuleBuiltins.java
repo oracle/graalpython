@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -175,8 +176,16 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE = tsLiteral("ASCII and UNICODE flags are incompatible");
         private static final TruffleString T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE = tsLiteral("ASCII and LOCALE flags are incompatible");
 
+        private static final int FLAG_IGNORECASE = 2;
+        private static final int FLAG_LOCALE = 4;
+        private static final int FLAG_MULTILINE = 8;
+        private static final int FLAG_DOTALL = 16;
+        private static final int FLAG_UNICODE = 32;
+        private static final int FLAG_VERBOSE = 64;
+        private static final int FLAG_ASCII = 256;
+
         @TruffleBoundary
-        public TRegexCache(Object pattern, TruffleString flags) {
+        public TRegexCache(Object pattern, int flags) {
             String patternStr;
             boolean binary = true;
             try {
@@ -201,7 +210,33 @@ public class SREModuleBuiltins extends PythonBuiltins {
             this.patternOrig = pattern;
             this.pattern = patternStr;
             this.binary = binary;
-            this.flags = flags.toJavaStringUncached();
+            this.flags = getTRegexFlags(flags);
+        }
+
+        private static String getTRegexFlags(int flags) {
+            StringBuilder sb = new StringBuilder();
+            if ((flags & FLAG_IGNORECASE) != 0) {
+                sb.append('i');
+            }
+            if ((flags & FLAG_LOCALE) != 0) {
+                sb.append('L');
+            }
+            if ((flags & FLAG_MULTILINE) != 0) {
+                sb.append('m');
+            }
+            if ((flags & FLAG_DOTALL) != 0) {
+                sb.append('s');
+            }
+            if ((flags & FLAG_UNICODE) != 0) {
+                sb.append('u');
+            }
+            if ((flags & FLAG_VERBOSE) != 0) {
+                sb.append('x');
+            }
+            if ((flags & FLAG_ASCII) != 0) {
+                sb.append('a');
+            }
+            return sb.toString();
         }
 
         public Object getRegexp(PythonMethod method, boolean mustAdvance) {
@@ -358,8 +393,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call(VirtualFrame frame, Object pattern, Object flags,
-                    @Cached CastToTruffleStringNode flagsToStringNode) {
-            TruffleString flagsStr = flagsToStringNode.execute(flags);
+                    @Cached PyLongAsIntNode flagsToIntNode) {
+            int flagsStr = flagsToIntNode.execute(frame, flags);
             return new TRegexCache(pattern, flagsStr);
         }
     }

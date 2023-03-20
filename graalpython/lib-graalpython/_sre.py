@@ -245,13 +245,19 @@ class Pattern():
         self.__binary = _is_bytes_like(pattern)
         self.pattern = pattern
         self.__input_flags = flags
-        flags_str = []
-        for char, flag in FLAGS.items():
-            if flags & flag:
-                flags_str.append(char)
-        self.__tregex_cache = tregex_init_cache(pattern, "".join(flags_str))
-        self.__cached_flags = None
+        self.__tregex_cache = tregex_init_cache(pattern, flags)
+
         compiled_regex = tregex_compile(self.__tregex_cache, _METHOD_SEARCH, False)
+
+        self.flags = flags
+        regex_flags = compiled_regex.flags
+        for flag, name in FLAG_NAMES:
+            try:
+                if getattr(regex_flags, name):
+                    self.flags |= flag
+            except AttributeError:
+                pass
+
         self.groups = compiled_regex.groupCount - 1
         groups = compiled_regex.groups
         if groups is None:
@@ -261,23 +267,6 @@ class Pattern():
             group_names = dir(groups)
             self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
             self.__indexgroup = {getattr(groups, name): name for name in group_names}
-
-    @property
-    def flags(self):
-        # Flags can be specified both in the flag argument or inline in the regex. Extract them back from the regex
-        if self.__cached_flags != None:
-            return self.__cached_flags
-        compiled_regex = tregex_compile(self.__tregex_cache, _METHOD_SEARCH, False)
-        flags = self.__input_flags
-        regex_flags = compiled_regex.flags
-        for flag, name in FLAG_NAMES:
-            try:
-                if getattr(regex_flags, name):
-                    flags |= flag
-            except AttributeError:
-                pass
-        self.__cached_flags = flags
-        return flags
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
