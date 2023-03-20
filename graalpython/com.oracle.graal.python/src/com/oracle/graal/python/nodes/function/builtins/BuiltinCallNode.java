@@ -171,7 +171,8 @@ public abstract class BuiltinCallNode extends Node {
         @Child private ReadArgumentNode arg5;
         @Child private ReadArgumentNode arg6;
 
-        public BuiltinSenaryCallNode(PythonSenaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3, ReadArgumentNode arg4, ReadArgumentNode arg5, ReadArgumentNode arg6) {
+        public BuiltinSenaryCallNode(PythonSenaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3, ReadArgumentNode arg4, ReadArgumentNode arg5,
+                        ReadArgumentNode arg6) {
             this.node = node;
             this.arg1 = arg1;
             this.arg2 = arg2;
@@ -191,6 +192,7 @@ public abstract class BuiltinCallNode extends Node {
             return node;
         }
     }
+
     public static final class BuiltinVarArgsCallNode extends BuiltinCallNode {
         @Child private PythonVarargsBuiltinNode node;
         @Child private ReadArgumentNode arg1;

@@ -242,14 +242,14 @@ class Match():
 
 class Pattern():
     def __init__(self, pattern, flags):
-        self.__binary = _is_bytes_like(pattern)
         self.pattern = pattern
+        self.flags = flags
+        self.__binary = _is_bytes_like(pattern)
         self.__input_flags = flags
         self.__tregex_cache = tregex_init_cache(pattern, flags)
 
         compiled_regex = tregex_compile(self.__tregex_cache, _METHOD_SEARCH, False)
 
-        self.flags = flags
         regex_flags = compiled_regex.flags
         for flag, name in FLAG_NAMES:
             try:

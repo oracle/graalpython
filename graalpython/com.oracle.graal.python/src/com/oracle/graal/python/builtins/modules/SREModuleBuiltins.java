@@ -157,8 +157,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private final Object patternOrig;
         private final String pattern;
         private final String flags;
-        public final boolean binary;
-        public final boolean localeSensitive;
+        private final boolean binary;
+        private final boolean localeSensitive;
 
         private Object searchRegexp;
         private Object matchRegexp;
@@ -212,8 +212,16 @@ public class SREModuleBuiltins extends PythonBuiltins {
             this.pattern = patternStr;
             this.binary = binary;
             this.flags = getTRegexFlags(flags);
-            this.localeSensitive = isLocaleSensitive();
+            this.localeSensitive = calculateLocaleSensitive();
             this.localeSensitiveRegexps = this.localeSensitive ? EconomicMap.create() : null;
+        }
+
+        public boolean isBinary() {
+            return binary;
+        }
+
+        public boolean isLocaleSensitive() {
+            return localeSensitive;
         }
 
         private static String getTRegexFlags(int flags) {
@@ -248,8 +256,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
          * This is the case when sequences resembling inline flags appear in character classes or
          * comments.
          */
-        private boolean isLocaleSensitive() {
-            if (!binary) {
+        private boolean calculateLocaleSensitive() {
+            if (!isBinary()) {
                 return false;
             }
             if (flags.indexOf('L') != -1) {
@@ -282,7 +290,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         public Object getRegexp(PythonMethod method, boolean mustAdvance) {
-            assert !localeSensitive;
+            assert !isLocaleSensitive();
             switch (method) {
                 case search:
                     if (mustAdvance) {
@@ -309,12 +317,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public Object getLocaleSensitiveRegexp(PythonMethod method, boolean mustAdvance, TruffleString locale) {
-            assert localeSensitive;
+            assert isLocaleSensitive();
             return localeSensitiveRegexps.get(new RegexKey(method, mustAdvance, locale));
         }
 
-        public void setRegexp(PythonMethod method, boolean mustAdvance, Object regexp) {
-            assert !localeSensitive;
+        private void setRegexp(PythonMethod method, boolean mustAdvance, Object regexp) {
+            assert !isLocaleSensitive();
             switch (method) {
                 case search:
                     if (mustAdvance) {
@@ -341,8 +349,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public void setLocaleSensitiveRegexp(PythonMethod method, boolean mustAdvance, TruffleString locale, Object regexp) {
-            assert localeSensitive;
+        private void setLocaleSensitiveRegexp(PythonMethod method, boolean mustAdvance, TruffleString locale, Object regexp) {
+            assert isLocaleSensitive();
             localeSensitiveRegexps.put(new RegexKey(method, mustAdvance, locale), regexp);
         }
 
@@ -366,7 +374,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public Object compile(PythonContext context, PythonMethod method, boolean mustAdvance, TruffleString locale) {
-            String encoding = binary ? ENCODING_LATIN_1 : ENCODING_UTF_32;
+            String encoding = isBinary() ? ENCODING_LATIN_1 : ENCODING_UTF_32;
             String options = getTRegexOptions(encoding, method, mustAdvance, locale);
             InteropLibrary lib = InteropLibrary.getUncached();
             Object regexp;
@@ -379,37 +387,41 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     regexp = compiledRegex;
                 }
             } catch (RuntimeException e) {
-                try {
-                    if (lib.isException(e)) {
-                        if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
-                            TruffleString reason = lib.asTruffleString(lib.getExceptionMessage(e)).switchEncodingUncached(TS_ENCODING);
-                            if (reason.equalsUncached(T_VALUE_ERROR_UNICODE_FLAG_BYTES_PATTERN, TS_ENCODING) ||
-                                    reason.equalsUncached(T_VALUE_ERROR_LOCALE_FLAG_STR_PATTERN, TS_ENCODING) ||
-                                    reason.equalsUncached(T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE, TS_ENCODING) ||
-                                    reason.equalsUncached(T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE, TS_ENCODING)) {
-                                throw PRaiseNode.getUncached().raise(ValueError, reason);
-                            } else {
-                                SourceSection sourceSection = lib.getSourceLocation(e);
-                                int position = sourceSection.getCharIndex();
-                                PythonModule module = context.lookupBuiltinModule(T__SRE);
-                                Object errorConstructor = PyObjectLookupAttr.getUncached().execute(null, module, T_ERROR);
-                                PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, patternOrig, position);
-                                throw PRaiseNode.getUncached().raiseExceptionObject(exception);
-                            }
-                        }
-                    }
-                } catch (UnsupportedMessageException e1) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                // just re-throw
-                throw e;
+                throw handleCompilationError(e, lib, context);
             }
-            if (localeSensitive) {
+            if (isLocaleSensitive()) {
                 setLocaleSensitiveRegexp(method, mustAdvance, locale, regexp);
             } else {
                 setRegexp(method, mustAdvance, regexp);
             }
             return regexp;
+        }
+
+        private RuntimeException handleCompilationError(RuntimeException e, InteropLibrary lib, PythonContext context) {
+            try {
+                if (lib.isException(e)) {
+                    if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
+                        TruffleString reason = lib.asTruffleString(lib.getExceptionMessage(e)).switchEncodingUncached(TS_ENCODING);
+                        if (reason.equalsUncached(T_VALUE_ERROR_UNICODE_FLAG_BYTES_PATTERN, TS_ENCODING) ||
+                                        reason.equalsUncached(T_VALUE_ERROR_LOCALE_FLAG_STR_PATTERN, TS_ENCODING) ||
+                                        reason.equalsUncached(T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE, TS_ENCODING) ||
+                                        reason.equalsUncached(T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE, TS_ENCODING)) {
+                            return PRaiseNode.getUncached().raise(ValueError, reason);
+                        } else {
+                            SourceSection sourceSection = lib.getSourceLocation(e);
+                            int position = sourceSection.getCharIndex();
+                            PythonModule module = context.lookupBuiltinModule(T__SRE);
+                            Object errorConstructor = PyObjectLookupAttr.getUncached().execute(null, module, T_ERROR);
+                            PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, patternOrig, position);
+                            return PRaiseNode.getUncached().raiseExceptionObject(exception);
+                        }
+                    }
+                }
+            } catch (UnsupportedMessageException e1) {
+                return CompilerDirectives.shouldNotReachHere();
+            }
+            // just re-throw
+            return e;
         }
 
         private static final class RegexKey {
@@ -446,7 +458,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call(VirtualFrame frame, Object pattern, Object flags,
-                    @Cached PyLongAsIntNode flagsToIntNode) {
+                        @Cached PyLongAsIntNode flagsToIntNode) {
             int flagsStr = flagsToIntNode.execute(frame, flags);
             return new TRegexCache(pattern, flagsStr);
         }
@@ -459,11 +471,11 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         private static final TruffleString T__GETLOCALE = tsLiteral("_getlocale");
 
-        @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.localeSensitive" }, limit = "6")
+        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "6")
         Object localeNonSensitive(TRegexCache tRegexCache, int method, boolean mustAdvance,
-                      @Cached("method") int cachedMethod,
-                      @Cached("mustAdvance") boolean cachedMustAdvance,
-                      @Cached("fromOrdinal(method)") PythonMethod pythonMethod) {
+                        @Cached("method") int cachedMethod,
+                        @Cached("mustAdvance") boolean cachedMustAdvance,
+                        @Cached("fromOrdinal(method)") PythonMethod pythonMethod) {
             final Object tRegex = tRegexCache.getRegexp(pythonMethod, mustAdvance);
             if (tRegex != null) {
                 return tRegex;
@@ -472,14 +484,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.localeSensitive" }, limit = "6")
+        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.isLocaleSensitive()"}, limit = "6")
         Object localeSensitive(TRegexCache tRegexCache, int method, boolean mustAdvance,
-                       @Cached("method") int cachedMethod,
-                       @Cached("mustAdvance") boolean cachedMustAdvance,
-                       @Cached("fromOrdinal(method)") PythonMethod pythonMethod,
-                       @Cached("lookupGetLocaleFunction()") Object getLocale,
-                       @Cached CallNode callGetLocale,
-                       @Cached CastToTruffleStringNode castToTruffleStringNode) {
+                        @Cached("method") int cachedMethod,
+                        @Cached("mustAdvance") boolean cachedMustAdvance,
+                        @Cached("fromOrdinal(method)") PythonMethod pythonMethod,
+                        @Cached("lookupGetLocaleFunction()") Object getLocale,
+                        @Cached CallNode callGetLocale,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode) {
             TruffleString locale = castToTruffleStringNode.execute(callGetLocale.execute(getLocale));
             final Object tRegex = tRegexCache.getLocaleSensitiveRegexp(pythonMethod, mustAdvance, locale);
             if (tRegex != null) {
@@ -506,7 +518,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
 
-        private static final PTuple SUPPORTED_BINARY_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[] {PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
+        private static final PTuple SUPPORTED_BINARY_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[]{PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray,
+                        PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
         private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
         private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
@@ -518,31 +531,31 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "method == cachedMethod", limit = "3")
         Object search(VirtualFrame frame, Object pattern, Object inputStringOrBytes, Object posArg, Object endPosArg, int method, boolean mustAdvance,
-                      @Cached("method") int cachedMethod,
-                      @Cached PyNumberIndexNode indexNode,
-                      @Cached PyNumberAsSizeNode asSizeNode,
-                      @Cached PyObjectLookupAttr lookupCacheNode,
-                      @Cached PyObjectLookupAttr lookupIndexGroupNode,
-                      @Cached BuiltinFunctions.IsInstanceNode isStringNode,
-                      @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
-                      @Cached ConditionProfile unsupportedInputTypeProfile,
-                      @Cached ConditionProfile unexpectedInputTypeProfile,
-                      @Cached PyObjectSizeNode lengthNode,
-                      @Cached ConditionProfile truncatingInputProfile,
-                      @Cached SliceNodes.CreateSliceNode createSliceNode,
-                      @Cached PyObjectGetItem getItemNode,
-                      @Cached TRegexCompile tRegexCompile,
-                      @CachedLibrary(limit = "1") InteropLibrary libCompiledRegex,
-                      @Cached ConditionProfile fallbackProfile,
-                      @Cached("create(T__PATTERN__FALLBACK_COMPILE)") GetAttributeNode getFallbackCompileNode,
-                      @Cached CallNode callFallbackCompileNode,
-                      @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
-                      @Cached CallNode callFallbackMethodNode,
-                      @Cached TRegexCallExec tRegexCallExec,
-                      @CachedLibrary(limit = "1") InteropLibrary libResult,
-                      @Cached ConditionProfile matchProfile,
-                      @Cached("lookupMatchConstructor()") Object matchConstructor,
-                      @Cached CallNode constructResultNode) {
+                        @Cached("method") int cachedMethod,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyObjectLookupAttr lookupCacheNode,
+                        @Cached PyObjectLookupAttr lookupIndexGroupNode,
+                        @Cached BuiltinFunctions.IsInstanceNode isStringNode,
+                        @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
+                        @Cached ConditionProfile unsupportedInputTypeProfile,
+                        @Cached ConditionProfile unexpectedInputTypeProfile,
+                        @Cached PyObjectSizeNode lengthNode,
+                        @Cached ConditionProfile truncatingInputProfile,
+                        @Cached SliceNodes.CreateSliceNode createSliceNode,
+                        @Cached PyObjectGetItem getItemNode,
+                        @Cached TRegexCompile tRegexCompile,
+                        @CachedLibrary(limit = "1") InteropLibrary libCompiledRegex,
+                        @Cached ConditionProfile fallbackProfile,
+                        @Cached("create(T__PATTERN__FALLBACK_COMPILE)") GetAttributeNode getFallbackCompileNode,
+                        @Cached CallNode callFallbackCompileNode,
+                        @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
+                        @Cached CallNode callFallbackMethodNode,
+                        @Cached TRegexCallExec tRegexCallExec,
+                        @CachedLibrary(limit = "1") InteropLibrary libResult,
+                        @Cached ConditionProfile matchProfile,
+                        @Cached("lookupMatchConstructor()") Object matchConstructor,
+                        @Cached CallNode constructResultNode) {
             int pos = asSizeNode.executeExact(frame, indexNode.execute(frame, posArg));
             int endPos = asSizeNode.executeExact(frame, indexNode.execute(frame, endPosArg));
             TRegexCache tRegexCache = (TRegexCache) lookupCacheNode.execute(frame, pattern, T__PATTERN__TREGEX_CACHE);
@@ -551,8 +564,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
             if (unsupportedInputTypeProfile.profile(!isString && !isBytes)) {
                 throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
-            if (unexpectedInputTypeProfile.profile(tRegexCache.binary != isBytes)) {
-                if (tRegexCache.binary) {
+            if (unexpectedInputTypeProfile.profile(tRegexCache.isBinary() != isBytes)) {
+                if (tRegexCache.isBinary()) {
                     throw getRaiseNode().raise(TypeError, T_UNEXPECTED_STR);
                 } else {
                     throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
@@ -610,12 +623,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
-                    @Cached CastToTruffleStringNode cast,
-                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                    @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Cached BufferToTruffleStringNode bufferToTruffleStringNode,
-                    @CachedLibrary("callable") InteropLibrary interop,
-                    @Cached BranchProfile binaryProfile) {
+                        @Cached CastToTruffleStringNode cast,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached BufferToTruffleStringNode bufferToTruffleStringNode,
+                        @CachedLibrary("callable") InteropLibrary interop,
+                        @Cached BranchProfile binaryProfile) {
             TruffleString input;
             Object buffer = null;
             try {
