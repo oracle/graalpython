@@ -466,6 +466,7 @@ requires_legacy_unicode_capi = unittest.skipUnless(unicode_legacy_string,
                         'requires legacy Unicode C API')
 
 is_jython = sys.platform.startswith('java')
+is_graalpy = sys.implementation.name == "graalpy"
 
 is_android = hasattr(sys, 'getandroidapilevel')
 
@@ -661,9 +662,11 @@ def gc_collect():
     """
     import gc
     gc.collect()
-    if is_jython:
+    if is_jython or is_graalpy:
         time.sleep(0.1)
     gc.collect()
+    if is_graalpy:
+        time.sleep(0.1)
     gc.collect()
 
 @contextlib.contextmanager
