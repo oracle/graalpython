@@ -276,34 +276,6 @@ class Pattern():
         if self.__binary and isinstance(input, str):
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
-    def __is_locale_sensitive(self, pattern, flags):
-        """Tests whether the regex is locale-sensitive. It is not completely precise. In some
-        instances, it will return `True` even though the regex is *not* locale-sensitive. This is
-        the case when sequences resembling inline flags appear in character classes or comments."""
-        if not _is_bytes_like(pattern):
-            return False
-        if flags & FLAG_LOCALE != 0:
-            return True
-        pattern = pattern.decode(encoding='LATIN-1')
-        position = 0
-        while position < len(pattern):
-            position = pattern.find('(?', position)
-            if position == -1:
-                break
-            backslash_position = position - 1
-            while backslash_position >= 0 and pattern[backslash_position] == '\\':
-                backslash_position = backslash_position - 1
-            # jump over '(?'
-            position = position + 2
-            if (position - backslash_position) % 2 == 0:
-                # found odd number of backslashes, the parentheses is a literal
-                continue
-            while position < len(pattern) and pattern[position] in 'aiLmsux':
-                if pattern[position] == 'L':
-                    return True
-                position = position + 1
-        return False
-
     def __fallback_compile(self):
         if self.__compiled_fallback is None:
             if not _with_sre:

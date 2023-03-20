@@ -158,6 +158,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private final String pattern;
         private final String flags;
         public final boolean binary;
+        public final boolean localeSensitive;
 
         private Object searchRegexp;
         private Object matchRegexp;
@@ -166,8 +167,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private Object mustAdvanceSearchRegexp;
         private Object mustAdvanceMatchRegexp;
         private Object mustAdvanceFullMatchRegexp;
+        private final EconomicMap<RegexKey, Object> localeSensitiveRegexps;
 
-        private EconomicMap<RegexKey, Object> localeSensitiveRegexps;
         private static final String ENCODING_UTF_32 = "Encoding=UTF-32";
         private static final String ENCODING_LATIN_1 = "Encoding=LATIN-1";
         private static final TruffleString T_ERROR = tsLiteral("error");
@@ -211,6 +212,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
             this.pattern = patternStr;
             this.binary = binary;
             this.flags = getTRegexFlags(flags);
+            this.localeSensitive = isLocaleSensitive();
+            this.localeSensitiveRegexps = this.localeSensitive ? EconomicMap.create() : null;
         }
 
         private static String getTRegexFlags(int flags) {
@@ -239,7 +242,47 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return sb.toString();
         }
 
+        /**
+         * Tests whether the regex is locale-sensitive. It is not completely precise. In some
+         * instances, it will return {@code true} even though the regex is *not* locale-sensitive.
+         * This is the case when sequences resembling inline flags appear in character classes or
+         * comments.
+         */
+        private boolean isLocaleSensitive() {
+            if (!binary) {
+                return false;
+            }
+            if (flags.indexOf('L') != -1) {
+                return true;
+            }
+            int position = 0;
+            while (position < pattern.length()) {
+                position = pattern.indexOf("(?", position);
+                if (position == -1) {
+                    break;
+                }
+                int backslashPosition = position - 1;
+                while (backslashPosition >= 0 && pattern.charAt(backslashPosition) == '\\') {
+                    backslashPosition--;
+                }
+                // jump over '(?'
+                position += 2;
+                if ((position - backslashPosition) % 2 == 0) {
+                    // found odd number of backslashes, the parentheses is a literal
+                    continue;
+                }
+                while (position < pattern.length() && "aiLmsux".indexOf(pattern.charAt(position)) != -1) {
+                    if (pattern.charAt(position) == 'L') {
+                        return true;
+                    }
+                    position++;
+                }
+            }
+            return false;
+        }
+
         public Object getRegexp(PythonMethod method, boolean mustAdvance) {
+            assert !localeSensitive;
             switch (method) {
                 case search:
                     if (mustAdvance) {
@@ -264,7 +307,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @TruffleBoundary
+        public Object getLocaleSensitiveRegexp(PythonMethod method, boolean mustAdvance, TruffleString locale) {
+            assert localeSensitive;
+            return localeSensitiveRegexps.get(new RegexKey(method, mustAdvance, locale));
+        }
+
         public void setRegexp(PythonMethod method, boolean mustAdvance, Object regexp) {
+            assert !localeSensitive;
             switch (method) {
                 case search:
                     if (mustAdvance) {
@@ -290,23 +340,38 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private String getOptions(PythonMethod pythonMethod, boolean mustAdvance) {
+        @TruffleBoundary
+        public void setLocaleSensitiveRegexp(PythonMethod method, boolean mustAdvance, TruffleString locale, Object regexp) {
+            assert localeSensitive;
+            localeSensitiveRegexps.put(new RegexKey(method, mustAdvance, locale), regexp);
+        }
+
+        private String getTRegexOptions(String encoding, PythonMethod pythonMethod, boolean mustAdvance, TruffleString locale) {
             StringBuilder sb = new StringBuilder();
+            sb.append("Flavor=Python");
+            sb.append(',');
+            sb.append(encoding);
+            sb.append(',');
             sb.append(pythonMethod.getTRegexOption());
             if (mustAdvance) {
                 sb.append(',');
                 sb.append("MustAdvance=true");
             }
+            if (locale != null) {
+                sb.append(',');
+                sb.append("PythonLocale=" + locale.toJavaStringUncached());
+            }
             return sb.toString();
         }
 
         @TruffleBoundary
-        public Object compile(PythonContext context, PythonMethod method, boolean mustAdvance) {
-            String options = getOptions(method, mustAdvance);
+        public Object compile(PythonContext context, PythonMethod method, boolean mustAdvance, TruffleString locale) {
+            String encoding = binary ? ENCODING_LATIN_1 : ENCODING_UTF_32;
+            String options = getTRegexOptions(encoding, method, mustAdvance, locale);
             InteropLibrary lib = InteropLibrary.getUncached();
             Object regexp;
             try {
-                Source regexSource = constructSource(binary ? ENCODING_LATIN_1 : ENCODING_UTF_32, options, pattern, flags);
+                Source regexSource = Source.newBuilder("regex", options + '/' + pattern + '/' + flags, "re").mimeType("application/tregex").internal(true).build();
                 Object compiledRegex = context.getEnv().parseInternal(regexSource).call();
                 if (lib.isNull(compiledRegex)) {
                     regexp = PNone.NONE;
@@ -339,32 +404,20 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 // just re-throw
                 throw e;
             }
-            setRegexp(method, mustAdvance, regexp);
+            if (localeSensitive) {
+                setLocaleSensitiveRegexp(method, mustAdvance, locale, regexp);
+            } else {
+                setRegexp(method, mustAdvance, regexp);
+            }
             return regexp;
         }
 
-        private static Source constructSource(String encoding, String options, String pattern, String flags) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Flavor=Python");
-            sb.append(',');
-            sb.append(encoding);
-            if (!options.isEmpty()) {
-                sb.append(',');
-                sb.append(options);
-            }
-            sb.append('/');
-            sb.append(pattern);
-            sb.append('/');
-            sb.append(flags);
-            return Source.newBuilder("regex", sb.toString(), "re").mimeType("application/tregex").internal(true).build();
-        }
-
         private static final class RegexKey {
-            private final String pythonMethod;
+            private final PythonMethod pythonMethod;
             private final boolean mustAdvance;
-            private final String pythonLocale;
+            private final TruffleString pythonLocale;
 
-            RegexKey(String pythonMethod, boolean mustAdvance, String pythonLocale) {
+            RegexKey(PythonMethod pythonMethod, boolean mustAdvance, TruffleString pythonLocale) {
                 this.pythonMethod = pythonMethod;
                 this.mustAdvance = mustAdvance;
                 this.pythonLocale = pythonLocale;
@@ -376,7 +429,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     return false;
                 }
                 RegexKey other = (RegexKey) obj;
-                return this.pythonMethod.equals(other.pythonMethod) && this.mustAdvance == other.mustAdvance && this.pythonLocale.equals(other.pythonLocale);
+                return this.pythonMethod == other.pythonMethod && this.mustAdvance == other.mustAdvance && this.pythonLocale.equalsUncached(other.pythonLocale, TS_ENCODING);
             }
 
             @Override
@@ -402,10 +455,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_compile", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCompileNode extends PythonTernaryBuiltinNode {
+    abstract static class TRegexCompile extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance" }, limit = "6")
-        Object compile(VirtualFrame frame, TRegexCache tRegexCache, int method, boolean mustAdvance,
+        private static final TruffleString T__GETLOCALE = tsLiteral("_getlocale");
+
+        @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.localeSensitive" }, limit = "6")
+        Object localeNonSensitive(TRegexCache tRegexCache, int method, boolean mustAdvance,
                       @Cached("method") int cachedMethod,
                       @Cached("mustAdvance") boolean cachedMustAdvance,
                       @Cached("fromOrdinal(method)") PythonMethod pythonMethod) {
@@ -413,8 +468,32 @@ public class SREModuleBuiltins extends PythonBuiltins {
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(getContext(), pythonMethod, mustAdvance);
+                return tRegexCache.compile(getContext(), pythonMethod, mustAdvance, null);
             }
+        }
+
+        @Specialization(guards = { "method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.localeSensitive" }, limit = "6")
+        Object localeSensitive(TRegexCache tRegexCache, int method, boolean mustAdvance,
+                       @Cached("method") int cachedMethod,
+                       @Cached("mustAdvance") boolean cachedMustAdvance,
+                       @Cached("fromOrdinal(method)") PythonMethod pythonMethod,
+                       @Cached("lookupGetLocaleFunction()") Object getLocale,
+                       @Cached CallNode callGetLocale,
+                       @Cached CastToTruffleStringNode castToTruffleStringNode) {
+            TruffleString locale = castToTruffleStringNode.execute(callGetLocale.execute(getLocale));
+            final Object tRegex = tRegexCache.getLocaleSensitiveRegexp(pythonMethod, mustAdvance, locale);
+            if (tRegex != null) {
+                return tRegex;
+            } else {
+                return tRegexCache.compile(getContext(), pythonMethod, mustAdvance, locale);
+            }
+        }
+
+        @TruffleBoundary
+        @NeverDefault
+        protected Object lookupGetLocaleFunction() {
+            PythonModule module = getContext().lookupBuiltinModule(T__SRE);
+            return PyObjectLookupAttr.getUncached().execute(null, module, T__GETLOCALE);
         }
 
         protected static PythonMethod fromOrdinal(int ordinal) {
@@ -452,7 +531,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                       @Cached ConditionProfile truncatingInputProfile,
                       @Cached SliceNodes.CreateSliceNode createSliceNode,
                       @Cached PyObjectGetItem getItemNode,
-                      @Cached TRegexCompileNode tRegexCompileNode,
+                      @Cached TRegexCompile tRegexCompile,
                       @CachedLibrary(limit = "1") InteropLibrary libCompiledRegex,
                       @Cached ConditionProfile fallbackProfile,
                       @Cached("create(T__PATTERN__FALLBACK_COMPILE)") GetAttributeNode getFallbackCompileNode,
@@ -494,7 +573,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             if (truncatingInputProfile.profile(endPos != length)) {
                 truncatedInput = getItemNode.execute(frame, inputStringOrBytes, createSliceNode.execute(0, endPos, 1));
             }
-            Object compiledRegex = tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance);
+            Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, method, mustAdvance);
             if (fallbackProfile.profile(libCompiledRegex.isNull(compiledRegex))) {
                 Object fallbackRegex = callFallbackCompileNode.execute(getFallbackCompileNode.executeObject(frame, pattern));
                 return callFallbackMethodNode.execute(getFallbackMethodNode.executeObject(frame, fallbackRegex), inputStringOrBytes, pos, endPos);
