@@ -1640,7 +1640,7 @@ public abstract class SequenceStorageNodes {
         static NativeSequenceStorage doObject(Object[] arr, int length,
                         @Exclusive @Cached PCallCapiFunction callNode,
                         @Exclusive @Cached PythonToNativeNewRefNode toSulongNode) {
-            Object[] wrappedValues = new Object[arr.length];
+            Object[] wrappedValues = new Object[length];
             for (int i = 0; i < wrappedValues.length; i++) {
                 wrappedValues[i] = toSulongNode.execute(arr[i]);
             }
