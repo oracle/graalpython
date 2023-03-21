@@ -177,7 +177,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * derived from the actual version.
      */
     public static final int GRAALVM_MAJOR = 23;
-    public static final int GRAALVM_MINOR = 0;
+    public static final int GRAALVM_MINOR = 1;
 
     static {
         switch (RELEASE_LEVEL) {
