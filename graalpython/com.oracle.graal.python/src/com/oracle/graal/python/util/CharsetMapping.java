@@ -260,7 +260,7 @@ public class CharsetMapping {
         addMapping("cp874", "x-IBM874");
         addMapping("cp875", "x-IBM875");
         addMapping("cp932", "windows-31j");
-        addMapping("cp949", "x-IBM949");
+        addMapping("cp949", "x-windows-949");
         addMapping("cp950", "x-IBM950");
         addMapping("euc_jis_2004", null);
         addMapping("euc_jisx0213", null);
@@ -315,7 +315,6 @@ public class CharsetMapping {
         addMapping("shift_jis_2004", "Shift_JISX0213");
         addMapping("shift_jis", "Shift_JIS");
         addMapping("shift_jisx0213", "x-SJIS_0213");
-        addMapping("tis_620", "TIS-620");
         addMapping("utf_16_be", "UTF-16BE");
         addMapping("utf_16_le", "UTF-16LE");
         addMapping("utf_16", "UTF-16");
@@ -610,11 +609,6 @@ public class CharsetMapping {
         addAlias("shiftjisx0213", "shift_jisx0213");
         addAlias("sjisx0213", "shift_jisx0213");
         addAlias("s_jisx0213", "shift_jisx0213");
-        addAlias("tis620", "tis_620");
-        addAlias("tis_620_0", "tis_620");
-        addAlias("tis_620_2529_0", "tis_620");
-        addAlias("tis_620_2529_1", "tis_620");
-        addAlias("iso_ir_166", "tis_620");
         addAlias("u16", "utf_16");
         addAlias("utf16", "utf_16");
         addAlias("unicodebigunmarked", "utf_16_be");
