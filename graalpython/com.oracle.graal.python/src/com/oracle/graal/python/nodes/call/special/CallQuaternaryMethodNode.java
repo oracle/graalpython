@@ -90,7 +90,7 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethodSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3, Object arg4,
-                    @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getFunction(), 4)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
