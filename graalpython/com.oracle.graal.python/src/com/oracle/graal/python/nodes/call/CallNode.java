@@ -229,7 +229,7 @@ public abstract class CallNode extends PNodeWithContext {
 
     @Specialization(limit = "1", guards = {"isSingleContext()", "callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"})
     protected Object builtinMethodCallBuiltinDirectCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Cached("callable") PBuiltinMethod cachedCallable,
+                    @Cached(value = "callable", weak = true) PBuiltinMethod cachedCallable,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
