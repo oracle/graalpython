@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStr
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.LazyRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -171,14 +171,14 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = "exceptionObject == null")
         static PBaseException createNew(Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject, int startPos, int endPos, TruffleString reason,
                         @Cached CallNode callNode,
-                        @Cached LazyRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = callNode.execute(UnicodeEncodeError, encoding, inputObject, startPos, endPos, reason);
             if (obj instanceof PBaseException exception) {
                 return exception;
             }
             // Shouldn't happen unless the user manually replaces the method, which is really
             // unexpected and shouldn't be permitted at all, but currently it is
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeEncodeError, obj);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeEncodeError, obj);
         }
 
         @Specialization(guards = "exceptionObject != null")
@@ -207,10 +207,10 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         static TruffleString doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached CastToTruffleStringCheckedNode castToStringNode,
-                        @Cached LazyRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "object");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "object");
             }
             return castToStringNode.cast(obj, ErrorMessages.S_ATTRIBUTE_MUST_BE_UNICODE, "object");
         }
@@ -287,10 +287,10 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         static TruffleString doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached CastToTruffleStringCheckedNode castToStringNode,
-                        @Cached LazyRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "encoding");
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "encoding");
             }
             return castToStringNode.cast(obj, ErrorMessages.S_ATTRIBUTE_MUST_BE_UNICODE, "encoding");
         }

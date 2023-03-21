@@ -85,7 +85,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.LazyRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -611,7 +610,7 @@ public final class ErrorHandlers {
                     result[pos + 3] = (byte) cp;
                     break;
                 default:
-                    throw shouldNotReachHere("Unexpected encoding: " + encoding);
+                    throw shouldNotReachHere("Unexpected encoding");
             }
         }
 
@@ -624,7 +623,7 @@ public final class ErrorHandlers {
                 case UTF16BE -> (src[pos] & 0xFF) << 8 | (src[pos + 1] & 0xFF);
                 case UTF32LE -> ((src[pos + 3] & 0xFF) << 24) | ((src[pos + 2] & 0xFF) << 16) | ((src[pos + 1] & 0xFF) << 8) | (src[pos] & 0xFF);
                 case UTF32BE -> ((src[pos] & 0xFF) << 24) | ((src[pos + 1] & 0xFF) << 16) | ((src[pos + 2] & 0xFF) << 8) | (src[pos + 3] & 0xFF);
-                default -> throw shouldNotReachHere("Unexpected encoding: " + encoding);
+                default -> throw shouldNotReachHere("Unexpected encoding");
             };
         }
 
@@ -822,9 +821,9 @@ public final class ErrorHandlers {
                         @Cached(inline = false) SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached(inline = false) CastToTruffleStringCheckedNode castToTruffleStringCheckedNode,
                         @Cached(inline = false) CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached @Shared("raiseNode") LazyRaiseNode raiseNode) {
+                        @Cached @Shared("raiseNode") PRaiseNode.Lazy raiseNode) {
             if (lenNode.execute(result) != 2) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
             }
             Object[] array = getObjectArrayNode.execute(result);
             TruffleString str = castToTruffleStringCheckedNode.cast(array[0], ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
@@ -834,8 +833,8 @@ public final class ErrorHandlers {
 
         @Fallback
         static DecodingErrorHandlerResult doOther(Node inliningTarget, @SuppressWarnings("unused") Object result,
-                        @Cached @Shared("raiseNode") LazyRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+                        @Cached @Shared("raiseNode") PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
         }
     }
 
@@ -856,7 +855,7 @@ public final class ErrorHandlers {
                         @Cached ParseDecodingErrorHandlerResultNode parseResultNode,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached(inline = false) PyObjectSizeNode sizeNode,
-                        @Cached LazyRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
             cache.exceptionObject = makeDecodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
@@ -893,9 +892,9 @@ public final class ErrorHandlers {
                         @Cached(inline = false) CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached(inline = false) PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached(inline = false) PyBytesCheckNode pyBytesCheckNode,
-                        @Cached @Shared LazyRaiseNode raiseNode) {
+                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
             if (lenNode.execute(result) != 2) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
             Object[] array = getObjectArrayNode.execute(result);
             boolean isUnicode;
@@ -904,7 +903,7 @@ public final class ErrorHandlers {
             } else if (pyBytesCheckNode.execute(frame, array[0])) {
                 isUnicode = false;
             } else {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
             int pos = castToJavaIntExactNode.execute(array[1]);
             return new EncodingErrorHandlerResult(array[0], pos, isUnicode);
@@ -912,8 +911,8 @@ public final class ErrorHandlers {
 
         @Fallback
         static EncodingErrorHandlerResult doOther(Node inliningTarget, @SuppressWarnings("unused") Object result,
-                        @Cached @Shared LazyRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
+                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
         }
     }
 
@@ -933,7 +932,7 @@ public final class ErrorHandlers {
                         @Cached(inline = false) CallNode callNode,
                         @Cached ParseEncodingErrorHandlerResultNode parseResultNode,
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached LazyRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
             int len = codePointLengthNode.execute(srcObj, TS_ENCODING);
             cache.exceptionObject = makeEncodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
@@ -960,12 +959,12 @@ public final class ErrorHandlers {
         }
     }
 
-    private static int adjustAndCheckPos(int newPos, int len, Node inliningTarget, LazyRaiseNode raiseNode) {
+    private static int adjustAndCheckPos(int newPos, int len, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
         if (newPos < 0) {
             newPos += len;
         }
         if (newPos < 0 || newPos > len) {
-            throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newPos);
+            throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newPos);
         }
         return newPos;
     }

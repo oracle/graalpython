@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.Surr
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.XmlCharRefReplaceErrorHandlerNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
-import com.oracle.graal.python.nodes.LazyRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -102,7 +101,7 @@ public final class CodecsRegistry {
         @Specialization
         static Object lookup(Node inliningTarget, TruffleString name,
                         @Cached InlinedConditionProfile resultProfile,
-                        @Cached LazyRaiseNode raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             ensureRegistryInitialized(context);
             if (name == null) {
@@ -110,7 +109,7 @@ public final class CodecsRegistry {
             }
             Object result = getErrorHandler(context, name);
             if (resultProfile.profile(inliningTarget, result == null)) {
-                throw raiseNode.raise(inliningTarget, LookupError, UNKNOWN_ERROR_HANDLER, name);
+                throw raiseNode.get(inliningTarget).raise(LookupError, UNKNOWN_ERROR_HANDLER, name);
             }
             return result;
         }
