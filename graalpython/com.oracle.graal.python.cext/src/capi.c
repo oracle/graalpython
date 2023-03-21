@@ -904,6 +904,10 @@ void PyTruffle_SetStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) 
     Py_XSETREF(ptr[index], newitem);
 }
 
+void PyTruffle_InitializeStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
+    ptr[index] = newitem;
+}
+
 PyAPI_FUNC(Py_ssize_t) PyTruffle_Object_Size(PyObject *op) {
     return ((PyVarObject*)op)->ob_size;
 }
@@ -2177,6 +2181,10 @@ PyAPI_FUNC(PyObject*) _PyTruffleObject_Call1(PyObject* a, PyObject* b, PyObject*
 #undef _PyTruffleObject_CallMethod1
 PyAPI_FUNC(PyObject*) _PyTruffleObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
     return Graal_PyTruffleObject_CallMethod1(a, truffleString(b), c, d);
+}
+#undef _PyTuple_SET_ITEM
+PyAPI_FUNC(int) _PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    return Graal_PyTuple_SET_ITEM(a, b, c);
 }
 #undef _PyType_Lookup
 PyAPI_FUNC(PyObject*) _PyType_Lookup(PyTypeObject* a, PyObject* b) {
