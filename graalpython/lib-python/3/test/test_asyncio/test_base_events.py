@@ -367,7 +367,9 @@ class BaseEventLoopTests(test_utils.TestCase):
         self.loop._run_once()
 
         t = self.loop._selector.select.call_args[0][0]
-        self.assertTrue(9.5 < t < 10.5, t)
+        # GR-45013 - Truffle change: we may pump slower than CPython and have a
+        # lower remaining timer
+        self.assertTrue(8 < t < 10.5, t)
         self.assertEqual([h2], self.loop._scheduled)
         self.assertTrue(self.loop._process_events.called)
 
