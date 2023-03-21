@@ -1505,7 +1505,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ARG_MUST_BE_A_SEQUENCE_OBJECT = tsLiteral("arg must be a sequence object");
     public static final TruffleString STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S = tsLiteral("stream function returned a non-bytes object (%s)");
 
-    public static final TruffleString DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE = tsLiteral("decoding error handler must return (str, int) tuple");
     public static final TruffleString CANNOT_BUILD_PARAMETER = tsLiteral("cannot build parameter");
     public static final TruffleString ON_CALLING_CTYPES_CALLBACK_FUNCTION = tsLiteral("on calling ctypes callback function");
     public static final TruffleString ON_CONVERTING_RESULT_OF_CTYPES_CALLBACK_FUNCTION = tsLiteral("on converting result of ctypes callback function");
