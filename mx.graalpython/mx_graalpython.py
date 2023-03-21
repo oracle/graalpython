@@ -51,6 +51,7 @@ from argparse import ArgumentParser
 import mx
 import mx_benchmark
 import mx_gate
+import mx_native
 import mx_unittest
 import mx_sdk
 import mx_subst
@@ -102,6 +103,15 @@ def is_collectiong_coverage():
 
 if os.environ.get("CI") == "true" and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
+
+
+def wants_debug_build(flags=os.environ.get("CFLAGS", "")):
+    return any(x in flags for x in ["-g", "-ggdb", "-ggdb3"])
+
+
+if wants_debug_build():
+    mx_native.DefaultNativeProject.cflags = property(lambda self: self._cflags + ["-fPIC", "-ggdb3"])
+
 
 def _sibling(filename):
     return os.path.join(os.path.dirname(__file__), filename)
@@ -2447,14 +2457,20 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         # besides keeping custom sysroot, since our toolchain forwards to the system headers
         for var in ["CC", "CFLAGS", "LDFLAGS"]:
             value = env.pop(var, None)
-            if value and "--sysroot" in value:
-                seen_sysroot = False
-                for element in shlex.split(value):
-                    if element == "--sysroot":
-                        seen_sysroot = True
-                    elif seen_sysroot:
-                        env[var] = f"--sysroot {element}"
-                        break
+            new_value = []
+            if value:
+                if wants_debug_build(value):
+                    new_value.append("-ggdb3")
+                if "--sysroot" in value:
+                    seen_sysroot = False
+                    for element in shlex.split(value):
+                        if element == "--sysroot":
+                            seen_sysroot = True
+                        elif seen_sysroot:
+                            new_value.append(f"--sysroot {element}")
+                            break
+            if new_value:
+                env[var] = " ".join(new_value)
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):
