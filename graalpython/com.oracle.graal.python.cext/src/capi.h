@@ -597,6 +597,7 @@ typedef struct {
     BUILTIN(_PyTruffleObject_MakeTpCall, PyObject*, PyObject*, void*, int, void*, void*) \
     BUILTIN(_PyTruffleSet_NextEntry, PyObject*, PyObject*, Py_ssize_t) \
     BUILTIN(_PyTruffle_HashBytes, Py_hash_t, const char*) \
+    BUILTIN(_PyTuple_SET_ITEM, int, PyObject*, Py_ssize_t, PyObject*) \
     BUILTIN(_PyType_Lookup, PyObject*, PyTypeObject*, PyObject*) \
     BUILTIN(_PyUnicode_AsASCIIString, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \

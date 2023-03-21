@@ -29,6 +29,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC;
@@ -65,10 +66,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateEmptyNodeGen;
@@ -1271,7 +1270,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
-    protected abstract static class SetNativeItemScalarNode extends Node {
+    public abstract static class SetNativeItemScalarNode extends Node {
         public abstract void execute(NativeSequenceStorage s, int idx, Object value);
 
         @Specialization(guards = "isByteStorage(storage)")
@@ -1290,6 +1289,48 @@ public abstract class SequenceStorageNodes {
                         @Cached PCallCapiFunction call,
                         @Cached PythonToNativeNewRefNode toSulongNode) {
             call.call(FUN_PY_TRUFFLE_SET_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
+        }
+
+        @Fallback
+        protected static void doNative(NativeSequenceStorage storage, int idx, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached VerifyNativeItemNode verifyNativeItemNode) {
+            try {
+                lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value, verifyNativeItemNode));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        private static Object verifyValue(NativeSequenceStorage storage, Object item, VerifyNativeItemNode verifyNativeItemNode) {
+            if (verifyNativeItemNode.execute(storage.getElementType(), item)) {
+                return item;
+            }
+            throw new SequenceStoreException(item);
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class InitializeNativeItemScalarNode extends Node {
+        public abstract void execute(NativeSequenceStorage s, int idx, Object value);
+
+        @Specialization(guards = "isByteStorage(storage)")
+        protected static void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CastToByteNode castToByteNode) {
+            try {
+                lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(null, value));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = "isObjectStorage(storage)")
+        protected static void doNativeObject(NativeSequenceStorage storage, int idx, Object value,
+                        @Cached PCallCapiFunction call,
+                        @Cached PythonToNativeNewRefNode toSulongNode) {
+            call.call(FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
         }
 
         @Fallback

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -29,7 +29,7 @@ PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject *);
 #define PyTuple_GET_ITEM(op, i) PyTuple_GetItem(_PyObject_CAST(op), (i))
 
 /* Macro, *only* to be used to fill in brand new tuples */
-// LS: Py_SetItem behaves differently wrt. the existing element...
-#define PyTuple_SET_ITEM(op, i, v) PyTuple_SetItem(_PyObject_CAST(op), (i), (v))
+PyAPI_FUNC(int) _PyTuple_SET_ITEM(PyObject *, Py_ssize_t, PyObject *);
+#define PyTuple_SET_ITEM(op, i, v) _PyTuple_SET_ITEM(_PyObject_CAST(op), (i), (v))
 
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);

@@ -1503,6 +1503,7 @@ void unimplemented(const char* name) {
 #undef _PyTuple_DebugMallocStats
 #undef _PyTuple_MaybeUntrack
 #undef _PyTuple_Resize
+#undef _PyTuple_SET_ITEM
 #undef _PyType_CalculateMetaclass
 #undef _PyType_GetDocFromInternalDoc
 #undef _PyType_GetModuleByDef
@@ -5567,6 +5568,10 @@ PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject* a) {
 }
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject** a, Py_ssize_t b) {
     unimplemented("_PyTuple_Resize"); exit(-1);
+}
+PyAPI_FUNC(int) _PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    int result = (int) Graal_PyTuple_SET_ITEM(a, b, c);
+    return result;
 }
 PyAPI_FUNC(PyTypeObject*) _PyType_CalculateMetaclass(PyTypeObject* a, PyObject* b) {
     unimplemented("_PyType_CalculateMetaclass"); exit(-1);
