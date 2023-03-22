@@ -39,10 +39,11 @@
  * SOFTWARE.
  */
 
-#include <Python.h>
-
 #define EXCLUDE_POLYGLOT_API
 #define Py_BUILD_CORE
+
+#include <Python.h>
+
 #include "capi.h"
 
 #include <frameobject.h>
@@ -298,7 +299,7 @@ int initNativeForwardCalled = 0;
 /**
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
-PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*)) {
+PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
     if (initNativeForwardCalled) {
     	return 0;
     }
@@ -341,7 +342,27 @@ CAPI_BUILTINS
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
     initializeCAPIForwards(getAPI);
 
-    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    // send the locations of these values to Sulong - the values need to be shared
+    initialize_native_locations(&PyTruffle_AllocatedMemory, &PyTruffle_MaxNativeMemory, &PyTruffle_NativeMemoryGCBarrier);
+
+//    if (PyTruffle_Log_Fine()) {
+//    	// provide some timing info for native/Java boundary
+//
+//        clock_t start;
+//        for (int run = 0; run < 1000; run++) {
+//			start = clock();
+//			int COUNT = 10000;
+//			for (int i = 0; i < COUNT; i++) {
+//				GraalPyTruffleLong_Zero();
+//			}
+//			double delta = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+//			if ((run % 100) == 0) {
+//				PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "C API Timing probe: %.0fns", delta * 1000000000 / COUNT);
+//			}
+//        }
+//        PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initNativeForward: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+//    }
+
     return 1;
 }
 
@@ -425,12 +446,17 @@ void Py_IncRef(PyObject *a) {
 /*
 This is a workaround for C++ modules, namely PyTorch, that declare global/static variables with destructors that call
 _Py_DECREF. The destructors get called by libc during exit during which we cannot make upcalls as that would segfault.
-So we rebind them to no-ops when exitting.
+So we rebind them to no-ops when exiting.
 */
-static void nop_Py_DecRef(PyObject* obj) {}
+Py_ssize_t nop_GraalPy_get_PyObject_ob_refcnt(PyObject* obj) {
+	return 100; // large dummy refcount
+}
+void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
+	// do nothing
+}
 void finalizeCAPI() {
-    __target___Py_DecRef = nop_Py_DecRef;
-    __target__Py_DecRef = nop_Py_DecRef;
+	GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
+	GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
@@ -550,6 +576,20 @@ PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject* a, const char* b, ...) {
     return result;
 }
 
+int PyType_IsSubtype(PyTypeObject *a, PyTypeObject *b) {
+
+	// stay in native code if possible
+
+	PyTypeObject* t = a;
+    do {
+        if (t == b)
+            return 1;
+        t = t->tp_base;
+    } while (t != NULL);
+
+	return PyType_IsSubtype_Inlined(a, b);
+}
+
 
 /*
  * This dummy implementation is needed until we can properly transition the PyThreadState data structure to native.
@@ -566,14 +606,24 @@ char _PyByteArray_empty_string[] = "";
 /*
  * The following source files contain code that can be compiled directly and does not need to be called via stubs in Sulong:
  */
-
 #define COMPILING_NATIVE_CAPI
+
+// there are only pointers, no polyglot values
+static int polyglot_is_value(const void *value) {
+    return 0;
+}
+
 #include "_warnings.c"
 #include "boolobject.c"
+#include "longobject_shared.c"
 #include "complexobject.c"
 #include "dictobject.c"
+#include "floatobject.c"
 #include "modsupport_shared.c"
+#include "object_shared.c"
+#include "obmalloc.c"
 #include "pylifecycle.c"
+#include "typeobject_shared.c"
 
 /*
  * This mirrors the definition in capi.c that we us on Sulong, and needs to be

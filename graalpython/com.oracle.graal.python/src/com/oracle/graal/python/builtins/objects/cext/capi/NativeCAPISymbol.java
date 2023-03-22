@@ -109,8 +109,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     /* Python C API functions */
 
     FUN_PY_TRUFFLE_STRING_TO_CSTR("PyTruffle_StringToCstr"),
-    FUN_NATIVE_HANDLE_FOR_ARRAY("NativeHandle_ForArray"),
-    FUN_PY_NONE_HANDLE("PyNoneHandle"),
     FUN_WHCAR_SIZE("PyTruffle_Wchar_Size"),
     FUN_PY_TRUFFLE_CSTR_TO_STRING("PyTruffle_CstrToString"),
     FUN_PY_TRUFFLE_ASCII_TO_STRING("PyTruffle_AsciiToString"),
@@ -158,6 +156,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TRUFFLE_PRIMITIVE_ARRAY_FREE("PyTruffle_PrimitiveArrayFree"),
     FUN_PY_TRUFFLE_OBJECT_ARRAY_FREE("PyTruffle_ObjectArrayFree"),
     FUN_PY_TRUFFLE_SET_STORAGE_ITEM("PyTruffle_SetStorageItem"),
+    FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM("PyTruffle_InitializeStorageItem"),
     FUN_PY_TRUFFLE_NATIVE_TUPLE_ITEMS("PyTruffle_NativeTupleItems"),
     FUN_PY_OBJECT_GENERIC_GET_DICT("_PyObject_GenericGetDict"),
     FUN_PY_OBJECT_NEW("PyTruffle_Object_New"),
@@ -180,7 +179,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_ADDREF("PyTruffle_ADDREF"),
     FUN_SUBREF("PyTruffle_SUBREF"),
     FUN_GET_LONG_BITS_PER_DIGIT("get_long_bits_in_digit"),
-    FUN_BULK_SUBREF("PyTruffle_bulk_SUBREF"),
+    FUN_BULK_DEALLOC("PyTruffle_bulk_DEALLOC"),
     FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset"),
     FUN_PY_TRUFFLE_PY_MAPPING_CHECK("PyTruffle_PyMapping_Check"),
     FUN_PY_TRUFFLE_PY_MAPPING_SIZE("PyTruffle_PyMapping_Size"),

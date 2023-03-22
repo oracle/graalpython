@@ -52,7 +52,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
@@ -73,13 +72,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeTransfer;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -198,8 +197,17 @@ public final class CApiContext extends CExtContext {
      */
     private final AtomicLong nextTssKey = new AtomicLong();
 
-    private final HashMap<Object, Long> callableClosurePointers = new HashMap<>();
-    private final HashSet<Object> callableClosures = new HashSet<>();
+    public Object timezoneType;
+
+    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
+    }
+
+    /*
+     * The key is the executable instance, i.e., an instance of a class that exports the
+     * InteropLibrary.
+     */
+    private final HashMap<Object, ClosureInfo> callableClosureByExecutable = new HashMap<>();
+    private final HashMap<Long, ClosureInfo> callableClosures = new HashMap<>();
     private Object nativeLibrary;
     private boolean loadNativeLibrary = true;
     public RootCallTarget signatureContainer;
@@ -212,14 +220,14 @@ public final class CApiContext extends CExtContext {
      * Private dummy constructor just for {@link #LAZY_CONTEXT}.
      */
     private CApiContext() {
-        super(null, null, null);
+        super(null, null);
         primitiveNativeWrapperCache = null;
         promotedTruffleStringCache = null;
         llvmTypeCache = null;
     }
 
-    public CApiContext(PythonContext context, Object hpyLibrary) {
-        super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
+    public CApiContext(PythonContext context, Object llvmLibrary) {
+        super(context, llvmLibrary);
 
         // initialize primitive and pointer type cache
         llvmTypeCache = new Object[LLVMType.values().length];
@@ -460,7 +468,7 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    private void triggerGC(PythonContext context, long size, NodeInterface caller) {
+    public void triggerGC(PythonContext context, long size, NodeInterface caller) {
         long delay = 0;
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
@@ -735,7 +743,7 @@ public final class CApiContext extends CExtContext {
 
         checkFunctionResultNode.execute(context, initFuncName, nativeResult);
 
-        Object result = CApiTransitions.nativeToPython(nativeResult, false);
+        Object result = NativeToPythonNode.executeUncached(nativeResult);
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
 
@@ -891,7 +899,7 @@ public final class CApiContext extends CExtContext {
                     case "capsule":
                         result = InteropLibrary.getUncached().readMember(llvmLibrary, "getPyCapsuleTypeReference");
                         result = InteropLibrary.getUncached().execute(result);
-                        result = ToJavaNodeGen.getUncached().execute(result);
+                        result = NativeToPythonNode.executeUncached(result);
                         break;
                 }
                 if (result == null) {
@@ -922,7 +930,7 @@ public final class CApiContext extends CExtContext {
                     return InteropLibrary.getUncached().asPointer(result);
                 }
                 if (result != null) {
-                    result = ToNewRefNodeGen.getUncached().execute(result);
+                    result = PythonToNativeNewRefNode.executeUncached(result);
                     long l;
                     if (result instanceof Long) {
                         l = (long) result;
@@ -998,9 +1006,10 @@ public final class CApiContext extends CExtContext {
                  * PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*))
                  */
                 Object initFunction = InteropLibrary.getUncached().readMember(nativeLibrary, "initNativeForward");
-
-                Object signature = env.parseInternal(Source.newBuilder("nfi", "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID):SINT32", "exec").build()).call();
-                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore());
+                Object initializeNativeLocations = InteropLibrary.getUncached().readMember(getLLVMLibrary(), "initialize_native_locations");
+                Object signature = env.parseInternal(
+                                Source.newBuilder("nfi", "((SINT32):POINTER,(STRING):POINTER,(STRING):POINTER, (STRING,SINT64):VOID, (POINTER, POINTER, POINTER):VOID):SINT32", "exec").build()).call();
+                Object result = SignatureLibrary.getUncached().call(signature, initFunction, new GetBuiltin(), new GetAPI(), new GetType(), new SetTypeStore(), initializeNativeLocations);
                 if (InteropLibrary.getUncached().asInt(result) == 0) {
                     // this is not the first context - native C API backend not supported
                     nativeLibrary = null;
@@ -1070,19 +1079,34 @@ public final class CApiContext extends CExtContext {
         return -1;
     }
 
-    @TruffleBoundary
-    public long getClosurePointer(Object callable) {
-        return callableClosurePointers.getOrDefault(callable, -1L);
-    }
-
-    public void setClosurePointer(Object callable, Object closure, long pointer) {
+    public long getClosurePointer(Object executable) {
         CompilerAsserts.neverPartOfCompilation();
-        callableClosurePointers.put(callable, pointer);
-        callableClosures.add(closure);
+        ClosureInfo info = callableClosureByExecutable.get(executable);
+        return info == null ? -1 : info.pointer;
     }
 
-    public void retainClosure(Object closure) {
-        callableClosures.add(closure);
+    public Object getClosureDelegate(long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        ClosureInfo info = callableClosures.get(pointer);
+        return info == null ? null : info.delegate;
+    }
+
+    public void setClosurePointer(Object closure, Object delegate, Object executable, long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        var info = new ClosureInfo(closure, delegate, executable, pointer);
+        callableClosureByExecutable.put(executable, info);
+        callableClosures.put(pointer, info);
+        LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
+    }
+
+    public long registerClosure(String nfiSignature, Object executable, Object delegate) {
+        CompilerAsserts.neverPartOfCompilation();
+        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
+        Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
+        long pointer = PythonNativeWrapper.coerceToLong(closure, InteropLibrary.getUncached());
+        setClosurePointer(closure, delegate, executable, pointer);
+        return pointer;
     }
 
     private record ProcCacheItem(ArgDescriptor signature, Object callable) {

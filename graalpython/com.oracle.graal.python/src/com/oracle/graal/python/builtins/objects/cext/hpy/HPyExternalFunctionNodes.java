@@ -256,7 +256,7 @@ public abstract class HPyExternalFunctionNodes {
         } else {
             defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        return factory.createGetSetBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), callTarget);
+        return factory.createBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), 0, callTarget);
     }
 
     private static PRootNode createSlotRootNode(PythonLanguage language, HPySlotWrapper wrapper, TruffleString name) {
@@ -1348,7 +1348,7 @@ public abstract class HPyExternalFunctionNodes {
             PythonLanguage lang = hpyContext.getContext().getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorGetterRootNode(l, propertyName), HPyGetSetDescriptorGetterRootNode.class, propertyName);
             PythonObjectFactory factory = hpyContext.getSlowPathFactory();
-            return factory.createGetSetBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), callTarget);
+            return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
     }
 
@@ -1393,7 +1393,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            return factory.createGetSetBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
 
@@ -1433,7 +1433,7 @@ public abstract class HPyExternalFunctionNodes {
             PythonLanguage lang = hpyContext.getContext().getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorSetterRootNode(l, propertyName), HPyGetSetDescriptorSetterRootNode.class, propertyName);
             PythonObjectFactory factory = hpyContext.getSlowPathFactory();
-            return factory.createGetSetBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), callTarget);
+            return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
 
     }
@@ -1475,7 +1475,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            return factory.createGetSetBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
 
@@ -1530,7 +1530,7 @@ public abstract class HPyExternalFunctionNodes {
             PythonLanguage lang = context.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorNotWritableRootNode(l, propertyName), HPyGetSetDescriptorNotWritableRootNode.class, propertyName);
             PythonObjectFactory factory = context.factory();
-            return factory.createGetSetBuiltinFunction(propertyName, enclosingType, 0, callTarget);
+            return factory.createBuiltinFunction(propertyName, enclosingType, 0, 0, callTarget);
         }
     }
 

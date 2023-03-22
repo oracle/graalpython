@@ -67,16 +67,18 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
@@ -128,6 +130,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -154,6 +157,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class ExternalFunctionNodes {
+
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(ExternalFunctionNodes.class);
 
     public static final TruffleString KW_CALLABLE = tsLiteral("$callable");
     public static final TruffleString KW_CLOSURE = tsLiteral("$closure");
@@ -238,36 +243,14 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class ToNativeNode extends CExtToNativeNode {
-
-        @Override
-        public Object execute(Object object) {
-            return CApiTransitions.pythonToNative(object, false);
-        }
-    }
-
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
+
+        @Child private PythonToNativeNode toNative = PythonToNativeNodeGen.create();
 
         @Override
         public Object execute(Object object) {
             assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
-            return CApiTransitions.pythonToNative(object, false);
-        }
-    }
-
-    public static final class ToNativeTransferNode extends CExtToNativeNode {
-
-        @Override
-        public Object execute(Object object) {
-            return CApiTransitions.pythonToNative(object, true);
-        }
-    }
-
-    public static final class ToPythonNode extends CExtToJavaNode {
-
-        @Override
-        public Object execute(Object object) {
-            return CApiTransitions.nativeToPython(object, false);
+            return toNative.execute(object);
         }
     }
 
@@ -285,10 +268,11 @@ public abstract class ExternalFunctionNodes {
 
     public static final class ToPythonStringNode extends CExtToJavaNode {
         @Child private CastToTruffleStringNode castToStringNode = CastToTruffleStringNodeGen.create();
+        @Child private NativeToPythonNode nativeToPythonNode = NativeToPythonNodeGen.create();
 
         @Override
         public Object execute(Object object) {
-            Object result = CApiTransitions.nativeToPython(object, false);
+            Object result = nativeToPythonNode.execute(object);
             if (result instanceof TruffleString) {
                 return result;
             } else if (result instanceof PString) {
@@ -306,14 +290,6 @@ public abstract class ExternalFunctionNodes {
         @Override
         public PythonNativeWrapper execute(Object object) {
             return CApiTransitions.nativeToPythonWrapper(object);
-        }
-    }
-
-    public static final class ToPythonTransferNode extends CExtToJavaNode {
-
-        @Override
-        public Object execute(Object object) {
-            return CApiTransitions.nativeToPython(object, true);
         }
     }
 
@@ -585,11 +561,23 @@ public abstract class ExternalFunctionNodes {
          *         wrapper.
          */
         @TruffleBoundary
-        public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags,
-                        PExternalFunctionWrapper sig,
-                        PythonLanguage language,
-                        PythonObjectFactory factory,
-                        boolean doArgAndResultConversion) {
+        public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language,
+                        PythonObjectFactory factory, boolean doArgAndResultConversion) {
+            LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
+            InteropLibrary lib = InteropLibrary.getUncached(callable);
+            if (lib.isPointer(callable)) {
+                long pointer;
+                try {
+                    pointer = lib.asPointer(callable);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+                Object delegate = PythonContext.get(null).getCApiContext().getClosureDelegate(pointer);
+                if (delegate instanceof PBuiltinFunction function) {
+                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
+                    return function;
+                }
+            }
             if (flags < 0) {
                 flags = 0;
             }
@@ -641,6 +629,10 @@ public abstract class ExternalFunctionNodes {
 
         CheckFunctionResultNode createCheckFunctionResultNode() {
             return returnValue.createCheckResultNode();
+        }
+
+        CExtToJavaNode createConvertRetNode() {
+            return returnValue.createNativeToPythonNode();
         }
 
         CExtToNativeNode[] createConvertArgNodes() {
@@ -695,7 +687,7 @@ public abstract class ExternalFunctionNodes {
         private final CApiTiming timing;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
+        @Child private CExtToJavaNode convertReturnValue;
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
         @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
@@ -735,6 +727,7 @@ public abstract class ExternalFunctionNodes {
             this.timing = CApiTiming.create(true, provider.name());
             CheckFunctionResultNode node = provider.createCheckFunctionResultNode();
             this.checkResultNode = node != null ? node : DefaultCheckFunctionResultNodeGen.create();
+            this.convertReturnValue = provider.createConvertRetNode();
             this.provider = provider;
         }
 
@@ -758,12 +751,12 @@ public abstract class ExternalFunctionNodes {
 
             CApiTiming.enter();
             try {
-
                 Object result;
                 if (!lib.isExecutable(callable)) {
                     if (signature == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        signature = getContext().getEnv().parseInternal(Source.newBuilder("nfi", provider.signature, "exec").build()).call();
+                        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+                        signature = getContext().getEnv().parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + provider.signature, "exec").build()).call();
                     }
                     if (signatureLib == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -773,7 +766,12 @@ public abstract class ExternalFunctionNodes {
                 } else {
                     result = lib.execute(callable, cArguments);
                 }
-                return fromNative(asPythonObjectNode.execute(checkResultNode.execute(ctx, name, result)));
+
+                result = checkResultNode.execute(ctx, name, result);
+                if (convertReturnValue != null) {
+                    result = convertReturnValue.execute(result);
+                }
+                return fromNative(result);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
@@ -1975,9 +1973,10 @@ public abstract class ExternalFunctionNodes {
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization
-        static Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                        @Cached DefaultCheckFunctionResultNode recursive) {
-            return recursive.execute(context, name, result.getDelegate());
+        Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(this, name, false, true, context, errOccurredProfile);
+            return result;
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")

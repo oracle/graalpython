@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -116,7 +116,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object readArrayElement(long index,
-                    @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode) throws InvalidArrayIndexException {
+                    @Shared("toNewRefNode") @Cached PythonToNativeNewRefNode toNewRefNode) throws InvalidArrayIndexException {
         try {
             int idx = PInt.intValueExact(index);
             if (idx >= 0 && idx < wrappers.length) {
@@ -157,7 +157,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
      */
     @ExportMessage
     void toNative(
-                    @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode,
+                    @Shared("toNewRefNode") @Cached PythonToNativeNewRefNode toNewRefNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLib) {
         if (!PythonContext.get(toNewRefNode).isNativeAccessAllowed()) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

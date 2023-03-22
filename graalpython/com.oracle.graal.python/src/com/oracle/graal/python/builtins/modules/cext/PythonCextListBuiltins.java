@@ -85,20 +85,20 @@ public final class PythonCextListBuiltins {
 
     ///////////// list /////////////
     @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    public abstract static class PyList_New extends CApiUnaryBuiltinNode {
+    abstract static class PyList_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
-        public Object newListError(long size) {
+        Object newListError(long size) {
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "size == 0")
-        public Object newEmptyList(long size) {
+        Object newEmptyList(long size) {
             return factory().createList(PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
         @Specialization(guards = "size > 0")
-        public Object newList(long size) {
+        Object newList(long size) {
             return factory().createList(array(size));
         }
 
@@ -110,7 +110,7 @@ public final class PythonCextListBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Direct)
-    public abstract static class PyList_GetItem extends CApiBinaryBuiltinNode {
+    abstract static class PyList_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
         Object doPList(PList list, long key,

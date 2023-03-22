@@ -65,8 +65,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNull
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins.CFunctionNewExMethodNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -90,13 +88,12 @@ public final class PythonCextModuleBuiltins {
 
         @Specialization
         long doIt() {
-            CApiContext nativeContext = getContext().getCApiContext();
-            return nativeContext.getAndIncMaxModuleNumber();
+            return getCApiContext().getAndIncMaxModuleNumber();
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    public abstract static class PyModule_SetDocString extends CApiBinaryBuiltinNode {
+    abstract static class PyModule_SetDocString extends CApiBinaryBuiltinNode {
         @Specialization
         static int run(PythonModule module, Object doc,
                         @Cached ObjectBuiltins.SetattrNode setattrNode) {
@@ -107,7 +104,7 @@ public final class PythonCextModuleBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
     @CApiBuiltin(name = "PyModule_New", ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    public abstract static class PyModule_NewObject extends CApiUnaryBuiltinNode {
+    abstract static class PyModule_NewObject extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object run(TruffleString name,
@@ -117,7 +114,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyModuleObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    public abstract static class _PyTruffleModule_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
+    abstract static class _PyTruffleModule_CreateInitialized_PyModule_New extends CApiUnaryBuiltinNode {
 
         @Specialization
         Object run(TruffleString name,
@@ -152,16 +149,16 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
+    abstract static class PyModule_GetNameObject extends CApiUnaryBuiltinNode {
         @Specialization
-        Object getName(Object o,
+        static Object getName(Object o,
                         @Cached PyObjectLookupAttr lookupAttrNode) {
             return lookupAttrNode.execute(null, o, T___NAME__);
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    public abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
+    abstract static class PyModule_AddObjectRef extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
         static Object addObject(Object m, TruffleString k, Object o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -173,11 +170,10 @@ public final class PythonCextModuleBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isModuleSubtype(m, getClassNode, isSubtypeNode)")
-        public static Object pop(Object m, Object key, Object defaultValue,
+        Object pop(Object m, Object key, Object defaultValue,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(null, -1, TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            throw raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
         }
 
         protected boolean isModuleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -186,7 +182,7 @@ public final class PythonCextModuleBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ArgDescriptor.Long}, call = Direct)
-    public abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
+    abstract static class PyModule_AddIntConstant extends CApiTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(m, getClassNode, isSubtypeNode)")
         Object addObject(Object m, TruffleString k, long o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -197,7 +193,7 @@ public final class PythonCextModuleBuiltins {
         }
 
         @Specialization(guards = "!isModuleSubtype(m, getClassNode, isSubtypeNode)")
-        public Object pop(@SuppressWarnings("unused") Object m, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue,
+        Object pop(@SuppressWarnings("unused") Object m, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             throw raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddIntConstant", "module");

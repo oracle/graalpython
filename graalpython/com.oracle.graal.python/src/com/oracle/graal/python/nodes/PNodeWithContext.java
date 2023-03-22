@@ -59,7 +59,7 @@ public abstract class PNodeWithContext extends Node {
      * @return {@code true} if this node can be shared statically.
      */
     @Idempotent
-    protected boolean isUncached() {
+    protected final boolean isUncached() {
         return !isAdoptable();
     }
 

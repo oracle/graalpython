@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -49,19 +49,72 @@ static void init_formats(void) {
     float_format = detected_float_format;
 }
 
-// not quite as in CPython, this assumes that x is already a double. The rest of
-// the implementation is in the Float constructor in Java
-PyObject* float_subtype_new(PyTypeObject *type, double x) {
-    PyObject* newobj = type->tp_alloc(type, 0);
-    if (newobj == NULL) {
-        Py_DECREF(newobj);
-        return NULL;
-    }
-    ((PyFloatObject *)newobj)->ob_fval = x;
-    return newobj;
-}
 
 // Below taken from CPython
+
+
+double
+PyFloat_AsDouble(PyObject *op)
+{
+	if (points_to_py_handle_space(op)) {
+		return GraalPyTruffleFloat_AsDouble(op);
+	}
+    PyNumberMethods *nb;
+    PyObject *res;
+    double val;
+
+    if (op == NULL) {
+        PyErr_BadArgument();
+        return -1;
+    }
+
+    if (PyFloat_Check(op)) {
+        return ((PyFloatObject*) op)->ob_fval;
+    }
+
+    nb = Py_TYPE(op)->tp_as_number;
+    if (nb == NULL || nb->nb_float == NULL) {
+        if (nb && nb->nb_index) {
+            PyObject *res = _PyNumber_Index(op);
+            if (!res) {
+                return -1;
+            }
+            double val = PyLong_AsDouble(res);
+            Py_DECREF(res);
+            return val;
+        }
+        PyErr_Format(PyExc_TypeError, "must be real number, not %.50s",
+                     Py_TYPE(op)->tp_name);
+        return -1;
+    }
+
+    res = (*nb->nb_float) (op);
+    if (res == NULL) {
+        return -1;
+    }
+    if (!PyFloat_CheckExact(res)) {
+        if (!PyFloat_Check(res)) {
+            PyErr_Format(PyExc_TypeError,
+                         "%.50s.__float__ returned non-float (type %.50s)",
+                         Py_TYPE(op)->tp_name, Py_TYPE(res)->tp_name);
+            Py_DECREF(res);
+            return -1;
+        }
+        if (PyErr_WarnFormat(PyExc_DeprecationWarning, 1,
+                "%.50s.__float__ returned non-float (type %.50s).  "
+                "The ability to return an instance of a strict subclass of float "
+                "is deprecated, and may be removed in a future version of Python.",
+                Py_TYPE(op)->tp_name, Py_TYPE(res)->tp_name)) {
+            Py_DECREF(res);
+            return -1;
+        }
+    }
+
+    val = PyFloat_AsDouble(res);
+    Py_DECREF(res);
+    return val;
+}
+
 
 /*----------------------------------------------------------------------------
  * _PyFloat_{Pack,Unpack}{2,4,8}.  See floatobject.h.

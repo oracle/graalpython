@@ -166,6 +166,7 @@ CAPI_BUILTINS
 
 PyAPI_FUNC(void) initialize_builtins(void* (*getBuiltin)(int id)) {
 	int id = 0;
+//#define BUILTIN(NAME, RET, ...) printf("initializing " #NAME "\n"); Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
 #define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
 CAPI_BUILTINS
 #undef BUILTIN
@@ -455,6 +456,18 @@ char* get_ob_sval(PyObject* op) {
 	return ((PyBytesObject *)(op))->ob_sval;
 }
 
+// not quite as in CPython, this assumes that x is already a double. The rest of
+// the implementation is in the Float constructor in Java
+PyObject* float_subtype_new(PyTypeObject *type, double x) {
+    PyObject* newobj = type->tp_alloc(type, 0);
+    if (newobj == NULL) {
+        Py_DECREF(newobj);
+        return NULL;
+    }
+    ((PyFloatObject *)newobj)->ob_fval = x;
+    return newobj;
+}
+
 /**
  * To be used from Java code only. Reads native 'PyModuleDef.m_methods' field and
  * returns a typed pointer that can be used as interop array.
@@ -573,26 +586,11 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value) {
 }
 
 /** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_SUBREF(PyObject *ptrArray[], Py_ssize_t values[], int64_t len) {
-    int64_t i;
-    PyObject *obj;
-    Py_ssize_t value;
+PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
 
-    for (i = 0; i < len; i++) {
-        obj = ptrArray[i];
-        value = values[i];
-        /* IMPORTANT: 'value == 0' indicates we should not process the reference at all */
-        if (value > 0) {
-            Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
-            if (new_value == 0) {
-                _Py_Dealloc(obj);
-            }
-#ifdef Py_REF_DEBUG
-            else if (new_value < 0) {
-                _Py_NegativeRefcount(filename, lineno, op);
-            }
-#endif
-        }
+	for (int i = 0; i < len; i++) {
+    	PyObject *obj = (PyObject*) ptrArray[i];
+        _Py_Dealloc(obj);
     }
     return 0;
 }
@@ -604,11 +602,6 @@ PyAPI_FUNC(uint64_t) PyTruffle_Wchar_Size() {
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
 PyAPI_FUNC(void) PyTruffle_Free(intptr_t val) {
     PyMem_RawFree((void*) val);
-}
-
-/** to be used from Java code only; creates the deref handle for a sequence wrapper */
-PyAPI_FUNC(void*) NativeHandle_ForArray(void* jobj, Py_ssize_t element_size) {
-    return create_deref_handle(jobj);
 }
 
 PyAPI_FUNC(const char*) PyTruffle_StringToCstr(void* o, int32_t strLen) {
@@ -909,6 +902,10 @@ void PyTruffle_ObjectArrayFree(PyObject** array, int32_t size) {
 
 void PyTruffle_SetStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
     Py_XSETREF(ptr[index], newitem);
+}
+
+void PyTruffle_InitializeStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
+    ptr[index] = newitem;
 }
 
 PyAPI_FUNC(Py_ssize_t) PyTruffle_Object_Size(PyObject *op) {
@@ -1240,6 +1237,16 @@ void* truffle_get_constant(int entry) {
 	return NULL;
 }
 
+/*
+ * These locations need to be shared between native and Sulong - if the native parts are initialized,
+ * we assign_managed them to share them.
+ */
+PyAPI_FUNC(void) initialize_native_locations(void* allocateMemory, void* maxNativeMemory, void* nativeMemoryGCBarrier) {
+	truffle_assign_managed(&PyTruffle_AllocatedMemory, allocateMemory);
+	truffle_assign_managed(&PyTruffle_MaxNativeMemory, maxNativeMemory);
+	truffle_assign_managed(&PyTruffle_NativeMemoryGCBarrier, nativeMemoryGCBarrier);
+}
+
 // defined in 'exceptions.c'
 void initialize_exceptions();
 // defined in 'pyhash.c'
@@ -1510,10 +1517,6 @@ PyAPI_FUNC(int) PyException_SetTraceback(PyObject* a, PyObject* b) {
 #undef PyFile_WriteObject
 PyAPI_FUNC(int) PyFile_WriteObject(PyObject* a, PyObject* b, int c) {
     return GraalPyFile_WriteObject(a, b, c);
-}
-#undef PyFloat_AsDouble
-PyAPI_FUNC(double) PyFloat_AsDouble(PyObject* a) {
-    return GraalPyFloat_AsDouble(a);
 }
 #undef PyFloat_FromDouble
 PyAPI_FUNC(PyObject*) PyFloat_FromDouble(double a) {
@@ -2178,6 +2181,10 @@ PyAPI_FUNC(PyObject*) _PyTruffleObject_Call1(PyObject* a, PyObject* b, PyObject*
 #undef _PyTruffleObject_CallMethod1
 PyAPI_FUNC(PyObject*) _PyTruffleObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
     return Graal_PyTruffleObject_CallMethod1(a, truffleString(b), c, d);
+}
+#undef _PyTuple_SET_ITEM
+PyAPI_FUNC(int) _PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
+    return Graal_PyTuple_SET_ITEM(a, b, c);
 }
 #undef _PyType_Lookup
 PyAPI_FUNC(PyObject*) _PyType_Lookup(PyTypeObject* a, PyObject* b) {

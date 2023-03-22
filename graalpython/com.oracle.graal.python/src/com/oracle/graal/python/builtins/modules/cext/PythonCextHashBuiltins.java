@@ -91,7 +91,7 @@ public final class PythonCextHashBuiltins {
 
         @Specialization
         @TruffleBoundary
-        long doI(int idx) {
+        static long doI(int idx) {
             switch (idx) {
                 case 0:
                     return PyObjectHashNode.getUncached().execute(null, Double.POSITIVE_INFINITY);
@@ -127,7 +127,7 @@ public final class PythonCextHashBuiltins {
 
         @Specialization
         @TruffleBoundary
-        long doI(Object value,
+        static long doI(Object value,
                         @Cached PyObjectHashNode hashNode) {
             return hashNode.execute(null, value);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,50 +38,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.capi;
+#include "capi.h"
+#include "pycore_object.h"
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
-
-public class CAPIConversionNodeSupplier extends ConversionNodeSupplier {
-
-    public static final CAPIConversionNodeSupplier INSTANCE = new CAPIConversionNodeSupplier();
-
-    private CAPIConversionNodeSupplier() {
-    }
-
-    @Override
-    public CExtToNativeNode createToNativeNode() {
-        return ToSulongNode.create();
-    }
-
-    @Override
-    public CExtToNativeNode getUncachedToNativeNode() {
-        return ToSulongNode.getUncached();
-    }
-
-    @Override
-    public CExtAsPythonObjectNode createAsPythonObjectNode() {
-        return AsPythonObjectNodeGen.create();
-    }
-
-    @Override
-    public CExtAsPythonObjectNode getUncachedAsPythonObjectNode() {
-        return AsPythonObjectNodeGen.getUncached();
-    }
-
-    @Override
-    public CExtToJavaNode createToJavaNode() {
-        return ToJavaNodeGen.create();
-    }
-
-    @Override
-    public CExtToJavaNode getUncachedToJavaNode() {
-        return ToJavaNodeGen.getUncached();
-    }
+unsigned long PyType_GetFlags(struct _typeobject *type) {
+    return PyTypeObject_tp_flags(type);
 }

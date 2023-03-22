@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
-import com.oracle.graal.python.runtime.PythonContext;
+import static org.junit.Assert.assertEquals;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.strings.TruffleString;
-import static org.junit.Assert.assertEquals;
 
 public class CExtContextTest {
 
@@ -80,8 +80,8 @@ public class CExtContextTest {
     }
 
     private static class TestCExtContext extends CExtContext {
-        public TestCExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
-            super(context, llvmLibrary, supplier);
+        public TestCExtContext(PythonContext context, Object llvmLibrary) {
+            super(context, llvmLibrary);
         }
 
         @Override

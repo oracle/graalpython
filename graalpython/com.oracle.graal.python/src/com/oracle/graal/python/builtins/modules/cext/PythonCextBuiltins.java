@@ -87,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiCodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
@@ -144,7 +143,6 @@ import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -169,13 +167,13 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -183,6 +181,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
@@ -309,6 +308,10 @@ public final class PythonCextBuiltins {
 
         public final Python3Core getCore() {
             return getContext();
+        }
+
+        protected final CApiContext getCApiContext() {
+            return getContext().getCApiContext();
         }
 
         protected final PException badInternalCall(String argName) {
@@ -644,24 +647,31 @@ public final class PythonCextBuiltins {
                     context.signatureContainer = new SignatureContainerRootNode().getCallTarget();
                 }
 
-                SignatureContainerRootNode container = (SignatureContainerRootNode) context.signatureContainer.getRootNode();
-                // create NFI closure and get its address
-                StringBuilder signature = new StringBuilder("(");
-                for (int i = 0; i < args.length; i++) {
-                    signature.append(i == 0 ? "" : ",");
-                    signature.append(args[i].getNFISignature());
-                }
-                signature.append("):").append(ret.getNFISignature());
-                Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", signature.toString(), "exec").build()).call();
-                Object closure = container.getLibrary(name).createClosure(nfiSignature, this);
-                InteropLibrary.getUncached().toNative(closure);
                 try {
-                    pointer = InteropLibrary.getUncached().asPointer(closure);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    SignatureContainerRootNode container = (SignatureContainerRootNode) context.signatureContainer.getRootNode();
+                    // create NFI closure and get its address
+                    boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+                    StringBuilder signature = new StringBuilder(panama ? "with panama (" : "(");
+                    for (int i = 0; i < args.length; i++) {
+                        signature.append(i == 0 ? "" : ",");
+                        signature.append(args[i].getNFISignature());
+                    }
+                    signature.append("):").append(ret.getNFISignature());
+
+                    Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", signature.toString(), "exec").build()).call();
+                    Object closure = container.getLibrary(name).createClosure(nfiSignature, this);
+                    InteropLibrary.getUncached().toNative(closure);
+                    try {
+                        pointer = InteropLibrary.getUncached().asPointer(closure);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                    context.setClosurePointer(closure, null, this, pointer);
+                    LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
+                } catch (Throwable t) {
+                    t.printStackTrace(new PrintStream(PythonContext.get(null).getEnv().err()));
+                    throw t;
                 }
-                context.setClosurePointer(this, closure, pointer);
-                LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
             }
         }
 
@@ -717,9 +727,7 @@ public final class PythonCextBuiltins {
                     assert arguments.length == argNodes.length;
 
                     Object[] argCast = new Object[argNodes.length];
-                    for (int i = 0; i < argNodes.length; i++) {
-                        argCast[i] = argNodes[i] == null ? arguments[i] : argNodes[i].execute(arguments[i]);
-                    }
+                    castArguments(arguments, argCast);
                     Object result = builtinNode.execute(argCast);
                     if (retNode != null) {
                         result = retNode.execute(result);
@@ -750,6 +758,13 @@ public final class PythonCextBuiltins {
                 }
             } finally {
                 CApiTiming.exit(self.timing);
+            }
+        }
+
+        @ExplodeLoop
+        private void castArguments(Object[] arguments, Object[] argCast) {
+            for (int i = 0; i < argNodes.length; i++) {
+                argCast[i] = argNodes[i] == null ? arguments[i] : argNodes[i].execute(arguments[i]);
             }
         }
     }
@@ -888,7 +903,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffle_FileSystemDefaultEncoding extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_FileSystemDefaultEncoding extends CApiNullaryBuiltinNode {
         @Specialization
         static TruffleString encoding() {
             return GetFileSystemEncodingNode.getFileSystemEncoding();
@@ -1273,53 +1288,47 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, ArgDescriptor.Long}, call = Ignored)
-    public abstract static class PyTruffle_Object_Alloc extends CApiBinaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Alloc.class);
+    @CApiBuiltin(ret = SIZE_T, args = {}, call = Ignored)
+    abstract static class PyTruffle_MaxNativeMemory extends CApiNullaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        long get() {
+            return PythonOptions.MaxNativeMemory.getValue(getContext().getEnv().getOptions());
+        }
+    }
+
+    @CApiBuiltin(ret = SIZE_T, args = {}, call = Ignored)
+    abstract static class PyTruffle_InitialNativeMemory extends CApiNullaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        long get() {
+            return PythonOptions.InitialNativeMemory.getValue(getContext().getEnv().getOptions());
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {SIZE_T}, call = Ignored)
+    abstract static class PyTruffle_TriggerGC extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object alloc(Object allocatedObject, long objectSize,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached(value = "getAllocationReporter(getContext())", allowUncached = true) AllocationReporter reporter) {
-            // memory management
-            PythonContext context = getContext();
-            CApiContext cApiContext = context.getCApiContext();
-            cApiContext.increaseMemoryPressure(objectSize, lib);
-
-            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
-            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
-            boolean reportAllocation = reporter.isActive();
-            if (isLoggable || traceNativeMemory || reportAllocation) {
-                if (isLoggable) {
-                    LOGGER.finer(() -> PythonUtils.formatJString("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
-                }
-                if (traceNativeMemory) {
-                    PFrame.Reference ref = null;
-                    if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
-                        ref = getCurrentFrameRef.execute(null);
-                        ref.markAsEscaped();
-                    }
-                    cApiContext.traceAlloc(CApiContext.asPointer(allocatedObject, lib), ref, null, objectSize);
-                }
-                if (reportAllocation) {
-                    reporter.onEnter(null, 0, objectSize);
-                    reporter.onReturnValue(allocatedObject, 0, objectSize);
-                }
-                return 0;
+        @TruffleBoundary
+        Object trigger(long delay) {
+            LOGGER.fine("full GC due to native memory");
+            PythonUtils.forceFullGC();
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException x) {
+                // Restore interrupt status
+                Thread.currentThread().interrupt();
             }
-            return -2;
+            CApiTransitions.pollReferenceQueue();
+            PythonContext.triggerAsyncActions(this);
+            return PNone.NO_VALUE;
         }
-
-        static AllocationReporter getAllocationReporter(PythonContext context) {
-            return context.getEnv().lookup(AllocationReporter.class);
-        }
-
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
     @ImportStatic(CApiGuards.class)
-    public abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Free.class);
 
         @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
@@ -1394,7 +1403,7 @@ public final class PythonCextBuiltins {
 
             // this will also be called if the allocation failed
             if (!lib.isNull(pointerObject)) {
-                CApiContext cApiContext = getContext().getCApiContext();
+                CApiContext cApiContext = getCApiContext();
                 cApiContext.getTraceMallocDomain(cachedDomainIdx).track(pointerObject, size);
                 cApiContext.increaseMemoryPressure(null, getThreadStateNode, this, size);
                 if (LOGGER.isLoggable(Level.FINE)) {
@@ -1412,7 +1421,7 @@ public final class PythonCextBuiltins {
         }
 
         int lookupDomain(int domain) {
-            return getContext().getCApiContext().findOrCreateTraceMallocDomain(domain);
+            return getCApiContext().findOrCreateTraceMallocDomain(domain);
         }
     }
 
@@ -1426,7 +1435,7 @@ public final class PythonCextBuiltins {
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
 
-            CApiContext cApiContext = getContext().getCApiContext();
+            CApiContext cApiContext = getCApiContext();
             long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(pointerObject);
             cApiContext.reduceMemoryPressure(trackedMemorySize);
             if (LOGGER.isLoggable(Level.FINE)) {
@@ -1441,7 +1450,7 @@ public final class PythonCextBuiltins {
         }
 
         int lookupDomain(int domain) {
-            return getContext().getCApiContext().findOrCreateTraceMallocDomain(domain);
+            return getCApiContext().findOrCreateTraceMallocDomain(domain);
         }
     }
 
@@ -1482,10 +1491,12 @@ public final class PythonCextBuiltins {
             return PNone.NO_VALUE;
         }
 
+        @NonIdempotent
         static boolean traceMem(PythonContext context) {
             return context.getOption(PythonOptions.TraceNativeMemory);
         }
 
+        @NonIdempotent
         static boolean traceCalls(PythonContext context) {
             return context.getOption(PythonOptions.TraceNativeMemoryCalls);
         }
@@ -1503,7 +1514,7 @@ public final class PythonCextBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.fine(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
@@ -1514,7 +1525,7 @@ public final class PythonCextBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.fine(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
     }
@@ -1584,79 +1595,6 @@ public final class PythonCextBuiltins {
         }
     }
 
-    /**
-     * This will be called right before the call to stdlib's {@code free} function.
-     */
-    @CApiBuiltin(ret = Int, args = {Pointer, Py_ssize_t}, call = Ignored)
-    abstract static class _PyTruffle_Trace_Free extends CApiBinaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(_PyTruffle_Trace_Free.class);
-
-        @Specialization(limit = "2")
-        static int doNativeWrapperLong(Object ptr, long size,
-                        @CachedLibrary("ptr") InteropLibrary lib,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
-
-            PythonContext context = PythonContext.get(lib);
-            CApiContext cApiContext = context.getCApiContext();
-            cApiContext.reduceMemoryPressure(size);
-
-            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
-            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
-            if (!lib.isNull(ptr)) {
-                Object maybeLong = CApiContext.asPointer(ptr, lib);
-                if (maybeLong instanceof Long) {
-                    assert CApiTransitions.nativeLookupGet(context.nativeContext, (long) maybeLong) == null;
-                }
-                if (isLoggable || traceNativeMemory) {
-                    boolean traceNativeMemoryCalls = context.getOption(PythonOptions.TraceNativeMemoryCalls);
-                    if (traceNativeMemory) {
-                        PFrame.Reference ref = null;
-                        if (traceNativeMemoryCalls) {
-                            ref = getCurrentFrameRef.execute(null);
-                        }
-                        AllocInfo allocLocation = cApiContext.traceFree(maybeLong, ref, null);
-                        if (allocLocation != null) {
-                            LOGGER.finer(() -> PythonUtils.formatJString("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
-
-                            if (traceNativeMemoryCalls) {
-                                Reference left = allocLocation.allocationSite;
-                                PFrame pyFrame = null;
-                                while (pyFrame == null && left != null) {
-                                    pyFrame = left.getPyFrame();
-                                    left = left.getCallerInfo();
-                                }
-                                if (pyFrame != null) {
-                                    final PFrame f = pyFrame;
-                                    LOGGER.finer(() -> PythonUtils.formatJString("Free'd pointer was allocated at: %s", f.getTarget()));
-                                }
-                            }
-                        }
-                    } else {
-                        assert isLoggable;
-                        LOGGER.finer(() -> PythonUtils.formatJString("Freeing pointer: %s", CApiContext.asHex(ptr)));
-                    }
-                }
-            }
-            return 0;
-        }
-
-        @Specialization(limit = "2", replaces = "doNativeWrapperLong")
-        static int doNativeWrapper(Object ptr, Object sizeObject,
-                        @Cached CastToJavaLongLossyNode castToJavaLongNode,
-                        @CachedLibrary("ptr") InteropLibrary lib,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
-            long size;
-            try {
-                size = castToJavaLongNode.execute(sizeObject);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
-            }
-            return doNativeWrapperLong(ptr, size, lib, getCurrentFrameRef);
-        }
-
-    }
-
     @CApiBuiltin(ret = Void, args = {}, call = Direct)
     abstract static class PyTruffle_DebugTrace extends CApiNullaryBuiltinNode {
 
@@ -1689,7 +1627,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    public abstract static class PyTruffle_Debug extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_Debug extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         static Object doIt(Object[] args,
@@ -1700,7 +1638,7 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    public abstract static class PyTruffle_ToNative extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffle_ToNative extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         int doIt(Object object) {

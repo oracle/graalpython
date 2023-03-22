@@ -462,10 +462,10 @@ public final class PythonCextAbstractBuiltins {
     /////// PySequence ///////
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PySequence_Tuple extends CApiUnaryBuiltinNode {
+    abstract static class PySequence_Tuple extends CApiUnaryBuiltinNode {
 
         @Specialization
-        public Object values(Object obj,
+        Object values(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached TupleNode tupleNode,
                         @Cached InlinedGetClassNode getClassNode) {
@@ -478,18 +478,18 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PySequence_List extends CApiUnaryBuiltinNode {
+    abstract static class PySequence_List extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object values(Object obj,
+        Object values(Object obj,
                         @Cached ConstructListNode listNode) {
             return listNode.execute(null, obj);
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Direct)
-    public abstract static class PySequence_SetItem extends CApiTernaryBuiltinNode {
+    abstract static class PySequence_SetItem extends CApiTernaryBuiltinNode {
         @Specialization(guards = "checkNode.execute(obj)", limit = "1")
-        public Object setItem(Object obj, Object key, Object value,
+        Object setItem(Object obj, Object key, Object value,
                         @Shared("check") @SuppressWarnings("unused") @Cached PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached ConditionProfile hasSetItem,
@@ -636,7 +636,7 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
-    public abstract static class PySequence_DelItem extends CApiBinaryBuiltinNode {
+    abstract static class PySequence_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static Object run(Object o, Object i,
                         @Cached PyObjectDelItem delItemNode) {
@@ -756,16 +756,16 @@ public final class PythonCextAbstractBuiltins {
     /////// PyMapping ///////
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyMapping_Keys extends CApiUnaryBuiltinNode {
+    abstract static class PyMapping_Keys extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object keys(PDict obj,
+        Object keys(PDict obj,
                         @Cached KeysNode keysNode,
                         @Cached ConstructListNode listNode) {
             return listNode.execute(null, keysNode.execute(null, obj));
         }
 
         @Specialization(guards = "!isDict(obj)")
-        public Object keys(Object obj,
+        Object keys(Object obj,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode) {
@@ -780,16 +780,16 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyMapping_Items extends CApiUnaryBuiltinNode {
+    abstract static class PyMapping_Items extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object items(PDict obj,
+        Object items(PDict obj,
                         @Cached ItemsNode itemsNode,
                         @Cached ConstructListNode listNode) {
             return listNode.execute(null, itemsNode.execute(null, obj));
         }
 
         @Specialization(guards = "!isDict(obj)")
-        public Object items(Object obj,
+        Object items(Object obj,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode) {
@@ -799,16 +799,16 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyMapping_Values extends CApiUnaryBuiltinNode {
+    abstract static class PyMapping_Values extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object values(PDict obj,
+        Object values(PDict obj,
                         @Cached ConstructListNode listNode,
                         @Cached ValuesNode valuesNode) {
             return listNode.execute(null, valuesNode.execute(null, obj));
         }
 
         @Specialization(guards = "!isDict(obj)")
-        public Object values(Object obj,
+        Object values(Object obj,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode) {

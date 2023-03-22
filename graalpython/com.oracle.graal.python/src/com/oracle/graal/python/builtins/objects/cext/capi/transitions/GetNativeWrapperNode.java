@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -195,14 +194,6 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
         assert !CApiTransitions.isBackendPointerObject(object);
         assert !(object instanceof String);
         return TruffleObjectNativeWrapper.wrap(object);
-    }
-
-    protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
-        return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
-    }
-
-    protected static PythonClassNativeWrapper wrapNativeClassFast(PythonBuiltinClassType object, PythonContext context) {
-        return PythonClassNativeWrapper.wrap(context.lookupType(object), GetNameNode.doSlowPath(object));
     }
 
     protected static boolean isNaN(double d) {

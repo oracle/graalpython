@@ -630,7 +630,7 @@ public final class PythonUtils {
     public static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, TruffleString name, TruffleString doc, int idx,
                     Function<PythonLanguage, RootNode> rootNodeSupplier) {
         RootCallTarget callTarget = language.createCachedCallTarget(rootNodeSupplier, nodeClass, idx);
-        PBuiltinFunction getter = factory.createGetSetBuiltinFunction(name, klass, 0, callTarget);
+        PBuiltinFunction getter = factory.createBuiltinFunction(name, klass, 0, 0, callTarget);
         GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
         if (doc != null) {
             callable.setAttribute(T___DOC__, doc);

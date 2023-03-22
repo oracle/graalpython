@@ -57,8 +57,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -91,11 +91,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextCEvalBuiltins {
 
     @CApiBuiltin(ret = PyThreadState, args = {}, acquiresGIL = false, call = Direct)
-    public abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
+    abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
         @Specialization
-        Object save(@Cached GilNode gil) {
+        static Object save(@Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
             PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
             LOGGER.fine("C extension releases GIL");
@@ -105,11 +105,11 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PyThreadState}, acquiresGIL = false, call = Direct)
-    public abstract static class PyEval_RestoreThread extends CApiUnaryBuiltinNode {
+    abstract static class PyEval_RestoreThread extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 
         @Specialization
-        Object restore(@SuppressWarnings("unused") Object ptr,
+        static Object restore(@SuppressWarnings("unused") Object ptr,
                         @Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
             PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
@@ -120,9 +120,9 @@ public final class PythonCextCEvalBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
-    public abstract static class PyEval_GetBuiltins extends CApiNullaryBuiltinNode {
+    abstract static class PyEval_GetBuiltins extends CApiNullaryBuiltinNode {
         @Specialization
-        public Object release(
+        Object release(
                         @Cached GetDictIfExistsNode getDictNode) {
             PythonModule cext = getCore().getBuiltins();
             return getDictNode.execute(cext);
@@ -132,12 +132,12 @@ public final class PythonCextCEvalBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Pointer, Pointer, Pointer, PyObject, PyObject}, call = Ignored)
     abstract static class _PyTruffleEval_EvalCodeEx extends CApi8BuiltinNode {
         @Specialization
-        Object doGeneric(PCode code, Object globals, Object locals,
+        static Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, Object kwsPtr, Object defaultValueArrayPtr,
                         Object kwdefaultsWrapper, Object closureObj,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary ptrLib,
-                        @Cached CExtNodes.ToJavaNode elementToJavaNode,
+                        @Cached NativeToPythonNode elementToJavaNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -183,7 +183,7 @@ public final class PythonCextCEvalBuiltins {
             return invokeNode.execute(rootCallTarget, pArguments);
         }
 
-        private static Object[] unwrapArray(Object ptr, InteropLibrary ptrLib, CExtNodes.ToJavaNode elementToJavaNode) {
+        private static Object[] unwrapArray(Object ptr, InteropLibrary ptrLib, NativeToPythonNode elementToJavaNode) {
             if (ptrLib.hasArrayElements(ptr)) {
                 try {
                     int size = PInt.intValueExact(ptrLib.getArraySize(ptr));

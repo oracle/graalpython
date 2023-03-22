@@ -59,10 +59,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextFileBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, Int}, call = Direct)
-    public abstract static class PyFile_WriteObject extends CApiTernaryBuiltinNode {
+    abstract static class PyFile_WriteObject extends CApiTernaryBuiltinNode {
 
         @Specialization
-        public int writeStr(Object obj, Object f, int flags,
+        int writeStr(Object obj, Object f, int flags,
                         @Cached StrNode strNode,
                         @Cached ReprNode reprNode,
                         @Cached PyObjectGetAttr getAttr,

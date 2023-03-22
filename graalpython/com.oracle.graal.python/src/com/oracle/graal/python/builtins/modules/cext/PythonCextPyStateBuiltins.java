@@ -67,10 +67,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextPyStateBuiltins {
 
     @CApiBuiltin(ret = PY_GIL_STATE_STATE, args = {}, acquiresGIL = false, call = Direct)
-    public abstract static class PyGILState_Ensure extends CApiNullaryBuiltinNode {
+    abstract static class PyGILState_Ensure extends CApiNullaryBuiltinNode {
 
         @Specialization
-        Object save(@Cached GilNode gil) {
+        static Object save(@Cached GilNode gil) {
             // TODO allow acquiring from foreign thread
             boolean acquired = gil.acquire();
             return acquired ? 1 : 0;
@@ -78,7 +78,7 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {}, acquiresGIL = false, call = Direct)
-    public abstract static class PyGILState_Check extends CApiNullaryBuiltinNode {
+    abstract static class PyGILState_Check extends CApiNullaryBuiltinNode {
 
         @Specialization
         Object check() {
@@ -87,10 +87,10 @@ public final class PythonCextPyStateBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PY_GIL_STATE_STATE}, acquiresGIL = false, call = Direct)
-    public abstract static class PyGILState_Release extends CApiUnaryBuiltinNode {
+    abstract static class PyGILState_Release extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object restore(int state,
+        static Object restore(int state,
                         @Cached GilNode gil) {
             gil.release(state == 1);
             return 0;
@@ -130,7 +130,7 @@ public final class PythonCextPyStateBuiltins {
         Object doGeneric(long mIndex) {
             try {
                 int i = PInt.intValueExact(mIndex);
-                Object result = getContext().getCApiContext().getModuleByIndex(i);
+                Object result = getCApiContext().getModuleByIndex(i);
                 if (result == null) {
                     return getNativeNull();
                 }

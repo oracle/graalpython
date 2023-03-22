@@ -79,13 +79,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextUpcallNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CharPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
@@ -101,8 +98,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleResolver;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.CharPtrToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -130,6 +133,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -212,6 +216,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
+import sun.misc.Unsafe;
+
 public abstract class CExtNodes {
 
     private static final String J_UNICODE = "unicode";
@@ -260,7 +266,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "isNativeClass(object)")
         protected Object callNativeConstructor(Object object, Object arg,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             try {
@@ -569,90 +575,6 @@ public abstract class CExtNodes {
         }
     }
 
-    /**
-     * Same as {@code ToSulongNode} but ensures that a new Python reference is returned.<br/>
-     * Concept:<br/>
-     * <p>
-     * If the value to convert is a managed object or a Java primitive, we will (1) do nothing if a
-     * fresh wrapper is created, or (2) increase the reference count by 1 if the wrapper already
-     * exists.
-     * </p>
-     * <p>
-     * If the value to convert is a {@link PythonAbstractNativeObject} (i.e. a wrapped native
-     * pointer), the reference count will be increased by 1. This is necessary because if the
-     * currently returning upcall function already got a new reference, it won't have increased the
-     * refcnt but will eventually decreases it.<br/>
-     * Consider following example:<br/>
-     *
-     * <pre>
-     *     some.py: nativeLong0 * nativeLong1
-     * </pre>
-     *
-     * Assume that {@code nativeLong0} is a native object with a native type. It will call
-     * {@code nativeType->tp_as_number.nb_multiply}. This one then often uses
-     * {@code PyNumber_Multiply} which should just pass through the newly created native reference.
-     * But it will decrease the reference count since it wraps the gained native pointer. So, the
-     * intermediate upcall should effectively not alter the refcnt which means that we need to
-     * increase it since it will finally decrease it.
-     * </p>
-     */
-    @GenerateUncached
-    @ImportStatic({PGuards.class, CApiGuards.class})
-    public abstract static class ToNewRefNode extends CExtToNativeNode {
-
-        @Specialization
-        static Object doString(Object value) {
-            return CApiTransitions.pythonToNative(value, true);
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Unwraps objects contained in {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper}
-     * instances or wraps objects allocated in native code for consumption in Java.
-     */
-    @GenerateUncached
-    @ImportStatic({PGuards.class, CApiGuards.class})
-    public abstract static class AsPythonObjectNode extends CExtAsPythonObjectNode {
-
-        @Specialization(limit = "3")
-        static Object doNativeObject(Object object,
-                        @CachedLibrary("object") InteropLibrary lib) {
-            if (lib.isNull(object)) {
-                return PNone.NO_VALUE;
-            }
-            return CApiTransitions.nativeToPython(object, false);
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic({PGuards.class, CApiGuards.class})
-    public abstract static class AsPythonObjectStealingNode extends CExtAsPythonObjectNode {
-
-        @Specialization(limit = "3")
-        static Object doNativeObject(Object object,
-                        @CachedLibrary("object") InteropLibrary lib) {
-            if (lib.isNull(object)) {
-                return PNone.NO_VALUE;
-            }
-            return CApiTransitions.nativeToPython(object, true);
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic({PGuards.class, CApiGuards.class})
-    public abstract static class WrapCharPtrNode extends CExtAsPythonObjectNode {
-
-        @Specialization
-        static Object doNativeObject(Object object,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @Cached FromCharPointerNode fromCharPointerNode) {
-            return fromCharPointerNode.execute(object);
-        }
-
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     /**
      * Materializes a primitive value of a primitive native wrapper to ensure pointer equality.
@@ -758,14 +680,11 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    /**
-     * use subclasses {@link ToJavaNode} and {@link ToJavaStealingNode}
-     */
     abstract static class ToJavaBaseNode extends CExtToJavaNode {
 
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
-                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
+                        @Exclusive @Cached NativeToPythonNode toJavaNode) {
             return toJavaNode.execute(value);
         }
 
@@ -812,48 +731,6 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Does the same conversion as the native function {@code to_java}. The node tries to avoid
-     * calling the native function for resolving native handles.
-     */
-    @GenerateUncached
-    public abstract static class ToJavaNode extends ToJavaBaseNode {
-
-        @Specialization(guards = "isForeignObject(value)", limit = "1")
-        static Object doForeign(Object value,
-                        @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached ConditionProfile isNullProfile) {
-            // this is just a shortcut
-            if (isNullProfile.profile(interopLibrary.isNull(value))) {
-                return PNone.NO_VALUE;
-            }
-            return CApiTransitions.nativeToPython(value, false);
-        }
-
-        @NeverDefault
-        public static ToJavaNode create() {
-            return ToJavaNodeGen.create();
-        }
-    }
-
-    /**
-     * Does the same conversion as the native function {@code to_java}. The node tries to avoid
-     * calling the native function for resolving native handles.
-     */
-    @GenerateUncached
-    public abstract static class ToJavaStealingNode extends ToJavaBaseNode {
-
-        @Specialization(guards = "isForeignObject(value)", limit = "1")
-        static Object doForeign(Object value,
-                        @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached ConditionProfile isNullProfile) {
-            if (isNullProfile.profile(interopLibrary.isNull(value))) {
-                return PNone.NO_VALUE;
-            }
-            return CApiTransitions.nativeToPython(value, true);
-        }
-    }
-
-    /**
      * Does the same conversion as the native function {@code native_pointer_to_java}. The node
      * tries to avoid calling the native function for resolving native handles.
      */
@@ -863,25 +740,6 @@ public abstract class CExtNodes {
         @Specialization(guards = "isForeignObject(value)")
         Object doForeign(Object value) {
             return value;
-        }
-    }
-
-    /**
-     * Does the same conversion as the native function {@code native_pointer_to_java}. The node
-     * tries to avoid calling the native function for resolving native handles.
-     */
-    @GenerateUncached
-    public abstract static class CharPtrToJavaNode extends ToJavaBaseNode {
-
-        @Specialization(guards = "isForeignObject(value)", limit = "1")
-        static Object doForeign(Object value,
-                        @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached ConditionProfile isNullProfile) {
-            // this branch is not a shortcut; it actually returns a different object
-            if (isNullProfile.profile(interopLibrary.isNull(value))) {
-                return PNone.NO_VALUE;
-            }
-            return CApiTransitions.nativeCharToJava(value);
         }
     }
 
@@ -960,10 +818,29 @@ public abstract class CExtNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        @Specialization(guards = "!isCArrayWrapper(charPtr)")
-        static PString doPointer(Object charPtr,
+        private static Unsafe UNSAFE = PythonUtils.initUnsafe();
+
+        @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")
+        static TruffleString doPointer(Object charPtr,
+                        @CachedLibrary("charPtr") InteropLibrary lib,
+                        @Cached TruffleString.FromNativePointerNode fromNative,
+                        @Cached StringMaterializeNode materialize,
                         @Cached PythonObjectFactory factory) {
-            return factory.createString(new NativeCharSequence(charPtr, 1, false));
+            if (lib.isPointer(charPtr)) {
+                long pointer;
+                try {
+                    pointer = lib.asPointer(charPtr);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+                int length = 0;
+                while (UNSAFE.getByte(pointer + length) != 0) {
+                    length++;
+                }
+                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, true);
+            }
+
+            return materialize.execute(factory.createString(new NativeCharSequence(charPtr, 1, false)));
         }
 
         static boolean isCArrayWrapper(Object object) {
@@ -984,10 +861,10 @@ public abstract class CExtNodes {
         public static Object run(Object object,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @CachedLibrary("object") InteropLibrary interopLibrary) {
-            if (!interopLibrary.isNull(object)) {
-                return fromCharPointerNode.execute(object);
+            if (interopLibrary.isNull(object)) {
+                return PNone.NONE;
             }
-            return PNone.NONE;
+            return fromCharPointerNode.execute(object);
         }
     }
 
@@ -1001,7 +878,7 @@ public abstract class CExtNodes {
                         rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
         static Object getNativeClassByMember(PythonAbstractNativeObject object,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberNameJavaString())));
@@ -1015,7 +892,7 @@ public abstract class CExtNodes {
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Cached PCallCapiFunction callGetObTypeNode,
                         @Cached CExtNodes.GetLLVMType getLLVMType,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             Object typedPtr = callGetObTypeNode.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
             return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberNameJavaString())));
@@ -1024,7 +901,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = {"getNativeClassByMember", "getNativeClassByMemberAttachType"})
         static Object getNativeClass(PythonAbstractNativeObject object,
                         @Cached PCallCapiFunction callGetObTypeNode,
-                        @Cached AsPythonObjectNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ProfileClassNode classProfile) {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
@@ -1135,7 +1012,7 @@ public abstract class CExtNodes {
         static Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
                         @Cached("args.length") int cachedLength,
                         @Cached("offset") int cachedOffset,
-                        @Cached("createNodes(args.length)") AsPythonObjectNode[] toJavaNodes) {
+                        @Cached("createNodes(args.length)") NativeToPythonNode[] toJavaNodes) {
             int n = cachedLength - cachedOffset;
             Object[] output = new Object[n];
             for (int i = 0; i < n; i++) {
@@ -1146,7 +1023,7 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = "cached")
         static Object[] uncached(Object[] args, int offset,
-                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
+                        @Exclusive @Cached NativeToPythonNode toJavaNode) {
             int len = args.length - offset;
             Object[] output = new Object[len];
             for (int i = 0; i < len; i++) {
@@ -1160,10 +1037,10 @@ public abstract class CExtNodes {
             return len - offset;
         }
 
-        static AsPythonObjectNode[] createNodes(int n) {
-            AsPythonObjectNode[] nodes = new AsPythonObjectNode[n];
+        static NativeToPythonNode[] createNodes(int n) {
+            NativeToPythonNode[] nodes = new NativeToPythonNode[n];
             for (int i = 0; i < n; i++) {
-                nodes[i] = AsPythonObjectNodeGen.create();
+                nodes[i] = NativeToPythonNodeGen.create();
             }
             return nodes;
         }
@@ -1188,7 +1065,7 @@ public abstract class CExtNodes {
         static Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
                         @Cached("args.length") int cachedLength,
                         @Cached("offset") int cachedOffset,
-                        @Cached("createNodes(args.length)") ToJavaNode[] toJavaNodes) {
+                        @Cached("createNodes(args.length)") NativeToPythonNode[] toJavaNodes) {
             int n = cachedLength - cachedOffset;
             Object[] output = new Object[n];
             for (int i = 0; i < n; i++) {
@@ -1199,7 +1076,7 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = "cached")
         static Object[] uncached(Object[] args, int offset,
-                        @Exclusive @Cached ToJavaNode toJavaNode) {
+                        @Exclusive @Cached NativeToPythonNode toJavaNode) {
             int len = args.length - offset;
             Object[] output = new Object[len];
             for (int i = 0; i < len; i++) {
@@ -1213,10 +1090,10 @@ public abstract class CExtNodes {
             return len - offset;
         }
 
-        static ToJavaNode[] createNodes(int n) {
-            ToJavaNode[] nodes = new ToJavaNode[n];
+        static NativeToPythonNode[] createNodes(int n) {
+            NativeToPythonNode[] nodes = new NativeToPythonNode[n];
             for (int i = 0; i < n; i++) {
-                nodes[i] = ToJavaNode.create();
+                nodes[i] = NativeToPythonNodeGen.create();
             }
             return nodes;
         }
@@ -1374,7 +1251,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 2")
         Object upcall0(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1385,7 +1262,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall1(VirtualFrame frame, Object[] args,
                         @Cached CallUnaryMethodNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1396,7 +1273,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 4")
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1407,7 +1284,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 5")
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
@@ -1418,7 +1295,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
-                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached NativeToPythonNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             // we needs at least a receiver and a member name
             assert args.length >= 2;
@@ -1732,24 +1609,6 @@ public abstract class CExtNodes {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class GetTypeMemberNode extends PNodeWithContext {
         public abstract Object execute(Object obj, NativeMember nativeMember);
-//
-// /*
-// * A note about the logic here, and why this is fine: the cachedObj is from a particular
-// * native context, so we can be sure that the "nativeClassStableAssumption" (which is
-// * per-context) is from the context in which this native object was created.
-// */
-// @Specialization(guards = {"isSingleContext()", "lib.isIdentical(cachedObj, obj, lib)",
-// "memberName == cachedMemberName"}, //
-// limit = "1", //
-// assumptions = {"getNativeClassStableAssumption(cachedObj)"})
-// public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj,
-// @SuppressWarnings("unused") NativeMember memberName,
-// @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
-// @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
-// @Cached("memberName") @SuppressWarnings("unused") NativeMember cachedMemberName,
-// @Cached("doSlowPath(obj, memberName)") Object result) {
-// return result;
-// }
 
         @Specialization(guards = {"lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
                         limit = "1", //
@@ -1757,7 +1616,7 @@ public abstract class CExtNodes {
         static Object getByMember(PythonAbstractNativeObject object, NativeMember member,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
-                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") CExtAsPythonObjectNode toJavaNode)
                         throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return toJavaNode.execute(lib.readMember(object.getPtr(), member.getMemberNameJavaString()));
@@ -1771,7 +1630,7 @@ public abstract class CExtNodes {
                         @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached CExtNodes.GetLLVMType getLLVMType,
-                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") CExtAsPythonObjectNode toJavaNode)
                         throws UnknownIdentifierException, UnsupportedMessageException {
             Object typedPtr = callGetObTypeNode.call(FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyTypeObject));
             return toJavaNode.execute(lib.readMember(typedPtr, member.getMemberNameJavaString()));
@@ -1782,7 +1641,7 @@ public abstract class CExtNodes {
                         @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
                         @SuppressWarnings("unused") @Cached TruffleString.ConcatNode concatNode,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
+                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") CExtAsPythonObjectNode toJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
             return toJavaNode.execute(callMemberGetterNode.call(cachedMemberName.getGetterFunctionName(), toSulong.execute(self)));
         }
@@ -1791,8 +1650,8 @@ public abstract class CExtNodes {
         static Object doGeneric(Object self, NativeMember memberName,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached ToJavaNode toJavaNode,
-                        @Cached CharPtrToJavaNode charPtrToJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached CharPtrToPythonNode charPtrToJavaNode,
                         @Cached VoidPtrToJavaNode voidPtrToJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
             if (self instanceof PythonAbstractNativeObject) {
@@ -1823,12 +1682,12 @@ public abstract class CExtNodes {
         }
 
         @NeverDefault
-        static ToJavaBaseNode createForMember(NativeMember member) {
+        static CExtAsPythonObjectNode createForMember(NativeMember member) {
             switch (member.getType()) {
                 case OBJECT:
-                    return ToJavaNodeGen.create();
+                    return NativeToPythonNodeGen.create();
                 case CSTRING:
-                    return CharPtrToJavaNodeGen.create();
+                    return CharPtrToPythonNodeGen.create();
                 case PRIMITIVE:
                 case POINTER:
                     return VoidPtrToJavaNodeGen.create();
@@ -1836,12 +1695,12 @@ public abstract class CExtNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        static ToJavaBaseNode getUncachedForMember(NativeMember member) {
+        static CExtAsPythonObjectNode getUncachedForMember(NativeMember member) {
             switch (member.getType()) {
                 case OBJECT:
-                    return ToJavaNodeGen.getUncached();
+                    return NativeToPythonNodeGen.getUncached();
                 case CSTRING:
-                    return CharPtrToJavaNodeGen.getUncached();
+                    return CharPtrToPythonNodeGen.getUncached();
                 case PRIMITIVE:
                 case POINTER:
                     return VoidPtrToJavaNodeGen.getUncached();
@@ -1994,7 +1853,6 @@ public abstract class CExtNodes {
         static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value) {
             assert value >= 0 : "adding negative reference count; dealloc might not happen";
             CApiTransitions.incRef(nativeWrapper, value);
-// nativeWrapper.setRefCount(nativeWrapper.getRefCount() + value);
             return nativeWrapper;
         }
 
@@ -2340,7 +2198,7 @@ public abstract class CExtNodes {
 
             // helper nodes
             GetNextVaArgNode getVaArgsNode = GetNextVaArgNodeGen.getUncached();
-            ToJavaNode toJavaNode = ToJavaNodeGen.getUncached();
+            NativeToPythonNode toJavaNode = NativeToPythonNodeGen.getUncached();
             CastToJavaStringNode castToJavaStringNode = CastToJavaStringNodeGen.getUncached();
             FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
             InteropLibrary interopLibrary = InteropLibrary.getUncached();
@@ -2600,7 +2458,7 @@ public abstract class CExtNodes {
         }
 
         private static Object getPyObject(GetNextVaArgNode getVaArgsNode, Object vaList) throws InteropException {
-            return ToJavaNodeGen.getUncached().execute(getVaArgsNode.getPyObjectPtr(vaList));
+            return NativeToPythonNode.executeUncached(getVaArgsNode.getPyObjectPtr(vaList));
         }
 
         @TruffleBoundary
@@ -2633,7 +2491,7 @@ public abstract class CExtNodes {
                         @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
                         @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
                         @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+                        @Shared("asPythonObjectNode") @Cached NativeToPythonNode asPythonObjectNode) {
             Object type = asPythonObjectNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, ptr));
             Object llvmType = getSulongTypeNode.execute(type);
             if (llvmType == null) {
@@ -2649,7 +2507,7 @@ public abstract class CExtNodes {
                         @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
                         @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
                         @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+                        @Shared("asPythonObjectNode") @Cached NativeToPythonNode asPythonObjectNode) {
             if (!lib.hasMetaObject(ptr)) {
                 return doUntyped(ptr, lib, getSulongTypeNode, getLLVMType, callGetObTypeNode, callPolyglotFromTypedNode, asPythonObjectNode);
             }
@@ -2711,7 +2569,7 @@ public abstract class CExtNodes {
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
-                        @Cached ToJavaStealingNode toJavaNode,
+                        @Cached NativeToPythonStealingNode toJavaNode,
                         @Cached PRaiseNode raiseNode) {
             // call to type the pointer
             Object moduleDef = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;
@@ -2780,7 +2638,7 @@ public abstract class CExtNodes {
 
             Object module;
             if (createFunction != null && !interopLib.isNull(createFunction)) {
-                Object[] cArguments = new Object[]{CApiTransitions.pythonToNative(moduleSpec.originalModuleSpec, false), moduleDef};
+                Object[] cArguments = new Object[]{PythonToNativeNode.executeUncached(moduleSpec.originalModuleSpec), moduleDef};
                 try {
                     Object result;
                     if (!interopLib.isExecutable(createFunction)) {
@@ -2915,7 +2773,7 @@ public abstract class CExtNodes {
                                 Object signature = capiContext.getContext().getEnv().parseInternal(Source.newBuilder("nfi", "(POINTER):SINT32", "exec").build()).call();
                                 execFunction = SignatureLibrary.getUncached().bind(signature, execFunction);
                             }
-                            Object result = interopLib.execute(execFunction, CApiTransitions.pythonToNative(module, false));
+                            Object result = interopLib.execute(execFunction, PythonToNativeNode.executeUncached(module));
                             int iResult = interopLib.asInt(result);
                             /*
                              * It's a bit counterintuitive that we use 'isPrimitiveValue = false'
@@ -3081,7 +2939,7 @@ public abstract class CExtNodes {
         @Specialization
         static PMemoryView fromNative(PythonNativeObject buf, int flags,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached NativeToPythonNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
             Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);

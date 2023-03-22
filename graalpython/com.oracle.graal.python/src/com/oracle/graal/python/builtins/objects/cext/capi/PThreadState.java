@@ -46,9 +46,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -342,7 +342,7 @@ public final class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @Cached ThreadStateWriteNode writeNode,
-                    @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
+                    @Cached NativeToPythonNode toJavaNode) throws UnknownIdentifierException {
         writeNode.execute(threadState, member, toJavaNode.execute(value));
     }
 

@@ -95,7 +95,7 @@ public abstract class CExtContext {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
 
-    public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null, null) {
+    public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null) {
         @Override
         protected Store initializeSymbolCache() {
             return null;
@@ -123,18 +123,14 @@ public abstract class CExtContext {
     /** The LLVM bitcode library object representing 'libpython.*.so' or similar. */
     private final Object llvmLibrary;
 
-    /** A factory for creating context-specific conversion nodes. */
-    private final ConversionNodeSupplier supplier;
-
     /** A cache for C symbols. */
     private DynamicObject symbolCache;
 
     protected boolean supportsNativeBackend = true;
 
-    public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
+    public CExtContext(PythonContext context, Object llvmLibrary) {
         this.context = context;
         this.llvmLibrary = llvmLibrary;
-        this.supplier = supplier;
     }
 
     public final PythonContext getContext() {
@@ -143,10 +139,6 @@ public abstract class CExtContext {
 
     public final Object getLLVMLibrary() {
         return llvmLibrary;
-    }
-
-    public final ConversionNodeSupplier getSupplier() {
-        return supplier;
     }
 
     public static boolean isMethVarargs(int flags) {
@@ -336,7 +328,8 @@ public abstract class CExtContext {
                     if (cApiContext.supportsNativeBackend) {
                         GraalHPyContext.loadJNIBackend();
                         LOGGER.config("loading module " + spec.path + " as native");
-                        library = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+                        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+                        library = GraalHPyContext.evalNFI(context, (panama ? "with panama " : "") + "load \"" + spec.path + "\"", "load " + spec.name);
                     }
                 }
             } else {

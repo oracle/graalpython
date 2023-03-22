@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNodeGen.GetSulongTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -105,7 +105,7 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
     @Specialization(replaces = {"doIntLike", "doBool", "doDouble"})
     static Object doGeneric(PythonNativeWrapper obj,
                     @Cached GetSulongTypeNode getSulongTypeNode,
-                    @Cached AsPythonObjectNode getDelegate,
+                    @Cached NativeToPythonNode getDelegate,
                     @Cached GetClassNode getClassNode) {
         return getSulongTypeNode.execute(getClassNode.execute(getDelegate.execute(obj)));
     }

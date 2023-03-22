@@ -71,9 +71,9 @@ public final class PythonCextMemoryViewBuiltins {
     public static final int PY_BUF_WRITE = 0x200;
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int, CHAR}, call = Direct)
-    public abstract static class PyMemoryView_GetContiguous extends CApiTernaryBuiltinNode {
+    abstract static class PyMemoryView_GetContiguous extends CApiTernaryBuiltinNode {
         @Specialization()
-        public Object get(Object obj, int buffertype, byte orderByte,
+        Object get(Object obj, int buffertype, byte orderByte,
                         @Cached PyMemoryViewFromObject memoryViewFromObject,
                         @Cached ReleaseNode releaseNode,
                         @Cached ToBytesNode toBytesNode,
@@ -119,7 +119,7 @@ public final class PythonCextMemoryViewBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyMemoryView_FromObject extends CApiUnaryBuiltinNode {
         @Specialization
-        Object wrap(Object object,
+        static Object wrap(Object object,
                         @Cached PyMemoryViewFromObject memoryViewNode) {
             return memoryViewNode.execute(null, object);
         }

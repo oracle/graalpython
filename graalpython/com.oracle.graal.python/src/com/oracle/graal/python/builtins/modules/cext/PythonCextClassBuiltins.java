@@ -54,9 +54,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextClassBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class PyInstanceMethod_New extends CApiUnaryBuiltinNode {
+    abstract static class PyInstanceMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object staticmethod(Object func) {
+        Object staticmethod(Object func) {
             checkNonNullArg(func);
             PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
             res.setCallable(func);

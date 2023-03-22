@@ -44,10 +44,10 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.c
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -76,9 +76,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
@@ -88,7 +86,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     public PyProcsWrapper(Object delegate) {
         super(delegate);
-        this.timing = CApiTiming.create(true, delegate);
+        this.timing = CApiTiming.create(false, delegate);
     }
 
     @ExportMessage
@@ -99,8 +97,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
     protected Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere("abstract class");
     }
 
     @ExportMessage
@@ -132,10 +129,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     @ExportMessage
     @TruffleBoundary
     protected void toNative() {
-        Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", getSignature(), "exec").build()).call();
-        Object result = SignatureLibrary.getUncached().createClosure(signature, this);
-        PythonContext.get(null).getCApiContext().retainClosure(result);
-        setNativePointer(coerceToLong(result, InteropLibrary.getUncached()));
+        if (!isPointer()) {
+            setNativePointer(PythonContext.get(null).getCApiContext().registerClosure(getSignature(), this, getDelegate()));
+        }
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -147,9 +143,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
-                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -160,7 +156,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     throw ArityException.create(2, 2, arguments.length);
                 }
                 try {
-                    return toNewRefNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
+                    return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "GetAttrWrapper", getDelegate());
                 }
@@ -188,9 +184,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
-                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -201,7 +197,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     throw ArityException.create(2, 2, arguments.length);
                 }
                 try {
-                    return toNewRefNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
+                    return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "BinaryFuncWrapper", getDelegate());
                 }
@@ -229,9 +225,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
-                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -246,7 +242,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     throw ArityException.create(1, 2, arguments.length);
                 }
                 try {
-                    return toNewRefNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0])));
+                    return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0])));
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getDelegate());
                 }
@@ -275,7 +271,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected Object execute(Object[] arguments,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -315,7 +311,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected int execute(Object[] arguments,
                         @Cached CallTernaryMethodNode callTernaryMethodNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ConditionProfile arityProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -362,7 +358,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
+                            @Cached NativeToPythonNode toJavaNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -416,10 +412,10 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "arguments.length == 2")
             static Object init(VarargWrapper self, Object[] arguments,
-                            @Cached ToNewRefNode toNewRefNode,
+                            @Cached PythonToNativeNewRefNode toNativeNode,
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
+                            @Cached NativeToPythonNode toJavaNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -432,7 +428,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                         Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        return toNewRefNode.execute(callNode.execute(null, self.getDelegate(), pArgs, PKeyword.EMPTY_KEYWORDS));
+                        return toNativeNode.execute(callNode.execute(null, self.getDelegate(), pArgs, PKeyword.EMPTY_KEYWORDS));
                     } catch (Throwable t) {
                         throw checkThrowableBeforeNative(t, "VarargWrapper", self.getDelegate());
                     }
@@ -470,11 +466,11 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "arguments.length == 3")
             static Object init(VarargKeywordWrapper self, Object[] arguments,
-                            @Cached ToNewRefNode toNewRefNode,
+                            @Cached PythonToNativeNewRefNode toNativeNode,
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
+                            @Cached NativeToPythonNode toJavaNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -489,7 +485,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                         Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
-                        return toNewRefNode.execute(callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray));
+                        return toNativeNode.execute(callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray));
                     } catch (Throwable t) {
                         throw checkThrowableBeforeNative(t, "VarargKeywordWrapper", self.getDelegate());
                     }
@@ -530,8 +526,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
-                            @Cached ToNewRefNode toNewRefNode,
+                            @Cached NativeToPythonNode toJavaNode,
+                            @Cached PythonToNativeNewRefNode toNativeNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -547,7 +543,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
                         Object result = callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray);
-                        return toNewRefNode.execute(result);
+                        return toNativeNode.execute(result);
                     } catch (Throwable t) {
                         throw checkThrowableBeforeNative(t, "TernaryFunctionWrapper", self.getDelegate());
                     }
@@ -582,9 +578,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached CallTernaryMethodNode callNode,
-                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -601,7 +597,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     Object arg2 = arguments[2];
 
                     Object result = callNode.execute(null, getDelegate(), arg0, arg1, arg2);
-                    return toNewRefNode.execute(result);
+                    return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", getDelegate());
                 }
@@ -629,9 +625,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
-                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
                         @Cached CallBinaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -644,7 +640,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 assert arguments[1] instanceof Number;
                 try {
                     Object result = executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), arguments[1]);
-                    return toNewRefNode.execute(result);
+                    return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", getDelegate());
                 }
@@ -673,7 +669,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected Object execute(Object[] arguments,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaIntLossyNode castLossy,
@@ -719,7 +715,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected Object execute(Object[] arguments,
                         @Cached CallUnaryMethodNode executeNode,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -766,8 +762,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             @Specialization(guards = "arguments.length == 3")
             static Object call(DescrGetFunctionWrapper self, Object[] arguments,
                             @Cached CallTernaryMethodNode callNode,
-                            @Cached ToJavaNode toJavaNode,
-                            @Cached ToNewRefNode toNewRefNode,
+                            @Cached NativeToPythonNode toJavaNode,
+                            @Cached PythonToNativeNewRefNode toNativeNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -780,7 +776,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object cls = toJavaNode.execute(arguments[2]);
 
                         Object result = callNode.execute(null, self.getDelegate(), receiver, obj, cls);
-                        return toNewRefNode.execute(result);
+                        return toNativeNode.execute(result);
                     } catch (Throwable t) {
                         throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getDelegate());
                     }

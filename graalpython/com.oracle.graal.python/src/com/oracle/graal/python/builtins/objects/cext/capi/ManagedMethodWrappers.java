@@ -43,8 +43,9 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -59,12 +60,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wrappers for methods used by native code.
@@ -95,18 +93,12 @@ public abstract class ManagedMethodWrappers {
         @ExportMessage
         @TruffleBoundary
         public void toNative() {
-            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", getSignature(), "exec").build()).call();
-            Object result = SignatureLibrary.getUncached().createClosure(signature, this);
-            try {
-                setNativePointer(InteropLibrary.getUncached(result).asPointer(result));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+            if (!isPointer()) {
+                setNativePointer(PythonContext.get(null).getCApiContext().registerClosure(getSignature(), this, getDelegate()));
             }
-            // the closure needs to stay alive indefinitely
-            PythonContext.get(null).getCApiContext().retainClosure(result);
         }
 
-        protected abstract CharSequence getSignature();
+        protected abstract String getSignature();
 
         @ExportMessage
         @SuppressWarnings("static-method")
@@ -135,8 +127,8 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Exclusive @Cached NativeToPythonNode toJavaNode,
+                        @Exclusive @Cached PythonToNativeNewRefNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
@@ -173,7 +165,7 @@ public abstract class ManagedMethodWrappers {
         }
 
         @Override
-        protected CharSequence getSignature() {
+        protected String getSignature() {
             return "(POINTER,POINTER,POINTER):POINTER";
         }
     }
@@ -193,8 +185,8 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Exclusive @Cached NativeToPythonNode toJavaNode,
+                        @Exclusive @Cached PythonToNativeNewRefNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Exclusive @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -220,7 +212,7 @@ public abstract class ManagedMethodWrappers {
         }
 
         @Override
-        protected CharSequence getSignature() {
+        protected String getSignature() {
             return "(POINTER):POINTER";
         }
 
