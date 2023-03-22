@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class FunctionNodes {
     @GenerateUncached
@@ -202,9 +203,10 @@ public abstract class FunctionNodes {
 
         @Specialization
         static Signature doFunction(PFunction function,
+                        @Bind("this") Node inliningTarget,
                         @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("getSignature") @Cached CodeNodes.GetCodeSignatureNode getSignature) {
-            return getSignature.execute(getFunctionCodeNode.execute(function));
+            return getSignature.execute(inliningTarget, getFunctionCodeNode.execute(function));
         }
 
         @Specialization
@@ -214,10 +216,11 @@ public abstract class FunctionNodes {
 
         @Specialization(guards = "isPFunction(function)")
         static Signature doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("this") Node inliningTarget,
                         @Bind("method.getFunction()") Object function,
                         @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("getSignature") @Cached CodeNodes.GetCodeSignatureNode getSignature) {
-            return getSignature.execute(getFunctionCodeNode.execute((PFunction) function));
+            return getSignature.execute(inliningTarget, getFunctionCodeNode.execute((PFunction) function));
         }
 
         @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
@@ -244,9 +247,10 @@ public abstract class FunctionNodes {
 
         @Specialization
         static RootCallTarget doFunction(PFunction function,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getCode") @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
-            return getCt.execute(getFunctionCodeNode.execute(function));
+            return getCt.execute(inliningTarget, getFunctionCodeNode.execute(function));
         }
 
         @Specialization
@@ -256,10 +260,11 @@ public abstract class FunctionNodes {
 
         @Specialization(guards = "isPFunction(function)")
         static RootCallTarget doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("this") Node inliningTarget,
                         @Bind("method.getFunction()") Object function,
                         @Shared("getCode") @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
-            return getCt.execute(getFunctionCodeNode.execute((PFunction) function));
+            return getCt.execute(inliningTarget, getFunctionCodeNode.execute((PFunction) function));
         }
 
         @Specialization(guards = "isPBuiltinFunction(method.getFunction())")

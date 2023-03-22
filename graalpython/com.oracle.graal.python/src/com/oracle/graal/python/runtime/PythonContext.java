@@ -1511,7 +1511,7 @@ public final class PythonContext extends Python3Core {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.T___PATH__);
                 if (path instanceof PList) {
-                    Object[] paths = SequenceStorageNodes.CopyInternalArrayNode.getUncached().execute(((PList) path).getSequenceStorage());
+                    Object[] paths = SequenceStorageNodes.CopyInternalArrayNode.executeUncached(((PList) path).getSequenceStorage());
                     for (int i = 0; i < paths.length; i++) {
                         Object pathElement = paths[i];
                         TruffleString strPath;

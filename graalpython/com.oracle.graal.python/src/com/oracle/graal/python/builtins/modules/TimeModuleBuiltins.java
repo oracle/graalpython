@@ -974,10 +974,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @ExplodeLoop
         double mktime(VirtualFrame frame, PythonModule module, PTuple tuple,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached ReadAttributeFromDynamicObjectNode readZoneId) {
-            Object[] items = getObjectArrayNode.execute(tuple);
+            Object[] items = getObjectArrayNode.execute(inliningTarget, tuple);
             if (items.length != ELEMENT_COUNT) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, ELEMENT_COUNT, items.length);
             }

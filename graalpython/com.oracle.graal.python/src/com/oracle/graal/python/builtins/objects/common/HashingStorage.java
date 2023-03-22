@@ -78,6 +78,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -146,7 +147,7 @@ public abstract class HashingStorage {
                         @SuppressWarnings("unused") @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
             PythonContext contextRef = PythonContext.get(this);
             PythonLanguage language = PythonLanguage.get(this);
             Object state = IndirectCallContext.enter(frame, language, contextRef, this);
@@ -160,7 +161,7 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = "hasIterAttrButNotBuiltin(inliningTarget, col, getClassNode, lookupIter)", limit = "1")
-        HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
@@ -181,7 +182,7 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
-        HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
+        static HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
@@ -195,7 +196,7 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
-        HashingStorage doSequence(VirtualFrame frame, Object iterable, PKeyword[] kwargs,
+        static HashingStorage doSequence(VirtualFrame frame, Object iterable, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
@@ -207,7 +208,7 @@ public abstract class HashingStorage {
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached InlinedConditionProfile lengthTwoProfile,
                         @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
+                        @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
 
             return addSequenceToStorage(frame, inliningTarget, iterable, kwargs, PDict::createNewStorage, getIter, nextNode, createListNode,
                             seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
@@ -270,7 +271,7 @@ public abstract class HashingStorage {
                 assert element != null;
                 // This constructs a new list using the builtin type. So, the object cannot
                 // be subclassed and we can directly call 'len()'.
-                int len = seqLenNode.execute(element);
+                int len = seqLenNode.execute(inliningTarget, element);
 
                 if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
                     throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);

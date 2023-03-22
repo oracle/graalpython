@@ -241,7 +241,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
             }
 
-            Object[] savedArray = toArrayNode.execute(saved.getSequenceStorage());
+            Object[] savedArray = toArrayNode.execute(inliningTarget, saved.getSequenceStorage());
             self.setSaved(toList(savedArray));
             self.setFirstpass(firstPass);
             self.setIndex(0);

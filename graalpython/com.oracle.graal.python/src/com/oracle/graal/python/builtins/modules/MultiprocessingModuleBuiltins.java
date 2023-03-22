@@ -90,12 +90,14 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_multiprocessing")
@@ -382,6 +384,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object multiprocessingFdsList, Object multiprocessingObjsList, Object posixFileObjsList, Object timeoutObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PosixModuleBuiltins.FileDescriptorConversionNode fdConvertor,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItem,
@@ -401,7 +404,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 multiprocessingFds[i] = toInt(castToJava, pythonObject);
             }
 
-            Object[] posixFileObjs = getObjectArrayNode.execute(posixFileObjsList);
+            Object[] posixFileObjs = getObjectArrayNode.execute(inliningTarget, posixFileObjsList);
             int[] posixFds = new int[posixFileObjs.length];
             for (int i = 0; i < posixFileObjs.length; i++) {
                 posixFds[i] = toInt(castToJava, fdConvertor.execute(frame, posixFileObjs[i]));
@@ -409,7 +412,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
             double timeout = castToDouble.execute(timeoutObj);
 
-            Object[] multiprocessingObjs = getObjectArrayNode.execute(multiprocessingObjsList);
+            Object[] multiprocessingObjs = getObjectArrayNode.execute(inliningTarget, multiprocessingObjsList);
             gil.release(true);
             try {
                 boolean[] selectedMultiprocessingFds = new boolean[multiprocessingFds.length];

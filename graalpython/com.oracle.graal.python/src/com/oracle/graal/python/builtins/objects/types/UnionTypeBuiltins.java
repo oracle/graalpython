@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,12 +84,14 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -167,9 +169,10 @@ public class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         long hash(VirtualFrame frame, PUnionType self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
-            PFrozenSet argSet = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, self.getArgs()));
+            PFrozenSet argSet = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
             return hashNode.execute(frame, argSet);
         }
     }
@@ -253,10 +256,11 @@ public class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean eq(VirtualFrame frame, PUnionType self, PUnionType other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            PFrozenSet argSet1 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, self.getArgs()));
-            PFrozenSet argSet2 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, other.getArgs()));
+            PFrozenSet argSet1 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
+            PFrozenSet argSet2 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
             return eqNode.execute(frame, argSet1, argSet2);
         }
 

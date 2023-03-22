@@ -40,12 +40,14 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -195,11 +197,12 @@ public final class PFunction extends PythonObject {
 
     @ExportMessage
     public SourceSection getSourceLocation(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            SourceSection result = getSourceLocationDirect(getCt);
+            SourceSection result = getSourceLocationDirect(inliningTarget, getCt);
             if (result == null) {
                 throw UnsupportedMessageException.create();
             } else {
@@ -211,8 +214,8 @@ public final class PFunction extends PythonObject {
     }
 
     @TruffleBoundary
-    private SourceSection getSourceLocationDirect(GetCodeCallTargetNode getCt) {
-        RootNode rootNode = getCt.execute(code).getRootNode();
+    private SourceSection getSourceLocationDirect(Node inliningTarget, GetCodeCallTargetNode getCt) {
+        RootNode rootNode = getCt.execute(inliningTarget, code).getRootNode();
         SourceSection result;
         if (rootNode instanceof PRootNode) {
             result = ((PRootNode) rootNode).getSourceSection();
@@ -229,11 +232,12 @@ public final class PFunction extends PythonObject {
 
     @ExportMessage
     public boolean hasSourceLocation(
+                    @Bind("$node") Node inliningTarget,
                     @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return getSourceLocationDirect(getCt) != null;
+            return getSourceLocationDirect(inliningTarget, getCt) != null;
         } finally {
             gil.release(mustRelease);
         }

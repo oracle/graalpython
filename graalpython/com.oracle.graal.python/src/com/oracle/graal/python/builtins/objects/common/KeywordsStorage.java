@@ -54,6 +54,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -104,43 +106,45 @@ public class KeywordsStorage extends HashingStorage {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public abstract static class GetItemNode extends Node {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetKeywordsStorageItemNode extends Node {
         /**
          * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
          * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.
          */
-        public abstract Object execute(Frame frame, KeywordsStorage self, Object key, long hash);
+        public abstract Object execute(Frame frame, Node node, KeywordsStorage self, Object key, long hash);
 
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Exclusive @Cached(value = "self.length()") int cachedLen,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+                        @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
             final int idx = self.findCachedStringKey(key, cachedLen, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(replaces = "cached")
         static Object string(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+                        @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
             final int idx = self.findStringKey(key, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)", limit = "1")
-        static Object pstring(KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
+        static Object pstring(Node node, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached(inline = false) CastToTruffleStringNode castToTruffleStringNode,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinObjectProfile profile,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+                        @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
             return string(self, castToTruffleStringNode.execute(key), -1, equalNode);
         }
 
         @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)", limit = "1")
-        static Object notString(Frame frame, KeywordsStorage self, Object key, long hashIn,
+        static Object notString(Frame frame, Node node, KeywordsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinObjectProfile profile,
-                        @Cached PyObjectHashNode hashNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached(inline = false) PyObjectHashNode hashNode,
+                        @Cached(inline = false) PyObjectRichCompareBool.EqNode eqNode) {
             long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;
             for (int i = 0; i < self.keywords.length; i++) {
                 TruffleString currentKey = self.keywords[i].getName();

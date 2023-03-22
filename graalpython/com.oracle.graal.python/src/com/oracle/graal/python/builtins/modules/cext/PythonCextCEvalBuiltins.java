@@ -78,12 +78,14 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCEvalBuiltins {
@@ -133,6 +135,7 @@ public final class PythonCextCEvalBuiltins {
         Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, Object kwsPtr, Object defaultValueArrayPtr,
                         Object kwdefaultsWrapper, Object closureObj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary ptrLib,
                         @Cached CExtNodes.ToJavaNode elementToJavaNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
@@ -147,7 +150,7 @@ public final class PythonCextCEvalBuiltins {
             PCell[] closure = null;
             if (closureObj != PNone.NO_VALUE) {
                 // CPython also just accesses the object as tuple without further checks.
-                closure = PCell.toCellArray(getObjectArrayNode.execute(closureObj));
+                closure = PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closureObj));
             }
             Object[] kws = unwrapArray(kwsPtr, ptrLib, elementToJavaNode);
 
@@ -159,7 +162,7 @@ public final class PythonCextCEvalBuiltins {
 
             // prepare Python frame arguments
             Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
-            Signature signature = getSignatureNode.execute(code);
+            Signature signature = getSignatureNode.execute(inliningTarget, code);
             Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
 
             // set custom locals
@@ -176,7 +179,7 @@ public final class PythonCextCEvalBuiltins {
                 // TODO(fa): raise appropriate exception
             }
 
-            RootCallTarget rootCallTarget = getCallTargetNode.execute(code);
+            RootCallTarget rootCallTarget = getCallTargetNode.execute(inliningTarget, code);
             return invokeNode.execute(rootCallTarget, pArguments);
         }
 

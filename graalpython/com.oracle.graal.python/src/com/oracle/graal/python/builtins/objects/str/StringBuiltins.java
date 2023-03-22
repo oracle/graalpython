@@ -604,6 +604,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doTuplePrefixStartEnd(TruffleString self, PTuple subStrs, int start, int end,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToTruffleStringNode castPrefixNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -612,7 +613,7 @@ public final class StringBuiltins extends PythonBuiltins {
             int cpStart = adjustStartIndex(start, selfLen);
             int cpEnd = adjustEndIndex(end, selfLen);
 
-            for (Object element : getObjectArrayNode.execute(subStrs)) {
+            for (Object element : getObjectArrayNode.execute(inliningTarget, subStrs)) {
                 try {
                     TruffleString subStr = castPrefixNode.execute(element);
                     int subStrLen = codePointLengthNode.execute(subStr, TS_ENCODING);
@@ -641,13 +642,14 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doTuplePrefixStartEnd")
         boolean doTuplePrefixGeneric(Object self, PTuple substrs, int start, int end,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToTruffleStringNode castPrefixNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("regionEqual") @Cached TruffleString.RegionEqualNode regionEqualNode) {
             TruffleString selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, getMethodName(), self);
-            return doTuplePrefixStartEnd(selfStr, substrs, start, end, getObjectArrayNode, castPrefixNode, codePointLengthNode, regionEqualNode);
+            return doTuplePrefixStartEnd(selfStr, substrs, start, end, inliningTarget, getObjectArrayNode, castPrefixNode, codePointLengthNode, regionEqualNode);
         }
 
         // the actual operation; will be overridden by subclasses
@@ -1828,12 +1830,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doStringEncoding(VirtualFrame frame, TruffleString self, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
             Object result = encodeNode.execute(frame, self, encoding, errors);
             if (!(result instanceof PBytes)) {
                 if (result instanceof PByteArray) {
-                    return factory().createBytes(copyNode.execute(((PByteArray) result).getSequenceStorage()));
+                    return factory().createBytes(copyNode.execute(inliningTarget, ((PByteArray) result).getSequenceStorage()));
                 }
                 throw raise(TypeError, S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
             }
@@ -1842,11 +1845,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
                         @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
             TruffleString selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
-            return doStringEncoding(frame, selfStr, encoding, errors, encodeNode, copyNode);
+            return doStringEncoding(frame, selfStr, encoding, errors, inliningTarget, encodeNode, copyNode);
         }
     }
 

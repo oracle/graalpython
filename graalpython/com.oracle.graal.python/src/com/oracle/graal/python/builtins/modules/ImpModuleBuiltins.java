@@ -705,7 +705,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             WriteAttributeToDynamicObjectNode.getUncached().execute(module, T___PATH__, core.factory().createList());
         }
 
-        RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
+        RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.executeUncached(code);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
@@ -776,8 +776,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class SourceHashNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         PBytes run(long magicNumber, Object sourceBuffer,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.HashBufferNode hashBufferNode) {
-            long sourceHash = hashBufferNode.execute(sourceBuffer);
+            long sourceHash = hashBufferNode.execute(inliningTarget, sourceBuffer);
             return factory().createBytes(computeHash(magicNumber, sourceHash));
         }
 

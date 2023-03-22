@@ -484,6 +484,7 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasDecoder()")
         boolean readChunk(VirtualFrame frame, PTextIO self, int hint,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
                         @Cached DecodeNode decodeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,
@@ -513,7 +514,7 @@ public abstract class TextIOWrapperNodes {
                 if (!(state instanceof PTuple)) {
                     throw raise(TypeError, ILLEGAL_DECODER_STATE);
                 }
-                Object[] array = getArray.execute(state);
+                Object[] array = getArray.execute(inliningTarget, state);
                 if (array.length < 2) {
                     throw raise(TypeError, ILLEGAL_DECODER_STATE);
                 }

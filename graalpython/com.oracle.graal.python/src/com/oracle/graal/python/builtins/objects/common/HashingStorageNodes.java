@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -115,8 +116,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object dom(Frame frame, DynamicObjectStorage self, Object key, long keyHash,
+                        @Bind("this") Node inliningTarget,
                         @Cached DynamicObjectStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key, keyHash);
+            return getNode.execute(frame, inliningTarget, self, key, keyHash);
         }
 
         @Specialization
@@ -127,8 +129,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object keywords(Frame frame, KeywordsStorage self, Object key, long keyHash,
-                        @Cached KeywordsStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key, keyHash);
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetKeywordsStorageItemNode getNode) {
+            return getNode.execute(frame, inliningTarget, self, key, keyHash);
         }
     }
 
@@ -173,8 +176,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object dom(Frame frame, DynamicObjectStorage self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached DynamicObjectStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key, -1);
+            return getNode.execute(frame, inliningTarget, self, key, -1);
         }
 
         @Specialization
@@ -187,8 +191,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object keywords(Frame frame, KeywordsStorage self, Object key,
-                        @Cached KeywordsStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key, -1);
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetKeywordsStorageItemNode getNode) {
+            return getNode.execute(frame, inliningTarget, self, key, -1);
         }
     }
 
@@ -544,8 +549,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static int dom(DynamicObjectStorage self,
+                        @Bind("this") Node inliningTarget,
                         @Cached DynamicObjectStorage.LengthNode lengthNode) {
-            return lengthNode.execute(self);
+            return lengthNode.execute(inliningTarget, self);
         }
 
         @Specialization
@@ -572,8 +578,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorage dom(DynamicObjectStorage self,
+                        @Bind("this") Node inliningTarget,
                         @Cached DynamicObjectStorage.ClearNode clearNode) {
-            clearNode.execute(self);
+            clearNode.execute(inliningTarget, self);
             return self;
         }
 
@@ -608,8 +615,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static DynamicObjectStorage dom(DynamicObjectStorage dom,
+                        @Bind("this") Node inliningTarget,
                         @Cached DynamicObjectStorage.Copy copyNode) {
-            return copyNode.execute(dom);
+            return copyNode.execute(inliningTarget, dom);
         }
 
         @Specialization

@@ -77,6 +77,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -402,6 +403,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "isPSequence(object.getDelegate())")
         static long doPSequence(PySequenceArrayWrapper object,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
@@ -413,7 +415,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                 throw new IllegalStateException("could not allocate native storage");
             }
             // switch to native storage
-            setStorage.execute(sequence, nativeStorage);
+            setStorage.execute(inliningTarget, sequence, nativeStorage);
             return PythonNativeWrapper.coerceToLong(nativeStorage.getPtr(), lib);
         }
 

@@ -137,7 +137,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
@@ -887,24 +886,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setSpecialArgument(args, locals);
         }
 
-        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
+        private void setBuiltinsInGlobals(VirtualFrame frame, Node inliningTarget, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
             if (builtins != null) {
                 PDict builtinsDict = getOrCreateDictNode(builtins);
-                setBuiltins.execute(frame, globals, T___BUILTINS__, builtinsDict);
+                setBuiltins.execute(frame, inliningTarget, globals, T___BUILTINS__, builtinsDict);
             } else {
                 // This happens during context initialization
                 return;
             }
         }
 
-        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
+        private void setCustomGlobals(VirtualFrame frame, Node inliningTarget, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
             PythonModule builtins = getContext().getBuiltins();
-            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins);
+            setBuiltinsInGlobals(frame, inliningTarget, globals, setBuiltins, builtins);
             PArguments.setGlobals(args, globals);
         }
 
         @Specialization
         Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
@@ -914,18 +914,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
             inheritGlobals(callerFrame, args);
             inheritLocals(callerFrame, args, getFrameLocalsNode);
 
-            return invokeNode.execute(frame, getCt.execute(code), args);
+            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
         }
 
         @Specialization
         Object execCustomGlobalsGlobalLocals(VirtualFrame frame, Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached HashingCollectionNodes.SetItemNode setBuiltins,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args);
+            setCustomGlobals(frame, inliningTarget, globals, setBuiltins, args);
             setCustomLocals(args, globals);
-            RootCallTarget rootCallTarget = getCt.execute(code);
+            RootCallTarget rootCallTarget = getCt.execute(inliningTarget, code);
             if (rootCallTarget == null) {
                 throw raise(ValueError, ErrorMessages.CANNOT_CREATE_CALL_TARGET, code);
             }
@@ -935,6 +936,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
@@ -943,19 +945,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
 
-            return invokeNode.execute(frame, getCt.execute(code), args);
+            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
         }
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execCustomGlobalsCustomLocals(VirtualFrame frame, Object source, PDict globals, Object locals,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached HashingCollectionNodes.SetItemNode setBuiltins,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args);
+            setCustomGlobals(frame, inliningTarget, globals, setBuiltins, args);
             setCustomLocals(args, locals);
 
-            return invokeNode.execute(frame, getCt.execute(code), args);
+            return invokeNode.execute(frame, getCt.execute(inliningTarget, code), args);
         }
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
@@ -1388,7 +1391,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static final int MAX_EXPLODE_LOOP = 16; // is also shifted to the left by recursion depth
         static final byte NON_RECURSIVE = Byte.MAX_VALUE;
 
-        @Child private GetObjectArrayNode getObjectArrayNode;
         protected final byte depth;
 
         protected RecursiveBinaryCheckBaseNode(byte depth) {
@@ -1419,10 +1421,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = {"depth < getNodeRecursionLimit()", "getLength(clsTuple) == cachedLen", "cachedLen < getMaxExplodeLoop()"}, //
                         limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        final boolean doTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
+        static boolean doTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @Bind("this") Node inliningTarget,
                         @Cached("getLength(clsTuple)") int cachedLen,
+                        @Shared @Cached GetObjectArrayNode getObjectArrayNode,
                         @Shared @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
-            Object[] array = getArray(clsTuple);
+            Object[] array = getObjectArrayNode.execute(inliningTarget, clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
                 if (recursiveNode.executeWith(frame, instance, cls)) {
@@ -1434,8 +1438,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "depth < getNodeRecursionLimit()", replaces = "doTupleConstantLen")
         final boolean doRecursiveWithNode(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetObjectArrayNode getObjectArrayNode,
                         @Shared @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
-            for (Object cls : getArray(clsTuple)) {
+            for (Object cls : getObjectArrayNode.execute(inliningTarget, clsTuple)) {
                 if (recursiveNode.executeWith(frame, instance, cls)) {
                     return true;
                 }
@@ -1444,7 +1450,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = {"depth != NON_RECURSIVE", "depth >= getNodeRecursionLimit()"})
-        final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple, @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
+        final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
             PythonLanguage language = PythonLanguage.get(this);
             Object state = IndirectCallContext.enter(frame, language, getContext(), this);
             try {
@@ -1452,36 +1461,30 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
                 // other children of this executed by other specializations may assume they'll
                 // always get a non-null frame
-                return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, node);
+                return callRecursiveWithNodeTruffleBoundary(inliningTarget, instance, clsTuple, getObjectArrayNode, node);
             } finally {
                 IndirectCallContext.exit(frame, PythonLanguage.get(this), getContext(), state);
             }
         }
 
         @Specialization(guards = "depth == NON_RECURSIVE")
-        final boolean doRecursiveWithLoopReuseThis(VirtualFrame frame, Object instance, PTuple clsTuple) {
+        final boolean doRecursiveWithLoopReuseThis(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetObjectArrayNode getObjectArrayNode) {
             // This should be only called by doRecursiveWithLoop, now we have to reuse this to stop
             // recursive node creation. It is OK, because now all specializations should always get
             // null frame
             assert frame == null;
-            return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, this);
+            return callRecursiveWithNodeTruffleBoundary(inliningTarget, instance, clsTuple, getObjectArrayNode, this);
         }
 
         @TruffleBoundary
-        private boolean callRecursiveWithNodeTruffleBoundary(Object instance, PTuple clsTuple, RecursiveBinaryCheckBaseNode node) {
-            return doRecursiveWithNode(null, instance, clsTuple, node);
+        private boolean callRecursiveWithNodeTruffleBoundary(Node inliningTarget, Object instance, PTuple clsTuple, GetObjectArrayNode getObjectArrayNode, RecursiveBinaryCheckBaseNode node) {
+            return doRecursiveWithNode(null, instance, clsTuple, inliningTarget, getObjectArrayNode, node);
         }
 
         protected static int getLength(PTuple t) {
             return t.getSequenceStorage().length();
-        }
-
-        private Object[] getArray(PTuple tuple) {
-            if (getObjectArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
-            }
-            return getObjectArrayNode.execute(tuple);
         }
     }
 

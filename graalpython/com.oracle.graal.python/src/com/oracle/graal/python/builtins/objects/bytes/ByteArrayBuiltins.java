@@ -156,8 +156,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(source)")
         public PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.BytesInitNode toBytesNode) {
-            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
+            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, inliningTarget, source, encoding, errors)));
             return PNone.NONE;
         }
 
@@ -228,6 +229,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "bufferAcquireLib.hasBuffer(value)", limit = "3")
+        @SuppressWarnings("truffle-static-method")
         PNone doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -282,6 +284,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
     @ArgumentClinic(name = "item", conversion = ArgumentClinic.ClinicConversion.Index)
+    @SuppressWarnings("truffle-static-method")
     public abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
 
         public abstract PNone execute(VirtualFrame frame, PByteArray list, Object index, Object value);
@@ -298,13 +301,14 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.InsertItemNode insertItemNode,
                         @Cached @Shared CastToByteNode toByteNode) {
             self.checkCanResize(this);
             byte v = toByteNode.execute(frame, value);
             SequenceStorage storage = getSequenceStorageNode.execute(self);
-            insertItemNode.execute(storage, normalizeIndex(index, storage.length()), v);
+            insertItemNode.execute(inliningTarget, storage, normalizeIndex(index, storage.length()), v);
             return PNone.NONE;
         }
 
@@ -561,6 +565,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(source)", limit = "3")
+        @SuppressWarnings("truffle-static-method")
         PNone doGeneric(VirtualFrame frame, PByteArray self, Object source,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("source") PythonBufferAcquireLibrary bufferAcquireLib,

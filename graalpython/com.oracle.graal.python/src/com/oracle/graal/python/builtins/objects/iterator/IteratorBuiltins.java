@@ -145,7 +145,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             PArray array = self.array;
             if (self.getIndex() < array.getLength()) {
-                return itemTypeProfile.profile(inliningTarget, getValueNode.execute(array, self.index++));
+                return itemTypeProfile.profile(inliningTarget, getValueNode.execute(inliningTarget, array, self.index++));
             }
             return stopIteration(self);
         }
@@ -377,8 +377,9 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         public static int lengthHint(PSequenceIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.LenNode lenNode) {
-            int len = lenNode.execute(self.getPSequence()) - self.getIndex();
+            int len = lenNode.execute(inliningTarget, self.getPSequence()) - self.getIndex();
             return len < 0 ? 0 : len;
         }
 

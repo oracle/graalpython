@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,12 +48,14 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class WriteGlobalNode extends PNodeWithContext {
@@ -101,15 +103,17 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1")
     void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(frame, cachedGlobals, attributeId, value);
+        storeNode.execute(frame, inliningTarget, cachedGlobals, attributeId, value);
     }
 
     @Specialization(replaces = "writeDictObjectCached", guards = "isBuiltinDict(globals)")
     void writeDictObject(VirtualFrame frame, PDict globals, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(frame, globals, attributeId, value);
+        storeNode.execute(frame, inliningTarget, globals, attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"})
