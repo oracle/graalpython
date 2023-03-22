@@ -797,7 +797,7 @@ suite = {
             "fileListPurpose": 'native-image-resources',
             "description": "GraalVM Python support distribution for the GraalVM license files",
             "layout": {
-                "LICENSE_GRAALPY.txt": "file:LICENSE",
+                "LICENSE_GRAALPY.txt": "file:LICENSE.txt",
                 "THIRD_PARTY_LICENSE_GRAALPY.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
