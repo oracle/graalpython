@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStri
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -828,8 +829,7 @@ public abstract class CExtNodes {
         static TruffleString doPointer(Object charPtr, boolean copy,
                         @CachedLibrary("charPtr") InteropLibrary lib,
                         @Cached TruffleString.FromNativePointerNode fromNative,
-                        @Cached StringMaterializeNode materialize,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PCallCapiFunction callNode) {
             if (lib.isPointer(charPtr)) {
                 long pointer;
                 try {
@@ -843,8 +843,7 @@ public abstract class CExtNodes {
                 }
                 return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, copy);
             }
-
-            return materialize.execute(factory.createString(new NativeCharSequence(charPtr, 1, false)));
+            return StringMaterializeNode.materializeNativeCharSequence(new NativeCharSequence(charPtr, 1, false), callNode, UnicodeFromWcharNodeGen.getUncached());
         }
 
         static boolean isCArrayWrapper(Object object) {
