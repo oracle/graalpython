@@ -200,8 +200,8 @@ public abstract class CodeNodes {
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
         static RootCallTarget doCachedCode(Node node, @SuppressWarnings("unused") PCode code,
-                        @SuppressWarnings("unused") @Cached("code") PCode cachedCode,
-                        @Cached("code.initializeCallTarget()") RootCallTarget cachedRootCallTarget) {
+                        @SuppressWarnings("unused") @Cached(value = "code", weak = true) PCode cachedCode,
+                        @Cached(value = "code.initializeCallTarget()", weak = true) RootCallTarget cachedRootCallTarget) {
             return cachedRootCallTarget;
         }
 
