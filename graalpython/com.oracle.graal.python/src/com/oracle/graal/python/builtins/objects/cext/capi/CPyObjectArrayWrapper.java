@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -116,13 +116,13 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object readArrayElement(long index,
-                    @Shared("toNewRefNode") @Cached PythonToNativeNewRefNode toNewRefNode) throws InvalidArrayIndexException {
+                    @Shared("toNativeNode") @Cached PythonToNativeNode toNativeNode) throws InvalidArrayIndexException {
         try {
             int idx = PInt.intValueExact(index);
             if (idx >= 0 && idx < wrappers.length) {
                 if (wrappers[idx] == null) {
                     Object[] arr = getObjectArray();
-                    wrappers[idx] = toNewRefNode.execute(arr[idx]);
+                    wrappers[idx] = toNativeNode.execute(arr[idx]);
                 }
                 return wrappers[idx];
             }
@@ -157,9 +157,9 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
      */
     @ExportMessage
     void toNative(
-                    @Shared("toNewRefNode") @Cached PythonToNativeNewRefNode toNewRefNode,
+                    @Shared("toNativeNode") @Cached PythonToNativeNode toNativeNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLib) {
-        if (!PythonContext.get(toNewRefNode).isNativeAccessAllowed()) {
+        if (!PythonContext.get(toNativeNode).isNativeAccessAllowed()) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
         }
@@ -169,7 +169,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
             try {
                 for (int i = 0; i < data.length; i++) {
                     if (wrappers[i] == null) {
-                        wrappers[i] = toNewRefNode.execute(data[i]);
+                        wrappers[i] = toNativeNode.execute(data[i]);
                     }
                     // we need a pointer, so manually send toNative
                     interopLib.toNative(wrappers[i]);
@@ -183,9 +183,16 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
     }
 
     public void free(ReleaseNativeWrapperNode releaseNativeWrapperNode) {
-        for (int i = 0; i < wrappers.length; i++) {
-            releaseNativeWrapperNode.execute(wrappers[i]);
-        }
+        /*
+         * TODO we currently don't implement immediate releases of wrappers.
+         *
+         * If we ever do and we incref items we put in the wrappers array, we need to be careful
+         * with native objects. They would need to be decref'd here and the commented out code below
+         * doesn't do this.
+         */
+        // for (int i = 0; i < wrappers.length; i++) {
+        // releaseNativeWrapperNode.execute(wrappers[i]);
+        // }
         if (isNative()) {
             if (!PythonContext.get(releaseNativeWrapperNode).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
