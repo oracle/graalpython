@@ -129,6 +129,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -339,7 +340,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());
             }
-            return getClassNode.execute(object);
+            return getClassNode.executeCached(object);
         }
 
         private PyNumberAsSizeNode getAsSizeNode() {
@@ -432,7 +433,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 reportPolymorphicSpecialize();
                 getDictNode = insert(GetOrCreateDictNode.create());
             }
-            return getDictNode.execute(getContext().lookupBuiltinModule(T_SYS));
+            return getDictNode.executeCached(getContext().lookupBuiltinModule(T_SYS));
         }
 
         private PDict getGlobalsDict(Object globals) {
@@ -441,7 +442,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 reportPolymorphicSpecialize();
                 getDictFromGlobalsNode = insert(GetDictFromGlobalsNode.create());
             }
-            return getDictFromGlobalsNode.execute(globals);
+            return getDictFromGlobalsNode.executeCached(globals);
         }
 
         private PFrame getCallerFrame(VirtualFrame frame, int stackLevel) {
@@ -495,16 +496,16 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 return true;
             }
             try {
-                TruffleString objStr = getCastStr().execute(obj);
+                TruffleString objStr = getCastStr().executeCached(obj);
                 try {
-                    return getEqualNode().execute(objStr, getCastStr().execute(arg), TS_ENCODING);
+                    return getEqualNode().execute(objStr, getCastStr().executeCached(arg), TS_ENCODING);
                 } catch (CannotCastException e) {
                     // Python calls PyUnicode_Compare directly, which raises this error
                     throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANT_COMPARE, obj, arg);
                 }
             } catch (CannotCastException e) {
-                Object result = getCallMethodNode().execute(frame, obj, T_MATCH, arg);
-                return getIsTrueNode().execute(frame, result);
+                Object result = getCallMethodNode().executeCached(frame, obj, T_MATCH, arg);
+                return getIsTrueNode().executeCached(frame, result);
             }
         }
 
@@ -537,9 +538,9 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 }
             } else {
                 Object sys = context.lookupBuiltinModule(T_SYS);
-                Object modules = lookup.execute(frame, sys, T_MODULES);
+                Object modules = lookup.executeCached(frame, sys, T_MODULES);
                 try {
-                    warningsModule = callMethod.execute(frame, modules, T_GET, T_WARNINGS, PNone.NONE);
+                    warningsModule = callMethod.executeCached(frame, modules, T_GET, T_WARNINGS, PNone.NONE);
                 } catch (PException e) {
                     return null;
                 }
@@ -547,7 +548,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
             }
-            Object result = lookup.execute(frame, warningsModule, attr);
+            Object result = lookup.executeCached(frame, warningsModule, attr);
             if (result == PNone.NO_VALUE) {
                 return null;
             } else {
@@ -578,7 +579,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 defaultAction = getStateDefaultAction(module);
             }
             try {
-                return getCastStr().execute(defaultAction);
+                return getCastStr().executeCached(defaultAction);
             } catch (CannotCastException e) {
                 throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.WARN_DEF_ACTION_MUST_BE_STRING, defaultAction);
             }
@@ -600,7 +601,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             SequenceStorage filtersStorage = ((PList) filters).getSequenceStorage();
             SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItemNode();
             for (int i = 0; i < filtersStorage.length(); i++) {
-                Object tmpItem = sequenceGetItem.execute(filtersStorage, i);
+                Object tmpItem = sequenceGetItem.executeCached(filtersStorage, i);
                 if (!(tmpItem instanceof PTuple)) {
                     throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
@@ -609,24 +610,24 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                     throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
 
-                Object actionObj = sequenceGetItem.execute(tmpStorage, 0);
+                Object actionObj = sequenceGetItem.executeCached(tmpStorage, 0);
                 TruffleString action;
                 try {
-                    action = getCastStr().execute(actionObj);
+                    action = getCastStr().executeCached(actionObj);
                 } catch (CannotCastException e) {
                     // CPython does this check after the other __getitem__ calls, but we know it's a
                     // tuple so...
                     throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ACTION_MUST_BE_STRING, actionObj);
                 }
-                Object msg = sequenceGetItem.execute(tmpStorage, 1);
-                Object cat = sequenceGetItem.execute(tmpStorage, 2);
-                Object mod = sequenceGetItem.execute(tmpStorage, 3);
-                Object lnObj = sequenceGetItem.execute(tmpStorage, 4);
+                Object msg = sequenceGetItem.executeCached(tmpStorage, 1);
+                Object cat = sequenceGetItem.executeCached(tmpStorage, 2);
+                Object mod = sequenceGetItem.executeCached(tmpStorage, 3);
+                Object lnObj = sequenceGetItem.executeCached(tmpStorage, 4);
 
                 boolean goodMsg = checkMatched(frame, msg, text);
                 boolean goodMod = checkMatched(frame, mod, module);
                 boolean isSubclass = getIsSubClass().executeBoolean(frame, category, cat);
-                int ln = getAsSizeNode().executeExact(frame, lnObj);
+                int ln = getAsSizeNode().executeExactCached(frame, lnObj);
                 if (goodMsg && isSubclass && goodMod && (ln == 0 || lineno == ln)) {
                     // if we're ignoring warnings, the first action will match all and the loop
                     // count would always be 1, so let's report here and hope that Graal will unroll
@@ -664,19 +665,19 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, PyObjectRichCompareBool.EqNode eqNode,
                         PyObjectCallMethodObjArgs callMethod, PyDictGetItem getItem, PyObjectSetItem setItem, PyObjectIsTrueNode isTrueNode,
                         DynamicObjectLibrary warnLib) {
-            Object versionObj = getItem.execute(frame, registry, T_VERSION);
+            Object versionObj = getItem.executeCached(frame, registry, T_VERSION);
             long stateFiltersVersion = getStateFiltersVersion(_warnings, warnLib);
-            if (versionObj == null || !eqNode.execute(frame, stateFiltersVersion, versionObj)) {
-                callMethod.execute(frame, registry, T_CLEAR);
-                setItem.execute(frame, registry, T_VERSION, stateFiltersVersion);
+            if (versionObj == null || !eqNode.compareCached(frame, stateFiltersVersion, versionObj)) {
+                callMethod.executeCached(frame, registry, T_CLEAR);
+                setItem.executeCached(frame, registry, T_VERSION, stateFiltersVersion);
             } else {
-                Object alreadyWarned = getItem.execute(frame, registry, key);
+                Object alreadyWarned = getItem.executeCached(frame, registry, key);
                 if (alreadyWarned != null) {
-                    return isTrueNode.execute(frame, alreadyWarned);
+                    return isTrueNode.executeCached(frame, alreadyWarned);
                 }
             }
             if (shouldSet) {
-                setItem.execute(frame, registry, key, true);
+                setItem.executeCached(frame, registry, key, true);
             }
             return false;
         }
@@ -716,7 +717,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             if (category instanceof PythonBuiltinClassType) {
                 name = ((PythonBuiltinClassType) category).getName();
             } else {
-                name = PyObjectLookupAttr.getUncached().execute(null, category, SpecialAttributeNames.T___NAME__);
+                name = PyObjectLookupAttr.executeUncached(category, SpecialAttributeNames.T___NAME__);
             }
             Object stderr = PythonContext.get(null).getStderr();
 
@@ -726,23 +727,23 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             // Print "filename:lineno: category: text\n"
             PyObjectCallMethodObjArgs call = PyObjectCallMethodObjArgs.getUncached();
             PyObjectStrAsObjectNode str = PyObjectStrAsObjectNode.getUncached();
-            call.execute(null, stderr, T_WRITE, str.execute(null, filename));
-            call.execute(null, stderr, T_WRITE, T_COLON);
-            call.execute(null, stderr, T_WRITE, TruffleString.fromLongUncached(lineno, TS_ENCODING, true));
-            call.execute(null, stderr, T_WRITE, T_COLON);
-            call.execute(null, stderr, T_WRITE, str.execute(null, name));
-            call.execute(null, stderr, T_WRITE, T_COLON);
-            call.execute(null, stderr, T_WRITE, T_SPACE);
-            call.execute(null, stderr, T_WRITE, str.execute(null, text));
-            call.execute(null, stderr, T_WRITE, T_NEWLINE);
+            call.execute(null, null, stderr, T_WRITE, str.execute(null, filename));
+            call.execute(null, null, stderr, T_WRITE, T_COLON);
+            call.execute(null, null, stderr, T_WRITE, TruffleString.fromLongUncached(lineno, TS_ENCODING, true));
+            call.execute(null, null, stderr, T_WRITE, T_COLON);
+            call.execute(null, null, stderr, T_WRITE, str.execute(null, name));
+            call.execute(null, null, stderr, T_WRITE, T_COLON);
+            call.execute(null, null, stderr, T_WRITE, T_SPACE);
+            call.execute(null, null, stderr, T_WRITE, str.execute(null, text));
+            call.execute(null, null, stderr, T_WRITE, T_NEWLINE);
 
             // Print " source_line\n"
             if (sourceline != null) {
                 // CPython goes through the trouble of getting a substring of sourceline with
                 // leading whitespace removed, but then ignores the substring and prints the full
                 // sourceline anyway...
-                call.execute(null, stderr, T_WRITE, sourceline);
-                call.execute(null, stderr, T_WRITE, T_NEWLINE);
+                call.execute(null, null, stderr, T_WRITE, sourceline);
+                call.execute(null, null, stderr, T_WRITE, T_NEWLINE);
             } else {
                 // TODO: _Py_DisplaySourceLine(f_stderr, filename, lineno, indent 2);
             }
@@ -759,7 +760,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 return;
             }
 
-            if (!PyCallableCheckNode.getUncached().execute(showFn)) {
+            if (!PyCallableCheckNode.executeUncached(showFn)) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.WARN_MUST_BE_SET_CALLABLE);
             }
 
@@ -811,7 +812,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             // what __instancecheck__ does
             Object text;
             if (getIsSubClass().executeBoolean(frame, getPythonClass(message), PythonBuiltinClassType.Warning)) {
-                text = getStrNode().execute(frame, message);
+                text = getStrNode().executeCached(frame, message);
                 category = getPythonClass(message);
             } else {
                 text = message;
@@ -852,7 +853,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             if (action.equalsUncached(T_ERROR, TS_ENCODING)) {
                 if (!PyExceptionInstanceCheckNode.executeUncached(message)) {
                     throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION,
-                                    PyObjectReprAsTruffleStringNode.getUncached().execute(null, message));
+                                    PyObjectReprAsTruffleStringNode.executeUncached(message));
                 } else {
                     throw PRaiseNode.raiseExceptionObject(node, message);
                 }
@@ -860,7 +861,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
             if (!action.equalsUncached(T_ALWAYS, TS_ENCODING)) {
                 if (registry != null) {
-                    PyObjectSetItem.getUncached().execute(null, registry, key, true);
+                    PyObjectSetItem.executeUncached(registry, key, true);
                 }
 
                 boolean alreadyWarned = false;
@@ -877,7 +878,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                     }
                 } else if (!action.equalsUncached(T_DEFAULT, TS_ENCODING)) {
                     throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNRECOGNIZED_ACTION_IN_WARNINGS, action,
-                                    PyObjectReprAsTruffleStringNode.getUncached().execute(null, item));
+                                    PyObjectReprAsTruffleStringNode.executeUncached(item));
                 }
 
                 if (alreadyWarned) {
@@ -918,17 +919,17 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            registry[0] = getDictGetItemNode().execute(frame, globals, T___WARNINGREGISTRY__);
+            registry[0] = getDictGetItemNode().executeCached(frame, globals, T___WARNINGREGISTRY__);
             if (registry[0] == null) {
                 registry[0] = getFactory().createDict();
-                getSetItemNode().execute(frame, globals, T___WARNINGREGISTRY__, registry[0]);
+                getSetItemNode().executeCached(frame, globals, T___WARNINGREGISTRY__, registry[0]);
             }
-            Object moduleObj = getDictGetItemNode().execute(frame, globals, SpecialAttributeNames.T___NAME__);
+            Object moduleObj = getDictGetItemNode().executeCached(frame, globals, SpecialAttributeNames.T___NAME__);
             if (moduleObj == null) {
                 module[0] = null;
             } else {
                 try {
-                    module[0] = getCastStr().execute(moduleObj);
+                    module[0] = getCastStr().executeCached(moduleObj);
                 } catch (CannotCastException e) {
                     module[0] = T_STRING_SOURCE;
                 }
@@ -944,7 +945,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 return messageType;
             } else if (category == null || category == PNone.NONE) {
                 return PythonBuiltinClassType.UserWarning;
-            } else if (!getIsTypeNode().execute(category) || !getIsSubClass().executeBoolean(frame, category, PythonBuiltinClassType.Warning)) {
+            } else if (!getIsTypeNode().executeCached(category) || !getIsSubClass().executeBoolean(frame, category, PythonBuiltinClassType.Warning)) {
                 throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CATEGORY_MUST_BE_WARN_SUBCLS, category);
             } else {
                 return category;
@@ -969,17 +970,17 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          */
         @TruffleBoundary
         private static TruffleString getSourceLine(Node node, PDict globals, int lineno) {
-            Object loader = PyDictGetItem.getUncached().execute(null, globals, T___LOADER__);
+            Object loader = PyDictGetItem.executeUncached(globals, T___LOADER__);
             if (loader == null) {
                 return null;
             }
-            Object moduleName = PyDictGetItem.getUncached().execute(null, globals, T___NAME__);
+            Object moduleName = PyDictGetItem.executeUncached(globals, T___NAME__);
             if (moduleName == null) {
                 return null;
             }
             Object source;
             try {
-                source = PyObjectCallMethodObjArgs.getUncached().execute(null, loader, T_GET_SOURCE, moduleName);
+                source = PyObjectCallMethodObjArgs.executeUncached(loader, T_GET_SOURCE, moduleName);
             } catch (PException e) {
                 return null;
             }
@@ -1054,11 +1055,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
                         int lineno, Object module, Object registry, Object globals, Object source,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
             TruffleString filename;
             try {
-                filename = castStr.execute(flname);
+                filename = castStr.execute(inliningTarget, flname);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "warn_explicit()", 3, "str", flname);
             }

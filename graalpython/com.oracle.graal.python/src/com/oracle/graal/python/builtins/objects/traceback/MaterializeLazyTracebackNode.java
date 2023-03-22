@@ -42,9 +42,10 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -113,22 +114,27 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * </p>
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class MaterializeLazyTracebackNode extends Node {
-    public abstract PTraceback execute(LazyTraceback tb);
+    public abstract PTraceback execute(Node inliningTarget, LazyTraceback tb);
+
+    public final PTraceback executeCached(LazyTraceback tb) {
+        return execute(this, tb);
+    }
 
     public static PTraceback executeUncached(LazyTraceback tb) {
-        return MaterializeLazyTracebackNodeGen.getUncached().execute(tb);
+        return MaterializeLazyTracebackNodeGen.getUncached().execute(null, tb);
     }
 
     @Specialization(guards = "tb.isMaterialized()")
-    PTraceback getMaterialized(LazyTraceback tb) {
+    static PTraceback getMaterialized(LazyTraceback tb) {
         return tb.getTraceback();
     }
 
     @Fallback
-    PTraceback getTraceback(LazyTraceback tb,
-                    @Bind("this") Node inliningTarget,
-                    @Cached PythonObjectFactory factory,
+    static PTraceback getTraceback(Node inliningTarget, LazyTraceback tb,
+                    @Cached(inline = false) PythonObjectFactory factory,
                     @Cached InlinedLoopConditionProfile loopConditionProfile) {
         PTraceback newTraceback = null;
         LazyTraceback current = tb;

@@ -50,7 +50,6 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -113,7 +112,7 @@ public class KeywordsStorage extends HashingStorage {
          * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
          * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.
          */
-        public abstract Object execute(Frame frame, Node node, KeywordsStorage self, Object key, long hash);
+        public abstract Object execute(Frame frame, Node inliningTarget, KeywordsStorage self, Object key, long hash);
 
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
@@ -131,25 +130,23 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(guards = "isBuiltinString(inliningTarget, key, profile)")
-        static Object pstring(Node node, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached(inline = false) CastToTruffleStringNode castToTruffleStringNode,
+        static Object pstring(@SuppressWarnings("unused") Node inliningTarget, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinObjectProfile profile,
                         @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
-            return string(self, castToTruffleStringNode.execute(key), -1, equalNode);
+            return string(self, castToTruffleStringNode.execute(inliningTarget, key), -1, equalNode);
         }
 
         @Specialization(guards = "!isBuiltinString(inliningTarget, key, profile)")
-        static Object notString(Frame frame, Node node, KeywordsStorage self, Object key, long hashIn,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static Object notString(Frame frame, @SuppressWarnings("unused") Node inliningTarget, KeywordsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinObjectProfile profile,
-                        @Cached(inline = false) PyObjectHashNode hashNode,
-                        @Cached(inline = false) PyObjectRichCompareBool.EqNode eqNode) {
-            long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            long hash = hashIn == -1 ? hashNode.execute(frame, inliningTarget, key) : hashIn;
             for (int i = 0; i < self.keywords.length; i++) {
                 TruffleString currentKey = self.keywords[i].getName();
-                long keyHash = hashNode.execute(frame, currentKey);
-                if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
+                long keyHash = hashNode.execute(frame, inliningTarget, currentKey);
+                if (keyHash == hash && eqNode.compare(frame, inliningTarget, key, currentKey)) {
                     return self.keywords[i].getValue();
                 }
             }
@@ -157,9 +154,9 @@ public class KeywordsStorage extends HashingStorage {
         }
     }
 
-    void addAllTo(HashingStorage storage, SpecializedSetStringKey putNode) {
+    void addAllTo(Node inliningTarget, HashingStorage storage, SpecializedSetStringKey putNode) {
         for (PKeyword entry : keywords) {
-            putNode.execute(storage, entry.getName(), entry.getValue());
+            putNode.execute(inliningTarget, storage, entry.getName(), entry.getValue());
         }
     }
 

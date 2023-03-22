@@ -51,38 +51,44 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
+@GenerateInline(false) // used in BCI root node
 public abstract class SetupAwithNode extends PNodeWithContext {
     public abstract int execute(Frame frame, int stackTop);
 
     @Specialization
     static int setup(VirtualFrame frame, int stackTopIn,
+                    @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupAEnter,
                     @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupAExit,
                     @Cached CallUnaryMethodNode callEnter,
-                    @Cached BranchProfile errorProfile,
+                    @Cached InlinedBranchProfile error1Profile,
+                    @Cached InlinedBranchProfile error2Profile,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
         Object contextManager = frame.getObject(stackTop);
-        Object type = getClassNode.execute(contextManager);
+        Object type = getClassNode.execute(inliningTarget, contextManager);
         Object enter = lookupAEnter.execute(frame, type, contextManager);
         if (enter == PNone.NO_VALUE) {
-            errorProfile.enter();
+            error1Profile.enter(inliningTarget);
             throw raiseNode.raise(AttributeError, new Object[]{T___AENTER__});
         }
         Object exit = lookupAExit.execute(frame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
-            errorProfile.enter();
+            error2Profile.enter(inliningTarget);
             throw raiseNode.raise(AttributeError, new Object[]{T___AEXIT__});
         }
         Object res = callEnter.executeObject(frame, enter, contextManager);

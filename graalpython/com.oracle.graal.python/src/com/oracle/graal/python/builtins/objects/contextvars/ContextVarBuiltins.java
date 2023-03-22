@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,10 +57,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVar)
 public final class ContextVarBuiltins extends PythonBuiltins {
@@ -106,9 +109,10 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object reset(PContextVar self, PContextVarsToken token,
-                        @Cached PRaiseNode raise) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raise) {
             if (self == token.getVar()) {
-                token.use(raise);
+                token.use(inliningTarget, raise);
                 PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
                 if (token.getOldValue() == null) {
                     PContextVarsContext context = threadState.getContextVarsContext();
@@ -117,15 +121,20 @@ public final class ContextVarBuiltins extends PythonBuiltins {
                     self.setValue(threadState, token.getOldValue());
                 }
             } else {
-                throw raise.raise(ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
+                throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
             }
             return PNone.NONE;
         }
 
-        @Specialization
+        @Specialization(guards = "!isToken(token)")
         Object doError(@SuppressWarnings("unused") PContextVar self, Object token,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode.Lazy raise) {
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
+        }
+
+        static boolean isToken(Object obj) {
+            return obj instanceof PContextVarsToken;
         }
     }
 

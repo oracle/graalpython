@@ -58,7 +58,7 @@ import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -236,7 +236,7 @@ public final class PBaseException extends PythonObject {
 
     @TruffleBoundary
     public String getFormattedMessage() {
-        final Object clazz = GetClassNode.getUncached().execute(this);
+        final Object clazz = GetPythonObjectClassNode.executeUncached(this);
         String typeName = GetNameNode.doSlowPath(clazz).toJavaStringUncached();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
@@ -338,7 +338,7 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     ExceptionType getExceptionType(
                     @Bind("$node") Node inliningTarget,
-                    /* @Shared("getClass") */ @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached GetClassNode getClassNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -386,7 +386,7 @@ public final class PBaseException extends PythonObject {
     int getExceptionExitStatus(
                     @Cached CastToJavaIntExactNode castToInt,
                     @Bind("$node") Node inliningTarget,
-                    /* @Shared("getClass") */ @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached GetClassNode getClassNode,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
                     @Shared("unsupportedProfile") @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
@@ -401,7 +401,7 @@ public final class PBaseException extends PythonObject {
                     }
                     // Avoid side-effects in integer conversion too
                     try {
-                        return castToInt.execute(code);
+                        return castToInt.execute(inliningTarget, code);
                     } catch (CannotCastException | PException e) {
                         return 1;
                     }

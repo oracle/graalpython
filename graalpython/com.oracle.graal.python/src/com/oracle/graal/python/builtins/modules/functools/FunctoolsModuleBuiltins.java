@@ -126,7 +126,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
             Object initial = initialNoValueProfile.profile(inliningTarget, PGuards.isNoValue(initialIn)) ? null : initialIn;
             Object seqIterator, result = initial;
             try {
-                seqIterator = getIter.execute(frame, sequence);
+                seqIterator = getIter.execute(frame, inliningTarget, sequence);
             } catch (PException pe) {
                 pe.expectTypeError(inliningTarget, typeError);
                 throw raise(PythonBuiltinClassType.TypeError, S_ARG_N_MUST_SUPPORT_ITERATION, "reduce()", 2);

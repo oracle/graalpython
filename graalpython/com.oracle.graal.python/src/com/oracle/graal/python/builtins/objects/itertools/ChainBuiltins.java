@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -112,7 +112,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                 if (self.getActive() == PNone.NONE) {
                     try {
                         Object next = nextNode.execute(frame, self.getSource(), PNone.NO_VALUE);
-                        Object iter = getIter.execute(frame, next);
+                        Object iter = getIter.execute(frame, inliningTarget, next);
                         self.setActive(iter);
                     } catch (PException e) {
                         nextExceptioProfile.enter(inliningTarget);
@@ -136,9 +136,10 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class FromIterNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter) {
             PChain instance = factory().createChain(PythonBuiltinClassType.PChain);
-            instance.setSource(getIter.execute(frame, arg));
+            instance.setSource(getIter.execute(frame, inliningTarget, arg));
             instance.setActive(PNone.NONE);
             return instance;
         }
@@ -150,7 +151,7 @@ public final class ChainBuiltins extends PythonBuiltins {
         @Specialization
         Object reducePos(PChain self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClass,
+                        @Cached GetClassNode getClass,
                         @Cached InlinedConditionProfile hasSourceProfile,
                         @Cached InlinedConditionProfile hasActiveProfile) {
             Object type = getClass.execute(inliningTarget, self);

@@ -56,12 +56,14 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -319,6 +321,7 @@ public final class PMemoryView extends PythonBuiltinObject {
 
     @ExportMessage
     void release(
+                    @Bind("$node") Node inliningTarget,
                     @Cached PRaiseNode raiseNode,
                     @Cached ReleaseBufferNode releaseNode) {
         /*
@@ -329,7 +332,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         if (shouldReleaseImmediately) {
             checkExports(raiseNode);
             if (checkShouldReleaseBuffer()) {
-                releaseNode.execute(getLifecycleManager());
+                releaseNode.execute(inliningTarget, getLifecycleManager());
             }
             setReleased();
         } else {

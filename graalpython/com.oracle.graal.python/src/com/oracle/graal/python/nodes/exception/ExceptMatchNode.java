@@ -52,7 +52,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -68,6 +70,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
 public abstract class ExceptMatchNode extends Node {
     public abstract boolean executeMatch(Frame frame, Object exception, Object clause);
 
@@ -81,24 +84,25 @@ public abstract class ExceptMatchNode extends Node {
         throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
     }
 
-    @Specialization(guards = "isClass(clause, isTypeNode)", limit = "1")
+    @Specialization(guards = "isClass(inliningTarget, clause, isTypeNode)", limit = "1")
     static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
-                    @Cached ValidExceptionNode isValidException,
+                    @Shared @Cached ValidExceptionNode isValidException,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtype,
-                    @Cached PRaiseNode raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         raiseIfNoException(frame, clause, isValidException, raiseNode);
-        return isSubtype.execute(frame, getClassNode.execute(e.getUnreifiedException()), clause);
+        return isSubtype.execute(frame, getClassNode.execute(inliningTarget, e.getUnreifiedException()), clause);
     }
 
     @Specialization(guards = {"eLib.isException(e)", "clauseLib.isMetaObject(clause)"}, limit = "3", replaces = "matchPythonSingle")
     @SuppressWarnings("unused")
     static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
-                    @Cached ValidExceptionNode isValidException,
+                    @Shared @Cached ValidExceptionNode isValidException,
                     @CachedLibrary("e") InteropLibrary eLib,
                     @CachedLibrary("clause") InteropLibrary clauseLib,
-                    @Cached PRaiseNode raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
         // foreign exception types if they *are* exception types
         raiseIfNoException(frame, clause, isValidException, raiseNode);
@@ -111,13 +115,14 @@ public abstract class ExceptMatchNode extends Node {
 
     @Specialization
     static boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
+                    @Bind("this") Node inliningTarget,
                     @Cached ExceptMatchNode recursiveNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
         // check for every type in the tuple
         SequenceStorage storage = clause.getSequenceStorage();
         int length = storage.length();
         for (int i = 0; i < length; i++) {
-            Object clauseType = getItemNode.execute(storage, i);
+            Object clauseType = getItemNode.execute(inliningTarget, storage, i);
             if (recursiveNode.executeMatch(frame, e, clauseType)) {
                 return true;
             }
@@ -128,7 +133,7 @@ public abstract class ExceptMatchNode extends Node {
     @Fallback
     @SuppressWarnings("unused")
     static boolean fallback(VirtualFrame frame, Object e, Object clause,
-                    @Cached PRaiseNode raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         raiseNoException(raiseNode);
         return false;
     }

@@ -396,6 +396,7 @@ public class IONodes {
         }
 
         @Specialization(guards = "!isFast(mode)", replaces = "string")
+        @SuppressWarnings("truffle-static-method")
         IOMode generic(VirtualFrame frame, Object mode,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
@@ -406,7 +407,7 @@ public class IONodes {
                         @Shared @Cached InlinedBranchProfile errProfile3,
                         @Shared @Cached WarningsModuleBuiltins.WarnNode warnNode) {
             try {
-                return string(frame, toString.execute(mode), inliningTarget, createCodePointIteratorNode, nextNode, errProfile1, errProfile2, errProfile3, warnNode);
+                return string(frame, toString.execute(inliningTarget, mode), inliningTarget, createCodePointIteratorNode, nextNode, errProfile1, errProfile2, errProfile3, warnNode);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
@@ -445,8 +446,8 @@ public class IONodes {
                         @Cached InlinedConditionProfile errorProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            if (indexCheckNode.execute(nameobj)) {
-                int fd = asSizeNode.executeExact(frame, nameobj);
+            if (indexCheckNode.execute(inliningTarget, nameobj)) {
+                int fd = asSizeNode.executeExact(frame, inliningTarget, nameobj);
                 if (errorProfile.profile(inliningTarget, fd < 0)) {
                     err(fd);
                 }
@@ -529,9 +530,10 @@ public class IONodes {
 
         @Specialization(guards = "!isString(s)")
         TruffleString str(Object s,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode str) {
             try {
-                return str.execute(s);
+                return str.execute(inliningTarget, s);
             } catch (CannotCastException e) {
                 throw raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
             }

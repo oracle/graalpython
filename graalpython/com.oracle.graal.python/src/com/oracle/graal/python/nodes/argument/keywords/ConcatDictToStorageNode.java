@@ -58,93 +58,103 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@GenerateInline(false) // footprint reduction 48 -> 30
 public abstract class ConcatDictToStorageNode extends PNodeWithContext {
-    public abstract HashingStorage execute(Frame frame, HashingStorage dest, Object other) throws SameDictKeyException, NonMappingException;
+    public abstract HashingStorage execute(VirtualFrame frame, HashingStorage dest, Object other) throws SameDictKeyException, NonMappingException;
 
-    @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)")
+    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)")
     static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
-                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                     @Cached HashingStorageNodes.HashingStorageCopy copyNode) {
-        return copyNode.execute(other.getDictStorage());
+        return copyNode.execute(inliningTarget, other.getDictStorage());
     }
 
-    @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)")
+    @Specialization(guards = "hasBuiltinIter(inliningTarget, other, getClassNode, lookupIter)")
     static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                    @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
-                    @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
+                    @Shared @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
+                    @Exclusive @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
                     @Cached HashingStorageNodes.HashingStorageGetIterator getIterator,
                     @Cached HashingStorageNodes.HashingStorageIteratorNext iterNext,
                     @Cached HashingStorageNodes.HashingStorageIteratorKey iterKey,
                     @Cached HashingStorageNodes.HashingStorageIteratorValue iterValue,
-                    @Cached LoopConditionProfile loopProfile,
+                    @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                     @Cached.Shared("cast") @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
                     @Cached.Shared("sameKeyProfile") @Cached InlinedBranchProfile sameKeyProfile) throws SameDictKeyException {
         HashingStorage result = dest;
         HashingStorage otherStorage = other.getDictStorage();
-        HashingStorageNodes.HashingStorageIterator it = getIterator.execute(otherStorage);
-        while (loopProfile.profile(iterNext.execute(otherStorage, it))) {
-            Object key = iterKey.execute(otherStorage, it);
-            Object value = iterValue.execute(otherStorage, it);
-            if (resultGetItem.hasKey(frame, result, key)) {
+        HashingStorageNodes.HashingStorageIterator it = getIterator.execute(inliningTarget, otherStorage);
+        while (loopProfile.profile(inliningTarget, iterNext.execute(inliningTarget, otherStorage, it))) {
+            Object key = iterKey.execute(inliningTarget, otherStorage, it);
+            Object value = iterValue.execute(inliningTarget, otherStorage, it);
+            if (resultGetItem.hasKey(frame, inliningTarget, result, key)) {
                 sameKeyProfile.enter(inliningTarget);
-                TruffleString keyName = castToStringNode.cast(key, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
+                TruffleString keyName = castToStringNode.cast(inliningTarget, key, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
                 throw new SameDictKeyException(keyName);
             }
-            result = resultSetItem.execute(frame, result, key, value);
+            result = resultSetItem.execute(frame, inliningTarget, result, key, value);
         }
         return result;
     }
 
-    @Fallback
+    // Not using @Fallback because of GR-43912
+    static boolean isFallback(Node inliningTarget, Object other, GetPythonObjectClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+        return !(other instanceof PDict otherDict && hasBuiltinIter(inliningTarget, otherDict, getClassNode, lookupIter));
+    }
+
+    @Specialization(guards = "isFallback(inliningTarget, other, getClassNode, lookupIter)", limit = "1")
     static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
                     @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                     @Cached.Shared("sameKeyProfile") @Cached InlinedBranchProfile sameKeyProfile,
                     @Cached.Shared("cast") @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
                     @Cached PyObjectCallMethodObjArgs callKeys,
                     @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached ListNodes.FastConstructListNode asList,
-                    @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
-                    @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
+                    @Shared @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
+                    @Exclusive @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
                     @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
-                    @Cached LoopConditionProfile loopProfile,
+                    @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                     @Cached PyObjectGetItem getItem) throws SameDictKeyException, NonMappingException {
         HashingStorage result = dest;
         try {
-            PSequence keys = asList.execute(frame, callKeys.execute(frame, other, T_KEYS));
-            SequenceStorage keysStorage = getSequenceStorage.execute(keys);
+            PSequence keys = asList.execute(frame, inliningTarget, callKeys.execute(frame, inliningTarget, other, T_KEYS));
+            SequenceStorage keysStorage = getSequenceStorage.execute(inliningTarget, keys);
             int keysLen = keysStorage.length();
-            loopProfile.profileCounted(keysLen);
-            for (int i = 0; loopProfile.inject(i < keysLen); i++) {
-                Object key = sequenceGetItem.execute(keysStorage, i);
-                if (resultGetItem.hasKey(frame, result, key)) {
+            loopProfile.profileCounted(inliningTarget, keysLen);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < keysLen); i++) {
+                Object key = sequenceGetItem.execute(inliningTarget, keysStorage, i);
+                if (resultGetItem.hasKey(frame, inliningTarget, result, key)) {
                     sameKeyProfile.enter(inliningTarget);
-                    TruffleString keyName = castToStringNode.cast(key, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
+                    TruffleString keyName = castToStringNode.cast(inliningTarget, key, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
                     throw new SameDictKeyException(keyName);
                 }
-                Object value = getItem.execute(frame, other, key);
-                result = resultSetItem.execute(frame, result, key, value);
+                Object value = getItem.execute(frame, inliningTarget, other, key);
+                result = resultSetItem.execute(frame, inliningTarget, result, key, value);
             }
             return result;
         } catch (PException e) {
@@ -154,7 +164,7 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
     }
 
     /* CPython tests that tp_iter is dict_iter */
-    protected static boolean hasBuiltinIter(PDict dict, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
-        return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == BuiltinMethodDescriptors.DICT_ITER;
+    protected static boolean hasBuiltinIter(Node inliningTarget, PDict dict, GetPythonObjectClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+        return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(inliningTarget, dict)) == BuiltinMethodDescriptors.DICT_ITER;
     }
 }

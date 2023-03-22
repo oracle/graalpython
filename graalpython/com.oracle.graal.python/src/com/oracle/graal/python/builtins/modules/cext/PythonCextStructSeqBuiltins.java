@@ -78,10 +78,12 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -152,6 +154,7 @@ public final class PythonCextStructSeqBuiltins {
 
         @Specialization
         Object doGeneric(Object cls,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
                         @Cached CastToJavaIntExactNode castToIntNode) {
             try {
@@ -159,7 +162,7 @@ public final class PythonCextStructSeqBuiltins {
                 if (realSizeObj == PNone.NO_VALUE) {
                     throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
                 } else {
-                    int realSize = castToIntNode.execute(realSizeObj);
+                    int realSize = castToIntNode.execute(inliningTarget, realSizeObj);
                     return factory().createTuple(cls, new Object[realSize]);
                 }
             } catch (CannotCastException e) {

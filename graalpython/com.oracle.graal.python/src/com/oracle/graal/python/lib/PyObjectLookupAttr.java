@@ -61,12 +61,14 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -86,10 +88,19 @@ import com.oracle.truffle.api.strings.TruffleString;
  * doesn't exist.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 @ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
 public abstract class PyObjectLookupAttr extends Node {
+    public static Object executeUncached(Object type, Object name) {
+        return PyObjectLookupAttrNodeGen.getUncached().execute(null, null, type, name);
+    }
 
-    public abstract Object execute(Frame frame, Object receiver, Object name);
+    public final Object executeCached(Frame frame, Object receiver, Object name) {
+        return execute(frame, this, receiver, name);
+    }
+
+    public abstract Object execute(Frame frame, Node inliningTarget, Object receiver, Object name);
 
     protected static boolean hasNoGetAttr(Object lazyClass) {
         Object slotValue = null;
@@ -134,13 +145,13 @@ public abstract class PyObjectLookupAttr extends Node {
     // simple version that needs no calls and only reads from the object directly
     @SuppressWarnings("unused")
     @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "3")
-    static Object doBuiltinObject(VirtualFrame frame, Object object, TruffleString name,
+    static Object doBuiltinObject(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     @Cached("name") TruffleString cachedName,
-                    @Shared @Cached InlinedGetClassNode getClass,
-                    @Bind("getClass.execute(this, object)") Object type,
+                    /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
+                    @Bind("getClass.execute(inliningTarget, object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
                     @Bind("lookupName.execute(type)") Object descr,
-                    @Shared @Cached ReadAttributeFromObjectNode readNode) {
+                    @Shared @Cached(inline = false) ReadAttributeFromObjectNode readNode) {
         return readNode.execute(object, cachedName);
     }
 
@@ -149,18 +160,17 @@ public abstract class PyObjectLookupAttr extends Node {
     // module-level __getattr__ as well
     @SuppressWarnings("unused")
     @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
-    static Object doBuiltinModule(VirtualFrame frame, Object object, TruffleString name,
-                    @Bind("this") Node inliningTarget,
+    static Object doBuiltinModule(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     @Cached("name") TruffleString cachedName,
-                    @Shared @Cached InlinedGetClassNode getClass,
+                    /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
                     @Bind("lookupName.execute(type)") Object descr,
-                    @Shared @Cached ReadAttributeFromObjectNode readNode,
-                    @Exclusive @Cached ReadAttributeFromObjectNode readGetattr,
-                    @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
+                    @Shared @Cached(inline = false) ReadAttributeFromObjectNode readNode,
+                    @Exclusive @Cached(inline = false) ReadAttributeFromObjectNode readGetattr,
+                    /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                     @Exclusive @Cached InlinedConditionProfile noValueFound,
-                    @Cached CallNode callGetattr) {
+                    @Cached(inline = false) CallNode callGetattr) {
         Object value = readNode.execute(object, cachedName);
         if (noValueFound.profile(inliningTarget, value == PNone.NO_VALUE)) {
             Object getAttr = readGetattr.execute(object, SpecialMethodNames.T___GETATTR__);
@@ -186,18 +196,17 @@ public abstract class PyObjectLookupAttr extends Node {
     // suffices to only check for inheritance via super classes.
     @SuppressWarnings("unused")
     @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name, codePointLengthNode, codePointAtIndexNode)"})
-    static Object doBuiltinTypeType(VirtualFrame frame, Object object, TruffleString name,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached InlinedGetClassNode getClass,
+    static Object doBuiltinTypeType(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
+                    /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
-                    @Cached LookupAttributeInMRONode.Dynamic readNode,
+                    @Cached(inline = false) LookupAttributeInMRONode.Dynamic readNode,
                     @Exclusive @Cached InlinedConditionProfile valueFound,
-                    @Shared @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
+                    @Shared @Cached(value = "create(Get)", inline = false) LookupInheritedSlotNode lookupValueGet,
                     @Exclusive @Cached InlinedConditionProfile noGetMethod,
-                    @Shared @Cached CallTernaryMethodNode invokeValueGet,
-                    @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
-                    @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Shared @Cached(inline = false) CallTernaryMethodNode invokeValueGet,
+                    /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
+                    @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Shared @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object value = readNode.execute(object, name);
         if (valueFound.profile(inliningTarget, value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);
@@ -220,19 +229,18 @@ public abstract class PyObjectLookupAttr extends Node {
     // is that it looks for a __get__ method on the value and invokes it if it is callable.
     @SuppressWarnings("unused")
     @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(metaClassDescr)"}, replaces = "doBuiltinTypeType", limit = "1")
-    static Object doBuiltinType(VirtualFrame frame, Object object, TruffleString name,
-                    @Bind("this") Node inliningTarget,
+    static Object doBuiltinType(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     @Cached("name") TruffleString cachedName,
-                    @Shared @Cached InlinedGetClassNode getClass,
+                    /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
-                    @Cached("create(name)") LookupAttributeInMRONode lookupInMetaclassHierachy,
+                    @Cached(value = "create(name)", inline = false) LookupAttributeInMRONode lookupInMetaclassHierachy,
                     @Bind("lookupInMetaclassHierachy.execute(type)") Object metaClassDescr,
-                    @Cached("create(name)") LookupAttributeInMRONode readNode,
+                    @Cached(value = "create(name)", inline = false) LookupAttributeInMRONode readNode,
                     @Exclusive @Cached InlinedConditionProfile valueFound,
-                    @Shared @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
+                    @Shared @Cached(value = "create(Get)", inline = false) LookupInheritedSlotNode lookupValueGet,
                     @Exclusive @Cached InlinedConditionProfile noGetMethod,
-                    @Shared @Cached CallTernaryMethodNode invokeValueGet,
-                    @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
+                    @Shared @Cached(inline = false) CallTernaryMethodNode invokeValueGet,
+                    /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
         Object value = readNode.execute(object);
         if (valueFound.profile(inliningTarget, value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);
@@ -251,16 +259,15 @@ public abstract class PyObjectLookupAttr extends Node {
     }
 
     @Specialization(replaces = {"doBuiltinObject", "doBuiltinModule", "doBuiltinType"})
-    static Object getDynamicAttr(Frame frame, Object receiver, Object name,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached InlinedGetClassNode getClass,
-                    @Cached(parameters = "GetAttribute") LookupSpecialMethodSlotNode lookupGetattribute,
-                    @Cached(parameters = "GetAttr") LookupSpecialMethodSlotNode lookupGetattr,
-                    @Cached CallBinaryMethodNode callGetattribute,
-                    @Cached CallBinaryMethodNode callGetattr,
-                    @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
-                    @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+    static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, Object name,
+                    /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
+                    @Cached(parameters = "GetAttribute", inline = false) LookupSpecialMethodSlotNode lookupGetattribute,
+                    @Cached(parameters = "GetAttr", inline = false) LookupSpecialMethodSlotNode lookupGetattr,
+                    @Cached(inline = false) CallBinaryMethodNode callGetattribute,
+                    @Cached(inline = false) CallBinaryMethodNode callGetattr,
+                    /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
+                    @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Shared @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
         if (!callGetattr.isAdoptable()) {

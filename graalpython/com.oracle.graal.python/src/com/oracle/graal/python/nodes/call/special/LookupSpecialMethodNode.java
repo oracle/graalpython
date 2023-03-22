@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,10 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -71,31 +74,29 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
 
     @Specialization
     Object lookup(VirtualFrame frame, Object type, Object receiver,
+                    @Bind("this") Node inliningTarget,
                     @Cached(parameters = "name") LookupAttributeInMRONode lookupMethod,
                     @Cached MaybeBindDescriptorNode bind) {
-        return bind.execute(frame, lookupMethod.execute(type), receiver, type);
+        return bind.execute(frame, inliningTarget, lookupMethod.execute(type), receiver, type);
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class Dynamic extends Node {
 
-        public abstract Object execute(Frame frame, Object type, TruffleString name, Object receiver);
+        public abstract Object execute(Frame frame, Node inliningTarget, Object type, TruffleString name, Object receiver);
 
-        @NeverDefault
-        public static Dynamic create() {
-            return LookupSpecialMethodNodeGen.DynamicNodeGen.create();
-        }
-
-        public static Dynamic getUncached() {
-            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached();
+        public static Object executeUncached(Frame frame, Object type, TruffleString name, Object receiver) {
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached().execute(frame, null, type, name, receiver);
         }
 
         @Specialization
-        Object lookup(VirtualFrame frame, Object type, TruffleString name, Object receiver,
+        static Object lookup(VirtualFrame frame, Node inliningTarget, Object type, TruffleString name, Object receiver,
                         @Cached MaybeBindDescriptorNode bind,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr) {
+                        @Cached(inline = false) LookupAttributeInMRONode.Dynamic lookupAttr) {
             Object descriptor = lookupAttr.execute(type, name);
-            return bind.execute(frame, descriptor, receiver, type);
+            return bind.execute(frame, inliningTarget, descriptor, receiver, type);
         }
     }
 }

@@ -103,7 +103,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
@@ -135,7 +135,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         PyObjectCallMethodObjArgs callMethodClose) {
             try {
                 lock.enter(inliningTarget, self);
-                Object res = callMethodClose.execute(frame, self.getRaw(), T_CLOSE);
+                Object res = callMethodClose.execute(frame, inliningTarget, self.getRaw(), T_CLOSE);
                 if (self.getBuffer() != null) {
                     self.setBuffer(null);
                 }
@@ -162,7 +162,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 }
                 if (self.isFinalizing()) {
                     if (self.getRaw() != null) {
-                        callMethodDeallocWarn.execute(frame, self.getRaw(), T__DEALLOC_WARN, self);
+                        callMethodDeallocWarn.execute(frame, inliningTarget, self.getRaw(), T__DEALLOC_WARN, self);
                     }
                 }
             } finally {
@@ -170,7 +170,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             }
             /* flush() will most probably re-take the lock, so drop it first */
             try {
-                callMethodFlush.execute(frame, self, T_FLUSH);
+                callMethodFlush.execute(frame, inliningTarget, self, T_FLUSH);
             } catch (PException e) {
                 try {
                     close(frame, inliningTarget, self, lock, callMethodClose);
@@ -188,8 +188,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class DetachNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush) {
-            callMethodFlush.execute(frame, self, T_FLUSH);
+            callMethodFlush.execute(frame, inliningTarget, self, T_FLUSH);
             Object raw = self.getRaw();
             self.clearRaw();
             self.setDetached(true);
@@ -203,8 +204,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class SeekableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getRaw(), T_SEEKABLE);
+            return callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEKABLE);
         }
     }
 
@@ -213,8 +215,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class FileNoNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getRaw(), T_FILENO);
+            return callMethod.execute(frame, inliningTarget, self.getRaw(), T_FILENO);
         }
     }
 
@@ -223,8 +226,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class IsAttyNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getRaw(), T_ISATTY);
+            return callMethod.execute(frame, inliningTarget, self.getRaw(), T_ISATTY);
         }
     }
 
@@ -233,8 +237,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class DeallocWarnNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"self.isOK()", "self.getRaw() != null"})
         static Object doit(VirtualFrame frame, PBuffered self, Object source,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            callMethod.execute(frame, self.getRaw(), T__DEALLOC_WARN, source);
+            callMethod.execute(frame, inliningTarget, self.getRaw(), T__DEALLOC_WARN, source);
             return PNone.NONE;
         }
 
@@ -324,7 +329,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             try {
                 lock.enter(inliningTarget, self);
                 flushAndRewindUnlockedNode.execute(frame, inliningTarget, self);
-                Object res = callMethodTruncate.execute(frame, self.getRaw(), T_TRUNCATE, pos);
+                Object res = callMethodTruncate.execute(frame, inliningTarget, self.getRaw(), T_TRUNCATE, pos);
                 /* Reset cached position */
                 rawTellNode.execute(frame, inliningTarget, self);
                 return res;
@@ -373,8 +378,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class NameNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getRaw(), T_NAME);
+            return getAttr.execute(frame, inliningTarget, self.getRaw(), T_NAME);
         }
     }
 
@@ -383,8 +389,9 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ModeNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getRaw(), T_MODE);
+            return getAttr.execute(frame, inliningTarget, self.getRaw(), T_MODE);
         }
     }
 
@@ -396,14 +403,14 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinObjectProfile isValueError,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString typeName = getNameNode.execute(getClassNode.execute(inliningTarget, self));
+            TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
             Object nameobj = PNone.NO_VALUE;
             try {
-                nameobj = lookup.execute(frame, self, T_NAME);
+                nameobj = lookup.execute(frame, inliningTarget, self, T_NAME);
             } catch (PException e) {
                 e.expect(inliningTarget, ValueError, isValueError);
                 // ignore
@@ -415,7 +422,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                     throw raise(RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, typeName);
                 } else {
                     try {
-                        TruffleString name = repr.execute(frame, nameobj);
+                        TruffleString name = repr.execute(frame, inliningTarget, nameobj);
                         return simpleTruffleStringFormatNode.format("<%s name=%s>", typeName, name);
                     } finally {
                         getContext().reprLeave(self);

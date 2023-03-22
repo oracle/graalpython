@@ -61,7 +61,10 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -78,6 +81,7 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 public abstract class TupleNodes {
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 40 -> 21
     public abstract static class ConstructTupleNode extends PNodeWithContext {
         public final PTuple execute(VirtualFrame frame, Object value) {
             return execute(frame, PythonBuiltinClassType.PTuple, value);
@@ -92,39 +96,44 @@ public abstract class TupleNodes {
         }
 
         @Specialization
+        @InliningCutoff
         static PTuple tuple(Object cls, TruffleString arg,
                         @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             return factory.createTuple(cls, StringUtils.toCharacterArray(arg, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode));
         }
 
         @Specialization
+        @InliningCutoff
         static PTuple tuple(Object cls, PString arg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            return tuple(cls, castToStringNode.execute(arg), factory, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
+                        @Shared @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            return tuple(cls, castToStringNode.execute(inliningTarget, arg), factory, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
-        @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(iterable, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(iterable, this, getClassNode)"}, limit = "1")
         static PTuple tuple(@SuppressWarnings("unused") Object cls, PTuple iterable,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return iterable;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(this, cls, iterable, getClassNode)"}, limit = "1")
+        @InliningCutoff
         static PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached CreateStorageFromIteratorNode storageNode,
                         @Cached PyObjectGetIter getIter) {
-            Object iterObj = getIter.execute(frame, iterable);
+            Object iterObj = getIter.execute(frame, inliningTarget, iterable);
             return factory.createTuple(cls, storageNode.execute(frame, iterObj));
         }
 
@@ -134,9 +143,9 @@ public abstract class TupleNodes {
             throw new RuntimeException("tuple does not support iterable object " + value);
         }
 
-        protected boolean createNewTuple(Object cls, Object iterable, GetClassNode getClassNode) {
+        protected boolean createNewTuple(Node inliningTarget, Object cls, Object iterable, GetClassNode getClassNode) {
             if (iterable instanceof PTuple) {
-                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(getClassNode.execute(iterable)));
+                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(getClassNode.execute(inliningTarget, iterable)));
             }
             return true;
         }

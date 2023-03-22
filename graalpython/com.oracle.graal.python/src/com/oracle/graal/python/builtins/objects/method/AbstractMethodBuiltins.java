@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -72,8 +73,10 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -83,6 +86,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -202,7 +206,9 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     abstract static class GetModuleNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(none)", limit = "2")
-        Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
+        static Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Bind("getThisAsIndirectCallNode()") IndirectCallNode indirectCallNode,
                         @Cached PyObjectLookupAttr lookup,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             // No profiling, performance here is not very important
@@ -211,12 +217,12 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                 return module;
             }
             if (self.getSelf() instanceof PythonModule) {
-                PythonLanguage language = getLanguage();
-                Object state = IndirectCallContext.enter(frame, language, getContext(), this);
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                Object state = IndirectCallContext.enter(frame, language, PythonContext.get(inliningTarget), indirectCallNode);
                 try {
-                    return lookup.execute(null, self.getSelf(), T___NAME__);
+                    return lookup.execute(null, inliningTarget, self.getSelf(), T___NAME__);
                 } finally {
-                    IndirectCallContext.exit(frame, language, getContext(), state);
+                    IndirectCallContext.exit(frame, language, PythonContext.get(inliningTarget), state);
                 }
             }
             return PNone.NONE;
@@ -246,7 +252,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getDoc(PMethod self,
-                        @Cached ReadAttributeFromObjectNode readNode) {
+                        @Shared @Cached ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), T___DOC__);
             if (doc == PNone.NO_VALUE) {
                 return PNone.NONE;
@@ -256,7 +262,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getDoc(PBuiltinMethod self,
-                        @Cached ReadAttributeFromObjectNode readNode) {
+                        @Shared @Cached ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), T___DOC__);
             if (doc == PNone.NO_VALUE) {
                 return PNone.NONE;
@@ -270,10 +276,11 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     public abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getName(VirtualFrame frame, PBuiltinMethod method,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttr) {
             try {
-                return toStringNode.execute(getAttr.execute(frame, method.getFunction(), T___NAME__));
+                return toStringNode.execute(inliningTarget, getAttr.execute(frame, inliningTarget, method.getFunction(), T___NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -281,10 +288,11 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getName(VirtualFrame frame, PMethod method,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getAttr") @Cached PyObjectGetAttr getAttr) {
             try {
-                return toStringNode.execute(getAttr.execute(frame, method.getFunction(), T___NAME__));
+                return toStringNode.execute(inliningTarget, getAttr.execute(frame, inliningTarget, method.getFunction(), T___NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -294,8 +302,6 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class QualNameNode extends PythonUnaryBuiltinNode {
-
-        @Child private GetClassNode getClassNode;
 
         protected static boolean isSelfModuleOrNull(PMethod method) {
             return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
@@ -307,60 +313,58 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
         static TruffleString doSelfIsModule(VirtualFrame frame, PMethod method,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
-            return getName(frame, method.getFunction(), toStringNode, lookupName);
+            return getName(frame, inliningTarget, method.getFunction(), toStringNode, lookupName);
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
         static TruffleString doSelfIsModule(VirtualFrame frame, PBuiltinMethod method,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
-            return getName(frame, method.getFunction(), toStringNode, lookupName);
+            return getName(frame, inliningTarget, method.getFunction(), toStringNode, lookupName);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         TruffleString doSelfIsObjet(VirtualFrame frame, PMethod method,
-                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getQualname") @Cached PyObjectGetAttr getQualname,
                         @Shared("lookupName") @Cached PyObjectLookupAttr lookupName,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode);
+            return getQualName(frame, inliningTarget, method.getSelf(), method.getFunction(), getClassNode, isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         TruffleString doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method,
-                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getQualname") @Cached PyObjectGetAttr getQualname,
                         @Shared("lookupName") @Cached PyObjectLookupAttr lookupName,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode);
+            return getQualName(frame, inliningTarget, method.getSelf(), method.getFunction(), getClassNode, isTypeNode, toStringNode, getQualname, lookupName, simpleTruffleStringFormatNode);
         }
 
-        private TruffleString getQualName(VirtualFrame frame, Object self, Object func, TypeNodes.IsTypeNode isTypeNode, CastToTruffleStringNode toStringNode, PyObjectGetAttr getQualname,
-                        PyObjectLookupAttr lookupName, SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object type = isTypeNode.execute(self) ? self : getPythonClass(self);
+        private TruffleString getQualName(VirtualFrame frame, Node inliningTarget, Object self, Object func, GetClassNode getClassNode, TypeNodes.IsTypeNode isTypeNode,
+                        CastToTruffleStringNode toStringNode, PyObjectGetAttr getQualname, PyObjectLookupAttr lookupName, SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            Object type = isTypeNode.execute(inliningTarget, self) ? self : getClassNode.execute(inliningTarget, self);
 
             try {
-                TruffleString typeQualName = toStringNode.execute(getQualname.execute(frame, type, T___QUALNAME__));
-                return simpleTruffleStringFormatNode.format("%s.%s", typeQualName, getName(frame, func, toStringNode, lookupName));
+                TruffleString typeQualName = toStringNode.execute(inliningTarget, getQualname.execute(frame, inliningTarget, type, T___QUALNAME__));
+                return simpleTruffleStringFormatNode.format("%s.%s", typeQualName, getName(frame, inliningTarget, func, toStringNode, lookupName));
             } catch (CannotCastException cce) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___QUALNAME__);
             }
         }
 
-        private static TruffleString getName(VirtualFrame frame, Object func, CastToTruffleStringNode toStringNode, PyObjectLookupAttr lookupName) {
-            return toStringNode.execute(lookupName.execute(frame, func, T___NAME__));
-        }
-
-        private Object getPythonClass(Object desc) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(desc);
+        private static TruffleString getName(VirtualFrame frame, Node inliningTarget, Object func, CastToTruffleStringNode toStringNode, PyObjectLookupAttr lookupName) {
+            return toStringNode.execute(inliningTarget, lookupName.execute(frame, inliningTarget, func, T___NAME__));
         }
     }
 
@@ -377,42 +381,46 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
         static TruffleString doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getName") @Cached PyObjectGetAttr getName) {
-            return getName(frame, method.getFunction(), toStringNode, getName);
+            return getName(frame, inliningTarget, method.getFunction(), toStringNode, getName);
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
         static TruffleString doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getName") @Cached PyObjectGetAttr getName) {
-            return getName(frame, method.getFunction(), toStringNode, getName);
+            return getName(frame, inliningTarget, method.getFunction(), toStringNode, getName);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         PTuple doSelfIsObjet(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
                         @Shared("getName") @Cached PyObjectGetAttr getName) {
             PythonModule builtins = getCore().getBuiltins();
-            Object getattr = getGetAttr.execute(frame, builtins, T_GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toStringNode, getName)});
+            Object getattr = getGetAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
             return factory().createTuple(new Object[]{getattr, args});
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         PTuple doSelfIsObject(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Shared("toStringNode") @Cached CastToTruffleStringNode toStringNode,
                         @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
                         @Shared("getName") @Cached PyObjectGetAttr getName) {
             PythonModule builtins = getCore().getBuiltins();
-            Object getattr = getGetAttr.execute(frame, builtins, T_GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toStringNode, getName)});
+            Object getattr = getGetAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, inliningTarget, method.getFunction(), toStringNode, getName)});
             return factory().createTuple(new Object[]{getattr, args});
         }
 
-        private static TruffleString getName(VirtualFrame frame, Object func, CastToTruffleStringNode toStringNode, PyObjectGetAttr getName) {
-            return toStringNode.execute(getName.execute(frame, func, T___NAME__));
+        private static TruffleString getName(VirtualFrame frame, Node inliningTarget, Object func, CastToTruffleStringNode toStringNode, PyObjectGetAttr getName) {
+            return toStringNode.execute(inliningTarget, getName.execute(frame, inliningTarget, func, T___NAME__));
         }
     }
 }

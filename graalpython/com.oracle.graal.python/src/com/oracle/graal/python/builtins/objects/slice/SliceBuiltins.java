@@ -58,6 +58,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -108,10 +109,11 @@ public final class SliceBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean sliceCmpWithLib(VirtualFrame frame, PSlice left, PSlice right,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            return eqNode.execute(frame, left.getStart(), right.getStart()) &&
-                            eqNode.execute(frame, left.getStop(), right.getStop()) &&
-                            eqNode.execute(frame, left.getStep(), right.getStep());
+            return eqNode.compare(frame, inliningTarget, left.getStart(), right.getStart()) &&
+                            eqNode.compare(frame, inliningTarget, left.getStop(), right.getStop()) &&
+                            eqNode.compare(frame, inliningTarget, left.getStep(), right.getStep());
         }
 
     }
@@ -176,27 +178,29 @@ public final class SliceBuiltins extends PythonBuiltins {
 
         @Specialization
         protected PTuple safeInt(VirtualFrame frame, PIntSlice self, int length,
-                        @Cached ComputeIndices compute) {
+                        @Shared @Cached ComputeIndices compute) {
             return doPSlice(frame, self, length, compute);
         }
 
         @Specialization(guards = "!isPNone(length)", rewriteOn = PException.class)
         protected PTuple doSliceObject(VirtualFrame frame, PSlice self, Object length,
-                        @Cached SliceExactCastToInt toInt,
-                        @Cached ComputeIndices compute) {
-            return doPSlice(frame, self, (int) toInt.execute(frame, length), compute);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached SliceExactCastToInt toInt,
+                        @Shared @Cached ComputeIndices compute) {
+            return doPSlice(frame, self, (int) toInt.execute(frame, inliningTarget, length), compute);
         }
 
         @Specialization(guards = "!isPNone(length)", replaces = {"doSliceObject"})
+        @SuppressWarnings("truffle-static-method")
         protected PTuple doSliceObjectWithSlowPath(VirtualFrame frame, PSlice self, Object length,
                         @Bind("this") Node inliningTarget,
-                        @Cached SliceExactCastToInt toInt,
-                        @Cached ComputeIndices compute,
+                        @Shared @Cached SliceExactCastToInt toInt,
+                        @Shared @Cached ComputeIndices compute,
                         @Cached IsBuiltinObjectProfile profileError,
                         @Cached SliceCastToToBigInt castLengthNode,
                         @Cached CoerceToObjectSlice castNode) {
             try {
-                return doPSlice(frame, self, (int) toInt.execute(frame, length), compute);
+                return doPSlice(frame, self, (int) toInt.execute(frame, inliningTarget, length), compute);
             } catch (PException pe) {
                 if (!profileError.profileException(inliningTarget, pe, PythonBuiltinClassType.OverflowError)) {
                     throw pe;
@@ -204,7 +208,7 @@ public final class SliceBuiltins extends PythonBuiltins {
                 // pass
             }
 
-            Object lengthIn = castLengthNode.execute(length);
+            Object lengthIn = castLengthNode.execute(inliningTarget, length);
             PObjectSlice.SliceObjectInfo sliceInfo = PObjectSlice.computeIndicesSlowPath(castNode.execute(self), lengthIn, factory());
             return factory().createTuple(new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
         }
@@ -233,9 +237,10 @@ public final class SliceBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PSlice self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode) {
             PTuple args = factory().createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
-            return factory().createTuple(new Object[]{getClassNode.execute(self), args});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 }

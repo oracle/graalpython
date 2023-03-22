@@ -134,7 +134,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltin
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -170,10 +169,12 @@ public abstract class ObjectNodes {
     public static final TruffleString T__SLOTNAMES = tsLiteral("_slotnames");
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class GetObjectIdNode extends Node {
         private static final HiddenKey OBJECT_ID = new HiddenKey("_id");
 
-        public abstract long execute(Object self);
+        public abstract long execute(Node inliningTarget, Object self);
 
         protected static Assumption getSingleThreadedAssumption(Node node) {
             return PythonLanguage.get(node).singleThreadedAssumption;
@@ -185,8 +186,8 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption(readNode)")
         static long singleThreadedObject(Object self,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeNode) {
+                        @Shared @Cached(inline = false) ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode) {
             Object objectId = readNode.execute(self, OBJECT_ID);
             if (objectId == PNone.NO_VALUE) {
                 objectId = PythonContext.get(readNode).getNextObjectId();
@@ -198,8 +199,8 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isIDableObject(self)", replaces = "singleThreadedObject")
         static long multiThreadedObject(Object self,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeNode) {
+                        @Shared @Cached(inline = false) ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared @Cached(inline = false) WriteAttributeToDynamicObjectNode writeNode) {
             Object objectId = readNode.execute(self, OBJECT_ID);
             if (objectId == PNone.NO_VALUE) {
                 synchronized (self) {
@@ -246,43 +247,44 @@ public abstract class ObjectNodes {
      */
     @ImportStatic({PythonOptions.class, PGuards.class})
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 73
     public abstract static class GetIdNode extends PNodeWithContext {
         public abstract Object execute(Object self);
 
         @Specialization
         static Object id(PBytes self,
                         @Bind("this") Node inliningTarget,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
-                        @Cached IsAnyBuiltinObjectProfile isBuiltin,
-                        @Cached PyObjectSizeNode sizeNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, self) == 0) {
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Shared @Cached IsAnyBuiltinObjectProfile isBuiltin,
+                        @Shared @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, inliningTarget, self) == 0) {
                 return ID_EMPTY_BYTES;
             }
-            return getObjectIdNode.execute(self);
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object id(PFrozenSet self,
                         @Bind("this") Node inliningTarget,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
-                        @Cached IsAnyBuiltinObjectProfile isBuiltin,
-                        @Cached PyObjectSizeNode sizeNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, self) == 0) {
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Shared @Cached IsAnyBuiltinObjectProfile isBuiltin,
+                        @Shared @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, inliningTarget, self) == 0) {
                 return ID_EMPTY_FROZENSET;
             }
-            return getObjectIdNode.execute(self);
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object id(PTuple self,
                         @Bind("this") Node inliningTarget,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
-                        @Cached IsAnyBuiltinObjectProfile isBuiltin,
-                        @Cached PyObjectSizeNode sizeNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, self) == 0) {
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Shared @Cached IsAnyBuiltinObjectProfile isBuiltin,
+                        @Shared @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(inliningTarget, self) && sizeNode.execute(null, inliningTarget, self) == 0) {
                 return ID_EMPTY_TUPLE;
             }
-            return getObjectIdNode.execute(self);
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
@@ -312,40 +314,44 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PythonAbstractNativeObject self,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            return getObjectIdNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object id(boolean self,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             PythonContext context = PythonContext.get(getObjectIdNode);
             Object bool = self ? context.getTrue() : context.getFalse();
-            return getObjectIdNode.execute(bool);
+            return getObjectIdNode.execute(inliningTarget, bool);
         }
 
         @Specialization
         static Object id(double self,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return IDUtils.getId(self, factory);
         }
 
         @Specialization
         static Object id(PFloat self,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            return getObjectIdNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object id(long self,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             return IDUtils.getId(self, factory);
         }
 
         @Specialization
         static Object id(PInt self,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            return getObjectIdNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
@@ -354,22 +360,24 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        Object id(TruffleString self) {
+        static Object id(TruffleString self,
+                        @Bind("this") Node inliningTarget) {
             if (self.isEmpty()) {
                 return ID_EMPTY_UNICODE;
             }
-            return PythonContext.get(this).getNextStringId(self);
+            return PythonContext.get(inliningTarget).getNextStringId(self);
         }
 
         @Specialization
-        Object id(PString self,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+        static Object id(PString self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached StringNodes.IsInternedStringNode isInternedStringNode,
                         @Cached StringNodes.StringMaterializeNode materializeNode) {
-            if (isInternedStringNode.execute(self)) {
-                return id(materializeNode.execute(self));
+            if (isInternedStringNode.execute(inliningTarget, self)) {
+                return id(materializeNode.execute(inliningTarget, self), inliningTarget);
             }
-            return getObjectIdNode.execute(self);
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
         @Specialization
@@ -394,24 +402,28 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isDefaultCase(self)")
         static Object id(PythonObject self,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            return getObjectIdNode.execute(self);
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(inliningTarget, self);
         }
 
-        @Specialization(guards = "isForeignObjectNode.execute(self)", limit = "1")
+        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, self)", limit = "1")
         static Object idForeign(Object self,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             return PythonContext.get(isForeignObjectNode).getNextObjectId(self);
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetIdentityHashNode extends Node {
-        public abstract int execute(Object object);
+        public abstract int execute(Node inliningTarget, Object object);
 
         @Specialization
         static int idHash(Object object,
-                        @Cached GetIdNode getIdNode) {
+                        @Cached(inline = false) GetIdNode getIdNode) {
             final Object id = getIdNode.execute(object);
             if (id instanceof Long) {
                 return Long.hashCode((long) id);
@@ -422,9 +434,11 @@ public abstract class ObjectNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PythonOptions.class, PGuards.class})
     abstract static class FastIsListSubClassNode extends Node {
-        abstract boolean execute(VirtualFrame frame, Object object);
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object object);
 
         @Specialization
         @SuppressWarnings("unused")
@@ -433,10 +447,9 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        static boolean isList(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+        static boolean isList(VirtualFrame frame, Node inliningTarget, Object object,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(inline = false) BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached InlineIsBuiltinClassProfile objProfile) {
             Object type = getClassNode.execute(inliningTarget, object);
             if (objProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PList)) {
@@ -446,9 +459,15 @@ public abstract class ObjectNodes {
         }
     }
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     @ImportStatic({PythonOptions.class, PGuards.class})
     public abstract static class FastIsTupleSubClassNode extends Node {
-        public abstract boolean execute(VirtualFrame frame, Object object);
+        public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object object);
+
+        public final boolean executeCached(VirtualFrame frame, Object object) {
+            return execute(frame, this, object);
+        }
 
         @Specialization
         @SuppressWarnings("unused")
@@ -457,10 +476,9 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        static boolean isTuple(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+        static boolean isTuple(VirtualFrame frame, Node inliningTarget, Object object,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(inline = false) BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached InlineIsBuiltinClassProfile objProfile) {
             Object type = getClassNode.execute(inliningTarget, object);
             if (objProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PTuple)) {
@@ -475,9 +493,11 @@ public abstract class ObjectNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PythonOptions.class, PGuards.class})
     abstract static class FastIsDictSubClassNode extends Node {
-        abstract boolean execute(VirtualFrame frame, Object object);
+        abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object object);
 
         @Specialization
         @SuppressWarnings("unused")
@@ -486,10 +506,9 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        static boolean isDict(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+        static boolean isDict(VirtualFrame frame, Node inliningTarget, Object object,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(inline = false) BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached InlineIsBuiltinClassProfile objProfile) {
             Object type = getClassNode.execute(inliningTarget, object);
             if (objProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PDict)) {
@@ -500,15 +519,17 @@ public abstract class ObjectNodes {
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 45
     abstract static class GetNewArgsNode extends Node {
         public abstract Pair<Object, Object> execute(VirtualFrame frame, Object obj);
 
         @Specialization
         Pair<Object, Object> dispatch(VirtualFrame frame, Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNewArgsInternalNode getNewArgsInternalNode,
                         @Cached PyObjectLookupAttr lookupAttr) {
-            Object getNewArgsExAttr = lookupAttr.execute(frame, obj, T___GETNEWARGS_EX__);
-            Object getNewArgsAttr = lookupAttr.execute(frame, obj, T___GETNEWARGS__);
+            Object getNewArgsExAttr = lookupAttr.execute(frame, inliningTarget, obj, T___GETNEWARGS_EX__);
+            Object getNewArgsAttr = lookupAttr.execute(frame, inliningTarget, obj, T___GETNEWARGS__);
             return getNewArgsInternalNode.execute(frame, getNewArgsExAttr, getNewArgsAttr);
         }
 
@@ -516,7 +537,9 @@ public abstract class ObjectNodes {
             public abstract Pair<Object, Object> execute(VirtualFrame frame, Object getNewArgsExAttr, Object getNewArgsAttr);
 
             @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
+            @SuppressWarnings("truffle-static-method")
             Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
+                            @Bind("this") Node inliningTarget,
                             @Shared("callNode") @Cached CallNode callNode,
                             @Shared("tupleCheck") @Cached FastIsTupleSubClassNode isTupleSubClassNode,
                             @Cached FastIsDictSubClassNode isDictSubClassNode,
@@ -524,22 +547,22 @@ public abstract class ObjectNodes {
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached PyObjectSizeNode sizeNode) {
                 Object newargs = callNode.execute(frame, getNewArgsExAttr);
-                if (!isTupleSubClassNode.execute(frame, newargs)) {
+                if (!isTupleSubClassNode.execute(frame, inliningTarget, newargs)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS_EX__, "tuple", newargs);
                 }
-                int length = sizeNode.execute(frame, newargs);
+                int length = sizeNode.execute(frame, inliningTarget, newargs);
                 if (length != 2) {
                     throw raise(ValueError, SHOULD_RETURN_A_NOT_B, T___GETNEWARGS_EX__, "tuple of length 2", length);
                 }
 
-                SequenceStorage sequenceStorage = getSequenceStorageNode.execute(newargs);
+                SequenceStorage sequenceStorage = getSequenceStorageNode.execute(inliningTarget, newargs);
                 Object args = getItemNode.execute(sequenceStorage, 0);
                 Object kwargs = getItemNode.execute(sequenceStorage, 1);
 
-                if (!isTupleSubClassNode.execute(frame, args)) {
+                if (!isTupleSubClassNode.execute(frame, inliningTarget, args)) {
                     throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
                 }
-                if (!isDictSubClassNode.execute(frame, kwargs)) {
+                if (!isDictSubClassNode.execute(frame, inliningTarget, kwargs)) {
                     throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "second item of the tuple returned by __getnewargs_ex__", "dict", kwargs);
                 }
 
@@ -548,10 +571,11 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(getNewArgsAttr)")
             Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
+                            @Bind("this") Node inliningTarget,
                             @Shared("callNode") @Cached CallNode callNode,
                             @Shared("tupleCheck") @Cached FastIsTupleSubClassNode isTupleSubClassNode) {
                 Object args = callNode.execute(frame, getNewArgsAttr);
-                if (!isTupleSubClassNode.execute(frame, args)) {
+                if (!isTupleSubClassNode.execute(frame, inliningTarget, args)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS__, "tuple", args);
                 }
                 return Pair.create(args, PNone.NONE);
@@ -570,7 +594,7 @@ public abstract class ObjectNodes {
         @Child PyObjectLookupAttr lookupAttr = PyObjectLookupAttr.create();
 
         public final Object execute(VirtualFrame frame, Object cls, Object copyReg) {
-            Object clsDict = lookupAttr.execute(frame, cls, T___DICT__);
+            Object clsDict = lookupAttr.executeCached(frame, cls, T___DICT__);
             return executeInternal(frame, cls, clsDict, copyReg);
         }
 
@@ -578,9 +602,10 @@ public abstract class ObjectNodes {
 
         @Specialization
         Object dispatchDict(VirtualFrame frame, Object cls, PDict clsDict, Object copyReg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-            Object slotNames = getItem.execute(clsDict.getDictStorage(), T__SLOTNAMES);
+            Object slotNames = getItem.execute(inliningTarget, clsDict.getDictStorage(), T__SLOTNAMES);
             slotNames = slotNames == null ? PNone.NO_VALUE : slotNames;
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
         }
@@ -588,11 +613,12 @@ public abstract class ObjectNodes {
         // Fast paths for a common case of PMappingproxy and NO_VALUE
         @Specialization(guards = "isDict(mapping)")
         Object dispatchMappingProxy(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PMappingproxy clsDict, Object copyReg,
+                        @Bind("this") Node inliningTarget,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Bind("clsDict.getMapping()") Object mapping,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem) {
             PDict mappingDict = (PDict) mapping;
-            return dispatchDict(frame, cls, mappingDict, copyReg, getSlotNamesInternalNode, getItem);
+            return dispatchDict(frame, cls, mappingDict, copyReg, inliningTarget, getSlotNamesInternalNode, getItem);
         }
 
         @Specialization(guards = "isNoValue(noValue)")
@@ -602,7 +628,7 @@ public abstract class ObjectNodes {
         }
 
         @Fallback
-        Object dispatchGeneric(VirtualFrame frame, Object cls, Object clsDict, Object copyReg,
+        static Object dispatchGeneric(VirtualFrame frame, Object cls, Object clsDict, Object copyReg,
                         @Bind("this") Node inliningTarget,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Cached PyObjectGetItem getItemNode,
@@ -618,7 +644,7 @@ public abstract class ObjectNodes {
             Object slotNames = PNone.NO_VALUE;
             if (!PGuards.isNoValue(clsDict)) {
                 try {
-                    slotNames = getItemNode.execute(frame, clsDict, T___SLOTNAMES__);
+                    slotNames = getItemNode.execute(frame, inliningTarget, clsDict, T___SLOTNAMES__);
                 } catch (PException ex) {
                     ex.expect(inliningTarget, PythonBuiltinClassType.KeyError, isBuiltinClassProfile);
                 }
@@ -631,20 +657,23 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(slotNames)")
             Object getSlotNames(VirtualFrame frame, Object cls, @SuppressWarnings("unused") Object copyReg, Object slotNames,
-                            @Cached FastIsListSubClassNode isListSubClassNode) {
+                            @Bind("this") Node inliningTarget,
+                            @Shared @Cached FastIsListSubClassNode isListSubClassNode) {
                 Object names = slotNames;
-                if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, names)) {
+                if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, inliningTarget, names)) {
                     throw raise(TypeError, SLOTNAMES_SHOULD_BE_A_NOT_B, cls, "list or None", names);
                 }
                 return names;
             }
 
             @Specialization
+            @SuppressWarnings("truffle-static-method")
             Object getCopyRegSlotNames(VirtualFrame frame, Object cls, Object copyReg, @SuppressWarnings("unused") PNone slotNames,
-                            @Cached FastIsListSubClassNode isListSubClassNode,
+                            @Bind("this") Node inliningTarget,
+                            @Shared @Cached FastIsListSubClassNode isListSubClassNode,
                             @Cached PyObjectCallMethodObjArgs callMethod) {
-                Object names = callMethod.execute(frame, copyReg, T__SLOTNAMES, cls);
-                if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, names)) {
+                Object names = callMethod.execute(frame, inliningTarget, copyReg, T__SLOTNAMES, cls);
+                if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, inliningTarget, names)) {
                     throw raise(TypeError, COPYREG_SLOTNAMES);
                 }
                 return names;
@@ -654,14 +683,16 @@ public abstract class ObjectNodes {
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 64 -> 45
     abstract static class GetStateNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg);
 
         @Specialization
         Object dispatch(VirtualFrame frame, Object obj, boolean required, Object copyReg,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetStateInternalNode getStateInternalNode,
                         @Cached PyObjectLookupAttr lookupAttr) {
-            Object getStateAttr = lookupAttr.execute(frame, obj, T___GETSTATE__);
+            Object getStateAttr = lookupAttr.execute(frame, inliningTarget, obj, T___GETSTATE__);
             return getStateInternalNode.execute(frame, obj, required, copyReg, getStateAttr);
         }
 
@@ -675,6 +706,7 @@ public abstract class ObjectNodes {
             }
 
             @Specialization
+            @SuppressWarnings("truffle-static-method")
             Object getStateFromSlots(VirtualFrame frame, Object obj, boolean required, Object copyReg, @SuppressWarnings("unused") PNone getStateAttr,
                             @Bind("this") Node inliningTarget,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -682,7 +714,7 @@ public abstract class ObjectNodes {
                             @Cached TypeNodes.GetItemSizeNode getItemsizeNode,
                             @Cached CastToTruffleStringNode toStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
-                            @Cached InlinedGetClassNode getClassNode,
+                            @Cached GetClassNode getClassNode,
                             @Cached PyObjectSizeNode sizeNode,
                             @Cached PyObjectLookupAttr lookupAttr,
                             @Cached HashingStorageSetItem setHashingStorageItem,
@@ -693,8 +725,8 @@ public abstract class ObjectNodes {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 
-                Object dict = lookupAttr.execute(frame, obj, T___DICT__);
-                if (!PGuards.isNoValue(dict) && sizeNode.execute(frame, dict) > 0) {
+                Object dict = lookupAttr.execute(frame, inliningTarget, obj, T___DICT__);
+                if (!PGuards.isNoValue(dict) && sizeNode.execute(frame, inliningTarget, dict) > 0) {
                     state = dict;
                 } else {
                     state = PNone.NONE;
@@ -704,11 +736,11 @@ public abstract class ObjectNodes {
                 Object slotnames = getSlotNamesNode.execute(frame, type, copyReg);
                 Object[] names = EMPTY_OBJECT_ARRAY;
                 if (!PGuards.isNone(slotnames)) {
-                    SequenceStorage sequenceStorage = getSequenceStorageNode.execute(slotnames);
+                    SequenceStorage sequenceStorage = getSequenceStorageNode.execute(inliningTarget, slotnames);
                     names = toArrayNode.execute(inliningTarget, sequenceStorage);
                 }
 
-                if (required && !checkBasesize.execute(obj, type, names.length)) {
+                if (required && !checkBasesize.execute(inliningTarget, obj, type, names.length)) {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 
@@ -717,10 +749,10 @@ public abstract class ObjectNodes {
                     boolean haveSlots = false;
                     for (Object o : names) {
                         try {
-                            TruffleString name = toStringNode.execute(o);
-                            Object value = lookupAttr.execute(frame, obj, name);
+                            TruffleString name = toStringNode.execute(inliningTarget, o);
+                            Object value = lookupAttr.execute(frame, inliningTarget, obj, name);
                             if (!PGuards.isNoValue(value)) {
-                                HashingStorage newStorage = setHashingStorageItem.execute(frame, slotsStorage, name, value);
+                                HashingStorage newStorage = setHashingStorageItem.execute(frame, inliningTarget, slotsStorage, name, value);
                                 assert newStorage == slotsStorage;
                                 haveSlots = true;
                             }
@@ -738,8 +770,10 @@ public abstract class ObjectNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class CheckBasesizeForGetState extends Node {
-        public abstract boolean execute(Object obj, Object type, int slotNum);
+        public abstract boolean execute(Node inliningTarget, Object obj, Object type, int slotNum);
 
         @Specialization
         boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
@@ -770,12 +804,13 @@ public abstract class ObjectNodes {
         public abstract Object execute(VirtualFrame frame, Object obj, int proto);
 
         @Specialization(guards = "proto >= 2")
+        @SuppressWarnings("truffle-static-method")
         public Object reduceNewObj(VirtualFrame frame, Object obj, @SuppressWarnings("unused") int proto,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached("create(T___NEW__)") LookupAttributeInMRONode lookupNew,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PyImportImport importNode,
+                        @Shared @Cached PyImportImport importNode,
                         @Cached InlinedConditionProfile newObjProfile,
                         @Cached InlinedConditionProfile hasArgsProfile,
                         @Cached GetNewArgsNode getNewArgsNode,
@@ -784,7 +819,7 @@ public abstract class ObjectNodes {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Shared @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter) {
             Object cls = getClassNode.execute(inliningTarget, obj);
             if (lookupNew.execute(cls) == PNone.NO_VALUE) {
@@ -796,15 +831,15 @@ public abstract class ObjectNodes {
             Object kwargs = rv.getRight();
             Object newobj, newargs;
 
-            Object copyReg = importNode.execute(frame, T_MOD_COPYREG);
+            Object copyReg = importNode.execute(frame, inliningTarget, T_MOD_COPYREG);
 
             boolean hasargs = args != PNone.NONE;
 
-            if (newObjProfile.profile(inliningTarget, kwargs == PNone.NONE || sizeNode.execute(frame, kwargs) == 0)) {
-                newobj = lookupAttr.execute(frame, copyReg, T___NEWOBJ__);
+            if (newObjProfile.profile(inliningTarget, kwargs == PNone.NONE || sizeNode.execute(frame, inliningTarget, kwargs) == 0)) {
+                newobj = lookupAttr.execute(frame, inliningTarget, copyReg, T___NEWOBJ__);
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(inliningTarget, hasargs)) {
-                    SequenceStorage sequenceStorage = getSequenceStorageNode.execute(args);
+                    SequenceStorage sequenceStorage = getSequenceStorageNode.execute(inliningTarget, args);
                     Object[] vals = toArrayNode.execute(inliningTarget, sequenceStorage);
                     newargsVals = new Object[vals.length + 1];
                     newargsVals[0] = cls;
@@ -814,7 +849,7 @@ public abstract class ObjectNodes {
                 }
                 newargs = factory().createTuple(newargsVals);
             } else if (hasArgsProfile.profile(inliningTarget, hasargs)) {
-                newobj = lookupAttr.execute(frame, copyReg, T___NEWOBJ_EX__);
+                newobj = lookupAttr.execute(frame, inliningTarget, copyReg, T___NEWOBJ_EX__);
                 newargs = factory().createTuple(new Object[]{cls, args, kwargs});
             } else {
                 throw raiseBadInternalCall();
@@ -825,18 +860,19 @@ public abstract class ObjectNodes {
             boolean required = !hasargs && !objIsDict && !objIsList;
 
             Object state = getStateNode.execute(frame, obj, required, copyReg);
-            Object listitems = objIsList ? getIter.execute(frame, obj) : PNone.NONE;
-            Object dictitems = objIsDict ? getIter.execute(frame, callMethod.execute(frame, obj, T_ITEMS)) : PNone.NONE;
+            Object listitems = objIsList ? getIter.execute(frame, inliningTarget, obj) : PNone.NONE;
+            Object dictitems = objIsDict ? getIter.execute(frame, inliningTarget, callMethod.execute(frame, inliningTarget, obj, T_ITEMS)) : PNone.NONE;
 
             return factory().createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
         }
 
         @Specialization(guards = "proto < 2")
-        public Object reduceCopyReg(VirtualFrame frame, Object obj, int proto,
-                        @Cached PyImportImport importNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object copyReg = importNode.execute(frame, T_MOD_COPYREG);
-            return callMethod.execute(frame, copyReg, T__REDUCE_EX, obj, proto);
+        public static Object reduceCopyReg(VirtualFrame frame, Object obj, int proto,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyImportImport importNode,
+                        @Shared @Cached PyObjectCallMethodObjArgs callMethod) {
+            Object copyReg = importNode.execute(frame, inliningTarget, T_MOD_COPYREG);
+            return callMethod.execute(frame, inliningTarget, copyReg, T__REDUCE_EX, obj, proto);
         }
     }
 
@@ -848,26 +884,28 @@ public abstract class ObjectNodes {
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 76 -> 57
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
         public abstract TruffleString execute(Frame frame, Object cls);
 
         @Specialization
         static TruffleString get(VirtualFrame frame, Object cls,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            Object moduleNameObject = lookupAttr.execute(frame, cls, T___MODULE__);
-            Object qualNameObject = lookupAttr.execute(frame, cls, T___QUALNAME__);
+            Object moduleNameObject = lookupAttr.execute(frame, inliningTarget, cls, T___MODULE__);
+            Object qualNameObject = lookupAttr.execute(frame, inliningTarget, cls, T___QUALNAME__);
             if (qualNameObject == PNone.NO_VALUE) {
                 return StringLiterals.T_VALUE_UNKNOWN;
             }
-            TruffleString qualName = cast.execute(qualNameObject);
+            TruffleString qualName = cast.execute(inliningTarget, qualNameObject);
             if (moduleNameObject == PNone.NO_VALUE) {
                 return qualName;
             }
-            TruffleString moduleName = cast.execute(moduleNameObject);
+            TruffleString moduleName = cast.execute(inliningTarget, moduleNameObject);
             if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING)) {
                 return qualName;
             }
@@ -891,15 +929,16 @@ public abstract class ObjectNodes {
      * {@link BuiltinNames#T_BUILTINS} module).
      */
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class GetFullyQualifiedClassNameNode extends PNodeWithContext {
-        public abstract TruffleString execute(Frame frame, Object self);
+        public abstract TruffleString execute(Frame frame, Node inliningTarget, Object self);
 
         @Specialization
-        static TruffleString get(VirtualFrame frame, Object self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClass,
-                        @Cached GetFullyQualifiedNameNode getFullyQualifiedNameNode) {
+        static TruffleString get(VirtualFrame frame, Node inliningTarget, Object self,
+                        @Cached GetClassNode getClass,
+                        @Cached(inline = false) GetFullyQualifiedNameNode getFullyQualifiedNameNode) {
             return getFullyQualifiedNameNode.execute(frame, getClass.execute(inliningTarget, self));
         }
     }
@@ -908,14 +947,20 @@ public abstract class ObjectNodes {
      * Default repr for objects that don't override {@code __repr__}
      */
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class DefaultObjectReprNode extends PNodeWithContext {
-        public abstract TruffleString execute(Frame frame, Object object);
+        public abstract TruffleString execute(Frame frame, Node inliningTarget, Object object);
+
+        public final TruffleString executeCached(Frame frame, Object object) {
+            return execute(frame, this, object);
+        }
 
         @Specialization
-        static TruffleString repr(VirtualFrame frame, Object self,
+        static TruffleString repr(VirtualFrame frame, Node inliningTarget, Object self,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
+                        @Cached(inline = false) SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self);
             return simpleTruffleStringFormatNode.format("<%s object at 0x%s>", fqcn, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
         }
 
@@ -933,10 +978,10 @@ public abstract class ObjectNodes {
 
         @Specialization
         static void doStringKey(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, WriteAttributeToObjectNode writeNode,
-                        @Shared @Cached InlinedGetClassNode getClassNode,
+                        @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached CallSetHelper callSetHelper,
-                        @Shared @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
             boolean calledSet = callSetHelper.execute(inliningTarget, frame, descr, object, value);
@@ -948,24 +993,24 @@ public abstract class ObjectNodes {
                 return;
             }
             if (descr != PNone.NO_VALUE) {
-                throw raiseNode.raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raiseNode.raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
             }
         }
 
         @Specialization(replaces = "doStringKey")
         static void doIt(Node inliningTarget, VirtualFrame frame, Object object, Object keyObject, Object value, WriteAttributeToObjectNode writeNode,
-                        @Shared @Cached InlinedGetClassNode getClassNode,
+                        @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached CallSetHelper callSetHelper,
-                        @Shared @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Shared @Cached PRaiseNode raiseNode,
+                        @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode,
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(keyObject);
+                key = castKeyToStringNode.execute(inliningTarget, keyObject);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
             }
             doStringKey(inliningTarget, frame, object, key, value, writeNode, getClassNode, callSetHelper, getExisting, raiseNode);
         }
@@ -989,9 +1034,9 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(descr)")
             static boolean call(Node inliningTarget, VirtualFrame frame, Object descr, Object object, Object value,
-                            @Cached InlinedGetClassNode getClassNode,
-                            @Cached(parameters = "Set") LookupCallableSlotInMRONode lookup,
-                            @Cached CallTernaryMethodNode call) {
+                            @Cached GetClassNode getClassNode,
+                            @Cached(parameters = "Set", inline = false) LookupCallableSlotInMRONode lookup,
+                            @Cached(inline = false) CallTernaryMethodNode call) {
                 Object descrClass = getClassNode.execute(inliningTarget, descr);
                 Object setMethod = lookup.execute(descrClass);
                 if (setMethod == PNone.NO_VALUE) {
@@ -1019,7 +1064,7 @@ public abstract class ObjectNodes {
         @Specialization
         protected PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
@@ -1044,12 +1089,12 @@ public abstract class ObjectNodes {
         @Specialization(replaces = "doStringKey")
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(keyObject);
+                key = castKeyToStringNode.execute(inliningTarget, keyObject);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
             }
@@ -1061,7 +1106,7 @@ public abstract class ObjectNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getDescClassNode = insert(GetClassNode.create());
             }
-            return getDescClassNode.execute(desc);
+            return getDescClassNode.executeCached(desc);
         }
 
         private LookupCallableSlotInMRONode ensureLookupSetNode() {

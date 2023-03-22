@@ -49,12 +49,14 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -67,6 +69,7 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
  * never raises {@code StopIteration}.
  */
 @GenerateUncached
+@GenerateInline(false) // Used in BCI
 public abstract class ForIterINode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object iterator, int stackTop) throws QuickeningGeneralizeException;
 
@@ -89,9 +92,10 @@ public abstract class ForIterINode extends PNodeWithContext {
     // TODO list, tuple, enumerate, dict keys, dict values, dict items, string, bytes
 
     @Specialization
-    boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
+    @InliningCutoff
+    static boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
                     @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
                     @Cached IsBuiltinObjectProfile stopIterationProfile,

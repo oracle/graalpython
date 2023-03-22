@@ -151,12 +151,13 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object string(PString value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached InlinedConditionProfile asciiProfile) {
-            TruffleString ts = cast.execute(value);
+            TruffleString ts = cast.execute(inliningTarget, value);
             if (asciiProfile.profile(inliningTarget, isAscii(ts, getCodeRangeNode))) {
                 return asciiString(ts, getCodeRangeNode);
             } else {

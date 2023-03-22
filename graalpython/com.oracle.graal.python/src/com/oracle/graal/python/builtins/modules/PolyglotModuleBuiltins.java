@@ -86,6 +86,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -99,6 +100,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.LanguageInfo;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -612,8 +614,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class StorageNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doSequence(PSequence seq,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(seq);
+            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, seq);
             return PythonContext.get(this).getEnv().asGuestValue(storage.getInternalArrayObject());
         }
 

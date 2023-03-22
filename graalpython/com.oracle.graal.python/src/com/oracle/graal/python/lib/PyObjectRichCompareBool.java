@@ -48,20 +48,22 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBoolFactory.EqNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -85,13 +87,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  * report they are unequal to themselves (i.e. {@code NaN}).
  */
 public abstract class PyObjectRichCompareBool {
-    @SuppressWarnings("unused")
-    @GenerateCached(false)
-    @GenerateInline(false)
-    @GenerateUncached(false)
-    protected abstract static class ComparisonBaseNode extends PNodeWithContext {
-        public abstract boolean execute(Frame frame, Object a, Object b);
 
+    public abstract static class Comparison {
         protected boolean op(boolean a, boolean b) {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
@@ -124,96 +121,109 @@ public abstract class PyObjectRichCompareBool {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
 
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+        protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+            throw CompilerDirectives.shouldNotReachHere("abstract method");
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @GenerateCached(false)
+    @GenerateInline(false)
+    @GenerateUncached(false)
+    protected abstract static class ComparisonBaseNode extends PNodeWithContext {
+        // Overridden by the implementors to call execute with the right Comparison strategy
+        public boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
 
+        protected abstract boolean execute(Frame frame, Node inliningTarget, Object a, Object b, Comparison cmp);
+
         @Specialization
-        boolean doBB(boolean a, boolean b) {
-            return op(a, b);
+        static boolean doBB(boolean a, boolean b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization
-        boolean doII(int a, int b) {
-            return op(a, b);
+        static boolean doII(int a, int b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization
-        boolean doIL(int a, long b) {
-            return op(a, b);
+        static boolean doIL(int a, long b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization
-        boolean doID(int a, double b) {
-            return op(a, b);
+        static boolean doID(int a, double b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization(guards = "isBuiltinPInt(b)", rewriteOn = OverflowException.class)
-        boolean doIPNoOVerflow(int a, PInt b) throws OverflowException {
-            return op(a, b.intValueExact());
+        static boolean doIPNoOVerflow(int a, PInt b, Comparison cmp) throws OverflowException {
+            return cmp.op(a, b.intValueExact());
         }
 
         @Specialization(guards = "isBuiltinPInt(b)", replaces = "doIPNoOVerflow")
-        boolean doIP(int a, PInt b) {
+        static boolean doIP(int a, PInt b, Comparison cmp) {
             try {
-                return op(a, b.intValueExact());
+                return cmp.op(a, b.intValueExact());
             } catch (OverflowException e) {
                 return false;
             }
         }
 
         @Specialization
-        boolean doLL(long a, long b) {
-            return op(a, b);
+        static boolean doLL(long a, long b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization
-        boolean doLI(long a, int b) {
-            return op(a, b);
+        static boolean doLI(long a, int b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization
-        boolean doLD(long a, double b) {
-            return op(a, b);
+        static boolean doLD(long a, double b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization(guards = "isBuiltinPInt(b)", rewriteOn = OverflowException.class)
-        boolean doLPNoOVerflow(long a, PInt b) throws OverflowException {
-            return op(a, b.longValueExact());
+        static boolean doLPNoOVerflow(long a, PInt b, Comparison cmp) throws OverflowException {
+            return cmp.op(a, b.longValueExact());
         }
 
         @Specialization(guards = "isBuiltinPInt(b)", replaces = "doLPNoOVerflow")
-        boolean doLP(long a, PInt b) {
+        static boolean doLP(long a, PInt b, Comparison cmp) {
             try {
-                return op(a, b.longValueExact());
+                return cmp.op(a, b.longValueExact());
             } catch (OverflowException e) {
                 return false;
             }
         }
 
         @Specialization(guards = "isBuiltinPInt(a)", rewriteOn = OverflowException.class)
-        boolean doPINoOverflow(PInt a, int b) throws OverflowException {
-            return op(a.intValueExact(), b);
+        static boolean doPINoOverflow(PInt a, int b, Comparison cmp) throws OverflowException {
+            return cmp.op(a.intValueExact(), b);
         }
 
         @Specialization(guards = "isBuiltinPInt(a)", replaces = "doPINoOverflow")
-        boolean doPI(PInt a, int b) {
+        static boolean doPI(PInt a, int b, Comparison cmp) {
             try {
-                return op(a.intValueExact(), b);
+                return cmp.op(a.intValueExact(), b);
             } catch (OverflowException e) {
                 return false;
             }
         }
 
         @Specialization(guards = "isBuiltinPInt(a)", rewriteOn = OverflowException.class)
-        boolean doPLNoOverflow(PInt a, long b) throws OverflowException {
-            return op(a.longValueExact(), b);
+        static boolean doPLNoOverflow(PInt a, long b, Comparison cmp) throws OverflowException {
+            return cmp.op(a.longValueExact(), b);
         }
 
         @Specialization(guards = "isBuiltinPInt(a)", replaces = "doPLNoOverflow")
-        boolean doPL(PInt a, long b) {
+        static boolean doPL(PInt a, long b, Comparison cmp) {
             try {
-                return op(a.longValueExact(), b);
+                return cmp.op(a.longValueExact(), b);
             } catch (OverflowException e) {
                 return false;
             }
@@ -221,45 +231,45 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization(guards = {"isBuiltinPInt(a)", "isBuiltinPInt(b)"})
         @TruffleBoundary
-        boolean doPP(PInt a, PInt b) {
-            return op(a.compareTo(b), 0);
+        static boolean doPP(PInt a, PInt b, Comparison cmp) {
+            return cmp.op(a.compareTo(b), 0);
         }
 
         @Specialization
-        boolean doDD(double a, double b) {
+        static boolean doDD(double a, double b, Comparison cmp) {
             // nb: Eq subclass handles NaN identity
-            return op(a, b);
+            return cmp.op(a, b);
         }
 
         @Specialization
-        boolean doDI(double a, int b) {
-            return op(a, b);
+        static boolean doDI(double a, int b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization
-        boolean doDL(double a, long b) {
-            return op(a, b);
+        static boolean doDL(double a, long b, Comparison cmp) {
+            return cmp.op(a, b);
         }
 
         @Specialization
         @SuppressWarnings("truffle-static-method")
-        boolean doGeneric(VirtualFrame frame, Object a, Object b,
-                        @Bind("this") Node inliningTarget,
-                        @Cached IsNode isNode,
-                        @Cached InlinedGetClassNode getClassA,
-                        @Cached InlinedGetClassNode getClassB,
+        @InliningCutoff
+        static boolean doGeneric(VirtualFrame frame, Node inliningTarget, Object a, Object b, Comparison cmp,
+                        @Cached(inline = false) IsNode isNode,
+                        @Cached GetClassNode getClassA,
+                        @Cached GetClassNode getClassB,
                         @Cached InlinedConditionProfile reversedFirst,
-                        @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached(parameters = "getSlot()") LookupSpecialMethodSlotNode lookupMethod,
-                        @Cached(parameters = "getReverseSlot()") LookupSpecialMethodSlotNode lookupReverseMethod,
-                        @Cached CallBinaryMethodNode callMethod,
-                        @Cached CallBinaryMethodNode callReverseMethod,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                        @Cached(parameters = "cmp.getSlot()", inline = false) LookupSpecialMethodSlotNode lookupMethod,
+                        @Cached(parameters = "cmp.getReverseSlot()", inline = false) LookupSpecialMethodSlotNode lookupReverseMethod,
+                        @Cached(inline = false) CallBinaryMethodNode callMethod,
+                        @Cached(inline = false) CallBinaryMethodNode callReverseMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (needsIdentityComparison()) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (cmp.needsIdentityComparison()) {
                 if (isNode.execute(a, b)) {
-                    return identityComparisonResult();
+                    return cmp.identityComparisonResult();
                 }
             }
             boolean checkedReverseOp = false;
@@ -272,7 +282,7 @@ public abstract class PyObjectRichCompareBool {
                 if (reverseMethod != PNone.NO_VALUE) {
                     Object result = callReverseMethod.executeObject(frame, reverseMethod, b, a);
                     if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                        return isTrueNode.execute(frame, result);
+                        return isTrueNode.execute(frame, inliningTarget, result);
                     }
                 }
             }
@@ -280,7 +290,7 @@ public abstract class PyObjectRichCompareBool {
             if (method != PNone.NO_VALUE) {
                 Object result = callMethod.executeObject(frame, method, a, b);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    return isTrueNode.execute(frame, result);
+                    return isTrueNode.execute(frame, inliningTarget, result);
                 }
             }
             if (!checkedReverseOp) {
@@ -288,11 +298,11 @@ public abstract class PyObjectRichCompareBool {
                 if (reverseMethod != PNone.NO_VALUE) {
                     Object result = callReverseMethod.executeObject(frame, reverseMethod, b, a);
                     if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                        return isTrueNode.execute(frame, result);
+                        return isTrueNode.execute(frame, inliningTarget, result);
                     }
                 }
             }
-            return doDefault(raiseNode, a, b);
+            return cmp.doDefault(inliningTarget, raiseNode, a, b);
         }
 
         private static Object lookupMethodIgnoreDescriptorError(VirtualFrame frame, LookupSpecialMethodSlotNode lookupMethod, Object aType, Object a) {
@@ -305,57 +315,76 @@ public abstract class PyObjectRichCompareBool {
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
     public abstract static class EqNode extends ComparisonBaseNode {
-        @Override
-        protected boolean op(boolean a, boolean b) {
-            return a == b;
+        private static final class EqComparison extends Comparison {
+            @Override
+            protected boolean op(boolean a, boolean b) {
+                return a == b;
+            }
+
+            @Override
+            protected boolean op(int a, int b) {
+                return a == b;
+            }
+
+            @Override
+            protected boolean op(long a, long b) {
+                return a == b;
+            }
+
+            @Override
+            protected boolean op(double a, double b) {
+                return a == b || (Double.isNaN(a) && Double.isNaN(b));
+            }
+
+            @Override
+            protected SpecialMethodSlot getSlot() {
+                return SpecialMethodSlot.Eq;
+            }
+
+            @Override
+            protected SpecialMethodSlot getReverseSlot() {
+                return SpecialMethodSlot.Eq;
+            }
+
+            @Override
+            protected boolean needsIdentityComparison() {
+                return true;
+            }
+
+            @Override
+            protected boolean identityComparisonResult() {
+                return true;
+            }
+
+            @Override
+            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+                // Already compared for identity
+                return false;
+            }
+        }
+
+        private static final EqComparison CMP = new EqComparison();
+
+        public final boolean compareCached(Frame frame, Object a, Object b) {
+            return compare(frame, this, a, b);
         }
 
         @Override
-        protected boolean op(int a, int b) {
-            return a == b;
+        public final boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
+            return execute(frame, inliningTarget, a, b, CMP);
         }
 
-        @Override
-        protected boolean op(long a, long b) {
-            return a == b;
-        }
-
-        @Override
-        protected boolean op(double a, double b) {
-            return a == b || (Double.isNaN(a) && Double.isNaN(b));
+        public static boolean compareUncached(Object a, Object b) {
+            return EqNodeGen.getUncached().compare(null, null, a, b);
         }
 
         @Specialization(insertBefore = "doGeneric")
-        boolean doSS(TruffleString a, TruffleString b,
-                        @Cached TruffleString.EqualNode equalNode) {
+        @InliningCutoff
+        static boolean doSS(TruffleString a, TruffleString b, @SuppressWarnings("unused") Comparison cmp,
+                        @Cached(inline = false) TruffleString.EqualNode equalNode) {
             return equalNode.execute(a, b, TS_ENCODING);
-        }
-
-        @Override
-        protected SpecialMethodSlot getSlot() {
-            return SpecialMethodSlot.Eq;
-        }
-
-        @Override
-        protected SpecialMethodSlot getReverseSlot() {
-            return SpecialMethodSlot.Eq;
-        }
-
-        @Override
-        protected boolean needsIdentityComparison() {
-            return true;
-        }
-
-        @Override
-        protected boolean identityComparisonResult() {
-            return true;
-        }
-
-        @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            // Already compared for identity
-            return false;
         }
 
         @NeverDefault
@@ -369,280 +398,293 @@ public abstract class PyObjectRichCompareBool {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class NeNode extends ComparisonBaseNode {
-        @Override
-        protected boolean op(boolean a, boolean b) {
-            return a != b;
+        private static final class NeComparison extends Comparison {
+            @Override
+            protected boolean op(boolean a, boolean b) {
+                return a != b;
+            }
+
+            @Override
+            protected boolean op(int a, int b) {
+                return a != b;
+            }
+
+            @Override
+            protected boolean op(long a, long b) {
+                return a != b;
+            }
+
+            @Override
+            protected boolean op(double a, double b) {
+                return a != b;
+            }
+
+            @Override
+            protected SpecialMethodSlot getSlot() {
+                return SpecialMethodSlot.Ne;
+            }
+
+            @Override
+            protected SpecialMethodSlot getReverseSlot() {
+                return SpecialMethodSlot.Ne;
+            }
+
+            @Override
+            protected boolean needsIdentityComparison() {
+                return true;
+            }
+
+            @Override
+            protected boolean identityComparisonResult() {
+                return false;
+            }
+
+            @Override
+            @SuppressWarnings("unused")
+            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+                // Already compared for identity
+                return true;
+            }
         }
 
-        @Override
-        protected boolean op(int a, int b) {
-            return a != b;
-        }
+        private static final NeComparison CMP = new NeComparison();
 
         @Override
-        protected boolean op(long a, long b) {
-            return a != b;
-        }
-
-        @Override
-        protected boolean op(double a, double b) {
-            return a != b;
+        public final boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
+            return execute(frame, inliningTarget, a, b, CMP);
         }
 
         @Specialization(insertBefore = "doGeneric")
-        boolean doSS(TruffleString a, TruffleString b,
-                        @Cached TruffleString.EqualNode equalNode) {
+        static boolean doSS(TruffleString a, TruffleString b, @SuppressWarnings("unused") Comparison cmp,
+                        @Cached(inline = false) TruffleString.EqualNode equalNode) {
             return !equalNode.execute(a, b, TS_ENCODING);
         }
-
-        @Override
-        protected SpecialMethodSlot getSlot() {
-            return SpecialMethodSlot.Ne;
-        }
-
-        @Override
-        protected SpecialMethodSlot getReverseSlot() {
-            return SpecialMethodSlot.Ne;
-        }
-
-        @Override
-        protected boolean needsIdentityComparison() {
-            return true;
-        }
-
-        @Override
-        protected boolean identityComparisonResult() {
-            return false;
-        }
-
-        @Override
-        @SuppressWarnings("unused")
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            // Already compared for identity
-            return true;
-        }
-
-        @NeverDefault
-        public static NeNode create() {
-            return PyObjectRichCompareBoolFactory.NeNodeGen.create();
-        }
-
-        public static NeNode getUncached() {
-            return PyObjectRichCompareBoolFactory.NeNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class LtNode extends ComparisonBaseNode {
-        @Override
-        protected boolean op(boolean a, boolean b) {
-            return !a && b;
+
+        private static final class LtComparison extends Comparison {
+            @Override
+            protected boolean op(boolean a, boolean b) {
+                return !a && b;
+            }
+
+            @Override
+            protected boolean op(int a, int b) {
+                return a < b;
+            }
+
+            @Override
+            protected boolean op(long a, long b) {
+                return a < b;
+            }
+
+            @Override
+            protected boolean op(double a, double b) {
+                return a < b;
+            }
+
+            @Override
+            protected SpecialMethodSlot getSlot() {
+                return SpecialMethodSlot.Lt;
+            }
+
+            @Override
+            protected SpecialMethodSlot getReverseSlot() {
+                return SpecialMethodSlot.Gt;
+            }
+
+            @Override
+            @SuppressWarnings("unused")
+            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
+            }
         }
 
-        @Override
-        protected boolean op(int a, int b) {
-            return a < b;
-        }
+        public static final LtComparison CMP = new LtComparison();
 
         @Override
-        protected boolean op(long a, long b) {
-            return a < b;
-        }
-
-        @Override
-        protected boolean op(double a, double b) {
-            return a < b;
+        public boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
+            return execute(frame, inliningTarget, a, b, CMP);
         }
 
         @Specialization(insertBefore = "doGeneric")
-        boolean doSS(TruffleString a, TruffleString b,
-                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+        static boolean doSS(TruffleString a, TruffleString b, @SuppressWarnings("unused") Comparison cmp,
+                        @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
             return compareStrings(a, b, compareIntsUTF32Node) < 0;
         }
-
-        @Override
-        protected SpecialMethodSlot getSlot() {
-            return SpecialMethodSlot.Lt;
-        }
-
-        @Override
-        protected SpecialMethodSlot getReverseSlot() {
-            return SpecialMethodSlot.Gt;
-        }
-
-        @Override
-        @SuppressWarnings("unused")
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
-        }
-
-        @NeverDefault
-        public static LtNode create() {
-            return PyObjectRichCompareBoolFactory.LtNodeGen.create();
-        }
-
-        public static LtNode getUncached() {
-            return PyObjectRichCompareBoolFactory.LtNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
     public abstract static class LeNode extends ComparisonBaseNode {
-        @Override
-        protected boolean op(boolean a, boolean b) {
-            return b || !a;
+
+        private static final class LeComparison extends Comparison {
+            @Override
+            protected boolean op(boolean a, boolean b) {
+                return b || !a;
+            }
+
+            @Override
+            protected boolean op(int a, int b) {
+                return a <= b;
+            }
+
+            @Override
+            protected boolean op(long a, long b) {
+                return a <= b;
+            }
+
+            @Override
+            protected boolean op(double a, double b) {
+                return a <= b;
+            }
+
+            @Override
+            protected SpecialMethodSlot getSlot() {
+                return SpecialMethodSlot.Le;
+            }
+
+            @Override
+            protected SpecialMethodSlot getReverseSlot() {
+                return SpecialMethodSlot.Ge;
+            }
+
+            @Override
+            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
+            }
         }
 
-        @Override
-        protected boolean op(int a, int b) {
-            return a <= b;
-        }
+        public static final LeComparison CMP = new LeComparison();
 
         @Override
-        protected boolean op(long a, long b) {
-            return a <= b;
-        }
-
-        @Override
-        protected boolean op(double a, double b) {
-            return a <= b;
+        public final boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
+            return execute(frame, inliningTarget, a, b, CMP);
         }
 
         @Specialization(insertBefore = "doGeneric")
-        boolean doSS(TruffleString a, TruffleString b,
-                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+        static boolean doSS(TruffleString a, TruffleString b, @SuppressWarnings("unused") Comparison cmp,
+                        @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
             return compareStrings(a, b, compareIntsUTF32Node) <= 0;
         }
-
-        @Override
-        protected SpecialMethodSlot getSlot() {
-            return SpecialMethodSlot.Le;
-        }
-
-        @Override
-        protected SpecialMethodSlot getReverseSlot() {
-            return SpecialMethodSlot.Ge;
-        }
-
-        @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
-        }
-
-        @NeverDefault
-        public static LeNode create() {
-            return PyObjectRichCompareBoolFactory.LeNodeGen.create();
-        }
-
-        public static LeNode getUncached() {
-            return PyObjectRichCompareBoolFactory.LeNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GtNode extends ComparisonBaseNode {
-        @Override
-        protected boolean op(boolean a, boolean b) {
-            return a && !b;
+
+        private static final class GtComparison extends Comparison {
+            @Override
+            protected boolean op(boolean a, boolean b) {
+                return a && !b;
+            }
+
+            @Override
+            protected boolean op(int a, int b) {
+                return a > b;
+            }
+
+            @Override
+            protected boolean op(long a, long b) {
+                return a > b;
+            }
+
+            @Override
+            protected boolean op(double a, double b) {
+                return a > b;
+            }
+
+            @Override
+            protected SpecialMethodSlot getSlot() {
+                return SpecialMethodSlot.Gt;
+            }
+
+            @Override
+            protected SpecialMethodSlot getReverseSlot() {
+                return SpecialMethodSlot.Lt;
+            }
+
+            @Override
+            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
+            }
         }
 
-        @Override
-        protected boolean op(int a, int b) {
-            return a > b;
-        }
+        public static final GtComparison CMP = new GtComparison();
 
         @Override
-        protected boolean op(long a, long b) {
-            return a > b;
-        }
-
-        @Override
-        protected boolean op(double a, double b) {
-            return a > b;
+        public final boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
+            return execute(frame, inliningTarget, a, b, CMP);
         }
 
         @Specialization(insertBefore = "doGeneric")
-        boolean doSS(TruffleString a, TruffleString b,
-                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+        static boolean doSS(TruffleString a, TruffleString b, @SuppressWarnings("unused") Comparison cmp,
+                        @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
             return compareStrings(a, b, compareIntsUTF32Node) > 0;
         }
-
-        @Override
-        protected SpecialMethodSlot getSlot() {
-            return SpecialMethodSlot.Gt;
-        }
-
-        @Override
-        protected SpecialMethodSlot getReverseSlot() {
-            return SpecialMethodSlot.Lt;
-        }
-
-        @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
-        }
-
-        @NeverDefault
-        public static GtNode create() {
-            return PyObjectRichCompareBoolFactory.GtNodeGen.create();
-        }
-
-        public static GtNode getUncached() {
-            return PyObjectRichCompareBoolFactory.GtNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GeNode extends ComparisonBaseNode {
-        @Override
-        protected boolean op(boolean a, boolean b) {
-            return a || !b;
+
+        private static final class GeComparison extends Comparison {
+            @Override
+            protected boolean op(boolean a, boolean b) {
+                return a || !b;
+            }
+
+            @Override
+            protected boolean op(int a, int b) {
+                return a >= b;
+            }
+
+            @Override
+            protected boolean op(long a, long b) {
+                return a >= b;
+            }
+
+            @Override
+            protected boolean op(double a, double b) {
+                return a >= b;
+            }
+
+            @Override
+            protected SpecialMethodSlot getSlot() {
+                return SpecialMethodSlot.Ge;
+            }
+
+            @Override
+            protected SpecialMethodSlot getReverseSlot() {
+                return SpecialMethodSlot.Le;
+            }
+
+            @Override
+            protected boolean doDefault(Node inliningTarget, Lazy raiseNode, Object a, Object b) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
+            }
         }
 
-        @Override
-        protected boolean op(int a, int b) {
-            return a >= b;
-        }
+        public static final GeComparison CMP = new GeComparison();
 
         @Override
-        protected boolean op(long a, long b) {
-            return a >= b;
-        }
-
-        @Override
-        protected boolean op(double a, double b) {
-            return a >= b;
+        public final boolean compare(Frame frame, Node inliningTarget, Object a, Object b) {
+            return execute(frame, inliningTarget, a, b, CMP);
         }
 
         @Specialization(insertBefore = "doGeneric")
-        boolean doSS(TruffleString a, TruffleString b,
-                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+        static boolean doSS(TruffleString a, TruffleString b, @SuppressWarnings("unused") Comparison cmp,
+                        @Cached(inline = false) TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
             return compareStrings(a, b, compareIntsUTF32Node) >= 0;
-        }
-
-        @Override
-        protected SpecialMethodSlot getSlot() {
-            return SpecialMethodSlot.Ge;
-        }
-
-        @Override
-        protected SpecialMethodSlot getReverseSlot() {
-            return SpecialMethodSlot.Le;
-        }
-
-        @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
-        }
-
-        @NeverDefault
-        public static GeNode create() {
-            return PyObjectRichCompareBoolFactory.GeNodeGen.create();
-        }
-
-        public static GeNode getUncached() {
-            return PyObjectRichCompareBoolFactory.GeNodeGen.getUncached();
         }
     }
 }

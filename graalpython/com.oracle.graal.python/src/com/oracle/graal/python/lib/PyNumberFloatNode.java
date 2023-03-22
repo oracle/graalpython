@@ -55,13 +55,14 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -75,12 +76,14 @@ import com.oracle.truffle.api.nodes.Node;
  * integer wouldn't fit into double.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyNumberFloatNode extends PNodeWithContext {
-    public abstract double execute(Frame frame, Object object);
+    public abstract double execute(Frame frame, Node inliningTarget, Object object);
 
-    public final double execute(Object object) {
-        return execute(null, object);
+    public final double execute(Node inliningTarget, Object object) {
+        return execute(null, inliningTarget, object);
     }
 
     @Specialization
@@ -104,19 +107,19 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)"})
-    static double doObject(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached(parameters = "Float") LookupSpecialMethodSlotNode lookup,
-                    @Cached CallUnaryMethodNode call,
-                    @Cached InlinedGetClassNode resultClassNode,
+    @InliningCutoff
+    static double doObject(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Float", inline = false) LookupSpecialMethodSlotNode lookup,
+                    @Cached(inline = false) CallUnaryMethodNode call,
+                    @Cached GetClassNode resultClassNode,
                     @Cached InlineIsBuiltinClassProfile resultProfile,
-                    @Cached IsSubtypeNode resultSubtypeNode,
+                    @Cached(inline = false) IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
                     @Cached CastToJavaDoubleNode cast,
-                    @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                    @Cached PRaiseNode raiseNode,
+                    @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
+                    @Cached PRaiseNode.Lazy raiseNode,
                     @Cached PyFloatFromString fromString) {
         Object floatDescr = lookup.execute(frame, getClassNode.execute(inliningTarget, object), object);
         if (floatDescr != PNone.NO_VALUE) {
@@ -124,23 +127,18 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
             Object resultType = resultClassNode.execute(inliningTarget, result);
             if (!resultProfile.profileClass(inliningTarget, resultType, PythonBuiltinClassType.PFloat)) {
                 if (!resultSubtypeNode.execute(resultType, PythonBuiltinClassType.PFloat)) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
                 } else {
                     warnNode.warnFormat(frame, null, DeprecationWarning, 1,
                                     ErrorMessages.WARN_P_RETURNED_NON_P, object, T___FLOAT__, "float", result, "float");
                 }
             }
-            return cast.execute(result);
+            return cast.execute(inliningTarget, result);
         }
-        if (indexCheckNode.execute(object)) {
-            Object index = indexNode.execute(frame, object);
-            return cast.execute(index);
+        if (indexCheckNode.execute(inliningTarget, object)) {
+            Object index = indexNode.execute(frame, inliningTarget, object);
+            return cast.execute(inliningTarget, index);
         }
-        return fromString.execute(frame, object);
-    }
-
-    @NeverDefault
-    public static PyNumberFloatNode create() {
-        return PyNumberFloatNodeGen.create();
+        return fromString.execute(frame, inliningTarget, object);
     }
 }

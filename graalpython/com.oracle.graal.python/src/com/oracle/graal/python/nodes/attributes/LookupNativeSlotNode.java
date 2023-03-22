@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.AttributeAssumptionPair;
@@ -69,7 +69,9 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
@@ -78,7 +80,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @ImportStatic(LookupAttributeInMRONode.class)
 public abstract class LookupNativeSlotNode extends PNodeWithContext {
@@ -126,13 +127,13 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         if (dict != null && HashingStorageGuards.mayHaveSideEffects(dict)) {
             return null;
         }
-        MroSequenceStorage mro = GetMroStorageNode.getUncached().execute(klass);
+        MroSequenceStorage mro = GetMroStorageNode.executeUncached(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(slot.methodName);
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass clsObj = mro.getItemNormalized(i);
             if (i > 0) {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
-                GetMroStorageNode.getUncached().execute(clsObj).addAttributeInMROFinalAssumption(slot.methodName, attrAssumption);
+                GetMroStorageNode.executeUncached(clsObj).addAttributeInMROFinalAssumption(slot.methodName, attrAssumption);
             }
             Object value = readSlot(clsObj, ReadAttributeFromObjectNode.getUncachedForceType(), CStructAccess.ReadPointerNode.getUncached(), InteropLibrary.getUncached());
             if (value != null) {
@@ -147,9 +148,8 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     assumptions = "cachedAttrInMROInfo.assumption")
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") PythonManagedClass klass,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameTypeNode,
+                    @Exclusive @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.value;
     }
@@ -159,11 +159,17 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
     // PythonClass#initializeMroShape
     @Specialization(guards = {"!isSingleContext()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
+    @SuppressWarnings("truffle-static-method")
     protected Object lookupConstantMROShape(PythonClass klass,
-                    @Cached GetMroStorageNode getMroStorageNode,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached GetMroStorageNode getMroStorageNode,
                     @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
                     @Cached("lookupInMroShape(cachedMroShape, klass)") MroShapeLookupResult lookupResult) {
-        return wrapManagedMethod(klass, lookupResult.getFromMro(getMroStorageNode.execute(klass), slot.methodName));
+        return wrapManagedMethod(klass, lookupResult.getFromMro(getMroStorageNode.execute(inliningTarget, klass), slot.methodName));
+    }
+
+    protected static MroSequenceStorage getMroStorageUncached(Object object) {
+        return GetMroStorageNode.executeUncached(object);
     }
 
     @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "mroLength < 32"}, //
@@ -171,12 +177,12 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     replaces = "lookupConstantMROShape", //
                     assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    @SuppressWarnings("truffle-static-method")
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonManagedClass klass,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameTypeNode,
+                    @Exclusive @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @SuppressWarnings("unused") @Cached GetMroStorageNode getMroStorageNode,
-                    @Cached("getMroStorageNode.execute(cachedKlass)") MroSequenceStorage mro,
+                    @Cached("getMroStorageUncached(cachedKlass)") MroSequenceStorage mro,
                     @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("mro.length()") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes,
@@ -196,9 +202,11 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     replaces = {"lookupConstantMROCached", "lookupConstantMRO"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    @SuppressWarnings("truffle-static-method")
     protected Object lookupCachedLen(@SuppressWarnings("unused") PythonManagedClass klass,
-                    @SuppressWarnings("unused") @Cached GetMroStorageNode getMroStorageNode,
-                    @Bind("getMroStorageNode.execute(klass)") MroSequenceStorage mro,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @Exclusive @SuppressWarnings("unused") @Cached GetMroStorageNode getMroStorageNode,
+                    @Bind("getMroStorageNode.execute(inliningTarget, klass)") MroSequenceStorage mro,
                     @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
                     @Cached("mro.length()") int cachedMroLength,
                     @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes,
@@ -216,12 +224,14 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
 
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
     @Megamorphic
+    @SuppressWarnings("truffle-static-method")
     protected Object lookupGeneric(PythonManagedClass klass,
-                    @Cached GetMroStorageNode getMroStorageNode,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached GetMroStorageNode getMroStorageNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
                     @Cached CStructAccess.ReadPointerNode readPointerNode,
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-        MroSequenceStorage mro = getMroStorageNode.execute(klass);
+        MroSequenceStorage mro = getMroStorageNode.execute(inliningTarget, klass);
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
             Object value = readSlot(kls, readAttrNode, readPointerNode, interopLibrary);
@@ -291,13 +301,14 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         @Override
         @TruffleBoundary
         public Object execute(PythonManagedClass type) {
-            return lookupGeneric(type, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), CStructAccess.ReadPointerNode.getUncached(),
+            return lookupGeneric(type, null, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), CStructAccess.ReadPointerNode.getUncached(),
                             InteropLibrary.getUncached());
         }
     }
 
     @GenerateUncached
     @ImportStatic({SpecialMethodSlot.class, SlotMethodDef.class})
+    @GenerateInline(value = false) // Used lazily
     public abstract static class LookupNativeGetattroSlotNode extends Node {
         public abstract Object execute(PythonManagedClass type);
 

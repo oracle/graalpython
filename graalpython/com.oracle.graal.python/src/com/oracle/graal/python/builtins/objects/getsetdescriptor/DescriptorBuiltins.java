@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -100,14 +100,14 @@ public final class DescriptorBuiltins extends PythonBuiltins {
     public abstract static class QualnameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor self,
-                        @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
+                        @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getName());
         }
 
         @Specialization
         static TruffleString doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor self,
-                        @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
+                        @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getKey().getName());
         }
@@ -151,7 +151,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
         @Specialization
         static void check(Node inliningTarget, Object descrType, Object name, Object obj,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
@@ -254,7 +254,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());
             }
-            return getNameNode.execute(descrType);
+            return getNameNode.executeCached(descrType);
         }
 
         protected PRaiseNode getRaiseNode() {

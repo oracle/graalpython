@@ -40,12 +40,12 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -56,15 +56,19 @@ import com.oracle.truffle.api.nodes.Node;
  * or {@code __subclasscheck__}.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
 public abstract class PyObjectTypeCheck extends PNodeWithContext {
-    public abstract boolean execute(Object object, Object type);
+    public abstract boolean execute(Node inliningTarget, Object object, Object type);
+
+    public final boolean executeCached(Object object, Object type) {
+        return execute(this, object, type);
+    }
 
     @Specialization
-    static boolean doGeneric(Object object, Object type,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
+    static boolean doGeneric(Node inliningTarget, Object object, Object type,
+                    @Cached GetClassNode getClassNode,
+                    @Cached IsSameTypeNode isSameTypeNode,
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
         Object objectType = getClassNode.execute(inliningTarget, object);
         return isSameTypeNode.execute(inliningTarget, type, objectType) || isSubtypeNode.execute(objectType, type);
     }

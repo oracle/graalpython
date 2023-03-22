@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -169,7 +169,7 @@ public final class CycleBuiltins extends PythonBuiltins {
         @Specialization(guards = "hasIterable(self)")
         Object reduce(PCycle self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClass) {
+                        @Cached @Shared GetClassNode getClass) {
             Object type = getClass.execute(inliningTarget, self);
             PTuple iterableTuple = factory().createTuple(new Object[]{self.getIterable()});
             PTuple tuple = factory().createTuple(new Object[]{getSavedList(self), self.isFirstpass()});
@@ -177,19 +177,20 @@ public final class CycleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!hasIterable(self)")
+        @SuppressWarnings("truffle-static-method")
         Object reduceNoIterable(VirtualFrame frame, PCycle self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClass,
+                        @Cached @Shared GetClassNode getClass,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached PyObjectGetIter getIterNode,
                         @Cached InlinedBranchProfile indexProfile) {
             Object type = getClass.execute(inliningTarget, self);
             PList savedList = getSavedList(self);
-            Object it = getIterNode.execute(frame, savedList);
+            Object it = getIterNode.execute(frame, inliningTarget, savedList);
             if (self.getIndex() > 0) {
                 indexProfile.enter(inliningTarget);
-                Object setStateCallable = lookupAttrNode.execute(frame, it, T___SETSTATE__);
+                Object setStateCallable = lookupAttrNode.execute(frame, inliningTarget, it, T___SETSTATE__);
                 callNode.executeObject(frame, setStateCallable, self.getIndex());
             }
             PTuple iteratorTuple = factory().createTuple(new Object[]{it});
@@ -235,7 +236,7 @@ public final class CycleBuiltins extends PythonBuiltins {
 
             boolean firstPass;
             try {
-                firstPass = asSizeNode.executeLossy(frame, getItemNode.execute(frame, state, 1)) != 0;
+                firstPass = asSizeNode.executeLossy(frame, inliningTarget, getItemNode.execute(frame, state, 1)) != 0;
             } catch (PException e) {
                 e.expectTypeError(inliningTarget, isTypeErrorProfile);
                 throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");

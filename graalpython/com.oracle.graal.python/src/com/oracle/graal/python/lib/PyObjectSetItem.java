@@ -51,10 +51,11 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -67,24 +68,37 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent to use for PyObject_SetItem.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 @ImportStatic({SpecialMethodSlot.class, PGuards.class})
 public abstract class PyObjectSetItem extends Node {
-    public abstract void execute(Frame frame, Object container, Object index, Object item);
+    public static void executeUncached(Frame frame, Object container, Object index, Object value) {
+        PyObjectSetItemNodeGen.getUncached().execute(frame, null, container, index, value);
+    }
+
+    public static void executeUncached(Object container, Object index, Object value) {
+        PyObjectSetItemNodeGen.getUncached().execute(null, null, container, index, value);
+    }
+
+    public final void executeCached(Frame frame, Object container, Object index, Object item) {
+        execute(frame, this, container, index, item);
+    }
+
+    public abstract void execute(Frame frame, Node inliningTarget, Object container, Object index, Object item);
 
     @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
-    void doList(VirtualFrame frame, PList object, Object key, Object value,
-                    @Cached ListBuiltins.SetItemNode setItemNode) {
+    static void doList(VirtualFrame frame, PList object, Object key, Object value,
+                    @Cached(inline = false) ListBuiltins.SetItemNode setItemNode) {
         setItemNode.execute(frame, object, key, value);
     }
 
     @InliningCutoff
     @Specialization(replaces = "doList")
-    static void doWithFrame(Frame frame, Object primary, Object index, Object value,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetitem,
+    static void doWithFrame(Frame frame, Node inliningTarget, Object primary, Object index, Object value,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "SetItem", inline = false) LookupSpecialMethodSlotNode lookupSetitem,
                     @Cached PRaiseNode.Lazy raise,
-                    @Cached CallTernaryMethodNode callSetitem) {
+                    @Cached(inline = false) CallTernaryMethodNode callSetitem) {
         Object setitem = lookupSetitem.execute(frame, getClassNode.execute(inliningTarget, primary), primary);
         if (setitem == PNone.NO_VALUE) {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);

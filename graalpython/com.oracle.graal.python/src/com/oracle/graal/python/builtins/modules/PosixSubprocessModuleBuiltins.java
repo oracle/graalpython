@@ -125,17 +125,17 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached("createNotNormalized()") GetItemNode getItemNode) {
             PSequence argsSequence;
             try {
-                argsSequence = fastConstructListNode.execute(frame, processArgs);
+                argsSequence = fastConstructListNode.execute(frame, inliningTarget, processArgs);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, isBuiltinClassProfile);
                 throw raise(TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
             }
 
-            SequenceStorage argsStorage = getSequenceStorageNode.execute(argsSequence);
+            SequenceStorage argsStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
             int len = argsStorage.length();
             Object[] argsArray = new Object[len];
             for (int i = 0; i < len; ++i) {
-                SequenceStorage newStorage = getSequenceStorageNode.execute(argsSequence);
+                SequenceStorage newStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
                 if (newStorage != argsStorage || newStorage.length() != len) {
                     // TODO write a test for this
                     throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
@@ -160,16 +160,18 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(env)")
+        @SuppressWarnings("truffle-static-method")
         Object doSequence(VirtualFrame frame, Object env,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached PyObjectGetItem getItem,
                         @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
-            int length = sizeNode.execute(frame, env);
+            int length = sizeNode.execute(frame, inliningTarget, env);
             Object[] result = new Object[length];
             for (int i = 0; i < length; ++i) {
-                Object o = getItem.execute(frame, env, i);
+                Object o = getItem.execute(frame, inliningTarget, env, i);
                 byte[] bytes = toBytesNode.execute(frame, o);
                 Object o1 = posixLib.createPathFromBytes(getContext().getPosixSupport(), bytes);
                 if (o1 == null) {
@@ -241,6 +243,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         boolean restoreSignals, boolean callSetsid, Object gidObject, Object groupsList,
                         Object uidObject, int childUmask, Object preexecFn,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
                         @Cached PyObjectGetItem getItem,
                         @Cached CastToJavaIntExactNode castToIntNode,
@@ -258,16 +261,16 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
             }
             Object[] processArgs = args;
-            int[] fdsToKeep = convertFdSequence((PTuple) fdsToKeepObj, tupleGetItem, castToIntNode);
+            int[] fdsToKeep = convertFdSequence(inliningTarget, (PTuple) fdsToKeepObj, tupleGetItem, castToIntNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable).toJavaStringUncached());
 
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
-            int length = sizeNode.execute(frame, executableList);
+            int length = sizeNode.execute(frame, inliningTarget, executableList);
             Object[] executables = new Object[length];
             for (int i = 0; i < length; ++i) {
-                byte[] bytes = toBytesNode.execute(frame, getItem.execute(frame, executableList, i));
+                byte[] bytes = toBytesNode.execute(frame, getItem.execute(frame, inliningTarget, executableList, i));
                 if (Arrays.equals(bytes, sysExecutable)) {
                     TruffleString[] additionalArgs = PythonOptions.getExecutableList(getContext());
                     if (length != 1 && additionalArgs.length != 1) {
@@ -306,14 +309,14 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
          * Checks that the tuple contains only valid fds (positive integers fitting into an int) in
          * ascending order.
          */
-        private int[] convertFdSequence(PTuple fdSequence, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode) {
+        private int[] convertFdSequence(Node inliningTarget, PTuple fdSequence, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode) {
             SequenceStorage storage = fdSequence.getSequenceStorage();
             int len = storage.length();
             int[] fds = new int[len];
             int prevFd = -1;
             for (int i = 0; i < len; ++i) {
                 try {
-                    int fd = castToIntNode.execute(getItemNode.execute(storage, i));
+                    int fd = castToIntNode.execute(inliningTarget, getItemNode.execute(storage, i));
                     if (fd > prevFd) {
                         prevFd = fds[i] = fd;
                         continue;

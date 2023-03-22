@@ -71,11 +71,12 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -102,7 +103,7 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached("createCopyNode()") LookupAndCallUnaryNode copyNode,
                         @Cached InlinedConditionProfile isTeeInstanceProfile) {
-            Object it = getIter.execute(frame, iterable);
+            Object it = getIter.execute(frame, inliningTarget, iterable);
             if (isTeeInstanceProfile.profile(inliningTarget, it instanceof PTee)) {
                 return copyNode.executeObject(frame, it);
             } else {
@@ -141,7 +142,7 @@ public final class TeeBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
         Object next(VirtualFrame frame, PTee self,
-                        @Cached BuiltinFunctions.NextNode nextNode) {
+                        @Shared @Cached BuiltinFunctions.NextNode nextNode) {
             Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, this);
             self.setIndex(self.getIndex() + 1);
             return value;
@@ -149,7 +150,7 @@ public final class TeeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getIndex() >= LINKCELLS")
         Object nextNext(VirtualFrame frame, PTee self,
-                        @Cached BuiltinFunctions.NextNode nextNode) {
+                        @Shared @Cached BuiltinFunctions.NextNode nextNode) {
             self.setDataObj(self.getDataobj().jumplink(factory()));
             Object value = self.getDataobj().getItem(frame, 0, nextNode, this);
             self.setIndex(1);
@@ -165,7 +166,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(PTee self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClass) {
+                        @Cached GetClassNode getClass) {
             // return type(self), ((),), (self.dataobj, self.index)
             Object type = getClass.execute(inliningTarget, self);
             PTuple tuple1 = factory().createTuple(new Object[]{factory().createEmptyTuple()});
@@ -181,6 +182,7 @@ public final class TeeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setState(VirtualFrame frame, PTee self, Object state,
+                        @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached CastToJavaIntLossyNode castToIntNode) {
@@ -196,7 +198,7 @@ public final class TeeBuiltins extends PythonBuiltins {
             Object secondElement = getItemNode.execute(frame, state, 1);
             int index = 0;
             try {
-                index = castToIntNode.execute(secondElement);
+                index = castToIntNode.execute(inliningTarget, secondElement);
             } catch (CannotCastException e) {
                 throw raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }

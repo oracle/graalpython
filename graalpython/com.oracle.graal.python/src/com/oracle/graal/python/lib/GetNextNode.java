@@ -53,7 +53,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -126,7 +126,7 @@ public abstract class GetNextNode extends PNodeWithContext {
         @SuppressWarnings("static-method")
         @TruffleBoundary
         private Object executeImpl(Object iterator) {
-            Object nextMethod = LookupSpecialMethodSlotNode.getUncached(SpecialMethodSlot.Next).execute(null, InlinedGetClassNode.executeUncached(iterator), iterator);
+            Object nextMethod = LookupSpecialMethodSlotNode.getUncached(SpecialMethodSlot.Next).execute(null, GetClassNode.executeUncached(iterator), iterator);
             if (nextMethod == PNone.NO_VALUE) {
                 throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, T___NEXT__);
             }

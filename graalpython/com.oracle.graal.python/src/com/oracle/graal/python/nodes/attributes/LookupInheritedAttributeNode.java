@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -78,28 +80,25 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
      *         object.
      */
     public Object execute(Object object) {
-        return lookupInMRONode.execute(getClassNode.execute(object));
+        return lookupInMRONode.execute(getClassNode.executeCached(object));
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class Dynamic extends Node {
-        public abstract Object execute(Object object, TruffleString key);
+        public static Object executeUncached(Object object, TruffleString key) {
+            return LookupInheritedAttributeNodeFactory.DynamicNodeGen.getUncached().execute(null, object, key);
+        }
+
+        public abstract Object execute(Node inliningTarget, Object object, TruffleString key);
 
         @Specialization
-        Object doCached(Object object, TruffleString key,
+        static Object doCached(Node inliningTarget, Object object, TruffleString key,
                         @Cached GetClassNode getClassNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrInMroNode) {
+                        @Cached(inline = false) LookupAttributeInMRONode.Dynamic lookupAttrInMroNode) {
 
-            return lookupAttrInMroNode.execute(getClassNode.execute(object), key);
-        }
-
-        @NeverDefault
-        public static Dynamic create() {
-            return LookupInheritedAttributeNodeFactory.DynamicNodeGen.create();
-        }
-
-        public static Dynamic getUncached() {
-            return LookupInheritedAttributeNodeFactory.DynamicNodeGen.getUncached();
+            return lookupAttrInMroNode.execute(getClassNode.execute(inliningTarget, object), key);
         }
     }
 }

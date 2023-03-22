@@ -59,10 +59,11 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -97,7 +98,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
         Object next(PProduct self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedLoopConditionProfile loopProfile) {
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             Object[] lst = new Object[self.getGears().length];
             loopProfile.profileCounted(inliningTarget, lst.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < lst.length); i++) {
@@ -113,7 +114,7 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile gearsProfile,
                         @Cached InlinedConditionProfile indexProfile,
                         @Cached InlinedBranchProfile wasStoppedProfile,
-                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile doneProfile) {
 
             Object[][] gears = self.getGears();
@@ -188,7 +189,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
         Object reduce(PProduct self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple gearTuples = createGearTuple(self);
             return factory().createTuple(new Object[]{type, gearTuples});
@@ -197,7 +198,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
         Object reduceLst(PProduct self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple gearTuples = createGearTuple(self);
             PTuple indicesTuple = factory().createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
@@ -215,7 +216,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isStopped()")
         Object reduceStopped(PProduct self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode) {
+                        @Cached @Shared GetClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple empty = factory().createEmptyTuple();
             return factory().createTuple(new Object[]{type, factory().createTuple(new Object[]{empty})});
@@ -242,8 +243,8 @@ public final class ProductBuiltins extends PythonBuiltins {
             int[] indices = self.getIndices();
             loopProfile.profileCounted(inliningTarget, gears.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < gears.length); i++) {
-                Object o = getItemNode.execute(frame, state, i);
-                int index = pyLongAsIntNode.execute(frame, o);
+                Object o = getItemNode.execute(frame, inliningTarget, state, i);
+                int index = pyLongAsIntNode.execute(frame, inliningTarget, o);
                 int gearSize = gears[i].length;
                 if (indices == null || gearSize == 0) {
                     stoppedProfile.enter(inliningTarget);

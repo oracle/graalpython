@@ -214,10 +214,12 @@ public class LZMANodes {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         long o(Object o,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaLongExactNode cast) {
             try {
-                return ll(cast.execute(o));
+                return ll(cast.execute(inliningTarget, o));
             } catch (CannotCastException e) {
                 throw raise(TypeError, INTEGER_REQUIRED);
             }
@@ -240,9 +242,10 @@ public class LZMANodes {
 
         @Specialization
         HashingStorage fast(VirtualFrame frame, PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = dict.getDictStorage();
-            if (!getItem.hasKey(frame, storage, T_ID)) {
+            if (!getItem.hasKey(frame, inliningTarget, storage, T_ID)) {
                 throw raise(ValueError, FILTER_SPECIFIER_MUST_HAVE);
             }
             return storage;
@@ -250,13 +253,14 @@ public class LZMANodes {
 
         @Specialization(guards = "!isDict(object)")
         HashingStorage slow(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem,
                         @Cached GetDictIfExistsNode getDict) {
             PDict dict = getDict.execute(object);
             if (dict == null) {
                 throw raise(TypeError, FILTER_SPEC_MUST_BE_DICT);
             }
-            return fast(frame, dict, getItem);
+            return fast(frame, dict, inliningTarget, getItem);
         }
     }
 
@@ -278,20 +282,20 @@ public class LZMANodes {
 
         @Specialization
         static OptionsState doit(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, OptionsState s,
-                        @Cached(inline = false) HashingStorageIteratorKey itKey,
-                        @Cached(inline = false) PyObjectStrAsTruffleStringNode strNode,
-                        @Cached(inline = false) CastToJavaLongLossyNode toLong,
+                        @Cached HashingStorageIteratorKey itKey,
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached CastToJavaLongLossyNode toLong,
                         @Cached InlinedConditionProfile errProfile,
-                        @Cached(inline = false) HashingStorageGetItem getItem,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PRaiseNode.Lazy raise,
                         @Cached(inline = false) TruffleString.EqualNode equalNode) {
-            Object key = itKey.execute(storage, it);
-            TruffleString skey = strNode.execute(frame, key);
+            Object key = itKey.execute(inliningTarget, storage, it);
+            TruffleString skey = strNode.execute(frame, inliningTarget, key);
             int idx = getOptionIndex(skey, s, equalNode);
             if (errProfile.profile(inliningTarget, idx == -1)) {
                 throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_FILTER_SPECIFIED_FOR_FILTER, s.filterType);
             }
-            long l = toLong.execute(getItem.execute(s.dictStorage, skey));
+            long l = toLong.execute(inliningTarget, getItem.execute(inliningTarget, s.dictStorage, skey));
             if (errProfile.profile(inliningTarget, l < 0)) {
                 throw raise.get(inliningTarget).raise(OverflowError, ErrorMessages.CANT_CONVERT_NEG_INT_TO_UNSIGNED);
             }
@@ -412,8 +416,8 @@ public class LZMANodes {
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageForEach forEachNode) {
             HashingStorage dict = getOptionsDict.execute(frame, spec);
-            Object idObj = getItem.execute(dict, T_ID);
-            long id = toLong.execute(idObj);
+            Object idObj = getItem.execute(inliningTarget, dict, T_ID);
+            long id = toLong.execute(inliningTarget, idObj);
             long[] options;
             OptionsState state;
             switch (LZMAFilter.from(id)) {
@@ -455,18 +459,19 @@ public class LZMANodes {
 
         @Specialization
         long[][] parseFilter(VirtualFrame frame, Object filterSpecs,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached LZMAFilterConverter converter,
                         @Cached SequenceNodes.CheckIsSequenceNode checkIsSequenceNode,
                         @Cached PyObjectSizeNode sizeNode) {
             checkIsSequenceNode.execute(filterSpecs);
-            int numFilters = sizeNode.execute(frame, filterSpecs);
+            int numFilters = sizeNode.execute(frame, inliningTarget, filterSpecs);
             if (numFilters > LZMA_FILTERS_MAX) {
                 throw raise(ValueError, ErrorMessages.TOO_MAMNY_FILTERS_LZMA_SUPPORTS_MAX_S, LZMA_FILTERS_MAX);
             }
             long[][] filters = new long[numFilters][0];
             for (int i = 0; i < numFilters; i++) {
-                filters[i] = converter.execute(frame, getItemNode.execute(frame, filterSpecs, i));
+                filters[i] = converter.execute(frame, getItemNode.execute(frame, inliningTarget, filterSpecs, i));
             }
             return filters;
         }
@@ -1277,6 +1282,7 @@ public class LZMANodes {
         }
 
         @Specialization(guards = "useNativeContext()")
+        @SuppressWarnings("truffle-static-method")
         void decodeNative(VirtualFrame frame, long id, byte[] encoded, PDict dict,
                         @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction decodeFilter,
@@ -1295,7 +1301,7 @@ public class LZMANodes {
                 }
                 errorHandling(lzret, getRaiseNode());
             }
-            buildFilterSpec(frame, opts, dict, setItem);
+            buildFilterSpec(frame, inliningTarget, opts, dict, setItem);
         }
 
         @SuppressWarnings("unused")
@@ -1304,21 +1310,21 @@ public class LZMANodes {
             throw raise(SystemError, T_LZMA_JAVA_ERROR);
         }
 
-        void buildFilterSpec(VirtualFrame frame, long[] opts, PDict dict, HashingStorageSetItem setItem) {
+        void buildFilterSpec(VirtualFrame frame, Node inliningTarget, long[] opts, PDict dict, HashingStorageSetItem setItem) {
             long id = opts[LZMAOption.id.ordinal()];
-            addField(frame, setItem, dict, LZMAOption.id.OptName(), id);
+            addField(frame, inliningTarget, setItem, dict, LZMAOption.id.OptName(), id);
             switch (LZMAFilter.from(id)) {
                 case LZMA_FILTER_LZMA1:
-                    addField(frame, setItem, dict, LZMAOption.lc.OptName(), opts[LZMAOption.lc.ordinal()]);
-                    addField(frame, setItem, dict, LZMAOption.lp.OptName(), opts[LZMAOption.lp.ordinal()]);
-                    addField(frame, setItem, dict, LZMAOption.pb.OptName(), opts[LZMAOption.pb.ordinal()]);
-                    addField(frame, setItem, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
+                    addField(frame, inliningTarget, setItem, dict, LZMAOption.lc.OptName(), opts[LZMAOption.lc.ordinal()]);
+                    addField(frame, inliningTarget, setItem, dict, LZMAOption.lp.OptName(), opts[LZMAOption.lp.ordinal()]);
+                    addField(frame, inliningTarget, setItem, dict, LZMAOption.pb.OptName(), opts[LZMAOption.pb.ordinal()]);
+                    addField(frame, inliningTarget, setItem, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
                     break;
                 case LZMA_FILTER_LZMA2:
-                    addField(frame, setItem, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
+                    addField(frame, inliningTarget, setItem, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
                     break;
                 case LZMA_FILTER_DELTA:
-                    addField(frame, setItem, dict, DeltaOption.dist.OptName(), opts[DeltaOption.dist.ordinal()]);
+                    addField(frame, inliningTarget, setItem, dict, DeltaOption.dist.OptName(), opts[DeltaOption.dist.ordinal()]);
                     break;
                 case LZMA_FILTER_X86:
                 case LZMA_FILTER_POWERPC:
@@ -1326,13 +1332,13 @@ public class LZMANodes {
                 case LZMA_FILTER_ARM:
                 case LZMA_FILTER_ARMTHUMB:
                 case LZMA_FILTER_SPARC:
-                    addField(frame, setItem, dict, BCJOption.start_offset.OptName(), opts[BCJOption.start_offset.ordinal()]);
+                    addField(frame, inliningTarget, setItem, dict, BCJOption.start_offset.OptName(), opts[BCJOption.start_offset.ordinal()]);
                     break;
             }
         }
 
-        void addField(VirtualFrame frame, HashingStorageSetItem setItem, PDict dict, TruffleString key, long val) {
-            dict.setDictStorage(setItem.execute(frame, dict.getDictStorage(), key, val));
+        void addField(VirtualFrame frame, Node inliningTarget, HashingStorageSetItem setItem, PDict dict, TruffleString key, long val) {
+            dict.setDictStorage(setItem.execute(frame, inliningTarget, dict.getDictStorage(), key, val));
         }
     }
 

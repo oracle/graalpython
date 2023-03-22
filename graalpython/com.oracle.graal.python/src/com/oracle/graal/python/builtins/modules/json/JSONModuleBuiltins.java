@@ -37,11 +37,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -89,10 +91,11 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object call(Object string, int end, boolean strict,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringCheckedNode castString,
                         @Cached PythonObjectFactory factory) {
             IntRef nextIdx = new IntRef();
-            TruffleString result = JSONScannerBuiltins.scanStringUnicode(castString.cast(string, ErrorMessages.FIRST_ARG_MUST_BE_STRING_NOT_P, string), end, strict, nextIdx,
+            TruffleString result = JSONScannerBuiltins.scanStringUnicode(castString.cast(inliningTarget, string, ErrorMessages.FIRST_ARG_MUST_BE_STRING_NOT_P, string), end, strict, nextIdx,
                             this);
             return factory.createTuple(new Object[]{result, nextIdx.value});
         }
@@ -180,10 +183,11 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castStrict,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CoerceToBooleanNode.YesNode castStrict,
                         @Cached PythonObjectFactory factory) {
 
-            boolean strict = castStrict.executeBoolean(frame, getStrict.execute(frame, context));
+            boolean strict = castStrict.executeBoolean(frame, inliningTarget, getStrict.execute(frame, context));
             Object objectHook = getObjectHook.execute(frame, context);
             Object objectPairsHook = getObjectPairsHook.execute(frame, context);
             Object parseFloat = getParseFloat.execute(frame, context);

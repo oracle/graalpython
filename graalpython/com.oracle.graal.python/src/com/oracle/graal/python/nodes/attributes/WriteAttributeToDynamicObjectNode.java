@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,12 +42,15 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -61,6 +64,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
+@GenerateInline(false) // Should be reconsidered during anticipated refactoring from DOM library
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, HiddenKey key, Object value);
@@ -94,9 +98,10 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
 
     @Specialization(guards = "!isHiddenKey(key)", replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
     static boolean write(DynamicObject dynamicObject, Object key, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        dylib.put(dynamicObject, attrKey(key, castNode), value);
+        dylib.put(dynamicObject, attrKey(inliningTarget, key, castNode), value);
         return true;
     }
 }

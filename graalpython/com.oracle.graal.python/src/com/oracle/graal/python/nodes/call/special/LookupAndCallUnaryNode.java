@@ -52,7 +52,9 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -60,7 +62,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
@@ -132,49 +134,53 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return null;
     }
 
-    protected static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
-        Object clazz = getClassNode.execute(receiver);
+    protected static PythonBuiltinClassType getBuiltinClass(Node inliningTarget, Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(inliningTarget, receiver);
         return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
     }
 
-    protected static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
-        return getClassNode.execute(receiver) == clazz;
+    protected static boolean isClazz(Node inliningTarget, PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(inliningTarget, receiver) == clazz;
     }
 
     // Object
 
-    @Specialization(guards = {"clazz != null", "function != null", "isClazz(clazz, receiver, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, receiver, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectBuiltin(VirtualFrame frame, Object receiver,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached("getBuiltinClass(receiver, getClassNode)") PythonBuiltinClassType clazz,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(this, receiver, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getUnaryBuiltin(clazz)") PythonUnaryBuiltinNode function) {
         return function.execute(frame, receiver);
     }
 
-    @Specialization(guards = "getObjectClass(receiver) == cachedClass")
+    @Specialization(guards = "getObjectClass(receiver) == cachedClass", limit = "3")
     Object callObjectGeneric(VirtualFrame frame, Object receiver,
+                    @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
-                    @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Shared @Cached CallUnaryMethodNode dispatchNode) {
+        return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
     }
 
     @Specialization(replaces = "callObjectGeneric")
     @Megamorphic
+    @SuppressWarnings("truffle-static-method")
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
-                    @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
+                    @Bind("this") Node inliningTarget,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Shared @Cached CallUnaryMethodNode dispatchNode) {
+        return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
     }
 
     protected Class<?> getObjectClass(Object object) {
         return object.getClass();
     }
 
-    private Object doCallObject(VirtualFrame frame, Object receiver, GetClassNode getClassNode, LookupSpecialBaseNode getattr, CallUnaryMethodNode dispatchNode) {
-        Object attr = getattr.execute(frame, getClassNode.execute(receiver), receiver);
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object receiver, GetClassNode getClassNode, LookupSpecialBaseNode getattr, CallUnaryMethodNode dispatchNode) {
+        Object attr = getattr.execute(frame, getClassNode.execute(inliningTarget, receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 if (handler == null) {
@@ -198,18 +204,20 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 20
     public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithContext {
 
         public abstract Object executeObject(Object receiver, TruffleString name);
 
         @Specialization
         static Object doObject(Object receiver, TruffleString name,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
-                        @Cached ConditionProfile profile) {
-            Object attr = getattr.execute(null, getClassNode.execute(receiver), name, receiver);
-            if (profile.profile(attr != PNone.NO_VALUE)) {
+                        @Cached InlinedConditionProfile profile) {
+            Object attr = getattr.execute(null, inliningTarget, getClassNode.execute(inliningTarget, receiver), name, receiver);
+            if (profile.profile(inliningTarget, attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
                 // global state context manager
                 return dispatchNode.executeObject(null, attr, receiver);

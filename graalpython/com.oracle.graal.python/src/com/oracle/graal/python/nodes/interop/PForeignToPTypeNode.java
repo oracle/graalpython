@@ -55,6 +55,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
+@SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
 public abstract class PForeignToPTypeNode extends Node {
 
     public abstract Object executeConvert(Object value);

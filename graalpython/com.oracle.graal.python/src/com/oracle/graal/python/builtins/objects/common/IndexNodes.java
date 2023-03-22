@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.BoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithoutBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -195,6 +194,8 @@ public abstract class IndexNodes {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 28 -> 10
+    // not inlined because it is always created dynamically by NormalizeIndexNode
     abstract static class NormalizeIndexWithBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 
         @Specialization
@@ -279,6 +280,8 @@ public abstract class IndexNodes {
     }
 
     @GenerateUncached
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 24 -> 6
+    // not inlined because it is always created dynamically by NormalizeIndexNode
     abstract static class NormalizeIndexWithoutBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 
         @Specialization
@@ -354,13 +357,12 @@ public abstract class IndexNodes {
     @GenerateCached(false)
     public abstract static class BoundsCheckNode extends Node {
 
-        public abstract void execute(Node node, TruffleString errorMessage, int idx, int length);
+        public abstract void execute(Node inliningTarget, TruffleString errorMessage, int idx, int length);
 
-        public abstract void execute(Node node, TruffleString errorMessage, long idx, long length);
+        public abstract void execute(Node inliningTarget, TruffleString errorMessage, long idx, long length);
 
         @Specialization
-        static void doBoundsCheck(Node node, TruffleString errorMessage, int idx, int length,
-                        @Bind("this") Node inliningTarget,
+        static void doBoundsCheck(Node inliningTarget, TruffleString errorMessage, int idx, int length,
                         @Shared @Cached InlinedConditionProfile outOfBoundsProfile,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (outOfBoundsProfile.profile(inliningTarget, idx < 0 || idx >= length)) {
@@ -369,17 +371,12 @@ public abstract class IndexNodes {
         }
 
         @Specialization
-        static void doBoundsCheck(Node node, TruffleString errorMessage, long idx, long length,
-                        @Bind("this") Node inliningTarget,
+        static void doBoundsCheck(Node inliningTarget, TruffleString errorMessage, long idx, long length,
                         @Shared @Cached InlinedConditionProfile outOfBoundsProfile,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (outOfBoundsProfile.profile(inliningTarget, idx < 0 || idx >= length)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, errorMessage);
             }
-        }
-
-        public static BoundsCheckNode getUncached() {
-            return BoundsCheckNodeGen.getUncached();
         }
     }
 

@@ -144,7 +144,7 @@ public abstract class ErrorMessageFormatter {
     }
 
     private static String getClassName(Object obj) {
-        return getClassNameOfClass(GetClassNode.getUncached().execute(obj));
+        return getClassNameOfClass(GetClassNode.executeUncached(obj));
     }
 
     private static String getClassNameOfClass(Object obj) {

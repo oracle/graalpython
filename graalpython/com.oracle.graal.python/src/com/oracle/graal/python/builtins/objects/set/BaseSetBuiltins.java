@@ -102,6 +102,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -122,25 +124,26 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
-        private static void fillItems(VirtualFrame frame, HashingStorage storage, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode repr,
+        private static void fillItems(VirtualFrame frame, Node inliningTarget, HashingStorage storage, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode repr,
                         HashingStorageGetIterator getIter, HashingStorageIteratorNext iterNext, HashingStorageIteratorKey iterKey,
                         TruffleStringBuilder.AppendStringNode appendStringNode) {
             boolean first = true;
             appendStringNode.execute(sb, T_LBRACE);
-            HashingStorageIterator it = getIter.execute(storage);
-            while (iterNext.execute(storage, it)) {
+            HashingStorageIterator it = getIter.execute(inliningTarget, storage);
+            while (iterNext.execute(inliningTarget, storage, it)) {
                 if (first) {
                     first = false;
                 } else {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                 }
-                appendStringNode.execute(sb, repr.execute(frame, iterKey.execute(storage, it)));
+                appendStringNode.execute(sb, repr.execute(frame, inliningTarget, iterKey.execute(inliningTarget, storage, it)));
             }
             appendStringNode.execute(sb, T_RBRACE);
         }
 
         @Specialization
         public static Object repr(VirtualFrame frame, PBaseSet self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
@@ -151,26 +154,26 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            Object clazz = getClassNode.execute(self);
+            Object clazz = getClassNode.execute(inliningTarget, self);
             PythonContext ctxt = PythonContext.get(getNameNode);
-            int len = lenNode.execute(self.getDictStorage());
+            int len = lenNode.execute(inliningTarget, self.getDictStorage());
             if (len == 0) {
-                appendStringNode.execute(sb, getNameNode.execute(clazz));
+                appendStringNode.execute(sb, getNameNode.execute(inliningTarget, clazz));
                 appendStringNode.execute(sb, T_EMPTY_PARENS);
                 return toStringNode.execute(sb);
             }
             if (!ctxt.reprEnter(self)) {
-                appendStringNode.execute(sb, getNameNode.execute(clazz));
+                appendStringNode.execute(sb, getNameNode.execute(inliningTarget, clazz));
                 appendStringNode.execute(sb, T_ELLIPSIS_IN_PARENS);
                 return toStringNode.execute(sb);
             }
             try {
                 boolean showType = clazz != PythonBuiltinClassType.PSet;
                 if (showType) {
-                    appendStringNode.execute(sb, getNameNode.execute(clazz));
+                    appendStringNode.execute(sb, getNameNode.execute(inliningTarget, clazz));
                     appendStringNode.execute(sb, T_LPAREN);
                 }
-                fillItems(frame, self.getDictStorage(), sb, repr, getStorageIterator, iteratorNext, iteratorKey, appendStringNode);
+                fillItems(frame, inliningTarget, self.getDictStorage(), sb, repr, getStorageIterator, iteratorNext, iteratorKey, appendStringNode);
                 if (showType) {
                     appendStringNode.execute(sb, T_RPAREN);
                 }
@@ -186,10 +189,11 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doBaseSet(PBaseSet self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator) {
             HashingStorage storage = self.getDictStorage();
-            return factory().createBaseSetIterator(self, getIterator.execute(storage), lenNode.execute(storage));
+            return factory().createBaseSetIterator(self, getIterator.execute(inliningTarget, storage), lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -198,8 +202,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseLenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public static int len(PBaseSet self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(self.getDictStorage());
+            return lenNode.execute(inliningTarget, self.getDictStorage());
         }
     }
 
@@ -209,6 +214,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(VirtualFrame frame, PBaseSet self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
@@ -216,20 +222,20 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookup) {
             HashingStorage storage = self.getDictStorage();
-            int len = lenNode.execute(storage);
+            int len = lenNode.execute(inliningTarget, storage);
             Object[] keysArray = new Object[len];
-            HashingStorageIterator it = getIter.execute(storage);
+            HashingStorageIterator it = getIter.execute(inliningTarget, storage);
             for (int i = 0; i < len; i++) {
-                boolean hasNext = iterNext.execute(storage, it);
+                boolean hasNext = iterNext.execute(inliningTarget, storage, it);
                 assert hasNext;
-                keysArray[i] = getIterKey.execute(storage, it);
+                keysArray[i] = getIterKey.execute(inliningTarget, storage, it);
             }
             PTuple contents = factory().createTuple(new Object[]{factory().createList(keysArray)});
-            Object dict = lookup.execute(frame, self, T___DICT__);
+            Object dict = lookup.execute(frame, inliningTarget, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            return factory().createTuple(new Object[]{getClassNode.execute(self), contents, dict});
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents, dict});
         }
     }
 
@@ -238,8 +244,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseEqNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean doSetSameType(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, self.getDictStorage(), other.getDictStorage()) == 0;
+            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()) == 0;
         }
 
         @Fallback
@@ -255,9 +262,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean contains(VirtualFrame frame, PBaseSet self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConvertKeyNode conv,
                         @Cached HashingStorageGetItem getItem) {
-            return getItem.hasKey(frame, self.getDictStorage(), conv.execute(key));
+            return getItem.hasKey(frame, inliningTarget, self.getDictStorage(), conv.execute(inliningTarget, key));
         }
     }
 
@@ -266,16 +274,18 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIsSubsetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean isSubSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Shared("compareKeys") @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, self.getDictStorage(), other.getDictStorage()) <= 0;
+            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()) <= 0;
         }
 
         @Specialization(replaces = "isSubSet")
         static boolean isSubSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Shared("compareKeys") @Cached HashingStorageCompareKeys compareKeys) {
-            HashingStorage otherSet = getHashingStorageNode.execute(frame, other);
-            return compareKeys.execute(frame, self.getDictStorage(), otherSet) <= 0;
+            HashingStorage otherSet = getHashingStorageNode.execute(frame, inliningTarget, other);
+            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), otherSet) <= 0;
         }
     }
 
@@ -284,16 +294,18 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIsSupersetNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean isSuperSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Shared("compareKeys") @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, other.getDictStorage(), self.getDictStorage()) <= 0;
+            return compareKeys.execute(frame, inliningTarget, other.getDictStorage(), self.getDictStorage()) <= 0;
         }
 
         @Specialization(replaces = "isSuperSet")
         static boolean isSuperSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Shared("compareKeys") @Cached HashingStorageCompareKeys compareKeys) {
-            HashingStorage otherSet = getHashingStorageNode.execute(frame, other);
-            return compareKeys.execute(frame, otherSet, self.getDictStorage()) <= 0;
+            HashingStorage otherSet = getHashingStorageNode.execute(frame, inliningTarget, other);
+            return compareKeys.execute(frame, inliningTarget, otherSet, self.getDictStorage()) <= 0;
         }
 
     }
@@ -304,41 +316,43 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self == other")
         static boolean isDisjointSameObject(PBaseSet self, @SuppressWarnings("unused") PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(self.getDictStorage()) == 0;
+            return lenNode.execute(inliningTarget, self.getDictStorage()) == 0;
         }
 
-        @Specialization(guards = {"self != other", "cannotBeOverridden(other, getClassNode)"})
+        @Specialization(guards = {"self != other", "cannotBeOverridden(other, inliningTarget, getClassNode)"})
         static boolean isDisjointFastPath(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageAreDisjoint disjointNode,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return disjointNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+            return disjointNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage());
         }
 
-        @Specialization(guards = {"self != other", "!cannotBeOverridden(other, getClassNode)"})
+        @Specialization(guards = {"self != other", "!cannotBeOverridden(other, inliningTarget, getClassNode)"})
         static boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageGetItem getHashingStorageItem,
+                        @Shared @Cached HashingStorageGetItem getHashingStorageItem,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Shared @Cached PyObjectGetIter getIter,
+                        @Shared @Cached GetNextNode getNextNode,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile) {
             return isDisjointGeneric(frame, self, other, inliningTarget, getHashingStorageItem, getIter, getNextNode, errorProfile);
         }
 
         @Specialization(guards = {"!isAnySet(other)"})
         static boolean isDisjointGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageGetItem getHashingStorageItem,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Shared @Cached HashingStorageGetItem getHashingStorageItem,
+                        @Shared @Cached PyObjectGetIter getIter,
+                        @Shared @Cached GetNextNode getNextNode,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage selfStorage = self.getDictStorage();
-            Object iterator = getIter.execute(frame, other);
+            Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
                 try {
                     Object nextValue = getNextNode.execute(frame, iterator);
-                    if (getHashingStorageItem.hasKey(frame, selfStorage, nextValue)) {
+                    if (getHashingStorageItem.hasKey(frame, inliningTarget, selfStorage, nextValue)) {
                         return false;
                     }
                 } catch (PException e) {
@@ -355,8 +369,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseLessEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean doLE(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, self.getDictStorage(), other.getDictStorage()) <= 0;
+            return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()) <= 0;
         }
 
         @Fallback
@@ -371,8 +386,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseGreaterEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean doGE(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCompareKeys compareKeys) {
-            return compareKeys.execute(frame, other.getDictStorage(), self.getDictStorage()) <= 0;
+            return compareKeys.execute(frame, inliningTarget, other.getDictStorage(), self.getDictStorage()) <= 0;
         }
 
         @Fallback
@@ -393,12 +409,12 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageLen lenOtherNode,
                         @Cached HashingStorageCompareKeys compareKeys,
                         @Cached InlinedConditionProfile sizeProfile) {
-            final int len1 = lenSelfNode.execute(self.getDictStorage());
-            final int len2 = lenOtherNode.execute(other.getDictStorage());
+            final int len1 = lenSelfNode.execute(inliningTarget, self.getDictStorage());
+            final int len2 = lenOtherNode.execute(inliningTarget, other.getDictStorage());
             if (sizeProfile.profile(inliningTarget, len1 >= len2)) {
                 return false;
             }
-            return BaseLessEqualNode.doLE(frame, self, other, compareKeys);
+            return BaseLessEqualNode.doLE(frame, self, other, inliningTarget, compareKeys);
         }
 
         @Fallback
@@ -419,12 +435,12 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageLen bLenNode,
                         @Cached HashingStorageCompareKeys compareKeys,
                         @Cached InlinedConditionProfile sizeProfile) {
-            final int len1 = aLenNode.execute(self.getDictStorage());
-            final int len2 = bLenNode.execute(other.getDictStorage());
+            final int len1 = aLenNode.execute(inliningTarget, self.getDictStorage());
+            final int len2 = bLenNode.execute(inliningTarget, other.getDictStorage());
             if (sizeProfile.profile(inliningTarget, len1 <= len2)) {
                 return false;
             }
-            return BaseGreaterEqualNode.doGE(frame, self, other, compareKeys);
+            return BaseGreaterEqualNode.doGE(frame, self, other, inliningTarget, compareKeys);
         }
 
         @Fallback
@@ -434,9 +450,11 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PGuards.class, SpecialMethodSlot.class})
     protected abstract static class ConvertKeyNode extends PNodeWithContext {
-        public abstract Object execute(Object key);
+        public abstract Object execute(Node inliningTarget, Object key);
 
         @Specialization(guards = "!isPSet(key)")
         static Object doNotPSet(Object key) {
@@ -444,14 +462,14 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doPSet(PSet key,
+        static Object doPSet(Node inliningTarget, PSet key,
                         @Cached HashingStorageCopy copyNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "Hash") LookupCallableSlotInMRONode lookupHash,
-                        @Cached PythonObjectFactory factory) {
-            Object hashDescr = lookupHash.execute(getClassNode.execute(key));
+                        @Cached(parameters = "Hash", inline = false) LookupCallableSlotInMRONode lookupHash,
+                        @Cached(inline = false) PythonObjectFactory factory) {
+            Object hashDescr = lookupHash.execute(getClassNode.execute(inliningTarget, key));
             if (hashDescr instanceof PNone) {
-                return factory.createFrozenSet(copyNode.execute(key.getDictStorage()));
+                return factory.createFrozenSet(copyNode.execute(inliningTarget, key.getDictStorage()));
             } else {
                 return key;
             }

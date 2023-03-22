@@ -95,12 +95,14 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PyCSimpleType)
@@ -131,6 +133,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached TypeNode typeNew,
                         @Cached InternStringNode internStringNode,
                         @Cached GetDictIfExistsNode getDict,
@@ -153,14 +156,14 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
 
-            Object proto = lookupAttrType.execute(frame, result, T__TYPE_);
+            Object proto = lookupAttrType.execute(frame, inliningTarget, result, T__TYPE_);
             if (proto == PNone.NO_VALUE) {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
             TruffleString proto_str;
             int proto_len;
             if (PGuards.isString(proto)) {
-                proto_str = toTruffleStringNode.execute(proto);
+                proto_str = toTruffleStringNode.execute(inliningTarget, proto);
                 proto_len = codePointLengthNode.execute(proto_str, TS_ENCODING);
             } else {
                 throw raise(TypeError, CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE);
@@ -198,8 +201,8 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
-            setDict.execute((PythonObject) result, stgdict);
+            addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
+            setDict.execute(inliningTarget, (PythonObject) result, stgdict);
 
             /*
              * Install from_param class methods in ctypes base classes. Overrides the
@@ -207,7 +210,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
              */
             Python3Core core = getCore();
             PythonObjectSlowPathFactory factory = core.factory();
-            if (getBaseClassNode.execute(result) == core.lookupType(SimpleCData)) {
+            if (getBaseClassNode.execute(inliningTarget, result) == core.lookupType(SimpleCData)) {
                 if (eqNode.execute(T_LOWER_Z, proto_str, TS_ENCODING)) { /* c_char_p */
                     LazyPyCSimpleTypeBuiltins.addCCharPFromParam(factory, getLanguage(), result);
                     stgdict.flags |= TYPEFLAG_ISPOINTER;
@@ -226,7 +229,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
             }
 
             if (type == PyCSimpleType && fmt.setfunc_swapped != FieldSet.nil && fmt.getfunc_swapped != FieldGet.nil) {
-                Object swapped = CreateSwappedType(frame, type, args, kwds, proto, fmt,
+                Object swapped = CreateSwappedType(frame, inliningTarget, type, args, kwds, proto, fmt,
                                 typeNew,
                                 internStringNode,
                                 toTruffleStringNode,
@@ -247,7 +250,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    private static Object CreateSwappedType(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds, Object proto, FieldDesc fmt,
+    private static Object CreateSwappedType(VirtualFrame frame, Node inliningTarget, Object type, Object[] args, PKeyword[] kwds, Object proto, FieldDesc fmt,
                     TypeNode typeNew,
                     InternStringNode internStringNode,
                     CastToTruffleStringNode toString,
@@ -257,8 +260,8 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                     PythonObjectFactory factory) {
         int argsLen = args.length;
         Object[] swapped_args = new Object[argsLen];
-        TruffleString suffix = toString.execute(internStringNode.execute(T__BE));
-        TruffleString name = toString.execute(args[0]);
+        TruffleString suffix = toString.execute(inliningTarget, internStringNode.execute(inliningTarget, T__BE));
+        TruffleString name = toString.execute(inliningTarget, args[0]);
         TruffleString newname = StringUtils.cat(name, suffix);
 
         swapped_args[0] = newname;
@@ -283,8 +286,8 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
         if (resDict == null) {
             resDict = factory.createDictFixedStorage((PythonObject) result);
         }
-        addAllToOther.execute(frame, resDict.getDictStorage(), stgdict);
-        setDict.execute((PythonObject) result, stgdict);
+        addAllToOther.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
+        setDict.execute(inliningTarget, (PythonObject) result, stgdict);
 
         return result;
     }
@@ -299,6 +302,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCSimpleType_from_param(VirtualFrame frame, Object type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -332,10 +336,10 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 // pass through to check for _as_parameter_
             }
 
-            Object as_parameter = lookupAsParam.execute(frame, value, T__AS_PARAMETER_);
+            Object as_parameter = lookupAsParam.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
             if (as_parameter != PNone.NO_VALUE) {
                 // Py_EnterRecursiveCall("while processing _as_parameter_"); TODO
-                Object r = PyCSimpleType_from_param(frame, type, as_parameter, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam, codePointAtIndexNode);
+                Object r = PyCSimpleType_from_param(frame, type, as_parameter, inliningTarget, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam, codePointAtIndexNode);
                 // Py_LeaveRecursiveCall();
                 return r;
             }

@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -68,24 +69,26 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline(false) // used in BCI root node
 public abstract class UnpackSequenceNode extends PNodeWithContext {
     public abstract int execute(Frame frame, int stackTop, Object collection, int count);
 
-    @Specialization(guards = {"cannotBeOverridden(sequence, getClassNode)", "!isPString(sequence)"}, limit = "1")
+    @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
     @ExplodeLoop
     static int doUnpackSequence(VirtualFrame frame, int initialStackTop, PSequence sequence, int count,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(count);
         int resultStackTop = initialStackTop + count;
         int stackTop = resultStackTop;
-        SequenceStorage storage = getSequenceStorageNode.execute(sequence);
+        SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
         int len = storage.length();
         if (len == count) {
             for (int i = 0; i < count; i++) {
-                frame.setObject(stackTop--, getItemNode.execute(storage, i));
+                frame.setObject(stackTop--, getItemNode.execute(inliningTarget, storage, i));
             }
         } else {
             if (len < count) {
@@ -112,7 +115,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
         int stackTop = resultStackTop;
         Object iterator;
         try {
-            iterator = getIter.execute(frame, collection);
+            iterator = getIter.execute(frame, inliningTarget, collection);
         } catch (PException e) {
             e.expectTypeError(inliningTarget, notIterableProfile);
             throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);

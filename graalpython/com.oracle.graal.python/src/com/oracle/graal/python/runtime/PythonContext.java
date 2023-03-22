@@ -105,7 +105,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
@@ -173,6 +173,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -520,64 +521,49 @@ public final class PythonContext extends Python3Core {
     }
 
     @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
     public abstract static class GetThreadStateNode extends Node {
 
-        public abstract PythonThreadState execute(PythonContext context);
+        public abstract PythonThreadState execute(Node inliningTarget, PythonContext context);
 
-        public final PythonThreadState execute() {
-            return execute(null);
+        public final PythonThreadState executeCached(PythonContext context) {
+            return execute(this, context);
         }
 
-        public final PException getCaughtException(PythonContext context) {
-            return execute(context).caughtException;
+        public final PythonThreadState executeCached() {
+            return executeCached(null);
         }
 
-        public final PException getCaughtException() {
-            return execute(null).caughtException;
+        public final void setCaughtExceptionCached(PythonContext context, PException exception) {
+            executeCached(context).caughtException = exception;
         }
 
-        public final void setCaughtException(PythonContext context, PException exception) {
-            execute(context).caughtException = exception;
+        public final void setCaughtException(Node inliningTarget, PException exception) {
+            execute(inliningTarget, null).caughtException = exception;
         }
 
-        public final void setCaughtException(PException exception) {
-            execute(null).caughtException = exception;
+        public final PException getCurrentException(Node inliningTarget, PythonContext context) {
+            return execute(inliningTarget, context).currentException;
         }
 
-        public final PException getCurrentException(PythonContext context) {
-            return execute(context).currentException;
+        public final PException getCurrentException(Node inliningTarget) {
+            return execute(inliningTarget, null).currentException;
         }
 
-        public final PException getCurrentException() {
-            return execute(null).currentException;
+        public final void setTopFrameInfoCached(PythonContext context, PFrame.Reference topframeref) {
+            executeCached(context).topframeref = topframeref;
         }
 
-        public final void setTopFrameInfo(PythonContext context, PFrame.Reference topframeref) {
-            execute(context).topframeref = topframeref;
+        public final void clearTopFrameInfoCached(PythonContext context) {
+            executeCached(context).topframeref = null;
         }
 
-        public final void clearTopFrameInfo(PythonContext context) {
-            execute(context).topframeref = null;
+        public final void setCurrentException(Node inliningTarget, PythonContext context, PException exception) {
+            execute(inliningTarget, context).currentException = exception;
         }
 
-        public final void setCurrentException(PythonContext context, PException exception) {
-            execute(context).currentException = exception;
-        }
-
-        public final void setCurrentException(PException exception) {
-            execute(null).currentException = exception;
-        }
-
-        public final void setTopFrameInfo(PFrame.Reference topframeref) {
-            execute(null).topframeref = topframeref;
-        }
-
-        public final PFrame.Reference getTopFrameInfo(PythonContext context) {
-            return execute(context).topframeref;
-        }
-
-        public final PFrame.Reference getTopFrameInfo() {
-            return execute(null).topframeref;
+        public final void setCurrentException(Node inliningTarget, PException exception) {
+            execute(inliningTarget, null).currentException = exception;
         }
 
         @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
@@ -1223,7 +1209,7 @@ public final class PythonContext extends Python3Core {
                 try {
                     data.running.countDown();
                     Object res = ct.call(fd, sentinel);
-                    int exitCode = CastToJavaIntLossyNode.getUncached().execute(res);
+                    int exitCode = CastToJavaIntLossyNode.executeUncached(res);
                     data.setExitCode(exitCode);
                 } finally {
                     ctx.leave(null, parent);
@@ -1498,7 +1484,7 @@ public final class PythonContext extends Python3Core {
             if (path0 != null) {
                 PythonModule sys = lookupBuiltinModule(T_SYS);
                 Object path = sys.getAttribute(T_PATH);
-                PyObjectCallMethodObjArgs.getUncached().execute(null, path, T_INSERT, 0, path0);
+                PyObjectCallMethodObjArgs.executeUncached(path, T_INSERT, 0, path0);
             }
         }
     }
@@ -1600,7 +1586,7 @@ public final class PythonContext extends Python3Core {
         mainModule = factory().createPythonModule(T___MAIN__);
         mainModule.setAttribute(T___BUILTINS__, getBuiltins());
         mainModule.setAttribute(T___ANNOTATIONS__, factory().createDict());
-        SetDictNode.getUncached().execute(mainModule, factory().createDictFixedStorage(mainModule));
+        SetDictNode.executeUncached(mainModule, factory().createDictFixedStorage(mainModule));
         getSysModules().setItem(T___MAIN__, mainModule);
 
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -2533,9 +2519,9 @@ public final class PythonContext extends Python3Core {
             PythonModule sysModule = this.lookupBuiltinModule(T_SYS);
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, T_IMPLEMENTATION);
             // sys.implementation.cache_tag
-            TruffleString cacheTag = (TruffleString) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, T_CACHE_TAG);
+            TruffleString cacheTag = (TruffleString) PInteropGetAttributeNode.executeUncached(implementationObj, T_CACHE_TAG);
             // sys.implementation._multiarch
-            TruffleString multiArch = (TruffleString) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, T__MULTIARCH);
+            TruffleString multiArch = (TruffleString) PInteropGetAttributeNode.executeUncached(implementationObj, T__MULTIARCH);
 
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);

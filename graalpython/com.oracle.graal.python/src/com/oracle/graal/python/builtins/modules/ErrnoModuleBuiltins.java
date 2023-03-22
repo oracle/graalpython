@@ -40,19 +40,19 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @CoreFunctions(defineModule = "errno")
 public final class ErrnoModuleBuiltins extends PythonBuiltins {

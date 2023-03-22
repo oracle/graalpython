@@ -125,12 +125,14 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -220,6 +222,7 @@ public class PythonCextObjectBuiltins {
     abstract static class _PyTruffleObject_CallMethod1 extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object receiver, TruffleString methodName, Object argsObj, int singleArg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached CastArgsNode castArgsNode) {
 
@@ -229,7 +232,7 @@ public class PythonCextObjectBuiltins {
             } else {
                 args = castArgsNode.execute(null, argsObj);
             }
-            return callMethod.execute(null, receiver, methodName, args);
+            return callMethod.execute(null, inliningTarget, receiver, methodName, args);
         }
     }
 
@@ -240,6 +243,7 @@ public class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object threadState, Object callable, Object argsArray, long nargs, Object kwargs,
                         @Cached CStructAccess.ReadObjectNode readNode,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readKwNode,
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
@@ -252,7 +256,7 @@ public class PythonCextObjectBuiltins {
                 if (kwargs instanceof PNone) {
                     keywords = PKeyword.EMPTY_KEYWORDS;
                 } else if (kwargs instanceof PDict) {
-                    keywords = castKwargsNode.execute(kwargs);
+                    keywords = castKwargsNode.execute(inliningTarget, kwargs);
                 } else if (kwargs instanceof PTuple) {
                     // We have a tuple with kw names and an array with kw values
                     PTuple kwTuple = (PTuple) kwargs;
@@ -261,7 +265,7 @@ public class PythonCextObjectBuiltins {
                     Object[] kwValues = readKwNode.readPyObjectArray(argsArray, kwcount, (int) nargs);
                     keywords = new PKeyword[kwcount];
                     for (int i = 0; i < kwcount; i++) {
-                        TruffleString name = castToTruffleStringNode.execute(getItemScalarNode.execute(storage, i));
+                        TruffleString name = castToTruffleStringNode.execute(inliningTarget, getItemScalarNode.execute(inliningTarget, storage, i));
                         keywords[i] = new PKeyword(name, kwValues[i]);
                     }
                 } else {
@@ -280,8 +284,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_Str extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doGeneric(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStrAsObjectNode strNode) {
-            return strNode.execute(obj);
+            return strNode.execute(inliningTarget, obj);
         }
 
         @Specialization(guards = "isNoValue(obj)")
@@ -294,8 +299,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_Repr extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doGeneric(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectReprAsObjectNode reprNode) {
-            return reprNode.execute(obj);
+            return reprNode.execute(null, inliningTarget, obj);
         }
 
         @Specialization(guards = "isNoValue(obj)")
@@ -308,8 +314,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object obj, Object k,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectDelItem delNode) {
-            delNode.execute(null, obj, k);
+            delNode.execute(null, inliningTarget, obj, k);
             return 0;
         }
     }
@@ -318,8 +325,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object obj, Object k, Object v,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetItem setItemNode) {
-            setItemNode.execute(null, obj, k, v);
+            setItemNode.execute(null, inliningTarget, obj, k, v);
             return 0;
         }
     }
@@ -386,8 +394,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_AsFileDescriptor extends CApiUnaryBuiltinNode {
         @Specialization
         static Object asFileDescriptor(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectAsFileDescriptor asFileDescriptorNode) {
-            return asFileDescriptorNode.execute(null, obj);
+            return asFileDescriptorNode.execute(null, inliningTarget, obj);
         }
     }
 
@@ -415,10 +424,11 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_HasAttr extends CApiBinaryBuiltinNode {
         @Specialization
         static int hasAttr(Object obj, Object attr,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached BranchProfile exceptioBranchProfile) {
             try {
-                return lookupAttrNode.execute(null, obj, attr) != PNone.NO_VALUE ? 1 : 0;
+                return lookupAttrNode.execute(null, inliningTarget, obj, attr) != PNone.NO_VALUE ? 1 : 0;
             } catch (PException e) {
                 exceptioBranchProfile.enter();
                 return 0;
@@ -438,8 +448,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_IsTrue extends CApiUnaryBuiltinNode {
         @Specialization
         static int isTrue(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(null, obj) ? 1 : 0;
+            return isTrueNode.execute(null, inliningTarget, obj) ? 1 : 0;
         }
     }
 
@@ -450,15 +461,17 @@ public class PythonCextObjectBuiltins {
             return bytes;
         }
 
-        @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(bytes, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(inliningTarget, bytes, getClassNode, isSubtypeNode)"})
         static Object bytes(Object bytes,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             return bytes;
         }
 
-        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "hasBytes(obj, lookupAttrNode)"}, limit = "1")
+        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
         Object bytes(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
@@ -466,8 +479,9 @@ public class PythonCextObjectBuiltins {
             return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
         }
 
-        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "!hasBytes(obj, lookupAttrNode)"}, limit = "1")
+        @Specialization(guards = {"!isBytes(obj)", "!isBytesSubtype(this, obj, getClassNode, isSubtypeNode)", "!isNoValue(obj)", "!hasBytes(inliningTarget, obj, lookupAttrNode)"}, limit = "1")
         static Object bytes(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
@@ -484,12 +498,12 @@ public class PythonCextObjectBuiltins {
             return factory().createBytes(BytesUtils.NULL_STRING);
         }
 
-        protected static boolean hasBytes(Object obj, PyObjectLookupAttr lookupAttrNode) {
-            return lookupAttrNode.execute(null, obj, T___BYTES__) != PNone.NO_VALUE;
+        protected static boolean hasBytes(Node inliningTarget, Object obj, PyObjectLookupAttr lookupAttrNode) {
+            return lookupAttrNode.execute(null, inliningTarget, obj, T___BYTES__) != PNone.NO_VALUE;
         }
 
-        protected static boolean isBytesSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        protected static boolean isBytesSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes);
         }
     }
 
@@ -572,15 +586,15 @@ public class PythonCextObjectBuiltins {
             stderr.println("ptrObject refcount : " + refCnt);
             stderr.flush();
 
-            Object type = GetClassNode.getUncached().execute(pythonObject);
+            Object type = GetClassNode.executeUncached(pythonObject);
             stderr.println("object type     : " + type);
-            stderr.println("object type name: " + TypeNodes.GetNameNode.getUncached().execute(type));
+            stderr.println("object type name: " + TypeNodes.GetNameNode.executeUncached(type));
 
             // the most dangerous part
             stderr.println("object repr     : ");
             stderr.flush();
             try {
-                Object reprObj = PyObjectCallMethodObjArgs.getUncached().execute(null, context.getBuiltins(), BuiltinNames.T_REPR, pythonObject);
+                Object reprObj = PyObjectCallMethodObjArgs.executeUncached(context.getBuiltins(), BuiltinNames.T_REPR, pythonObject);
                 stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
             } catch (PException | CannotCastException e) {
                 // errors are ignored at this point
@@ -594,8 +608,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_ASCII extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         static TruffleString ascii(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectAsciiNode asciiNode) {
-            return asciiNode.execute(null, obj);
+            return asciiNode.execute(null, inliningTarget, obj);
         }
 
         @Specialization(guards = "isNoValue(obj)")
@@ -608,8 +623,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_Type extends CApiUnaryBuiltinNode {
         @Specialization
         static Object type(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClass) {
-            return getClass.execute(obj);
+            return getClass.execute(inliningTarget, obj);
         }
     }
 
@@ -626,8 +642,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_GetIter extends CApiUnaryBuiltinNode {
         @Specialization
         static Object iter(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter) {
-            return getIter.execute(null, object);
+            return getIter.execute(null, inliningTarget, object);
         }
     }
 
@@ -635,8 +652,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_Hash extends CApiUnaryBuiltinNode {
         @Specialization
         static long hash(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(null, object);
+            return hashNode.execute(null, inliningTarget, object);
         }
     }
 
@@ -644,8 +662,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyCallable_Check extends CApiUnaryBuiltinNode {
         @Specialization
         static int doGeneric(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck) {
-            return intValue(callableCheck.execute(object));
+            return intValue(callableCheck.execute(inliningTarget, object));
         }
     }
 
@@ -653,8 +672,9 @@ public class PythonCextObjectBuiltins {
     abstract static class PyObject_Dir extends CApiUnaryBuiltinNode {
         @Specialization
         static Object dir(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectDir dir) {
-            return dir.execute(null, object);
+            return dir.execute(null, inliningTarget, object);
         }
     }
 }

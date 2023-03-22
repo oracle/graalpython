@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = OperatorModuleBuiltins.MODULE_NAME)
 public final class OperatorModuleBuiltins extends PythonBuiltins {
@@ -85,8 +87,9 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class TruthNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(frame, object);
+            return isTrueNode.execute(frame, inliningTarget, object);
         }
     }
 
@@ -95,8 +98,9 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object value, Object index,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItem) {
-            return getItem.execute(frame, value, index);
+            return getItem.execute(frame, inliningTarget, value, index);
         }
     }
 
@@ -170,8 +174,9 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object asIndex(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode index) {
-            return index.execute(frame, value);
+            return index.execute(frame, inliningTarget, value);
         }
     }
 }

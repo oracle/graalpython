@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.dict;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -68,6 +67,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -79,6 +79,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class DictNodes {
     @ImportStatic(HashingStorageGuards.class)
+    @SuppressWarnings("truffle-inlining")       // footprint reduction 188 -> 170
     public abstract static class UpdateNode extends PNodeWithContext {
         public abstract void execute(Frame frame, PDict self, Object other);
 
@@ -89,68 +90,70 @@ public abstract class DictNodes {
 
         @Specialization(guards = "!mayHaveSideEffectingEq(self)")
         static void updateDictNoSideEffects(PDict self, PDict other,
-                        @Cached HashingStorageAddAllToOther addAllToOther) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached HashingStorageAddAllToOther addAllToOther) {
             // The contract is such that we iterate over 'other' and add its elements to 'self'. If
             // 'other' gets mutated during the iteration, we should raise. This can happen via a
             // side effect of '__eq__' of some key in self, we should not run any other arbitrary
             // code here (hashes are reused from the 'other' storage).
-            addAllToOther.execute(null, other.getDictStorage(), self);
+            addAllToOther.execute(null, inliningTarget, other.getDictStorage(), self);
         }
 
         @Specialization(guards = "mayHaveSideEffectingEq(self)")
         static void updateDictGeneric(VirtualFrame frame, PDict self, PDict other,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageTransferItem transferItem,
                         @Cached HashingStorageGetIterator getOtherIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageLen otherLenNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             HashingStorage selfStorage = self.getDictStorage();
             HashingStorage otherStorage = other.getDictStorage();
-            int initialSize = otherLenNode.execute(otherStorage);
-            HashingStorageIterator itOther = getOtherIter.execute(otherStorage);
-            while (iterNext.execute(otherStorage, itOther)) {
-                selfStorage = transferItem.execute(frame, null, otherStorage, itOther, selfStorage);
-                if (initialSize != otherLenNode.execute(otherStorage)) {
-                    throw raiseNode.raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
+            int initialSize = otherLenNode.execute(inliningTarget, otherStorage);
+            HashingStorageIterator itOther = getOtherIter.execute(inliningTarget, otherStorage);
+            while (iterNext.execute(inliningTarget, otherStorage, itOther)) {
+                selfStorage = transferItem.execute(frame, inliningTarget, otherStorage, itOther, selfStorage);
+                if (initialSize != otherLenNode.execute(inliningTarget, otherStorage)) {
+                    throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                 }
             }
             self.setDictStorage(selfStorage);
         }
 
-        @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, other, lookupKeys)"})
+        @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, inliningTarget, other, lookupKeys)"})
         static void updateMapping(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Cached PyObjectGetItem getItem,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Shared @Cached PyObjectGetItem getItem,
+                        @Shared @Cached GetNextNode nextNode,
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage storage = HashingStorage.copyToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
-                            callKeysNode, getItem, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
+                            callKeysNode, getItem, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
 
-        @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, other, lookupKeys)"})
+        @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, inliningTarget, other, lookupKeys)"})
         static void updateSequence(VirtualFrame frame, PDict self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Cached PRaiseNode raise,
-                        @Cached GetNextNode nextNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Shared @Cached GetNextNode nextNode,
                         @Cached ListNodes.FastConstructListNode createListNode,
-                        @Cached PyObjectGetItem getItem,
+                        @Shared @Cached PyObjectGetItem getItem,
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached InlinedConditionProfile lengthTwoProfile,
-                        @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
+                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
+                        @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile) {
             HashingStorage.StorageSupplier storageSupplier = (int length) -> self.getDictStorage();
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, inliningTarget, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,
-                            getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile,
+                            getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raiseNode, getItem, isTypeErrorProfile,
                             errorProfile, setHasihngStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
@@ -159,12 +162,8 @@ public abstract class DictNodes {
             return dict == other;
         }
 
-        protected static boolean isDictEconomicMap(Object other) {
-            return other instanceof PDict && ((PDict) other).getDictStorage() instanceof EconomicMapStorage;
-        }
-
-        protected static boolean hasKeysAttr(VirtualFrame frame, Object other, PyObjectLookupAttr lookupKeys) {
-            return lookupKeys.execute(frame, other, SpecialMethodNames.T_KEYS) != PNone.NO_VALUE;
+        protected static boolean hasKeysAttr(VirtualFrame frame, Node inliningTarget, Object other, PyObjectLookupAttr lookupKeys) {
+            return lookupKeys.execute(frame, inliningTarget, other, SpecialMethodNames.T_KEYS) != PNone.NO_VALUE;
         }
 
         @NeverDefault

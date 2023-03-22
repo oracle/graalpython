@@ -71,7 +71,9 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -84,6 +86,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
+@GenerateInline(false) // footprint reduction 120 -> 103
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);
@@ -126,9 +129,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
-    private static TruffleString castKey(CastToTruffleStringNode castNode, Object value) {
+    private static TruffleString castKey(Node inliningTarget, CastToTruffleStringNode castNode, Object value) {
         try {
-            return castNode.execute(value);
+            return castNode.execute(inliningTarget, value);
         } catch (CannotCastException ex) {
             throw CompilerDirectives.shouldNotReachHere(ex);
         }
@@ -165,7 +168,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         if (PythonContext.get(this).isInitialized()) {
-            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, key), klass);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), klass);
         } else {
             return writeToDynamicStorageManagedClass(klass, key, value, inliningTarget, castToStrNode, callAttrUpdate, dylib, codePointLengthNode, codePointAtIndexNode);
         }
@@ -177,7 +180,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Shared("castToStr") @Cached CastToTruffleStringNode castToStrNode,
                     @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
-                    @Cached InlinedBranchProfile updateFlags,
+                    @Exclusive @Cached InlinedBranchProfile updateFlags,
                     @Shared("dylib") @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib,
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
@@ -191,7 +194,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     private static boolean writeToDynamicStorageManagedClass(PythonManagedClass klass, Object key, Object value, Node inliningTarget, CastToTruffleStringNode castToStrNode,
                     InlinedBranchProfile callAttrUpdate, DynamicObjectLibrary dylib, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
-        TruffleString strKey = castKey(castToStrNode, key);
+        TruffleString strKey = castKey(inliningTarget, castToStrNode, key);
         try {
             dylib.put(klass, strKey, value);
             return true;
@@ -227,7 +230,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         if (PythonContext.get(this).isInitialized()) {
-            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, key), klass);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), klass);
         } else {
             return writeToDictManagedClass(klass, dict, key, value, inliningTarget, castToStrNode, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
         }
@@ -251,7 +254,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     InlinedBranchProfile callAttrUpdate, InlinedBranchProfile updateStorage, HashingStorageSetItem setHashingStorageItem, TruffleString.CodePointLengthNode codePointLengthNode,
                     TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
-        TruffleString strKey = castKey(castToStrNode, key);
+        TruffleString strKey = castKey(inliningTarget, castToStrNode, key);
         try {
             return writeToDict(dict, strKey, value, inliningTarget, updateStorage, setHashingStorageItem);
         } finally {
@@ -270,7 +273,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         HashingStorage dictStorage = dict.getDictStorage();
         // The assumption is that the key is a string with the default __hash__ and __eq__, so we do
         // not need to pass the frame. This is not entirely correct: GR-41728
-        HashingStorage hashingStorage = setHashingStorageItem.execute(null, dictStorage, key, value);
+        HashingStorage hashingStorage = setHashingStorageItem.execute(null, inliningTarget, dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter(inliningTarget);
             dict.setDictStorage(hashingStorage);
@@ -304,6 +307,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // footprint reduction 124 -> 107
     protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
@@ -334,6 +338,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @GenerateUncached
     @ImportStatic(SpecialMethodSlot.class)
+    @GenerateInline(false) // footprint reduction 132 -> 115
     protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
 
         /*
@@ -369,7 +374,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
-                        @Cached InlinedBranchProfile canBeSpecialSlot,
+                        @Exclusive @Cached InlinedBranchProfile canBeSpecialSlot,
                         @Shared("castToStr") @Cached CastToTruffleStringNode castKeyNode,
                         @Cached IsTypeNode isTypeNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
@@ -390,11 +395,11 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                 throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, keyObj);
             } finally {
                 try {
-                    TruffleString key = castKeyNode.execute(keyObj);
+                    TruffleString key = castKeyNode.execute(inliningTarget, keyObj);
                     if (SpecialMethodSlot.canBeSpecial(key, codePointLengthNode, codePointAtIndexNode)) {
                         canBeSpecialSlot.enter(inliningTarget);
                         SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key, codePointLengthNode, codePointAtIndexNode, equalNode);
-                        if (slot != null && isTypeNode.execute(object)) {
+                        if (slot != null && isTypeNode.execute(inliningTarget, object)) {
                             SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
                         }
                     }

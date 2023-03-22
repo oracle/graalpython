@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -132,13 +133,13 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     public boolean hasSourceLocation(
-                    @CachedLibrary(limit = "1") InteropLibrary lib) {
+                    @Shared("sourceInterop") @CachedLibrary(limit = "1") InteropLibrary lib) {
         return lib.hasSourceLocation(scopes[scopeIndex]);
     }
 
     @ExportMessage
     public SourceSection getSourceLocation(
-                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+                    @Shared("sourceInterop") @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
         return lib.getSourceLocation(scopes[scopeIndex]);
     }
 
@@ -268,7 +269,7 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     Object toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects,
-                    @CachedLibrary(limit = "1") InteropLibrary lib) {
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib) {
         return lib.toDisplayString(scopes[scopeIndex]);
     }
 }

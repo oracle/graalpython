@@ -58,11 +58,13 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateInline(false) // used in BCI root node
 public abstract class ThrowNode extends PNodeWithContext {
 
     private static final TruffleString T_CLOSE = tsLiteral("close");
@@ -95,7 +97,7 @@ public abstract class ThrowNode extends PNodeWithContext {
     }
 
     @Fallback
-    boolean doOther(VirtualFrame frame, int stackTop, Object obj, PException exception,
+    static boolean doOther(VirtualFrame frame, int stackTop, Object obj, PException exception,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupThrow,
                     @Cached PyObjectLookupAttr lookupClose,
@@ -108,7 +110,7 @@ public abstract class ThrowNode extends PNodeWithContext {
         if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
             Object close = PNone.NO_VALUE;
             try {
-                close = lookupClose.execute(frame, obj, T_CLOSE);
+                close = lookupClose.execute(frame, inliningTarget, obj, T_CLOSE);
             } catch (PException e) {
                 writeUnraisableNode.execute(frame, e.getEscapedException(), null, obj);
             }
@@ -117,7 +119,7 @@ public abstract class ThrowNode extends PNodeWithContext {
             }
             throw exception;
         } else {
-            Object throwMethod = lookupThrow.execute(frame, obj, T_THROW);
+            Object throwMethod = lookupThrow.execute(frame, inliningTarget, obj, T_THROW);
             if (throwMethod == PNone.NO_VALUE) {
                 throw exception;
             }

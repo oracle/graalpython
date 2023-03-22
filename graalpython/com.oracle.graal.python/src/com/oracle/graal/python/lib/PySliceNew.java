@@ -47,41 +47,46 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Creates a new slice object with given parameters. Equivalent of CPython's {@code PySlice_New}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(PInt.class)
 public abstract class PySliceNew extends PNodeWithContext {
-    public abstract PSlice execute(Object start, Object stop, Object step);
+    public abstract PSlice execute(Node inliningTarget, Object start, Object stop, Object step);
 
     @SuppressWarnings("unused")
     static PSlice doInt(int start, int stop, PNone step,
-                    @Cached.Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached.Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createIntSlice(start, stop, 1, false, true);
     }
 
     @Specialization
     static PSlice doInt(int start, int stop, int step,
-                    @Cached.Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached.Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createIntSlice(start, stop, step);
     }
 
     @Specialization
     @SuppressWarnings("unused")
     static PSlice doInt(PNone start, int stop, PNone step,
-                    @Cached.Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached.Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createIntSlice(0, stop, 1, true, true);
     }
 
     @Specialization
     @SuppressWarnings("unused")
     static PSlice doInt(PNone start, int stop, int step,
-                    @Cached.Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached.Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createIntSlice(0, stop, step, true, false);
     }
 
@@ -89,13 +94,13 @@ public abstract class PySliceNew extends PNodeWithContext {
     @Specialization(guards = {"isIntRange(start)", "isIntRange(stop)"})
     @SuppressWarnings("unused")
     static PSlice doLong(long start, long stop, PNone step,
-                    @Cached.Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached.Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
         return factory.createIntSlice((int) start, (int) stop, 1, false, true);
     }
 
     @Fallback
     static PSlice doGeneric(Object start, Object stop, Object step,
-                    @Cached.Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached.Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
         assert start != PNone.NO_VALUE && stop != PNone.NO_VALUE && step != PNone.NO_VALUE;
         return factory.createObjectSlice(start, stop, step);
     }

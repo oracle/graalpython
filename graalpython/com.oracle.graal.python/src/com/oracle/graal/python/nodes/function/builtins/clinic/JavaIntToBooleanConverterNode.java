@@ -46,10 +46,12 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Implements the {@code bool(accept=int)} argument clinic conversion.
@@ -95,8 +97,9 @@ public abstract class JavaIntToBooleanConverterNode extends ArgumentCastNode {
 
     @Specialization(guards = "!isNoValue(value)")
     static Object doOthers(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyLongAsIntNode asIntNode) {
-        return asIntNode.execute(frame, value) != 0;
+        return asIntNode.execute(frame, inliningTarget, value) != 0;
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)

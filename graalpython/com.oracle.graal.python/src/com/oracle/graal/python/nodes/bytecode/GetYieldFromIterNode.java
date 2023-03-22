@@ -43,14 +43,17 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline(false) // used in BCI root node
 public abstract class GetYieldFromIterNode extends Node {
     public abstract Object execute(Frame frame, Object receiver);
 
@@ -62,12 +65,13 @@ public abstract class GetYieldFromIterNode extends Node {
 
     @Specialization
     public Object getGeneric(Frame frame, Object arg,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
-                    @Cached IsBuiltinClassProfile isCoro) {
-        if (isCoro.profileObject(arg, PythonBuiltinClassType.PCoroutine)) {
+                    @Cached IsBuiltinObjectProfile isCoro) {
+        if (isCoro.profileObject(inliningTarget, arg, PythonBuiltinClassType.PCoroutine)) {
             return arg;
         } else {
-            return getIter.execute(frame, arg);
+            return getIter.execute(frame, inliningTarget, arg);
         }
     }
 

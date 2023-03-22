@@ -52,13 +52,19 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyNumber_AsSize} function. Converts the argument into integer (our
@@ -66,28 +72,46 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * if the argument is not convertible to integer. Overflow behavior depends on the execute method
  * used:
  * <ul>
- * <li>{@link #executeLossy(Frame, Object)} clamps the value to maximal/minimal integer (equivalent
- * of passing {@code NULL} in CPython).
- * <li>{@link #executeExact(Frame, Object)} raises {@code OverflowError} on overflow.
- * <li>{@link #executeExact(Frame, Object, PythonBuiltinClassType)} raises the supplied exception
- * type on overflow.
+ * <li>{@link #executeLossy(Frame, Node, Object)} clamps the value to maximal/minimal integer
+ * (equivalent of passing {@code NULL} in CPython).
+ * <li>{@link #executeExact(Frame, Node, Object)} raises {@code OverflowError} on overflow.
+ * <li>{@link #executeExact(Frame, Node, Object, PythonBuiltinClassType)} raises the supplied
+ * exception type on overflow.
  * </ul>
  */
 @GenerateUncached
+@GenerateCached
+@GenerateInline(inlineByDefault = true)
 public abstract class PyNumberAsSizeNode extends PNodeWithContext {
-    public final int executeLossy(Frame frame, Object object) {
-        return execute(frame, object, PNone.NO_VALUE);
+    public final int executeLossy(Frame frame, Node inliningTarget, Object object) {
+        return execute(frame, inliningTarget, object, PNone.NO_VALUE);
     }
 
-    public final int executeExact(Frame frame, Object object) {
-        return execute(frame, object, OverflowError);
+    /**
+     * Attention: only to be used with a cached variant of this node. Prefer the inline variant (the
+     * default when used as @Cached).
+     */
+    public final int executeExactCached(Frame frame, Object object) {
+        return execute(frame, this, object, OverflowError);
     }
 
+    public final int executeExact(Frame frame, Node inliningTarget, Object object) {
+        return execute(frame, inliningTarget, object, OverflowError);
+    }
+
+    /**
+     * Attention: only to be used with a cached variant of this node. Prefer the inline variant (the
+     * default when used as @Cached).
+     */
     public final int executeExact(Frame frame, Object object, PythonBuiltinClassType errorClass) {
-        return execute(frame, object, errorClass);
+        return execute(frame, null, object, errorClass);
     }
 
-    protected abstract int execute(Frame frame, Object object, Object errorClass);
+    public final int executeExact(Frame frame, Node inliningTarget, Object object, PythonBuiltinClassType errorClass) {
+        return execute(frame, inliningTarget, object, errorClass);
+    }
+
+    protected abstract int execute(Frame frame, Node inliningTarget, Object object, Object errorClass);
 
     @Specialization
     static int doInt(int object, @SuppressWarnings("unused") Object errorClass) {
@@ -95,28 +119,13 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
     }
 
     @Specialization
-    static int doLongExact(long object, PythonBuiltinClassType errorClass,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+    static int doLongExact(Node inliningTarget, long object, PythonBuiltinClassType errorClass,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         int converted = (int) object;
         if (object == converted) {
             return converted;
         }
-        throw raiseNode.raise(errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
-    }
-
-    @Specialization
-    static int doObjectExact(VirtualFrame frame, Object object, PythonBuiltinClassType errorClass,
-                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                    @Cached CastToJavaIntExactNode cast) {
-        Object index = indexNode.execute(frame, object);
-        try {
-            return cast.execute(index);
-        } catch (PException pe) {
-            throw raiseNode.raise(errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
-        } catch (CannotCastException cannotCastException) {
-            throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
-        }
+        throw raiseNode.get(inliningTarget).raise(errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
     }
 
     @Specialization
@@ -128,15 +137,45 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
         return object > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
     }
 
-    @Specialization
-    static int doObjectLossy(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone errorClass,
-                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                    @Cached CastToJavaIntLossyNode cast) {
-        Object index = indexNode.execute(frame, object);
-        try {
-            return cast.execute(index);
-        } catch (CannotCastException cannotCastException) {
-            throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
+    @Fallback
+    @InliningCutoff
+    static int doObject(Frame frame, Object object, Object errorClass,
+                    @Cached(inline = false) PyNumberAsSizeObjectNode node) {
+        return node.execute(frame, object, errorClass);
+    }
+
+    @GenerateInline(false) // used lazily
+    @GenerateUncached
+    abstract static class PyNumberAsSizeObjectNode extends Node {
+        protected abstract int execute(Frame frame, Object object, Object errorClass);
+
+        @Specialization
+        static int doObjectExact(VirtualFrame frame, Object object, PythonBuiltinClassType errorClass,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached CastToJavaIntExactNode cast) {
+            Object index = indexNode.execute(frame, inliningTarget, object);
+            try {
+                return cast.execute(inliningTarget, index);
+            } catch (PException pe) {
+                throw raiseNode.get(inliningTarget).raise(errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
+            } catch (CannotCastException cannotCastException) {
+                throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
+            }
+        }
+
+        @Specialization
+        static int doObjectLossy(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone errorClass,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaIntLossyNode cast) {
+            Object index = indexNode.execute(frame, inliningTarget, object);
+            try {
+                return cast.execute(inliningTarget, index);
+            } catch (CannotCastException cannotCastException) {
+                throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
+            }
         }
     }
 

@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -50,10 +47,12 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -64,6 +63,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_issubclass")
+@SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
 public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     static final int MAX_RECURSION = 3; // Don't use PythonOptions to avoid language reference
 
@@ -82,9 +82,10 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return execute(null, derived, cls);
     }
 
-    @Specialization(guards = "isSameMetaObject(isSameTypeNode, derived, cls)")
+    @Specialization(guards = "isSameMetaObject(inliningTarget, isSameTypeNode, derived, cls)")
     @SuppressWarnings("unused")
     static boolean doSameClass(Object derived, Object cls, @SuppressWarnings("unused") int depth,
+                    @Bind("this") Node inliningTarget,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode) {
         return true;
     }
@@ -95,16 +96,17 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return ary;
     }
 
-    @Specialization(guards = {"depth < MAX_RECURSION", "!isSameMetaObject(isSameTypeNode, derived, cls)", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"depth < MAX_RECURSION", "!isSameMetaObject(inliningTarget, isSameTypeNode, derived, cls)", "derived == cachedDerived",
+                    "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static boolean doSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls, int depth,
                     @Bind("this") Node inliningTarget,
                     @Cached(value = "observedSize()", dimensions = 1) int[] observedSizeArray,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
-                    @Cached @SuppressWarnings("unused") IsSameTypeNode isSameTypeNode,
-                    @Cached AbstractObjectGetBasesNode getBasesNode,
+                    @Shared("isSameType") @Cached @SuppressWarnings("unused") IsSameTypeNode isSameTypeNode,
+                    @Shared @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
-                    @Cached GetObjectArrayNode getObjectArrayNode) {
+                    @Shared @Cached GetObjectArrayNode getObjectArrayNode) {
         CompilerAsserts.partialEvaluationConstant(depth);
         PTuple bases = getBasesNode.execute(frame, cachedDerived);
         if (bases == null || isEmpty(bases)) {
@@ -149,12 +151,12 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     @Specialization(replaces = {"doSubclass", "doSameClass"})
     static boolean doGeneric(VirtualFrame frame, Object derived, Object cls, int depth,
                     @Bind("this") Node inliningTarget,
-                    @Cached AbstractObjectGetBasesNode getBasesNode,
+                    @Shared @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached("createRecursive(depth)") AbstractObjectIsSubclassNode isSubclassNode,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode,
-                    @Cached GetObjectArrayNode getObjectArrayNode) {
+                    @Shared @Cached GetObjectArrayNode getObjectArrayNode) {
         CompilerAsserts.partialEvaluationConstant(depth);
-        if (isSameMetaObject(isSameTypeNode, derived, cls)) {
+        if (isSameMetaObject(inliningTarget, isSameTypeNode, derived, cls)) {
             return true;
         }
 
@@ -171,6 +173,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return false;
     }
 
+    @NeverDefault
     protected AbstractObjectIsSubclassNode createRecursive(int depth) {
         if (depth >= MAX_RECURSION) {
             return AbstractObjectIsSubclassNodeGen.getUncached();
@@ -187,7 +190,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
      * {@link IsSameTypeNode} because it will also accept meta objects that are not classes.
      */
     @SuppressWarnings("javadoc")
-    static boolean isSameMetaObject(IsSameTypeNode isSameTypeNode, Object derived, Object cls) {
-        return derived == cls || isSameTypeNode.execute(derived, cls);
+    static boolean isSameMetaObject(Node inliningTarget, IsSameTypeNode isSameTypeNode, Object derived, Object cls) {
+        return derived == cls || isSameTypeNode.execute(inliningTarget, derived, cls);
     }
 }

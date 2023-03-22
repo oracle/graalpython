@@ -61,12 +61,15 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeError)
@@ -93,19 +96,19 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public static TruffleString getArgAsString(Object[] args, int index, PNodeWithRaise raiseNode, CastToTruffleStringNode castNode) {
+    public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PNodeWithRaise raiseNode, CastToTruffleStringNode castNode) {
         if (args.length < index + 1 || !PGuards.isString(args[index])) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
-            return castNode.execute(args[index]);
+            return castNode.execute(inliningTarget, args[index]);
         }
     }
 
-    public static int getArgAsInt(Object[] args, int index, PNodeWithRaise raiseNode, CastToJavaIntExactNode castNode) {
+    public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PNodeWithRaise raiseNode, CastToJavaIntExactNode castNode) {
         if (args.length < index + 1 || !(PGuards.isInteger(args[index]) || PGuards.isPInt(args[index]))) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
-            return castNode.execute(args[index]);
+            return castNode.execute(inliningTarget, args[index]);
         }
     }
 
@@ -115,7 +118,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         @CompilerDirectives.TruffleBoundary
         PBytes doString(TruffleString value,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             // TODO GR-37601: cbasca cPython works directly with bytes while we have Java strings
             // which are encoded, here we decode using the system encoding but this might not be the
             // correct / ideal case
@@ -130,7 +133,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
         PBytes doOther(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             try {
                 final byte[] buffer = bufferLib.getInternalOrCopiedByteArray(value);
                 final int bufferLength = bufferLib.getBufferLength(value);
@@ -174,33 +177,34 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeErrorStartNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         Object get(PBaseException self, PNone none,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, none, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setBool(PBaseException self, boolean value,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value ? 1 : 0, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setInt(PBaseException self, int value,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setInt(PBaseException self, long value,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, (int) value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setPInt(PBaseException self, PInt value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, castToJavaIntExactNode.execute(value), IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, castToJavaIntExactNode.execute(inliningTarget, value), IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
@@ -215,27 +219,28 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeErrorEndNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         Object get(PBaseException self, PNone none,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, none, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setBool(PBaseException self, boolean value,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value ? 1 : 0, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setInt(PBaseException self, int value,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         Object setPInt(PBaseException self, PInt value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, castToJavaIntExactNode.execute(value), IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, castToJavaIntExactNode.execute(inliningTarget, value), IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})

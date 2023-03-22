@@ -78,12 +78,14 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PThreadLocal)
@@ -125,6 +127,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
@@ -133,12 +136,12 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(keyObj);
+                key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
-            Object type = getClassNode.execute(object);
+            Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type, key);
             Object dataDescClass = null;
             boolean hasDescr = descr != PNone.NO_VALUE;
@@ -177,7 +180,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getDictStorageItem = insert(HashingStorageGetItemNodeGen.create());
             }
-            return getDictStorageItem.execute(frame, object.getDictStorage(), key);
+            return getDictStorageItem.executeCached(frame, object.getDictStorage(), key);
         }
 
         private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, Object get) {
@@ -193,7 +196,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getDescClassNode = insert(GetClassNode.create());
             }
-            return getDescClassNode.execute(desc);
+            return getDescClassNode.executeCached(desc);
         }
 
         private Object lookupGet(Object dataDescClass) {
@@ -237,6 +240,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
 
         @Specialization
         protected PNone doStringKey(VirtualFrame frame, PThreadLocal object, Object keyObject, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached GetClassNode getClassNode,
@@ -245,11 +249,11 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(keyObject);
+                key = castKeyToStringNode.execute(inliningTarget, keyObject);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
             }
-            Object type = getClassNode.execute(object);
+            Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
                 Object dataDescClass = getDescClass(descr);
@@ -268,7 +272,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getDescClassNode = insert(GetClassNode.create());
             }
-            return getDescClassNode.execute(desc);
+            return getDescClassNode.executeCached(desc);
         }
 
         private LookupCallableSlotInMRONode ensureLookupSetNode() {
@@ -293,7 +297,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                 setHashingStorageItem = insert(HashingStorageSetItem.create());
             }
             HashingStorage storage = dict.getDictStorage();
-            HashingStorage newStorage = setHashingStorageItem.execute(frame, storage, key, value);
+            HashingStorage newStorage = setHashingStorageItem.executeCached(frame, storage, key, value);
             if (storage != newStorage) {
                 if (!changedStorage) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -311,6 +315,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
 
         @Specialization
         protected PNone doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached GetClassNode getClassNode,
@@ -322,11 +327,11 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
             try {
-                key = castKeyToStringNode.execute(keyObj);
+                key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
-            Object type = getClassNode.execute(object);
+            Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
                 Object dataDescClass = getDescClass(descr);
@@ -336,7 +341,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            Object found = delHashingStorageItem.executePop(localDict.getDictStorage(), key, localDict);
+            Object found = delHashingStorageItem.executePop(inliningTarget, localDict.getDictStorage(), key, localDict);
             if (found != null) {
                 return PNone.NONE;
             }
@@ -352,7 +357,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getDescClassNode = insert(GetClassNode.create());
             }
-            return getDescClassNode.execute(desc);
+            return getDescClassNode.executeCached(desc);
         }
     }
 }

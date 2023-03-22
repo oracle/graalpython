@@ -46,16 +46,16 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@GenerateInline(false)
 public abstract class WriteNameNode extends PNodeWithContext implements AccessNameNode {
 
     public final void execute(VirtualFrame frame, TruffleString attributeId, Object value) {
@@ -73,17 +73,16 @@ public abstract class WriteNameNode extends PNodeWithContext implements AccessNa
 
     @Specialization(guards = "hasLocalsDict(frame)")
     protected static void writeLocalsDict(VirtualFrame frame, TruffleString attributeId, Object value,
-                    @Bind("this") Node inliningTarget,
-                    @Cached HashingCollectionNodes.SetItemNode setItem) {
+                    @Cached(inline = false) HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
-        setItem.execute(frame, inliningTarget, frameLocals, attributeId, value);
+        setItem.executeCached(frame, frameLocals, attributeId, value);
     }
 
     @Specialization(guards = "hasLocals(frame)")
     protected static void writeLocal(VirtualFrame frame, TruffleString attributeId, Object value,
-                    @Cached PyObjectSetItem setItem) {
+                    @Cached(inline = false) PyObjectSetItem setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
-        setItem.execute(frame, frameLocals, attributeId, value);
+        setItem.executeCached(frame, frameLocals, attributeId, value);
     }
 
     @NeverDefault

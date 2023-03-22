@@ -49,21 +49,31 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Casts a Python boolean to a Java boolean without coercion. <b>ATTENTION:</b> If the cast fails,
  * because the object is not a Python boolean, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(PGuards.class)
 public abstract class CastToJavaBooleanNode extends PNodeWithContext {
 
-    public abstract boolean execute(Object x) throws CannotCastException;
+    public abstract boolean execute(Node inliningTarget, Object x) throws CannotCastException;
+
+    public static boolean executeUncached(Object x) throws CannotCastException {
+        return CastToJavaBooleanNodeGen.getUncached().execute(null, x);
+    }
 
     @Specialization
     static boolean doBoolean(boolean x) {
@@ -71,11 +81,11 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doPInt(PInt x,
-                    @Cached ConditionProfile isBoolean,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Cached GetClassNode getClassNode) {
-        if (isBoolean.profile(isSubtype.execute(getClassNode.execute(x), PythonBuiltinClassType.Boolean))) {
+    static boolean doPInt(Node inliningTarget, PInt x,
+                    @Cached InlinedConditionProfile isBoolean,
+                    @Shared @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Shared @Cached GetClassNode getClassNode) {
+        if (isBoolean.profile(inliningTarget, isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.Boolean))) {
             return !x.isZero();
         } else {
             throw CannotCastException.INSTANCE;
@@ -83,10 +93,10 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doNativeObject(PythonNativeObject x,
-                    @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.Boolean)) {
+    static boolean doNativeObject(Node inliningTarget, PythonNativeObject x,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.Boolean)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException("casting a native long object to a Java boolean is not implemented yet");
         }
@@ -97,9 +107,5 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
     @Fallback
     static boolean doUnsupported(@SuppressWarnings("unused") Object x) {
         throw CannotCastException.INSTANCE;
-    }
-
-    public static CastToJavaBooleanNode getUncached() {
-        return CastToJavaBooleanNodeGen.getUncached();
     }
 }

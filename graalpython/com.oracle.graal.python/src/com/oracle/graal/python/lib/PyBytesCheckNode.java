@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -56,7 +56,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PyBytes_Check}.
+ * Equivalent of CPython's {@code PyBytes_Check}. Note: in CPython this helper never executes Python
+ * code. Our implementation is not completely aligned and may execute some Python code in subtype
+ * check, but we do not take frame to make it clear what the contract should be (and eventually it
+ * will be fixed).
  */
 @ImportStatic(PGuards.class)
 @GenerateUncached
@@ -78,8 +81,8 @@ public abstract class PyBytesCheckNode extends Node {
 
     @Specialization
     static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
         // FIXME we should have a subtype check that doesn't call back to python
         return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes);
     }

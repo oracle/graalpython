@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNPACKED_TUPLE_SHOULD_
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -54,26 +55,27 @@ import com.oracle.truffle.api.strings.TruffleString;
 /**
  * Equivalent of CPython's {@code _PyArg_CheckPositional}.
  */
-@GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyArgCheckPositionalNode extends Node {
-    public final boolean execute(TruffleString name, Object[] args, int min, int max) {
-        return execute(name, args.length, min, max);
+    public final boolean execute(Node inliningTarget, TruffleString name, Object[] args, int min, int max) {
+        return execute(inliningTarget, name, args.length, min, max);
     }
 
-    public abstract boolean execute(TruffleString name, int nargs, int min, int max);
+    public abstract boolean execute(Node inliningTarget, TruffleString name, int nargs, int min, int max);
 
     @Specialization
-    static boolean doGeneric(TruffleString name, int nargs, int min, int max,
-                    @Cached PRaiseNode raiseNode) {
+    static boolean doGeneric(Node inliningTarget, TruffleString name, int nargs, int min, int max,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         assert min >= 0;
         assert min <= max;
 
         if (nargs < min) {
             if (name != null) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
                                 name, (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
             } else {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
                                 (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
             }
         }
@@ -84,10 +86,10 @@ public abstract class PyArgCheckPositionalNode extends Node {
 
         if (nargs > max) {
             if (name != null) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
                                 name, (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
             } else {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
                                 (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -44,7 +44,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
@@ -67,9 +67,9 @@ public abstract class InvokeNode extends Node implements IndirectCallNode {
         return callTarget;
     }
 
-    protected static void optionallySetGeneratorFunction(Object[] arguments, CallTarget callTarget, ConditionProfile isGeneratorFunctionProfile, PFunction callee) {
+    protected static void optionallySetGeneratorFunction(Node inliningTarget, Object[] arguments, CallTarget callTarget, InlinedConditionProfile isGeneratorFunctionProfile, PFunction callee) {
         RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (isGeneratorFunctionProfile.profile(rootNode instanceof PBytecodeGeneratorFunctionRootNode)) {
+        if (isGeneratorFunctionProfile.profile(inliningTarget, rootNode instanceof PBytecodeGeneratorFunctionRootNode)) {
             assert callee != null : "generator function callee not passed to invoke node";
             PArguments.setGeneratorFunction(arguments, callee);
         }

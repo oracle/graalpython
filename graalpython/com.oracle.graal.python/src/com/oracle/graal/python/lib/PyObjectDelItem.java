@@ -49,10 +49,12 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -65,34 +67,39 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent to use for PyObject_DelItem.
  */
 @GenerateUncached
+@GenerateCached
+@GenerateInline(inlineByDefault = true)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectDelItem extends Node {
-    public abstract void execute(Frame frame, Object container, Object index);
+    public final void executeCached(Frame frame, Object container, Object index) {
+        execute(frame, this, container, index);
+    }
+
+    public abstract void execute(Frame frame, Node inliningTarget, Object container, Object index);
 
     @Specialization
-    static void doWithFrame(VirtualFrame frame, Object primary, Object index,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getclass") @Cached InlinedGetClassNode getClassNode,
+    static void doWithFrame(VirtualFrame frame, Node inliningTarget, Object primary, Object index,
+                    @Shared("getclass") @Cached GetClassNode getClassNode,
                     @Cached("create(DelItem)") LookupSpecialMethodSlotNode lookupDelitem,
-                    @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @Shared("callNode") @Cached CallBinaryMethodNode callDelitem) {
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raise,
+                    @Shared("callNode") @Cached(inline = false) CallBinaryMethodNode callDelitem) {
         Object delitem = lookupDelitem.execute(frame, getClassNode.execute(inliningTarget, primary), primary);
         if (delitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
         }
         callDelitem.executeObject(frame, delitem, primary, index);
     }
 
     @Specialization(replaces = "doWithFrame")
-    static void doGeneric(Object primary, Object index,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getclass") @Cached InlinedGetClassNode getClassNode,
-                    @Cached(parameters = "DelItem") LookupCallableSlotInMRONode lookupDelitem,
-                    @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @Shared("callNode") @Cached CallBinaryMethodNode callDelitem) {
+    @InliningCutoff
+    static void doGeneric(Node inliningTarget, Object primary, Object index,
+                    @Shared("getclass") @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "DelItem", inline = false) LookupCallableSlotInMRONode lookupDelitem,
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raise,
+                    @Shared("callNode") @Cached(inline = false) CallBinaryMethodNode callDelitem) {
         Object setitem = lookupDelitem.execute(getClassNode.execute(inliningTarget, primary));
         if (setitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
+            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
         }
         callDelitem.executeObject(null, setitem, primary, index);
     }

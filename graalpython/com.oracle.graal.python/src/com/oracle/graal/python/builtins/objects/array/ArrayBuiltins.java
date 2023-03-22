@@ -108,7 +108,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -281,7 +281,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 return false;
             }
             for (int i = 0; i < left.getLength(); i++) {
-                if (!eqNode.execute(frame, getLeft.execute(inliningTarget, left, i), getRight.execute(inliningTarget, right, i))) {
+                if (!eqNode.compare(frame, inliningTarget, getLeft.execute(inliningTarget, left, i), getRight.execute(inliningTarget, right, i))) {
                     return false;
                 }
             }
@@ -322,15 +322,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
-                        @Cached("createIfTrueNode()") @Shared CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached @Shared CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Cached @Shared ArrayNodes.GetValueNode getLeft,
                         @Cached @Shared ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
             for (int i = 0; i < commonLength; i++) {
                 Object leftValue = getLeft.execute(inliningTarget, left, i);
                 Object rightValue = getRight.execute(inliningTarget, right, i);
-                if (!eqNode.execute(frame, leftValue, rightValue)) {
-                    return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, leftValue, rightValue));
+                if (!eqNode.compare(frame, inliningTarget, leftValue, rightValue)) {
+                    return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
             return compareLengths(left.getLength(), right.getLength());
@@ -341,7 +341,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right,
                         @Bind("this") Node inliningTarget,
                         @Cached("createComparison()") @Shared BinaryComparisonNode compareNode,
-                        @Cached("createIfTrueNode()") @Shared CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached @Shared CoerceToBooleanNode.YesNode coerceToBooleanNode,
                         @Cached @Shared ArrayNodes.GetValueNode getLeft,
                         @Cached @Shared ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
@@ -349,7 +349,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
                 double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
-                    return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, leftValue, rightValue));
+                    return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
             return compareLengths(left.getLength(), right.getLength());
@@ -445,7 +445,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.execute(frame, getValueNode.execute(inliningTarget, self, i), value)) {
+                if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
                     return true;
                 }
             }
@@ -476,7 +476,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             if (isEmptyProfile.profile(inliningTarget, self.getLength() != 0)) {
                 if (isUnicodeProfile.profile(inliningTarget, self.getFormat() == BufferFormat.UNICODE)) {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
-                    appendStringNode.execute(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
+                    appendStringNode.execute(sb, cast.execute(inliningTarget, reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
                 } else {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, T_LBRACKET);
@@ -485,7 +485,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                             appendStringNode.execute(sb, T_COMMA_SPACE);
                         }
                         Object value = getValueNode.execute(inliningTarget, self, i);
-                        appendStringNode.execute(sb, cast.execute(reprNode.executeObject(frame, value)));
+                        appendStringNode.execute(sb, cast.execute(inliningTarget, reprNode.executeObject(frame, value)));
                     }
                     appendStringNode.execute(sb, T_RBRACKET);
                 }
@@ -505,7 +505,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("forArray()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
-            int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
             return getValueNode.execute(inliningTarget, self, index);
         }
 
@@ -515,7 +515,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices) {
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
             int itemsize = self.getFormat().bytesize;
             PArray newArray;
             try {
@@ -546,7 +546,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
-            int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
             putValueNode.execute(frame, inliningTarget, self, index, value);
             return PNone.NONE;
         }
@@ -564,7 +564,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached DelItemNode delItemNode) {
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
             int stop = sliceInfo.stop;
             int step = sliceInfo.step;
@@ -626,10 +626,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(idx)")
         Object delitem(VirtualFrame frame, PArray self, Object idx,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode) {
             self.checkCanResize(this);
-            int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
             self.delSlice(index, 1);
             return PNone.NONE;
         }
@@ -642,7 +643,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached SliceNodes.AdjustIndices adjustIndices) {
             self.checkCanResize(this);
             int length = self.getLength();
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(length, sliceUnpack.execute(slice));
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
@@ -699,11 +700,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "protocol < 3")
         Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared GetClassNode getClassNode,
                         @Cached @Shared PyObjectLookupAttr lookupDict,
                         @Cached ToListNode toListNode) {
             Object cls = getClassNode.execute(inliningTarget, self);
-            Object dict = lookupDict.execute(frame, self, T___DICT__);
+            Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
@@ -714,7 +715,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "protocol >= 3")
         Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedGetClassNode getClassNode,
+                        @Cached @Shared GetClassNode getClassNode,
                         @Cached @Shared PyObjectLookupAttr lookupDict,
                         @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode) {
@@ -722,11 +723,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
             Object cls = getClassNode.execute(inliningTarget, self);
-            Object dict = lookupDict.execute(frame, self, T___DICT__);
+            Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            Object reconstructor = getReconstructor.execute(frame, arrayModule, T_ARRAY_RECONSTRUCTOR);
+            Object reconstructor = getReconstructor.execute(frame, inliningTarget, arrayModule, T_ARRAY_RECONSTRUCTOR);
             PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
@@ -818,7 +819,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared ArrayNodes.PutValueNode putValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(value);
+            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, value);
             int storageLength = storage.length();
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), storageLength);
@@ -834,7 +835,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             for (int i = 0; i < storageLength; i++) {
                 // The whole extend is not atomic, just individual inserts are. That's the same as
                 // in CPython
-                putValueNode.execute(frame, inliningTarget, self, length, getItemNode.execute(storage, i));
+                putValueNode.execute(frame, inliningTarget, self, length, getItemNode.execute(inliningTarget, storage, i));
                 self.setLength(++length);
             }
 
@@ -849,7 +850,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached @Shared ArrayNodes.PutValueNode putValueNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
-            Object iter = getIter.execute(frame, value);
+            Object iter = getIter.execute(frame, inliningTarget, value);
             int length = self.getLength();
             while (true) {
                 Object nextValue;
@@ -931,7 +932,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
                 Object item = getValueNode.execute(inliningTarget, self, i);
-                if (eqNode.execute(frame, item, value)) {
+                if (eqNode.compare(frame, inliningTarget, item, value)) {
                     self.checkCanResize(this);
                     self.delSlice(i, 1);
                     return PNone.NONE;
@@ -1022,9 +1023,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
             int itemsize = self.getFormat().bytesize;
             int nbytes = n * itemsize;
-            Object readResult = callMethod.execute(frame, file, T_READ, nbytes);
+            Object readResult = callMethod.execute(frame, inliningTarget, file, T_READ, nbytes);
             if (readResult instanceof PBytes) {
-                int readLength = sizeNode.execute(frame, readResult);
+                int readLength = sizeNode.execute(frame, inliningTarget, readResult);
                 fromBytesNode.executeWithoutClinic(frame, self, readResult);
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way
@@ -1053,13 +1054,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             try {
-                SequenceStorage storage = getSequenceStorageNode.execute(list);
+                SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, list);
                 int length = storage.length();
                 int newLength = PythonUtils.addExact(self.getLength(), length);
                 self.checkCanResize(this);
                 self.resizeStorage(newLength);
                 for (int i = 0; i < length; i++) {
-                    putValueNode.execute(frame, inliningTarget, self, self.getLength() + i, getItemScalarNode.execute(storage, i));
+                    putValueNode.execute(frame, inliningTarget, self, self.getLength() + i, getItemScalarNode.execute(inliningTarget, storage, i));
                 }
                 self.setLength(newLength);
                 return PNone.NONE;
@@ -1166,6 +1167,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class ToFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object tofile(VirtualFrame frame, PArray self, Object file,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             if (self.getLength() > 0) {
                 int remaining = self.getLength() * self.getFormat().bytesize;
@@ -1179,7 +1181,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         buffer = new byte[blocksize];
                     }
                     PythonUtils.arraycopy(self.getBuffer(), i * blocksize, buffer, 0, buffer.length);
-                    callMethod.execute(frame, file, T_WRITE, factory().createBytes(buffer));
+                    callMethod.execute(frame, inliningTarget, file, T_WRITE, factory().createBytes(buffer));
                     remaining -= blocksize;
                 }
             }
@@ -1250,7 +1252,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 stop += self.getLength();
             }
             for (int i = start; i < stop && i < self.getLength(); i++) {
-                if (eqNode.execute(frame, getValueNode.execute(inliningTarget, self, i), value)) {
+                if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
                     return i;
                 }
             }
@@ -1273,7 +1275,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             int count = 0;
             for (int i = 0; i < self.getLength(); i++) {
-                if (eqNode.execute(frame, getValueNode.execute(inliningTarget, self, i), value)) {
+                if (eqNode.compare(frame, inliningTarget, getValueNode.execute(inliningTarget, self, i), value)) {
                     count++;
                 }
             }

@@ -106,18 +106,20 @@ public final class PythonCextSetBuiltins {
     abstract static class PySet_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PSet anyset, Object item,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
-            return PInt.intValue(getItem.hasKey(null, storage, item));
+            return PInt.intValue(getItem.hasKey(null, inliningTarget, storage, item));
         }
 
         @Specialization
         static int contains(PFrozenSet anyset, Object item,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = anyset.getDictStorage();
             // TODO: FIXME: this might call __hash__ twice
-            return PInt.intValue(getItem.hasKey(null, storage, item));
+            return PInt.intValue(getItem.hasKey(null, inliningTarget, storage, item));
         }
 
         @Fallback
@@ -129,69 +131,75 @@ public final class PythonCextSetBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     @TypeSystemReference(PythonTypes.class)
     abstract static class _PyTruffleSet_NextEntry extends CApiBinaryBuiltinNode {
-        @Specialization(guards = "pos < size(set, sizeNode)", limit = "3")
+        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)", limit = "3")
         Object nextEntry(PSet set, long pos,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached LoopConditionProfile loopProfile) {
-            return next((int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
         }
 
-        @Specialization(guards = "pos < size(set, sizeNode)", limit = "3")
+        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)", limit = "3")
         Object nextEntry(PFrozenSet set, long pos,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached LoopConditionProfile loopProfile) {
-            return next((int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
         }
 
-        @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(set, sizeNode)"}, limit = "1")
+        @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"}, limit = "1")
         Object nextEntry(@SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode) {
             return getNativeNull();
         }
 
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(anyset, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
         Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             throw raise(PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
         }
 
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(anyset, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
         Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode) {
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
         }
 
-        protected boolean isSetSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PSet) || isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PFrozenSet);
+        protected boolean isSetSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PSet) ||
+                            isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PFrozenSet);
         }
 
-        protected int size(Object set, PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(null, set);
+        protected int size(Node inliningTarget, Object set, PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(null, inliningTarget, set);
         }
 
-        private Object next(int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
+        private Object next(Node inliningTarget, int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
                         HashingStorageIteratorNext itNext, HashingStorageIteratorKey itKey, HashingStorageIteratorKeyHash itKeyHash,
                         LoopConditionProfile loopProfile) {
-            HashingStorageIterator it = getIterator.execute(storage);
+            HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
             loopProfile.profileCounted(pos);
             for (int i = 0; loopProfile.inject(i <= pos); i++) {
-                if (!itNext.execute(storage, it)) {
+                if (!itNext.execute(inliningTarget, storage, it)) {
                     return getNativeNull();
                 }
             }
-            Object key = itKey.execute(storage, it);
-            long hash = itKeyHash.execute(storage, it);
+            Object key = itKey.execute(inliningTarget, storage, it);
+            long hash = itKeyHash.execute(inliningTarget, storage, it);
             return factory().createTuple(new Object[]{key, hash});
         }
     }
@@ -277,8 +285,9 @@ public final class PythonCextSetBuiltins {
     abstract static class PySet_Size extends CApiUnaryBuiltinNode {
         @Specialization
         static long get(PBaseSet object,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(object.getDictStorage());
+            return lenNode.execute(inliningTarget, object.getDictStorage());
         }
     }
 }

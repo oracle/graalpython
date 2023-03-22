@@ -59,6 +59,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.Frame;
@@ -233,38 +234,43 @@ public abstract class ExecutionContext {
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             CompilerAsserts.partialEvaluationConstant(node);
             if (node.getFrameEscapedProfile().profile(info.isEscaped())) {
-                if (!everEscaped) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    everEscaped = true;
-                    reportPolymorphicSpecialize();
-                }
-                // This assumption acts as our branch profile here
-                PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
-                if (callerInfo == null) {
-                    // we didn't request the caller frame reference. now we need it.
-                    CompilerDirectives.transferToInterpreter();
-
-                    // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
-                    // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
-                    // non-Python frames, even if we do not skip frames of builtin functions.
-                    Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, FrameSelector.ALL_PYTHON_FRAMES, 0);
-                    if (PArguments.isPythonFrame(callerFrame)) {
-                        callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
-                    } else {
-                        // TODO: frames: an assertion should be that this is one of our
-                        // entry point call nodes
-                        callerInfo = PFrame.Reference.EMPTY;
-                    }
-                    // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
-                    assert node.needsCallerFrame() : "stack walk did not invalidate caller frame assumption";
-                }
-
-                // force the frame so that it can be accessed later
-                ensureMaterializeNode().execute(frame, node, false, true);
-                // if this frame escaped we must ensure that also f_back does
-                callerInfo.markAsEscaped();
-                info.setBackref(callerInfo);
+                exitEscaped(frame, node, info);
             }
+        }
+
+        @InliningCutoff
+        private void exitEscaped(VirtualFrame frame, PRootNode node, Reference info) {
+            if (!everEscaped) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                everEscaped = true;
+                reportPolymorphicSpecialize();
+            }
+            // This assumption acts as our branch profile here
+            Reference callerInfo = PArguments.getCallerFrameInfo(frame);
+            if (callerInfo == null) {
+                // we didn't request the caller frame reference. now we need it.
+                CompilerDirectives.transferToInterpreter();
+
+                // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
+                // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
+                // non-Python frames, even if we do not skip frames of builtin functions.
+                Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, FrameSelector.ALL_PYTHON_FRAMES, 0);
+                if (PArguments.isPythonFrame(callerFrame)) {
+                    callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                } else {
+                    // TODO: frames: an assertion should be that this is one of our
+                    // entry point call nodes
+                    callerInfo = Reference.EMPTY;
+                }
+                // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
+                assert node.needsCallerFrame() : "stack walk did not invalidate caller frame assumption";
+            }
+
+            // force the frame so that it can be accessed later
+            ensureMaterializeNode().execute(frame, node, false, true);
+            // if this frame escaped we must ensure that also f_back does
+            callerInfo.markAsEscaped();
+            info.setBackref(callerInfo);
         }
 
         private MaterializeFrameNode ensureMaterializeNode() {

@@ -259,9 +259,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(value)", "!isInteger(value)"})
-        Object doOthers(VirtualFrame frame, Object value,
+        static Object doOthers(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode) {
-            return asIntNode.execute(frame, value);
+            return asIntNode.execute(frame, inliningTarget, value);
         }
 
         protected ExpectIntNode createRec() {
@@ -347,9 +348,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             return nativeCrc32(bytes, len, value, invoke);
         }
@@ -364,8 +366,9 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!useNative()")
         static long doJavaBytes(PBytesLike data, int value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             return crc32(value, bytes, 0, len);
         }
@@ -425,9 +428,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             return nativeAdler32(bytes, len, value, PythonContext.get(this), invoke);
         }
@@ -442,8 +446,9 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!useNative()")
         long doJavaBytes(PBytesLike data, int value,
+                        @Bind("this") Node inliningTarget,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             return javaAdler32(bytes, len, value);
         }
@@ -502,7 +507,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
                         @Shared @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
-            byte[] bytes = toByte.execute(data);
+            byte[] bytes = toByte.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             byte[] resultArray = nativeCompress.execute(inliningTarget, bytes, len, level, getContext());
             return factory().createBytes(resultArray);
@@ -574,7 +579,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
                         @Shared @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
-            byte[] bytes = toByte.execute(data);
+            byte[] bytes = toByte.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
             return factory().createBytes(nativeDecompress.execute(inliningTarget, bytes, len, wbits, bufsize, PythonContext.get(this)));
         }

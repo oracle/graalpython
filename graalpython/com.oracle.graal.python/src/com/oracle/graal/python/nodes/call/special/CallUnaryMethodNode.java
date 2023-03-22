@@ -59,15 +59,20 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
 public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
@@ -117,10 +122,12 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     }
 
     @Specialization(guards = "isBuiltinDescriptor(info)", replaces = {"callUnarySpecialMethodSlotInlined", "callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})
+    @InliningCutoff
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object receiver,
-                    @Cached ConditionProfile invalidArgsProfile,
+                    @Bind("this") Node inliningTarget,
+                    @Exclusive @Cached InlinedConditionProfile invalidArgsProfile,
                     @Cached GenericInvokeNode invokeNode) {
-        raiseInvalidArgsNumUncached(invalidArgsProfile.profile(hasAllowedArgsNum(info)), info);
+        raiseInvalidArgsNumUncached(invalidArgsProfile.profile(inliningTarget, hasAllowedArgsNum(info)), info);
         RootCallTarget callTarget = PythonLanguage.get(this).getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(1);
         PArguments.setArgument(arguments, 0, receiver);
@@ -153,7 +160,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Shared @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
@@ -170,7 +177,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Shared @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
@@ -179,10 +186,12 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
 
     @Specialization(guards = "!isBuiltinDescriptor(func)", replaces = {"callObjectSingle", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
     @Megamorphic
+    @InliningCutoff
     static Object call(VirtualFrame frame, Object func, Object receiver,
+                    @Bind("this") Node inliningTarget,
                     @Cached CallNode callNode,
-                    @Cached ConditionProfile isBoundProfile) {
-        if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
+                    @Exclusive @Cached InlinedConditionProfile isBoundProfile) {
+        if (isBoundProfile.profile(inliningTarget, func instanceof BoundDescriptor)) {
             return callNode.execute(frame, ((BoundDescriptor) func).descriptor, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         } else {
             return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);

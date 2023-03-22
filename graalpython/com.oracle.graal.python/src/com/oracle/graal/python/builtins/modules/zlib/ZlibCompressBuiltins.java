@@ -107,7 +107,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
                         @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
             synchronized (self) {
                 assert self.isInitialized();
-                byte[] bytes = toBytes.execute(data.getSequenceStorage());
+                byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
                 int len = data.getSequenceStorage().length();
                 return factory().createBytes(compressObj.execute(inliningTarget, self, PythonContext.get(this), bytes, len));
             }

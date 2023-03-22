@@ -66,6 +66,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_get_bases")
 @GenerateUncached
 @ImportStatic({SpecialMethodNames.class})
+@SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
 public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     @NeverDefault
     public static AbstractObjectGetBasesNode create() {
@@ -100,7 +101,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Cached CallNode callGetattributeNode,
                     @Shared("exceptionMaskProfile") @Cached IsBuiltinObjectProfile exceptionMaskProfile) {
-        Object getattr = lookupGetattributeNode.execute(cls, T___GETATTRIBUTE__);
+        Object getattr = lookupGetattributeNode.execute(inliningTarget, cls, T___GETATTRIBUTE__);
         try {
             Object bases = callGetattributeNode.execute(frame, getattr, cls, T___BASES__);
             if (bases instanceof PTuple) {

@@ -149,7 +149,7 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile oversize) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
-                Object data = callMethod.execute(frame, self, getMethodName(), len);
+                Object data = callMethod.execute(frame, inliningTarget, self, getMethodName(), len);
                 if (isBytes.profile(inliningTarget, !(data instanceof PBytes))) {
                     throw raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
                 }

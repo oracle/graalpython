@@ -60,7 +60,7 @@ import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -109,7 +109,7 @@ public final class CountBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString reprPos(VirtualFrame frame, PCount self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,
                         @Cached CastToTruffleStringNode castStringNode,
@@ -118,11 +118,11 @@ public final class CountBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile hasDefaultStep,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object type = getClassNode.execute(inliningTarget, self);
-            TruffleString name = castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__));
-            TruffleString cntRepr = castStringNode.execute(reprNode.execute(frame, self.getCnt()));
-            if (!typeCheckNode.execute(self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(self.getStep()) != 1) {
+            TruffleString name = castStringNode.execute(inliningTarget, getAttrNode.execute(frame, inliningTarget, type, T___NAME__));
+            TruffleString cntRepr = castStringNode.execute(inliningTarget, reprNode.execute(frame, inliningTarget, self.getCnt()));
+            if (!typeCheckNode.execute(inliningTarget, self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(inliningTarget, self.getStep()) != 1) {
                 hasDefaultStep.enter(inliningTarget);
-                return simpleTruffleStringFormatNode.format("%s(%s, %s)", name, cntRepr, castStringNode.execute(reprNode.execute(frame, self.getStep())));
+                return simpleTruffleStringFormatNode.format("%s(%s, %s)", name, cntRepr, castStringNode.execute(inliningTarget, reprNode.execute(frame, inliningTarget, self.getStep())));
             }
             return simpleTruffleStringFormatNode.format("%s(%s)", name, cntRepr);
         }
@@ -134,13 +134,14 @@ public final class CountBuiltins extends PythonBuiltins {
         @Specialization
         Object reducePos(PCount self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached CastToJavaLongExactNode castLongNode,
                         @Cached PyObjectTypeCheck typeCheckNode,
                         @Cached InlinedConditionProfile hasDefaultStep) {
             Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple;
-            if (hasDefaultStep.profile(inliningTarget, !typeCheckNode.execute(self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(self.getStep()) != 1)) {
+            if (hasDefaultStep.profile(inliningTarget,
+                            !typeCheckNode.execute(inliningTarget, self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(inliningTarget, self.getStep()) != 1)) {
                 tuple = factory().createTuple(new Object[]{self.getCnt(), self.getStep()});
             } else {
                 tuple = factory().createTuple(new Object[]{self.getCnt()});

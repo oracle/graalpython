@@ -155,8 +155,8 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -215,6 +215,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         int get(PString object,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConditionProfile storageProfile,
                         @Cached StringMaterializeNode materializeNode) {
             // important: avoid materialization of native sequences
@@ -226,7 +227,7 @@ public final class PythonCextSlotBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
             }
-            return doCheck(materializeNode.execute(object), asciiEncoder) ? 1 : 0;
+            return doCheck(materializeNode.execute(inliningTarget, object), asciiEncoder) ? 1 : 0;
         }
     }
 
@@ -303,8 +304,9 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyCFunctionObject_m_module extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup) {
-            Object module = lookup.execute(null, object, T___MODULE__);
+            Object module = lookup.execute(null, inliningTarget, object, T___MODULE__);
             return module != PNone.NO_VALUE ? module : getNativeNull();
         }
     }
@@ -428,9 +430,10 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyGetSetDef_doc extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(PythonObject object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.execute(object, T___DOC__);
+            Object doc = getAttrNode.execute(inliningTarget, object, T___DOC__);
             if (PGuards.isPNone(doc)) {
                 return getNULL();
             } else {
@@ -451,9 +454,10 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyGetSetDef_name extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(PythonObject object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
-            Object name = getAttrNode.execute(object, T___NAME__);
+            Object name = getAttrNode.execute(inliningTarget, object, T___NAME__);
             if (PGuards.isPNone(name)) {
                 return getNULL();
             } else {
@@ -475,12 +479,13 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(PythonObject object,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Cached CastToTruffleStringNode castToStringNode) {
             Object doc = getAttrNode.execute(object, T___DOC__);
             if (!PGuards.isPNone(doc)) {
                 try {
-                    return new CStringWrapper(castToStringNode.execute(doc));
+                    return new CStringWrapper(castToStringNode.execute(inliningTarget, doc));
                 } catch (CannotCastException e) {
                     // fall through
                 }
@@ -550,12 +555,13 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object getName(PythonObject object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Cached CastToTruffleStringNode castToStringNode) {
-            Object name = getAttrNode.execute(object, SpecialAttributeNames.T___NAME__);
+            Object name = getAttrNode.execute(inliningTarget, object, SpecialAttributeNames.T___NAME__);
             if (!PGuards.isPNone(name)) {
                 try {
-                    return new CStringWrapper(castToStringNode.execute(name));
+                    return new CStringWrapper(castToStringNode.execute(inliningTarget, name));
                 } catch (CannotCastException e) {
                     // fall through
                 }
@@ -652,8 +658,9 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyModuleObject_md_dict extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PythonAbstractObject.PInteropGetAttributeNode getDictNode) {
-            return getDictNode.execute(object, SpecialAttributeNames.T___DICT__);
+            return getDictNode.execute(inliningTarget, object, SpecialAttributeNames.T___DICT__);
         }
     }
 
@@ -679,7 +686,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             Object result = getClassNode.execute(this, object);
             assert !(result instanceof Integer);
             return result;
@@ -691,8 +698,9 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static long get(PBaseSet object,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(object.getDictStorage());
+            return lenNode.execute(inliningTarget, object.getDictStorage());
         }
     }
 
@@ -811,9 +819,9 @@ public final class PythonCextSlotBuiltins {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 HashingStorage storage = d.getDictStorage();
-                HashingStorageIterator it = getIterator.execute(storage);
-                while (itNext.execute(storage, it)) {
-                    writeAttrNode.execute(object, itKey.execute(storage, it), itValue.execute(storage, it));
+                HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
+                while (itNext.execute(inliningTarget, storage, it)) {
+                    writeAttrNode.execute(object, itKey.execute(inliningTarget, storage, it), itValue.execute(inliningTarget, storage, it));
                 }
                 PDict existing = getDict.execute(object);
                 if (existing != null) {
@@ -821,7 +829,7 @@ public final class PythonCextSlotBuiltins {
                 } else {
                     d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
                 }
-                setDict.execute(object, d);
+                setDict.execute(inliningTarget, object, d);
             } else {
                 // TODO custom mapping object
             }
@@ -862,9 +870,9 @@ public final class PythonCextSlotBuiltins {
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorKeyHash itKeyHash,
                             @Cached HashingStorageGetItemWithHash getItemNode) {
-                long hash = itKeyHash.execute(storage, it);
-                Object key = itKey.execute(storage, it);
-                setAdd(subclasses, (PythonClass) getItemNode.execute(frame, storage, key, hash));
+                long hash = itKeyHash.execute(inliningTarget, storage, it);
+                Object key = itKey.execute(inliningTarget, storage, it);
+                setAdd(subclasses, (PythonClass) getItemNode.execute(frame, inliningTarget, storage, key, hash));
                 return subclasses;
             }
 
@@ -876,12 +884,13 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object doTpSubclasses(PythonClass object, PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetSubclassesNode getSubclassesNode,
                         @Cached EachSubclassAdd eachNode,
                         @Cached HashingStorageForEach forEachNode) {
             HashingStorage storage = dict.getDictStorage();
-            Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
-            forEachNode.execute(null, storage, eachNode, subclasses);
+            Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(inliningTarget, object);
+            forEachNode.execute(null, inliningTarget, storage, eachNode, subclasses);
             return PNone.NO_VALUE;
         }
     }

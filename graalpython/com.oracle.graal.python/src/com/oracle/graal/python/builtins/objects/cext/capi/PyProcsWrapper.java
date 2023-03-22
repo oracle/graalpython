@@ -395,6 +395,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "arguments.length == 3")
             static int init(InitWrapper self, Object[] arguments,
+                            @Bind("this") Node inliningTarget,
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
@@ -412,7 +413,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                         Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                        PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
                         callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray);
                         return 0;
                     } catch (Throwable t) {
@@ -506,6 +507,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "arguments.length == 3")
             static Object init(VarargKeywordWrapper self, Object[] arguments,
+                            @Bind("this") Node inliningTarget,
                             @Cached PythonToNativeNewRefNode toNativeNode,
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
@@ -524,7 +526,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                         Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                        PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
                         return toNativeNode.execute(callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray));
                     } catch (Throwable t) {
                         throw checkThrowableBeforeNative(t, "VarargKeywordWrapper", self.getDelegate());
@@ -563,6 +565,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "arguments.length == 3")
             static Object call(TernaryFunctionWrapper self, Object[] arguments,
+                            @Bind("this") Node inliningTarget,
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
@@ -581,7 +584,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                         Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                        PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
                         Object result = callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray);
                         return toNativeNode.execute(result);
                     } catch (Throwable t) {
@@ -708,6 +711,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @ExportMessage
         protected Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Cached CallUnaryMethodNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -725,7 +729,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                 }
                 try {
                     Object result = executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]));
-                    int len = PyObjectSizeNode.convertAndCheckLen(null, result, indexNode, castLossy, asSizeNode, raiseNode);
+                    int len = PyObjectSizeNode.convertAndCheckLen(null, inliningTarget, result, indexNode, castLossy, asSizeNode, raiseNode);
                     return (long) len;
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "LenfuncWrapper", getDelegate());

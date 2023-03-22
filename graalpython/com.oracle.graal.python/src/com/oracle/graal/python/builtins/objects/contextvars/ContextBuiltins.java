@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
+import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -61,11 +62,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVarsContext)
 public final class ContextBuiltins extends PythonBuiltins {
@@ -89,8 +93,9 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class GetContextVar extends PythonBinaryBuiltinNode {
         @Specialization
         Object get(PContextVarsContext self, Object key,
-                        @Cached PRaiseNode raise) {
-            return getContextVar(self, key, null, raise);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raise) {
+            return getContextVar(inliningTarget, self, key, null, raise);
         }
     }
 
@@ -135,10 +140,11 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Run extends PythonBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, PContextVarsContext self, Object fun, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode call,
-                        @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode.Lazy raise) {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            self.enter(threadState, raise);
+            self.enter(inliningTarget, threadState, raise);
             try {
                 return call.execute(frame, fun, args, keywords);
             } finally {
@@ -161,16 +167,14 @@ public final class ContextBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetMethod extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(def)")
-        Object doGet(PContextVarsContext self, Object key, @SuppressWarnings("unused") Object def,
-                        @Cached PRaiseNode raise) {
-            return doGetDefault(self, key, PNone.NONE, raise);
-        }
 
-        @Specialization(guards = "!isNoValue(def)")
+        @Specialization
         Object doGetDefault(PContextVarsContext self, Object key, Object def,
-                        @Cached PRaiseNode raise) {
-            return getContextVar(self, key, def, raise);
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile noValueProfile,
+                        @Cached PRaiseNode.Lazy raise) {
+            Object defVal = noValueProfile.profile(inliningTarget, isNoValue(def)) ? PNone.NONE : def;
+            return getContextVar(inliningTarget, self, key, defVal, raise);
         }
 
     }
@@ -188,12 +192,12 @@ public final class ContextBuiltins extends PythonBuiltins {
         }
     }
 
-    private static Object getContextVar(PContextVarsContext self, Object key, Object def, PRaiseNode raise) {
+    private static Object getContextVar(Node inliningTarget, PContextVarsContext self, Object key, Object def, PRaiseNode.Lazy raise) {
         if (key instanceof PContextVar ctxVar) {
             Object value = self.contextVarValues.lookup(key, ctxVar.getHash());
             if (value == null) {
                 if (def == null) {
-                    throw raise.raise(PythonBuiltinClassType.KeyError, new Object[]{key});
+                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, new Object[]{key});
                 } else {
                     return def;
                 }
@@ -201,7 +205,7 @@ public final class ContextBuiltins extends PythonBuiltins {
                 return value;
             }
         } else {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
+            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
         }
     }
 }

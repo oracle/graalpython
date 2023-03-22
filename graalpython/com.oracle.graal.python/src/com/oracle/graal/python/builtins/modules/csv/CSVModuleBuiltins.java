@@ -88,11 +88,12 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -100,6 +101,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = CSVModuleBuiltins.J__CSV)
@@ -161,6 +163,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone register(VirtualFrame frame, PythonModule module, Object nameObj, Object dialectObj, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode nameNode,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached CallNode callNode,
@@ -168,7 +171,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
             TruffleString name;
             try {
-                name = nameNode.execute(nameObj);
+                name = nameNode.execute(inliningTarget, nameObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
             }
@@ -178,7 +181,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             // TODO GR-38165: unchecked cast to PDict
             PDict dialects = (PDict) readNode.execute(module, T__DIALECTS);
 
-            setItem.execute(frame, dialects, name, result);
+            setItem.execute(frame, inliningTarget, dialects, name, result);
 
             return PNone.NONE;
         }
@@ -191,6 +194,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVUnregisterDialectNode extends PythonBuiltinNode {
         @Specialization
         PNone unregister(VirtualFrame frame, PythonModule module, Object nameObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyDictDelItem delItem,
                         @Cached HashingStorageGetItem getItem) {
@@ -198,8 +202,8 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             // TODO GR-38165: unchecked cast to PDict
             PDict dialects = (PDict) readNode.execute(module, T__DIALECTS);
 
-            if (getItem.hasKey(frame, (dialects).getDictStorage(), nameObj)) {
-                delItem.execute(frame, dialects, nameObj);
+            if (getItem.hasKey(frame, inliningTarget, (dialects).getDictStorage(), nameObj)) {
+                delItem.execute(frame, inliningTarget, dialects, nameObj);
             } else {
                 throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNKNOWN_DIALECT);
             }
@@ -222,13 +226,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         CSVDialect get(VirtualFrame frame, PythonModule module, Object nameObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyDictGetItem getItemNode,
                         @Cached ReadAttributeFromObjectNode readNode) {
 
             // TODO GR-38165: unchecked cast to PDict
             PDict dialects = (PDict) readNode.execute(module, T__DIALECTS);
 
-            CSVDialect dialect = (CSVDialect) getItemNode.execute(frame, dialects, nameObj);
+            CSVDialect dialect = (CSVDialect) getItemNode.execute(frame, inliningTarget, dialects, nameObj);
 
             if (dialect == null) {
                 throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNKNOWN_DIALECT);
@@ -257,9 +262,10 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVReaderNode extends PythonBuiltinNode {
         @Specialization
         Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callNode) {
-            Object inputIter = getIter.execute(frame, csvfile);
+            Object inputIter = getIter.execute(frame, inliningTarget, csvfile);
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
             return factory().createCSVReader(PythonBuiltinClassType.CSVReader, inputIter, dialect);
         }
@@ -270,11 +276,12 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVWriterNode extends PythonBuiltinNode {
         @Specialization
         Object createReader(VirtualFrame frame, Object outputFile, Object dialectObj, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyCallableCheckNode checkCallable) {
-            Object write = lookupAttr.execute(frame, outputFile, T_WRITE);
-            if (write == PNone.NO_VALUE || !checkCallable.execute(write)) {
+            Object write = lookupAttr.execute(frame, inliningTarget, outputFile, T_WRITE);
+            if (write == PNone.NO_VALUE || !checkCallable.execute(inliningTarget, write)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
             }
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
@@ -291,6 +298,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         long getOrSetFieldSizeLimit(VirtualFrame frame, PythonModule self, Object newLimit,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongCheckExactNode checkLongNode,
                         @Cached PyLongAsLongNode castToLong) {
 
@@ -298,10 +306,10 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             long oldLimit = csvModuleBuiltins.fieldLimit;
 
             if (newLimit != PNone.NO_VALUE) {
-                if (!checkLongNode.execute(newLimit)) {
+                if (!checkLongNode.execute(inliningTarget, newLimit)) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_INTEGER, "limit");
                 }
-                csvModuleBuiltins.fieldLimit = castToLong.execute(frame, newLimit);
+                csvModuleBuiltins.fieldLimit = castToLong.execute(frame, inliningTarget, newLimit);
             }
             return oldLimit;
         }
@@ -324,34 +332,33 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         CSVDialect doStringWithoutKeywords(VirtualFrame frame, PythonBuiltinClassType cls, TruffleString dialectName, PNone delimiter, PNone doublequote, PNone escapechar,
                         PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
                         PNone strict,
-                        @Shared @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
-                        @Shared @Cached ReadAttributeFromObjectNode readNode,
-                        @Shared @Cached PyDictGetItem getItemNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect) {
             PythonModule module = getCore().lookupBuiltinModule(T__CSV);
-            return getDialect.get(frame, module, dialectName, getItemNode, readNode);
+            return getDialect.execute(frame, module, dialectName);
         }
 
         @Specialization
         Object doNoDialectObj(VirtualFrame frame, PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
-            return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
+            return createCSVDialect(frame, inliningTarget, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
                             quotecharObj, quotingObj, skipinitialspaceObj, strictObj, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
         Object doStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, TruffleString dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
-                        @Shared @Cached ReadAttributeFromObjectNode readNode,
-                        @Shared @Cached PyDictGetItem getItemNode,
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
             PythonModule module = getCore().lookupBuiltinModule(T__CSV);
-            CSVDialect dialectObj = getDialect.get(frame, module, dialectName, getItemNode, readNode);
+            CSVDialect dialectObj = getDialect.execute(frame, module, dialectName);
 
             if (delimiterObj == PNone.NO_VALUE) {
                 delimiterObj = dialectObj.delimiter;
@@ -378,7 +385,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                 strictObj = dialectObj.strict;
             }
 
-            return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
+            return createCSVDialect(frame, inliningTarget, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
                             quotecharObj, quotingObj, skipinitialspaceObj, strictObj, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
@@ -386,6 +393,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         Object doDialectClassWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PythonClass dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
                         Object strictObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr getFirstAttributesNode,
                         @Shared @Cached PyObjectLookupAttr getSecondAttributesNode,
                         @Shared @Cached PyObjectLookupAttr getThirdAttributesNode,
@@ -395,33 +403,33 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
             // We use multiple AttributeNodes to be able to cache all attributes as current
             // CACHE_SIZE is 3.
-            delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, T_ATTR_DELIMITER, getFirstAttributesNode);
-            doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, T_ATTR_DOUBLEQUOTE, getFirstAttributesNode);
-            escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, T_ATTR_ESCAPECHAR, getFirstAttributesNode);
-            lineterminatorObj = getAttributeValue(frame, dialectObj, lineterminatorObj, T_ATTR_LINETERMINATOR, getSecondAttributesNode);
-            quotecharObj = getAttributeValue(frame, dialectObj, quotecharObj, T_ATTR_QUOTECHAR, getSecondAttributesNode);
-            quotingObj = getAttributeValue(frame, dialectObj, quotingObj, T_ATTR_QUOTING, getSecondAttributesNode);
-            skipinitialspaceObj = getAttributeValue(frame, dialectObj, skipinitialspaceObj, T_ATTR_SKIPINITIALSPACE, getThirdAttributesNode);
-            strictObj = getAttributeValue(frame, dialectObj, strictObj, T_ATTR_STRICT, getThirdAttributesNode);
+            delimiterObj = getAttributeValue(frame, inliningTarget, dialectObj, delimiterObj, T_ATTR_DELIMITER, getFirstAttributesNode);
+            doublequoteObj = getAttributeValue(frame, inliningTarget, dialectObj, doublequoteObj, T_ATTR_DOUBLEQUOTE, getFirstAttributesNode);
+            escapecharObj = getAttributeValue(frame, inliningTarget, dialectObj, escapecharObj, T_ATTR_ESCAPECHAR, getFirstAttributesNode);
+            lineterminatorObj = getAttributeValue(frame, inliningTarget, dialectObj, lineterminatorObj, T_ATTR_LINETERMINATOR, getSecondAttributesNode);
+            quotecharObj = getAttributeValue(frame, inliningTarget, dialectObj, quotecharObj, T_ATTR_QUOTECHAR, getSecondAttributesNode);
+            quotingObj = getAttributeValue(frame, inliningTarget, dialectObj, quotingObj, T_ATTR_QUOTING, getSecondAttributesNode);
+            skipinitialspaceObj = getAttributeValue(frame, inliningTarget, dialectObj, skipinitialspaceObj, T_ATTR_SKIPINITIALSPACE, getThirdAttributesNode);
+            strictObj = getAttributeValue(frame, inliningTarget, dialectObj, strictObj, T_ATTR_STRICT, getThirdAttributesNode);
 
-            return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
+            return createCSVDialect(frame, inliningTarget, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
                             quotecharObj, quotingObj, skipinitialspaceObj, strictObj, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doPStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PString dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
                         Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
-                        @Shared @Cached ReadAttributeFromObjectNode readNode,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached PyDictGetItem getItemNode,
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
 
-            TruffleString dialectNameStr = castToStringNode.execute(dialectName);
+            TruffleString dialectNameStr = castToStringNode.execute(inliningTarget, dialectName);
             PythonModule module = getCore().lookupBuiltinModule(T__CSV);
-            CSVDialect dialectObj = getDialect.get(frame, module, dialectNameStr, getItemNode, readNode);
+            CSVDialect dialectObj = getDialect.execute(frame, module, dialectNameStr);
 
             if (delimiterObj == PNone.NO_VALUE) {
                 delimiterObj = dialectObj.delimiter;
@@ -448,13 +456,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                 strictObj = dialectObj.strict;
             }
 
-            return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
+            return createCSVDialect(frame, inliningTarget, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
                             quotecharObj, quotingObj, skipinitialspaceObj, strictObj, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
         Object doGeneric(VirtualFrame frame, PythonBuiltinClassType cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
                         Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr getFirstAttributesNode,
                         @Shared @Cached PyObjectLookupAttr getSecondAttributesNode,
                         @Shared @Cached PyObjectLookupAttr getThirdAttributesNode,
@@ -462,16 +471,16 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Shared @Cached PyLongAsIntNode pyLongAsIntNode) {
 
-            delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, T_ATTR_DELIMITER, getFirstAttributesNode);
-            doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, T_ATTR_DOUBLEQUOTE, getFirstAttributesNode);
-            escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, T_ATTR_ESCAPECHAR, getFirstAttributesNode);
-            lineterminatorObj = getAttributeValue(frame, dialectObj, lineterminatorObj, T_ATTR_LINETERMINATOR, getSecondAttributesNode);
-            quotingObj = getAttributeValue(frame, dialectObj, quotingObj, T_ATTR_QUOTING, getSecondAttributesNode);
-            quotecharObj = getAttributeValue(frame, dialectObj, quotecharObj, T_ATTR_QUOTECHAR, getSecondAttributesNode);
-            skipinitialspaceObj = getAttributeValue(frame, dialectObj, skipinitialspaceObj, T_ATTR_SKIPINITIALSPACE, getThirdAttributesNode);
-            strictObj = getAttributeValue(frame, dialectObj, strictObj, T_ATTR_STRICT, getThirdAttributesNode);
+            delimiterObj = getAttributeValue(frame, inliningTarget, dialectObj, delimiterObj, T_ATTR_DELIMITER, getFirstAttributesNode);
+            doublequoteObj = getAttributeValue(frame, inliningTarget, dialectObj, doublequoteObj, T_ATTR_DOUBLEQUOTE, getFirstAttributesNode);
+            escapecharObj = getAttributeValue(frame, inliningTarget, dialectObj, escapecharObj, T_ATTR_ESCAPECHAR, getFirstAttributesNode);
+            lineterminatorObj = getAttributeValue(frame, inliningTarget, dialectObj, lineterminatorObj, T_ATTR_LINETERMINATOR, getSecondAttributesNode);
+            quotingObj = getAttributeValue(frame, inliningTarget, dialectObj, quotingObj, T_ATTR_QUOTING, getSecondAttributesNode);
+            quotecharObj = getAttributeValue(frame, inliningTarget, dialectObj, quotecharObj, T_ATTR_QUOTECHAR, getSecondAttributesNode);
+            skipinitialspaceObj = getAttributeValue(frame, inliningTarget, dialectObj, skipinitialspaceObj, T_ATTR_SKIPINITIALSPACE, getThirdAttributesNode);
+            strictObj = getAttributeValue(frame, inliningTarget, dialectObj, strictObj, T_ATTR_STRICT, getThirdAttributesNode);
 
-            return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
+            return createCSVDialect(frame, inliningTarget, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
                             quotecharObj, quotingObj, skipinitialspaceObj, strictObj, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
@@ -479,17 +488,18 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             return dialect instanceof CSVDialect;
         }
 
-        private Object createCSVDialect(VirtualFrame frame, PythonBuiltinClassType cls, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj, Object quotecharObj,
+        private Object createCSVDialect(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType cls, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
+                        Object quotecharObj,
                         Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         PyObjectIsTrueNode isTrueNode, PyLongCheckExactNode pyLongCheckExactNode, PyLongAsIntNode pyLongAsIntNode) {
             TruffleString delimiter = getChar(T_ATTR_DELIMITER, delimiterObj, T_COMMA, false);
-            boolean doubleQuote = getBoolean(frame, doublequoteObj, true, isTrueNode);
+            boolean doubleQuote = getBoolean(frame, inliningTarget, doublequoteObj, true, isTrueNode);
             TruffleString escapeChar = getChar(T_ATTR_ESCAPECHAR, escapecharObj, T_NOT_SET, true);
             TruffleString lineTerminator = getString(T_ATTR_LINETERMINATOR, lineterminatorObj, T_CRLF);
             TruffleString quoteChar = getChar(T_ATTR_QUOTECHAR, quotecharObj, T_DOUBLE_QUOTE, true);
-            QuoteStyle quoting = getQuotingValue(frame, T_ATTR_QUOTING, quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
-            boolean skipInitialSpace = getBoolean(frame, skipinitialspaceObj, false, isTrueNode);
-            boolean strict = getBoolean(frame, strictObj, false, isTrueNode);
+            QuoteStyle quoting = getQuotingValue(frame, inliningTarget, T_ATTR_QUOTING, quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
+            boolean skipInitialSpace = getBoolean(frame, inliningTarget, skipinitialspaceObj, false, isTrueNode);
+            boolean strict = getBoolean(frame, inliningTarget, strictObj, false, isTrueNode);
             if (quotecharObj == PNone.NONE && quotingObj == PNone.NO_VALUE) {
                 quoting = QUOTE_NONE;
             }
@@ -523,15 +533,11 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                             skipInitialSpace, strict);
         }
 
-        private static Object getAttributeValue(VirtualFrame frame, Object dialect, Object inputValue, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {
+        private static Object getAttributeValue(VirtualFrame frame, Node inliningTarget, Object dialect, Object inputValue, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {
             if (inputValue != PNone.NO_VALUE) {
                 return inputValue;
             }
-            return getAttributeValueFromDialect(frame, dialect, attributeName, getAttributeNode);
-        }
-
-        private static Object getAttributeValueFromDialect(VirtualFrame frame, Object dialect, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {
-            return getAttributeNode.execute(frame, dialect, attributeName);
+            return getAttributeNode.execute(frame, inliningTarget, dialect, attributeName);
         }
 
         @TruffleBoundary
@@ -546,9 +552,9 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             TruffleString charValue;
 
             try {
-                charValue = CastToTruffleStringNode.getUncached().execute(valueObj);
+                charValue = CastToTruffleStringNode.executeUncached(valueObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, optional ? ErrorMessages.S_MUST_BE_STRING_OR_NONE_NOT_S : ErrorMessages.S_MUST_BE_STRING_NOT_S, name, InlinedGetClassNode.executeUncached(valueObj));
+                throw raise(TypeError, optional ? ErrorMessages.S_MUST_BE_STRING_OR_NONE_NOT_S : ErrorMessages.S_MUST_BE_STRING_NOT_S, name, GetClassNode.executeUncached(valueObj));
             }
 
             if (optional && TruffleString.EqualNode.getUncached().execute(charValue, T_NOT_SET, TS_ENCODING)) {
@@ -567,12 +573,12 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             return charValue;
         }
 
-        private static boolean getBoolean(VirtualFrame frame, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
+        private static boolean getBoolean(VirtualFrame frame, Node inliningTarget, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
             if (valueObj == PNone.NO_VALUE) {
                 return defaultValue;
             }
 
-            return isTrueNode.execute(frame, valueObj);
+            return isTrueNode.execute(frame, inliningTarget, valueObj);
         }
 
         @TruffleBoundary
@@ -588,7 +594,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             TruffleString value;
 
             try {
-                value = CastToTruffleStringNode.getUncached().execute(valueObj);
+                value = CastToTruffleStringNode.executeUncached(valueObj);
             } catch (CannotCastException e) {
                 throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.MUST_BE_STRING_QUOTED, attribute);
             }
@@ -596,7 +602,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             return value;
         }
 
-        private QuoteStyle getQuotingValue(VirtualFrame frame, TruffleString name, Object valueObj, QuoteStyle defaultValue,
+        private QuoteStyle getQuotingValue(VirtualFrame frame, Node inliningTarget, TruffleString name, Object valueObj, QuoteStyle defaultValue,
                         PyLongCheckExactNode pyLongCheckExactNode,
                         PyLongAsIntNode pyLongAsIntNode) {
 
@@ -608,11 +614,11 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                 return (QuoteStyle) valueObj;
             }
 
-            if (!pyLongCheckExactNode.execute(valueObj)) {
+            if (!pyLongCheckExactNode.execute(inliningTarget, valueObj)) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER_QUOTED_ATTR, name);
             }
 
-            int value = pyLongAsIntNode.execute(frame, valueObj);
+            int value = pyLongAsIntNode.execute(frame, inliningTarget, valueObj);
 
             if (!QuoteStyle.containsOrdinalValue(value)) {
                 throw raise(TypeError, ErrorMessages.BAD_QUOTING_VALUE);

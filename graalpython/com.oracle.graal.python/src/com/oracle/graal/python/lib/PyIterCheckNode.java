@@ -47,11 +47,10 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -65,11 +64,18 @@ import com.oracle.truffle.api.nodes.Node;
  * {@code PyIter_Check}.
  */
 @ImportStatic(SpecialMethodSlot.class)
-@GenerateInline
-@GenerateCached(false)
+@GenerateInline(inlineByDefault = true)
 @GenerateUncached
 public abstract class PyIterCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
+
+    public final boolean executeCached(Object object) {
+        return execute(this, object);
+    }
+
+    public static PyIterCheckNode create() {
+        return PyIterCheckNodeGen.create();
+    }
 
     @Specialization
     static boolean doIterator(@SuppressWarnings("unused") PBuiltinIterator object) {
@@ -79,8 +85,8 @@ public abstract class PyIterCheckNode extends PNodeWithContext {
     @InliningCutoff
     @Specialization
     static boolean doPythonObject(Node inliningTarget, PythonAbstractObject object,
-                    @Shared @Cached InlinedGetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext) {
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Next", inline = false) LookupCallableSlotInMRONode lookupNext) {
         return !(lookupNext.execute(getClassNode.execute(inliningTarget, object)) instanceof PNone);
     }
 
@@ -113,8 +119,8 @@ public abstract class PyIterCheckNode extends PNodeWithContext {
     @Specialization(replaces = "doPythonObject")
     static boolean doGeneric(Node inliningTarget, Object object,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Shared @Cached InlinedGetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext) {
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Next", inline = false) LookupCallableSlotInMRONode lookupNext) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.isIterator(object);

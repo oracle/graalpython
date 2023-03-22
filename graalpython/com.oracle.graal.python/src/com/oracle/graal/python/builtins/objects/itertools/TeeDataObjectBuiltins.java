@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_D_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULDNT_HAVE_NEXT;
@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -140,7 +140,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
                 throw raise(ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
             }
             self.setIt(it);
-            Object[] valuesArray = getStorageNode.execute(values).getInternalArray();
+            Object[] valuesArray = getStorageNode.execute(inliningTarget, values).getInternalArray();
             Object[] obj = new Object[LINKCELLS];
             PythonUtils.arraycopy(valuesArray, 0, obj, 0, numread);
             self.setValues(obj);
@@ -169,7 +169,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(PTeeDataObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClass) {
+                        @Cached GetClassNode getClass) {
             int numread = self.getNumread();
             Object[] values = new Object[numread];
             PythonUtils.arraycopy(self.getValues(), 0, values, 0, numread);

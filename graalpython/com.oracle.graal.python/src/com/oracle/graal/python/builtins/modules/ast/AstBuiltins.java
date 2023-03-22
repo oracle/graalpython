@@ -70,8 +70,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -106,7 +106,7 @@ public final class AstBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyObjectSetAttr setAttrNode,
                         @Cached TruffleString.EqualNode equalNode) {
-            Object fieldsObj = lookupAttrNode.execute(frame, self, T__FIELDS);
+            Object fieldsObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELDS);
             Object[] fields;
             if (fieldsObj == PNone.NO_VALUE) {
                 fields = EMPTY_OBJECT_ARRAY;
@@ -120,13 +120,13 @@ public final class AstBuiltins extends PythonBuiltins {
                 throw raise(TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, fields.length, fields.length == 1 ? "" : "s");
             }
             for (int i = 0; i < args.length; ++i) {
-                setAttrNode.execute(frame, self, fields[i], args[i]);
+                setAttrNode.execute(frame, inliningTarget, self, fields[i], args[i]);
             }
             for (PKeyword kwArg : kwArgs) {
                 if (contains(fields, args.length, kwArg.getName(), equalNode)) {
                     throw raise(TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
                 }
-                setAttrNode.execute(frame, self, kwArg.getName(), kwArg.getValue());
+                setAttrNode.execute(frame, inliningTarget, self, kwArg.getName(), kwArg.getValue());
             }
             return PNone.NONE;
         }
@@ -148,14 +148,16 @@ public final class AstBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object doit(PythonObject self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self);
+            return getDict.execute(inliningTarget, self);
         }
 
         @Specialization
         static Object dict(PythonObject self, PDict dict,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
-            setDict.execute(self, dict);
+            setDict.execute(inliningTarget, self, dict);
             return PNone.NONE;
         }
 
@@ -173,10 +175,10 @@ public final class AstBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object doit(VirtualFrame frame, PythonObject self, Object ignored,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupAttr) {
             Object clazz = getClassNode.execute(inliningTarget, self);
-            Object dict = lookupAttr.execute(frame, self, T___DICT__);
+            Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
             return factory().createTuple(new Object[]{clazz, factory().createTuple(EMPTY_OBJECT_ARRAY), dict});
         }
     }

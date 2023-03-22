@@ -82,12 +82,14 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 
 import sun.misc.Signal;
@@ -278,8 +280,9 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!callableCheck.execute(idNum)")
+        @Specialization(guards = "!callableCheck.execute(this, idNum)")
         Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
                         @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToJavaIntExactNode cast) {
@@ -288,11 +291,11 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             // The -1 fallback will be correctly reported as an error later on
             int id;
             try {
-                id = cast.execute(idNum);
+                id = cast.execute(inliningTarget, idNum);
             } catch (CannotCastException | PException e) {
                 id = -1;
             }
-            return signal(asSizeNode.executeExact(frame, signal), id);
+            return signal(asSizeNode.executeExact(frame, inliningTarget, signal), id);
         }
 
         @TruffleBoundary
@@ -312,12 +315,13 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "callableCheck.execute(handler)")
+        @Specialization(guards = "callableCheck.execute(this, handler)")
         Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
                         @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode) {
-            return signal(self, asSizeNode.executeExact(frame, signal), handler, readModuleDataNode);
+            return signal(self, asSizeNode.executeExact(frame, inliningTarget, signal), handler, readModuleDataNode);
         }
 
         @TruffleBoundary
@@ -379,11 +383,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame, PythonModule self, int which, Object seconds, Object interval,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readModuleDataNode,
                         @Cached PyTimeFromObjectNode timeFromObjectNode) {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
-            long usDelay = toMicroseconds(frame, seconds, timeFromObjectNode);
-            long usInterval = toMicroseconds(frame, interval, timeFromObjectNode);
+            long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
+            long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
             if (which != ITIMER_REAL) {
                 throw raiseOSError(frame, OSErrorEnum.EINVAL);
             }
@@ -392,11 +397,11 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return resultTuple;
         }
 
-        private static long toMicroseconds(VirtualFrame frame, Object obj, PyTimeFromObjectNode timeFromObjectNode) {
+        private static long toMicroseconds(VirtualFrame frame, Node inliningTarget, Object obj, PyTimeFromObjectNode timeFromObjectNode) {
             if (obj == PNone.NO_VALUE) {
                 return 0;
             }
-            return timeFromObjectNode.execute(frame, obj, RoundType.CEILING, SEC_TO_US);
+            return timeFromObjectNode.execute(frame, inliningTarget, obj, RoundType.CEILING, SEC_TO_US);
         }
 
         @TruffleBoundary

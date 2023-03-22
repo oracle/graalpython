@@ -66,6 +66,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -78,6 +79,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "jarray")
 public final class JArrayModuleBuiltins extends PythonBuiltins {
@@ -189,15 +191,16 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
     abstract static class ArrayNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object fromSequence(PSequence sequence, Object type,
+                        @Bind("this") Node inliningTarget,
                         @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Shared @Cached ZerosNode zerosNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(sequence);
+            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int length = storage.length();
             Object array = zerosNode.execute(length, type);
             for (int i = 0; i < length; i++) {
-                Object value = getItemScalarNode.execute(storage, i);
+                Object value = getItemScalarNode.execute(inliningTarget, storage, i);
                 try {
                     lib.writeArrayElement(array, i, value);
                 } catch (UnsupportedTypeException e) {
@@ -211,13 +214,14 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSequence(sequence)")
         Object fromIterable(VirtualFrame frame, Object sequence, Object type,
+                        @Bind("this") Node inliningTarget,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Shared @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Shared @Cached ZerosNode zerosNode) {
             PList list = constructListNode.execute(frame, sequence);
-            return fromSequence(list, type, lib, getSequenceStorageNode, getItemScalarNode, zerosNode);
+            return fromSequence(list, type, inliningTarget, lib, getSequenceStorageNode, getItemScalarNode, zerosNode);
         }
     }
 }

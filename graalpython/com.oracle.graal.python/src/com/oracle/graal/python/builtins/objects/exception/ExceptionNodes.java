@@ -61,6 +61,7 @@ import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -99,7 +100,7 @@ public final class ExceptionNodes {
             return nullToNone(exception.getCause());
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.ReadObjectNode readObject) {
@@ -134,7 +135,7 @@ public final class ExceptionNodes {
             exception.setCause(value);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.WriteObjectNewRefNode writeObject,
@@ -165,7 +166,7 @@ public final class ExceptionNodes {
             return nullToNone(exception.getContext());
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.ReadObjectNode readObject) {
@@ -200,7 +201,7 @@ public final class ExceptionNodes {
             exception.setContext(value);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
@@ -229,7 +230,7 @@ public final class ExceptionNodes {
             return exception.getSuppressContext();
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static boolean doNative(Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.ReadByteNode read) {
@@ -259,7 +260,7 @@ public final class ExceptionNodes {
             exception.setSuppressContext(value);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, boolean value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.WriteByteNode write) {
@@ -289,16 +290,16 @@ public final class ExceptionNodes {
         }
 
         @Specialization
-        static Object doManaged(PBaseException e,
+        static Object doManaged(Node inliningTarget, PBaseException e,
                         @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             PTraceback result = null;
             if (e.getTraceback() != null) {
-                result = materializeLazyTracebackNode.execute(e.getTraceback());
+                result = materializeLazyTracebackNode.execute(inliningTarget, e.getTraceback());
             }
             return nullToNone(result);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.ReadObjectNode readObject) {
@@ -331,7 +332,7 @@ public final class ExceptionNodes {
             exception.setTraceback(value);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
@@ -372,10 +373,10 @@ public final class ExceptionNodes {
 
         @Specialization
         static PTuple doManaged(Node inliningTarget, PBaseException self,
-                        @Cached PythonObjectFactory factory,
+                        @Shared @Cached(inline = false) PythonObjectFactory factory,
                         @Cached InlinedConditionProfile nullArgsProfile,
                         @Cached InlinedConditionProfile hasMessageFormat,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             PTuple args = self.getArgs();
             if (nullArgsProfile.profile(inliningTarget, args == null)) {
                 if (hasMessageFormat.profile(inliningTarget, !self.hasMessageFormat())) {
@@ -389,7 +390,7 @@ public final class ExceptionNodes {
             return args;
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static PTuple doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.ReadObjectNode readObject) {
@@ -399,7 +400,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static PTuple doInterop(Node inliningTarget, AbstractTruffleException exception,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
             return factory.createEmptyTuple();
         }
     }
@@ -419,7 +420,7 @@ public final class ExceptionNodes {
             exception.setArgs(argsTuple);
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, exception)")
+        @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, PTuple argsTuple,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
                         @Cached CStructAccess.WriteObjectNewRefNode writeObject) {

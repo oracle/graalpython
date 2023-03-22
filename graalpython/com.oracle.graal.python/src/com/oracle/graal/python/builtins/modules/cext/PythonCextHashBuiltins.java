@@ -60,11 +60,14 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 public final class PythonCextHashBuiltins {
 
@@ -87,9 +90,9 @@ public final class PythonCextHashBuiltins {
         static long doI(int idx) {
             switch (idx) {
                 case 0:
-                    return PyObjectHashNode.getUncached().execute(null, Double.POSITIVE_INFINITY);
+                    return PyObjectHashNode.hash(Double.POSITIVE_INFINITY);
                 case 1:
-                    return PyObjectHashNode.getUncached().execute(null, Double.NaN);
+                    return PyObjectHashNode.hash(Double.NaN);
                 case 2:
                     return SysModuleBuiltins.HASH_IMAG;
                 default:
@@ -110,8 +113,9 @@ public final class PythonCextHashBuiltins {
 
         @Specialization(guards = "!isFinite(value)")
         long doNonFinite(Object inst, @SuppressWarnings("unused") double value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(null, inst);
+            return hashNode.execute(null, inliningTarget, inst);
         }
     }
 
@@ -123,10 +127,10 @@ public final class PythonCextHashBuiltins {
         static long doI(Object value, long size,
                         @Cached CStructAccess.ReadByteNode readNode,
                         @Cached TruffleString.FromByteArrayNode toString,
-                        @Cached PyObjectHashNode hashNode) {
+                        @Cached HashCodeNode hashNode) {
             byte[] array = readNode.readByteArray(value, (int) size);
             TruffleString string = toString.execute(array, Encoding.US_ASCII, false);
-            return hashNode.execute(null, string);
+            return PyObjectHashNode.hash(string, hashNode);
         }
     }
 }

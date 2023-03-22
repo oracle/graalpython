@@ -70,7 +70,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -78,21 +78,21 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
-import com.oracle.graal.python.lib.PyDictCheckExactNodeGen;
-import com.oracle.graal.python.lib.PyFloatCheckExactNodeGen;
-import com.oracle.graal.python.lib.PyFrozenSetCheckExactNodeGen;
-import com.oracle.graal.python.lib.PyListCheckExactNodeGen;
-import com.oracle.graal.python.lib.PyLongCheckExactNodeGen;
+import com.oracle.graal.python.lib.PyDictCheckExactNode;
+import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyFrozenSetCheckExactNode;
+import com.oracle.graal.python.lib.PyListCheckExactNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PySetCheckExactNodeGen;
-import com.oracle.graal.python.lib.PyTupleCheckExactNodeGen;
-import com.oracle.graal.python.lib.PyUnicodeCheckExactNodeGen;
+import com.oracle.graal.python.lib.PySetCheckExactNode;
+import com.oracle.graal.python.lib.PyTupleCheckExactNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -362,14 +362,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
          */
         static final class FileLikeInputStream extends InputStream {
             private final Object fileLike;
-            private final PyObjectCallMethodObjArgs callReadIntoNode;
             private final PyNumberAsSizeNode asSize;
             private final PByteArray buffer;
             private final ByteSequenceStorage singleByteStore;
 
             FileLikeInputStream(Object fileLike) {
                 this.fileLike = fileLike;
-                this.callReadIntoNode = PyObjectCallMethodObjArgs.getUncached();
                 this.asSize = PyNumberAsSizeNode.getUncached();
                 this.singleByteStore = new ByteSequenceStorage(new byte[1]);
                 this.buffer = PythonObjectFactory.getUncached().createByteArray(singleByteStore);
@@ -377,7 +375,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             @Override
             public int read() {
-                Object readIntoResult = callReadIntoNode.execute(null, fileLike, T_READINTO, buffer);
+                Object readIntoResult = PyObjectCallMethodObjArgs.executeUncached(fileLike, T_READINTO, buffer);
                 int numRead = asSize.executeExact(null, readIntoResult, ValueError);
                 if (numRead > 1) {
                     throw new MarshalError(ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
@@ -391,7 +389,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 ByteSequenceStorage tempStore = new ByteSequenceStorage(b, len);
                 buffer.setSequenceStorage(tempStore);
                 try {
-                    Object readIntoResult = callReadIntoNode.execute(null, fileLike, T_READINTO, buffer);
+                    Object readIntoResult = PyObjectCallMethodObjArgs.executeUncached(fileLike, T_READINTO, buffer);
                     int numRead = asSize.executeExact(null, readIntoResult, ValueError);
                     if (numRead > len) {
                         throw new MarshalError(ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
@@ -660,9 +658,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 writeByte(TYPE_NONE);
             } else if (v == PNone.NO_VALUE) {
                 writeByte(TYPE_NOVALUE);
-            } else if (TypeNodes.InlinedIsSameTypeNode.executeUncached(v, PythonBuiltinClassType.StopIteration)) {
+            } else if (IsSameTypeNode.executeUncached(v, PythonBuiltinClassType.StopIteration)) {
                 writeByte(TYPE_STOPITER);
-            } else if (TypeNodes.InlinedIsSameTypeNode.executeUncached(v, PythonBuiltinClassType.PEllipsis)) {
+            } else if (IsSameTypeNode.executeUncached(v, PythonBuiltinClassType.PEllipsis)) {
                 writeByte(TYPE_ELLIPSIS);
             } else if (v == Boolean.TRUE || v == pyTrue) {
                 writeByte(TYPE_TRUE);
@@ -698,7 +696,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private void writeComplexObject(Object v, int flag) {
             try {
-                if (PyLongCheckExactNodeGen.getUncached().execute(v)) {
+                if (PyLongCheckExactNode.executeUncached(v)) {
                     BigInteger bigInt = ((PInt) v).getValue();
                     if (bigInt.signum() == 0) {
                         // we don't handle ZERO in read/writeBigInteger
@@ -709,7 +707,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeByte(TYPE_LONG | flag);
                         writeBigInteger(((PInt) v).getValue());
                     }
-                } else if (PyFloatCheckExactNodeGen.getUncached().execute(v)) {
+                } else if (PyFloatCheckExactNode.executeUncached(v)) {
                     if (version > 1) {
                         writeByte(TYPE_BINARY_FLOAT | flag);
                         writeDouble(((PFloat) v).getValue());
@@ -733,14 +731,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 } else if (v instanceof TruffleString) {
                     writeByte(TYPE_UNICODE | flag);
                     writeString((TruffleString) v);
-                } else if (PyUnicodeCheckExactNodeGen.getUncached().execute(v)) {
-                    if (version >= 3 && IsInternedStringNodeGen.getUncached().execute((PString) v)) {
+                } else if (PyUnicodeCheckExactNode.executeUncached(v)) {
+                    if (version >= 3 && IsInternedStringNode.executeUncached((PString) v)) {
                         writeByte(TYPE_INTERNED | flag);
                     } else {
                         writeByte(TYPE_UNICODE | flag);
                     }
                     writeString(((PString) v).getValueUncached());
-                } else if (PyTupleCheckExactNodeGen.getUncached().execute(v)) {
+                } else if (PyTupleCheckExactNode.executeUncached(v)) {
                     Object[] items = GetObjectArrayNode.executeUncached(v);
                     if (version >= 4 && items.length < 256) {
                         writeByte(TYPE_SMALL_TUPLE | flag);
@@ -752,14 +750,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     for (Object item : items) {
                         writeObject(item);
                     }
-                } else if (PyListCheckExactNodeGen.getUncached().execute(v)) {
+                } else if (PyListCheckExactNode.executeUncached(v)) {
                     writeByte(TYPE_LIST | flag);
-                    Object[] items = GetInternalObjectArrayNodeGen.getUncached().execute(SequenceNodes.GetSequenceStorageNode.getUncached().execute(v));
+                    Object[] items = GetInternalObjectArrayNode.executeUncached(SequenceNodes.GetSequenceStorageNode.executeUncached(v));
                     writeSize(items.length);
                     for (Object item : items) {
                         writeObject(item);
                     }
-                } else if (v instanceof PDict && PyDictCheckExactNodeGen.getUncached().execute(v)) {
+                } else if (v instanceof PDict && PyDictCheckExactNode.executeUncached(v)) {
                     HashingStorage dictStorage = ((PDict) v).getDictStorage();
                     // NULL terminated as in CPython
                     writeByte(TYPE_DICT | flag);
@@ -769,8 +767,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeObject(HashingStorageIteratorValue.executeUncached(dictStorage, it));
                     }
                     writeNull();
-                } else if (v instanceof PBaseSet && (PySetCheckExactNodeGen.getUncached().execute(v) || PyFrozenSetCheckExactNodeGen.getUncached().execute(v))) {
-                    if (PyFrozenSetCheckExactNodeGen.getUncached().execute(v)) {
+                } else if (v instanceof PBaseSet && (PySetCheckExactNode.executeUncached(v) || PyFrozenSetCheckExactNode.executeUncached(v))) {
+                    if (PyFrozenSetCheckExactNode.executeUncached(v)) {
                         writeByte(TYPE_FROZENSET | flag);
                     } else {
                         writeByte(TYPE_SET | flag);
@@ -983,7 +981,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_SHORT_ASCII:
                     return addRef.run(readAscii(readByteSize(), false));
                 case TYPE_INTERNED:
-                    return addRef.run(StringNodes.InternStringNode.getUncached().execute(readString()));
+                    return addRef.run(StringNodes.InternStringNode.executeUncached(readString()));
                 case TYPE_UNICODE:
                     return addRef.run(readString());
                 case TYPE_SMALL_TUPLE:
@@ -1096,7 +1094,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] bytes = readNBytes((int) sz);
             TruffleString value = TruffleString.fromByteArrayUncached(bytes, 0, (int) sz, Encoding.US_ASCII, true).switchEncodingUncached(TS_ENCODING);
             if (intern) {
-                return StringNodes.InternStringNode.getUncached().execute(value);
+                return StringNodes.InternStringNode.executeUncached(value);
             } else {
                 return value;
             }

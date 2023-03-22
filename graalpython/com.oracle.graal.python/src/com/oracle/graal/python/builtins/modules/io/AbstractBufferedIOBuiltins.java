@@ -49,7 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellIgnoreErrorNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
@@ -61,8 +61,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -89,9 +89,9 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "bufferSize > 0")
         static void bufferedInit(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize, PythonObjectFactory factory,
-                        @Cached RawTellNode rawTellNode) {
+                        @Cached RawTellIgnoreErrorNode rawTellNode) {
             init(self, bufferSize, factory);
-            rawTellNode.executeIgnoreError(frame, inliningTarget, self);
+            rawTellNode.execute(frame, inliningTarget, self);
         }
 
         @SuppressWarnings("unused")
@@ -125,7 +125,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
     }
 
     protected static boolean isFileIO(PBuffered self, Object raw, PythonBuiltinClassType type,
-                    Node inliningTarget, GetPythonObjectClassNode getSelfClass, InlinedGetClassNode getRawClass) {
+                    Node inliningTarget, GetPythonObjectClassNode getSelfClass, GetClassNode getRawClass) {
         return raw instanceof PFileIO &&
                         getSelfClass.execute(inliningTarget, self) == type &&
                         getRawClass.execute(inliningTarget, raw) == PythonBuiltinClassType.PFileIO;
@@ -147,9 +147,9 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static int doOther(VirtualFrame frame, Object bufferSizeObj,
-                        @Cached(inline = false) PyNumberAsSizeNode asSizeNode) {
-            return asSizeNode.executeExact(frame, bufferSizeObj, ValueError);
+        static int doOther(VirtualFrame frame, Node inliningTarget, Object bufferSizeObj,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return asSizeNode.executeExact(frame, inliningTarget, bufferSizeObj, ValueError);
         }
     }
 

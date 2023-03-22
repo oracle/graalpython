@@ -57,13 +57,14 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,12 +82,10 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
  */
 @ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
+@GenerateCached(false)
+@GenerateInline
 public abstract class PyNumberIndexNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object object);
-
-    public abstract int executeInt(Frame frame, Object object) throws UnexpectedResultException;
-
-    public abstract long executeLong(Frame frame, Object object) throws UnexpectedResultException;
+    public abstract Object execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
     static int doInt(int object) {
@@ -104,12 +103,11 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    int doCallIndexInt(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                    @Shared("lookupIndex") @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
-                    @Shared("callIndex") @Cached CallUnaryMethodNode callIndex,
-                    @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
+    static int doCallIndexInt(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupIndex") @Cached(parameters = "Index", inline = false) LookupSpecialMethodSlotNode lookupIndex,
+                    @Shared("callIndex") @Cached(inline = false) CallUnaryMethodNode callIndex,
+                    @Shared("isSubtype") @Cached(inline = false) IsSubtypeNode isSubtype,
                     @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
         Object type = getClassNode.execute(inliningTarget, object);
         if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
@@ -124,9 +122,9 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         } catch (UnexpectedResultException e) {
             // Implicit CompilerDirectives.transferToInterpreterAndInvalidate()
             EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
-            Node outerNode = nodeRef.set(this);
+            Node outerNode = nodeRef.set(inliningTarget);
             try {
-                Object result = checkResult(frame, object, e.getResult(), null, InlinedGetClassNode.getUncached(),
+                Object result = checkResult(frame, object, e.getResult(), null, GetClassNode.getUncached(),
                                 IsSubtypeNode.getUncached(), PyLongCheckExactNode.getUncached(), PRaiseNode.Lazy.getUncached(),
                                 WarningsModuleBuiltins.WarnNode.getUncached(), PythonObjectFactory.getUncached());
                 throw new UnexpectedResultException(result);
@@ -137,18 +135,17 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "doCallIndexInt")
-    static Object doCallIndex(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                    @Shared("lookupIndex") @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
-                    @Shared("callIndex") @Cached CallUnaryMethodNode callIndex,
-                    @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
+    static Object doCallIndex(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupIndex") @Cached(parameters = "Index", inline = false) LookupSpecialMethodSlotNode lookupIndex,
+                    @Shared("callIndex") @Cached(inline = false) CallUnaryMethodNode callIndex,
+                    @Shared("isSubtype") @Cached(inline = false) IsSubtypeNode isSubtype,
                     @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
-                    @Exclusive @Cached InlinedGetClassNode resultClassNode,
-                    @Exclusive @Cached IsSubtypeNode resultSubtype,
+                    @Exclusive @Cached GetClassNode resultClassNode,
+                    @Exclusive @Cached(inline = false) IsSubtypeNode resultSubtype,
                     @Cached PyLongCheckExactNode isInt,
-                    @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                    @Cached PythonObjectFactory factory) {
+                    @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
+                    @Cached(inline = false) PythonObjectFactory factory) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
             return object;
@@ -161,10 +158,10 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         return checkResult(frame, object, result, inliningTarget, resultClassNode, resultSubtype, isInt, raiseNode, warnNode, factory);
     }
 
-    private static Object checkResult(VirtualFrame frame, Object originalObject, Object result, Node inliningTarget, InlinedGetClassNode getClassNode, IsSubtypeNode isSubtype,
+    private static Object checkResult(VirtualFrame frame, Object originalObject, Object result, Node inliningTarget, GetClassNode getClassNode, IsSubtypeNode isSubtype,
                     PyLongCheckExactNode isInt, PRaiseNode.Lazy raiseNode,
                     WarningsModuleBuiltins.WarnNode warnNode, PythonObjectFactory factory) {
-        if (isInt.execute(result)) {
+        if (isInt.execute(inliningTarget, result)) {
             return result;
         }
         if (!isSubtype.execute(getClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PInt)) {

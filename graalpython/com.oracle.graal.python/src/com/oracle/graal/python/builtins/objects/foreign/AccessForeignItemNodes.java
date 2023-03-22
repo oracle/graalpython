@@ -134,16 +134,17 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = "lib.hasArrayElements(object)")
         Object doArraySlice(VirtualFrame frame, Object object, PSlice idxSlice,
+                        @Bind("this") Node inliningTarget,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen,
                         @Shared("gil") @Cached GilNode gil) {
-            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(idxSlice), object, compute, lib);
+            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(inliningTarget, idxSlice), object, compute, lib);
             gil.release(true);
             try {
-                Object[] values = new Object[sliceLen.len(mslice)];
+                Object[] values = new Object[sliceLen.len(inliningTarget, mslice)];
                 for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
                     values[j] = readForeignIndex(object, i, lib);
                 }
@@ -256,6 +257,7 @@ abstract class AccessForeignItemNodes {
         public abstract Object execute(VirtualFrame frame, Object object, Object idx, Object value);
 
         @Specialization(guards = "lib.hasArrayElements(object)")
+        @SuppressWarnings("truffle-static-method")
         public Object doArraySlice(VirtualFrame frame, Object object, PSlice idxSlice, Object pvalues,
                         @Bind("this") Node inliningTarget,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
@@ -265,8 +267,8 @@ abstract class AccessForeignItemNodes {
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Shared("gil") @Cached GilNode gil) {
-            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(idxSlice), object, compute, lib);
-            Object iter = getIter.execute(frame, pvalues);
+            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(inliningTarget, idxSlice), object, compute, lib);
+            Object iter = getIter.execute(frame, inliningTarget, pvalues);
             for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
                 Object value = getNext.execute(frame, iter);
                 gil.release(true);
@@ -383,10 +385,11 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = "lib.hasArrayElements(object)")
         Object doArraySlice(VirtualFrame frame, Object object, PSlice idxSlice,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Bind("this") Node inliningTarget,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Shared("gil") @Cached GilNode gil) {
-            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(idxSlice), object, compute, lib);
+            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(inliningTarget, idxSlice), object, compute, lib);
             gil.release(true);
             try {
                 for (int i = mslice.start; i < mslice.stop; i += mslice.step) {

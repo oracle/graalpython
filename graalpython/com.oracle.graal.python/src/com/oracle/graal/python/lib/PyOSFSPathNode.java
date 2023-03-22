@@ -52,10 +52,11 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -68,8 +69,10 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@code __fspath__} method. Strings and bytes are passed as is.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyOSFSPathNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object object);
+    public abstract Object execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
     static Object doString(TruffleString object) {
@@ -87,14 +90,13 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
     }
 
     @Fallback
-    static Object callFspath(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
+    static Object callFspath(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Cached GetClassNode getClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookupFSPath,
-                    @Cached CallUnaryMethodNode callFSPath,
+                    @Cached(inline = false) CallUnaryMethodNode callFSPath,
                     @Cached PRaiseNode.Lazy raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
-        Object fspathMethod = lookupFSPath.execute(frame, type, T___FSPATH__, object);
+        Object fspathMethod = lookupFSPath.execute(frame, inliningTarget, type, T___FSPATH__, object);
         if (fspathMethod == PNone.NO_VALUE) {
             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, object);
         }

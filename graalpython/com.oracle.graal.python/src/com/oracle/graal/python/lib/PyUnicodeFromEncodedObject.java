@@ -48,15 +48,15 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNodeWithIndirectCall;
+import com.oracle.graal.python.nodes.IndirectCallData;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -70,44 +70,45 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
  * Equivalent of CPython's {@code PyUnicode_FromEncodedObject}.
  */
 @GenerateUncached
-public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
-    public abstract Object execute(Frame frame, Object object, Object encoding, Object errors);
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Node inliningTarget, Object object, Object encoding, Object errors);
 
     @Specialization
-    Object doBytes(VirtualFrame frame, PBytes object, Object encoding, Object errors,
-                    @Bind("this") Node inliningTarget,
+    static Object doBytes(VirtualFrame frame, Node inliningTarget, PBytes object, Object encoding, Object errors,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @Shared @Cached PyUnicodeDecode decode) {
         // Decoding bytes objects is the most common case and should be fast
         if (emptyStringProfile.profile(inliningTarget, object.getSequenceStorage().length() == 0)) {
             return T_EMPTY_STRING;
         }
-        return decode.execute(frame, object, encoding, errors);
+        return decode.execute(frame, inliningTarget, object, encoding, errors);
     }
 
     @Specialization
     @SuppressWarnings("unused")
-    Object doString(VirtualFrame frame, TruffleString object, Object encoding, Object errors,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+    static Object doString(VirtualFrame frame, TruffleString object, Object encoding, Object errors,
+                    @Shared @Cached(inline = false) PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization
     @SuppressWarnings("unused")
-    Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+    static Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors,
+                    @Shared @Cached(inline = false) PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
     @SuppressWarnings("truffle-static-method")
-    Object doBuffer(VirtualFrame frame, Object object, Object encoding, Object errors,
-                    @Bind("this") Node inliningTarget,
+    static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
+                    @Cached(inline = false) IndirectCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @Shared @Cached PyUnicodeDecode decode,
                     @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
-                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                    @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
         try {
             int len = bufferLib.getBufferLength(object);
             if (emptyStringProfile.profile(inliningTarget, len == 0)) {
@@ -116,14 +117,9 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
             // TODO GR-37601: this is probably never executed
             TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getInternalOrCopiedByteArray(object), 0, len, Encoding.UTF_8, true);
             final TruffleString unicode = switchEncodingNode.execute(utf8, TS_ENCODING);
-            return decode.execute(frame, unicode, encoding, errors);
+            return decode.execute(frame, inliningTarget, unicode, encoding, errors);
         } finally {
-            bufferLib.release(object, frame, this);
+            bufferLib.release(object, frame, indirectCallNode);
         }
-    }
-
-    @NeverDefault
-    public static PyUnicodeFromEncodedObject create() {
-        return PyUnicodeFromEncodedObjectNodeGen.create(Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 }

@@ -350,7 +350,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 setAttrNode.execute(frame, wrapper, mode.mode);
                 return result;
             } catch (PException e) {
-                callClose.execute(frame, result, T_CLOSE);
+                callClose.execute(frame, inliningTarget, result, T_CLOSE);
                 throw e;
             }
         }
@@ -431,7 +431,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 /* if binary, returns the buffered file */
                 return createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory(), mode);
             } catch (PException e) {
-                callClose.execute(frame, fileIO, T_CLOSE);
+                callClose.execute(frame, inliningTarget, fileIO, T_CLOSE);
                 throw e;
             }
         }

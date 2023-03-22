@@ -67,7 +67,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -135,16 +135,17 @@ public abstract class HashingStorage {
         @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(inliningTarget, dictLike, getClassNode, lookupIter)"})
         static HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("copy") @Cached HashingStorageCopy copyNode) {
-            return copyNode.execute(dictLike.getDictStorage());
+            return copyNode.execute(inliningTarget, dictLike.getDictStorage());
         }
 
         @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(inliningTarget, iterable, getClassNode, lookupIter)"})
+        @SuppressWarnings("truffle-static-method")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
@@ -153,8 +154,8 @@ public abstract class HashingStorage {
             Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
                 HashingStorage iterableDictStorage = iterable.getDictStorage();
-                HashingStorage dictStorage = copyNode.execute(iterableDictStorage);
-                return addAllToOther.execute(frame, new KeywordsStorage(kwargs), dictStorage);
+                HashingStorage dictStorage = copyNode.execute(inliningTarget, iterableDictStorage);
+                return addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), dictStorage);
             } finally {
                 IndirectCallContext.exit(frame, language, contextRef, state);
             }
@@ -163,20 +164,20 @@ public abstract class HashingStorage {
         @Specialization(guards = "hasIterAttrButNotBuiltin(inliningTarget, col, getClassNode, lookupIter)")
         static HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
+                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(0);
-            return copyToStorage(frame, inliningTarget, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
+            return copyToStorage(frame, inliningTarget, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHashingStorageItem, addAllToOther);
         }
 
-        protected static boolean hasIterAttrButNotBuiltin(Node inliningTarget, PHashingCollection col, InlinedGetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+        protected static boolean hasIterAttrButNotBuiltin(Node inliningTarget, PHashingCollection col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
             Object attr = lookupIter.execute(getClassNode.execute(inliningTarget, col));
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
@@ -201,7 +202,7 @@ public abstract class HashingStorage {
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Cached PRaiseNode raise,
+                        @Cached PRaiseNode.Lazy raise,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Cached FastConstructListNode createListNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
@@ -221,9 +222,18 @@ public abstract class HashingStorage {
         }
     }
 
-    public final HashingStorage union(HashingStorage other, HashingStorageCopy copyNode, HashingStorageAddAllToOther addAllToOther) {
-        HashingStorage newStore = copyNode.execute(this);
-        return addAllToOther.execute(null, other, newStore);
+    public final HashingStorage union(Node inliningTarget, HashingStorage other, HashingStorageCopy copyNode, HashingStorageAddAllToOther addAllToOther) {
+        HashingStorage newStore = copyNode.execute(inliningTarget, this);
+        return addAllToOther.execute(null, inliningTarget, other, newStore);
+    }
+
+    /**
+     * Callers must make sure that {@code copyNode} and {@code addAllToOther} are cached nodes (not
+     * inlined).
+     */
+    public final HashingStorage unionCached(HashingStorage other, HashingStorageCopy copyNode, HashingStorageAddAllToOther addAllToOther) {
+        HashingStorage newStore = copyNode.executeCached(this);
+        return addAllToOther.executeCached(null, other, newStore);
     }
 
     /**
@@ -234,21 +244,21 @@ public abstract class HashingStorage {
                     LookupAndCallUnaryNode callKeysNode, PyObjectGetItem callGetItemNode, PyObjectGetIter getIter, GetNextNode nextNode,
                     IsBuiltinObjectProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOtherNode) {
         Object keysIterable = callKeysNode.executeObject(frame, mapping);
-        Object keysIt = getIter.execute(frame, keysIterable);
+        Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
         HashingStorage curStorage = storage;
         while (true) {
             try {
                 Object keyObj = nextNode.execute(frame, keysIt);
-                Object valueObj = callGetItemNode.execute(frame, mapping, keyObj);
+                Object valueObj = callGetItemNode.execute(frame, inliningTarget, mapping, keyObj);
 
-                curStorage = setHashingStorageItem.execute(frame, curStorage, keyObj, valueObj);
+                curStorage = setHashingStorageItem.execute(frame, inliningTarget, curStorage, keyObj, valueObj);
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, errorProfile);
                 break;
             }
         }
         if (kwargs.length > 0) {
-            curStorage = addAllToOtherNode.execute(frame, new KeywordsStorage(kwargs), curStorage);
+            curStorage = addAllToOtherNode.execute(frame, inliningTarget, new KeywordsStorage(kwargs), curStorage);
         }
         return curStorage;
     }
@@ -260,28 +270,28 @@ public abstract class HashingStorage {
 
     public static HashingStorage addSequenceToStorage(VirtualFrame frame, Node inliningTarget, Object iterable, PKeyword[] kwargs, StorageSupplier storageSupplier,
                     PyObjectGetIter getIter, GetNextNode nextNode, FastConstructListNode createListNode, LenNode seqLenNode,
-                    InlinedConditionProfile lengthTwoProfile, PRaiseNode raise, PyObjectGetItem getItemNode, IsBuiltinObjectProfile isTypeErrorProfile,
+                    InlinedConditionProfile lengthTwoProfile, PRaiseNode.Lazy raise, PyObjectGetItem getItemNode, IsBuiltinObjectProfile isTypeErrorProfile,
                     IsBuiltinObjectProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOther) throws PException {
-        Object it = getIter.execute(frame, iterable);
+        Object it = getIter.execute(frame, inliningTarget, iterable);
         ArrayBuilder<PSequence> elements = new ArrayBuilder<>();
         try {
             while (true) {
                 Object next = nextNode.execute(frame, it);
-                PSequence element = createListNode.execute(frame, next);
+                PSequence element = createListNode.execute(frame, inliningTarget, next);
                 assert element != null;
                 // This constructs a new list using the builtin type. So, the object cannot
                 // be subclassed and we can directly call 'len()'.
                 int len = seqLenNode.execute(inliningTarget, element);
 
                 if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
-                    throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
+                    throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
                 }
 
                 elements.add(element);
             }
         } catch (PException e) {
             if (isTypeErrorProfile.profileException(inliningTarget, e, TypeError)) {
-                throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
+                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
             } else {
                 e.expectStopIteration(inliningTarget, errorProfile);
             }
@@ -289,12 +299,12 @@ public abstract class HashingStorage {
         HashingStorage storage = storageSupplier.get(elements.size() + kwargs.length);
         for (int j = 0; j < elements.size(); j++) {
             PSequence element = elements.get(j);
-            Object key = getItemNode.execute(frame, element, 0);
-            Object value = getItemNode.execute(frame, element, 1);
-            storage = setHashingStorageItem.execute(frame, storage, key, value);
+            Object key = getItemNode.execute(frame, inliningTarget, element, 0);
+            Object value = getItemNode.execute(frame, inliningTarget, element, 1);
+            storage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, value);
         }
         if (kwargs.length > 0) {
-            storage = addAllToOther.execute(frame, new KeywordsStorage(kwargs), storage);
+            storage = addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), storage);
         }
         return storage;
     }

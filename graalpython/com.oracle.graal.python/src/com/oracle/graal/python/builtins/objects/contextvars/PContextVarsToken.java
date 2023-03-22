@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public class PContextVarsToken extends PythonBuiltinObject {
@@ -59,9 +60,9 @@ public class PContextVarsToken extends PythonBuiltinObject {
         this.oldValue = oldValue;
     }
 
-    public void use(PRaiseNode raise) {
+    public void use(Node inliningTarget, PRaiseNode.Lazy raise) {
         if (used) {
-            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
+            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
         }
         used = true;
     }

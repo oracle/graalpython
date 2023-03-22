@@ -53,8 +53,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -85,7 +85,7 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
                         @Cached BufferedInitNode bufferedInitNode,
                         @Cached GetPythonObjectClassNode getSelfClass,
-                        @Cached InlinedGetClassNode getRawClass) {
+                        @Cached GetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
             checkReadableNode.checkReadable(frame, inliningTarget, raw);
@@ -127,8 +127,9 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class FlushNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getRaw(), T_FLUSH);
+            return callMethod.execute(frame, inliningTarget, self.getRaw(), T_FLUSH);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,10 +29,13 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.YesNodeGen;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CoerceToBooleanNode extends UnaryOpNode {
@@ -47,8 +50,14 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
         return NotNodeGen.create();
     }
 
-    public abstract boolean executeBoolean(VirtualFrame frame, Object value);
+    public abstract boolean executeBoolean(VirtualFrame frame, Node inliningTarget, Object value);
 
+    public final boolean executeBooleanCached(VirtualFrame frame, Object value) {
+        return executeBoolean(frame, this, value);
+    }
+
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class YesNode extends CoerceToBooleanNode {
         @Specialization
         static boolean doBoolean(boolean operand) {
@@ -77,12 +86,14 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
 
         @Megamorphic
         @Specialization
-        static boolean doObject(VirtualFrame frame, Object object,
+        static boolean doObject(VirtualFrame frame, Node inliningTarget, Object object,
                         @Cached PyObjectIsTrueNode isTrue) {
-            return isTrue.execute(frame, object);
+            return isTrue.execute(frame, inliningTarget, object);
         }
     }
 
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
     public abstract static class NotNode extends CoerceToBooleanNode {
         @Specialization
         static boolean doBool(boolean operand) {
@@ -111,9 +122,9 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
 
         @Megamorphic
         @Specialization
-        static boolean doObject(VirtualFrame frame, Object object,
+        static boolean doObject(VirtualFrame frame, Node inliningTarget, Object object,
                         @Cached PyObjectIsTrueNode isTrue) {
-            return !isTrue.execute(frame, object);
+            return !isTrue.execute(frame, inliningTarget, object);
         }
     }
 }

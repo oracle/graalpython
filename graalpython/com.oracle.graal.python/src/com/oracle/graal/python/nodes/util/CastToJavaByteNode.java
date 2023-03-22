@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,21 +49,26 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(MathGuards.class)
 public abstract class CastToJavaByteNode extends PNodeWithContext {
 
-    public abstract byte execute(byte x);
+    public abstract byte execute(Node inliningTarget, byte x);
 
-    public abstract byte execute(int x);
+    public abstract byte execute(Node inliningTarget, int x);
 
-    public abstract byte execute(long x);
+    public abstract byte execute(Node inliningTarget, long x);
 
-    public abstract byte execute(Object x);
+    public abstract byte execute(Node inliningTarget, Object x);
 
     @Specialization
     static byte fromByte(byte x) {
@@ -86,32 +91,32 @@ public abstract class CastToJavaByteNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "fromInt")
-    static byte fromIntErr(int x,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+    static byte fromIntErr(Node inliningTarget, int x,
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
         try {
             return PInt.byteValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 
     @Specialization(replaces = "fromLong")
-    static byte fromLongErr(long x,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+    static byte fromLongErr(Node inliningTarget, long x,
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
         try {
             return PInt.byteValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 
     @Specialization(replaces = "fromPInt")
-    static byte fromPIntErr(PInt x,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+    static byte fromPIntErr(Node inliningTarget, PInt x,
+                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
         try {
             return x.byteValueExact();
         } catch (ArithmeticException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 }

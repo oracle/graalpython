@@ -59,7 +59,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -71,6 +71,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  * {@code PyErr_NormalizeException}. Returns the normalized exception.
  */
 @ImportStatic(PGuards.class)
+@GenerateInline(false) // footprint reduction 44 -> 26
 public abstract class PrepareExceptionNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object type, Object value);
 
@@ -94,7 +95,7 @@ public abstract class PrepareExceptionNode extends Node {
         throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
-    @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)"})
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isPTuple(value)"})
     static Object doExceptionOrCreate(VirtualFrame frame, Object type, Object value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
@@ -117,7 +118,7 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTypeNode.execute(type)")
+    @Specialization(guards = "isTypeNode.execute(this, type)")
     static Object doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
@@ -134,7 +135,7 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTypeNode.execute(type)")
+    @Specialization(guards = "isTypeNode.execute(inliningTarget, type)")
     static Object doCreateTuple(VirtualFrame frame, Object type, PTuple value,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
@@ -153,10 +154,16 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Fallback
+    @Specialization(guards = "fallbackGuard(type, inliningTarget, isTypeNode)", limit = "1")
     static Object doError(Object type, @SuppressWarnings("unused") Object value,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared("isType") @Cached IsTypeNode isTypeNode,
                     @Shared @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
+    }
+
+    static boolean fallbackGuard(Object type, Node inliningTarget, IsTypeNode isTypeNode) {
+        return !(type instanceof PBaseException || isTypeNode.execute(inliningTarget, type));
     }
 
     private static PBaseException handleInstanceNotAnException(Object type, Object instance) {

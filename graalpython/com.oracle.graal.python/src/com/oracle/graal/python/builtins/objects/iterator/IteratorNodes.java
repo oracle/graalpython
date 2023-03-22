@@ -51,17 +51,20 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodesFactory.GetInternalIteratorSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
-import com.oracle.graal.python.lib.GraalPyObjectSizeNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
-import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -74,7 +77,8 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -83,10 +87,12 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -108,34 +114,83 @@ public abstract class IteratorNodes {
      * o.__len__() or o.__length_hint__(). If those methods aren't found the defaultvalue is
      * returned. If either has no viable or defaultvalue implementation then this node returns -1.
      */
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({PGuards.class, SpecialMethodNames.class, SpecialMethodSlot.class})
-    public abstract static class GetLength extends GraalPyObjectSizeNode {
+    public abstract static class GetLength extends PNodeWithContext {
 
-        public abstract int execute(VirtualFrame frame, Object iterable);
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, Object iterable);
 
-        // Fast-path specializations for builtins are inherited
+        // Note: these fast-paths are duplicated in PyObjectSizeNode, because there is no simple
+        // way to share them effectively without unnecessary indirections and overhead in the
+        // interpreter
+
+        @Specialization
+        static int doTruffleString(TruffleString str,
+                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+            return codePointLengthNode.execute(str, TS_ENCODING);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static int doList(Node inliningTarget, PList object,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+            return object.getSequenceStorage().length();
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static int doTuple(Node inliningTarget, PTuple object,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+            return object.getSequenceStorage().length();
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static int doDict(Node inliningTarget, PDict object,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                        @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(inliningTarget, object.getDictStorage());
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static int doSet(Node inliningTarget, PSet object,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                        @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(inliningTarget, object.getDictStorage());
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static int doPString(Node inliningTarget, PString object,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                        @Cached(inline = false) StringNodes.StringLenNode lenNode) {
+            return lenNode.execute(object);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+        static int doPBytes(Node inliningTarget, PBytesLike object,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+            return object.getSequenceStorage().length();
+        }
 
         @Specialization(guards = "isNoValue(iterable)")
-        static int length(@SuppressWarnings({"unused"}) VirtualFrame frame, @SuppressWarnings("unused") PNone iterable) {
+        static int length(@SuppressWarnings("unused") PNone iterable) {
             return -1;
         }
 
         @Fallback
-        int length(VirtualFrame frame, Object iterable,
-                        @Bind("this") Node inliningTarget,
+        @InliningCutoff
+        static int length(VirtualFrame frame, Node inliningTarget, Object iterable,
                         @Cached IsForeignObjectNode isForeignObjectNode,
-                        @Cached GetLengthForeign getLengthForeign,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached(inline = false) GetLengthForeign getLengthForeign,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("create(Len)") LookupCallableSlotInMRONode lenNode,
-                        @Cached("create(LengthHint)") LookupSpecialMethodSlotNode lenHintNode,
-                        @Cached CallUnaryMethodNode dispatchLenOrLenHint,
+                        @Cached(value = "create(Len)", inline = false) LookupCallableSlotInMRONode lenNode,
+                        @Cached(value = "create(LengthHint)", inline = false) LookupSpecialMethodSlotNode lenHintNode,
+                        @Cached(inline = false) CallUnaryMethodNode dispatchLenOrLenHint,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached InlinedConditionProfile hasLenProfile,
                         @Cached InlinedConditionProfile hasLengthHintProfile,
-                        @Cached PRaiseNode raiseNode) {
-            if (isForeignObjectNode.execute(iterable)) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (isForeignObjectNode.execute(inliningTarget, iterable)) {
                 int foreignLen = getLengthForeign.execute(iterable);
                 if (foreignLen != -1) {
                     return foreignLen;
@@ -151,14 +206,14 @@ public abstract class IteratorNodes {
                     e.expect(inliningTarget, TypeError, errorProfile);
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
-                    if (indexCheckNode.execute(len)) {
-                        int intLen = asSizeNode.executeExact(frame, len);
+                    if (indexCheckNode.execute(inliningTarget, len)) {
+                        int intLen = asSizeNode.executeExact(frame, inliningTarget, len);
                         if (intLen < 0) {
-                            throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
+                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
                         }
                         return intLen;
                     } else {
-                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LEN__, len);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LEN__, len);
                     }
                 }
             }
@@ -171,14 +226,14 @@ public abstract class IteratorNodes {
                     e.expect(inliningTarget, TypeError, errorProfile);
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
-                    if (indexCheckNode.execute(len)) {
-                        int intLen = asSizeNode.executeExact(frame, len);
+                    if (indexCheckNode.execute(inliningTarget, len)) {
+                        int intLen = asSizeNode.executeExact(frame, inliningTarget, len);
                         if (intLen < 0) {
-                            throw raiseNode.raise(TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
+                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
                         }
                         return intLen;
                     } else {
-                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LENGTH_HINT__, len);
+                        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LENGTH_HINT__, len);
                     }
                 }
             }
@@ -216,10 +271,12 @@ public abstract class IteratorNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class GetInternalIteratorSequenceStorage extends Node {
-        public static GetInternalIteratorSequenceStorage getUncached() {
-            return GetInternalIteratorSequenceStorageNodeGen.getUncached();
+        public static SequenceStorage executeUncached(PBuiltinIterator iterator) {
+            return GetInternalIteratorSequenceStorageNodeGen.getUncached().execute(null, iterator);
         }
 
         /**
@@ -227,13 +284,13 @@ public abstract class IteratorNodes {
          * internal sequence storage. Returns {@code null} if the sequence storage is not available
          * or if the iterator is not pointing to the first item in the storage.
          */
-        public final SequenceStorage execute(PBuiltinIterator iterator) {
-            assert InlinedGetClassNode.executeUncached(iterator) == PIterator;
+        public final SequenceStorage execute(Node inliningTarget, PBuiltinIterator iterator) {
+            assert GetPythonObjectClassNode.executeUncached(iterator) == PIterator;
             assert iterator.index == 0 && !iterator.isExhausted();
-            return executeInternal(iterator);
+            return executeInternal(inliningTarget, iterator);
         }
 
-        protected abstract SequenceStorage executeInternal(PBuiltinIterator iterator);
+        protected abstract SequenceStorage executeInternal(Node inliningTarget, PBuiltinIterator iterator);
 
         @Specialization(guards = "isList(it.sequence)")
         static SequenceStorage doSequenceList(PSequenceIterator it) {
@@ -271,33 +328,35 @@ public abstract class IteratorNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(PGuards.class)
     public abstract static class BuiltinIteratorLengthHint extends Node {
         /**
          * The argument must be a builtin iterator. Returns {@code -1} if the length hint is not
          * available and rewrites itself to generic fallback that always returns {@code -1}.
          */
-        public final int execute(PBuiltinIterator iterator) {
-            assert InlinedGetClassNode.executeUncached(iterator) == PIterator;
-            return executeInternal(iterator);
+        public final int execute(Node inliningTarget, PBuiltinIterator iterator) {
+            assert GetPythonObjectClassNode.executeUncached(iterator) == PIterator;
+            return executeInternal(inliningTarget, iterator);
         }
 
-        protected abstract int executeInternal(PBuiltinIterator iterator);
+        protected abstract int executeInternal(Node inliningTarget, PBuiltinIterator iterator);
 
-        protected static SequenceStorage getStorage(GetInternalIteratorSequenceStorage getSeqStorage, PBuiltinIterator it) {
-            return it.index != 0 || it.isExhausted() ? null : getSeqStorage.execute(it);
+        protected static SequenceStorage getStorage(Node inliningTarget, GetInternalIteratorSequenceStorage getSeqStorage, PBuiltinIterator it) {
+            return it.index != 0 || it.isExhausted() ? null : getSeqStorage.execute(inliningTarget, it);
         }
 
-        @Specialization(guards = "storage != null")
-        static int doSeqStorage(@SuppressWarnings("unused") PBuiltinIterator it,
+        @Specialization(guards = "storage != null", limit = "3")
+        static int doSeqStorage(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") PBuiltinIterator it,
                         @SuppressWarnings("unused") @Cached GetInternalIteratorSequenceStorage getSeqStorage,
-                        @Bind("getStorage(getSeqStorage, it)") SequenceStorage storage) {
+                        @Bind("getStorage(inliningTarget, getSeqStorage, it)") SequenceStorage storage) {
             return ensurePositive(storage.length());
         }
 
         @Specialization
         static int doString(PStringIterator it,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
             return ensurePositive(codePointLengthNode.execute(it.value, TS_ENCODING));
         }
 
@@ -321,21 +380,6 @@ public abstract class IteratorNodes {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             return len;
-        }
-    }
-
-    // Used in enterprise, use PyIterCheckNode instead
-    @Deprecated
-    @GenerateUncached
-    public abstract static class IsIteratorObjectNode extends Node {
-
-        public abstract boolean execute(Object o);
-
-        @Specialization
-        static boolean doGeneric(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyIterCheckNode iterCheckNode) {
-            return iterCheckNode.execute(inliningTarget, obj);
         }
     }
 
@@ -370,7 +414,7 @@ public abstract class IteratorNodes {
                         @Cached @Shared TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached @Shared TruffleStringIterator.NextNode nextNode,
                         @Cached @Shared TruffleString.FromCodePointNode fromCodePointNode) {
-            return doIt(castToStringNode.execute(iterable), inliningTarget, loopProfile, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
+            return doIt(castToStringNode.execute(inliningTarget, iterable), inliningTarget, loopProfile, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization
@@ -378,7 +422,7 @@ public abstract class IteratorNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
-            SequenceStorage storage = getStorageNode.execute(iterable);
+            SequenceStorage storage = getStorageNode.execute(inliningTarget, iterable);
             return toArrayNode.execute(inliningTarget, storage);
         }
 
@@ -388,7 +432,7 @@ public abstract class IteratorNodes {
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Cached PyObjectGetIter getIter) {
-            Object it = getIter.execute(frame, iterable);
+            Object it = getIter.execute(frame, inliningTarget, iterable);
             List<Object> result = createlist();
             while (true) {
                 try {

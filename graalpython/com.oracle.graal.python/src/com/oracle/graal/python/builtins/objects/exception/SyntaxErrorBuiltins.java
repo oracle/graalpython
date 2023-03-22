@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,11 +71,13 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.SyntaxError, PythonBuiltinClassType.IndentationError, PythonBuiltinClassType.TabError})
@@ -300,6 +302,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
     public abstract static class SyntaxErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString str(VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached CastToTruffleStringNode castToStringNode,
@@ -316,7 +319,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             TruffleString filename;
             final Object filenameAttrValue = attrNode.get(self, IDX_FILENAME, SYNTAX_ERROR_ATTR_FACTORY);
             if (filenameAttrValue != PNone.NONE && PGuards.isString(filenameAttrValue)) {
-                filename = castToStringNode.execute(self.getExceptionAttribute(IDX_FILENAME));
+                filename = castToStringNode.execute(inliningTarget, self.getExceptionAttribute(IDX_FILENAME));
                 filename = getLastPathElement(filename, fromJavaStringNode, codePointLengthNode, lastIndexOfStringNode, substringNode);
             } else {
                 filename = null;
@@ -324,8 +327,8 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
             final Object lineno = attrNode.get(self, IDX_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
             final Object msg = attrNode.get(self, IDX_MSG, SYNTAX_ERROR_ATTR_FACTORY);
-            boolean heaveLineNo = lineno != PNone.NONE && pyLongCheckExactNode.execute(lineno);
-            final TruffleString msgStr = strNode.execute(frame, msg);
+            boolean heaveLineNo = lineno != PNone.NONE && pyLongCheckExactNode.execute(inliningTarget, lineno);
+            final TruffleString msgStr = strNode.execute(frame, inliningTarget, msg);
 
             if (filename == null && !heaveLineNo) {
                 return msgStr;
@@ -335,7 +338,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             if (filename != null && heaveLineNo) {
                 long ln;
                 try {
-                    ln = pyLongAsLongAndOverflowNode.execute(frame, lineno);
+                    ln = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, lineno);
                 } catch (OverflowException e) {
                     ln = -1;
                 }
@@ -346,7 +349,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 // only have_lineno
                 long ln;
                 try {
-                    ln = pyLongAsLongAndOverflowNode.execute(frame, lineno);
+                    ln = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, lineno);
                 } catch (OverflowException e) {
                     ln = -1;
                 }

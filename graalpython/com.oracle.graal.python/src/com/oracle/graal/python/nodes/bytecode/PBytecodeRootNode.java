@@ -250,8 +250,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectDelItem> NODE_OBJECT_DEL_ITEM = PyObjectDelItem::create;
     private static final PyObjectDelItem UNCACHED_OBJECT_DEL_ITEM = PyObjectDelItem.getUncached();
 
-    private static final NodeSupplier<SetItemNode.NonInlined> NODE_SET_ITEM = HashingCollectionNodes.SetItemNode.NonInlined::create;
-    private static final SetItemNode.NonInlined UNCACHED_SET_ITEM = HashingCollectionNodes.SetItemNode.NonInlined.getUncached();
+    private static final NodeSupplier<SetItemNode> NODE_SET_ITEM = HashingCollectionNodes.SetItemNode::create;
+    private static final SetItemNode UNCACHED_SET_ITEM = HashingCollectionNodes.SetItemNode.getUncached();
     private static final NodeSupplier<CastToJavaIntExactNode> NODE_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode::create;
     private static final CastToJavaIntExactNode UNCACHED_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode.getUncached();
     private static final ImportNode UNCACHED_IMPORT = ImportNode.getUncached();
@@ -2456,7 +2456,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int bytecodeGetLen(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
         Object seq = virtualFrame.getObject(stackTop);
         PyObjectSizeNode sizeNode = insertChildNode(localNodes, bci, UNCACHED_SIZE, PyObjectSizeNodeGen.class, NODE_SIZE, useCachedNodes);
-        Object s = sizeNode.execute(virtualFrame, seq);
+        Object s = sizeNode.executeCached(virtualFrame, seq);
         virtualFrame.setObject(++stackTop, s);
         return stackTop;
     }
@@ -2471,14 +2471,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private boolean evaluateObjectCondition(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, byte[] localBC, Node[] localNodes, int beginBci) {
         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, PyObjectIsTrueNodeGen.class, NODE_OBJECT_IS_TRUE, useCachedNodes);
         Object condObj = virtualFrame.getObject(stackTop);
-        boolean cond = isTrue.execute(virtualFrame, condObj);
+        boolean cond = isTrue.executeCached(virtualFrame, condObj);
         return profileCondition(cond, localBC, bci, useCachedNodes);
     }
 
     @BytecodeInterpreterSwitch
     private void bytecodeGetIter(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         PyObjectGetIter getIter = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_ITER, PyObjectGetIterNodeGen.class, NODE_OBJECT_GET_ITER, useCachedNodes);
-        virtualFrame.setObject(stackTop, getIter.execute(virtualFrame, virtualFrame.getObject(stackTop)));
+        virtualFrame.setObject(stackTop, getIter.executeCached(virtualFrame, virtualFrame.getObject(stackTop)));
     }
 
     @BytecodeInterpreterSwitch
@@ -2836,7 +2836,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (mutableData.getPyFrame().getLocalTraceFun() != null) {
             pe.setCatchingFrameReference(virtualFrame, this, bci);
             Object peForPython = pe.getEscapedException();
-            Object peType = GetClassNode.getUncached().execute(peForPython);
+            Object peType = GetClassNode.executeUncached(peForPython);
             Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(peForPython);
             invokeTraceFunction(virtualFrame,
                             factory.createTuple(new Object[]{peType, peForPython, traceback}), mutableData.getThreadState(this),
@@ -2935,7 +2935,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return generalizeBinarySubscr(virtualFrame, stackTop, bci, localNodes);
         }
         virtualFrame.setObject(stackTop--, null);
-        virtualFrame.setObject(stackTop, getItemNode.execute(virtualFrame, virtualFrame.getObject(stackTop), index));
+        virtualFrame.setObject(stackTop, getItemNode.executeCached(virtualFrame, virtualFrame.getObject(stackTop), index));
         return stackTop;
     }
 
@@ -3047,7 +3047,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 pyFrame.setLineLock(line);
             }
             // Force locals dict sync, so that we can sync them back later
-            GetFrameLocalsNode.getUncached().execute(pyFrame);
+            GetFrameLocalsNode.executeUncached(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
@@ -3108,7 +3108,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         try {
             // Force locals dict sync, so that we can sync them back later
-            GetFrameLocalsNode.getUncached().execute(pyFrame);
+            GetFrameLocalsNode.executeUncached(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
@@ -3238,7 +3238,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             cond = generalizePopCondition(virtualFrame, stackTop, bci);
         }
         virtualFrame.setObject(stackTop, null);
-        return isTrue.execute(virtualFrame, cond);
+        return isTrue.executeCached(virtualFrame, cond);
     }
 
     private Object generalizePopCondition(VirtualFrame virtualFrame, int stackTop, int bci) {
@@ -3974,7 +3974,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeInputs(bci);
             value = virtualFrame.getValue(stackTop);
         }
-        Object result = opNode.execute(virtualFrame, value);
+        Object result = opNode.executeCached(virtualFrame, value);
         virtualFrame.setObject(stackTop, result);
     }
 
@@ -4572,13 +4572,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object value = virtualFrame.getObject(stackTop);
         switch (type) {
             case FormatOptions.FVC_STR:
-                value = insertChildNode(localNodes, bci, UNCACHED_STR, PyObjectStrAsObjectNodeGen.class, NODE_STR, useCachedNodes).execute(virtualFrame, value);
+                value = insertChildNode(localNodes, bci, UNCACHED_STR, PyObjectStrAsObjectNodeGen.class, NODE_STR, useCachedNodes).executeCached(virtualFrame, value);
                 break;
             case FormatOptions.FVC_REPR:
-                value = insertChildNode(localNodes, bci, UNCACHED_REPR, PyObjectReprAsObjectNodeGen.class, NODE_REPR, useCachedNodes).execute(virtualFrame, value);
+                value = insertChildNode(localNodes, bci, UNCACHED_REPR, PyObjectReprAsObjectNodeGen.class, NODE_REPR, useCachedNodes).executeCached(virtualFrame, value);
                 break;
             case FormatOptions.FVC_ASCII:
-                value = insertChildNode(localNodes, bci, UNCACHED_ASCII, PyObjectAsciiNodeGen.class, NODE_ASCII, useCachedNodes).execute(virtualFrame, value);
+                value = insertChildNode(localNodes, bci, UNCACHED_ASCII, PyObjectAsciiNodeGen.class, NODE_ASCII, useCachedNodes).executeCached(virtualFrame, value);
                 break;
             default:
                 assert type == FormatOptions.FVC_NONE;
@@ -4611,7 +4611,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
         TruffleString varName = freevars[oparg - cellvars.length];
         ReadFromLocalsNode readFromLocals = insertChildNode(localNodes, bci, UNCACHED_READ_FROM_LOCALS, ReadFromLocalsNodeGen.class, NODE_READ_FROM_LOCALS, useCachedNodes);
-        Object value = readFromLocals.execute(virtualFrame, locals, varName);
+        Object value = readFromLocals.executeCached(virtualFrame, locals, varName);
         if (value != PNone.NO_VALUE) {
             virtualFrame.setObject(++stackTop, value);
             return stackTop;
@@ -4667,7 +4667,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PyObjectGetAttr getAttr = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_ATTR, PyObjectGetAttrNodeGen.class, NODE_OBJECT_GET_ATTR, useCachedNodes);
         TruffleString varname = localNames[oparg];
         Object owner = virtualFrame.getObject(stackTop);
-        Object value = getAttr.execute(virtualFrame, owner, varname);
+        Object value = getAttr.executeCached(virtualFrame, owner, varname);
         virtualFrame.setObject(stackTop, value);
     }
 
@@ -4711,7 +4711,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         TruffleString varname = localNames[oparg];
         Object owner = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        callNode.delete(virtualFrame, owner, varname);
+        callNode.deleteCached(virtualFrame, owner, varname);
         return stackTop;
     }
 
@@ -4723,7 +4723,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop--, null);
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        callNode.execute(virtualFrame, owner, varname, value);
+        callNode.executeCached(virtualFrame, owner, varname, value);
         return stackTop;
     }
 
@@ -4731,7 +4731,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         TruffleString varname = localNames[oparg];
         if (locals != null) {
             PyObjectDelItem delItemNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_DEL_ITEM, PyObjectDelItemNodeGen.class, NODE_OBJECT_DEL_ITEM, useCachedNodes);
-            delItemNode.execute(virtualFrame, locals, varname);
+            delItemNode.executeCached(virtualFrame, locals, varname);
         } else {
             DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci + 1, UNCACHED_DELETE_GLOBAL, DeleteGlobalNodeGen.class, NODE_DELETE_GLOBAL, useCachedNodes);
             deleteGlobalNode.executeWithGlobals(virtualFrame, globals, varname);
@@ -4744,7 +4744,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop--, null);
         Object container = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        delItem.execute(virtualFrame, container, slice);
+        delItem.executeCached(virtualFrame, container, slice);
         return stackTop;
     }
 
@@ -4780,7 +4780,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             Object index = virtualFrame.getObject(stackTop);
             Object container = virtualFrame.getObject(stackTop - 1);
             Object value = virtualFrame.getObject(stackTop - 2);
-            setItem.execute(virtualFrame, container, index, value);
+            setItem.executeCached(virtualFrame, container, index, value);
         } catch (FrameSlotTypeException e) {
             // Should only happen in multi-context mode
             return generalizeStoreSubscr(virtualFrame, stackTop, bci, localNodes, useCachedNodes);
@@ -5020,7 +5020,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object[] args = (Object[]) virtualFrame.getObject(stackTop);
         TruffleString methodName = localNames[oparg];
         Object rcvr = args[0];
-        Object func = getMethodNode.execute(virtualFrame, rcvr, methodName);
+        Object func = getMethodNode.executeCached(virtualFrame, rcvr, methodName);
         CallNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
 
         Object result;
@@ -5175,7 +5175,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object rcvr = virtualFrame.getObject(stackTop);
         TruffleString methodName = localNames[oparg];
         PyObjectGetMethod getMethodNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_METHOD, PyObjectGetMethodNodeGen.class, NODE_OBJECT_GET_METHOD, useCachedNodes);
-        Object func = getMethodNode.execute(virtualFrame, rcvr, methodName);
+        Object func = getMethodNode.executeCached(virtualFrame, rcvr, methodName);
         virtualFrame.setObject(++stackTop, func);
         return stackTop;
     }
@@ -5318,7 +5318,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTop = initialStackTop;
         TruffleString[] fromlist = (TruffleString[]) virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        int level = castNode.execute(virtualFrame.getObject(stackTop));
+        int level = castNode.executeCached(virtualFrame.getObject(stackTop));
         ImportNode importNode = insertChildNode(localNodes, bci + 1, UNCACHED_IMPORT, ImportNodeGen.class, NODE_IMPORT, useCachedNodes);
         Object result = importNode.execute(virtualFrame, modname, globals, fromlist, level);
         virtualFrame.setObject(stackTop, result);
@@ -5437,10 +5437,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case CollectionBits.KIND_SET: {
                 PSet set = factory.createSet();
-                HashingCollectionNodes.SetItemNode.NonInlined newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.NonInlinedNodeGen.class,
-                                NODE_SET_ITEM, useCachedNodes);
+                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
+                                useCachedNodes);
                 for (int i = stackTop - count + 1; i <= stackTop; i++) {
-                    newNode.execute(virtualFrame, set, virtualFrame.getObject(i), PNone.NONE);
+                    newNode.executeCached(virtualFrame, set, virtualFrame.getObject(i), PNone.NONE);
                     virtualFrame.setObject(i, null);
                 }
                 res = set;
@@ -5448,12 +5448,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case CollectionBits.KIND_DICT: {
                 PDict dict = factory.createDict();
-                HashingCollectionNodes.SetItemNode.NonInlined setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.NonInlinedNodeGen.class,
-                                NODE_SET_ITEM,
+                HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
                 assert count % 2 == 0;
                 for (int i = stackTop - count + 1; i <= stackTop; i += 2) {
-                    setItem.execute(virtualFrame, dict, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
+                    setItem.executeCached(virtualFrame, dict, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
                     virtualFrame.setObject(i, null);
                     virtualFrame.setObject(i + 1, null);
                 }
@@ -5600,10 +5599,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case CollectionBits.KIND_DICT: {
                 Object key = virtualFrame.getObject(stackTop - 1);
-                HashingCollectionNodes.SetItemNode.NonInlined setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.NonInlinedNodeGen.class,
-                                NODE_SET_ITEM,
+                HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
-                setItem.execute(virtualFrame, (PDict) collection, key, item);
+                setItem.executeCached(virtualFrame, (PDict) collection, key, item);
                 virtualFrame.setObject(stackTop--, null);
                 break;
             }

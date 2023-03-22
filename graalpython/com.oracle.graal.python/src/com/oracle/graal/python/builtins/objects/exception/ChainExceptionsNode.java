@@ -44,11 +44,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
+@GenerateInline(false) // Used in BCI
 public abstract class ChainExceptionsNode extends Node {
     public abstract void execute(PException currentException, PException contextException);
 

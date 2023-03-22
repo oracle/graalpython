@@ -67,11 +67,13 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinClassMethod)
@@ -87,8 +89,9 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object name(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), T___NAME__);
+            return getAttr.execute(frame, inliningTarget, self.getCallable(), T___NAME__);
         }
     }
 
@@ -97,8 +100,9 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class QualnameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object qualname(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), T___QUALNAME__);
+            return getAttr.execute(frame, inliningTarget, self.getCallable(), T___QUALNAME__);
         }
     }
 
@@ -107,8 +111,9 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object objclass(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), T___OBJCLASS__);
+            return getAttr.execute(frame, inliningTarget, self.getCallable(), T___OBJCLASS__);
         }
     }
 
@@ -117,8 +122,9 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doc(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), T___DOC__);
+            return getAttr.execute(frame, inliningTarget, self.getCallable(), T___DOC__);
         }
     }
 
@@ -127,8 +133,9 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object textSignature(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), T___TEXT_SIGNATURE__);
+            return getAttr.execute(frame, inliningTarget, self.getCallable(), T___TEXT_SIGNATURE__);
         }
     }
 
@@ -137,14 +144,15 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PDecoratedMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStrAsTruffleStringNode asTruffleStringNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached PyObjectLookupAttr lookupName,
                         @Cached PyObjectGetAttr getObjClass,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object mayBeName = lookupName.execute(frame, self.getCallable(), T___NAME__);
-            TruffleString name = mayBeName != PNone.NO_VALUE ? asTruffleStringNode.execute(frame, mayBeName) : T_QUESTIONMARK;
-            TruffleString typeName = getNameNode.execute(getObjClass.execute(frame, self.getCallable(), T___OBJCLASS__));
+            Object mayBeName = lookupName.execute(frame, inliningTarget, self.getCallable(), T___NAME__);
+            TruffleString name = mayBeName != PNone.NO_VALUE ? asTruffleStringNode.execute(frame, inliningTarget, mayBeName) : T_QUESTIONMARK;
+            TruffleString typeName = getNameNode.execute(inliningTarget, getObjClass.execute(frame, inliningTarget, self.getCallable(), T___OBJCLASS__));
             return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", name, typeName);
         }
     }

@@ -1105,7 +1105,7 @@ public abstract class HPyExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getThreadStateNode = insert(GetThreadStateNodeGen.create());
             }
-            return getThreadStateNode.execute(context);
+            return getThreadStateNode.executeCached(context);
         }
     }
 

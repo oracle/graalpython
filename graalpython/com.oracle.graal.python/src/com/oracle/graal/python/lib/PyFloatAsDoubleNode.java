@@ -60,17 +60,16 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -81,9 +80,16 @@ import com.oracle.truffle.api.nodes.Node;
  * {@code __index__} and the returned integer wouldn't fit into double.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
-    public abstract double execute(Frame frame, Object object);
+
+    public static double executeUncached(Object object) {
+        return PyFloatAsDoubleNodeGen.getUncached().execute(null, null, object);
+    }
+
+    public abstract double execute(VirtualFrame frame, Node inliningTarget, Object object);
 
     @Specialization
     static double doDouble(double object) {
@@ -111,30 +117,30 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)")
-    static double doNative(PythonAbstractNativeObject object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
+    @InliningCutoff
+    static double doNative(Node inliningTarget, PythonAbstractNativeObject object,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached IsSubtypeNode isSubtype,
                     @Cached CStructAccess.ReadDoubleNode read) {
         return read.readFromObj(object, PyFloatObject__ob_fval);
     }
 
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)",
                     "!isFloatSubtype(inliningTarget, object, getClassNode, isSubtype)"})
-    static double doObject(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
-                    @Cached(parameters = "Float") LookupSpecialMethodSlotNode lookup,
-                    @Cached CallUnaryMethodNode call,
-                    @Exclusive @Cached InlinedGetClassNode resultClassNode,
+    @InliningCutoff
+    static double doObject(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached(inline = false) IsSubtypeNode isSubtype,
+                    @Cached(parameters = "Float", inline = false) LookupSpecialMethodSlotNode lookup,
+                    @Cached(inline = false) CallUnaryMethodNode call,
+                    @Exclusive @Cached GetClassNode resultClassNode,
                     @Exclusive @Cached InlineIsBuiltinClassProfile resultProfile,
-                    @Exclusive @Cached IsSubtypeNode resultSubtypeNode,
+                    @Exclusive @Cached(inline = false) IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
                     @Cached CastToJavaDoubleNode cast,
-                    @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         Object floatDescr = lookup.execute(frame, type, object);
         if (floatDescr != PNone.NO_VALUE) {
@@ -142,31 +148,22 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
             Object resultType = resultClassNode.execute(inliningTarget, result);
             if (!resultProfile.profileClass(inliningTarget, resultType, PythonBuiltinClassType.PFloat)) {
                 if (!resultSubtypeNode.execute(resultType, PythonBuiltinClassType.PFloat)) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
                 } else {
                     warnNode.warnFormat(frame, null, DeprecationWarning, 1,
                                     ErrorMessages.WARN_P_RETURNED_NON_P, object, T___FLOAT__, "float", result, "float");
                 }
             }
-            return cast.execute(result);
+            return cast.execute(inliningTarget, result);
         }
-        if (indexCheckNode.execute(object)) {
-            Object index = indexNode.execute(frame, object);
-            return cast.execute(index);
+        if (indexCheckNode.execute(inliningTarget, object)) {
+            Object index = indexNode.execute(frame, inliningTarget, object);
+            return cast.execute(inliningTarget, index);
         }
-        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
     }
 
-    static boolean isFloatSubtype(Node inliningTarget, Object object, InlinedGetClassNode getClass, IsSubtypeNode isSubtype) {
+    static boolean isFloatSubtype(Node inliningTarget, Object object, GetClassNode getClass, IsSubtypeNode isSubtype) {
         return FromNativeSubclassNode.isFloatSubtype(null, inliningTarget, object, getClass, isSubtype);
-    }
-
-    @NeverDefault
-    public static PyFloatAsDoubleNode create() {
-        return PyFloatAsDoubleNodeGen.create();
-    }
-
-    public static PyFloatAsDoubleNode getUncached() {
-        return PyFloatAsDoubleNodeGen.getUncached();
     }
 }

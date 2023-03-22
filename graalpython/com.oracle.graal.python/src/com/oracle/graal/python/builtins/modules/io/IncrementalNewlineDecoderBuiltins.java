@@ -162,10 +162,10 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             Object input = inputIn;
             if (self.hasDecoder()) {
                 hasDecoderProfile.enter(inliningTarget);
-                input = callMethod.execute(frame, self.getDecoder(), T_DECODE, input, isFinal);
+                input = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_DECODE, input, isFinal);
             }
 
-            TruffleString output = toString.execute(input);
+            TruffleString output = toString.execute(inliningTarget, input);
             int outputLen = codePointLengthNode.execute(output, TS_ENCODING);
             if (self.isPendingCR() && (isFinal || outputLen > 0)) {
                 /* Prefix output with CR */
@@ -295,15 +295,15 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object state = callMethod.execute(frame, self.getDecoder(), T_GETSTATE);
+            Object state = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
-            if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
+            if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
-            int flag = asSizeNode.executeExact(frame, objects[1]);
+            int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             flag <<= 1;
             if (self.isPendingCR()) {
                 flag |= 1;
@@ -323,15 +323,16 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
                         @Shared("s") @Cached PyNumberAsSizeNode asSizeNode) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
-            if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
+            if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
-            int flag = asSizeNode.executeExact(frame, objects[1]);
+            int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             self.setPendingCR((flag & 1) != 0);
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.hasDecoder()")
+        @SuppressWarnings("truffle-static-method")
         Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
                         @Bind("this") Node inliningTarget,
                         @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -339,14 +340,14 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
-            if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
+            if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
-            int flag = asSizeNode.executeExact(frame, objects[1]);
+            int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             self.setPendingCR((flag & 1) != 0);
             flag >>= 1;
             PTuple tuple = factory().createTuple(new Object[]{objects[0], flag});
-            return callMethod.execute(frame, self.getDecoder(), T_SETSTATE, tuple);
+            return callMethod.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, tuple);
         }
 
         @Fallback
@@ -368,9 +369,10 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasDecoder()")
         static Object withDecoder(VirtualFrame frame, PNLDecoder self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             noDecoder(self);
-            return callMethod.execute(frame, self.getDecoder(), T_RESET);
+            return callMethod.execute(frame, inliningTarget, self.getDecoder(), T_RESET);
         }
     }
 

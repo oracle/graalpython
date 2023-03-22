@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -157,12 +158,14 @@ public abstract class CastToByteNode extends Node {
     }
 
     @Specialization
+    @SuppressWarnings("truffle-static-method")
     protected byte doObject(VirtualFrame frame, Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
                     @Cached CastToByteNode recursive) {
-        if (indexCheckNode.execute(value)) {
-            return recursive.execute(frame, indexNode.execute(frame, value));
+        if (indexCheckNode.execute(inliningTarget, value)) {
+            return recursive.execute(frame, indexNode.execute(frame, inliningTarget, value));
         }
         return doError(value);
     }

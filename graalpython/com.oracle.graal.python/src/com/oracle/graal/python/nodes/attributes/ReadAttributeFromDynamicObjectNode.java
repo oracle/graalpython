@@ -47,7 +47,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -55,6 +57,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -64,6 +67,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 @GenerateUncached
+@GenerateInline(false) // footprint reduction 44 -> 25
 public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
     @NeverDefault
     public static ReadAttributeFromDynamicObjectNode create() {
@@ -111,7 +115,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                                     "!isPrimitive(value)"
                     }, //
                     assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected Object readFinalAttr(DynamicObject dynamicObject, TruffleString key,
+    protected static Object readFinalAttr(DynamicObject dynamicObject, TruffleString key,
                     @Cached("key") TruffleString cachedKey,
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
@@ -133,7 +137,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                                     "isPrimitive(value)"
                     }, //
                     assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected Object readFinalPrimitiveAttr(DynamicObject dynamicObject, TruffleString key,
+    protected static Object readFinalPrimitiveAttr(DynamicObject dynamicObject, TruffleString key,
                     @Cached("key") TruffleString cachedKey,
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
@@ -144,21 +148,22 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     }
 
     @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
-    protected Object readDirect(DynamicObject dynamicObject, TruffleString key,
+    protected static Object readDirect(DynamicObject dynamicObject, TruffleString key,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "isHiddenKey(key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected Object readDirectHidden(DynamicObject dynamicObject, Object key,
+    protected static Object readDirectHidden(DynamicObject dynamicObject, Object key,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "!isHiddenKey(key)", replaces = {"readDirect", "readFinalAttr"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected Object read(DynamicObject dynamicObject, Object key,
+    protected static Object read(DynamicObject dynamicObject, Object key,
+                    @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        return dylib.getOrDefault(dynamicObject, attrKey(key, castNode), PNone.NO_VALUE);
+        return dylib.getOrDefault(dynamicObject, attrKey(inliningTarget, key, castNode), PNone.NO_VALUE);
     }
 }

@@ -133,9 +133,10 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
-            byte[] bytes = toBytes.execute(data.getSequenceStorage());
+            byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
             return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }

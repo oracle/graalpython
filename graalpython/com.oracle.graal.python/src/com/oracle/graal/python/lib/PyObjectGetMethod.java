@@ -59,12 +59,15 @@ import com.oracle.graal.python.nodes.call.ForeignMethod;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,10 +88,15 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@link CallUnaryMethodNode}.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetMethod extends Node {
+    public final Object executeCached(Frame frame, Object receiver, TruffleString name) {
+        return execute(frame, this, receiver, name);
+    }
 
-    public abstract Object execute(Frame frame, Object receiver, TruffleString name);
+    public abstract Object execute(Frame frame, Node inliningTarget, Object receiver, TruffleString name);
 
     protected static boolean isObjectGetAttribute(Object lazyClass) {
         Object getattributeSlot = null;
@@ -106,18 +114,17 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     @Specialization(guards = {"isObjectGetAttribute(lazyClass)" /* Implies not foreign */, "name == cachedName"}, limit = "1")
-    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") TruffleString name,
-                    @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClass,
+    static Object getFixedAttr(VirtualFrame frame, Node inliningTarget, Object receiver, @SuppressWarnings("unused") TruffleString name,
+                    @SuppressWarnings("unused") /* Truffle bug: @Shared("getClassNode") */ @Exclusive @Cached GetClassNode getClass,
                     @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Cached("create(name)") LookupAttributeInMRONode lookupNode,
-                    @Shared("getDescrClass") @Cached InlinedGetClassNode getDescrClass,
-                    @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
-                    @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
-                    @Shared("callGet") @Cached CallTernaryMethodNode callGet,
-                    @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                    /* Truffle bug: @Shared("getDescrClass") */ @Exclusive @Cached GetClassNode getDescrClass,
+                    @Shared("lookupGet") @Cached(parameters = "Get", inline = false) LookupCallableSlotInMRONode lookupGet,
+                    @Shared("lookupSet") @Cached(parameters = "Set", inline = false) LookupCallableSlotInMRONode lookupSet,
+                    @Shared("callGet") @Cached(inline = false) CallTernaryMethodNode callGet,
+                    @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
+                    /* Truffle bug: @Shared("raiseNode") */ @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Cached InlinedBranchProfile hasDescr,
                     @Cached InlinedBranchProfile returnDataDescr,
                     @Cached InlinedBranchProfile returnAttr,
@@ -160,22 +167,21 @@ public abstract class PyObjectGetMethod extends Node {
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
         }
-        throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
     // No explicit branch profiling when we're looking up multiple things
-    @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr")
-    static Object getDynamicAttr(Frame frame, Object receiver, TruffleString name,
-                    @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClass,
+    @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr", limit = "1")
+    static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
+                    @SuppressWarnings("unused") /* Truffle bug: @Shared("getClassNode") */ @Exclusive @Cached GetClassNode getClass,
                     @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupNode,
-                    @Shared("getDescrClass") @Cached InlinedGetClassNode getDescrClass,
-                    @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
-                    @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
-                    @Shared("callGet") @Cached CallTernaryMethodNode callGet,
-                    @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                    @Cached(inline = false) LookupAttributeInMRONode.Dynamic lookupNode,
+                    /* Truffle bug: @Shared("getDescrClass") */ @Exclusive @Cached GetClassNode getDescrClass,
+                    @Shared("lookupGet") @Cached(parameters = "Get", inline = false) LookupCallableSlotInMRONode lookupGet,
+                    @Shared("lookupSet") @Cached(parameters = "Set", inline = false) LookupCallableSlotInMRONode lookupSet,
+                    @Shared("callGet") @Cached(inline = false) CallTernaryMethodNode callGet,
+                    @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
+                    /* Truffle bug: @Shared("raiseNode") */ @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass, name);
         Object getMethod = PNone.NO_VALUE;
@@ -205,26 +211,26 @@ public abstract class PyObjectGetMethod extends Node {
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
         }
-        throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
-    @Specialization(guards = "isForeignObjectNode.execute(receiver)", limit = "1")
-    Object getForeignMethod(VirtualFrame frame, Object receiver, TruffleString name,
+    @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, receiver)", limit = "1")
+    static Object getForeignMethod(VirtualFrame frame, Node inliningTarget, Object receiver, TruffleString name,
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Cached TruffleString.ToJavaStringNode toJavaString,
+                    @Cached(inline = false) TruffleString.ToJavaStringNode toJavaString,
                     @CachedLibrary("receiver") InteropLibrary lib,
                     @Shared @Cached PyObjectGetAttr getAttr) {
         String jName = toJavaString.execute(name);
         if (lib.isMemberInvocable(receiver, jName)) {
             return new BoundDescriptor(new ForeignMethod(receiver, jName));
         } else {
-            return new BoundDescriptor(getAttr.execute(frame, receiver, name));
+            return new BoundDescriptor(getAttr.execute(frame, inliningTarget, receiver, name));
         }
     }
 
     @Fallback
-    static Object getGenericAttr(Frame frame, Object receiver, TruffleString name,
+    static Object getGenericAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
                     @Shared @Cached PyObjectGetAttr getAttr) {
-        return new BoundDescriptor(getAttr.execute(frame, receiver, name));
+        return new BoundDescriptor(getAttr.execute(frame, inliningTarget, receiver, name));
     }
 }

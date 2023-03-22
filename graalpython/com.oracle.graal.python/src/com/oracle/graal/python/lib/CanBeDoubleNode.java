@@ -46,14 +46,14 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -65,9 +65,15 @@ import com.oracle.truffle.api.strings.TruffleString;
  * checks for the {@code nb_float} and {@code nb_index} slots directly.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class CanBeDoubleNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+    public static boolean executeUncached(Object receiver) {
+        return CanBeDoubleNodeGen.getUncached().execute(null, receiver);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doDouble(@SuppressWarnings("unused") Double object) {
@@ -85,11 +91,10 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doPythonObject(PythonAbstractObject object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached InlinedGetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+    static boolean doPythonObject(Node inliningTarget, PythonAbstractObject object,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
+                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
         Object type = getClassNode.execute(inliningTarget, object);
         return lookupFloat.execute(type) != PNone.NO_VALUE || lookupIndex.execute(type) != PNone.NO_VALUE;
     }
@@ -110,22 +115,16 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "doPythonObject")
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
+    static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached LazyInteropLibrary lazyInteropLibrary,
-                    @Shared @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
-                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
-                    @Shared @Cached InlinedGetClassNode getClassNode) {
+                    @Shared @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
+                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex,
+                    @Shared @Cached GetClassNode getClassNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             InteropLibrary interopLibrary = lazyInteropLibrary.get(inliningTarget);
             return interopLibrary.fitsInDouble(object) || interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
         }
         return lookupFloat.execute(type) != PNone.NO_VALUE || lookupIndex.execute(type) != PNone.NO_VALUE;
-    }
-
-    @NeverDefault
-    public static CanBeDoubleNode create() {
-        return CanBeDoubleNodeGen.create();
     }
 }

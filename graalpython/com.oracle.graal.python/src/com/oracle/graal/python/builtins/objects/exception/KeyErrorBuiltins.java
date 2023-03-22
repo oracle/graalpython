@@ -83,7 +83,7 @@ public final class KeyErrorBuiltins extends PythonBuiltins {
             PTuple args = argsNode.execute(inliningTarget, self);
             SequenceStorage storage = args.getSequenceStorage();
             if (storage.length() == 1) {
-                return reprNode.execute(frame, getItemNode.execute(storage, 0));
+                return reprNode.execute(frame, inliningTarget, getItemNode.execute(inliningTarget, storage, 0));
             }
             return baseStrNode.execute(frame, self);
         }

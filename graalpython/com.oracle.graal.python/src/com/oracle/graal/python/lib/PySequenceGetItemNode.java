@@ -54,10 +54,11 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -69,25 +70,26 @@ import com.oracle.truffle.api.nodes.Node;
  * {@code sq_item} and never {@code mp_item}.
  */
 @ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
+@GenerateInline(false) // One lazy usage, one eager usage => not worth it
 public abstract class PySequenceGetItemNode extends Node {
     public abstract Object execute(Frame frame, Object object, int index);
 
     @Specialization(guards = "!isNativeObject(object)")
     static Object doGenericManaged(VirtualFrame frame, Object object, int index,
                     @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached PySequenceCheckNode sequenceCheckNode,
                     @Cached PyMappingCheckNode mappingCheckNode,
                     @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
                     @Cached CallBinaryMethodNode callGetItem,
                     @Cached PRaiseNode.Lazy raise) {
-        if (sequenceCheckNode.execute(object)) {
+        if (sequenceCheckNode.execute(inliningTarget, object)) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object getItem = lookupGetItem.execute(frame, type, object);
             assert getItem != PNone.NO_VALUE;
             return callGetItem.executeObject(frame, getItem, object, index);
         }
-        if (mappingCheckNode.execute(object)) {
+        if (mappingCheckNode.execute(inliningTarget, object)) {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
         } else {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, object);

@@ -75,10 +75,11 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -104,6 +105,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached UnicodeErrorBuiltins.GetArgAsBytesNode getArgAsBytesNode,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
@@ -111,11 +113,11 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
-                            getArgAsString(args, 0, this, toStringNode),
+                            getArgAsString(inliningTarget, args, 0, this, toStringNode),
                             getArgAsBytes(frame, args, 1, this, getArgAsBytesNode),
-                            getArgAsInt(args, 2, this, toJavaIntExactNode),
-                            getArgAsInt(args, 3, this, toJavaIntExactNode),
-                            getArgAsString(args, 4, this, toStringNode)
+                            getArgAsInt(inliningTarget, args, 2, this, toJavaIntExactNode),
+                            getArgAsInt(inliningTarget, args, 3, this, toJavaIntExactNode),
+                            getArgAsString(inliningTarget, args, 4, this, toStringNode)
             });
             return PNone.NONE;
         }
@@ -126,6 +128,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeEncodeErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString str(VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached SequenceStorageNodes.GetItemNode getitemNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
@@ -140,8 +143,8 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             PBytesLike object = (PBytesLike) attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
             final int start = attrNode.getInt(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
-            final TruffleString encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
-            final TruffleString reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString encoding = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString reason = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
             if (start < object.getSequenceStorage().length() && end == start + 1) {
                 final int b = getitemNode.executeKnownInt(object.getSequenceStorage(), start);
                 String bStr = PythonUtils.formatJString("%02x", b);
@@ -170,7 +173,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = "exceptionObject == null")
         static PBaseException createNew(Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, Object inputObject, int startPos, int endPos,
                         TruffleString reason,
-                        @Cached CallNode callNode,
+                        @Cached(inline = false) CallNode callNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = callNode.execute(UnicodeDecodeError, encoding, inputObject, startPos, endPos, reason);
             if (obj instanceof PBaseException exception) {
@@ -184,7 +187,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = "exceptionObject != null")
         static PBaseException updateProvided(PBaseException exceptionObject, @SuppressWarnings("unused") TruffleString encoding, @SuppressWarnings("unused") Object inputObject, int startPos,
                         int endPos, TruffleString reason,
-                        @Cached BaseExceptionAttrNode attrNode) {
+                        @Cached(inline = false) BaseExceptionAttrNode attrNode) {
             attrNode.set(exceptionObject, startPos, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             attrNode.set(exceptionObject, endPos, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
             attrNode.set(exceptionObject, reason, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY);
@@ -205,9 +208,9 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, PBaseException exceptionObject,
-                        @Cached BaseExceptionAttrNode attrNode,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached(inline = false) BaseExceptionAttrNode attrNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {
@@ -233,10 +236,10 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         static int doIt(VirtualFrame frame, Node inliningTarget, PBaseException exceptionObject,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
-                        @Cached BaseExceptionAttrNode attrNode,
-                        @Cached(inline = false) PyObjectSizeNode sizeNode) {
+                        @Cached(inline = false) BaseExceptionAttrNode attrNode,
+                        @Cached PyObjectSizeNode sizeNode) {
             Object obj = getObjectNode.execute(inliningTarget, exceptionObject);
-            int size = sizeNode.execute(frame, obj);
+            int size = sizeNode.execute(frame, inliningTarget, obj);
             int start = attrNode.getInt(exceptionObject, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             if (start < 0) {
                 start = 0;
@@ -261,10 +264,10 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         static int doIt(VirtualFrame frame, Node inliningTarget, PBaseException exceptionObject,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
-                        @Cached BaseExceptionAttrNode attrNode,
-                        @Cached(inline = false) PyObjectSizeNode sizeNode) {
+                        @Cached(inline = false) BaseExceptionAttrNode attrNode,
+                        @Cached PyObjectSizeNode sizeNode) {
             Object obj = getObjectNode.execute(inliningTarget, exceptionObject);
-            int size = sizeNode.execute(frame, obj);
+            int size = sizeNode.execute(frame, inliningTarget, obj);
             int end = attrNode.getInt(exceptionObject, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
             if (end < 1) {
                 end = 1;
@@ -289,14 +292,14 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString doIt(Node inliningTarget, PBaseException exceptionObject,
-                        @Cached BaseExceptionAttrNode attrNode,
+                        @Cached(inline = false) BaseExceptionAttrNode attrNode,
                         @Cached CastToTruffleStringCheckedNode castToStringNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "encoding");
             }
-            return castToStringNode.cast(obj, ErrorMessages.S_ATTRIBUTE_MUST_BE_UNICODE, "encoding");
+            return castToStringNode.cast(inliningTarget, obj, ErrorMessages.S_ATTRIBUTE_MUST_BE_UNICODE, "encoding");
         }
     }
 }

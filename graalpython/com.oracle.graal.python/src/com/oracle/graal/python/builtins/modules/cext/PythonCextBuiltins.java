@@ -166,7 +166,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -190,6 +190,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -374,7 +375,7 @@ public final class PythonCextBuiltins {
             if (obj == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
-            if (IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(obj), type)) {
+            if (IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(obj), type)) {
                 throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
             } else {
                 throw raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
@@ -386,7 +387,7 @@ public final class PythonCextBuiltins {
             if (obj == PNone.NO_VALUE) {
                 throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
-            Object objType = InlinedGetClassNode.executeUncached(obj);
+            Object objType = GetClassNode.executeUncached(obj);
             if (IsSubtypeNode.getUncached().execute(objType, type1) || IsSubtypeNode.getUncached().execute(objType, type2)) {
                 throw raise(NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
             } else {
@@ -1074,6 +1075,7 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         @Specialization
         static Object addInheritedSlots(PythonAbstractNativeObject pythonClass,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CStructAccess.ReadObjectNode readNativeDict,
                         @Cached CStructAccess.ReadPointerNode readPointer,
@@ -1083,8 +1085,8 @@ public final class PythonCextBuiltins {
                         @Cached PyTruffleType_AddGetSet addGetSet,
                         @Cached PyTruffleType_AddMember addMember,
                         @Cached GetMroStorageNode getMroStorageNode) {
-            Object[] getsets = collect(getMroStorageNode.execute(pythonClass), INDEX_GETSETS);
-            Object[] members = collect(getMroStorageNode.execute(pythonClass), INDEX_MEMBERS);
+            Object[] getsets = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_GETSETS);
+            Object[] members = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_MEMBERS);
 
             PDict dict = (PDict) readNativeDict.readFromObj(pythonClass, CFields.PyTypeObject__tp_dict);
 
@@ -1169,6 +1171,7 @@ public final class PythonCextBuiltins {
         Object wrap(Object bufferStructPointer, Object ownerObj, long lenObj,
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConditionProfile zeroDimProfile,
                         @Cached CStructAccess.ReadI64Node readShapeNode,
                         @Cached CStructAccess.ReadI64Node readStridesNode,
@@ -1178,10 +1181,10 @@ public final class PythonCextBuiltins {
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
-            int ndim = castToIntNode.execute(ndimObj);
-            int itemsize = castToIntNode.execute(itemsizeObj);
-            int len = castToIntNode.execute(lenObj);
-            boolean readonly = castToIntNode.execute(readonlyObj) != 0;
+            int ndim = castToIntNode.execute(inliningTarget, ndimObj);
+            int itemsize = castToIntNode.execute(inliningTarget, itemsizeObj);
+            int len = castToIntNode.execute(inliningTarget, lenObj);
+            boolean readonly = castToIntNode.execute(inliningTarget, readonlyObj) != 0;
             Object owner = ownerObj instanceof PythonNativePointer ? null : ownerObj;
             int[] shape = null;
             int[] strides = null;
@@ -1203,7 +1206,7 @@ public final class PythonCextBuiltins {
                 }
             }
             Object buffer = NativeByteSequenceStorage.create(bufPointer, len, len, false);
-            int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
+            int flags = initFlagsNode.execute(inliningTarget, ndim, itemsize, shape, strides, suboffsets);
             BufferLifecycleManager bufferLifecycleManager = null;
             if (!lib.isNull(bufferStructPointer)) {
                 bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
@@ -1254,8 +1257,9 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = "!isNoValue(kwargs)")
         static PKeyword[] doKeywords(Object kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
-            return expandKwargsNode.execute(kwargs);
+            return expandKwargsNode.execute(inliningTarget, kwargs);
         }
     }
 
@@ -1445,6 +1449,7 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
         int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject, long size,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
@@ -1455,7 +1460,7 @@ public final class PythonCextBuiltins {
                 CApiContext cApiContext = getCApiContext();
                 Object key = CApiContext.asPointer(pointerObject, lib);
                 cApiContext.getTraceMallocDomain(cachedDomainIdx).track(key, size);
-                cApiContext.increaseMemoryPressure(null, getThreadStateNode, this, size);
+                cApiContext.increaseMemoryPressure(null, inliningTarget, getThreadStateNode, this, size);
                 if (LOGGER.isLoggable(Level.FINE)) {
                     LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(key)));
                 }
@@ -1465,9 +1470,10 @@ public final class PythonCextBuiltins {
 
         @Specialization(replaces = "doCachedDomainIdx", limit = "3")
         int doGeneric(int domain, Object pointerObject, long size,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Cached GetThreadStateNode getThreadStateNode) {
-            return doCachedDomainIdx(domain, pointerObject, size, getThreadStateNode, lib, domain, lookupDomain(domain));
+            return doCachedDomainIdx(domain, pointerObject, size, inliningTarget, getThreadStateNode, lib, domain, lookupDomain(domain));
         }
 
         int lookupDomain(int domain) {
@@ -1530,10 +1536,11 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = {"traceCalls(getContext())", "traceMem(getContext())"})
         Object doNativeWrapperTraceCall(Object ptr,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
 
-            PFrame.Reference ref = getCurrentFrameRef.execute(null);
+            PFrame.Reference ref = getCurrentFrameRef.execute(null, inliningTarget);
             trace(getContext(), CApiContext.asPointer(ptr, lib), ref, null);
             return PNone.NO_VALUE;
         }
@@ -1752,7 +1759,7 @@ public final class PythonCextBuiltins {
                     throw CompilerDirectives.shouldNotReachHere("cannot find class " + name);
                 }
 
-                PythonClassNativeWrapper.wrapNative(clazz, TypeNodes.GetNameNode.getUncached().execute(clazz), pointer);
+                PythonClassNativeWrapper.wrapNative(clazz, TypeNodes.GetNameNode.executeUncached(clazz), pointer);
                 return PNone.NO_VALUE;
             } catch (PException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);

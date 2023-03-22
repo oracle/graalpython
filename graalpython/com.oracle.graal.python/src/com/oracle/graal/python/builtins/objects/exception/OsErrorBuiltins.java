@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins.BaseExceptionInitNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -88,7 +89,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -132,7 +132,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         core.registerTypeInBuiltins(tsLiteral("IOError"), PythonBuiltinClassType.OSError);
     }
 
-    static boolean osErrorUseInit(VirtualFrame frame, Python3Core core, Object type, PyObjectGetAttr getAttr) {
+    static boolean osErrorUseInit(VirtualFrame frame, Node inliningTarget, Python3Core core, Object type, PyObjectGetAttr getAttr) {
         // When __init__ is defined in an OSError subclass, we want any extraneous argument
         // to __new__ to be ignored. The only reasonable solution, given __new__ takes a
         // variable number of arguments, is to defer arg parsing and initialization to __init__.
@@ -141,10 +141,10 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         //
         // (see http://bugs.python.org/issue12555#msg148829 )
         final PythonBuiltinClass osErrorType = core.lookupType(PythonBuiltinClassType.OSError);
-        final Object tpInit = getAttr.execute(frame, type, T___INIT__);
-        final Object tpNew = getAttr.execute(frame, type, T___NEW__);
-        final Object osErrInit = getAttr.execute(frame, osErrorType, T___INIT__);
-        final Object osErrNew = getAttr.execute(frame, osErrorType, T___NEW__);
+        final Object tpInit = getAttr.execute(frame, inliningTarget, type, T___INIT__);
+        final Object tpNew = getAttr.execute(frame, inliningTarget, type, T___NEW__);
+        final Object osErrInit = getAttr.execute(frame, inliningTarget, osErrorType, T___INIT__);
+        final Object osErrNew = getAttr.execute(frame, inliningTarget, osErrorType, T___NEW__);
         return tpInit != osErrInit && tpNew == osErrNew;
     }
 
@@ -221,8 +221,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    static void osErrorInit(Frame frame, PBaseException self, Object type, Object[] args, Object[] parsedArgs, PyNumberCheckNode pyNumberCheckNode,
-                    PyNumberAsSizeNode pyNumberAsSizeNode, BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
+    static void osErrorInit(Frame frame, Node inliningTarget, PBaseException self, Object type, Object[] args, Object[] parsedArgs, PyNumberCheckNode pyNumberCheckNode,
+                    PyNumberAsSizeNode pyNumberAsSizeNode, BaseExceptionInitNode baseInitNode) {
         Object[] pArgs = args;
 
         // filename will remain None otherwise
@@ -230,9 +230,9 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         Object filename2 = parsedArgs[IDX_FILENAME2];
         if (filename != null && filename != PNone.NONE) {
             if (type == PythonBuiltinClassType.BlockingIOError &&
-                            pyNumberCheckNode.execute(filename)) {
+                            pyNumberCheckNode.execute(inliningTarget, filename)) {
                 // BlockingIOError's 3rd argument can be the number of characters written.
-                parsedArgs[IDX_WRITTEN] = (pyNumberAsSizeNode.executeExact(frame, filename, PythonBuiltinClassType.ValueError));
+                parsedArgs[IDX_WRITTEN] = (pyNumberAsSizeNode.executeExact(frame, inliningTarget, filename, PythonBuiltinClassType.ValueError));
             } else {
                 parsedArgs[IDX_FILENAME] = filename;
                 if (filename2 != null && filename2 != PNone.NONE) {
@@ -249,10 +249,10 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         self.setExceptionAttributes(parsedArgs);
     }
 
-    static Object[] osErrorParseArgs(Object[] args, PyArgCheckPositionalNode checkPositionalNode) {
+    static Object[] osErrorParseArgs(Object[] args, Node inliningTarget, PyArgCheckPositionalNode checkPositionalNode) {
         Object[] parsed = new Object[OS_ERR_NUM_ATTRS];
         if (args.length >= 2 && args.length <= 5) {
-            checkPositionalNode.execute(PythonBuiltinClassType.OSError.getPrintName(), args, ARGS_MIN, ARGS_MAX);
+            checkPositionalNode.execute(inliningTarget, PythonBuiltinClassType.OSError.getPrintName(), args, ARGS_MIN, ARGS_MAX);
             PythonUtils.arraycopy(args, 0, parsed, 0, args.length);
         }
         parsed[IDX_WRITTEN] = -1;
@@ -264,6 +264,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     protected abstract static class OSErrorNewNode extends PythonBuiltinNode {
         @Specialization
         protected Object newCData(VirtualFrame frame, Object subType, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
@@ -272,16 +273,16 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             Object type = subType;
             Object[] parsedArgs = new Object[IDX_WRITTEN + 1];
             final Python3Core core = getCore();
-            if (!osErrorUseInit(frame, core, type, getAttr)) {
+            if (!osErrorUseInit(frame, inliningTarget, core, type, getAttr)) {
                 if (kwds.length != 0) {
                     throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
                 }
 
-                parsedArgs = osErrorParseArgs(args, checkPositionalNode);
+                parsedArgs = osErrorParseArgs(args, inliningTarget, checkPositionalNode);
                 final Object errnoVal = parsedArgs[IDX_ERRNO];
                 if (errnoVal != null && PGuards.canBeInteger(errnoVal) &&
                                 subType == PythonBuiltinClassType.OSError) {
-                    final int errno = pyNumberAsSizeNode.executeExact(frame, errnoVal);
+                    final int errno = pyNumberAsSizeNode.executeExact(frame, inliningTarget, errnoVal);
                     Object newType = errno2errorType(errno);
                     if (newType != null) {
                         type = newType;
@@ -290,8 +291,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             }
 
             PBaseException self = factory().createBaseException(type);
-            if (!osErrorUseInit(frame, core, type, getAttr)) {
-                osErrorInit(frame, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
+            if (!osErrorUseInit(frame, inliningTarget, core, type, getAttr)) {
+                osErrorInit(frame, inliningTarget, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             } else {
                 self.setArgs(factory().createEmptyTuple());
             }
@@ -306,14 +307,15 @@ public final class OsErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
                         @Cached PyArgCheckPositionalNode checkPositionalNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
-            final Object type = getClassNode.execute(self);
-            if (!osErrorUseInit(frame, getCore(), type, getAttr)) {
+            final Object type = getClassNode.execute(inliningTarget, self);
+            if (!osErrorUseInit(frame, inliningTarget, getCore(), type, getAttr)) {
                 // Everything already done in OSError_new
                 return PNone.NONE;
             }
@@ -322,8 +324,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
             }
 
-            Object[] parsedArgs = osErrorParseArgs(args, checkPositionalNode);
-            osErrorInit(frame, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
+            Object[] parsedArgs = osErrorParseArgs(args, inliningTarget, checkPositionalNode);
+            osErrorInit(frame, inliningTarget, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             return PNone.NONE;
         }
 
@@ -420,6 +422,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     public abstract static class OSErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
@@ -433,19 +436,19 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             if (filename != PNone.NONE) {
                 if (filename2 != PNone.NONE) {
                     return simpleTruffleStringFormatNode.format("[Errno %s] %s: %s -> %s",
-                                    strNode.execute(frame, errno != null ? errno : PNone.NONE),
-                                    strNode.execute(frame, strerror != null ? strerror : PNone.NONE),
-                                    reprNode.execute(frame, filename),
-                                    reprNode.execute(frame, filename2));
+                                    strNode.execute(frame, inliningTarget, errno != null ? errno : PNone.NONE),
+                                    strNode.execute(frame, inliningTarget, strerror != null ? strerror : PNone.NONE),
+                                    reprNode.execute(frame, inliningTarget, filename),
+                                    reprNode.execute(frame, inliningTarget, filename2));
                 } else {
                     return simpleTruffleStringFormatNode.format("[Errno %s] %s: %s",
-                                    strNode.execute(frame, errno != null ? errno : PNone.NONE),
-                                    strNode.execute(frame, strerror != null ? strerror : PNone.NONE),
-                                    reprNode.execute(frame, filename));
+                                    strNode.execute(frame, inliningTarget, errno != null ? errno : PNone.NONE),
+                                    strNode.execute(frame, inliningTarget, strerror != null ? strerror : PNone.NONE),
+                                    reprNode.execute(frame, inliningTarget, filename));
                 }
             }
             if (errno != PNone.NONE && strerror != PNone.NONE) {
-                return simpleTruffleStringFormatNode.format("[Errno %s] %s", strNode.execute(frame, errno), strNode.execute(frame, strerror));
+                return simpleTruffleStringFormatNode.format("[Errno %s] %s", strNode.execute(frame, inliningTarget, errno), strNode.execute(frame, inliningTarget, strerror));
             }
             return baseStrNode.execute(frame, self);
         }
@@ -459,7 +462,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             PTuple args = getArgsNode.execute(inliningTarget, self);
@@ -468,8 +471,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             SequenceStorage argsStorage = args.getSequenceStorage();
             if (argsStorage.length() == 2 && filename != PNone.NONE) {
                 Object[] argData = new Object[filename2 != PNone.NONE ? 5 : 3];
-                argData[0] = getItemNode.execute(argsStorage, 0);
-                argData[1] = getItemNode.execute(argsStorage, 1);
+                argData[0] = getItemNode.execute(inliningTarget, argsStorage, 0);
+                argData[1] = getItemNode.execute(inliningTarget, argsStorage, 1);
                 argData[2] = filename;
                 if (filename2 != PNone.NONE) {
                     // This tuple is essentially used as OSError(*args). So, to recreate filename2,

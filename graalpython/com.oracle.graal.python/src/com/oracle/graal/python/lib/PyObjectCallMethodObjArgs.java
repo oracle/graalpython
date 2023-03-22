@@ -49,9 +49,10 @@ import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -65,54 +66,67 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Equivalent to use for the various PyObject_CallMethod* functions available in CPython.
  */
 @GenerateUncached
+@GenerateCached
+@GenerateInline(inlineByDefault = true)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectCallMethodObjArgs extends Node {
 
-    public final Object execute(Frame frame, Object receiver, TruffleString name, Object... arguments) {
-        return executeInternal(frame, receiver, name, arguments);
+    public static Object executeUncached(Object receiver, TruffleString name, Object... arguments) {
+        return PyObjectCallMethodObjArgsNodeGen.getUncached().executeInternal(null, null, receiver, name, arguments);
     }
 
-    protected abstract Object executeInternal(Frame frame, Object receiver, TruffleString name, Object[] arguments);
+    public static Object executeUncached(Frame frame, Object receiver, TruffleString name, Object... arguments) {
+        return PyObjectCallMethodObjArgsNodeGen.getUncached().executeInternal(frame, null, receiver, name, arguments);
+    }
+
+    public final Object executeCached(Frame frame, Object receiver, TruffleString name, Object... arguments) {
+        return executeInternal(frame, this, receiver, name, arguments);
+    }
+
+    public final Object execute(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object... arguments) {
+        return executeInternal(frame, inliningTarget, receiver, name, arguments);
+    }
+
+    protected abstract Object executeInternal(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object[] arguments);
 
     @Specialization(guards = "arguments.length == 0")
-    static Object callUnary(Frame frame, Object receiver, TruffleString name, @SuppressWarnings("unused") Object[] arguments,
+    static Object callUnary(Frame frame, Node inliningTarget, Object receiver, TruffleString name, @SuppressWarnings("unused") Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
-                    @Cached CallUnaryMethodNode callNode) {
-        Object callable = getMethod.execute(frame, receiver, name);
+                    @Cached(inline = false) CallUnaryMethodNode callNode) {
+        Object callable = getMethod.execute(frame, inliningTarget, receiver, name);
         return callNode.executeObject(frame, callable, receiver);
     }
 
     @Specialization(guards = "arguments.length == 1")
-    static Object callBinary(Frame frame, Object receiver, TruffleString name, Object[] arguments,
+    static Object callBinary(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
-                    @Cached CallBinaryMethodNode callNode) {
-        Object callable = getMethod.execute(frame, receiver, name);
+                    @Cached(inline = false) CallBinaryMethodNode callNode) {
+        Object callable = getMethod.execute(frame, inliningTarget, receiver, name);
         return callNode.executeObject(frame, callable, receiver, arguments[0]);
     }
 
     @Specialization(guards = "arguments.length == 2")
-    static Object callTernary(Frame frame, Object receiver, TruffleString name, Object[] arguments,
+    static Object callTernary(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
-                    @Cached CallTernaryMethodNode callNode) {
-        Object callable = getMethod.execute(frame, receiver, name);
+                    @Cached(inline = false) CallTernaryMethodNode callNode) {
+        Object callable = getMethod.execute(frame, inliningTarget, receiver, name);
         return callNode.execute(frame, callable, receiver, arguments[0], arguments[1]);
     }
 
     @Specialization(guards = "arguments.length == 3")
-    static Object callQuad(Frame frame, Object receiver, TruffleString name, Object[] arguments,
+    static Object callQuad(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
-                    @Cached CallQuaternaryMethodNode callNode) {
-        Object callable = getMethod.execute(frame, receiver, name);
+                    @Cached(inline = false) CallQuaternaryMethodNode callNode) {
+        Object callable = getMethod.execute(frame, inliningTarget, receiver, name);
         return callNode.execute(frame, callable, receiver, arguments[0], arguments[1], arguments[2]);
     }
 
     @Specialization(replaces = {"callUnary", "callBinary", "callTernary", "callQuad"})
-    static Object call(Frame frame, Object receiver, TruffleString name, Object[] arguments,
-                    @Bind("this") Node inliningTarget,
+    static Object call(Frame frame, Node inliningTarget, Object receiver, TruffleString name, Object[] arguments,
                     @Shared("getMethod") @Cached PyObjectGetMethod getMethod,
-                    @Cached CallNode callNode,
+                    @Cached(inline = false) CallNode callNode,
                     @Cached InlinedConditionProfile isBoundProfile) {
-        Object callable = getMethod.execute(frame, receiver, name);
+        Object callable = getMethod.execute(frame, inliningTarget, receiver, name);
         if (isBoundProfile.profile(inliningTarget, callable instanceof BoundDescriptor)) { // not a
                                                                                            // method
             return callNode.execute(frame, ((BoundDescriptor) callable).descriptor, arguments, PKeyword.EMPTY_KEYWORDS);

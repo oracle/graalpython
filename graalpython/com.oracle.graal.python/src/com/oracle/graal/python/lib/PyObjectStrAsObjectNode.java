@@ -57,9 +57,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -78,12 +79,18 @@ import com.oracle.truffle.api.strings.TruffleString;
  * @see PyObjectReprAsTruffleStringNode
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object object);
+    public final Object executeCached(Frame frame, Object object) {
+        return execute(frame, this, object);
+    }
 
-    public final Object execute(Object object) {
-        return execute(null, object);
+    public abstract Object execute(Frame frame, Node inlineTarget, Object object);
+
+    public final Object execute(Node inliningTarget, Object object) {
+        return execute(null, inliningTarget, object);
     }
 
     @Specialization
@@ -98,19 +105,18 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
 
     @Specialization
     TruffleString str(long object,
-                    @Cached TruffleString.FromLongNode fromLongNode) {
+                    @Cached(inline = false) TruffleString.FromLongNode fromLongNode) {
         return fromLongNode.execute(object, TS_ENCODING, false);
     }
 
     @Specialization(guards = "!isTruffleString(obj)")
-    static Object str(VirtualFrame frame, Object obj,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached(parameters = "Str") LookupSpecialMethodSlotNode lookupStr,
-                    @Cached CallUnaryMethodNode callStr,
-                    @Cached InlinedGetClassNode getResultClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached PRaiseNode raiseNode) {
+    static Object str(VirtualFrame frame, Node inliningTarget, Object obj,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Str", inline = false) LookupSpecialMethodSlotNode lookupStr,
+                    @Cached(inline = false) CallUnaryMethodNode callStr,
+                    @Cached GetClassNode getResultClassNode,
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         Object type = getClassNode.execute(inliningTarget, obj);
         Object strDescr = lookupStr.execute(frame, type, obj);
         // All our objects should have __str__
@@ -120,7 +126,7 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
         if (result instanceof TruffleString || isSubtypeNode.execute(getResultClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PString)) {
             return result;
         } else {
-            throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___STR__, result);
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___STR__, result);
         }
     }
 

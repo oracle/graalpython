@@ -67,10 +67,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CODECS_JP)
@@ -142,16 +144,17 @@ public final class CodecsJPModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getcodec(Object encoding,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
 
-            if (!unicodeCheckNode.execute(encoding)) {
+            if (!unicodeCheckNode.execute(inliningTarget, encoding)) {
                 throw raise(TypeError, ENCODING_NAME_MUST_BE_A_STRING);
             }
 
-            MultibyteCodec codec = findCodec(CODEC_LIST, asUTF8Node.execute(encoding), isEqual);
+            MultibyteCodec codec = findCodec(CODEC_LIST, asUTF8Node.execute(inliningTarget, encoding), isEqual);
             if (codec == null) {
                 throw raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }

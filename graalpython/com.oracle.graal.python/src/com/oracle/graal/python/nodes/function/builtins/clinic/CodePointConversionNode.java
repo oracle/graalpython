@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,10 +52,12 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise {
@@ -91,12 +93,14 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
     }
 
     @Specialization(guards = {"!isHandledPNone(useDefaultForNone, value)"}, replaces = "doString")
+    @SuppressWarnings("truffle-static-method")
     int doOthers(Object value,
+                    @Bind("this") Node inliningTarget,
                     @Cached CastToTruffleStringNode castToStringNode,
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         try {
-            return doString(castToStringNode.execute(value), codePointLengthNode, codePointAtIndexNode);
+            return doString(castToStringNode.execute(inliningTarget, value), codePointLengthNode, codePointAtIndexNode);
         } catch (CannotCastException ex) {
             throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
         }

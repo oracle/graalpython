@@ -42,24 +42,22 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent to use for PyFrame_GetBuiltins. Note we ignore the actual frame and just always return
  * the context-global builtins module.
  */
-@GenerateUncached
 public abstract class PyFrameGetBuiltins extends Node {
-    public abstract PythonModule execute();
-
-    @Specialization
-    PythonModule getBuiltins() {
-        return PythonContext.get(this).getBuiltins();
+    private PyFrameGetBuiltins() {
+        // If we ever need a cached/inlined version, it can be added
     }
 
-    public static PyFrameGetBuiltins getUncached() {
-        return PyFrameGetBuiltinsNodeGen.getUncached();
+    public static PythonModule executeUncached() {
+        return PythonContext.get(null).getBuiltins();
+    }
+
+    public static PythonModule execute(PythonContext ctx) {
+        return ctx.getBuiltins();
     }
 }

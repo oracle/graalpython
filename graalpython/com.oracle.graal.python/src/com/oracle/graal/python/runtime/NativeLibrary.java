@@ -54,6 +54,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,7 +64,8 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -350,9 +352,10 @@ public class NativeLibrary {
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
-                        @Cached("createClassProfile()") ValueProfile functionClassProfile,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile functionClassProfile,
                         @CachedLibrary(limit = "1") InteropLibrary funInterop) {
-            NativeFunction function = functionClassProfile.profile(functionIn);
+            NativeFunction function = functionClassProfile.profile(inliningTarget, functionIn);
             Object funObj = lib.getCachedFunction(PythonContext.get(funInterop), function);
             return invoke(function, args, funObj, funInterop);
         }

@@ -52,25 +52,38 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyCallable_Check} function.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyCallableCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+    public static boolean executeUncached(Object object) {
+        return PyCallableCheckNodeGen.getUncached().execute(null, object);
+    }
+
+    /**
+     * Use this overload only if the node is cached!
+     */
+    public final boolean execute(Object object) {
+        return execute(null, object);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doFunction(@SuppressWarnings("unused") PFunction o) {
@@ -108,32 +121,26 @@ public abstract class PyCallableCheckNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass"})
-    static boolean doObject(PythonAbstractObject o,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupCallableSlotInMRONode lookupCall) {
+    static boolean doObject(Node inliningTarget, PythonAbstractObject o,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call", inline = false) LookupCallableSlotInMRONode lookupCall) {
         return lookupCall.execute(getClassNode.execute(inliningTarget, o)) != PNone.NO_VALUE;
     }
 
     @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass", "doType", "doObject"})
-    static boolean doGeneric(Object o,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupCallableSlotInMRONode lookupCall,
-                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+    static boolean doGeneric(Node inliningTarget, Object o,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call", inline = false) LookupCallableSlotInMRONode lookupCall,
+                    @Cached LazyInteropLibrary lazyInteropLib) {
         Object type = getClassNode.execute(inliningTarget, o);
         if (type == PythonBuiltinClassType.ForeignObject) {
+            InteropLibrary lib = lazyInteropLib.get(inliningTarget);
             return lib.isExecutable(o) || lib.isInstantiable(o);
         }
         return lookupCall.execute(type) != PNone.NO_VALUE;
     }
 
-    @NeverDefault
     public static PyCallableCheckNode create() {
         return PyCallableCheckNodeGen.create();
-    }
-
-    public static PyCallableCheckNode getUncached() {
-        return PyCallableCheckNodeGen.getUncached();
     }
 }

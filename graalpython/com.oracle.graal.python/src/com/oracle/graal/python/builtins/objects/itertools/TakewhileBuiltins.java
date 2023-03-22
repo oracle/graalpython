@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,11 +59,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PTakewhile})
 public final class TakewhileBuiltins extends PythonBuiltins {
@@ -87,12 +89,13 @@ public final class TakewhileBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object next(VirtualFrame frame, PTakewhile self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrue) {
 
             Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
-            if (!isTrue.execute(frame, callNode.execute(self.getPredicate(), value))) {
+            if (!isTrue.execute(frame, inliningTarget, callNode.execute(self.getPredicate(), value))) {
                 self.setIterable(factory().createSequenceIterator(factory().createList(PythonUtils.EMPTY_OBJECT_ARRAY)));
                 throw raiseStopIteration();
             }
@@ -105,8 +108,9 @@ public final class TakewhileBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PTakewhile self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode) {
-            Object type = getClassNode.execute(self);
+            Object type = getClassNode.execute(inliningTarget, self);
             PTuple tuple = factory().createTuple(new Object[]{self.getPredicate(), self.getIterable()});
             return factory().createTuple(new Object[]{type, tuple});
         }

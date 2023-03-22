@@ -164,8 +164,8 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrNewNode extends PythonBuiltinNode {
 
-        protected static boolean isLong(Object[] arg, PyLongCheckNode longCheckNode) {
-            return arg[0] instanceof PythonNativeVoidPtr || longCheckNode.execute(arg[0]);
+        protected static boolean isLong(Node inliningTarget, Object[] arg, PyLongCheckNode longCheckNode) {
+            return arg[0] instanceof PythonNativeVoidPtr || longCheckNode.execute(inliningTarget, arg[0]);
         }
 
         protected static boolean isTuple(Object[] arg) {
@@ -187,7 +187,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             return pyCFuncPtrFromDllNode.execute(frame, type, args);
         }
 
-        @Specialization(guards = {"args.length == 1", "isLong(args, longCheckNode)"})
+        @Specialization(guards = {"args.length == 1", "isLong(this, args, longCheckNode)"})
         Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
@@ -202,7 +202,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             return cdata;
         }
 
-        @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(args, longCheckNode)"})
+        @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(this, args, longCheckNode)"})
         Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
@@ -212,7 +212,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
             Object callable = args[0];
-            if (!callableCheck.execute(callable)) {
+            if (!callableCheck.execute(inliningTarget, callable)) {
                 throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
             }
 
@@ -230,8 +230,9 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(args, longCheckNode)"})
+        @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(this, args, longCheckNode)"})
         Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode) {
             throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
         }
@@ -329,8 +330,9 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck) {
-            if (value != PNone.NONE && !callableCheck.execute(value)) {
+            if (value != PNone.NONE && !callableCheck.execute(inliningTarget, value)) {
                 throw raise(TypeError, THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE);
             }
             self.errcheck = value;
@@ -360,6 +362,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object PyCFuncPtr_set_restype(VirtualFrame frame, PyCFuncPtrObject self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCallableCheckNode callableCheck) {
@@ -368,11 +371,11 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 self.restype = null;
                 return PNone.NONE;
             }
-            if (pyTypeStgDictNode.execute(value) == null && !callableCheck.execute(value)) {
+            if (pyTypeStgDictNode.execute(value) == null && !callableCheck.execute(inliningTarget, value)) {
                 throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
             }
             if (!PGuards.isPFunction(value)) {
-                Object checker = lookupAttr.execute(frame, value, T__CHECK_RETVAL_);
+                Object checker = lookupAttr.execute(frame, inliningTarget, value, T__CHECK_RETVAL_);
                 self.checker = checker != PNone.NO_VALUE ? checker : null;
             }
             self.restype = value;
@@ -410,20 +413,22 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PTuple value,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached GetInternalObjectArrayNode getArray) {
-            Object[] ob = getArray.execute(value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, ob, getRaiseNode(), lookupAttr);
+            Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, getRaiseNode(), lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PList value,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached GetInternalObjectArrayNode getArray) {
-            Object[] ob = getArray.execute(value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, ob, getRaiseNode(), lookupAttr);
+            Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, getRaiseNode(), lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
@@ -441,12 +446,13 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString PyCFuncPtr_repr(CDataObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object clazz = getClassNode.execute(self);
+            Object clazz = getClassNode.execute(inliningTarget, self);
             return simpleTruffleStringFormatNode.format("<%s object at %s>",
-                            getNameNode.execute(clazz), getNameNode.execute(getClassNode.execute(self)));
+                            getNameNode.execute(inliningTarget, clazz), getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)));
         }
     }
 
@@ -481,7 +487,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
             int[] props = new int[3];
             NativeFunction pProc = handleFromPointerNode.getNativeFunction(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
-            Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
+            Object[] callargs = _build_callargs(frame, inliningTarget, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);
             int inoutmask = props[pinoutmask_idx];
             int outmask = props[poutmask_idx];
@@ -524,7 +530,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 }
             }
 
-            return _build_result(frame, result, callargs, outmask, inoutmask, numretvals, callMethodObjArgs);
+            return _build_result(frame, inliningTarget, result, callargs, outmask, inoutmask, numretvals, callMethodObjArgs);
         }
 
         protected Object _get_arg(int[] pindex, TruffleString name, Object defval, Object[] inargs, PKeyword[] kwds, TruffleString.EqualNode equalNode) {
@@ -570,7 +576,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
          * function.
          */
         @SuppressWarnings("fallthrough")
-        Object[] _build_callargs(VirtualFrame frame, PyCFuncPtrObject self, Object[] argtypes, Object[] inargs, PKeyword[] kwds, int[] props,
+        Object[] _build_callargs(VirtualFrame frame, Node inliningTarget, PyCFuncPtrObject self, Object[] argtypes, Object[] inargs, PKeyword[] kwds, int[] props,
                         PyTypeCheck pyTypeCheck,
                         GetInternalObjectArrayNode getArray,
                         CastToJavaIntExactNode castToJavaIntExactNode,
@@ -601,11 +607,11 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                  * This way seems to be ~2 us faster than the PyArg_ParseTuple calls below.
                  */
                 /* We HAVE already checked that the tuple can be parsed with "i|ZO", so... */
-                Object[] item = getArray.execute(((PTuple) paramflags[i]).getSequenceStorage());
+                Object[] item = getArray.execute(inliningTarget, ((PTuple) paramflags[i]).getSequenceStorage());
                 Object ob;
                 int tsize = item.length;
-                int flag = castToJavaIntExactNode.execute(item[0]);
-                TruffleString name = tsize > 1 ? castToTruffleStringNode.execute(item[1]) : null;
+                int flag = castToJavaIntExactNode.execute(inliningTarget, item[0]);
+                TruffleString name = tsize > 1 ? castToTruffleStringNode.execute(inliningTarget, item[1]) : null;
                 Object defval = tsize > 2 ? item[2] : null;
 
                 switch (flag & (PARAMFLAG_FIN | PARAMFLAG_FOUT | PARAMFLAG_FLCID)) {
@@ -655,7 +661,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                             throw raise(RuntimeError, NULL_STGDICT_UNEXPECTED);
                         }
                         if (PGuards.isString(dict.proto)) { // TODO Py_TPFLAGS_UNICODE_SUBCLASS
-                            throw raise(TypeError, S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE, getNameNode.execute(ob));
+                            throw raise(TypeError, S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE, getNameNode.execute(inliningTarget, ob));
                         }
                         if (pyTypeCheck.isPyCArrayTypeObject(ob)) {
                             ob = callNode.execute(frame, ob);
@@ -701,7 +707,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         /*
          * Build return value of a function. Consumes the refcount on result and callargs.
          */
-        Object _build_result(VirtualFrame frame, Object result, Object[] callargs, int outmask, int inoutmask, int numretvals,
+        Object _build_result(VirtualFrame frame, Node inliningTarget, Object result, Object[] callargs, int outmask, int inoutmask, int numretvals,
                         PyObjectCallMethodObjArgs callMethodObjArgs) {
             int i, index;
             int bit;
@@ -732,7 +738,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                     index++;
                 } else if ((bit & outmask) != 0) {
                     v = callargs[i];
-                    v = callMethodObjArgs.execute(frame, v, T___CTYPES_FROM_OUTPARAM__);
+                    v = callMethodObjArgs.execute(frame, inliningTarget, v, T___CTYPES_FROM_OUTPARAM__);
                     if (v == null || numretvals == 1) {
                         return v;
                     }
@@ -775,17 +781,17 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             PTuple tuple = (PTuple) args[0];
             Object[] paramflags = null;
             if (args.length > 1 && args[1] instanceof PTuple) {
-                paramflags = getArray.execute(((PTuple) args[1]).getSequenceStorage());
+                paramflags = getArray.execute(inliningTarget, ((PTuple) args[1]).getSequenceStorage());
             }
 
             // PyArg_ParseTuple(ftuple, "O&O;illegal func_spec argument", _get_name, &name, &dll)
-            Object[] ftuple = getArray.execute(tuple.getSequenceStorage());
-            TruffleString name = toString.execute(ftuple[0]);
+            Object[] ftuple = getArray.execute(inliningTarget, tuple.getSequenceStorage());
+            TruffleString name = toString.execute(inliningTarget, ftuple[0]);
             Object dll = ftuple[1];
-            auditNode.audit("ctypes.dlsym", dll, name);
+            auditNode.audit(inliningTarget, "ctypes.dlsym", dll, name);
 
             Object obj = getAttributeNode.executeObject(frame, dll, T__HANDLE);
-            if (!longCheckNode.execute(obj)) { // PyLong_Check
+            if (!longCheckNode.execute(inliningTarget, obj)) { // PyLong_Check
                 throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             Pointer handlePtr;
@@ -795,7 +801,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
             }
             Object address = dlSymNode.execute(frame, handlePtr, name, AttributeError);
-            _validate_paramflags(type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode, codePointAtIndexNode);
+            _validate_paramflags(inliningTarget, type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode, codePointAtIndexNode);
 
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             PyCFuncPtrObject self = (PyCFuncPtrObject) pyCDataNewNode.execute(inliningTarget, type, dict);
@@ -810,7 +816,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         /* Returns 1 on success, 0 on error */
-        void _validate_paramflags(Object type, Object[] paramflags,
+        void _validate_paramflags(Node inliningTarget, Object type, Object[] paramflags,
                         PyTypeCheck pyTypeCheck,
                         GetInternalObjectArrayNode getArray,
                         PyTypeStgDictNode pyTypeStgDictNode,
@@ -834,7 +840,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             for (int i = 0; i < len; ++i) {
                 PTuple item = (PTuple) paramflags[i];
                 // PyArg_ParseTuple(item, "i|ZO", &flag, &name, &defval)
-                Object[] array = getArray.execute(item.getSequenceStorage());
+                Object[] array = getArray.execute(inliningTarget, item.getSequenceStorage());
                 int flag = (int) array[0];
                 if (array.length > 1) {
                     if (!PGuards.isString(array[1])) {
@@ -881,7 +887,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                 return;
             }
 
-            throw raise(TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S, index, GetNameNode.getUncached().execute(arg));
+            throw raise(TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S, index, GetNameNode.executeUncached(arg));
         }
 
         protected static boolean strchr(char[] chars, int code) {

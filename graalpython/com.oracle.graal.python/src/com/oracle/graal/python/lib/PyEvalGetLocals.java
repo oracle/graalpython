@@ -44,18 +44,22 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyEvalGetLocals extends Node {
-    public abstract Object execute(VirtualFrame frame);
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget);
 
     @Specialization
-    static Object getLocals(VirtualFrame frame,
-                    @Cached ReadCallerFrameNode readCallerFrameNode,
+    static Object getLocals(VirtualFrame frame, Node inliningTarget,
+                    @Cached(inline = false) ReadCallerFrameNode readCallerFrameNode,
                     @Cached GetFrameLocalsNode getFrameLocalsNode) {
         PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-        return getFrameLocalsNode.execute(callerFrame);
+        return getFrameLocalsNode.execute(inliningTarget, callerFrame);
     }
 }

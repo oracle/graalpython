@@ -53,10 +53,12 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -76,35 +78,40 @@ import com.oracle.truffle.api.strings.TruffleString;
  * @see PyObjectReprAsTruffleStringNode
  */
 @GenerateUncached
+@GenerateCached
+@GenerateInline(inlineByDefault = true)
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
+
+    public static Object executeUncached(Object object) {
+        return PyObjectReprAsObjectNodeGen.getUncached().execute(null, null, object);
+    }
 
     public static PyObjectReprAsObjectNode getUncached() {
         return PyObjectReprAsObjectNodeGen.getUncached();
     }
 
-    public abstract Object execute(Frame frame, Object object);
-
-    public final Object execute(Object object) {
-        return execute(null, object);
+    public final Object executeCached(Frame frame, Object object) {
+        return execute(frame, this, object);
     }
 
+    public abstract Object execute(Frame frame, Node inliningTarget, Object object);
+
     @Specialization
-    static Object repr(VirtualFrame frame, Object obj,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached(parameters = "Repr") LookupSpecialMethodSlotNode lookupRepr,
-                    @Cached CallUnaryMethodNode callRepr,
-                    @Cached ObjectNodes.DefaultObjectReprNode defaultRepr,
+    static Object repr(VirtualFrame frame, Node inliningTarget, Object obj,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Repr", inline = false) LookupSpecialMethodSlotNode lookupRepr,
+                    @Cached(inline = false) CallUnaryMethodNode callRepr,
+                    @Cached(inline = false) ObjectNodes.DefaultObjectReprNode defaultRepr,
                     @Cached InlinedConditionProfile isString,
                     @Cached InlinedConditionProfile isPString,
-                    @Cached PRaiseNode raiseNode) {
+                    @Cached PRaiseNode.Lazy raiseNode) {
         Object type = getClassNode.execute(inliningTarget, obj);
         Object reprMethod;
         try {
             reprMethod = lookupRepr.execute(frame, type, obj);
         } catch (PException e) {
-            return defaultRepr.execute(frame, obj);
+            return defaultRepr.execute(frame, inliningTarget, obj);
         }
         if (reprMethod != PNone.NO_VALUE) {
             Object result = callRepr.executeObject(frame, reprMethod, obj);
@@ -114,10 +121,15 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
                 return result;
             }
             if (result != PNone.NO_VALUE) {
-                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___REPR__, obj);
+                throw raiseTypeError(inliningTarget, obj, raiseNode);
             }
         }
-        return defaultRepr.execute(frame, obj);
+        return defaultRepr.execute(frame, inliningTarget, obj);
+    }
+
+    @InliningCutoff
+    private static PException raiseTypeError(Node inliningTarget, Object obj, PRaiseNode.Lazy raiseNode) {
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___REPR__, obj);
     }
 
     @NeverDefault

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,11 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -58,26 +61,37 @@ import com.oracle.truffle.api.strings.TruffleString;
  * PDict. Returns {@code null} when the key is not present.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 public abstract class PyDictGetItem extends Node {
-    public abstract Object execute(Frame frame, PDict dict, Object item);
+    public static Object executeUncached(PDict dict, Object item) {
+        return PyDictGetItemNodeGen.getUncached().execute(null, null, dict, item);
+    }
+
+    public final Object executeCached(VirtualFrame frame, PDict dict, Object key) {
+        return execute(frame, this, dict, key);
+    }
+
+    public abstract Object execute(Frame frame, Node inliningTarget, PDict dict, Object item);
 
     // We never need a frame for reading string keys
     @Specialization
-    static Object getString(PDict dict, TruffleString item,
+    static Object getString(Node inliningTarget, PDict dict, TruffleString item,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        return getItem.execute(dict.getDictStorage(), item);
+        return getItem.execute(inliningTarget, dict.getDictStorage(), item);
     }
 
     @Specialization(replaces = "getString")
-    static Object getItemCached(VirtualFrame frame, PDict dict, Object item,
+    static Object getItemCached(VirtualFrame frame, Node inliningTarget, PDict dict, Object item,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        return getItem.execute(frame, dict.getDictStorage(), item);
+        return getItem.execute(frame, inliningTarget, dict.getDictStorage(), item);
     }
 
     @Specialization(replaces = "getItemCached")
-    static Object getItem(PDict dict, Object item,
+    @InliningCutoff
+    static Object getItem(Node inliningTarget, PDict dict, Object item,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        return getItem.execute(null, dict.getDictStorage(), item);
+        return getItem.execute(null, inliningTarget, dict.getDictStorage(), item);
     }
 
     @NeverDefault

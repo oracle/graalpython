@@ -498,11 +498,11 @@ public enum SpecialMethodSlot {
             // is going to lookup something in that type's MRO?
             if (managedClass.specialMethodSlots != null) {
                 managedClass.specialMethodSlots = null;
-                initializeSpecialMethodSlots(managedClass, GetMroStorageNode.getUncached(), language);
+                initializeSpecialMethodSlots(managedClass, GetMroStorageNode.executeUncached(managedClass), language);
             }
             subClasses = managedClass.getSubClasses();
         } else if (klass instanceof PythonNativeClass) {
-            subClasses = GetSubclassesNode.getUncached().execute(klass);
+            subClasses = GetSubclassesNode.executeUncached(klass);
         } else {
             throw new AssertionError(Objects.toString(klass));
         }
@@ -511,8 +511,7 @@ public enum SpecialMethodSlot {
         }
     }
 
-    public static void initializeSpecialMethodSlots(PythonManagedClass klass, GetMroStorageNode getMroStorageNode, PythonLanguage language) {
-        MroSequenceStorage mro = getMroStorageNode.execute(klass);
+    public static void initializeSpecialMethodSlots(PythonManagedClass klass, MroSequenceStorage mro, PythonLanguage language) {
         klass.specialMethodSlots = initializeSpecialMethodsSlots(klass, mro, language);
     }
 
@@ -583,7 +582,7 @@ public enum SpecialMethodSlot {
             // object is subclass of everything
             return true;
         }
-        MroSequenceStorage subTypeMro = GetMroStorageNode.getUncached().execute(subType);
+        MroSequenceStorage subTypeMro = GetMroStorageNode.executeUncached(subType);
         boolean isMroSubtype = subTypeMro.length() == superTypeMro.length() - 1;
         if (isMroSubtype) {
             for (int i = 0; i < subTypeMro.length(); i++) {
@@ -654,7 +653,7 @@ public enum SpecialMethodSlot {
             // proceed with that
             newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
-        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue, PythonContext.get(null));
+        fixupSpecialMethodInSubClasses(GetSubclassesNode.executeUncached(klass), slot, newValue, PythonContext.get(null));
     }
 
     @TruffleBoundary
@@ -714,7 +713,7 @@ public enum SpecialMethodSlot {
         if (klass instanceof PythonManagedClass) {
             fixupSpecialMethodSlotInternal((PythonManagedClass) klass, slot, newValue, context);
         } else if (klass instanceof PythonNativeClass) {
-            fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue, context);
+            fixupSpecialMethodInSubClasses(GetSubclassesNode.executeUncached(klass), slot, newValue, context);
         } else {
             throw new AssertionError(Objects.toString(klass));
         }

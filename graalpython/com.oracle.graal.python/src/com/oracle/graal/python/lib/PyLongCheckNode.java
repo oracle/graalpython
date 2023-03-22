@@ -45,9 +45,10 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,8 +61,14 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @ImportStatic(SpecialMethodNames.class)
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyLongCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+    public static boolean executeUncached(Object o) {
+        return PyLongCheckNodeGen.getUncached().execute(null, o);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doBool(@SuppressWarnings("unused") Boolean object) {
@@ -84,10 +91,9 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode,
+    static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (isSubtypeNode.execute(type, PythonBuiltinClassType.PInt)) {

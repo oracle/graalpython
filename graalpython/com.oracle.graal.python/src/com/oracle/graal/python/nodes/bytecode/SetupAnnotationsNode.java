@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.builtins.objects.function.PArguments.getSpecialArgument;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,40 +62,46 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
 @ImportStatic(PArguments.class)
+@GenerateInline(false) // used in BCI root node
 public abstract class SetupAnnotationsNode extends PNodeWithContext {
     public abstract void execute(Frame frame);
 
-    @Specialization(guards = "locals != null")
+    @Specialization
     void doLocals(VirtualFrame frame,
-                    @Bind("getSpecialArgument(frame)") Object locals,
-                    @Shared("setup") @Cached SetupAnnotationsFromDictOrModuleNode setup) {
-        setup.execute(frame, locals);
-    }
-
-    @Fallback
-    void doGlobals(VirtualFrame frame,
-                    @Shared("setup") @Cached SetupAnnotationsFromDictOrModuleNode setup) {
-        setup.execute(frame, PArguments.getGlobals(frame));
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile hasLocals,
+                    @Cached SetupAnnotationsFromDictOrModuleNode setup) {
+        Object locals = getSpecialArgument(frame);
+        if (hasLocals.profile(inliningTarget, locals != null)) {
+            setup.execute(frame, inliningTarget, locals);
+        } else {
+            setup.execute(frame, inliningTarget, PArguments.getGlobals(frame));
+        }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
-        public abstract void execute(Frame frame, Object locals);
+        public abstract void execute(Frame frame, Node inliningTarget, Object locals);
 
         @Specialization
         static void doModule(PythonModule locals,
-                        @Cached ReadAttributeFromObjectNode read,
-                        @Cached WriteAttributeToObjectNode write,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Cached(inline = false) ReadAttributeFromObjectNode read,
+                        @Cached(inline = false) WriteAttributeToObjectNode write,
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             Object annotations = read.execute(locals, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
                 write.execute(locals, T___ANNOTATIONS__, factory.createDict());
@@ -102,28 +109,27 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
         }
 
         @Specialization(guards = "isBuiltinDict(locals)")
-        static void doBuiltinDict(VirtualFrame frame, PDict locals,
+        static void doBuiltinDict(VirtualFrame frame, Node inliningTarget, PDict locals,
                         @Cached PyDictGetItem getItem,
                         @Cached PyDictSetItem setItem,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            Object annotations = getItem.execute(frame, locals, T___ANNOTATIONS__);
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
+            Object annotations = getItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__);
             if (annotations == null) {
-                setItem.execute(frame, locals, T___ANNOTATIONS__, factory.createDict());
+                setItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__, factory.createDict());
             }
         }
 
         @Fallback
-        void doOther(VirtualFrame frame, Object locals,
-                        @Bind("this") Node inliningTarget,
+        static void doOther(VirtualFrame frame, Node inliningTarget, Object locals,
                         @Cached PyObjectGetItem getItem,
                         @Cached PyObjectSetItem setItem,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
             try {
-                getItem.execute(frame, locals, T___ANNOTATIONS__);
+                getItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.KeyError, errorProfile);
-                setItem.execute(frame, locals, T___ANNOTATIONS__, factory.createDict());
+                setItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__, factory.createDict());
             }
         }
     }

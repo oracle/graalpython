@@ -65,8 +65,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextPythonRunBuiltins {
@@ -78,13 +80,14 @@ public final class PythonCextPythonRunBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, PyObject, PyObject, PY_COMPILER_FLAGS}, call = Direct)
     abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
 
-        @Specialization(guards = "checkArgs(source, globals, locals, isMapping)")
+        @Specialization(guards = "checkArgs(source, globals, locals, inliningTarget, isMapping)")
         Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
             PythonModule builtins = getCore().getBuiltins();
-            Object compileCallable = lookupNode.execute(null, builtins, T_COMPILE);
+            Object compileCallable = lookupNode.execute(null, inliningTarget, builtins, T_COMPILE);
             TruffleString stype;
             if (type == Py_single_input) {
                 stype = StringLiterals.T_SINGLE;
@@ -96,7 +99,7 @@ public final class PythonCextPythonRunBuiltins {
                 throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
             Object code = callNode.execute(compileCallable, source, stype, stype);
-            Object execCallable = lookupNode.execute(null, builtins, T_EXEC);
+            Object execCallable = lookupNode.execute(null, inliningTarget, builtins, T_EXEC);
             return callNode.execute(execCallable, code, globals, locals);
         }
 
@@ -106,15 +109,16 @@ public final class PythonCextPythonRunBuiltins {
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
 
-        @Specialization(guards = {"isString(source)", "isDict(globals)", "!isMapping.execute(locals)"})
+        @Specialization(guards = {"isString(source)", "isDict(globals)", "!isMapping.execute(inliningTarget, locals)"})
         Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals, Object locals,
                         @SuppressWarnings("unused") Object flags,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping) {
             throw raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);
         }
 
-        protected boolean checkArgs(Object source, Object globals, Object locals, PyMappingCheckNode isMapping) {
-            return isString(source) && isDict(globals) && isMapping.execute(locals);
+        protected boolean checkArgs(Object source, Object globals, Object locals, Node inliningTarget, PyMappingCheckNode isMapping) {
+            return isString(source) && isDict(globals) && isMapping.execute(inliningTarget, locals);
         }
     }
 
@@ -122,10 +126,11 @@ public final class PythonCextPythonRunBuiltins {
     abstract static class Py_CompileString extends CApiTernaryBuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
         static Object compile(Object source, Object filename, int type,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
-            return Py_CompileStringExFlags.compile(source, filename, type, null, -1, raiseNode, lookupNode, callNode);
+            return Py_CompileStringExFlags.compile(source, filename, type, null, -1, inliningTarget, raiseNode, lookupNode, callNode);
         }
 
         @SuppressWarnings("unused")
@@ -139,13 +144,12 @@ public final class PythonCextPythonRunBuiltins {
     abstract static class Py_CompileStringExFlags extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
         static Object compile(Object source, Object filename, int type,
-                        @SuppressWarnings("unused") Object flags,
-                        int optimizationLevel,
+                        @SuppressWarnings("unused") Object flags, int optimizationLevel, @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
             PythonModule builtins = PythonContext.get(lookupNode).getCore().getBuiltins();
-            Object compileCallable = lookupNode.execute(null, builtins, T_COMPILE);
+            Object compileCallable = lookupNode.execute(null, inliningTarget, builtins, T_COMPILE);
             TruffleString stype;
             if (type == Py_single_input) {
                 stype = StringLiterals.T_SINGLE;
@@ -174,10 +178,11 @@ public final class PythonCextPythonRunBuiltins {
         static Object compile(Object source, Object filename, int type,
                         @SuppressWarnings("unused") Object flags,
                         int optimizationLevel,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
-            return Py_CompileStringExFlags.compile(source, filename, type, null, optimizationLevel, raiseNode, lookupNode, callNode);
+            return Py_CompileStringExFlags.compile(source, filename, type, null, optimizationLevel, inliningTarget, raiseNode, lookupNode, callNode);
         }
 
         @SuppressWarnings("unused")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,10 +62,12 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = {PIOBase, PFileIO, PStringIO, PTextIOWrapper, PBytesIO,
                 PBufferedReader, PBufferedWriter, PBufferedRandom, PBufferedRWPair})
@@ -84,8 +86,9 @@ public final class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object doit(PythonObject self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self);
+            return getDict.execute(inliningTarget, self);
         }
 
         @Specialization

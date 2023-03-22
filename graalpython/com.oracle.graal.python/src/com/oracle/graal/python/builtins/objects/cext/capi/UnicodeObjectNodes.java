@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -76,11 +77,12 @@ public abstract class UnicodeObjectNodes {
 
         @Specialization
         static PBytes doUnicode(PString s, long elementSize, ByteOrder byteOrder,
+                        @Bind("this") Node inliningTarget,
                         @Cached StringMaterializeNode materializeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return doUnicode(materializeNode.execute(s), elementSize, byteOrder, switchEncodingNode, copyToByteArrayNode, factory);
+            return doUnicode(materializeNode.execute(inliningTarget, s), elementSize, byteOrder, switchEncodingNode, copyToByteArrayNode, factory);
         }
 
         @Specialization

@@ -55,7 +55,8 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,31 +64,32 @@ import com.oracle.truffle.api.nodes.Node;
 
 public abstract class RangeNodes {
 
-    @GenerateNodeFactory
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class CreateBigRangeNode extends Node {
-        public abstract PBigRange execute(Object start, Object stop, Object step, PythonObjectFactory factory);
+        public abstract PBigRange execute(Node inliningTarget, Object start, Object stop, Object step, PythonObjectFactory factory);
 
         @TruffleBoundary
-        private static void checkStepZero(BigInteger stepBI, PRaiseNode raise) {
+        private static void checkStepZero(Node inliningTarget, BigInteger stepBI, PRaiseNode.Lazy raise) {
             if (stepBI.compareTo(BigInteger.ZERO) == 0) {
-                throw raise.raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+                throw raise.get(inliningTarget).raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
         }
 
         @Specialization
-        PBigRange createBigRange(Object start, Object stop, Object step, PythonObjectFactory factory,
+        static PBigRange createBigRange(Node inliningTarget, Object start, Object stop, Object step, PythonObjectFactory factory,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
-                        @Cached CastToJavaBigIntegerNode startToBI,
-                        @Cached CastToJavaBigIntegerNode stopToBI,
-                        @Cached CastToJavaBigIntegerNode stepToBI,
-                        @Cached PRaiseNode raise) {
-            BigInteger stepBI = stepToBI.execute(step);
-            checkStepZero(stepBI, raise);
-            BigInteger startBI = startToBI.execute(start);
-            BigInteger stopBI = stopToBI.execute(stop);
-            BigInteger len = lenOfRangeNode.execute(startBI, stopBI, stepBI);
+                        @Cached(inline = false) CastToJavaBigIntegerNode startToBI,
+                        @Cached(inline = false) CastToJavaBigIntegerNode stopToBI,
+                        @Cached(inline = false) CastToJavaBigIntegerNode stepToBI,
+                        @Cached PRaiseNode.Lazy raise) {
+            BigInteger stepBI = stepToBI.execute(inliningTarget, step);
+            checkStepZero(inliningTarget, stepBI, raise);
+            BigInteger startBI = startToBI.execute(inliningTarget, start);
+            BigInteger stopBI = stopToBI.execute(inliningTarget, stop);
+            BigInteger len = lenOfRangeNode.execute(inliningTarget, startBI, stopBI, stepBI);
             return factory.createBigRange(factory.createInt(startBI), factory.createInt(stopBI), factory.createInt(stepBI), factory.createInt(len));
         }
 
@@ -95,9 +97,10 @@ public abstract class RangeNodes {
 
     // Base class used just for code sharing
     @ImportStatic(SpecialMethodNames.class)
+    @GenerateCached(false)
     public abstract static class LenOfIntRangeBaseNode extends Node {
 
-        public abstract int executeInt(int start, int stop, int step) throws OverflowException;
+        public abstract int executeInt(Node inliningTarget, int start, int stop, int step) throws OverflowException;
 
         @Specialization(guards = {"step > 0", "lo > 0", "lo < hi"})
         static int simple(int lo, int hi, int step) {
@@ -125,17 +128,18 @@ public abstract class RangeNodes {
      * type as the arguments ({@code int} vs {@link BigInteger}). Overflow with integer arguments is
      * silent! However, unwanted overflows are checked with an assertion.
      */
-    @GenerateNodeFactory
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class LenOfRangeNode extends LenOfIntRangeBaseNode {
-        public abstract BigInteger execute(BigInteger start, BigInteger stop, BigInteger step);
+        public abstract BigInteger execute(Node inliningTarget, BigInteger start, BigInteger stop, BigInteger step);
 
         @Override // removes the checked exception
-        public abstract int executeInt(int start, int stop, int step);
+        public abstract int executeInt(Node inliningTarget, int start, int stop, int step);
 
-        public int len(SliceInfo slice) throws ArithmeticException {
-            return executeInt(slice.start, slice.stop, slice.step);
+        public int len(Node inliningTarget, SliceInfo slice) throws ArithmeticException {
+            return executeInt(inliningTarget, slice.start, slice.stop, slice.step);
         }
 
         @Specialization(guards = {"step > 0", "lo < hi"})
@@ -183,8 +187,9 @@ public abstract class RangeNodes {
      * may overflow, which results in {@link OverflowException}. It is then the responsibility of
      * the caller to widen the arguments' types if necessary.
      */
-    @GenerateNodeFactory
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class LenOfIntRangeNodeExact extends LenOfIntRangeBaseNode {
         @Specialization(guards = {"step > 0", "lo < hi"})
@@ -203,30 +208,32 @@ public abstract class RangeNodes {
     /**
      * This is only applicable to slow path computations. <i><b>For internal use only.</b></i>
      */
-    @GenerateNodeFactory
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class CoerceToBigRange extends PNodeWithContext {
 
-        public abstract PBigRange execute(PRange range, PythonObjectFactory factory);
+        public abstract PBigRange execute(Node inliningTarget, PRange range, PythonObjectFactory factory);
 
         @Specialization
-        PBigRange doIntRange(PIntRange range, PythonObjectFactory factory,
+        static PBigRange doIntRange(Node inliningTarget, PIntRange range, PythonObjectFactory factory,
                         @Cached CreateBigRangeNode cast) {
-            return cast.execute(range.getIntStart(), range.getIntStop(), range.getIntStep(), factory);
+            return cast.execute(inliningTarget, range.getIntStart(), range.getIntStop(), range.getIntStep(), factory);
         }
 
         @Specialization
-        PBigRange doBigRange(PBigRange range, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static PBigRange doBigRange(PBigRange range, @SuppressWarnings("unused") PythonObjectFactory factory) {
             return range;
         }
 
     }
 
-    @GenerateNodeFactory
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PRangeStartNode extends PNodeWithContext {
 
-        public abstract Object execute(PRange range);
+        public abstract Object execute(Node inliningTarget, PRange range);
 
         @Specialization
         Object doIntRange(PIntRange range) {
@@ -240,11 +247,12 @@ public abstract class RangeNodes {
 
     }
 
-    @GenerateNodeFactory
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PRangeStopNode extends PNodeWithContext {
 
-        public abstract Object execute(PRange range);
+        public abstract Object execute(Node inliningTarget, PRange range);
 
         @Specialization
         Object doIntRange(PIntRange range) {
@@ -258,11 +266,12 @@ public abstract class RangeNodes {
 
     }
 
-    @GenerateNodeFactory
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PRangeStepNode extends PNodeWithContext {
 
-        public abstract Object execute(PRange range);
+        public abstract Object execute(Node inliningTarget, PRange range);
 
         @Specialization
         Object doIntRange(PIntRange range) {
@@ -272,24 +281,6 @@ public abstract class RangeNodes {
         @Specialization
         Object doBigRange(PBigRange range) {
             return range.getStep();
-        }
-
-    }
-
-    @GenerateNodeFactory
-    @GenerateUncached
-    public abstract static class PRangeLengthNode extends PNodeWithContext {
-
-        public abstract Object execute(PRange range);
-
-        @Specialization
-        Object doIntRange(PIntRange range) {
-            return range.getIntLength();
-        }
-
-        @Specialization
-        Object doBigRange(PBigRange range) {
-            return range.getLength();
         }
 
     }

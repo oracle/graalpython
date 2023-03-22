@@ -138,20 +138,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         return right ? 1.0 : 0.0;
     }
 
-    private static double castToDoubleChecked(Object obj, CastToJavaDoubleNode cast) {
+    private static double castToDoubleChecked(Node inliningTarget, Object obj, CastToJavaDoubleNode cast) {
         try {
-            return cast.execute(obj);
+            return cast.execute(inliningTarget, obj);
         } catch (CannotCastException e) {
             throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "float", obj);
-        }
-    }
-
-    private static Object convertToDouble(Object obj, CastToJavaDoubleNode asDoubleNode) {
-        try {
-            return asDoubleNode.execute(obj);
-        } catch (CannotCastException e) {
-            // This can only happen to values that are expected to be long.
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -166,8 +157,9 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doDouble")
         Object doOther(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast) {
-            return op(castToDoubleChecked(object, cast));
+            return op(castToDoubleChecked(inliningTarget, object, cast));
         }
     }
 
@@ -186,13 +178,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doDD", "doDI"})
+        @SuppressWarnings("truffle-static-method")
         Object doOther(Object a, Object b,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast) {
             double aDouble, bDouble;
             try {
                 // Note the cast accepts integers too, which is what we want
-                aDouble = cast.execute(a);
-                bDouble = cast.execute(b);
+                aDouble = cast.execute(inliningTarget, a);
+                bDouble = cast.execute(inliningTarget, b);
             } catch (CannotCastException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -240,8 +234,9 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!formatString.isEmpty()")
         TruffleString formatPF(Object self, TruffleString formatString,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast) {
-            return doFormat(castToDoubleChecked(self, cast), formatString);
+            return doFormat(castToDoubleChecked(inliningTarget, self, cast), formatString);
         }
 
         @TruffleBoundary
@@ -283,7 +278,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
-            return pyLongFromDoubleNode.execute(inliningTarget, castToDoubleChecked(self, cast));
+            return pyLongFromDoubleNode.execute(inliningTarget, castToDoubleChecked(inliningTarget, self, cast));
         }
     }
 
@@ -406,7 +401,9 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
             if (!(mod instanceof PNone)) {
@@ -415,8 +412,8 @@ public final class FloatBuiltins extends PythonBuiltins {
 
             double leftDouble, rightDouble;
             try {
-                leftDouble = castToJavaDoubleNode.execute(left);
-                rightDouble = castToJavaDoubleNode.execute(right);
+                leftDouble = castToJavaDoubleNode.execute(inliningTarget, left);
+                rightDouble = castToJavaDoubleNode.execute(inliningTarget, right);
             } catch (CannotCastException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -579,9 +576,10 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString doDouble(Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(makeHexNumber(castToDoubleChecked(value, cast)), TS_ENCODING);
+            return fromJavaStringNode.execute(makeHexNumber(castToDoubleChecked(inliningTarget, value, cast)), TS_ENCODING);
         }
     }
 
@@ -661,20 +659,23 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(n)")
+        @SuppressWarnings("truffle-static-method")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @Cached CastToJavaDoubleNode cast,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CastToJavaDoubleNode cast,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            return round(castToDoubleChecked(x, cast), asSizeNode.executeLossy(frame, n));
+            return round(castToDoubleChecked(inliningTarget, x, cast), asSizeNode.executeLossy(frame, inliningTarget, n));
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         Object round(Object xObj, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToJavaDoubleNode cast,
+                        @Shared @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
                         @Cached InlinedConditionProfile isLongProfile) {
-            double x = castToDoubleChecked(xObj, cast);
+            double x = castToDoubleChecked(inliningTarget, xObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(x))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
@@ -712,18 +713,19 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "check.execute(inliningTarget, bObj)", replaces = "doDD", limit = "1")
         boolean doOO(Object aObj, Object bObj,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyFloatCheckNode check,
                         @Shared @Cached CastToJavaDoubleNode cast) {
-            double a = castToDoubleChecked(aObj, cast);
-            double b = castToDoubleChecked(bObj, cast);
+            double a = castToDoubleChecked(inliningTarget, aObj, cast);
+            double b = castToDoubleChecked(inliningTarget, bObj, cast);
             return op(a, b);
         }
 
         @Specialization(replaces = "doDI")
         boolean doOI(Object aObj, int b,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaDoubleNode cast) {
-            double a = castToDoubleChecked(aObj, cast);
+            double a = castToDoubleChecked(inliningTarget, aObj, cast);
             return op(a, b);
         }
 
@@ -732,21 +734,23 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile longFitsToDoubleProfile) {
-            double a = castToDoubleChecked(aObj, cast);
+            double a = castToDoubleChecked(inliningTarget, aObj, cast);
             return op(compareDoubleToLong(inliningTarget, a, b, longFitsToDoubleProfile), 0.0);
         }
 
         @Specialization
         boolean doOPInt(Object aObj, PInt b,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaDoubleNode cast) {
-            double a = castToDoubleChecked(aObj, cast);
+            double a = castToDoubleChecked(inliningTarget, aObj, cast);
             return op(compareDoubleToLargeInt(a, b), 0.0);
         }
 
         @Specialization
         boolean doOB(Object aObj, boolean b,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToJavaDoubleNode cast) {
-            double a = castToDoubleChecked(aObj, cast);
+            double a = castToDoubleChecked(inliningTarget, aObj, cast);
             return op(a, b ? 1 : 0);
         }
 
@@ -866,7 +870,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
-            return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(castToDoubleChecked(self, cast)));
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.floor(castToDoubleChecked(inliningTarget, self, cast)));
         }
     }
 
@@ -879,7 +883,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
-            return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(castToDoubleChecked(self, cast)));
+            return pyLongFromDoubleNode.execute(inliningTarget, Math.ceil(castToDoubleChecked(inliningTarget, self, cast)));
         }
     }
 
@@ -909,7 +913,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile) {
-            double self = castToDoubleChecked(selfObj, cast);
+            double self = castToDoubleChecked(inliningTarget, selfObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(self))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }

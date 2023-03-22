@@ -80,9 +80,11 @@ import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PythonCextListBuiltins {
@@ -118,6 +120,7 @@ public final class PythonCextListBuiltins {
 
         @Specialization
         Object doPList(PList list, long key,
+                        @Bind("this") Node inliningTarget,
                         @Cached PromoteBorrowedValue promoteNode,
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SetItemScalarNode setItemNode,
@@ -127,12 +130,12 @@ public final class PythonCextListBuiltins {
             if (key < 0 || key >= sequenceStorage.length()) {
                 throw raise(IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
             }
-            Object result = getItemNode.execute(sequenceStorage, (int) key);
+            Object result = getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
             Object promotedValue = promoteNode.execute(result);
             if (promotedValue != null) {
-                sequenceStorage = generalizationNode.execute(sequenceStorage, promotedValue);
+                sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 list.setSequenceStorage(sequenceStorage);
-                setItemNode.execute(sequenceStorage, (int) key, promotedValue);
+                setItemNode.execute(inliningTarget, sequenceStorage, (int) key, promotedValue);
                 return promotedValue;
             }
             return result;
@@ -182,9 +185,10 @@ public final class PythonCextListBuiltins {
     abstract static class PyList_GetSlice extends CApiTernaryBuiltinNode {
         @Specialization
         Object getSlice(PList list, Object iLow, Object iHigh,
+                        @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
                         @Cached PySliceNew sliceNode) {
-            return getItemNode.execute(null, list, sliceNode.execute(iLow, iHigh, PNone.NONE));
+            return getItemNode.execute(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
         }
 
         @Fallback
@@ -198,9 +202,10 @@ public final class PythonCextListBuiltins {
 
         @Specialization
         static int getSlice(PList list, Object iLow, Object iHigh, Object s,
+                        @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
                         @Cached PySliceNew sliceNode) {
-            setItemNode.execute(null, list, sliceNode.execute(iLow, iHigh, PNone.NONE), s);
+            setItemNode.execute(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE), s);
             return 0;
         }
 
@@ -295,13 +300,14 @@ public final class PythonCextListBuiltins {
     abstract static class _PyList_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
         int doManaged(PList list, long index, Object element,
+                        @Bind("this") Node inliningTarget,
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
                         @Cached ConditionProfile generalizedProfile) {
             SequenceStorage sequenceStorage = list.getSequenceStorage();
             checkBounds(sequenceStorage, index);
-            SequenceStorage newStorage = generalizationNode.execute(sequenceStorage, element);
-            setItemNode.execute(newStorage, (int) index, element);
+            SequenceStorage newStorage = generalizationNode.execute(inliningTarget, sequenceStorage, element);
+            setItemNode.execute(inliningTarget, newStorage, (int) index, element);
             if (generalizedProfile.profile(list.getSequenceStorage() != newStorage)) {
                 list.setSequenceStorage(newStorage);
             }

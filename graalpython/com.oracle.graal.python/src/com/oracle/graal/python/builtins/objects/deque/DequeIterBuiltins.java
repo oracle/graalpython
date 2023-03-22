@@ -62,10 +62,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDequeIter, PythonBuiltinClassType.PDequeRevIter})
 public final class DequeIterBuiltins extends PythonBuiltins {
@@ -132,8 +134,9 @@ public final class DequeIterBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple doGeneric(PDequeIter self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode) {
-            Object clazz = getClassNode.execute(self);
+            Object clazz = getClassNode.execute(inliningTarget, self);
             return factory().createTuple(new Object[]{clazz, factory().createTuple(new Object[]{self.deque, self.deque.getSize() - self.lengthHint()})});
         }
     }

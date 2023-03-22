@@ -191,11 +191,12 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString PyCField_repr(CFieldObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             int bits = self.size >> 16;
             int size = self.size & 0xFFFF;
-            TruffleString name = getNameNode.execute(self.proto);
+            TruffleString name = getNameNode.execute(inliningTarget, self.proto);
             if (bits != 0) {
                 return simpleTruffleStringFormatNode.format("<Field type=%s, ofs=%d:%d, bits=%d>", name, self.offset, size, bits);
             } else {
@@ -403,7 +404,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode) {
-            byte val = (byte) asLongNode.execute(frame, value);
+            byte val = (byte) asLongNode.execute(frame, inliningTarget, value);
             writeByteNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
@@ -413,7 +414,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
-            short val = (short) asLongNode.execute(frame, value);
+            short val = (short) asLongNode.execute(frame, inliningTarget, value);
             writeShortNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
@@ -423,7 +424,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
-            short val = (short) asLongNode.execute(frame, value);
+            short val = (short) asLongNode.execute(frame, inliningTarget, value);
             val = SWAP_2(val);
             writeShortNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
@@ -434,7 +435,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
-            int val = (int) asLongNode.execute(frame, value);
+            int val = (int) asLongNode.execute(frame, inliningTarget, value);
             writeIntNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
@@ -444,7 +445,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
-            int val = (int) asLongNode.execute(frame, value);
+            int val = (int) asLongNode.execute(frame, inliningTarget, value);
             val = SWAP_4(val);
             writeIntNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
@@ -461,7 +462,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
             short val;
-            if (!isTrueNode.execute(frame, value)) {
+            if (!isTrueNode.execute(frame, inliningTarget, value)) {
                 val = VARIANT_FALSE;
             } else {
                 val = VARIANT_TRUE;
@@ -475,7 +476,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode) {
-            byte val = (byte) (isTrueNode.execute(frame, value) ? 1 : 0);
+            byte val = (byte) (isTrueNode.execute(frame, inliningTarget, value) ? 1 : 0);
             writeByteNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
@@ -485,7 +486,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
-            long val = asLongNode.execute(frame, value);
+            long val = asLongNode.execute(frame, inliningTarget, value);
             writeLongNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
@@ -495,7 +496,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
-            long val = asLongNode.execute(frame, value);
+            long val = asLongNode.execute(frame, inliningTarget, value);
             val = SWAP_8(val);
             writeLongNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
@@ -510,7 +511,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
-            double x = asDoubleNode.execute(frame, value);
+            double x = asDoubleNode.execute(frame, inliningTarget, value);
             writeLongNode.execute(inliningTarget, ptr, Double.doubleToRawLongBits(x));
             return PNone.NONE;
         }
@@ -520,7 +521,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
-            writeLongNode.execute(inliningTarget, ptr, SWAP_8(Double.doubleToRawLongBits(asDoubleNode.execute(frame, value))));
+            writeLongNode.execute(inliningTarget, ptr, SWAP_8(Double.doubleToRawLongBits(asDoubleNode.execute(frame, inliningTarget, value))));
             return PNone.NONE;
         }
 
@@ -529,7 +530,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
-            float x = (float) asDoubleNode.execute(frame, value);
+            float x = (float) asDoubleNode.execute(frame, inliningTarget, value);
             writeIntNode.execute(inliningTarget, ptr, Float.floatToRawIntBits(x));
             return PNone.NONE;
         }
@@ -539,7 +540,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
-            writeIntNode.execute(inliningTarget, ptr, SWAP_4(Float.floatToRawIntBits((float) asDoubleNode.execute(frame, value))));
+            writeIntNode.execute(inliningTarget, ptr, SWAP_4(Float.floatToRawIntBits((float) asDoubleNode.execute(frame, inliningTarget, value))));
             return PNone.NONE;
         }
 
@@ -562,7 +563,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
             if (PGuards.isBytes(value)) {
                 PBytesLike bytes = (PBytesLike) value;
                 if (bytes.getSequenceStorage().length() == 1) {
-                    byte[] b = getBytes.execute(bytes.getSequenceStorage());
+                    byte[] b = getBytes.execute(inliningTarget, bytes.getSequenceStorage());
                     writeByteNode.execute(inliningTarget, ptr, b[0]);
                     return PNone.NONE;
                 }
@@ -590,7 +591,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
-            TruffleString str = switchEncodingNode.execute(toString.execute(value), WCHAR_T_ENCODING);
+            TruffleString str = switchEncodingNode.execute(toString.execute(inliningTarget, value), WCHAR_T_ENCODING);
             InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
             if (bytes.getLength() != WCHAR_T_SIZE) {
                 throw raiseNode.raise(TypeError, ErrorMessages.ONE_CHARACTER_UNICODE_EXPECTED);
@@ -611,7 +612,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
 
-            TruffleString str = switchEncodingNode.execute(toString.execute(value), WCHAR_T_ENCODING);
+            TruffleString str = switchEncodingNode.execute(toString.execute(inliningTarget, value), WCHAR_T_ENCODING);
             InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
             if (bytes.getLength() > size) {
                 throw raiseNode.raise(ValueError, ErrorMessages.STR_TOO_LONG, bytes.getLength(), size);
@@ -656,7 +657,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
-            } else if (longCheckNode.execute(value)) {
+            } else if (longCheckNode.execute(inliningTarget, value)) {
                 writePointerNode.execute(inliningTarget, ptr, pointerFromLongNode.execute(inliningTarget, value));
                 return PNone.NONE;
             }
@@ -691,7 +692,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
-            } else if (longCheckNode.execute(value)) {
+            } else if (longCheckNode.execute(inliningTarget, value)) {
                 writePointerNode.execute(inliningTarget, ptr, pointerFromLongNode.execute(inliningTarget, value));
                 return PNone.NONE;
             }
@@ -699,7 +700,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
             }
 
-            TruffleString str = switchEncodingNode.execute(toString.execute(value), WCHAR_T_ENCODING);
+            TruffleString str = switchEncodingNode.execute(toString.execute(inliningTarget, value), WCHAR_T_ENCODING);
             int byteLength = str.byteLength(WCHAR_T_ENCODING);
             byte[] bytes = new byte[byteLength + WCHAR_T_SIZE];
             copyToByteArrayNode.execute(str, 0, bytes, 0, byteLength, WCHAR_T_ENCODING);
@@ -720,7 +721,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
             Pointer valuePtr;
             if (value == PNone.NONE) {
                 valuePtr = Pointer.NULL;
-            } else if (longCheckNode.execute(value)) {
+            } else if (longCheckNode.execute(inliningTarget, value)) {
                 valuePtr = pointerFromLongNode.execute(inliningTarget, value);
             } else {
                 throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_BE_CONVERTED_TO_POINTER);

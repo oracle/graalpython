@@ -463,13 +463,15 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isInteger(arg)", "!isPNone(arg)"})
+        @SuppressWarnings("truffle-static-method")
         Object obj(VirtualFrame frame, PStringIO self, Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached TruffleString.SubstringNode substringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
-            int size = asSizeNode.executeExact(frame, indexNode.execute(frame, arg), OverflowError);
+            int size = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
                     return truncate(self, size, substringNode, toStringNode, appendStringNode);
@@ -609,12 +611,14 @@ public final class StringIOBuiltins extends PythonBuiltins {
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
+        @SuppressWarnings("truffle-static-method")
         Object doit(VirtualFrame frame, PStringIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetValueNode getValueNode,
                         @Cached GetOrCreateDictNode getDict) {
             Object initValue = getValueNode.execute(frame, self);
             Object readnl = self.getReadNewline() == null ? PNone.NONE : self.getReadNewline();
-            Object[] state = new Object[]{initValue, readnl, self.getPos(), getDict.execute(self)};
+            Object[] state = new Object[]{initValue, readnl, self.getPos(), getDict.execute(inliningTarget, self)};
             return factory().createTuple(state);
         }
     }
@@ -624,7 +628,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isClosed()"})
+        @SuppressWarnings("truffle-static-method")
         Object doit(VirtualFrame frame, PStringIO self, PTuple state,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached InitNode initNode,
                         @Cached CastToTruffleStringNode toString,
@@ -634,7 +640,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode) {
-            Object[] array = getArray.execute(state.getSequenceStorage());
+            Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             if (array.length < 4) {
                 return notTuple(self, state);
             }
@@ -647,7 +653,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
              * object's buffer completely.
              */
 
-            TruffleString buf = toString.execute(array[0]);
+            TruffleString buf = toString.execute(inliningTarget, array[0]);
             int bufsize = codePointLengthNode.execute(buf, TS_ENCODING);
             self.setRealized();
             TruffleStringBuilder newBuf = TruffleStringBuilder.create(TS_ENCODING, bufsize);
@@ -660,10 +666,10 @@ public final class StringIOBuiltins extends PythonBuiltins {
              * of modifying self->pos directly to better protect the object internal state against
              * erroneous (or malicious) inputs.
              */
-            if (!indexCheckNode.execute(array[2])) {
+            if (!indexCheckNode.execute(inliningTarget, array[2])) {
                 throw raise(TypeError, THIRD_ITEM_OF_STATE_MUST_BE_AN_INTEGER_GOT_P, array[2]);
             }
-            int pos = asSizeNode.executeExact(frame, array[2]);
+            int pos = asSizeNode.executeExact(frame, inliningTarget, array[2]);
             if (pos < 0) {
                 throw raise(ValueError, POSITION_VALUE_CANNOT_BE_NEGATIVE);
             }
@@ -678,8 +684,8 @@ public final class StringIOBuiltins extends PythonBuiltins {
                  * Alternatively, we could replace the internal dictionary completely. However, it
                  * seems more practical to just update it.
                  */
-                PDict dict = getDict.execute(self);
-                addAllToOtherNode.execute(frame, ((PDict) array[3]).getDictStorage(), dict.getDictStorage());
+                PDict dict = getDict.execute(inliningTarget, self);
+                addAllToOtherNode.execute(frame, inliningTarget, ((PDict) array[3]).getDictStorage(), dict.getDictStorage());
             }
 
             return PNone.NONE;
@@ -745,8 +751,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.hasDecoder()"})
         static Object doit(VirtualFrame frame, PStringIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getDecoder(), T_NEWLINES);
+            return getAttr.execute(frame, inliningTarget, self.getDecoder(), T_NEWLINES);
         }
     }
 
@@ -812,11 +819,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodReadline,
                         @Cached CastToTruffleStringNode toString) {
             self.realize();
-            Object res = callMethodReadline.execute(frame, self, T_READLINE);
+            Object res = callMethodReadline.execute(frame, inliningTarget, self, T_READLINE);
             if (!PGuards.isString(res)) {
                 throw raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, T_READLINE, res);
             }
-            TruffleString line = toString.execute(res);
+            TruffleString line = toString.execute(inliningTarget, res);
             if (line.isEmpty()) {
                 throw raiseStopIteration();
             }

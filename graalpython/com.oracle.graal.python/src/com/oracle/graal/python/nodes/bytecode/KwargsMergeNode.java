@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -56,6 +57,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
+@GenerateInline(false) // used in BCI root node
 public abstract class KwargsMergeNode extends AbstractKwargsNode {
     public abstract int execute(Frame frame, int stackTop);
 
@@ -63,7 +65,7 @@ public abstract class KwargsMergeNode extends AbstractKwargsNode {
     static int merge(VirtualFrame frame, int initialStackTop,
                     @Bind("this") Node inliningTarget,
                     @Cached ConcatDictToStorageNode concatNode,
-                    @Cached PRaiseNode raise,
+                    @Cached PRaiseNode.Lazy raise,
                     @Cached InlinedBranchProfile keywordsError1,
                     @Cached InlinedBranchProfile keywordsError2) {
         int stackTop = initialStackTop;
@@ -75,10 +77,10 @@ public abstract class KwargsMergeNode extends AbstractKwargsNode {
             dict.setDictStorage(resultStorage);
         } catch (SameDictKeyException e) {
             keywordsError1.enter(inliningTarget);
-            throw handleSameKey(frame, raise, stackTop, e);
+            throw handleSameKey(frame, raise.get(inliningTarget), stackTop, e);
         } catch (NonMappingException e) {
             keywordsError2.enter(inliningTarget);
-            throw handleNonMapping(frame, raise, stackTop, e);
+            throw handleNonMapping(frame, raise.get(inliningTarget), stackTop, e);
         }
         return stackTop;
     }

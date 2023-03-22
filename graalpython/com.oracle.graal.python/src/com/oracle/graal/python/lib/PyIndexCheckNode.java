@@ -46,17 +46,17 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -66,8 +66,14 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyIndexCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+    public static boolean executeUncached(Object object) {
+        return PyIndexCheckNodeGen.getUncached().execute(null, object);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     @Specialization
     static boolean doInt(@SuppressWarnings("unused") Integer object) {
@@ -83,10 +89,9 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
 
     @InliningCutoff
     @Specialization
-    static boolean doPythonObject(PythonAbstractObject object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared @Cached InlinedGetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+    static boolean doPythonObject(Node inliningTarget, PythonAbstractObject object,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
         return lookupIndex.execute(getClassNode.execute(inliningTarget, object)) != PNone.NO_VALUE;
     }
 
@@ -112,20 +117,16 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
 
     @InliningCutoff
     @Specialization(replaces = "doPythonObject")
-    static boolean doGeneric(Object object,
-                    @Bind("this") Node inliningTarget,
-                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Shared @Cached InlinedGetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+    static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached LazyInteropLibrary lazyInteropLibrary,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
-            return interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
+            InteropLibrary interop = lazyInteropLibrary.get(inliningTarget);
+            return interop.fitsInLong(object) ||
+                            interop.isBoolean(object);
         }
         return lookupIndex.execute(type) != PNone.NO_VALUE;
-    }
-
-    @NeverDefault
-    public static PyIndexCheckNode create() {
-        return PyIndexCheckNodeGen.create();
     }
 }

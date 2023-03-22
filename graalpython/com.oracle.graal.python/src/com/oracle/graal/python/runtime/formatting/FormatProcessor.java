@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -55,7 +55,6 @@ abstract class FormatProcessor<T> {
     /** see {@link #getArg()} for the meaning of this value. */
     private int argIndex = -1;
     private Object args;
-    private final PyObjectGetItem getItemNode;
     private final TupleBuiltins.GetItemNode getTupleItemNode;
 
     protected int index;
@@ -63,10 +62,9 @@ abstract class FormatProcessor<T> {
     protected final PRaiseNode raiseNode;
     protected final FormattingBuffer buffer;
 
-    public FormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
+    public FormatProcessor(Python3Core core, PRaiseNode raiseNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
         this.core = core;
         this.raiseNode = raiseNode;
-        this.getItemNode = getItemNode;
         this.getTupleItemNode = getTupleItemNode;
         this.buffer = buffer;
         index = 0;
@@ -93,7 +91,7 @@ abstract class FormatProcessor<T> {
     protected abstract boolean isMapping(Object obj);
 
     static Object lookupAttribute(Object owner, TruffleString name) {
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(owner), name);
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.executeUncached(owner), name);
     }
 
     static Object call(Object callable, Object... args) {
@@ -101,7 +99,7 @@ abstract class FormatProcessor<T> {
     }
 
     Object getItem(Object arg, Object arg2) {
-        return getItemNode.execute(null, arg, arg2);
+        return PyObjectGetItem.executeUncached(arg, arg2);
     }
 
     Object getArg() {
@@ -137,7 +135,7 @@ abstract class FormatProcessor<T> {
         if (c == '*') {
             Object o = getArg();
             try {
-                long value = CastToJavaLongLossyNode.getUncached().execute(o);
+                long value = CastToJavaLongLossyNode.executeUncached(o);
                 if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
                     throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
                 }
@@ -203,7 +201,7 @@ abstract class FormatProcessor<T> {
     }
 
     protected double asFloat(Object arg) {
-        return PyFloatAsDoubleNode.getUncached().execute(null, arg);
+        return PyFloatAsDoubleNode.executeUncached(arg);
     }
 
     protected abstract InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec);
@@ -255,7 +253,7 @@ abstract class FormatProcessor<T> {
 
         // We need to do a full subtype-check because native objects may inherit from tuple but have
         // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
-        final Object args1LazyClass = GetClassNode.getUncached().execute(args1);
+        final Object args1LazyClass = GetClassNode.executeUncached(args1);
         boolean tupleArgs = PGuards.isPTuple(args1) || isSubtype(args1LazyClass, PythonBuiltinClassType.PTuple);
         if (tupleArgs) {
             // We will simply work through the tuple elements
@@ -487,7 +485,7 @@ abstract class FormatProcessor<T> {
          * of range; if a special value, it would be wrong if it were -1, indicating a single item
          * that has not yet been used.
          */
-        if (argIndex == -1 || (argIndex >= 0 && PyObjectSizeNode.getUncached().execute(null, args1) >= argIndex + 1)) {
+        if (argIndex == -1 || (argIndex >= 0 && PyObjectSizeNode.executeUncached(args1) >= argIndex + 1)) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 

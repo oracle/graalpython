@@ -60,6 +60,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
+@GenerateInline(false) // used in BCI root node
 public abstract class ImportFromNode extends PNodeWithContext {
     private static final TruffleString T_UNKNOWN_LOCATION = tsLiteral("unknown location");
     private static final TruffleString T_UNKNOWN_MODULE_NAME = tsLiteral("<unknown module name>");
@@ -80,7 +82,7 @@ public abstract class ImportFromNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupAttr,
                     @Cached InlinedBranchProfile maybeCircularProfile) {
-        Object result = lookupAttr.execute(frame, module, name);
+        Object result = lookupAttr.execute(frame, inliningTarget, module, name);
         if (result != PNone.NO_VALUE) {
             return result;
         }
@@ -95,20 +97,20 @@ public abstract class ImportFromNode extends PNodeWithContext {
         TruffleString pkgname = T_UNKNOWN_MODULE_NAME;
         TruffleString pkgpath = T_UNKNOWN_LOCATION;
         try {
-            pkgnameObj = PyObjectGetAttr.getUncached().execute(null, module, T___NAME__);
-            pkgname = CastToTruffleStringNode.getUncached().execute(pkgnameObj);
+            pkgnameObj = PyObjectGetAttr.executeUncached(module, T___NAME__);
+            pkgname = CastToTruffleStringNode.executeUncached(pkgnameObj);
         } catch (PException | CannotCastException e) {
             pkgnameObj = null;
         }
         if (pkgnameObj != null) {
             TruffleString fullname = cat(pkgname, T_DOT, name);
-            Object imported = PyDictGetItem.getUncached().execute(null, getContext().getSysModules(), fullname);
+            Object imported = PyDictGetItem.executeUncached(getContext().getSysModules(), fullname);
             if (imported != null) {
                 return imported;
             }
             try {
-                pkgpathObj = PyObjectGetAttr.getUncached().execute(null, module, T___FILE__);
-                pkgpath = CastToTruffleStringNode.getUncached().execute(pkgpathObj);
+                pkgpathObj = PyObjectGetAttr.executeUncached(module, T___FILE__);
+                pkgpath = CastToTruffleStringNode.executeUncached(pkgpathObj);
             } catch (PException | CannotCastException e) {
                 pkgpathObj = null;
             }

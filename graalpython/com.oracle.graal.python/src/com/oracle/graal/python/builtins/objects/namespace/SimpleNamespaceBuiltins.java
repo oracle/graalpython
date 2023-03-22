@@ -137,8 +137,9 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     abstract static class SimpleNamespaceDictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getDict(PSimpleNamespace self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self);
+            return getDict.execute(inliningTarget, self);
         }
     }
 
@@ -147,9 +148,10 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     public abstract static class SimpleNamespaceEqNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object eq(VirtualFrame frame, PSimpleNamespace self, PSimpleNamespace other,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached DictBuiltins.EqNode eqNode) {
-            return eqNode.execute(frame, getDict.execute(self), getDict.execute(other));
+            return eqNode.execute(frame, getDict.execute(inliningTarget, self), getDict.execute(inliningTarget, other));
         }
 
         @Fallback
@@ -164,11 +166,12 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     public abstract static class SimpleNamespaceReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(PSimpleNamespace self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetOrCreateDictNode getDict) {
             PTuple args = factory().createEmptyTuple();
-            final PDict dict = getDict.execute(self);
-            return factory().createTuple(new Object[]{getClassNode.execute(self), args, dict});
+            final PDict dict = getDict.execute(inliningTarget, self);
+            return factory().createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, dict});
         }
     }
 
@@ -220,33 +223,34 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                 return limit;
             }
 
-            protected static TruffleString getReprString(Object obj,
+            protected static TruffleString getReprString(Node inliningTarget, Object obj,
                             LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode reprNode,
                             CastToTruffleStringNode castStr,
                             PRaiseNode raiseNode) {
                 Object reprObj = reprNode.executeObject(obj, T___REPR__);
                 try {
-                    return castStr.execute(reprObj);
+                    return castStr.execute(inliningTarget, reprObj);
                 } catch (CannotCastException e) {
                     throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
                 }
             }
 
             @Override
-            public abstract NSReprState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, NSReprState state);
+            public abstract NSReprState execute(Frame frame, Node node, HashingStorage storage, HashingStorageIterator it, NSReprState state);
 
             @Specialization
-            public static NSReprState doPStringKey(@SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, NSReprState state,
+            public static NSReprState doPStringKey(@SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, NSReprState state,
+                            @Bind("this") Node inliningTarget,
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStrKey,
                             @Cached CastToTruffleStringNode castStrValue,
                             @Cached PRaiseNode raiseNode,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageGetItem getItem) {
-                Object keyObj = itKey.execute(storage, it);
+                Object keyObj = itKey.execute(inliningTarget, storage, it);
                 if (PGuards.isString(keyObj)) {
-                    TruffleString key = castStrKey.execute(keyObj);
-                    TruffleString valueReprString = getReprString(getItem.execute(state.dictStorage, key), valueReprNode, castStrValue, raiseNode);
+                    TruffleString key = castStrKey.execute(inliningTarget, keyObj);
+                    TruffleString valueReprString = getReprString(inliningTarget, getItem.execute(inliningTarget, state.dictStorage, key), valueReprNode, castStrValue, raiseNode);
                     appendItem(state, key, valueReprString);
                 }
                 return state;
@@ -269,8 +273,8 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached HashingStorageForEach forEachNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            final Object klass = getClassNode.execute(ns);
-            final TruffleString name = clsProfile.profileClass(inliningTarget, klass, PythonBuiltinClassType.PSimpleNamespace) ? T_NAMESPACE : getNameNode.execute(klass);
+            final Object klass = getClassNode.execute(inliningTarget, ns);
+            final TruffleString name = clsProfile.profileClass(inliningTarget, klass, PythonBuiltinClassType.PSimpleNamespace) ? T_NAMESPACE : getNameNode.execute(inliningTarget, klass);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, name);
             appendStringNode.execute(sb, T_LPAREN);
@@ -280,9 +284,9 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                 return toStringNode.execute(sb);
             }
             try {
-                HashingStorage dictStorage = getDict.execute(ns).getDictStorage();
+                HashingStorage dictStorage = getDict.execute(inliningTarget, ns).getDictStorage();
                 final NSReprState state = new NSReprState(dictStorage);
-                forEachNode.execute(null, dictStorage, consumerNode, state);
+                forEachNode.execute(null, inliningTarget, dictStorage, consumerNode, state);
                 state.appendToTruffleStringBuilder(sb, appendStringNode);
                 appendStringNode.execute(sb, T_RPAREN);
                 return toStringNode.execute(sb);

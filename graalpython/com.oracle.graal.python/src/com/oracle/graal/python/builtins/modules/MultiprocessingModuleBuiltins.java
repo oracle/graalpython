@@ -92,6 +92,7 @@ import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -122,23 +123,25 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructSemLockNode extends PythonBuiltinNode {
         @Specialization
         PSemLock construct(Object cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castNameNode,
                         @Cached CastToJavaIntExactNode castKindToIntNode,
                         @Cached CastToJavaIntExactNode castValueToIntNode,
                         @Cached CastToJavaIntExactNode castMaxvalueToIntNode,
                         @Cached CastToJavaIntExactNode castUnlinkToIntNode) {
-            int kind = castKindToIntNode.execute(kindObj);
+            int kind = castKindToIntNode.execute(inliningTarget, kindObj);
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
             }
-            int value = castValueToIntNode.execute(valueObj);
-            castMaxvalueToIntNode.execute(maxvalueObj); // executed for the side-effect, but ignored
-                                                        // on posix
+            int value = castValueToIntNode.execute(inliningTarget, valueObj);
+            castMaxvalueToIntNode.execute(inliningTarget, maxvalueObj); // executed for the
+                                                                        // side-effect, but ignored
+            // on posix
             Semaphore semaphore = newSemaphore(value);
-            int unlink = castUnlinkToIntNode.execute(unlinkObj);
+            int unlink = castUnlinkToIntNode.execute(inliningTarget, unlinkObj);
             TruffleString name;
             try {
-                name = castNameNode.execute(nameObj);
+                name = castNameNode.execute(inliningTarget, nameObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "SemLock", 4, "str", nameObj);
             }
@@ -183,6 +186,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
         long spawn(int fd, int sentinel, PList keepFds,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
             SequenceStorage storage = keepFds.getSequenceStorage();
@@ -190,7 +194,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
             int[] keep = new int[length];
             for (int i = 0; i < length; i++) {
                 Object item = getItem.execute(storage, i);
-                keep[i] = castToJavaIntNode.execute(item);
+                keep[i] = castToJavaIntNode.execute(inliningTarget, item);
             }
             PythonContext context = getContext();
             long tid = context.spawnTruffleContext(fd, sentinel, keep);
@@ -289,7 +293,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object doWrite(int fd, PBytes data,
                         @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
-                        @Cached GilNode gil) {
+                        @Shared @Cached GilNode gil) {
             SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             gil.release(true);
             try {
@@ -310,7 +314,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object doWrite(long fd, PBytes data,
                         @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
-                        @Cached GilNode gil) {
+                        @Shared @Cached GilNode gil) {
             return doWrite((int) fd, data, bufferLib, gil);
         }
     }
@@ -320,7 +324,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doRead(int fd, @SuppressWarnings("unused") Object length,
-                        @Cached GilNode gil) {
+                        @Shared @Cached GilNode gil) {
             SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             gil.release(true);
             try {
@@ -338,7 +342,7 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doRead(long fd, Object length,
-                        @Cached GilNode gil) {
+                        @Shared @Cached GilNode gil) {
             return doRead((int) fd, length, gil);
         }
     }
@@ -396,21 +400,21 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             SharedMultiprocessingData sharedData = context.getSharedMultiprocessingData();
 
-            PSequence pSequence = constructListNode.execute(frame, multiprocessingFdsList);
-            int size = sizeNode.execute(frame, pSequence);
+            PSequence pSequence = constructListNode.execute(frame, inliningTarget, multiprocessingFdsList);
+            int size = sizeNode.execute(frame, inliningTarget, pSequence);
             int[] multiprocessingFds = new int[size];
             for (int i = 0; i < size; i++) {
-                Object pythonObject = getItem.execute(frame, pSequence, i);
-                multiprocessingFds[i] = toInt(castToJava, pythonObject);
+                Object pythonObject = getItem.execute(frame, inliningTarget, pSequence, i);
+                multiprocessingFds[i] = toInt(inliningTarget, castToJava, pythonObject);
             }
 
             Object[] posixFileObjs = getObjectArrayNode.execute(inliningTarget, posixFileObjsList);
             int[] posixFds = new int[posixFileObjs.length];
             for (int i = 0; i < posixFileObjs.length; i++) {
-                posixFds[i] = toInt(castToJava, fdConvertor.execute(frame, posixFileObjs[i]));
+                posixFds[i] = toInt(inliningTarget, castToJava, fdConvertor.execute(frame, posixFileObjs[i]));
             }
 
-            double timeout = castToDouble.execute(timeoutObj);
+            double timeout = castToDouble.execute(inliningTarget, timeoutObj);
 
             Object[] multiprocessingObjs = getObjectArrayNode.execute(inliningTarget, multiprocessingObjsList);
             gil.release(true);
@@ -440,9 +444,9 @@ public final class MultiprocessingModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static int toInt(CastToJavaIntLossyNode castToJava, Object pythonObject) {
+        private static int toInt(Node inliningTarget, CastToJavaIntLossyNode castToJava, Object pythonObject) {
             try {
-                return castToJava.execute(pythonObject);
+                return castToJava.execute(inliningTarget, pythonObject);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }

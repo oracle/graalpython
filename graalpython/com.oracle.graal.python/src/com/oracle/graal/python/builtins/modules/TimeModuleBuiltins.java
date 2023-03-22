@@ -273,13 +273,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         static long doObject(VirtualFrame frame, Node inliningTarget, Object obj,
                         @Shared @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached(inline = false) CastToJavaDoubleNode castToDouble,
-                        @Cached(inline = false) PyLongAsLongNode asLongNode) {
+                        @Cached CastToJavaDoubleNode castToDouble,
+                        @Cached PyLongAsLongNode asLongNode) {
             long t;
             try {
-                t = (long) castToDouble.execute(obj);
+                t = (long) castToDouble.execute(inliningTarget, obj);
             } catch (CannotCastException e) {
-                t = asLongNode.execute(frame, obj);
+                t = asLongNode.execute(frame, inliningTarget, obj);
             }
             check(inliningTarget, t, raiseNode);
             return t;
@@ -542,10 +542,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isInteger(secondsObj)")
-        Object sleepObj(VirtualFrame frame, PythonModule self, Object secondsObj,
+        static Object sleepObj(VirtualFrame frame, PythonModule self, Object secondsObj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached SleepNode recursive) {
-            return recursive.execute(frame, self, asDoubleNode.execute(frame, secondsObj));
+            return recursive.execute(frame, self, asDoubleNode.execute(frame, inliningTarget, secondsObj));
         }
 
         protected static boolean isPositive(double t) {
@@ -616,17 +617,17 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return PythonUtils.formatJString("%02d:%02d:%02d", date[TM_HOUR], date[TM_MIN], date[TM_SEC]);
         }
 
-        protected static int[] checkStructtime(VirtualFrame frame, PTuple time,
+        protected static int[] checkStructtime(VirtualFrame frame, Node inliningTarget, PTuple time,
                         SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         PyNumberAsSizeNode asSizeNode,
                         PRaiseNode raise) {
-            Object[] otime = getInternalObjectArrayNode.execute(time.getSequenceStorage());
+            Object[] otime = getInternalObjectArrayNode.execute(inliningTarget, time.getSequenceStorage());
             if (time.getSequenceStorage().length() != 9) {
                 throw raise.raise(TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
             }
             int[] date = new int[9];
             for (int i = 0; i < 9; i++) {
-                date[i] = asSizeNode.executeExact(frame, otime[i]);
+                date[i] = asSizeNode.executeExact(frame, inliningTarget, otime[i]);
             }
 
             // This is specific to java
@@ -942,7 +943,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         public TruffleString formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, TruffleString format, PTuple time,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
@@ -951,7 +954,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            int[] date = checkStructtime(frame, time, getArray, asSizeNode, getRaiseNode());
+            int[] date = checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, getRaiseNode());
             return format(toJavaStringNode.execute(format), date, fromJavaStringNode);
         }
 
@@ -984,7 +987,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
             int[] integers = new int[ELEMENT_COUNT];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
-                integers[i] = asSizeNode.executeExact(frame, items[i]);
+                integers[i] = asSizeNode.executeExact(frame, inliningTarget, items[i]);
             }
             ZoneId zoneId = (ZoneId) readZoneId.execute(module, CURRENT_ZONE_ID);
             return op(zoneId, integers);
@@ -1040,11 +1043,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         public TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, PTuple time,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return format(StrfTimeNode.checkStructtime(frame, time, getArray, asSizeNode, getRaiseNode()), fromJavaStringNode);
+            return format(StrfTimeNode.checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, getRaiseNode()), fromJavaStringNode);
         }
 
         @Fallback
@@ -1142,10 +1147,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object strptime(VirtualFrame frame, TruffleString dataString, TruffleString format,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyImportImport importNode,
                         @Cached PyObjectCallMethodObjArgs callNode) {
-            final Object module = importNode.execute(frame, T_MOD_STRPTIME);
-            return callNode.execute(frame, module, T_FUNC_STRPTIME_TIME, dataString, format);
+            final Object module = importNode.execute(frame, inliningTarget, T_MOD_STRPTIME);
+            return callNode.execute(frame, inliningTarget, module, T_FUNC_STRPTIME_TIME, dataString, format);
         }
     }
 }

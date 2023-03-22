@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,11 +67,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeTranslateError)
@@ -89,6 +91,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object initNoArgs(PBaseException self, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
@@ -98,10 +101,10 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
                             null, // placeholder for object so we do not redefine the access indexes
                                   // for the other attributes, although this exception does not have
                                   // an encoding set
-                            getArgAsString(args, 0, this, toStringNode),
-                            getArgAsInt(args, 1, this, toJavaIntExactNode),
-                            getArgAsInt(args, 2, this, toJavaIntExactNode),
-                            getArgAsString(args, 3, this, toStringNode)
+                            getArgAsString(inliningTarget, args, 0, this, toStringNode),
+                            getArgAsInt(inliningTarget, args, 1, this, toJavaIntExactNode),
+                            getArgAsInt(inliningTarget, args, 2, this, toJavaIntExactNode),
+                            getArgAsString(inliningTarget, args, 3, this, toStringNode)
             });
             return PNone.NONE;
         }
@@ -112,6 +115,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
     public abstract static class UnicodeTranslateErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString str(VirtualFrame frame, PBaseException self,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -125,10 +129,10 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
 
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
-            final TruffleString object = toStringNode.execute(attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString object = toStringNode.execute(inliningTarget, attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY));
             final int start = attrNode.getInt(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
-            final TruffleString reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
+            final TruffleString reason = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
             if (start < codePointLengthNode.execute(object, TS_ENCODING) && end == start + 1) {
                 final int badChar = codePointAtIndexNode.execute(object, start, TS_ENCODING);
                 String badCharStr;

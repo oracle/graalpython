@@ -42,6 +42,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -51,6 +52,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
@@ -75,7 +77,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         if (name instanceof HiddenKey || !PythonContext.get(null).isCoreInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
-            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, name), this);
+            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(name), this);
         }
     }
 
@@ -117,13 +119,14 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isMetaInstance(Object instance,
+                    @Bind("$node") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Shared("convert") @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
+            return isSubtype.execute(getClassNode.execute(inliningTarget, convert.executeConvert(instance)), this);
         } finally {
             gil.release(mustRelease);
         }

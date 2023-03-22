@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 public final class PStringReverseIterator extends PBuiltinIterator {
     public final TruffleString value;

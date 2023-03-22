@@ -110,11 +110,12 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isRaw(format)", "validFormat(format)", "!isPNone(memlimitObj)"})
         PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, Object memlimitObj, @SuppressWarnings("unused") PNone filters,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
             int memlimit;
             try {
-                memlimit = cast.execute(memlimitObj);
+                memlimit = cast.execute(inliningTarget, memlimitObj);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
@@ -197,7 +198,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
-            byte[] bytes = toBytes.execute(data.getSequenceStorage());
+            byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
             return factory().createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
 

@@ -49,11 +49,12 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttribu
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -67,12 +68,22 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Equivalent PyObject_GetAttr*. Like Python, this method raises when the attribute doesn't exist.
  */
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetAttr extends Node {
-    public abstract Object execute(Frame frame, Object receiver, Object name);
+    public static Object executeUncached(Object receiver, Object name) {
+        return PyObjectGetAttr.getUncached().execute(null, null, receiver, name);
+    }
 
-    public final Object execute(Object receiver, Object name) {
-        return execute(null, receiver, name);
+    public final Object executeCached(Frame frame, Object receiver, Object name) {
+        return execute(frame, this, receiver, name);
+    }
+
+    public abstract Object execute(Frame frame, Node inliningTarget, Object receiver, Object name);
+
+    public final Object execute(Node inliningTarget, Object receiver, Object name) {
+        return execute(null, inliningTarget, receiver, name);
     }
 
     @Specialization(guards = "name == cachedName", limit = "1")
@@ -84,16 +95,15 @@ public abstract class PyObjectGetAttr extends Node {
 
     @InliningCutoff
     @Specialization(replaces = "getFixedAttr")
-    static Object getDynamicAttr(Frame frame, Object receiver, Object name,
-                    @Bind("this") Node inliningTarget,
-                    @Cached InlinedGetClassNode getClass,
-                    @Cached(parameters = "GetAttribute") LookupSpecialMethodSlotNode lookupGetattribute,
-                    @Cached(parameters = "GetAttr") LookupSpecialMethodSlotNode lookupGetattr,
-                    @Cached CallBinaryMethodNode callGetattribute,
-                    @Cached CallBinaryMethodNode callGetattr,
+    static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, Object name,
+                    @Cached GetClassNode getClass,
+                    @Cached(parameters = "GetAttribute", inline = false) LookupSpecialMethodSlotNode lookupGetattribute,
+                    @Cached(parameters = "GetAttr", inline = false) LookupSpecialMethodSlotNode lookupGetattr,
+                    @Cached(inline = false) CallBinaryMethodNode callGetattribute,
+                    @Cached(inline = false) CallBinaryMethodNode callGetattr,
                     @Cached IsBuiltinObjectProfile errorProfile,
-                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
         if (!callGetattribute.isAdoptable()) {

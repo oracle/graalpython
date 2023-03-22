@@ -80,8 +80,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -95,6 +95,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -132,7 +134,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 splitArgsNode = insert(SplitArgsNode.create());
             }
-            Object[] argsWithoutSelf = splitArgsNode.execute(arguments);
+            Object[] argsWithoutSelf = splitArgsNode.executeCached(arguments);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 
@@ -210,7 +212,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return getCauseNode.execute(inliningTarget, self);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
+        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"}, limit = "1")
         public static Object setCause(Object self, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -227,7 +229,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
+        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"}, limit = "1")
         public static Object cause(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -246,7 +248,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return getContextNode.execute(inliningTarget, self);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"})
+        @Specialization(guards = {"!isNoValue(value)", "check.execute(inliningTarget, value)"}, limit = "1")
         public static Object setContext(Object self, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -263,7 +265,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
+        @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"}, limit = "1")
         public static Object context(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
@@ -291,13 +293,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBoolean(valueObj)")
+        @SuppressWarnings("truffle-static-method")
         public Object setSuppressContext(Object self, Object valueObj,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
             boolean value;
             try {
-                value = castToJavaBooleanNode.execute(valueObj);
+                value = castToJavaBooleanNode.execute(inliningTarget, valueObj);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
@@ -365,15 +368,17 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PNone dict(Object self, PDict mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetDictNode setDict) {
-            setDict.execute(self, mapping);
+            setDict.execute(inliningTarget, self, mapping);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNoValue(mapping)")
-        Object dict(Object self, @SuppressWarnings("unused") PNone mapping,
+        static Object dict(Object self, @SuppressWarnings("unused") PNone mapping,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetOrCreateDictNode getDict) {
-            return getDict.execute(self);
+            return getDict.execute(inliningTarget, self);
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
@@ -388,7 +393,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetArgsNode argsNode,
                         @Cached DictNode dictNode) {
             Object clazz = getClassNode.execute(inliningTarget, self);
@@ -408,7 +413,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile oneArgProfile,
                         @Cached InlinedBranchProfile moreArgsProfile,
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CastToTruffleStringNode castStringNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
@@ -417,17 +422,17 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
+            appendStringNode.execute(sb, castStringNode.execute(inliningTarget, getAttrNode.execute(frame, inliningTarget, type, T___NAME__)));
             PTuple args = getArgsNode.execute(inliningTarget, self);
             SequenceStorage argsStorage = args.getSequenceStorage();
             if (argsStorage.length() == 1) {
                 oneArgProfile.enter(inliningTarget);
                 appendStringNode.execute(sb, T_LPAREN);
-                appendStringNode.execute(sb, reprNode.execute(frame, getItemScalarNode.execute(argsStorage, 0)));
+                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, getItemScalarNode.execute(inliningTarget, argsStorage, 0)));
                 appendStringNode.execute(sb, T_RPAREN);
             } else if (argsStorage.length() > 1) {
                 moreArgsProfile.enter(inliningTarget);
-                appendStringNode.execute(sb, reprNode.execute(frame, args));
+                appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, args));
             } else {
                 noArgsProfile.enter(inliningTarget);
                 appendStringNode.execute(sb, T_EMPTY_PARENS);
@@ -452,10 +457,10 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             SequenceStorage argsStorage = args.getSequenceStorage();
             if (argsStorage.length() == 1) {
                 oneArgProfile.enter(inliningTarget);
-                return strNode.execute(frame, getItemScalarNode.execute(argsStorage, 0));
+                return strNode.execute(frame, inliningTarget, getItemScalarNode.execute(inliningTarget, argsStorage, 0));
             } else if (argsStorage.length() > 1) {
                 moreArgsProfile.enter(inliningTarget);
-                return strNode.execute(frame, args);
+                return strNode.execute(frame, inliningTarget, args);
             } else {
                 noArgsProfile.enter(inliningTarget);
                 return T_EMPTY_STRING;
@@ -478,29 +483,33 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @ImportStatic(PGuards.class)
+        @GenerateInline
+        @GenerateCached(false)
         abstract static class ForEachKW extends HashingStorageForEachCallback<ExcState> {
             @Override
-            public abstract ExcState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ExcState state);
+            public abstract ExcState execute(Frame frame, Node node, HashingStorage storage, HashingStorageIterator it, ExcState state);
 
             @Specialization
-            public static ExcState doIt(Frame frame, @SuppressWarnings("unused") Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ExcState state,
+            public static ExcState doIt(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageIterator it, ExcState state,
+                            @Bind("this") Node inliningTarget,
                             @Cached PyObjectSetAttr setAttr,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorKeyHash itKeyHash,
                             @Cached HashingStorageGetItemWithHash getItem) {
-                Object key = itKey.execute(storage, it);
-                Object value = getItem.execute(frame, state.dictStorage, key, itKeyHash.execute(storage, it));
-                setAttr.execute(frame, state.exception, key, value);
+                Object key = itKey.execute(inliningTarget, storage, it);
+                Object value = getItem.execute(frame, inliningTarget, state.dictStorage, key, itKeyHash.execute(inliningTarget, storage, it));
+                setAttr.execute(frame, inliningTarget, state.exception, key, value);
                 return state;
             }
         }
 
         @Specialization
-        Object setDict(VirtualFrame frame, Object self, PDict state,
+        static Object setDict(VirtualFrame frame, Object self, PDict state,
+                        @Bind("this") Node inliningTarget,
                         @Cached ForEachKW forEachKW,
                         @Cached HashingStorageForEach forEachNode) {
             final HashingStorage dictStorage = state.getDictStorage();
-            forEachNode.execute(frame, dictStorage, forEachKW, new ExcState(dictStorage, self));
+            forEachNode.execute(frame, inliningTarget, dictStorage, forEachKW, new ExcState(dictStorage, self));
             return PNone.NONE;
         }
 

@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.modules.io;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EncodingWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
+import static com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.T_INCREMENTALDECODER;
+import static com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.T_INCREMENTALENCODER;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_GETSTATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
@@ -76,6 +78,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.MakeIncrementalcodecNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -171,11 +174,13 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = "!self.isFileIO()")
+        @SuppressWarnings("truffle-static-method")
         void checkGeneric(VirtualFrame frame, PTextIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            Object res = getAttr.execute(frame, self.getBuffer(), T_CLOSED);
-            if (isTrueNode.execute(frame, res)) {
+            Object res = getAttr.execute(frame, inliningTarget, self.getBuffer(), T_CLOSED);
+            if (isTrueNode.execute(frame, inliningTarget, res)) {
                 error(self);
             }
         }
@@ -192,11 +197,12 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasPendingBytes()")
         static void writeflush(VirtualFrame frame, PTextIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             byte[] pending = self.getAndClearPendingBytes();
             PBytes b = factory.createBytes(pending);
-            callMethod.execute(frame, self.getBuffer(), T_WRITE, b);
+            callMethod.execute(frame, inliningTarget, self.getBuffer(), T_WRITE, b);
             // TODO: check _PyIO_trap_eintr
         }
     }
@@ -483,6 +489,7 @@ public abstract class TextIOWrapperNodes {
         public abstract boolean execute(VirtualFrame frame, PTextIO self, int size_hint);
 
         @Specialization(guards = "self.hasDecoder()")
+        @SuppressWarnings("truffle-static-method")
         boolean readChunk(VirtualFrame frame, PTextIO self, int hint,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
@@ -506,7 +513,7 @@ public abstract class TextIOWrapperNodes {
                  * To prepare for tell(), we need to snapshot a point in the file where the
                  * decoder's input buffer is empty.
                  */
-                Object state = callMethodGetState.execute(frame, self.getDecoder(), T_GETSTATE);
+                Object state = callMethodGetState.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
                 /*
                  * Given this, we know there was a valid snapshot point len(decBuffer) bytes ago
                  * with decoder state (b'', decFlags).
@@ -536,9 +543,9 @@ public abstract class TextIOWrapperNodes {
 
             Object inputChunk;
             if (self.isHasRead1()) {
-                inputChunk = callMethodRead.execute(frame, self.getBuffer(), T_READ1, chunkSize);
+                inputChunk = callMethodRead.execute(frame, inliningTarget, self.getBuffer(), T_READ1, chunkSize);
             } else {
-                inputChunk = callMethodRead.execute(frame, self.getBuffer(), T_READ, chunkSize);
+                inputChunk = callMethodRead.execute(frame, inliningTarget, self.getBuffer(), T_READ, chunkSize);
             }
 
             Object inputChunkBuf;
@@ -575,7 +582,7 @@ public abstract class TextIOWrapperNodes {
                     bufferLib.readIntoByteArray(decBuffer, 0, nextInput, 0, decBufferLen);
                     bufferLib.readIntoByteArray(inputChunkBuf, 0, nextInput, decBufferLen, nbytes);
                     self.setSnapshotNextInput(nextInput);
-                    self.setSnapshotDecFlags(asSizeNode.executeExact(frame, decFlags));
+                    self.setSnapshotDecFlags(asSizeNode.executeExact(frame, inliningTarget, decFlags));
                 }
 
                 return !eof;
@@ -605,10 +612,11 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         TruffleString decodeGeneric(VirtualFrame frame, Object decoder, Object o, boolean eof,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castNode,
                         @Cached PyObjectCallMethodObjArgs callMethodDecode) {
-            Object decoded = callMethodDecode.execute(frame, decoder, T_DECODE, o, eof);
-            return castNode.cast(decoded, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);
+            Object decoded = callMethodDecode.execute(frame, inliningTarget, decoder, T_DECODE, o, eof);
+            return castNode.cast(inliningTarget, decoded, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);
         }
     }
 
@@ -634,15 +642,17 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.hasDecoder()", "isAtInit(cookie)"})
         static void atInit(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReset) {
-            callMethodReset.execute(frame, self.getDecoder(), T_RESET);
+            callMethodReset.execute(frame, inliningTarget, self.getDecoder(), T_RESET);
         }
 
         @Specialization(guards = {"self.hasDecoder()", "!isAtInit(cookie)"})
         static void decoderSetstate(VirtualFrame frame, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
             PTuple tuple = factory.createTuple(new Object[]{factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY), cookie.decFlags});
-            callMethodSetState.execute(frame, self.getDecoder(), T_SETSTATE, tuple);
+            callMethodSetState.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, tuple);
 
         }
     }
@@ -658,8 +668,9 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasDecoder()")
         static void reset(VirtualFrame frame, PTextIO self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            callMethod.execute(frame, self.getDecoder(), T_RESET);
+            callMethod.execute(frame, inliningTarget, self.getDecoder(), T_RESET);
         }
     }
 
@@ -669,15 +680,17 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "startOfStream")
         static void encoderResetStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReset) {
-            callMethodReset.execute(frame, self.getEncoder(), T_RESET);
+            callMethodReset.execute(frame, inliningTarget, self.getEncoder(), T_RESET);
             self.setEncodingStartOfStream(true);
         }
 
         @Specialization(guards = "!startOfStream")
         static void encoderResetNotStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
+                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
-            callMethodSetState.execute(frame, self.getEncoder(), T_SETSTATE, 0);
+            callMethodSetState.execute(frame, inliningTarget, self.getEncoder(), T_SETSTATE, 0);
             self.setEncodingStartOfStream(false);
 
         }
@@ -700,14 +713,14 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.isSeekable()", "self.hasEncoder()"})
         static void fixEncoderState(VirtualFrame frame, @SuppressWarnings("unused") Node inliningTarget, PTextIO self,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodTell,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodSetState,
-                        @Cached(inline = false) PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached PyObjectCallMethodObjArgs callMethodTell,
+                        @Cached PyObjectCallMethodObjArgs callMethodSetState,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             self.setEncodingStartOfStream(true);
-            Object cookieObj = callMethodTell.execute(frame, self.getBuffer(), T_TELL);
-            if (!eqNode.execute(frame, cookieObj, 0)) {
+            Object cookieObj = callMethodTell.execute(frame, inliningTarget, self.getBuffer(), T_TELL);
+            if (!eqNode.compare(frame, inliningTarget, cookieObj, 0)) {
                 self.setEncodingStartOfStream(false);
-                callMethodSetState.execute(frame, self.getEncoder(), T_SETSTATE, 0);
+                callMethodSetState.execute(frame, inliningTarget, self.getEncoder(), T_SETSTATE, 0);
             }
         }
     }
@@ -723,16 +736,16 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         static void setDecoder(VirtualFrame frame, Node inliningTarget, PTextIO self, Object codecInfo, TruffleString errors,
-                        @Cached(inline = false) CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
+                        @Cached(inline = false) MakeIncrementalcodecNode makeIncrementalcodecNode,
                         @Cached InlinedConditionProfile isTrueProfile,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodReadable,
-                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
+                        @Cached PyObjectCallMethodObjArgs callMethodReadable,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached(inline = false) PythonObjectFactory factory) {
-            Object res = callMethodReadable.execute(frame, self.getBuffer(), T_READABLE);
-            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
+            Object res = callMethodReadable.execute(frame, inliningTarget, self.getBuffer(), T_READABLE);
+            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, res))) {
                 return;
             }
-            Object decoder = getIncrementalDecoderNode.execute(frame, codecInfo, errors);
+            Object decoder = makeIncrementalcodecNode.execute(frame, codecInfo, errors, T_INCREMENTALDECODER);
             if (self.isReadUniversal()) {
                 PNLDecoder incDecoder = factory.createNLDecoder(PIncrementalNewlineDecoder);
                 IncrementalNewlineDecoderBuiltins.InitNode.internalInit(incDecoder, decoder, self.isReadTranslate());
@@ -754,17 +767,17 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization
         static void setEncoder(VirtualFrame frame, Node inliningTarget, PTextIO self, Object codecInfo, TruffleString errors,
-                        @Cached(inline = false) CodecsTruffleModuleBuiltins.GetIncrementalEncoderNode getIncrementalEncoderNode,
+                        @Cached(inline = false) MakeIncrementalcodecNode makeIncrementalcodecNode,
                         @Cached InlinedConditionProfile isTrueProfile,
-                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodWritable) {
-            Object res = callMethodWritable.execute(frame, self.getBuffer(), T_WRITABLE);
-            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyObjectCallMethodObjArgs callMethodWritable) {
+            Object res = callMethodWritable.execute(frame, inliningTarget, self.getBuffer(), T_WRITABLE);
+            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, res))) {
                 return;
             }
             self.setEncoder(null);
             self.setEncodefunc(null);
-            self.setEncoder(getIncrementalEncoderNode.execute(frame, codecInfo, errors));
+            self.setEncoder(makeIncrementalcodecNode.execute(frame, codecInfo, errors, T_INCREMENTALENCODER));
             // TODO: find encoder function
             // res = libCodecInfo.lookupAttributeStrict(codecInfo, frame, NAME);
             // self.setEncodefunc(null);
@@ -787,9 +800,9 @@ public abstract class TextIOWrapperNodes {
                         @Cached SetEncoderNode setEncoderNode,
                         @Cached SetDecoderNode setDecoderNode,
                         @Cached FixEncoderStateNode fixEncoderStateNode,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethodSeekable,
-                        @Cached(inline = false) PyObjectLookupAttr lookup,
-                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
+                        @Cached PyObjectCallMethodObjArgs callMethodSeekable,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode,
@@ -864,11 +877,11 @@ public abstract class TextIOWrapperNodes {
                 }
             }
 
-            Object res = callMethodSeekable.execute(frame, buffer, T_SEEKABLE);
-            self.setTelling(isTrueNode.execute(frame, res));
+            Object res = callMethodSeekable.execute(frame, inliningTarget, buffer, T_SEEKABLE);
+            self.setTelling(isTrueNode.execute(frame, inliningTarget, res));
             self.setSeekable(self.isTelling());
 
-            self.setHasRead1(lookup.execute(frame, buffer, T_READ1) != PNone.NO_VALUE);
+            self.setHasRead1(lookup.execute(frame, inliningTarget, buffer, T_READ1) != PNone.NO_VALUE);
 
             self.setEncodingStartOfStream(false);
             fixEncoderStateNode.execute(frame, inliningTarget, self);

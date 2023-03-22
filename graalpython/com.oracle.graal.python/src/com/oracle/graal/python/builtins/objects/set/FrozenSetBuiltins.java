@@ -89,14 +89,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)")
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)", limit = "1")
         public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltin") @SuppressWarnings("unused") @Cached IsAnyBuiltinObjectProfile isBuiltinClass) {
             return arg;
         }
 
-        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinObject(inliningTarget, arg)", limit = "1")
         public PFrozenSet subFrozensetIdentity(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared("isBuiltin") @SuppressWarnings("unused") @Cached IsAnyBuiltinObjectProfile isBuiltinClass) {
@@ -112,16 +112,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+                        @Bind("this") Node inliningTarget,
                         @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
-            HashingStorage storage = intersectNode.execute(frame, left.getDictStorage(), right.getDictStorage());
+            HashingStorage storage = intersectNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(storage);
         }
 
         @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
-            HashingStorage storage = intersectNode.execute(frame, left.getDictStorage(), getHashingStorageNode.execute(frame, right));
+            HashingStorage storage = intersectNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
             return factory().createSet(storage);
         }
 
@@ -142,25 +144,27 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         PBaseSet doCached(VirtualFrame frame, PFrozenSet self, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached("args.length") int len,
-                        @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageIntersect intersectNode) {
-            HashingStorage result = copyNode.execute(self.getDictStorage());
+                        @Shared @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Shared @Cached HashingStorageCopy copyNode,
+                        @Shared @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
-                result = intersectNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
+                result = intersectNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
             return factory().createFrozenSet(result);
         }
 
         @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PFrozenSet self, Object[] args,
-                        @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageIntersect intersectNode) {
-            HashingStorage result = copyNode.execute(self.getDictStorage());
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Shared @Cached HashingStorageCopy copyNode,
+                        @Shared @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
-                result = intersectNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
+                result = intersectNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
             return factory().createFrozenSet(result);
         }
@@ -170,10 +174,12 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isOther(other)")
+        @SuppressWarnings("truffle-static-method")
         PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @Cached HashingStorageIntersect intersectNode) {
-            HashingStorage result = intersectNode.execute(frame, self.getDictStorage(), getHashingStorage.execute(frame, other));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Shared @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = intersectNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, other));
             return factory().createFrozenSet(result);
         }
     }
@@ -186,18 +192,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+                        @Bind("this") Node inliningTarget,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
-            HashingStorage storage = left.getDictStorage().union(right.getDictStorage(), copyNode, addAllToOther);
+            HashingStorage storage = left.getDictStorage().union(inliningTarget, right.getDictStorage(), copyNode, addAllToOther);
             return factory().createFrozenSet(storage);
         }
 
         @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
-            HashingStorage storage = left.getDictStorage().union(getHashingStorageNode.execute(frame, right), copyNode, addAllToOther);
+            HashingStorage storage = left.getDictStorage().union(inliningTarget, getHashingStorageNode.execute(frame, inliningTarget, right), copyNode, addAllToOther);
             return factory().createSet(storage);
         }
 
@@ -215,16 +223,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+                        @Bind("this") Node inliningTarget,
                         @Shared("xor") @Cached HashingStorageXor xorNode) {
-            HashingStorage storage = xorNode.execute(frame, left.getDictStorage(), right.getDictStorage());
+            HashingStorage storage = xorNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(storage);
         }
 
         @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared("xor") @Cached HashingStorageXor xorNode) {
-            HashingStorage storage = xorNode.execute(frame, left.getDictStorage(), getHashingStorageNode.execute(frame, right));
+            HashingStorage storage = xorNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
             return factory().createSet(storage);
         }
 
@@ -240,9 +250,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorage,
                         @Cached HashingStorageXor xorNode) {
-            HashingStorage result = xorNode.execute(frame, self.getDictStorage(), getHashingStorage.execute(frame, other));
+            HashingStorage result = xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
             return factory().createFrozenSet(result);
         }
     }
@@ -255,16 +266,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+                        @Bind("this") Node inliningTarget,
                         @Shared("diffNode") @Cached HashingStorageDiff diffNode) {
-            HashingStorage storage = diffNode.execute(frame, left.getDictStorage(), right.getDictStorage());
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(storage);
         }
 
         @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @Shared("diffNode") @Cached HashingStorageDiff diffNode) {
-            HashingStorage storage = diffNode.execute(frame, left.getDictStorage(), getHashingStorageNode.execute(frame, right));
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
             return factory().createSet(storage);
         }
 
@@ -285,25 +298,27 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         PBaseSet doCached(VirtualFrame frame, PFrozenSet self, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached("args.length") int len,
-                        @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageDiff diffNode) {
-            HashingStorage result = copyNode.execute(self.getDictStorage());
+                        @Shared @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Shared @Cached HashingStorageCopy copyNode,
+                        @Shared @Cached HashingStorageDiff diffNode) {
+            HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
-                result = diffNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
+                result = diffNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
             return factory().createFrozenSet(result);
         }
 
         @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PFrozenSet self, Object[] args,
-                        @Cached GetHashingStorageNode getHashingStorageNode,
-                        @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageDiff diffNode) {
-            HashingStorage result = copyNode.execute(self.getDictStorage());
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Shared @Cached HashingStorageCopy copyNode,
+                        @Shared @Cached HashingStorageDiff diffNode) {
+            HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
-                result = diffNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
+                result = diffNode.execute(frame, inliningTarget, result, getHashingStorageNode.execute(frame, inliningTarget, args[i]));
             }
             return factory().createFrozenSet(result);
         }
@@ -314,9 +329,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isOther(other)")
         PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @Cached HashingStorageDiff diffNode) {
-            HashingStorage result = diffNode.execute(frame, self.getDictStorage(), getHashingStorage.execute(frame, other));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Shared @Cached HashingStorageDiff diffNode) {
+            HashingStorage result = diffNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, other));
             return factory().createFrozenSet(result);
         }
     }
@@ -327,25 +343,27 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         PBaseSet doCached(VirtualFrame frame, PBaseSet self, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached("args.length") int len,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageAddAllToOther addAllToOther) {
-            HashingStorage result = copyNode.execute(self.getDictStorage());
+                        @Shared @Cached GetHashingStorageNode getHashingStorage,
+                        @Shared @Cached HashingStorageCopy copyNode,
+                        @Shared @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
-                result = addAllToOther.execute(frame, getHashingStorage.execute(frame, args[i]), result);
+                result = addAllToOther.execute(frame, inliningTarget, getHashingStorage.execute(frame, inliningTarget, args[i]), result);
             }
             return factory().createFrozenSet(result);
         }
 
         @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PBaseSet self, Object[] args,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageAddAllToOther addAllToOther) {
-            HashingStorage result = copyNode.execute(self.getDictStorage());
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetHashingStorageNode getHashingStorage,
+                        @Shared @Cached HashingStorageCopy copyNode,
+                        @Shared @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
-                result = addAllToOther.execute(frame, getHashingStorage.execute(frame, args[i]), result);
+                result = addAllToOther.execute(frame, inliningTarget, getHashingStorage.execute(frame, inliningTarget, args[i]), result);
             }
             return factory().createFrozenSet(result);
         }
@@ -363,6 +381,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         public static long computeHash(VirtualFrame frame, PFrozenSet self,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorKey iterKey,
@@ -376,11 +395,11 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             long hash = 0;
 
             int len = 0;
-            HashingStorageIterator it = getIter.execute(storage);
-            while (iterNext.execute(storage, it)) {
+            HashingStorageIterator it = getIter.execute(inliningTarget, storage);
+            while (iterNext.execute(inliningTarget, storage, it)) {
                 len++;
-                Object key = iterKey.execute(storage, it);
-                long tmp = hashNode.execute(frame, key);
+                Object key = iterKey.execute(inliningTarget, storage, it);
+                long tmp = hashNode.execute(frame, inliningTarget, key);
                 hash ^= shuffleBits(tmp);
             }
 

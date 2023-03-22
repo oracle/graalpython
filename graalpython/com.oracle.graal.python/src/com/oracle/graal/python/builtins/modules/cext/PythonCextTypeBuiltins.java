@@ -107,6 +107,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -275,10 +276,11 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         static int classMethod(Object methodDefPtr, Object type, Object dict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
+                        @Bind("this") Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Cached PyDictSetDefault setDefault) {
             Object func = newClassMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, type, doc);
-            setDefault.execute(null, dict, name, func);
+            setDefault.execute(null, inliningTarget, dict, name, func);
             return 0;
         }
     }
@@ -378,10 +380,11 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
+                        @Bind("this") Node inliningTarget,
                         @Cached CreateGetSetNode createGetSetNode,
                         @Cached PyDictSetDefault setDefault) {
             GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure);
-            setDefault.execute(null, dict, name, descr);
+            setDefault.execute(null, inliningTarget, dict, name, descr);
             return 0;
         }
     }

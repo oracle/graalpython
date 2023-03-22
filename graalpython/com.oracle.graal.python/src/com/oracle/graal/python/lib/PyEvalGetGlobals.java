@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,25 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyEval_GetGlobals}.
  */
-public abstract class PyEvalGetGlobals extends PNodeWithState {
-    public abstract Object execute(VirtualFrame frame);
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyEvalGetGlobals extends Node {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget);
 
     @Specialization
-    Object doGeneric(VirtualFrame frame,
-                    @Cached ReadCallerFrameNode readCallerFrameNode) {
+    static Object doGeneric(VirtualFrame frame,
+                    @Cached(inline = false) ReadCallerFrameNode readCallerFrameNode) {
         return readCallerFrameNode.executeWith(frame, 0).getGlobals();
     }
 }

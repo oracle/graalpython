@@ -47,18 +47,23 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Casts a Python integer to a Java long without coercion. <b>ATTENTION:</b> If the cast isn't
  * possible, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
 
-    public static CastToJavaLongExactNode getUncached() {
-        return CastToJavaLongExactNodeGen.getUncached();
+    public static long executeUncached(Object x) throws CannotCastException {
+        return CastToJavaLongExactNodeGen.getUncached().execute(null, x);
     }
 
     @Specialization(rewriteOn = OverflowException.class)
@@ -67,12 +72,12 @@ public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
     }
 
     @Specialization(replaces = "toLongNoOverflow")
-    protected static long toLong(PInt x,
-                    @Cached PRaiseNode raiseNode) {
+    protected static long toLong(Node inliningTarget, PInt x,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         try {
             return x.longValueExact();
         } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
+            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
         }
     }
 }

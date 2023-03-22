@@ -131,7 +131,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -140,6 +141,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -180,14 +182,14 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(iterable)")
         static PNone doIterable(VirtualFrame frame, PDeque self, Object iterable, @SuppressWarnings("unused") PNone maxlen,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile sizeZeroProfile,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Shared @Cached InlinedConditionProfile sizeZeroProfile,
+                        @Shared @Cached PyObjectGetIter getIter,
+                        @Shared @Cached GetNextNode getNextNode,
+                        @Shared @Cached IsBuiltinObjectProfile isStopIterationProfile) {
             if (sizeZeroProfile.profile(inliningTarget, self.getSize() != 0)) {
                 self.clear();
             }
-            Object iterator = getIter.execute(frame, iterable);
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
                 try {
                     self.append(getNextNode.execute(frame, iterator));
@@ -200,17 +202,18 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doNothing", "doIterable"})
+        @SuppressWarnings("truffle-static-method")
         PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlenObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile sizeZeroProfile,
+                        @Shared @Cached InlinedConditionProfile sizeZeroProfile,
                         @Cached CastToJavaIntExactNode castToIntNode,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile isTypeErrorProfile,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Shared @Cached PyObjectGetIter getIter,
+                        @Shared @Cached GetNextNode getNextNode,
+                        @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile,
+                        @Shared @Cached IsBuiltinObjectProfile isStopIterationProfile) {
             if (!PGuards.isPNone(maxlenObj)) {
                 try {
-                    int maxlen = castToIntNode.execute(maxlenObj);
+                    int maxlen = castToIntNode.execute(inliningTarget, maxlenObj);
                     if (maxlen < 0) {
                         throw raise(ValueError, ErrorMessages.MAXLEN_MUST_BE_NONNEG);
                     }
@@ -295,7 +298,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         PDeque doGeneric(PDeque self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode) {
+                        @Cached GetClassNode getClassNode) {
             PDeque copy = factory().createDeque(getClassNode.execute(inliningTarget, self));
             copy.setMaxLength(self.getMaxLength());
             copy.addAll(self);
@@ -314,7 +317,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             int n = 0;
             int startState = self.getState();
             for (Object item : self.data) {
-                if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, item, value)) {
+                if (PyObjectRichCompareBool.EqNode.compareUncached(item, value)) {
                     n++;
                 }
                 if (startState != self.getState()) {
@@ -328,6 +331,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     // deque.extend()
     @Builtin(name = J_EXTEND, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @SuppressWarnings("truffle-static-method")
     public abstract static class DequeExtendNode extends PythonBinaryBuiltinNode {
 
         void appendOperation(PDeque self, Object item) {
@@ -356,7 +360,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                 return doSelf(self, self);
             }
 
-            Object it = getIter.execute(frame, other);
+            Object it = getIter.execute(frame, inliningTarget, other);
             if (maxLenZeroProfile.profile(inliningTarget, self.getMaxLength() == 0)) {
                 consumeIterator(frame, it, getNextNode, inliningTarget, isStopIterationProfile);
                 return PNone.NONE;
@@ -398,16 +402,19 @@ public final class DequeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "v", "start", "stop"})
     @GenerateNodeFactory
+    @SuppressWarnings("truffle-static-method")
     public abstract static class DequeIndexNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization(guards = {"isNoValue(start)", "isNoValue(stop)"})
         int doWithoutSlice(VirtualFrame frame, PDeque self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop,
+                        @Bind("this") Node inliningTarget,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            return doWithIntSlice(frame, self, value, 0, self.getSize(), eqNode);
+            return doWithIntSlice(frame, self, value, 0, self.getSize(), inliningTarget, eqNode);
         }
 
         @Specialization
         int doWithIntSlice(VirtualFrame frame, PDeque self, Object value, int start, int stop,
+                        @Bind("this") Node inliningTarget,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
             int size = self.getSize();
             int normStart = normalize(start, size);
@@ -427,7 +434,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                  */
                 Object item = next(iterator);
                 if (normStart <= idx) {
-                    if (eqNode.execute(frame, item, value)) {
+                    if (eqNode.compare(frame, inliningTarget, item, value)) {
                         return idx;
                     }
                     if (startState != self.getState()) {
@@ -440,6 +447,7 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         int doGeneric(VirtualFrame frame, PDeque self, Object value, Object start, Object stop,
+                        @Bind("this") Node inliningTarget,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached PyNumberAsSizeNode startIndexNode,
@@ -447,16 +455,16 @@ public final class DequeBuiltins extends PythonBuiltins {
             int istart;
             int istop;
             if (start != PNone.NO_VALUE) {
-                istart = castToIntNode.execute(startIndexNode.executeLossy(frame, start));
+                istart = castToIntNode.execute(inliningTarget, startIndexNode.executeLossy(frame, inliningTarget, start));
             } else {
                 istart = 0;
             }
             if (stop != PNone.NO_VALUE) {
-                istop = castToIntNode.execute(stopIndexNode.executeLossy(frame, stop));
+                istop = castToIntNode.execute(inliningTarget, stopIndexNode.executeLossy(frame, inliningTarget, stop));
             } else {
                 istop = self.getSize();
             }
-            return doWithIntSlice(frame, self, value, istart, istop, eqNode);
+            return doWithIntSlice(frame, self, value, istart, istop, inliningTarget, eqNode);
         }
 
         private static int normalize(int i, int size) {
@@ -553,7 +561,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             int n = self.getSize();
             for (int i = 0; i < n; i++) {
                 try {
-                    boolean result = PyObjectRichCompareBool.EqNode.getUncached().execute(null, self.peekLeft(), value);
+                    boolean result = PyObjectRichCompareBool.EqNode.compareUncached(self.peekLeft(), value);
                     if (n != self.getSize()) {
                         throw PRaiseNode.raiseUncached(this, IndexError, DEQUE_MUTATED_DURING_REMOVE);
                     }
@@ -680,7 +688,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PDeque doOther(VirtualFrame frame, PDeque self, Object other,
+        static PDeque doOther(VirtualFrame frame, PDeque self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
@@ -693,7 +701,7 @@ public final class DequeBuiltins extends PythonBuiltins {
              * Funnily, CPython's implementation 'deque_inplace_concat' also allows to concat
              * non-deque objects (whereas 'deque_concat' just accepts deque objects).
              */
-            Object iterator = getIter.execute(frame, other);
+            Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
                 try {
                     self.append(getNextNode.execute(frame, iterator));
@@ -816,7 +824,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         boolean doGeneric(PDeque self, Object value) {
             int startState = self.getState();
             for (Object item : self.data) {
-                if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, item, value)) {
+                if (PyObjectRichCompareBool.EqNode.compareUncached(item, value)) {
                     return true;
                 }
                 if (startState != self.getState()) {
@@ -945,9 +953,9 @@ public final class DequeBuiltins extends PythonBuiltins {
                 PList asList = PythonObjectFactory.getUncached().createList(items);
                 int maxLength = self.getMaxLength();
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-                sb.appendStringUncached(GetNameNode.getUncached().execute(InlinedGetClassNode.executeUncached(self)));
+                sb.appendStringUncached(GetNameNode.executeUncached(GetPythonObjectClassNode.executeUncached(self)));
                 sb.appendStringUncached(T_LPAREN);
-                sb.appendStringUncached(PyObjectStrAsTruffleStringNode.getUncached().execute(null, asList));
+                sb.appendStringUncached(PyObjectStrAsTruffleStringNode.executeUncached(asList));
                 if (maxLength != -1) {
                     sb.appendStringUncached(toTruffleStringUncached(", maxlen="));
                     sb.appendIntNumberUncached(maxLength);
@@ -971,14 +979,14 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached InlinedConditionProfile profile) {
             Object clazz = getPythonClass(inliningTarget, getClassNode.execute(inliningTarget, self), profile);
-            Object dict = lookupAttr.execute(frame, self, T___DICT__);
-            if (PGuards.isNoValue(dict) || sizeNode.execute(frame, dict) <= 0) {
+            Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
+            if (PGuards.isNoValue(dict) || sizeNode.execute(frame, inliningTarget, dict) <= 0) {
                 dict = PNone.NONE;
             }
-            Object it = getIter.execute(frame, self);
+            Object it = getIter.execute(frame, inliningTarget, self);
             PTuple emptyTuple = factory().createEmptyTuple();
             int maxLength = self.getMaxLength();
             if (maxLength != -1) {
@@ -989,6 +997,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
     }
 
+    @SuppressWarnings("truffle-static-method")
     public abstract static class DequeCompareNode extends PythonBinaryBuiltinNode {
 
         @Child PyObjectRichCompareBool.EqNode eqNode;
@@ -1026,8 +1035,8 @@ public final class DequeBuiltins extends PythonBuiltins {
                 return false;
             }
 
-            Object ait = getIterSelf.execute(frame, self);
-            Object bit = getIterOther.execute(frame, otherDeque);
+            Object ait = getIterSelf.execute(frame, inliningTarget, self);
+            Object bit = getIterOther.execute(frame, inliningTarget, otherDeque);
             while (true) {
                 try {
                     Object selfItem = selfItNextNode.execute(frame, ait);
@@ -1061,7 +1070,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 eqNode = insert(PyObjectRichCompareBool.EqNode.create());
             }
-            return eqNode.execute(frame, selfItem, otherItem);
+            return eqNode.compareCached(frame, selfItem, otherItem);
         }
 
         @SuppressWarnings("unused")
@@ -1110,7 +1119,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isTrueNode = insert(PyObjectIsTrueNode.create());
             }
-            return isTrueNode.execute(frame, comparisonNode.executeObject(frame, selfItem, otherItem));
+            return isTrueNode.executeCached(frame, comparisonNode.executeObject(frame, selfItem, otherItem));
         }
 
         BinaryComparisonNode createCmp() {

@@ -52,9 +52,10 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -63,12 +64,17 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class SetDictNode extends PNodeWithContext {
-    public abstract void execute(Object object, PDict dict);
+    public abstract void execute(Node inliningTarget, Object object, PDict dict);
+
+    public static void executeUncached(Object object, PDict dict) {
+        SetDictNodeGen.getUncached().execute(null, object, dict);
+    }
 
     @Specialization
-    static void doPythonClass(PythonClass object, PDict dict,
-                    @Bind("this") Node inliningTarget,
+    static void doPythonClass(Node inliningTarget, PythonClass object, PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
                     @Cached InlinedBranchProfile hasMroShapeProfile) {
         object.setDictHiddenProp(inliningTarget, dylib, hasMroShapeProfile, dict);
@@ -86,7 +92,7 @@ public abstract class SetDictNode extends PNodeWithContext {
                     @Cached PythonToNativeNode dictToSulong,
                     @Cached CExtNodes.PCallCapiFunction callGetDictNode,
                     @Cached CheckPrimitiveFunctionResultNode checkResult) {
-        assert !IsTypeNode.getUncached().execute(object);
+        assert !IsTypeNode.executeUncached(object);
         PythonContext context = getContext();
         Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToSulong.execute(object), dictToSulong.execute(dict), context.getNativeNull().getPtr());
         checkResult.execute(context, FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
@@ -94,9 +100,5 @@ public abstract class SetDictNode extends PNodeWithContext {
 
     protected static boolean isPythonClass(Object object) {
         return object instanceof PythonClass;
-    }
-
-    public static SetDictNode getUncached() {
-        return SetDictNodeGen.getUncached();
     }
 }

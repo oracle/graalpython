@@ -75,7 +75,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -96,7 +96,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
@@ -105,6 +104,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
 @GenerateUncached
+@GenerateInline(false) // footprint reduction 48 -> 29
 public abstract class CreateArgumentsNode extends PNodeWithContext {
     public abstract Object[] execute(PMethodBase callable, Object[] userArguments, PKeyword[] keywords);
 
@@ -113,9 +113,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     public abstract Object[] execute(PBuiltinFunction callable, Object[] userArguments, PKeyword[] keywords);
 
     @Specialization(guards = {"isSingleContext()", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
-    Object[] doMethodCached(@SuppressWarnings("unused") PMethodBase method, Object[] userArguments, PKeyword[] keywords,
+    static Object[] doMethodCached(@SuppressWarnings("unused") PMethodBase method, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached(value = "method", weak = true) PMethodBase cachedMethod) {
 
         CompilerAsserts.partialEvaluationConstant(getFunction(cachedMethod));
@@ -132,9 +132,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     @Specialization(guards = {"isSingleContext()", "getFunction(method) == cachedFunction",
                     "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached")
-    Object[] doMethodFunctionAndSelfCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
+    static Object[] doMethodFunctionAndSelfCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction,
                     @Cached(value = "method.getSelf()", weak = true) Object cachedSelf,
                     @Cached(value = "getClassObject(method)", weak = true) Object cachedClassObject) {
@@ -146,9 +146,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isSingleContext()", "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached")
-    Object[] doMethodFunctionCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
+    static Object[] doMethodFunctionCached(PMethodBase method, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction) {
         // Following getters should fold since getFunction(cachedMethod) is constant
         Signature signature = GetSignatureNode.getFunctionSignatureSingleContext(inliningTarget, cachedFunction);
@@ -160,9 +160,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isSingleContext()", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
-    Object[] doFunctionCached(PFunction callable, Object[] userArguments, PKeyword[] keywords,
+    static Object[] doFunctionCached(PFunction callable, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PFunction cachedCallable) {
         Signature signature = CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, cachedCallable);
         Object[] defaults = cachedCallable.getDefaults();
@@ -171,9 +171,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isSingleContext()", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
-    Object[] doBuiltinFunctionCached(PBuiltinFunction callable, Object[] userArguments, PKeyword[] keywords,
+    static Object[] doBuiltinFunctionCached(PBuiltinFunction callable, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PBuiltinFunction cachedCallable) {
 
         Signature signature = cachedCallable.getSignature();
@@ -184,19 +184,19 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     @Specialization(guards = {"getCt.execute(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
                     "doFunctionCached"})
-    Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
+    static Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
-                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
+                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Exclusive @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
                     // signatures are attached to PRootNodes
                     @Cached("getSignatureNode.execute(inliningTarget, callable)") Signature signature,
                     @Cached InlinedConditionProfile gotMethod,
-                    @Cached GetDefaultsNode getDefaultsNode,
-                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Exclusive @Cached GetDefaultsNode getDefaultsNode,
+                    @Exclusive @Cached GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached("getCt.execute(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
         Object[] defaults = getDefaultsNode.execute(inliningTarget, callable);
-        PKeyword[] kwdefaults = getKwDefaultsNode.execute(callable);
+        PKeyword[] kwdefaults = getKwDefaultsNode.execute(inliningTarget, callable);
         Object self = null;
         Object classObject = null;
         if (gotMethod.profile(inliningTarget, PGuards.isMethod(callable))) {
@@ -207,19 +207,19 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached", "doCallTargetCached"})
-    Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
+    static Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached GetSignatureNode getSignatureNode,
-                    @Cached GetDefaultsNode getDefaultsNode,
-                    @Cached GetKeywordDefaultsNode getKwDefaultsNode) {
+                    @Exclusive @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Exclusive @Cached GetSignatureNode getSignatureNode,
+                    @Exclusive @Cached GetDefaultsNode getDefaultsNode,
+                    @Exclusive @Cached GetKeywordDefaultsNode getKwDefaultsNode) {
 
         // mostly we will be calling proper functions directly here,
         // but sometimes also methods that have functions directly.
         // In all other cases, the arguments... TODO: unfinished comment?
         Signature signature = getSignatureNode.execute(inliningTarget, callable);
         Object[] defaults = getDefaultsNode.execute(inliningTarget, callable);
-        PKeyword[] kwdefaults = getKwDefaultsNode.execute(callable);
+        PKeyword[] kwdefaults = getKwDefaultsNode.execute(inliningTarget, callable);
         Object self = getSelf(callable);
         Object classObject = getClassObject(callable);
         boolean methodcall = !(self instanceof PythonModule);
@@ -379,17 +379,18 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // Error handler that we explicitly do not want to inline
     protected abstract static class HandleTooManyArgumentsNode extends PNodeWithContext {
 
         public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
                         int adjustCount);
 
-        @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount", "cachedKwOnlyArgCount <= 32"})
+        @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount", "cachedKwOnlyArgCount <= 32"}, limit = "3")
         @ExplodeLoop
         static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
-                        @Cached PRaiseNode raise,
-                        @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached TruffleString.EqualNode equalNode,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
             int kwonly_given = 0;
             for (int i = 0; i < cachedKwOnlyArgCount; i++) {
@@ -404,8 +405,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "doCached")
         static PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
-                        @Cached PRaiseNode raise,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached TruffleString.EqualNode equalNode) {
             int kwonly_given = 0;
             for (int i = 0; i < co_kwonlyargcount; i++) {
                 if (PArguments.getArgument(scope_w, co_argcount + i) != null) {
@@ -480,8 +481,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(guards = "checkEnclosingType(signature, callable)")
         static void doEnclosingTypeCheck(Node inliningTarget, @SuppressWarnings("unused") Signature signature, PBuiltinFunction callable, @SuppressWarnings("unused") Object[] scope_w,
                         @Bind("getSelf(scope_w)") Object self,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeMRONode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(inline = false) IsSubtypeNode isSubtypeMRONode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!isSubtypeMRONode.execute(getClassNode.execute(inliningTarget, self), callable.getEnclosingType())) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -555,22 +556,24 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
      */
     // TODO qualified name is a workaround for a DSL bug
     @com.oracle.truffle.api.dsl.GenerateUncached
+    @GenerateInline(false) // Intentionally lazy
     protected abstract static class ApplyKeywordsNode extends PNodeWithContext {
         public abstract Object[] execute(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords);
 
-        @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"})
+        @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"}, limit = "3")
         @ExplodeLoop
-        Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+        static Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise,
+                        // TODO: GR-46101 make lazy once this Truffle DSL issue is fixed
+                        @Shared @Cached PRaiseNode raise,
                         @Cached("keywords.length") int kwLen,
                         @SuppressWarnings("unused") @Cached("calleeSignature") Signature cachedSignature,
                         @Cached("cachedSignature.takesVarKeywordArgs()") boolean takesVarKwds,
                         @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) TruffleString[] parameters,
                         @Cached("parameters.length") int positionalParamNum,
                         @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) TruffleString[] kwNames,
-                        @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
-                        @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
+                        @Exclusive @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
+                        @Exclusive @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
             PKeyword[] unusedKeywords = takesVarKwds ? PKeyword.create(kwLen) : null;
@@ -583,9 +586,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
                 TruffleString name = kwArg.getName();
-                int kwIdx = searchParamNode.execute(parameters, name);
+                int kwIdx = searchParamNode.execute(inliningTarget, parameters, name);
                 if (kwIdx == -1) {
-                    int kwOnlyIdx = searchKwNode.execute(kwNames, name);
+                    int kwOnlyIdx = searchKwNode.execute(inliningTarget, kwNames, name);
                     if (kwOnlyIdx != -1) {
                         kwOnlyIdxFoundProfile.enter(inliningTarget);
                         kwIdx = kwOnlyIdx + positionalParamNum;
@@ -618,11 +621,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "applyCached")
-        Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+        static Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raise,
-                        @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
-                        @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
+                        @Shared @Cached PRaiseNode raise,
+                        @Exclusive @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
+                        @Exclusive @Cached InlinedBranchProfile kwOnlyIdxFoundProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
             TruffleString[] parameters = calleeSignature.getParameterIds();
@@ -639,9 +642,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
                 TruffleString name = kwArg.getName();
-                int kwIdx = searchParamNode.execute(parameters, name);
+                int kwIdx = searchParamNode.execute(inliningTarget, parameters, name);
                 if (kwIdx == -1) {
-                    int kwOnlyIdx = searchKwNode.execute(kwNames, name);
+                    int kwOnlyIdx = searchKwNode.execute(inliningTarget, kwNames, name);
                     if (kwOnlyIdx != -1) {
                         kwOnlyIdxFoundProfile.enter(inliningTarget);
                         kwIdx = kwOnlyIdx + positionalParamNum;
@@ -701,8 +704,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @GenerateUncached
+        @GenerateInline
+        @GenerateCached(false)
         protected abstract static class SearchNamedParameterNode extends Node {
-            public abstract int execute(TruffleString[] parameters, TruffleString name);
+            public abstract int execute(Node inliningTarget, TruffleString[] parameters, TruffleString name);
 
             @Idempotent // I think this is true, I would just like the assertion
             protected static boolean nameIsAtIndex(TruffleString[] parameters, TruffleString name, int index) {
@@ -714,16 +719,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             static int cachedSingle(TruffleString[] parameters, TruffleString name,
                             @Cached("name") TruffleString cachedName,
                             @Cached(value = "parameters", dimensions = 0) TruffleString[] cachedParameters,
-                            @Shared @Cached TruffleString.EqualNode equalNode,
+                            @Shared @Cached(inline = false) TruffleString.EqualNode equalNode,
                             @Cached("uncached(parameters, name, equalNode)") int index) {
                 return index;
             }
 
-            @Specialization(guards = {"cachedLen == parameters.length", "cachedLen <= 32"}, replaces = "cachedSingle")
+            @Specialization(guards = {"cachedLen == parameters.length", "cachedLen <= 32"}, replaces = "cachedSingle", limit = "3")
             @ExplodeLoop
             static int cached(TruffleString[] parameters, TruffleString name,
                             @Cached("parameters.length") int cachedLen,
-                            @Shared @Cached TruffleString.EqualNode equalNode) {
+                            @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
                 int idx = -1;
                 for (int i = 0; i < cachedLen; i++) {
                     if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
@@ -735,7 +740,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
             @Specialization(replaces = "cached")
             static int uncached(TruffleString[] parameters, TruffleString name,
-                            @Shared @Cached TruffleString.EqualNode equalNode) {
+                            @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
                 for (int i = 0; i < parameters.length; i++) {
                     if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
                         return i;
@@ -748,7 +753,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     protected abstract static class FillBaseNode extends PNodeWithContext {
 
-        protected PException raiseMissing(Object callable, TruffleString[] missingNames, int missingCnt, TruffleString type, PRaiseNode raise) {
+        protected static PException raiseMissing(Object callable, TruffleString[] missingNames, int missingCnt, TruffleString type, PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_S,
                             getName(callable),
                             missingCnt,
@@ -798,17 +803,19 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // Intentionally lazy
     protected abstract static class FillDefaultsNode extends FillBaseNode {
 
         public abstract void execute(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount);
 
-        @Specialization(guards = {"input_argcount == cachedInputArgcount", "co_argcount == cachedArgcount", "checkIterations(input_argcount, co_argcount)"})
+        @Specialization(guards = {"input_argcount == cachedInputArgcount", "co_argcount == cachedArgcount", "checkIterations(input_argcount, co_argcount)"}, limit = "3")
         @ExplodeLoop
-        void doCached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
-                        @Cached PRaiseNode raise,
+        static void doCached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode raise,
                         @Cached("input_argcount") int cachedInputArgcount,
                         @Cached("co_argcount") int cachedArgcount,
-                        @Cached ConditionProfile missingProfile) {
+                        @Shared @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[cachedArgcount - cachedInputArgcount];
             int firstDefaultArgIdx = cachedArgcount - defaults.length;
             int missingCnt = 0;
@@ -823,15 +830,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     missingNames[missingCnt++] = signature.getParameterIds()[i];
                 }
             }
-            if (missingProfile.profile(missingCnt > 0)) {
+            if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
                 throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
             }
         }
 
         @Specialization(replaces = "doCached")
-        void doUncached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
-                        @Cached PRaiseNode raise,
-                        @Cached ConditionProfile missingProfile) {
+        static void doUncached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode raise,
+                        @Shared @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[co_argcount - input_argcount];
             int firstDefaultArgIdx = co_argcount - defaults.length;
             int missingCnt = 0;
@@ -846,7 +854,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     missingNames[missingCnt++] = signature.getParameterIds()[i];
                 }
             }
-            if (missingProfile.profile(missingCnt > 0)) {
+            if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
                 throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
             }
         }
@@ -869,17 +877,20 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
+    @GenerateInline(false) // Intentionally lazy
     protected abstract static class FillKwDefaultsNode extends FillBaseNode {
         public abstract void execute(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount);
 
         @Specialization(guards = {"co_argcount == cachedArgcount", "co_kwonlyargcount == cachedKwOnlyArgcount", "checkIterations(co_argcount, co_kwonlyargcount)"}, limit = "2")
         @ExplodeLoop
-        void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount,
-                        @Cached PRaiseNode raise,
-                        @Cached FindKwDefaultNode findKwDefaultNode,
+        static void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount,
+                        @SuppressWarnings("unused") int co_kwonlyargcount,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode raise,
+                        @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
-                        @Cached ConditionProfile missingProfile) {
+                        @Shared @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[cachedKwOnlyArgcount];
             int missingCnt = 0;
             for (int i = cachedArgcount; i < cachedArgcount + cachedKwOnlyArgcount; i++) {
@@ -888,23 +899,24 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
 
                 TruffleString kwname = signature.getKeywordNames()[i - cachedArgcount];
-                PKeyword kwdefault = findKwDefaultNode.execute(kwdefaults, kwname);
+                PKeyword kwdefault = findKwDefaultNode.execute(inliningTarget, kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
                 } else {
                     missingNames[missingCnt++] = kwname;
                 }
             }
-            if (missingProfile.profile(missingCnt > 0)) {
+            if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
                 throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
             }
         }
 
         @Specialization(replaces = "doCached")
-        void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
-                        @Cached PRaiseNode raise,
-                        @Cached FindKwDefaultNode findKwDefaultNode,
-                        @Cached ConditionProfile missingProfile) {
+        static void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode raise,
+                        @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
+                        @Shared @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[co_kwonlyargcount];
             int missingCnt = 0;
             for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {
@@ -913,14 +925,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
 
                 TruffleString kwname = signature.getKeywordNames()[i - co_argcount];
-                PKeyword kwdefault = findKwDefaultNode.execute(kwdefaults, kwname);
+                PKeyword kwdefault = findKwDefaultNode.execute(inliningTarget, kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
                 } else {
                     missingNames[missingCnt++] = kwname;
                 }
             }
-            if (missingProfile.profile(missingCnt > 0)) {
+            if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
                 throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
             }
         }
@@ -928,9 +940,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     /** finds a keyword-default value by a given name */
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     protected abstract static class FindKwDefaultNode extends Node {
 
-        public abstract PKeyword execute(PKeyword[] kwdefaults, TruffleString kwname);
+        public abstract PKeyword execute(Node inliningTarget, PKeyword[] kwdefaults, TruffleString kwname);
 
         @Idempotent
         protected final boolean isSingleContext() {
@@ -955,11 +969,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return result;
         }
 
-        @Specialization(guards = {"kwdefaults.length == cachedLength", "cachedLength < 32"}, replaces = "cachedSingle")
+        @Specialization(guards = {"kwdefaults.length == cachedLength", "cachedLength < 32"}, replaces = "cachedSingle", limit = "3")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         static PKeyword doCached(PKeyword[] kwdefaults, TruffleString kwname,
                         @Cached("kwdefaults.length") int cachedLength,
-                        @Shared @Cached TruffleString.EqualNode equalNode) {
+                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
             for (int j = 0; j < cachedLength; j++) {
                 if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];
@@ -970,7 +984,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "doCached")
         static PKeyword doUncached(PKeyword[] kwdefaults, TruffleString kwname,
-                        @Shared @Cached TruffleString.EqualNode equalNode) {
+                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
             for (int j = 0; j < kwdefaults.length; j++) {
                 if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];

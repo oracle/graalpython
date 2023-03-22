@@ -52,6 +52,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorag
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -80,7 +81,7 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
     static TruffleString doWithInternalByteArray(Object buffer,
                     int byteOffset,
                     @CachedLibrary(value = "buffer") PythonBufferAccessLibrary bufferLib,
-                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
+                    @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
         PythonBufferAccessLibrary.assertIsBuffer(buffer);
         byte[] bytes = bufferLib.getInternalByteArray(buffer);
         int bytesLen = bufferLib.getBufferLength(buffer);
@@ -90,7 +91,7 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
     @Specialization(guards = "isNativeByteSequenceStorage(bytes.getSequenceStorage())")
     static TruffleString doNativeBytesLike(PBytesLike bytes,
                     int byteOffset,
-                    @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
+                    @Shared @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
         NativeByteSequenceStorage store = (NativeByteSequenceStorage) bytes.getSequenceStorage();
         Object ptr = store.getPtr();
         int bytesLen = store.length();
@@ -98,16 +99,16 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    TruffleString doMMap(PMMap mmap, int byteOffset,
+    static TruffleString doMMap(PMMap mmap, int byteOffset,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedBranchProfile unsupportedPosix,
                     @CachedLibrary(limit = "4") PosixSupportLibrary posixLib,
                     @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
-                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
+                    @Shared @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
+                    @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
         int bytesLen = bufferLib.getBufferLength(mmap);
         try {
-            Object ptr = new MMapPointer(posixLib.mmapGetPointer(PythonContext.get(this).getPosixSupport(), mmap.getPosixSupportHandle()));
+            Object ptr = new MMapPointer(posixLib.mmapGetPointer(PythonContext.get(inliningTarget).getPosixSupport(), mmap.getPosixSupportHandle()));
             return fromNativePointerNode.execute(ptr, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
         } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
             unsupportedPosix.enter(inliningTarget);
@@ -128,7 +129,7 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
     static TruffleString doWithInternalOrCopiedByteArray(Object buffer,
                     int byteOffset,
                     @CachedLibrary(limit = "5") PythonBufferAccessLibrary bufferLib,
-                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
+                    @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
         PythonBufferAccessLibrary.assertIsBuffer(buffer);
         byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
         int bytesLen = bufferLib.getBufferLength(buffer);

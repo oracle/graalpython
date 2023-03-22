@@ -77,7 +77,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -139,6 +142,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
+        @SuppressWarnings("truffle-static-method")
         Object next(PArrayIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedExactClassProfile itemTypeProfile,
@@ -211,31 +215,34 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
+        @SuppressWarnings("truffle-static-method")
         Object nextHashingStorageIter(PHashingStorageIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile sizeChanged,
+                        @Exclusive @Cached InlinedConditionProfile sizeChanged,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageIteratorNext nextNode,
                         @Cached PHashingStorageIteratorNextValue itValueNode,
                         @Shared("next") @Cached InlinedConditionProfile profile) {
             HashingStorage storage = self.getHashingStorage();
             final HashingStorageIterator it = self.getIterator();
-            if (profile.profile(inliningTarget, nextNode.execute(storage, it))) {
-                if (sizeChanged.profile(inliningTarget, self.checkSizeChanged(lenNode))) {
+            if (profile.profile(inliningTarget, nextNode.execute(inliningTarget, storage, it))) {
+                if (sizeChanged.profile(inliningTarget, self.checkSizeChanged(inliningTarget, lenNode))) {
                     String name = PBaseSetIterator.isInstance(self) ? "Set" : "dictionary";
                     throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
                 }
                 self.index++;
-                return itValueNode.execute(self, storage, it);
+                return itValueNode.execute(inliningTarget, self, storage, it);
             }
             return stopIteration(self);
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
+        @SuppressWarnings("truffle-static-method")
         Object next(PSequenceIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
-            SequenceStorage s = getStorage.execute(self.getPSequence());
+            SequenceStorage s = getStorage.execute(inliningTarget, self.getPSequence());
             if (self.getIndex() < s.length()) {
                 return getItemNode.execute(s, self.index++);
             }
@@ -243,6 +250,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
+        @SuppressWarnings("truffle-static-method")
         Object next(VirtualFrame frame, PSequenceIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceGetItemNode getItem,
@@ -262,33 +270,35 @@ public final class IteratorBuiltins extends PythonBuiltins {
             }
         }
 
+        @GenerateInline
+        @GenerateCached(false)
         abstract static class PHashingStorageIteratorNextValue extends Node {
-            abstract Object execute(PHashingStorageIterator pyIter, HashingStorage storage, HashingStorageIterator it);
+            abstract Object execute(Node inliningTarget, PHashingStorageIterator pyIter, HashingStorage storage, HashingStorageIterator it);
 
             @Specialization
-            Object doDictValue(@SuppressWarnings("unused") PDictView.PDictValueIterator self, HashingStorage storage, HashingStorageIterator it,
+            static Object doDictValue(Node inliningTarget, @SuppressWarnings("unused") PDictView.PDictValueIterator self, HashingStorage storage, HashingStorageIterator it,
                             @Shared("val") @Cached HashingStorageIteratorValue itValueNode) {
-                return itValueNode.execute(storage, it);
+                return itValueNode.execute(inliningTarget, storage, it);
             }
 
             @Specialization
-            Object doDictKey(@SuppressWarnings("unused") PDictView.PDictKeyIterator self, HashingStorage storage, HashingStorageIterator it,
+            static Object doDictKey(Node inliningTarget, @SuppressWarnings("unused") PDictView.PDictKeyIterator self, HashingStorage storage, HashingStorageIterator it,
                             @Shared("key") @Cached HashingStorageIteratorKey itKeyNode) {
-                return itKeyNode.execute(storage, it);
+                return itKeyNode.execute(inliningTarget, storage, it);
             }
 
             @Specialization
-            PTuple doDictItem(@SuppressWarnings("unused") PDictView.PDictItemIterator self, HashingStorage storage, HashingStorageIterator it,
+            static PTuple doDictItem(Node inliningTarget, @SuppressWarnings("unused") PDictView.PDictItemIterator self, HashingStorage storage, HashingStorageIterator it,
                             @Shared("val") @Cached HashingStorageIteratorValue itValueNode,
                             @Shared("key") @Cached HashingStorageIteratorKey itKeyNode,
-                            @Cached PythonObjectFactory factory) {
-                return factory.createTuple(new Object[]{itKeyNode.execute(storage, it), itValueNode.execute(storage, it)});
+                            @Cached(inline = false) PythonObjectFactory factory) {
+                return factory.createTuple(new Object[]{itKeyNode.execute(inliningTarget, storage, it), itValueNode.execute(inliningTarget, storage, it)});
             }
 
             @Specialization
-            Object doSetKey(@SuppressWarnings("unused") PBaseSetIterator self, HashingStorage storage, HashingStorageIterator it,
+            static Object doSetKey(Node inliningTarget, @SuppressWarnings("unused") PBaseSetIterator self, HashingStorage storage, HashingStorageIterator it,
                             @Shared("key") @Cached HashingStorageIteratorKey itKeyNode) {
-                return itKeyNode.execute(storage, it);
+                return itKeyNode.execute(inliningTarget, storage, it);
             }
         }
     }
@@ -319,9 +329,9 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(@SuppressWarnings({"unused"}) VirtualFrame frame, PDictView.PBaseDictIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageLen lenNode,
-                        @Cached InlinedConditionProfile profile) {
-            if (profile.profile(inliningTarget, self.checkSizeChanged(lenNode))) {
+                        @Shared @Cached HashingStorageLen lenNode,
+                        @Shared @Cached InlinedConditionProfile profile) {
+            if (profile.profile(inliningTarget, self.checkSizeChanged(inliningTarget, lenNode))) {
                 return 0;
             }
             return self.getSize() - self.getIndex();
@@ -364,10 +374,10 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(PBaseSetIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageLen lenNode,
-                        @Cached InlinedConditionProfile profile) {
+                        @Shared @Cached HashingStorageLen lenNode,
+                        @Shared @Cached InlinedConditionProfile profile) {
             int size = self.getSize();
-            final int lenSet = lenNode.execute(self.getHashingStorage());
+            final int lenSet = lenNode.execute(inliningTarget, self.getHashingStorage());
             if (profile.profile(inliningTarget, lenSet != size)) {
                 return 0;
             }
@@ -392,8 +402,9 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
         public static int lengthHint(VirtualFrame frame, PSequenceIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
-            int len = sizeNode.execute(frame, self.getObject()) - self.getIndex();
+            int len = sizeNode.execute(frame, inliningTarget, self.getObject()) - self.getIndex();
             return len < 0 ? 0 : len;
         }
     }
@@ -498,7 +509,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         private PTuple reduceInternal(VirtualFrame frame, Object arg, Object state, PythonContext context) {
             PythonModule builtins = context.getBuiltins();
-            Object iter = getGetAttrNode().execute(frame, builtins, T_ITER);
+            Object iter = getGetAttrNode().executeCached(frame, builtins, T_ITER);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {
@@ -523,8 +534,9 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public static Object reduce(PBigRangeIterator self, Object index,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaBigIntegerNode castToJavaBigIntegerNode) {
-            BigInteger idx = castToJavaBigIntegerNode.execute(index);
+            BigInteger idx = castToJavaBigIntegerNode.execute(inliningTarget, index);
             if (idx.compareTo(BigInteger.ZERO) < 0) {
                 idx = BigInteger.ZERO;
             }
@@ -534,8 +546,9 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPBigRangeIterator(self)")
         public static Object reduce(VirtualFrame frame, PBuiltinIterator self, Object index,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            int idx = asSizeNode.executeExact(frame, index);
+            int idx = asSizeNode.executeExact(frame, inliningTarget, index);
             if (idx < 0) {
                 idx = 0;
             }

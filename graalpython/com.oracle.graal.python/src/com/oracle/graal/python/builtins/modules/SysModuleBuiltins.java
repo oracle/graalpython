@@ -219,7 +219,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -239,6 +239,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -758,7 +760,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     private static void callClose(Object obj) {
         try {
-            PyObjectCallMethodObjArgs.getUncached().execute(null, obj, T_CLOSE);
+            PyObjectCallMethodObjArgs.executeUncached(obj, T_CLOSE);
         } catch (PException e) {
         }
     }
@@ -787,7 +789,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PTuple run(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
@@ -848,17 +850,18 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class CurrentFrames extends PythonBuiltinNode {
         @Specialization
         Object currentFrames(VirtualFrame frame,
+                        @Bind("this") Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached HashingStorageSetItem setHashingStorageItem) {
-            auditNode.audit("sys._current_frames");
+            auditNode.audit(inliningTarget, "sys._current_frames");
             if (!getLanguage().singleThreadedAssumption.isValid()) {
                 warnNode.warn(frame, RuntimeWarning, ErrorMessages.WARN_CURRENT_FRAMES_MULTITHREADED);
             }
             PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0);
             PDict result = factory().createDict();
-            result.setDictStorage(setHashingStorageItem.execute(frame, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
+            result.setDictStorage(setHashingStorageItem.execute(frame, inliningTarget, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
             return result;
         }
     }
@@ -888,8 +891,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class InternNode extends PythonUnaryBuiltinNode {
-        private PString doIntern(Object str, StringNodes.InternStringNode internNode) {
-            final PString interned = internNode.execute(str);
+        private PString doIntern(Node inliningTarget, Object str, StringNodes.InternStringNode internNode) {
+            final PString interned = internNode.execute(inliningTarget, str);
             if (interned == null) {
                 throw raise(TypeError, ErrorMessages.CANNOT_INTERN_P, str);
             }
@@ -898,14 +901,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doString(TruffleString s,
+                        @Bind("this") Node inliningTarget,
                         @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
-            return doIntern(s, internNode);
+            return doIntern(inliningTarget, s, internNode);
         }
 
         @Specialization
         Object doPString(PString s,
+                        @Bind("this") Node inliningTarget,
                         @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
-            return doIntern(s, internNode);
+            return doIntern(inliningTarget, s, internNode);
         }
 
         @Fallback
@@ -957,38 +962,32 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
-        @Child PyNumberAsSizeNode asSizeNode;
-
         @Specialization(guards = "isNoValue(dflt)")
         protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
-            return checkResult(frame, callSizeofNode.executeObject(frame, object));
+            return checkResult(frame, inliningTarget, asSizeNode, callSizeofNode.executeObject(frame, object));
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
         protected Object doGeneric(VirtualFrame frame, Object object, Object dflt,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
             Object result = callSizeofNode.executeObject(frame, object);
             if (result == PNone.NO_VALUE) {
                 return dflt;
             }
-            return checkResult(frame, result);
+            return checkResult(frame, inliningTarget, asSizeNode, result);
         }
 
-        private Object checkResult(VirtualFrame frame, Object result) {
-            int value = getAsSizeNode().executeExact(frame, result);
+        private Object checkResult(VirtualFrame frame, Node inliningTarget, PyNumberAsSizeNode asSizeNode, Object result) {
+            int value = asSizeNode.executeExact(frame, inliningTarget, result);
             if (value < 0) {
                 throw raise(ValueError, ErrorMessages.SHOULD_RETURN, "__sizeof__()", ">= 0");
             }
             return value;
-        }
-
-        private PyNumberAsSizeNode getAsSizeNode() {
-            if (asSizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asSizeNode = insert(PyNumberAsSizeNode.create());
-            }
-            return asSizeNode;
         }
 
         @NeverDefault
@@ -1009,15 +1008,17 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     // TODO implement support for audit events
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class AuditNode extends Node {
-        protected abstract void executeInternal(Object event, Object[] arguments);
+        protected abstract void executeInternal(Node inliningTarget, Object event, Object[] arguments);
 
-        public void audit(String event, Object... arguments) {
-            executeInternal(event, arguments);
+        public void audit(Node inliningTarget, String event, Object... arguments) {
+            executeInternal(inliningTarget, event, arguments);
         }
 
-        public void audit(TruffleString event, Object... arguments) {
-            executeInternal(event, arguments);
+        public void audit(Node inliningTarget, TruffleString event, Object... arguments) {
+            executeInternal(inliningTarget, event, arguments);
         }
 
         @Specialization
@@ -1326,7 +1327,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static SyntaxErrData parseSyntaxError(VirtualFrame frame, Object err) {
+        private static SyntaxErrData parseSyntaxError(MaterializedFrame frame, Object err) {
             Object v, msg;
             TruffleString fileName = null, text = null;
             int lineNo = 0, offset = 0, hold;
@@ -1460,7 +1461,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             printException(frame, sys, out, value);
         }
 
-        protected void printException(VirtualFrame frame, PythonModule sys, Object out, Object excValue) {
+        protected void printException(MaterializedFrame frame, PythonModule sys, Object out, Object excValue) {
             Object value = excValue;
             final Object type = getObjectClass(value);
             if (!PGuards.isPBaseException(value)) {
@@ -1620,8 +1621,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
 
-            setAttr.execute(frame, builtins, T___, PNone.NONE);
-            Object stdOut = objectLookupAttr(frame, sys, T_STDOUT, lookupAttr);
+            setAttr.execute(frame, inliningTarget, builtins, T___, PNone.NONE);
+            Object stdOut = objectLookupAttr(frame, inliningTarget, sys, T_STDOUT, lookupAttr);
             if (PGuards.isPNone(stdOut)) {
                 throw raise(RuntimeError, LOST_S, "sys.stdout");
             }
@@ -1629,12 +1630,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             boolean reprWriteOk = false;
             boolean unicodeEncodeError = false;
             try {
-                Object reprVal = objectRepr(frame, obj, reprAsObjectNode);
+                Object reprVal = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
                 if (reprVal == null) {
                     reprWriteOk = false;
                 } else {
                     reprWriteOk = true;
-                    fileWriteString(frame, stdOut, castToString(reprVal, castToStringNode), getAttr, callNode);
+                    fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, reprVal), getAttr, callNode);
                 }
             } catch (PException pe) {
                 pe.expect(inliningTarget, UnicodeEncodeError, unicodeEncodeErrorProfile);
@@ -1644,22 +1645,22 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
             if (!reprWriteOk && unicodeEncodeError) {
                 // inlined sysDisplayHookUnencodable
-                final TruffleString stdoutEncoding = objectLookupAttrAsString(frame, stdOut, T_ENCODING, lookupAttr, castToStringNode);
-                final Object reprStr = objectRepr(frame, obj, reprAsObjectNode);
-                final Object encoded = pyUnicodeAsEncodedString.execute(frame, reprStr, stdoutEncoding, T_BACKSLASHREPLACE);
+                final TruffleString stdoutEncoding = objectLookupAttrAsString(frame, inliningTarget, stdOut, T_ENCODING, lookupAttr, castToStringNode);
+                final Object reprStr = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
+                final Object encoded = pyUnicodeAsEncodedString.execute(frame, inliningTarget, reprStr, stdoutEncoding, T_BACKSLASHREPLACE);
 
-                final Object buffer = objectLookupAttr(frame, stdOut, T_BUFFER, lookupAttr);
+                final Object buffer = objectLookupAttr(frame, inliningTarget, stdOut, T_BUFFER, lookupAttr);
                 if (buffer != null) {
-                    callMethodObjArgs.execute(frame, buffer, T_WRITE, encoded);
+                    callMethodObjArgs.execute(frame, inliningTarget, buffer, T_WRITE, encoded);
                 } else {
-                    Object escapedStr = pyUnicodeFromEncodedObject.execute(frame, encoded, stdoutEncoding, T_STRICT);
-                    final Object str = objectStr(frame, escapedStr, strAsObjectNode);
-                    fileWriteString(frame, stdOut, castToString(str, castToStringNode), getAttr, callNode);
+                    Object escapedStr = pyUnicodeFromEncodedObject.execute(frame, inliningTarget, encoded, stdoutEncoding, T_STRICT);
+                    final Object str = objectStr(frame, inliningTarget, escapedStr, strAsObjectNode);
+                    fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, str), getAttr, callNode);
                 }
             }
 
-            fileWriteString(frame, stdOut, T_NEWLINE, getAttr, callNode);
-            setAttr.execute(frame, builtins, T___, obj);
+            fileWriteString(frame, inliningTarget, stdOut, T_NEWLINE, getAttr, callNode);
+            setAttr.execute(frame, inliningTarget, builtins, T___, obj);
             return PNone.NONE;
         }
     }
@@ -1673,13 +1674,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_MOD_OS = tsLiteral("os");
         static final TruffleString T_ATTR_ENVIRON = tsLiteral("environ");
 
-        private static TruffleString getEnvVar(VirtualFrame frame, PyImportImport importNode, PyObjectGetAttr getAttr, PyObjectCallMethodObjArgs callMethodObjArgs,
+        private static TruffleString getEnvVar(VirtualFrame frame, Node inliningTarget, PyImportImport importNode,
+                        PyObjectGetAttr getAttr, PyObjectCallMethodObjArgs callMethodObjArgs,
                         CastToTruffleStringNode castToStringNode) {
-            Object os = importNode.execute(frame, T_MOD_OS);
-            final Object environ = getAttr.execute(frame, os, T_ATTR_ENVIRON);
-            Object var = callMethodObjArgs.execute(frame, environ, T_GET, T_PYTHONBREAKPOINT);
+            Object os = importNode.execute(frame, inliningTarget, T_MOD_OS);
+            final Object environ = getAttr.execute(frame, inliningTarget, os, T_ATTR_ENVIRON);
+            Object var = callMethodObjArgs.execute(frame, inliningTarget, environ, T_GET, T_PYTHONBREAKPOINT);
             try {
-                return castToStringNode.execute(var);
+                return castToStringNode.execute(inliningTarget, var);
             } catch (CannotCastException cce) {
                 return null;
             }
@@ -1700,7 +1702,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached TruffleString.LastIndexOfCodePointNode lastIndexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            TruffleString hookName = getEnvVar(frame, importNode, getAttr, callMethodObjArgs, castToStringNode);
+            TruffleString hookName = getEnvVar(frame, inliningTarget, importNode, getAttr, callMethodObjArgs, castToStringNode);
             if (hookName == null || hookName.isEmpty()) {
                 hookName = T_VAL_PDB_SETTRACE;
             }
@@ -1729,7 +1731,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             final Object module;
             try {
-                module = importNode.execute(frame, modPath);
+                module = importNode.execute(frame, inliningTarget, modPath);
             } catch (PException pe) {
                 if (isInstanceNode.executeWith(frame, pe.getUnreifiedException(), ImportError)) {
                     warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
@@ -1739,7 +1741,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             final Object hook;
             try {
-                hook = getAttr.execute(frame, module, attrName);
+                hook = getAttr.execute(frame, inliningTarget, module, attrName);
             } catch (PException pe) {
                 if (attrErrorProfile.profileException(inliningTarget, pe, AttributeError)) {
                     warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
@@ -1779,15 +1781,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetRecursionLimitNode extends PythonBuiltinNode {
         @Specialization
         Object setRecLim(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object limit,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode longAsIntNode,
                         @Cached PyFloatCheckExactNode floatCheckExactNode) {
-            if (floatCheckExactNode.execute(limit)) {
+            if (floatCheckExactNode.execute(inliningTarget, limit)) {
                 throw raise(TypeError, S_EXPECTED_GOT_P, "integer", limit);
             }
 
             int newLimit;
             try {
-                newLimit = longAsIntNode.execute(frame, limit);
+                newLimit = longAsIntNode.execute(frame, inliningTarget, limit);
             } catch (PException pe) {
                 newLimit = -1;
             }
@@ -1829,15 +1832,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetCheckIntervalNode extends PythonBuiltinNode {
         @Specialization
         Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PyLongAsIntNode longAsIntNode,
                         @Cached PyFloatCheckExactNode floatCheckExactNode) {
-            if (floatCheckExactNode.execute(arg)) {
+            if (floatCheckExactNode.execute(inliningTarget, arg)) {
                 throw raise(TypeError, S_EXPECTED_GOT_P, "integer", arg);
             }
 
             try {
-                final int n = longAsIntNode.execute(frame, arg);
+                final int n = longAsIntNode.execute(frame, inliningTarget, arg);
                 warnNode.warnFormat(frame, DeprecationWarning, WARN_DEPRECTATED_SYS_CHECKINTERVAL);
                 getContext().getSysModuleState().setCheckInterval(n);
             } catch (PException ignore) {
@@ -1877,8 +1881,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyFloatAsDoubleNode floatAsDoubleNode) {
-            double interval = floatAsDoubleNode.execute(frame, arg);
+            double interval = floatAsDoubleNode.execute(frame, inliningTarget, arg);
             if (interval <= 0.0) {
                 throw raise(ValueError, SWITCH_INTERVAL_MUST_BE_POSITIVE);
             }

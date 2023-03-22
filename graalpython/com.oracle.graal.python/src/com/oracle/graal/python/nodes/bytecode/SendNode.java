@@ -57,11 +57,13 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateInline(false) // used in BCI root node
 public abstract class SendNode extends PNodeWithContext {
     private static final TruffleString T_SEND = tsLiteral("send");
 
@@ -69,7 +71,7 @@ public abstract class SendNode extends PNodeWithContext {
     public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Object iter, Object arg);
 
     @Specialization
-    boolean doGenerator(VirtualFrame virtualFrame, int stackTop, PGenerator generator, Object arg,
+    static boolean doGenerator(VirtualFrame virtualFrame, int stackTop, PGenerator generator, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.SendNode sendNode,
                     @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
@@ -85,7 +87,7 @@ public abstract class SendNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "iterCheck.execute(inliningTarget, iter)", limit = "1")
-    boolean doIterator(VirtualFrame virtualFrame, int stackTop, Object iter, @SuppressWarnings("unused") PNone arg,
+    static boolean doIterator(VirtualFrame virtualFrame, int stackTop, Object iter, @SuppressWarnings("unused") PNone arg,
                     @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached PyIterCheckNode iterCheck,
                     @Cached GetNextNode getNextNode,
@@ -102,13 +104,13 @@ public abstract class SendNode extends PNodeWithContext {
     }
 
     @Fallback
-    boolean doOther(VirtualFrame virtualFrame, int stackTop, Object obj, Object arg,
+    static boolean doOther(VirtualFrame virtualFrame, int stackTop, Object obj, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectCallMethodObjArgs callMethodNode,
                     @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
-            Object value = callMethodNode.execute(virtualFrame, obj, T_SEND, arg);
+            Object value = callMethodNode.execute(virtualFrame, inliningTarget, obj, T_SEND, arg);
             virtualFrame.setObject(stackTop, value);
             return false;
         } catch (PException e) {

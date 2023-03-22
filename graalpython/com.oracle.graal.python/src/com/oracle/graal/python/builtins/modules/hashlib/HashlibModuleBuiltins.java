@@ -201,19 +201,20 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isString(a)", "isString(b)"})
         Object cmpStrings(Object a, Object b,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CopyToByteArrayNode getByteArrayNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached CastToTruffleStringNode castA,
                         @Cached CastToTruffleStringNode castB) {
-            TruffleString tsA = castA.execute(a);
-            TruffleString tsB = castB.execute(b);
+            TruffleString tsA = castA.execute(inliningTarget, a);
+            TruffleString tsB = castB.execute(inliningTarget, b);
             CodeRange crA = getCodeRangeNode.execute(tsA, TS_ENCODING);
             CodeRange crB = getCodeRangeNode.execute(tsB, TS_ENCODING);
             if (!(crA.isSubsetOf(CodeRange.ASCII) && crB.isSubsetOf(CodeRange.ASCII))) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.COMPARING_STRINGS_WITH_NON_ASCII);
             }
             byte[] bytesA = getByteArrayNode.execute(tsA, TS_ENCODING);
-            byte[] bytesB = getByteArrayNode.execute(castB.execute(b), TS_ENCODING);
+            byte[] bytesB = getByteArrayNode.execute(castB.execute(inliningTarget, b), TS_ENCODING);
             return cmp(bytesA, bytesB);
         }
 
@@ -274,7 +275,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isString(digestmod)")
+        @SuppressWarnings("truffle-static-method")
         Object hmacNewFromFunction(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digestmod,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
                         @Shared("castStr") @Cached CastToTruffleStringNode castStr,
@@ -284,10 +287,10 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             // cast guaranteed in our initialize
             EconomicMapStorage constructors = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
-            Object name = getItemNode.execute(frame, constructors, digestmod);
+            Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize
-                return hmacNew(self, key, msg, name, castStr, castJStr, concatStr, acquireLib, bufferLib);
+                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib);
             } else {
                 throw raise(PythonBuiltinClassType.UnsupportedDigestmodError);
             }
@@ -295,12 +298,13 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(digestmodObj)")
         Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
+                        @Bind("this") Node inliningTarget,
                         @Shared("castStr") @Cached CastToTruffleStringNode castStr,
                         @Shared("castJStr") @Cached CastToJavaStringNode castJStr,
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-            TruffleString digestmod = castStr.execute(digestmodObj);
+            TruffleString digestmod = castStr.execute(inliningTarget, digestmodObj);
             Object key;
             if (!acquireLib.hasBuffer(keyObj)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, keyObj);

@@ -90,12 +90,14 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -117,18 +119,19 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object mbstreamreaderNew(VirtualFrame frame, Object type, Object err,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual) { // "|s:IncrementalEncoder"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
-                errors = castToStringNode.execute(err);
+                errors = castToStringNode.execute(inliningTarget, err);
             }
 
             MultibyteIncrementalEncoderObject self = factory().createMultibyteIncrementalEncoderObject(type);
 
-            Object codec = getAttr.execute(frame, type, CODEC);
+            Object codec = getAttr.execute(frame, inliningTarget, type, CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
@@ -199,8 +202,10 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isTruffleString(unistr)")
+        @SuppressWarnings("truffle-static-method")
         Object notTS(VirtualFrame frame, MultibyteStatefulEncoderContext ctx, Object unistr, int end,
                         PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStrAsObjectNode strNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
@@ -209,13 +214,13 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                         @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached @Shared TruffleString.SubstringNode substringNode) {
             Object ucvt = unistr;
-            if (!unicodeCheckNode.execute(unistr)) {
-                ucvt = strNode.execute(frame, unistr);
-                if (!unicodeCheckNode.execute(unistr)) {
+            if (!unicodeCheckNode.execute(inliningTarget, unistr)) {
+                ucvt = strNode.execute(frame, inliningTarget, unistr);
+                if (!unicodeCheckNode.execute(inliningTarget, unistr)) {
                     throw raise(TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_STR);
                 }
             }
-            TruffleString str = toTruffleStringNode.execute(ucvt);
+            TruffleString str = toTruffleStringNode.execute(inliningTarget, ucvt);
             return ts(frame, ctx, str, end, factory, encodeNode, concatNode, codePointLengthNode, substringNode);
         }
 
@@ -249,6 +254,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         // _multibytecodec_MultibyteIncrementalEncoder_getstate_impl
         @Specialization
         Object getstate(MultibyteIncrementalEncoderObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode asUTF8AndSize,
                         @Cached IntNodes.PyLongFromByteArray fromByteArray) {
@@ -276,7 +282,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
             // for the encoder object.
             // memcpy(statebytes + statesize, self.state.c, MULTIBYTECODECSTATE);
             // statesize += MULTIBYTECODECSTATE;
-            Object stateobj = fromByteArray.execute(statebytes, false);
+            Object stateobj = fromByteArray.execute(inliningTarget, statebytes, false);
             // since statebytes.length > 8, we will get a PInt
             writeAttrNode.execute(stateobj, ENCODER_OBJECT_ATTR, self.state);
             return stateobj;
@@ -290,11 +296,12 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
         @Specialization
         // _multibytecodec_MultibyteIncrementalEncoder_setstate_impl
         Object setstate(MultibyteIncrementalEncoderObject self, PInt statelong,
+                        @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
                         @Cached IntNodes.PyLongAsByteArray asByteArray) {
             int sizeOfStateBytes = 1 + MAXENCPENDING * 4 + MULTIBYTECODECSTATE;
 
-            byte[] statebytes = asByteArray.execute(statelong, sizeOfStateBytes, false);
+            byte[] statebytes = asByteArray.execute(inliningTarget, statelong, sizeOfStateBytes, false);
 
             if (statebytes[0] > MAXENCPENDING * 4) {
                 throw raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);

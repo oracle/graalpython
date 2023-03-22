@@ -153,8 +153,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean closed(VirtualFrame frame, PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup) {
-            return isClosed(self, frame, lookup);
+            return isClosed(inliningTarget, self, frame, lookup);
         }
     }
 
@@ -196,10 +197,10 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         static PNone doIt(VirtualFrame frame, Node inliningTarget, PythonObject self,
-                        @Cached(inline = false) PyObjectGetAttr getAttr,
-                        @Cached(inline = false) PyObjectIsTrueNode isTrueNode,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PRaiseNode.Lazy lazyRaiseNode) {
-            if (isTrueNode.execute(frame, getAttr.execute(frame, self, T_CLOSED))) {
+            if (isTrueNode.execute(frame, inliningTarget, getAttr.execute(frame, inliningTarget, self, T_CLOSED))) {
                 throw lazyRaiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
@@ -237,12 +238,12 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doIt(VirtualFrame frame, Node inliningTarget, Object self, TruffleString method, TruffleString errorMessage,
-                        @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached(inline = false) IsNode isNode,
                         @Cached PRaiseNode.Lazy lazyRaiseNode) {
             CompilerAsserts.partialEvaluationConstant(method);
             CompilerAsserts.partialEvaluationConstant(errorMessage);
-            Object v = callMethod.execute(frame, self, method);
+            Object v = callMethod.execute(frame, inliningTarget, self, method);
             if (isNode.isTrue(v)) {
                 return true;
             }
@@ -295,9 +296,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached("create(T___IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PyErrChainExceptions chainExceptions) {
-            if (!isClosed(self, frame, lookup)) {
+            if (!isClosed(inliningTarget, self, frame, lookup)) {
                 try {
-                    callMethod.execute(frame, self, T_FLUSH);
+                    callMethod.execute(frame, inliningTarget, self, T_FLUSH);
                 } catch (PException e) {
                     errorProfile.enter(inliningTarget);
                     try {
@@ -319,8 +320,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone flush(VirtualFrame frame, PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup) {
-            if (isClosed(self, frame, lookup)) {
+            if (isClosed(inliningTarget, self, frame, lookup)) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
@@ -350,8 +352,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class TellNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object tell(VirtualFrame frame, PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self, T_SEEK, 0, 1);
+            return callMethod.execute(frame, inliningTarget, self, T_SEEK, 0, 1);
         }
     }
 
@@ -372,8 +375,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
         static Object exit(VirtualFrame frame, PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self, T_CLOSE);
+            return callMethod.execute(frame, inliningTarget, self, T_CLOSE);
         }
     }
 
@@ -415,10 +419,11 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object next(VirtualFrame frame, PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode) {
-            Object line = callMethod.execute(frame, self, T_READLINE);
-            if (sizeNode.execute(frame, line) <= 0) {
+            Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
+            if (sizeNode.execute(frame, inliningTarget, line) <= 0) {
                 throw raiseStopIteration();
             }
             return line;
@@ -437,7 +442,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter) {
             checkClosedNode.execute(frame, inliningTarget, self);
-            Object iter = getIter.execute(frame, lines);
+            Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
                 Object line;
                 try {
@@ -446,7 +451,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     break;
                 }
-                callMethod.execute(frame, self, T_WRITE, line);
+                callMethod.execute(frame, inliningTarget, self, T_WRITE, line);
                 // TODO _PyIO_trap_eintr [GR-23297]
             }
             return PNone.NONE;
@@ -476,7 +481,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasPeek,
                         @Cached InlinedConditionProfile isBytes) {
             /* For backwards compatibility, a (slowish) readline(). */
-            Object peek = lookupPeek.execute(frame, self, T_PEEK);
+            Object peek = lookupPeek.execute(frame, inliningTarget, self, T_PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
@@ -499,7 +504,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     }
                 }
 
-                Object b = callRead.execute(frame, self, T_READ, nreadahead);
+                Object b = callRead.execute(frame, inliningTarget, self, T_READ, nreadahead);
                 if (isBytes.profile(inliningTarget, !(b instanceof PBytes))) {
                     throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
@@ -538,13 +543,13 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode) {
             int hint = isNegativeHintProfile.profile(inliningTarget, hintIn <= 0) ? Integer.MAX_VALUE : hintIn;
             int length = 0;
-            Object iterator = getIter.execute(frame, self);
+            Object iterator = getIter.execute(frame, inliningTarget, self);
             ArrayBuilder<Object> list = new ArrayBuilder<>();
             while (true) {
                 try {
                     Object line = next.execute(frame, iterator);
                     list.add(line);
-                    int lineLength = sizeNode.execute(frame, line);
+                    int lineLength = sizeNode.execute(frame, inliningTarget, line);
                     if (lineLength > hint - length) {
                         break;
                     }
@@ -564,8 +569,8 @@ public final class IOBaseBuiltins extends PythonBuiltins {
      * @param self the IOBase instance
      * @return true if the {@link IONodes#T___IOBASE_CLOSED} attribute exists
      */
-    private static boolean isClosed(PythonObject self, VirtualFrame frame, PyObjectLookupAttr lookup) {
-        return !PGuards.isNoValue(lookup.execute(frame, self, T___IOBASE_CLOSED));
+    private static boolean isClosed(Node inliningTarget, PythonObject self, VirtualFrame frame, PyObjectLookupAttr lookup) {
+        return !PGuards.isNoValue(lookup.execute(frame, inliningTarget, self, T___IOBASE_CLOSED));
     }
 
     /**

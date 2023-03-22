@@ -88,6 +88,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -114,9 +115,10 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object init(VirtualFrame frame, StgDictObject self, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached CallNode callNode) {
-            Object initMethod = lookup.execute(frame, PythonBuiltinClassType.PDict, SpecialMethodNames.T___INIT__);
+            Object initMethod = lookup.execute(frame, inliningTarget, PythonBuiltinClassType.PDict, SpecialMethodNames.T___INIT__);
             Object[] dictArgs;
             if (args.length > 0) {
                 dictArgs = new Object[args.length + 1];
@@ -139,11 +141,12 @@ public final class StgDictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, StgDictObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached ObjectBuiltins.SizeOfNode sizeOfNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            long size = asSizeNode.executeLossy(frame, sizeOfNode.execute(frame, getDict.execute(self)));
+            long size = asSizeNode.executeLossy(frame, inliningTarget, sizeOfNode.execute(frame, getDict.execute(self)));
             // size += sizeof(StgDictObject) - sizeof(PyDictObject);
             if (self.format != null) {
                 size += codePointLengthNode.execute(self.format, TS_ENCODING) + 1;
@@ -168,6 +171,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
          */
         @Specialization
         void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttributeNode,
                         @Cached SetAttributeNode.Dynamic setAttributeNode,
@@ -177,24 +181,26 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached("create(T__FIELDS_)") GetAttributeNode getAttrString) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
-            if (!sequenceCheckNode.execute(fields)) {
+            if (!sequenceCheckNode.execute(inliningTarget, fields)) {
                 throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE);
             }
 
             PythonContext context = PythonContext.get(this);
-            for (int i = 0; i < sizeNode.execute(frame, fields); ++i) {
-                PTuple pair = (PTuple) getItemNode.execute(frame, fields, i); /* borrowed */
+            for (int i = 0; i < sizeNode.execute(frame, inliningTarget, fields); ++i) {
+                PTuple pair = (PTuple) getItemNode.execute(frame, inliningTarget, fields, i); /*
+                                                                                               * borrowed
+                                                                                               */
                 /* Convert to PyArg_UnpackTuple... */
                 // PyArg_ParseTuple(pair, "OO|O", & fname, &ftype, &bits);
-                Object[] array = getArray.execute(pair.getSequenceStorage());
+                Object[] array = getArray.execute(inliningTarget, pair.getSequenceStorage());
                 Object fname = array[0];
                 CFieldObject fdescr = (CFieldObject) getAttributeNode.executeObject(frame, descr.proto, fname);
-                if (getClassNode.execute(fdescr) != context.lookupType(CField)) {
+                if (getClassNode.execute(inliningTarget, fdescr) != context.lookupType(CField)) {
                     throw raise(TypeError, UNEXPECTED_TYPE);
                 }
                 if (fdescr.anonymous != 0) {
                     MakeFields(frame, type, fdescr, index + fdescr.index, offset + fdescr.offset, factory,
-                                    getClassNode, getAttributeNode, setAttributeNode,
+                                    inliningTarget, getClassNode, getAttributeNode, setAttributeNode,
                                     sequenceCheckNode, sizeNode, getItemNode, getArray, getAttrString);
                     continue;
                 }
@@ -229,9 +235,10 @@ public final class StgDictBuiltins extends PythonBuiltins {
         /* May return NULL, but does not set an exception! */
         @Specialization
         static StgDictObject PyType_stgdict(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached IsTypeNode isTypeNode,
                         @Cached GetDictIfExistsNode getDict) {
-            if (!isTypeNode.execute(obj)) {
+            if (!isTypeNode.execute(inliningTarget, obj)) {
                 return null;
             }
             PDict dict = getDict.execute(obj);
@@ -254,9 +261,10 @@ public final class StgDictBuiltins extends PythonBuiltins {
         /* May return null, but does not raise an exception! */
         @Specialization
         static StgDictObject PyObject_stgdict(Object self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getType,
                         @Cached GetDictIfExistsNode getDict) {
-            Object type = getType.execute(self);
+            Object type = getType.execute(inliningTarget, self);
             PDict dict = getDict.execute(type);
             if (!PGuards.isStgDict(dict)) {
                 return null;
@@ -279,6 +287,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
          */
         @Specialization
         void MakeAnonFields(VirtualFrame frame, Object type, PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItemNode,
@@ -286,18 +295,18 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttr,
                         @Cached PyObjectLookupAttr lookupAnon) {
-            Object anon = lookupAnon.execute(frame, type, T__ANONYMOUS_);
+            Object anon = lookupAnon.execute(frame, inliningTarget, type, T__ANONYMOUS_);
             if (PGuards.isPNone(anon)) {
                 return;
             }
-            if (!sequenceCheckNode.execute(anon)) {
+            if (!sequenceCheckNode.execute(inliningTarget, anon)) {
                 throw raise(TypeError, ANONYMOUS_MUST_BE_A_SEQUENCE);
             }
 
-            for (int i = 0; i < sizeNode.execute(frame, anon); ++i) {
-                Object fname = getItemNode.execute(frame, anon, i); /* borrowed */
+            for (int i = 0; i < sizeNode.execute(frame, inliningTarget, anon); ++i) {
+                Object fname = getItemNode.execute(frame, inliningTarget, anon, i); /* borrowed */
                 CFieldObject descr = (CFieldObject) getAttr.executeObject(frame, type, fname);
-                if (getClassNode.execute(descr) != CField) {
+                if (getClassNode.execute(inliningTarget, descr) != CField) {
                     throw raise(AttributeError, S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS, fname);
                 }
                 descr.anonymous = 1;

@@ -45,47 +45,59 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
+@GenerateInline(inlineByDefault = true)
+@GenerateCached
+@ImportStatic(PGuards.class)
 public abstract class GetOrCreateDictNode extends PNodeWithContext {
-    public abstract PDict execute(Object object);
+    public abstract PDict execute(Node inliningTarget, Object object);
+
+    public final PDict executeCached(Object object) {
+        return execute(this, object);
+    }
+
+    public static PDict executeUncached(Object object) {
+        return GetOrCreateDictNodeGen.getUncached().execute(null, object);
+    }
 
     @Specialization
-    static PDict doPythonObject(PythonObject object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getDict") @Cached GetDictIfExistsNode getDictIfExistsNode,
+    static PDict doPythonObject(Node inliningTarget, PythonObject object,
+                    @Shared("getDict") @Cached(inline = false) GetDictIfExistsNode getDictIfExistsNode,
                     @Cached SetDictNode setDictNode,
                     @Cached InlinedBranchProfile createDict,
-                    @Cached PythonObjectFactory factory) {
+                    @Cached(inline = false) PythonObjectFactory factory) {
         PDict dict = getDictIfExistsNode.execute(object);
         if (dict == null) {
             createDict.enter(inliningTarget);
             dict = factory.createDictFixedStorage(object);
-            setDictNode.execute(object, dict);
+            setDictNode.execute(inliningTarget, object, dict);
         }
         return dict;
     }
 
-    @Fallback
-    PDict doOther(Object object,
-                    @Shared("getDict") @Cached GetDictIfExistsNode getDict) {
+    @Specialization(guards = "!isPythonObject(object)")
+    static PDict doOther(Node inliningTarget, Object object,
+                    @Shared("getDict") @Cached(inline = false) GetDictIfExistsNode getDict) {
         PDict dict = getDict.execute(object);
         if (dict == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.UNABLE_SET_DICT_OF_OBJ, object);
+            throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.UNABLE_SET_DICT_OF_OBJ, object);
         }
         return dict;
     }
@@ -93,9 +105,5 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
     @NeverDefault
     public static GetOrCreateDictNode create() {
         return GetOrCreateDictNodeGen.create();
-    }
-
-    public static GetOrCreateDictNode getUncached() {
-        return GetOrCreateDictNodeGen.getUncached();
     }
 }

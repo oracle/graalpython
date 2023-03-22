@@ -137,8 +137,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -152,6 +152,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -1168,8 +1169,8 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization(guards = "right >= 0", replaces = "doLLPosLPos")
         long doLLPosLGeneric(long left, long right, long mod,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile errorProfile,
-                        @Cached InlinedConditionProfile modNegativeProfile) {
+                        @Exclusive @Cached InlinedConditionProfile errorProfile,
+                        @Exclusive @Cached InlinedConditionProfile modNegativeProfile) {
             if (errorProfile.profile(inliningTarget, mod == 0)) {
                 throw raise(ValueError, ErrorMessages.POW_THIRD_ARG_CANNOT_BE_ZERO);
             }
@@ -1863,8 +1864,9 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!a.isNativePointer()")
         Object opVoidPtrLong(VirtualFrame frame, PythonNativeVoidPtr a, long b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
-            return op(hashNode.execute(frame, a), b);
+            return op(hashNode.execute(frame, inliningTarget, a), b);
         }
 
         @Specialization(guards = {"a.isNativePointer()", "b.isNativePointer()"})
@@ -1876,24 +1878,27 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"a.isNativePointer()", "!b.isNativePointer()"})
         long voidPtrsANative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
             long ptrVal = a.getNativePointer();
             // pointers are considered unsigned
-            return op(ptrVal, hashNode.execute(frame, b));
+            return op(ptrVal, hashNode.execute(frame, inliningTarget, b));
         }
 
         @Specialization(guards = {"!a.isNativePointer()", "b.isNativePointer()"})
         long voidPtrsBNative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
             long ptrVal = b.getNativePointer();
             // pointers are considered unsigned
-            return op(ptrVal, hashNode.execute(frame, a));
+            return op(ptrVal, hashNode.execute(frame, inliningTarget, a));
         }
 
         @Specialization(guards = {"!a.isNativePointer()", "!b.isNativePointer()"})
         long voidPtrsManaged(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
-            return op(hashNode.execute(frame, a), hashNode.execute(frame, b));
+            return op(hashNode.execute(frame, inliningTarget, a), hashNode.execute(frame, inliningTarget, b));
         }
 
         @Specialization
@@ -2057,8 +2062,9 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean eqLongVoidPtr(VirtualFrame frame, long a, PythonNativeVoidPtr b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
-            return eqVoidPtrLong(frame, b, a, hashNode);
+            return eqVoidPtrLong(frame, b, a, inliningTarget, hashNode);
         }
 
         @Specialization
@@ -2068,13 +2074,14 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean eqVoidPtrLong(VirtualFrame frame, PythonNativeVoidPtr a, long b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
             if (a.isNativePointer()) {
                 long ptrVal = a.getNativePointer();
                 // pointers are considered unsigned
                 return ptrVal == b;
             }
-            return hashNode.execute(frame, a) == b;
+            return hashNode.execute(frame, inliningTarget, a) == b;
         }
 
         @Specialization(guards = {"a.isNativePointer()", "b.isNativePointer()"})
@@ -2086,24 +2093,27 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"a.isNativePointer()", "!b.isNativePointer()"})
         static boolean voidPtrsANative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
             long ptrVal = a.getNativePointer();
             // pointers are considered unsigned
-            return ptrVal == hashNode.execute(frame, b);
+            return ptrVal == hashNode.execute(frame, inliningTarget, b);
         }
 
         @Specialization(guards = {"!a.isNativePointer()", "b.isNativePointer()"})
         static boolean voidPtrsBNative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
             long ptrVal = b.getNativePointer();
             // pointers are considered unsigned
-            return ptrVal == hashNode.execute(frame, a);
+            return ptrVal == hashNode.execute(frame, inliningTarget, a);
         }
 
         @Specialization(guards = {"!a.isNativePointer()", "!b.isNativePointer()"})
         static boolean voidPtrsManaged(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Bind("this") Node inliningTarget,
                         @Shared("h") @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(frame, a) == hashNode.execute(frame, b);
+            return hashNode.execute(frame, inliningTarget, a) == hashNode.execute(frame, inliningTarget, b);
         }
 
         @Specialization
@@ -2119,7 +2129,7 @@ public final class IntBuiltins extends PythonBuiltins {
                 return PInt.longToBigInteger(ptrVal).equals(b.getValue());
             }
             try {
-                return PyObjectHashNode.getUncached().execute(null, a) == b.longValueExact();
+                return PyObjectHashNode.executeUncached(a) == b.longValueExact();
             } catch (OverflowException e) {
                 return false;
             }
@@ -2222,10 +2232,10 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization(guards = "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)", limit = "1")
         static boolean doDN(VirtualFrame frame, long x, PythonAbstractNativeObject y,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClass,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
-                        @Cached FromNativeSubclassNode fromNativeNode) {
-            return x < fromNativeNode.execute(frame, y);
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
+                        @Shared @Cached FromNativeSubclassNode nativeRight) {
+            return x < nativeRight.execute(frame, y);
         }
 
         @Specialization(guards = {
@@ -2233,20 +2243,20 @@ public final class IntBuiltins extends PythonBuiltins {
                         "isFloatSubtype(frame, inliningTarget, y, getClass, isSubtype)"}, limit = "1")
         static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, PythonAbstractNativeObject y,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClass,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
-                        @Cached FromNativeSubclassNode nativeLeft,
-                        @Cached FromNativeSubclassNode nativeRight) {
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
+                        @Shared @Cached FromNativeSubclassNode nativeLeft,
+                        @Shared @Cached FromNativeSubclassNode nativeRight) {
             return nativeLeft.execute(frame, x) < nativeRight.execute(frame, y);
         }
 
         @Specialization(guards = "isFloatSubtype(frame, inliningTarget, x, getClass, isSubtype)", limit = "1")
         static boolean doDN(VirtualFrame frame, PythonAbstractNativeObject x, double y,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClass,
-                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
-                        @Cached FromNativeSubclassNode fromNativeNode) {
-            return fromNativeNode.execute(frame, x) < y;
+                        @SuppressWarnings("unused") @Shared @Cached GetPythonObjectClassNode getClass,
+                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtype,
+                        @Shared @Cached FromNativeSubclassNode nativeLeft) {
+            return nativeLeft.execute(frame, x) < y;
         }
 
         @Specialization
@@ -2754,9 +2764,10 @@ public final class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString doNativeVoidPtr(VirtualFrame frame, PythonNativeVoidPtr self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Shared("fromLong") @Cached TruffleString.FromLongNode fromLongNode) {
-            return doL(hashNode.execute(frame, self), fromLongNode);
+            return doL(hashNode.execute(frame, inliningTarget, self), fromLongNode);
         }
     }
 
@@ -2769,8 +2780,6 @@ public final class IntBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class FormatNode extends FormatNodeBase {
-        @Child private PyNumberFloatNode floatNode;
-
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return FormatNodeClinicProviderGen.INSTANCE;
@@ -2795,30 +2804,30 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatL(VirtualFrame frame, long self, TruffleString formatString) {
-            return formatPI(frame, factory().createInt(self), formatString);
+        TruffleString formatL(VirtualFrame frame, long self, TruffleString formatString,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyNumberFloatNode floatNode) {
+            return formatPI(frame, factory().createInt(self), formatString, inliningTarget, floatNode);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        TruffleString formatPI(VirtualFrame frame, PInt self, TruffleString formatString) {
+        TruffleString formatPI(VirtualFrame frame, PInt self, TruffleString formatString,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyNumberFloatNode floatNode) {
             PRaiseNode raiseNode = getRaiseNode();
             Spec spec = getSpec(formatString, raiseNode);
             if (isDoubleSpec(spec)) {
                 // lazy init of floatNode serves as branch profile
-                double doubleVal = asDouble(frame, self);
+                double doubleVal = asDouble(frame, inliningTarget, floatNode, self);
                 return formatDouble(raiseNode, spec, doubleVal);
             }
             validateIntegerSpec(raiseNode, spec);
             return formatPInt(self, raiseNode, spec);
         }
 
-        private double asDouble(VirtualFrame frame, Object self) {
-            if (floatNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                floatNode = insert(PyNumberFloatNode.create());
-            }
+        private double asDouble(VirtualFrame frame, Node inliningTarget, PyNumberFloatNode floatNode, Object self) {
             // This should have the semantics of PyNumber_Float
-            return floatNode.execute(frame, self);
+            return floatNode.execute(frame, inliningTarget, self);
         }
 
         private static Spec getSpec(TruffleString formatString, PRaiseNode raiseNode) {
@@ -3022,28 +3031,28 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization(guards = "cannotBeOverridden(self, inliningTarget, getClassNode)")
         static PInt doPInt(PInt self,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) {
             return self;
         }
 
         @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", rewriteOn = OverflowException.class)
         static int doPIntOverridenNarrowInt(PInt self,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) throws OverflowException {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) throws OverflowException {
             return self.intValueExact();
         }
 
         @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class)
         static long doPIntOverridenNarrowLong(PInt self,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) throws OverflowException {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) throws OverflowException {
             return self.longValueExact();
         }
 
         @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", replaces = "doPIntOverridenNarrowLong")
         PInt doPIntOverriden(PInt self,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached InlinedGetClassNode getClassNode) {
+                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) {
             return factory().createInt(self.getValue());
         }
 

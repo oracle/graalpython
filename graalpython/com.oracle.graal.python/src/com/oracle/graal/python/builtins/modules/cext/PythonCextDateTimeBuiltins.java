@@ -67,8 +67,10 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Implementations of the functions in PyDateTimeCAPI. See also {@link PyDateTimeCAPIWrapper}.
@@ -125,13 +127,14 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_DateTime_FromTimestamp extends CApiTernaryBuiltinNode {
         @Specialization
         static Object values(Object type, Object args, Object kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode starArgsNode,
                         @Cached ExpandKeywordStarargsNode kwArgsNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallVarargsMethodNode call) {
             Object[] callArgs = starArgsNode.executeWith(null, args);
-            PKeyword[] kwds = kwArgsNode.execute(kwargs);
-            Object fromTSCallable = lookupNode.execute(null, type, T_FROMTIMESTAMP);
+            PKeyword[] kwds = kwArgsNode.execute(inliningTarget, kwargs);
+            Object fromTSCallable = lookupNode.execute(null, inliningTarget, type, T_FROMTIMESTAMP);
             return call.execute(null, fromTSCallable, callArgs, kwds);
         }
     }
@@ -140,11 +143,12 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffleDateTimeCAPI_Date_FromTimestamp extends CApiBinaryBuiltinNode {
         @Specialization
         static Object values(Object type, Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached ExecutePositionalStarargsNode starArgsNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallVarargsMethodNode call) {
             Object[] callArgs = starArgsNode.executeWith(null, args);
-            Object fromTSCallable = lookupNode.execute(null, type, T_FROMTIMESTAMP);
+            Object fromTSCallable = lookupNode.execute(null, inliningTarget, type, T_FROMTIMESTAMP);
             return call.execute(null, fromTSCallable, callArgs, PKeyword.EMPTY_KEYWORDS);
         }
     }
@@ -171,8 +175,9 @@ public final class PythonCextDateTimeBuiltins {
     abstract static class PyTruffle_PyDateTime_GET_TZINFO extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(null, obj, PyDateTimeCAPIWrapper.T_TZINFO);
+            return getAttr.execute(inliningTarget, obj, PyDateTimeCAPIWrapper.T_TZINFO);
         }
     }
 }

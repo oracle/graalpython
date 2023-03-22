@@ -58,8 +58,10 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextTracebackBuiltins {
@@ -80,6 +82,7 @@ public final class PythonCextTracebackBuiltins {
     abstract static class PyTraceBack_Here extends CApiUnaryBuiltinNode {
         @Specialization
         int tbHere(PFrame frame,
+                        @Bind("this") Node inliningTarget,
                         @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             PythonLanguage language = getLanguage();
             PythonContext.PythonThreadState threadState = getContext().getThreadState(language);
@@ -87,7 +90,7 @@ public final class PythonCextTracebackBuiltins {
             if (currentException != null) {
                 PTraceback traceback = null;
                 if (currentException.getTraceback() != null) {
-                    traceback = materializeLazyTracebackNode.execute(currentException.getTraceback());
+                    traceback = materializeLazyTracebackNode.execute(inliningTarget, currentException.getTraceback());
                 }
                 PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
