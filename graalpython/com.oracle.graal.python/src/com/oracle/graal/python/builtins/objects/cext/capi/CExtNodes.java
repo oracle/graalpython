@@ -788,7 +788,11 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class FromCharPointerNode extends Node {
-        public abstract Object execute(Object charPtr);
+        public final Object execute(Object charPtr) {
+            return execute(charPtr, true);
+        }
+
+        public abstract Object execute(Object charPtr, boolean copy);
 
         @Specialization
         static TruffleString doCStringWrapper(CStringWrapper cStringWrapper) {
@@ -796,16 +800,16 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper,
+        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper, boolean copy,
                         @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             byte[] byteArray = cByteArrayWrapper.getByteArray();
             // TODO(fa): what is the encoding ? ASCII only ?
-            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.US_ASCII, true), TS_ENCODING);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.US_ASCII, copy), TS_ENCODING);
         }
 
         @Specialization
-        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj,
+        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, boolean copy,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -813,7 +817,7 @@ public abstract class CExtNodes {
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 // TODO(fa): what is the encoding ? ASCII only ?
-                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, Encoding.US_ASCII, true), TS_ENCODING);
+                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, Encoding.US_ASCII, copy), TS_ENCODING);
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -821,7 +825,7 @@ public abstract class CExtNodes {
         private static Unsafe UNSAFE = PythonUtils.initUnsafe();
 
         @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")
-        static TruffleString doPointer(Object charPtr,
+        static TruffleString doPointer(Object charPtr, boolean copy,
                         @CachedLibrary("charPtr") InteropLibrary lib,
                         @Cached TruffleString.FromNativePointerNode fromNative,
                         @Cached StringMaterializeNode materialize,
@@ -837,7 +841,7 @@ public abstract class CExtNodes {
                 while (UNSAFE.getByte(pointer + length) != 0) {
                     length++;
                 }
-                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, true);
+                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, copy);
             }
 
             return materialize.execute(factory.createString(new NativeCharSequence(charPtr, 1, false)));
