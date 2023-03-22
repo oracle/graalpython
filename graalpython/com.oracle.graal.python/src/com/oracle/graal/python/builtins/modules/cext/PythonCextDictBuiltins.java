@@ -233,7 +233,7 @@ public final class PythonCextDictBuiltins {
     public abstract static class PyDict_GetItem extends CApiBinaryBuiltinNode {
 
         @Specialization
-       Object getItem(PDict dict, Object key,
+        Object getItem(PDict dict, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
@@ -271,7 +271,7 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
-       Object getItem(PDict dict, Object key,
+        Object getItem(PDict dict, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PromoteBorrowedValue promoteNode,
@@ -299,7 +299,7 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
-       static int setItem(PDict dict, Object key, Object value,
+        static int setItem(PDict dict, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached SetItemNode setItemNode) {
             setItemNode.execute(null, inliningTarget, dict, key, value);
@@ -316,7 +316,7 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject, Py_hash_t}, call = Direct)
     abstract static class _PyDict_SetItem_KnownHash extends CApiQuaternaryBuiltinNode {
         @Specialization
-       int setItem(PDict dict, Object key, Object value, Object givenHash,
+        int setItem(PDict dict, Object key, Object value, Object givenHash,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaLongExactNode castToLong,
