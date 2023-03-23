@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -173,10 +173,11 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
             }
             Object delegate = getDelegate();
             if (delegate instanceof PythonObject) {
-                // Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
-                // circumvents any checks if the attribute may be written according to the common
-                // Python
-                // rules. So, directly write to the Python object's storage.
+                /*
+                 * Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
+                 * circumvents any checks if the attribute may be written according to the common
+                 * Python rules. So, directly write to the Python object's storage.
+                 */
                 writeAttrToDynamicObjectNode.execute(((PythonObject) delegate).getStorage(), T___DOC__, fromCharPointerNode.execute(value));
             } else {
                 throw UnsupportedMessageException.create();

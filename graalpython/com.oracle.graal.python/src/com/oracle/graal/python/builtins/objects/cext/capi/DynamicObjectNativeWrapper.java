@@ -1369,9 +1369,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "eq(TP_NAME, key)")
             static void doTpName(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                            @Cached CExtNodes.FromCharPointerNode fromCharPointerNode,
-                            @Cached CastToTruffleStringNode cast) {
-                object.setName(cast.execute(fromCharPointerNode.execute(value)));
+                            @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) {
+                object.setName(fromCharPointerNode.execute(value));
             }
 
             @Specialization(guards = "eq(TP_FLAGS, key)")
