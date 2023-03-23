@@ -68,6 +68,8 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -527,10 +529,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_search", minNumOfPositionalArgs = 6)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
+    abstract static class RECheckInputTypeNode extends PNodeWithRaise {
 
         private static final PTuple SUPPORTED_BINARY_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[]{PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray,
                         PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
@@ -538,46 +537,16 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
         private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
 
-        private static final TruffleString T_MATCH_CONSTRUCTOR = tsLiteral("Match");
-        private static final TruffleString T__PATTERN__TREGEX_CACHE = tsLiteral("_Pattern__tregex_cache");
-        private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
-        protected static final TruffleString T__PATTERN__FALLBACK_COMPILE = tsLiteral("_Pattern__fallback_compile");
+        public abstract void execute(VirtualFrame frame, TRegexCache tRegexCache, Object input);
 
-        @Specialization(guards = {"pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
-        Object doCached(VirtualFrame frame, Object pattern, Object inputStringOrBytes, Object posArg, Object endPosArg, int method, boolean mustAdvance,
-                        @Cached("pattern") Object cachedPattern,
-                        @Cached("method") int cachedMethod,
-                        @Cached("mustAdvance") boolean cachedMustAdvance,
-                        @Cached @Shared ReadAttributeFromObjectNode readCacheNode,
-                        @Cached @Shared TRegexCompile tRegexCompileNode,
-                        @Cached("getTRegexCache(readCacheNode, pattern)") TRegexCache tRegexCache,
-                        @Cached("tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance)") Object compiledRegex,
-                        @Cached @Shared PyNumberIndexNode indexNode,
-                        @Cached @Shared PyNumberAsSizeNode asSizeNode,
-                        @Cached @Shared PyObjectLookupAttr lookupIndexGroupNode,
-                        @Cached @Shared BuiltinFunctions.IsInstanceNode isStringNode,
-                        @Cached @Shared BuiltinFunctions.IsInstanceNode isBytesNode,
-                        @Cached @Shared ConditionProfile unsupportedInputTypeProfile,
-                        @Cached @Shared ConditionProfile unexpectedInputTypeProfile,
-                        @Cached @Shared PyObjectSizeNode lengthNode,
-                        @Cached @Shared ConditionProfile truncatingInputProfile,
-                        @Cached @Shared SliceNodes.CreateSliceNode createSliceNode,
-                        @Cached @Shared PyObjectGetItem getItemNode,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached @Shared ConditionProfile fallbackProfile,
-                        @Cached("create(T__PATTERN__FALLBACK_COMPILE)") @Shared GetAttributeNode getFallbackCompileNode,
-                        @Cached @Shared CallNode callFallbackCompileNode,
-                        @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
-                        @Cached @Shared CallNode callFallbackMethodNode,
-                        @Cached @Shared TRegexCallExec tRegexCallExec,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary libResult,
-                        @Cached @Shared ConditionProfile matchProfile,
-                        @Cached("lookupMatchConstructor()") @Shared Object matchConstructor,
-                        @Cached @Shared CallNode constructResultNode) {
-            int pos = asSizeNode.executeExact(frame, indexNode.execute(frame, posArg));
-            int endPos = asSizeNode.executeExact(frame, indexNode.execute(frame, endPosArg));
-            boolean isString = (boolean) isStringNode.execute(frame, inputStringOrBytes, PythonBuiltinClassType.PString);
-            boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, inputStringOrBytes, SUPPORTED_BINARY_INPUT_TYPES);
+        @Specialization
+        protected void check(VirtualFrame frame, TRegexCache tRegexCache, Object input,
+                        @Cached BuiltinFunctions.IsInstanceNode isStringNode,
+                        @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
+                        @Cached ConditionProfile unsupportedInputTypeProfile,
+                        @Cached ConditionProfile unexpectedInputTypeProfile) {
+            boolean isString = (boolean) isStringNode.execute(frame, input, PythonBuiltinClassType.PString);
+            boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, input, SUPPORTED_BINARY_INPUT_TYPES);
             if (unsupportedInputTypeProfile.profile(!isString && !isBytes)) {
                 throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
@@ -588,7 +557,79 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
                 }
             }
-            int length = lengthNode.execute(frame, inputStringOrBytes);
+        }
+    }
+
+    abstract static class CreateMatchFromTRegexResultNode extends PNodeWithContext {
+
+        private static final TruffleString T_MATCH_CONSTRUCTOR = tsLiteral("Match");
+        private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
+
+        public abstract Object execute(VirtualFrame frame, Object pattern, int pos, int endPos, Object regexResult, Object input);
+
+        @Specialization
+        protected Object createMatch(VirtualFrame frame, Object pattern, int pos, int endPos, Object regexResult, Object input,
+                        @Cached("lookupMatchConstructor()") Object matchConstructor,
+                        @Cached ConditionProfile matchProfile,
+                        @CachedLibrary(limit = "1") InteropLibrary libResult,
+                        @Cached PyObjectLookupAttr lookupIndexGroupNode,
+                        @Cached CallNode constructResultNode) {
+            try {
+                if (matchProfile.profile((boolean) libResult.readMember(regexResult, "isMatch"))) {
+                    Object indexGroup = lookupIndexGroupNode.execute(frame, pattern, T__PATTERN__INDEXGROUP);
+                    return constructResultNode.execute(matchConstructor, pattern, pos, endPos, regexResult, input, indexGroup);
+                } else {
+                    return PNone.NONE;
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @TruffleBoundary
+        @NeverDefault
+        protected Object lookupMatchConstructor() {
+            PythonModule module = getContext().lookupBuiltinModule(T__SRE);
+            return PyObjectLookupAttr.getUncached().execute(null, module, T_MATCH_CONSTRUCTOR);
+        }
+    }
+
+    @Builtin(name = "tregex_search", minNumOfPositionalArgs = 6)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
+        private static final TruffleString T__PATTERN__TREGEX_CACHE = tsLiteral("_Pattern__tregex_cache");
+        protected static final TruffleString T__PATTERN__FALLBACK_COMPILE = tsLiteral("_Pattern__fallback_compile");
+
+        @Specialization(guards = {"pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
+        protected Object doCached(VirtualFrame frame, Object pattern, Object input, Object posArg, Object endPosArg, int method, boolean mustAdvance,
+                        @Cached("pattern") Object cachedPattern,
+                        @Cached("method") int cachedMethod,
+                        @Cached("mustAdvance") boolean cachedMustAdvance,
+                        @Cached @Shared ReadAttributeFromObjectNode readCacheNode,
+                        @Cached @Shared TRegexCompile tRegexCompileNode,
+                        @Cached("getTRegexCache(readCacheNode, pattern)") TRegexCache tRegexCache,
+                        @Cached("tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance)") Object compiledRegex,
+                        @Cached @Shared ConditionProfile fallbackProfile,
+                        @Cached @Shared ConditionProfile truncatingInputProfile,
+                        @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
+                        @Cached @Shared PyNumberIndexNode indexNode,
+                        @Cached @Shared PyNumberAsSizeNode asSizeNode,
+                        @Cached @Shared PyObjectSizeNode lengthNode,
+                        @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
+                        @Cached("create(T__PATTERN__FALLBACK_COMPILE)") @Shared GetAttributeNode getFallbackCompileNode,
+                        @Cached @Shared CallNode callFallbackCompileNode,
+                        @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
+                        @Cached @Shared CallNode callFallbackMethodNode,
+                        @Cached @Shared SliceNodes.CreateSliceNode createSliceNode,
+                        @Cached @Shared PyObjectGetItem getItemNode,
+                        @Cached @Shared TRegexCallExec tRegexCallExec,
+                        @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
+            reCheckInputTypeNode.execute(frame, tRegexCache, input);
+
+            int pos = asSizeNode.executeExact(frame, indexNode.execute(frame, posArg));
+            int endPos = asSizeNode.executeExact(frame, indexNode.execute(frame, endPosArg));
+            int length = lengthNode.execute(frame, input);
             if (pos < 0) {
                 pos = 0;
             } else if (pos > length) {
@@ -599,40 +640,30 @@ public class SREModuleBuiltins extends PythonBuiltins {
             } else if (endPos > length) {
                 endPos = length;
             }
+
             if (fallbackProfile.profile(libCompiledRegex.isNull(compiledRegex))) {
                 Object fallbackRegex = callFallbackCompileNode.execute(getFallbackCompileNode.executeObject(frame, pattern));
-                return callFallbackMethodNode.execute(getFallbackMethodNode.executeObject(frame, fallbackRegex), inputStringOrBytes, pos, endPos);
+                return callFallbackMethodNode.execute(getFallbackMethodNode.executeObject(frame, fallbackRegex), input, pos, endPos);
             }
-            Object truncatedInput = inputStringOrBytes;
+
+            Object truncatedInput = input;
             if (truncatingInputProfile.profile(endPos != length)) {
-                truncatedInput = getItemNode.execute(frame, inputStringOrBytes, createSliceNode.execute(0, endPos, 1));
+                truncatedInput = getItemNode.execute(frame, input, createSliceNode.execute(0, endPos, 1));
             }
             Object regexResult = tRegexCallExec.execute(frame, compiledRegex, truncatedInput, pos);
-            try {
-                if (matchProfile.profile((boolean) libResult.readMember(regexResult, "isMatch"))) {
-                    Object indexGroup = lookupIndexGroupNode.execute(frame, pattern, T__PATTERN__INDEXGROUP);
-                    return constructResultNode.execute(matchConstructor, pattern, pos, endPos, regexResult, inputStringOrBytes, indexGroup);
-                } else {
-                    return PNone.NONE;
-                }
-            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+
+            return createMatchFromTRegexResultNode.execute(frame, pattern, pos, endPos, regexResult, input);
         }
 
         @Specialization(guards = "method == cachedMethod", limit = "3", replaces = "doCached")
         @ReportPolymorphism.Megamorphic
-        Object doDynamic(VirtualFrame frame, Object pattern, Object inputStringOrBytes, Object posArg, Object endPosArg, int method, boolean mustAdvance,
+        protected Object doDynamic(VirtualFrame frame, Object pattern, Object inputStringOrBytes, Object posArg, Object endPosArg, int method, boolean mustAdvance,
                         @Cached("method") int cachedMethod,
                         @Cached @Shared ReadAttributeFromObjectNode readCacheNode,
                         @Cached @Shared TRegexCompile tRegexCompileNode,
                         @Cached @Shared PyNumberIndexNode indexNode,
                         @Cached @Shared PyNumberAsSizeNode asSizeNode,
-                        @Cached @Shared PyObjectLookupAttr lookupIndexGroupNode,
-                        @Cached @Shared BuiltinFunctions.IsInstanceNode isStringNode,
-                        @Cached @Shared BuiltinFunctions.IsInstanceNode isBytesNode,
-                        @Cached @Shared ConditionProfile unsupportedInputTypeProfile,
-                        @Cached @Shared ConditionProfile unexpectedInputTypeProfile,
+                        @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
                         @Cached @Shared PyObjectSizeNode lengthNode,
                         @Cached @Shared ConditionProfile truncatingInputProfile,
                         @Cached @Shared SliceNodes.CreateSliceNode createSliceNode,
@@ -644,16 +675,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
                         @Cached @Shared CallNode callFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary libResult,
-                        @Cached @Shared ConditionProfile matchProfile,
-                        @Cached("lookupMatchConstructor()") @Shared Object matchConstructor,
-                        @Cached @Shared CallNode constructResultNode) {
+                        @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             TRegexCache tRegexCache = getTRegexCache(readCacheNode, pattern);
             Object compiledRegex = tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance);
             return doCached(frame, pattern, inputStringOrBytes, posArg, endPosArg, method, mustAdvance, pattern, cachedMethod, mustAdvance, readCacheNode, tRegexCompileNode, tRegexCache,
-                            compiledRegex, indexNode, asSizeNode, lookupIndexGroupNode, isStringNode, isBytesNode, unsupportedInputTypeProfile, unexpectedInputTypeProfile, lengthNode,
-                            truncatingInputProfile, createSliceNode, getItemNode, libCompiledRegex, fallbackProfile, getFallbackCompileNode, callFallbackCompileNode, getFallbackMethodNode,
-                            callFallbackMethodNode, tRegexCallExec, libResult, matchProfile, matchConstructor, constructResultNode);
+                            compiledRegex, fallbackProfile, truncatingInputProfile, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex, getFallbackCompileNode,
+                            callFallbackCompileNode, getFallbackMethodNode, callFallbackMethodNode, createSliceNode, getItemNode, tRegexCallExec, createMatchFromTRegexResultNode);
         }
 
         protected static TRegexCache getTRegexCache(ReadAttributeFromObjectNode readCacheNode, Object pattern) {
@@ -662,13 +689,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         protected static TruffleString getMethodName(int method) {
             return PythonMethod.fromOrdinal(method).getMethodName();
-        }
-
-        @TruffleBoundary
-        @NeverDefault
-        protected Object lookupMatchConstructor() {
-            PythonModule module = getContext().lookupBuiltinModule(T__SRE);
-            return PyObjectLookupAttr.getUncached().execute(null, module, T_MATCH_CONSTRUCTOR);
         }
     }
 
