@@ -79,7 +79,7 @@ public final class PythonCextDescrBuiltins {
         @Specialization
         Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
                         @Cached CreateGetSetNode createGetSetNode) {
-            return createGetSetNode.execute(name, cls, getter, setter, doc, closure, getLanguage(), factory());
+            return createGetSetNode.execute(name, cls, getter, setter, doc, closure);
         }
     }
 
@@ -89,7 +89,7 @@ public final class PythonCextDescrBuiltins {
         @Specialization
         Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
                         @Cached NewClassMethodNode newClassMethodNode) {
-            Object func = newClassMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, type, doc, factory());
+            Object func = newClassMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, type, doc);
             if (!isClassOrStaticMethod(flags)) {
                 /*
                  * NewClassMethodNode only wraps method with METH_CLASS and METH_STATIC set but we

@@ -299,7 +299,7 @@ typedef struct {
     BUILTIN(PyTruffleLong_FromString, PyObject*, const char*, int, int) \
     BUILTIN(PyTruffleLong_One, PyObject*) \
     BUILTIN(PyTruffleLong_Zero, PyObject*) \
-    BUILTIN(PyTruffleModule_AddFunctionToModule, int, void*, PyObject*, const char*, void*, int, int, void*) \
+    BUILTIN(PyTruffleModule_AddFunctionToModule, int, void*, PyObject*, const char*, void*, int, int, const char*) \
     BUILTIN(PyTruffleNumber_BinOp, PyObject*, PyObject*, PyObject*, int) \
     BUILTIN(PyTruffleNumber_InPlaceBinOp, PyObject*, PyObject*, PyObject*, int) \
     BUILTIN(PyTruffleNumber_UnaryOp, PyObject*, PyObject*, int) \
@@ -312,10 +312,10 @@ typedef struct {
     BUILTIN(PyTruffleStructSequence_InitType2, int, PyTypeObject*, void*, void*, int) \
     BUILTIN(PyTruffleStructSequence_NewType, PyTypeObject*, const char*, const char*, void*, void*, int) \
     BUILTIN(PyTruffleToCharPointer, void*, PyObject*) \
-    BUILTIN(PyTruffleType_AddFunctionToType, int, void*, PyTypeObject*, PyObject*, const char*, void*, int, int, void*) \
-    BUILTIN(PyTruffleType_AddGetSet, int, PyTypeObject*, PyObject*, const char*, void*, void*, void*, void*) \
-    BUILTIN(PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, void*) \
-    BUILTIN(PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, void*) \
+    BUILTIN(PyTruffleType_AddFunctionToType, int, void*, PyTypeObject*, PyObject*, const char*, void*, int, int, const char*) \
+    BUILTIN(PyTruffleType_AddGetSet, int, PyTypeObject*, PyObject*, const char*, void*, void*, const char*, void*) \
+    BUILTIN(PyTruffleType_AddMember, int, PyTypeObject*, PyObject*, const char*, int, Py_ssize_t, int, const char*) \
+    BUILTIN(PyTruffleType_AddSlot, int, PyTypeObject*, PyObject*, const char*, void*, int, int, const char*) \
     BUILTIN(PyTruffleUnicode_Decode, PyObject*, PyObject*, const char*, const char*) \
     BUILTIN(PyTruffleUnicode_DecodeUTF8Stateful, PyObject*, void*, const char*, int) \
     BUILTIN(PyTruffleUnicode_FromUCS, PyObject*, void*, Py_ssize_t, int) \

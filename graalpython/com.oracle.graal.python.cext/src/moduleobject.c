@@ -32,7 +32,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
                        function_pointer_to_java(def->ml_meth),
                        def->ml_flags,
                        get_method_flags_wrapper(def->ml_flags),
-					   def->ml_doc);
+					   truffleString(def->ml_doc));
     }
     return 0;
 }
