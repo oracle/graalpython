@@ -178,7 +178,7 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
                 CompilerDirectives.transferToInterpreter();
                 throw UnsupportedMessageException.create();
             }
-            setAttrNode.execute(getDelegate(), fromJavaStringNode.execute(member, TS_ENCODING), fromCharPointerNode.execute(value));
+            setAttrNode.execute(getDelegate(), fromJavaStringNode.execute(member, TS_ENCODING), fromCharPointerNode.execute(value, false));
         } finally {
             gil.release(mustRelease);
         }

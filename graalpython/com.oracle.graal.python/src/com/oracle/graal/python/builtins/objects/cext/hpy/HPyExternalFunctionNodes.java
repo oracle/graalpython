@@ -1553,11 +1553,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private PCallCapiFunction callFromTyped;
         @Child private HPyCloseAndGetHandleNode closeAndGetHandleNode;
         @Child private FromCharPointerNode fromCharPointerNode;
-        @Child private CastToTruffleStringNode castToStringNode;
         @Child private GetIntArrayNode getIntArrayNode;
         @Child private PRaiseNode raiseNode;
-
-        @CompilationFinal private ConditionProfile isAllocatedProfile;
 
         @TruffleBoundary
         public HPyGetBufferRootNode(PythonLanguage language, TruffleString name) {
@@ -1626,10 +1623,6 @@ public abstract class HPyExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 fromCharPointerNode = insert(FromCharPointerNodeGen.create());
             }
-            if (castToStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToTruffleStringNode.create());
-            }
             if (valueLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 valueLib = insert(InteropLibrary.getFactory().createDispatched(3));
@@ -1660,7 +1653,7 @@ public abstract class HPyExternalFunctionNodes {
                 int ndim = castToInt(ptrLib.readMember(bufferPtr, "ndim"));
                 int itemSize = castToInt(ptrLib.readMember(bufferPtr, "itemsize"));
                 boolean readonly = castToInt(ptrLib.readMember(bufferPtr, "readonly")) != 0;
-                TruffleString format = castToStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(bufferPtr, "format")));
+                TruffleString format = fromCharPointerNode.execute(ptrLib.readMember(bufferPtr, "format"));
                 Object shapePtr = ptrLib.readMember(bufferPtr, "shape");
                 Object stridesPtr = ptrLib.readMember(bufferPtr, "strides");
                 Object suboffsetsPtr = ptrLib.readMember(bufferPtr, "suboffsets");
