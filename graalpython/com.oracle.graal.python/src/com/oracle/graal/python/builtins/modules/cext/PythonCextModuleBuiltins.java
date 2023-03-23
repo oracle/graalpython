@@ -204,17 +204,17 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {Pointer, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class PyTruffleModule_AddFunctionToModule extends CApi7BuiltinNode {
 
         @Specialization
-        Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
+        static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
             Object modName = dylib.getOrDefault(mod.getStorage(), T___NAME__, null);
             assert modName != null : "module name is missing!";
-            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc, factory());
+            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc);
             setattrNode.execute(null, mod, name, func);
             return 0;
         }
