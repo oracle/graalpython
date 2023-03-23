@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStri
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
