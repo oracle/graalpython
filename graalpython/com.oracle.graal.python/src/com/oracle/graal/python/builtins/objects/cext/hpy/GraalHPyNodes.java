@@ -336,7 +336,7 @@ public class GraalHPyNodes {
             try {
                 Object doc = interopLibrary.readMember(methodDef, "doc");
                 if (!resultLib.isNull(doc)) {
-                    methodDoc = fromCharPointerNode.execute(doc);
+                    methodDoc = fromCharPointerNode.execute(doc, false);
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 // fall through
@@ -429,7 +429,7 @@ public class GraalHPyNodes {
             try {
                 Object getSetDocPtr = interopLibrary.readMember(legacyGetSetDef, "doc");
                 if (!resultLib.isNull(getSetDocPtr)) {
-                    getSetDescrDoc = fromCharPointerNode.execute(getSetDocPtr);
+                    getSetDescrDoc = fromCharPointerNode.execute(getSetDocPtr, false);
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 // fall through
@@ -569,18 +569,13 @@ public class GraalHPyNodes {
             assert interopLibrary.isMemberReadable(memberDef, "doc");
 
             try {
-                TruffleString name;
-                try {
-                    name = castToTruffleStringNode.execute(fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name")));
-                } catch (CannotCastException e) {
-                    throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
-                }
+                TruffleString name = fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name"));
 
                 // note: 'doc' may be NULL; in this case, we would store 'None'
                 Object memberDoc = PNone.NONE;
                 Object doc = interopLibrary.readMember(memberDef, "doc");
                 if (!valueLib.isNull(doc)) {
-                    memberDoc = fromCharPointerNode.execute(doc);
+                    memberDoc = fromCharPointerNode.execute(doc, false);
                 }
 
                 int flags = valueLib.asInt(interopLibrary.readMember(memberDef, "flags"));
@@ -628,7 +623,6 @@ public class GraalHPyNodes {
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached PCallHPyFunction callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
@@ -641,18 +635,13 @@ public class GraalHPyNodes {
             assert interopLibrary.isMemberReadable(memberDef, "doc");
 
             try {
-                TruffleString name;
-                try {
-                    name = castToTruffleStringNode.execute(fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name")));
-                } catch (CannotCastException e) {
-                    throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
-                }
+                TruffleString name = fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name"));
 
                 // note: 'doc' may be NULL; in this case, we would store 'None'
                 Object memberDoc = PNone.NONE;
                 Object doc = interopLibrary.readMember(memberDef, "doc");
                 if (!valueLib.isNull(doc)) {
-                    memberDoc = fromCharPointerNode.execute(doc);
+                    memberDoc = fromCharPointerNode.execute(doc, false);
                 }
 
                 int type = valueLib.asInt(callHelperNode.call(context, GRAAL_HPY_MEMBER_GET_TYPE, memberDef));
@@ -704,7 +693,6 @@ public class GraalHPyNodes {
                         @CachedLibrary("memberDef") InteropLibrary memberDefLib,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeDocNode,
@@ -718,18 +706,13 @@ public class GraalHPyNodes {
             assert memberDefLib.isMemberReadable(memberDef, "closure");
 
             try {
-                TruffleString name;
-                try {
-                    name = castToTruffleStringNode.execute(fromCharPointerNode.execute(memberDefLib.readMember(memberDef, "name")));
-                } catch (CannotCastException e) {
-                    throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
-                }
+                TruffleString name = fromCharPointerNode.execute(memberDefLib.readMember(memberDef, "name"));
 
                 // note: 'doc' may be NULL; in this case, we would store 'None'
                 Object memberDoc = PNone.NONE;
                 Object docCharPtr = memberDefLib.readMember(memberDef, "doc");
                 if (!valueLib.isNull(docCharPtr)) {
-                    memberDoc = fromCharPointerNode.execute(docCharPtr);
+                    memberDoc = fromCharPointerNode.execute(docCharPtr, false);
                 }
 
                 Object closurePtr = memberDefLib.readMember(memberDef, "closure");

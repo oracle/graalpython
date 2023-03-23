@@ -789,44 +789,60 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class FromCharPointerNode extends Node {
-        public final Object execute(Object charPtr) {
-            return execute(charPtr, true);
+        public final TruffleString execute(Object charPtr) {
+            return execute(charPtr, Encoding.UTF_8, true);
         }
 
-        public abstract Object execute(Object charPtr, boolean copy);
+        public final TruffleString execute(Object charPtr, boolean copy) {
+            return execute(charPtr, Encoding.UTF_8, copy);
+        }
+
+        public final TruffleString execute(Object charPtr, Encoding encoding) {
+            return execute(charPtr, encoding, true);
+        }
+
+        public abstract TruffleString execute(Object charPtr, Encoding encoding, boolean copy);
 
         @Specialization
-        static TruffleString doCStringWrapper(CStringWrapper cStringWrapper) {
+        static TruffleString doCStringWrapper(CStringWrapper cStringWrapper, @SuppressWarnings("unused") Encoding encoding, @SuppressWarnings("unused") boolean copy) {
             return cStringWrapper.getString();
         }
 
         @Specialization
-        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper, boolean copy,
+        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper, Encoding encoding, boolean copy,
                         @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
             byte[] byteArray = cByteArrayWrapper.getByteArray();
-            // TODO(fa): what is the encoding ? ASCII only ?
-            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.US_ASCII, copy), TS_ENCODING);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, encoding, copy), TS_ENCODING);
         }
 
         @Specialization
-        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, boolean copy,
+        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, Encoding encoding, boolean copy,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
             Object delegate = obj.getDelegate();
-            if (delegate instanceof PBytesLike) {
-                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                // TODO(fa): what is the encoding ? ASCII only ?
-                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, Encoding.US_ASCII, copy), TS_ENCODING);
+            boolean needs_copy;
+            if (delegate instanceof PBytes) {
+                // 'bytes' objects are immutable, so we can safely avoid a copy of the content
+                needs_copy = false;
+            } else if (delegate instanceof PByteArray) {
+                needs_copy = copy;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
             }
-            throw CompilerDirectives.shouldNotReachHere();
+            byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, encoding, needs_copy), TS_ENCODING);
         }
 
         private static Unsafe UNSAFE = PythonUtils.initUnsafe();
 
         @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")
-        static TruffleString doPointer(Object charPtr, boolean copy,
+        static TruffleString doPointer(Object charPtr, Encoding encoding, boolean copy,
                         @CachedLibrary("charPtr") InteropLibrary lib,
                         @Cached TruffleString.FromNativePointerNode fromNative,
                         @Cached PCallCapiFunction callNode) {
@@ -841,7 +857,7 @@ public abstract class CExtNodes {
                 while (UNSAFE.getByte(pointer + length) != 0) {
                     length++;
                 }
-                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, copy);
+                return fromNative.execute(charPtr, 0, length, encoding, copy);
             }
             return StringMaterializeNode.materializeNativeCharSequence(new NativeCharSequence(charPtr, 1, false), callNode, UnicodeFromWcharNodeGen.getUncached());
         }
@@ -2846,7 +2862,7 @@ public abstract class CExtNodes {
             try {
                 Object methodDocPtr = interopLibrary.readMember(methodDef, J_ML_DOC);
                 if (!resultLib.isNull(methodDocPtr)) {
-                    methodDoc = fromCharPointerNode.execute(methodDocPtr);
+                    methodDoc = fromCharPointerNode.execute(methodDocPtr, false);
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 // fall through

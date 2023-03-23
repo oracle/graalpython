@@ -106,17 +106,16 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static boolean fallback(Object name1, Object name2,
-                        @Cached CastToTruffleStringNode cast,
                         @Cached CExtNodes.FromCharPointerNode fromCharPtr,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached TruffleString.EqualNode equalNode) {
             TruffleString n1 = name1 instanceof TruffleString ? (TruffleString) name1 : null;
             TruffleString n2 = name2 instanceof TruffleString ? (TruffleString) name2 : null;
             if (n1 == null) {
-                n1 = lib.isNull(name1) ? null : cast.execute(fromCharPtr.execute(name1));
+                n1 = lib.isNull(name1) ? null : fromCharPtr.execute(name1, false);
             }
             if (n2 == null) {
-                n2 = lib.isNull(name2) ? null : cast.execute(fromCharPtr.execute(name2));
+                n2 = lib.isNull(name2) ? null : fromCharPtr.execute(name2, false);
             }
             return ts(n1, n2, equalNode);
         }

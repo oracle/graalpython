@@ -108,12 +108,12 @@ public final class PyCapsule extends PythonBuiltinObject {
     @TruffleBoundary
     public String toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
         String quote, n;
-        if (getName() != null) {
+        if (name != null) {
             quote = "\"";
-            if (getName() instanceof TruffleString) {
+            if (name instanceof TruffleString) {
                 n = ((TruffleString) getName()).toJavaStringUncached();
             } else {
-                n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(name));
+                n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(name, false));
             }
         } else {
             quote = "";

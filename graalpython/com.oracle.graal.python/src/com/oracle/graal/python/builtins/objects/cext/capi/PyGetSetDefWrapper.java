@@ -173,10 +173,11 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
             }
             Object delegate = getDelegate();
             if (delegate instanceof PythonObject) {
-                // Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
-                // circumvents any checks if the attribute may be written according to the common
-                // Python
-                // rules. So, directly write to the Python object's storage.
+                /*
+                 * Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
+                 * circumvents any checks if the attribute may be written according to the common
+                 * Python rules. So, directly write to the Python object's storage.
+                 */
                 writeAttrToDynamicObjectNode.execute(((PythonObject) delegate).getStorage(), T___DOC__, fromCharPointerNode.execute(value));
             } else {
                 throw UnsupportedMessageException.create();
