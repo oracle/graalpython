@@ -848,26 +848,6 @@ public abstract class CExtNodes {
         }
     }
 
-    /**
-     * Very similar to {@link FromCharPointerNode}. Converts a C character pointer into a Python
-     * string where decoding is done lazily. Additionally, if the provided pointer denotes a
-     * {@code NULL} pointer, this will be converted to {@code None}.
-     */
-    public abstract static class CharPtrToJavaObjectNode extends PNodeWithContext {
-
-        public abstract Object execute(Object object);
-
-        @Specialization(limit = "2")
-        public static Object run(Object object,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @CachedLibrary("object") InteropLibrary interopLibrary) {
-            if (interopLibrary.isNull(object)) {
-                return PNone.NONE;
-            }
-            return fromCharPointerNode.execute(object);
-        }
-    }
-
     @GenerateUncached
     public abstract static class GetNativeClassNode extends PNodeWithContext {
 

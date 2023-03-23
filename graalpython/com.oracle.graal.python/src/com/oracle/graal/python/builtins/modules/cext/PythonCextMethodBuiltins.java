@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi9Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CharPtrToJavaObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -79,26 +78,22 @@ public final class PythonCextMethodBuiltins {
 
     abstract static class CFunctionNewExMethodNode extends Node {
 
-        abstract Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object cls, Object doc,
-                        PythonObjectFactory factory);
+        abstract Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object cls, Object doc);
 
-        final Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
-                        PythonObjectFactory factory) {
-            return execute(methodDefPtr, name, methObj, flags, wrapper, self, module, PNone.NO_VALUE, doc, factory);
+        final Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc) {
+            return execute(methodDefPtr, name, methObj, flags, wrapper, self, module, PNone.NO_VALUE, doc);
         }
 
         @Specialization
         static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object cls, Object doc,
-                        PythonObjectFactory factory,
+                        @Cached PythonObjectFactory factory,
                         @Cached CreateFunctionNode createFunctionNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                        @Cached CharPtrToJavaObjectNode charPtrToJavaObjectNode) {
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             Object f = createFunctionNode.execute(name, methObj, wrapper, PNone.NO_VALUE, flags, factory);
             assert f instanceof PBuiltinFunction;
             PBuiltinFunction func = (PBuiltinFunction) f;
             dylib.put(func.getStorage(), T___NAME__, name);
-            Object strDoc = charPtrToJavaObjectNode.execute(doc);
-            dylib.put(func.getStorage(), T___DOC__, strDoc);
+            dylib.put(func.getStorage(), T___DOC__, doc);
             PBuiltinMethod method;
             if (cls != PNone.NO_VALUE) {
                 method = factory.createBuiltinMethod(self, func, cls);
@@ -115,9 +110,9 @@ public final class PythonCextMethodBuiltins {
     abstract static class PyTruffleCMethod_NewEx extends CApi9BuiltinNode {
 
         @Specialization
-        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
+        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
-            return cFunctionNewExMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, self, module, cls, doc, factory());
+            return cFunctionNewExMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, self, module, cls, doc);
         }
     }
 }
