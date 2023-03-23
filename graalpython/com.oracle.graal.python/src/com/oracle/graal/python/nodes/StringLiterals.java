@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -163,7 +163,6 @@ public abstract class StringLiterals {
     public static final TruffleString T_HPY_SUFFIX = tsLiteral(".hpy.so");
     public static final TruffleString T_EXT_SO = tsLiteral(".so");
     public static final TruffleString T_EXT_DYLIB = tsLiteral(".dylib");
-    public static final TruffleString T_EXT_SU = tsLiteral(".su");
     public static final TruffleString T_EXT_PYD = tsLiteral(".pyd");
 
     public static final TruffleString T_NATIVE = tsLiteral("native");

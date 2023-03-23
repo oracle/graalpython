@@ -65,10 +65,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextCodeBuiltins {
 
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
-    public abstract static class PyCode_New extends CApi15BuiltinNode {
+    abstract static class PyCode_New extends CApi15BuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object codeNew(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
+        public static Object codeNew(int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
                         Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, int firstlineno, Object lnotab,
                         @Cached CallNode callNode) {
             /*
@@ -86,10 +86,10 @@ public final class PythonCextCodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject}, call = Direct)
-    public abstract static class PyCode_NewWithPosOnlyArgs extends CApi16BuiltinNode {
+    abstract static class PyCode_NewWithPosOnlyArgs extends CApi16BuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object codeNew(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
+        public static Object codeNew(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,
                         Object names, Object varnames, Object freevars, Object cellvars, Object filename, Object name, int firstlineno, Object lnotab,
                         @Cached CallNode callNode) {
             /*

@@ -94,11 +94,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDo
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
@@ -106,8 +106,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Enco
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
@@ -125,6 +125,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -250,9 +252,50 @@ public abstract class GraalHPyContextFunctions {
     }
 
     enum ReturnType {
-        OBJECT,
-        INT,
-        FLOAT
+        OBJECT {
+            @Override
+            public CExtToNativeNode createToNativeNode() {
+                return HPyAsHandleNodeGen.create();
+            }
+
+            @Override
+            public CExtToNativeNode getUncachedToNativeNode() {
+                return HPyAsHandleNodeGen.getUncached();
+            }
+
+            @Override
+            public CExtToJavaNode createToJavaNode() {
+                return HPyAsPythonObjectNodeGen.create();
+            }
+
+            @Override
+            public CExtToJavaNode getUncachedToJavaNode() {
+                return HPyAsPythonObjectNodeGen.getUncached();
+            }
+        },
+        INT {
+            @Override
+            public CExtToNativeNode createToNativeNode() {
+                return HPyAsNativeInt64NodeGen.create();
+            }
+
+            @Override
+            public CExtToNativeNode getUncachedToNativeNode() {
+                return HPyAsNativeInt64NodeGen.getUncached();
+            }
+        };
+
+        public abstract CExtToNativeNode createToNativeNode();
+
+        public abstract CExtToNativeNode getUncachedToNativeNode();
+
+        public CExtToJavaNode createToJavaNode() {
+            throw CompilerDirectives.shouldNotReachHere("unsupported");
+        }
+
+        public CExtToJavaNode getUncachedToJavaNode() {
+            throw CompilerDirectives.shouldNotReachHere("unsupported");
+        }
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -1471,7 +1514,7 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsPythonObjectNode handleAsPythonObjectNode,
-                        @Cached ToNewRefNode toPyObjectPointerNode) throws ArityException {
+                        @Cached PythonToNativeNewRefNode toPyObjectPointerNode) throws ArityException {
             checkArity(arguments, 2);
             Object object = handleAsPythonObjectNode.execute(arguments[1]);
             return toPyObjectPointerNode.execute(object);
@@ -1869,7 +1912,7 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Cached ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             // IMPORTANT: this is not stealing the reference. The CPython implementation
@@ -1995,18 +2038,15 @@ public abstract class GraalHPyContextFunctions {
         private final int nPythonArguments;
         private final ReturnType returnType;
 
-        private ConversionNodeSupplier toNativeNodeSupplier;
-
         GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments) {
-            this(key, nPythonArguments, ReturnType.OBJECT, null);
+            this(key, nPythonArguments, ReturnType.OBJECT);
         }
 
-        GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments, ReturnType returnType, ConversionNodeSupplier toNativeNodeSupplier) {
+        GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments, ReturnType returnType) {
             this.key = key;
             assert nPythonArguments >= 0 : "number of arguments cannot be negative";
             this.nPythonArguments = nPythonArguments;
             this.returnType = returnType;
-            this.toNativeNodeSupplier = toNativeNodeSupplier != null ? toNativeNodeSupplier : GraalHPyConversionNodeSupplier.HANDLE;
         }
 
         @ExportMessage
@@ -2039,20 +2079,17 @@ public abstract class GraalHPyContextFunctions {
                             return GraalHPyHandle.NULL_HANDLE;
                         case INT:
                             return -1;
-                        case FLOAT:
-                            return -1.0;
-
                     }
                 }
                 throw CompilerDirectives.shouldNotReachHere();
             }
 
             static CExtToNativeNode createToNativeNode(GraalHPyCallBuiltinFunction receiver) {
-                return receiver.toNativeNodeSupplier.createToNativeNode();
+                return receiver.returnType.createToNativeNode();
             }
 
             static CExtToNativeNode getUncachedToNativeNode(GraalHPyCallBuiltinFunction receiver) {
-                return receiver.toNativeNodeSupplier.getUncachedToNativeNode();
+                return receiver.returnType.getUncachedToNativeNode();
             }
         }
     }

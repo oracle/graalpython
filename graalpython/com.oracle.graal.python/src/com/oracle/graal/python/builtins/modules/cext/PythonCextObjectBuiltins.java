@@ -78,11 +78,10 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -121,6 +120,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -161,7 +161,7 @@ public class PythonCextObjectBuiltins {
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
-                        @Cached CExtNodes.ToJavaNode toJavaNode) {
+                        @Cached NativeToPythonNode toJavaNode) {
             return callFunction(callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
 
@@ -169,7 +169,7 @@ public class PythonCextObjectBuiltins {
                         GetNextVaArgNode getVaArgs,
                         InteropLibrary argLib,
                         CallNode callNode,
-                        CExtNodes.ToJavaNode toJavaNode) {
+                        NativeToPythonNode toJavaNode) {
             /*
              * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains just
              * 'PyObject *' and is terminated by 'NULL'.
@@ -207,7 +207,7 @@ public class PythonCextObjectBuiltins {
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached GetAnyAttributeNode getAnyAttributeNode,
-                        @Cached CExtNodes.ToJavaNode toJavaNode) {
+                        @Cached NativeToPythonNode toJavaNode) {
 
             Object method = getAnyAttributeNode.executeObject(null, receiver, methodName);
             return PyTruffleObject_CallFunctionObjArgs.callFunction(method, vaList, getVaArgs, argLib, callNode, toJavaNode);
@@ -238,7 +238,7 @@ public class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(Object callable, Object argsArray, int nargs, Object kwargsObj, Object kwvalues,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached NativeToPythonNode toJavaNode,
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
@@ -397,7 +397,7 @@ public class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
     abstract static class PyTruffleObject_GenericGetAttr extends CApiBinaryBuiltinNode {
         @Specialization
-        Object getAttr(Object obj, Object attr,
+        static Object getAttr(Object obj, Object attr,
                         @Cached GetAttributeNode getAttrNode) {
             return getAttrNode.execute(null, obj, attr);
         }
@@ -497,7 +497,7 @@ public class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffle_NotImplemented extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_NotImplemented extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -524,7 +524,7 @@ public class PythonCextObjectBuiltins {
     abstract static class _PyObject_Dump extends CApiUnaryBuiltinNode {
 
         @Specialization
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         int doGeneric(Object ptrObject) {
             PythonContext context = getContext();
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
@@ -567,7 +567,7 @@ public class PythonCextObjectBuiltins {
             } else {
                 refCnt = GetRefCntNodeGen.getUncached().execute(cApiContext, ptrObject);
             }
-            pythonObject = CApiTransitions.nativeToPython(ptrObject, false);
+            pythonObject = NativeToPythonNode.executeUncached(ptrObject);
 
             // first, write fields which are the least likely to crash
             stderr.println("ptrObject address  : " + ptrObject);
@@ -609,7 +609,7 @@ public class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyObject_Type extends CApiUnaryBuiltinNode {
         @Specialization
-        Object type(Object obj,
+        static Object type(Object obj,
                         @Cached GetClassNode getClass) {
             return getClass.execute(obj);
         }
@@ -618,7 +618,7 @@ public class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyObject_Format extends CApiBinaryBuiltinNode {
         @Specialization
-        public static Object ascii(Object obj, Object spec,
+        static Object ascii(Object obj, Object spec,
                         @Cached FormatNode format) {
             return format.execute(null, obj, spec);
         }

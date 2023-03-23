@@ -124,6 +124,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -1753,7 +1755,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private PCallCapiFunction callCapiFunction;
         @Children private CExtNodes.ToSulongNode[] toSulongNodes;
-        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
+        @Child private NativeToPythonNode asPythonObjectNode;
         @Child private SplitArgsNode splitArgsNode;
         @Child private LookupCallableSlotInMRONode lookupInit;
         @Child private LookupCallableSlotInMRONode lookupNew;
@@ -1869,7 +1871,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             if (asPythonObjectNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPythonObjectNode = insert(CExtNodesFactory.AsPythonObjectNodeGen.create());
+                asPythonObjectNode = insert(NativeToPythonNodeGen.create());
             }
             PKeyword[] kwarr = kwargs.length > 0 ? kwargs : null;
             PTuple targs = factory().createTuple(varargs);

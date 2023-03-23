@@ -94,7 +94,7 @@ public final class PythonCextComplexBuiltins {
         }
 
         @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
-        public Object asDouble(Object obj,
+        Object asDouble(Object obj,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -107,7 +107,7 @@ public final class PythonCextComplexBuiltins {
         }
 
         @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
-        public Object asDoubleFloat(Object obj,
+        Object asDoubleFloat(Object obj,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -135,7 +135,7 @@ public final class PythonCextComplexBuiltins {
         }
 
         @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
-        public static Object asDouble(Object obj,
+        static Object asDouble(Object obj,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -145,7 +145,7 @@ public final class PythonCextComplexBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(obj, getClassNode, isSubtypeNode)"})
-        public Object asDouble(Object obj,
+        Object asDouble(Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return 0.0;
@@ -160,7 +160,7 @@ public final class PythonCextComplexBuiltins {
     abstract static class PyComplex_FromDoubles extends CApiBinaryBuiltinNode {
 
         @Specialization
-        public PComplex asDouble(double r, double i) {
+        PComplex asDouble(double r, double i) {
             return factory().createComplex(r, i);
         }
     }

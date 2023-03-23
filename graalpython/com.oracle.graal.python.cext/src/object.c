@@ -121,36 +121,6 @@ static PyNumberMethods none_as_number = {
     0,                          /* nb_index */
 };
 
-Py_ssize_t _Py_REFCNT(const PyObject *obj) {
-	return PyObject_ob_refcnt(obj);
-}
-
-Py_ssize_t _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-	set_PyObject_ob_refcnt(obj, cnt);
-	return cnt;
-}
-
-PyTypeObject* _Py_TYPE(const PyObject *a) {
-	return PyObject_ob_type(a);
-}
-Py_ssize_t _Py_SIZE(const PyVarObject *a) {
-	return PyVarObject_ob_size(a);
-}
-void _Py_SET_TYPE(PyObject *a, PyTypeObject *b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the type of an object is not supported\n");
-	} else {
-		a->ob_type = b;
-	}
-}
-void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the size of an object is not supported\n");
-	} else {
-		a->ob_size = b;
-	}
-}
-
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
@@ -713,80 +683,7 @@ int PyObject_RichCompareBool(PyObject *v, PyObject *w, int op) {
     }
 }
 
-PyObject* _PyObject_New(PyTypeObject *tp) {
-    PyObject *op = (PyObject*)PyObject_MALLOC(_PyObject_SIZE(tp));
-    if (op == NULL) {
-        return PyErr_NoMemory();
-    }
-    return PyObject_INIT(op, tp);
-}
 
-void PyObject_GC_Del(void *tp) {
-	PyObject_Free(tp);
-}
-
-PyObject* _PyObject_GC_New(PyTypeObject *tp) {
-    return _PyObject_New(tp);
-}
-
-PyVarObject* _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems) {
-    return _PyObject_NewVar(tp, nitems);
-}
-
-PyVarObject *
-_PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
-{
-    PyVarObject *op;
-    const size_t size = _PyObject_VAR_SIZE(tp, nitems);
-    op = (PyVarObject *) PyObject_MALLOC(size);
-    if (op == NULL)
-        return (PyVarObject *)PyErr_NoMemory();
-    return PyObject_INIT_VAR(op, tp, nitems);
-}
-
-void _Py_IncRef(PyObject *op) {
-    Py_SET_REFCNT(op, Py_REFCNT(op) + 1);
-}
-
-void _Py_DecRef(PyObject *op) {
-    Py_ssize_t cnt = Py_REFCNT(op) - 1;
-    Py_SET_REFCNT(op, cnt);
-    if (cnt != 0) {
-    }
-    else {
-        _Py_Dealloc(op);
-    }
-}
-void Py_IncRef(PyObject *op) {
-	if (op != NULL) {
-		_Py_IncRef(op);
-	}
-}
-
-void Py_DecRef(PyObject *op) {
-	if (op != NULL) {
-		_Py_DecRef(op);
-	}
-}
-
-PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
-    if (op == NULL) {
-        return PyErr_NoMemory();
-    }
-
-    _PyObject_Init(op, tp);
-    return op;
-}
-
-// taken from CPython "Objects/object.c"
-PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
-    if (op == NULL) {
-        return (PyVarObject *) PyErr_NoMemory();
-    }
-
-    _PyObject_InitVar(op, tp, size);
-    return op;
-}
 
 // taken from CPython "Objects/object.c"
 PyObject * _PyObject_GetAttrId(PyObject *v, _Py_Identifier *name) {
@@ -806,32 +703,6 @@ PyObject * _PyObject_NextNotImplemented(PyObject *self) {
     return NULL;
 }
 
-#undef _Py_Dealloc
-
-void
-_Py_Dealloc(PyObject *op)
-{
-    destructor dealloc = Py_TYPE(op)->tp_dealloc;
-#ifdef Py_TRACE_REFS
-    _Py_ForgetReference(op);
-#endif
-    (*dealloc)(op);
-}
-
-void
-_Py_NewReference(PyObject *op)
-{
-    if (_Py_tracemalloc_config.tracing) {
-        _PyTraceMalloc_NewReference(op);
-    }
-#ifdef Py_REF_DEBUG
-    _Py_RefTotal++;
-#endif
-    Py_SET_REFCNT(op, 1);
-#ifdef Py_TRACE_REFS
-    _Py_AddToAllObjects(op, 1);
-#endif
-}
 
 #undef Py_NewRef
 #undef Py_XNewRef
@@ -848,31 +719,3 @@ Py_XNewRef(PyObject *obj)
 {
     return _Py_XNewRef(obj);
 }
-
-#undef Py_Is
-#undef Py_IsNone
-#undef Py_IsTrue
-#undef Py_IsFalse
-
-// Export Py_Is(), Py_IsNone(), Py_IsTrue(), Py_IsFalse() as regular functions
-// for the stable ABI.
-int Py_Is(PyObject *x, PyObject *y)
-{
-    return (x == y);
-}
-
-int Py_IsNone(PyObject *x)
-{
-    return Py_Is(x, Py_None);
-}
-
-int Py_IsTrue(PyObject *x)
-{
-    return Py_Is(x, Py_True);
-}
-
-int Py_IsFalse(PyObject *x)
-{
-    return Py_Is(x, Py_False);
-}
-

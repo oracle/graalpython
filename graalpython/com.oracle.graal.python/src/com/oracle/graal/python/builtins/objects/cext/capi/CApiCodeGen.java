@@ -104,22 +104,29 @@ public final class CApiCodeGen {
             return Arrays.stream(arguments).anyMatch(a -> a == ArgDescriptor.VARARGS);
         }
 
-        void generateUnimplemented(List<String> lines) {
+        private void generateFunctionHeader(List<String> lines) {
             lines.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
                             "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+        }
+
+        private String getTargetDefinition() {
+            return returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;";
+        }
+
+        void generateUnimplemented(List<String> lines) {
+            generateFunctionHeader(lines);
             lines.add("    unimplemented(\"" + name + "\"); exit(-1);");
             lines.add("}");
         }
 
-        void generateC(List<String> lines) {
-            lines.add(returnType.getCSignature() + " (*" + targetName() + ")(" + mapArgs(i -> arguments[i].getCSignature(), ", ") + ") = NULL;");
-            lines.add((inlined ? "MUST_INLINE " : "") + "PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + (inlined ? "_Inlined" : "") +
-                            "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+        void generateForward(List<String> lines, boolean direct) {
+            generateFunctionHeader(lines);
             String line = "    ";
             if (!returnType.isVoid()) {
                 line += returnType.getCSignature() + " result = (" + returnType.getCSignature() + ") ";
             }
-            lines.add(line + targetName() + "(" + mapArgs(i -> argName(i), ", ") + ");");
+            String target = direct ? "Graal" + name : targetName();
+            lines.add(line + target + "(" + mapArgs(i -> argName(i), ", ") + ");");
 
             if (returnType.isVoid()) {
                 if (returnType == VoidNoReturn) {
@@ -132,7 +139,7 @@ public final class CApiCodeGen {
         }
 
         private void generateVarargForward(List<String> lines, String forwardFunction) {
-            lines.add("PyAPI_FUNC(" + returnType.getCSignature() + ") " + name + "(" + mapArgs(i -> getArgSignatureWithName(arguments[i], i), ", ") + ") {");
+            generateFunctionHeader(lines);
             lines.add("    va_list args;");
             lines.add("    va_start(args, " + argName(arguments.length - 2) + ");");
             String line = "    ";
@@ -305,8 +312,11 @@ public final class CApiCodeGen {
                         missingVarargForwards.add(function.name);
                     }
                 }
+            } else if (function.call == Direct && Arrays.stream(function.arguments).noneMatch(arg -> arg == ConstCharPtrAsTruffleString)) {
+                function.generateForward(lines, true);
             } else {
-                function.generateC(lines);
+                lines.add(function.getTargetDefinition());
+                function.generateForward(lines, false);
                 toBeResolved.add(function);
             }
         }
@@ -419,11 +429,17 @@ public final class CApiCodeGen {
     private static boolean generateBuiltinRegistry(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
 
+        lines.add("    // @formatter:off");
+        lines.add("    // Checkstyle: stop");
+        for (var builtin : javaBuiltins) {
+            String argString = Arrays.stream(builtin.arguments).map(b -> "ArgDescriptor." + b).collect(Collectors.joining(", "));
+            lines.add("    public static final CApiBuiltinExecutable " + builtin.name + " = new CApiBuiltinExecutable(\"" + builtin.name + "\", CApiCallPath." + builtin.call + ", ArgDescriptor." +
+                            builtin.returnType + ", new ArgDescriptor[]{" + argString + "}, " + builtin.id + ");");
+        }
+        lines.add("");
         lines.add("    public static final CApiBuiltinExecutable[] builtins = {");
         for (var builtin : javaBuiltins) {
-            lines.add("                    new CApiBuiltinExecutable(\"" + builtin.name + "\", " + builtin.call + ", " + builtin.returnType + ",");
-            String argString = Arrays.stream(builtin.arguments).map(Object::toString).collect(Collectors.joining(", "));
-            lines.add("                                    new ArgDescriptor[]{" + argString + "}, " + builtin.id + "),");
+            lines.add("                    " + builtin.name + ",");
         }
         lines.add("    };");
         lines.add("");
@@ -453,6 +469,7 @@ public final class CApiCodeGen {
         lines.add("        }");
         lines.add("        return null;");
         lines.add("    }");
+        lines.add("    // @formatter:on");
 
         return writeGenerated(Path.of("com.oracle.graal.python", "src", "com", "oracle", "graal", "python", "builtins", "modules", "cext", "PythonCextBuiltinRegistry.java"), lines);
     }
@@ -526,7 +543,7 @@ public final class CApiCodeGen {
                     "PyMethodDescrObject_GetMethod", "PyObject_GetDoc", "PyObject_SetDoc", "PySlice_Start", "PySlice_Step", "PySlice_Stop", "_PyASCIIObject_LENGTH", "_PyASCIIObject_STATE_ASCII",
                     "_PyASCIIObject_STATE_COMPACT", "_PyASCIIObject_STATE_KIND", "_PyASCIIObject_STATE_READY", "_PyASCIIObject_WSTR", "_PyByteArray_Start", "_PyEval_SetCoroutineOriginTrackingDepth",
                     "_PyFrame_SetLineNumber", "_PyMemoryView_GetBuffer", "_PySequence_Fast_ITEMS", "_PySequence_ITEM", "_PyUnicodeObject_DATA", "_PyUnicode_get_wstr_length", "_Py_REFCNT",
-                    "_Py_SET_REFCNT", "_Py_SET_SIZE", "_Py_SET_TYPE", "_Py_SIZE", "_Py_TYPE"};
+                    "_Py_SET_REFCNT", "_Py_SET_SIZE", "_Py_SET_TYPE", "_Py_SIZE", "_Py_TYPE", "_PyTuple_SET_ITEM"};
 
     /**
      * Check the list of implemented and unimplemented builtins against the list of CPython exported

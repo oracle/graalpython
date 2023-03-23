@@ -68,11 +68,11 @@ public final class PythonCextPyThreadBuiltins {
     private static final long LOCK_MASK = 0xA10C000000000000L;
 
     @CApiBuiltin(ret = PY_THREAD_TYPE_LOCK, args = {}, call = Direct)
-    public abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
+    abstract static class PyThread_allocate_lock extends CApiNullaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         public long allocate() {
-            CApiContext context = getContext().getCApiContext();
+            CApiContext context = getCApiContext();
             long id = context.lockId.incrementAndGet() ^ LOCK_MASK;
             PLock lock = factory().createLock(PythonBuiltinClassType.PLock);
             context.locks.put(id, lock);
@@ -81,13 +81,12 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PY_THREAD_TYPE_LOCK, Int}, call = Direct)
-    public abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
+    abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         public int acquire(long id, int waitflag,
                         @Cached AcquireLockNode acquireNode) {
-            CApiContext context = getContext().getCApiContext();
-            PLock lock = context.locks.get(id);
+            PLock lock = getCApiContext().locks.get(id);
             if (lock == null) {
                 throw badInternalCall("lock");
             }
@@ -96,12 +95,12 @@ public final class PythonCextPyThreadBuiltins {
     }
 
     @CApiBuiltin(ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = Direct)
-    public abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
+    abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         public Object release(long id,
                         @Cached ReleaseLockNode releaseNode) {
-            CApiContext context = getContext().getCApiContext();
+            CApiContext context = getCApiContext();
             PLock lock = context.locks.get(id);
             if (lock == null) {
                 throw badInternalCall("lock");
@@ -116,7 +115,7 @@ public final class PythonCextPyThreadBuiltins {
         @Specialization
         @TruffleBoundary
         long tssCreate() {
-            return getContext().getCApiContext().nextTssKey();
+            return getCApiContext().nextTssKey();
         }
     }
 
@@ -124,7 +123,7 @@ public final class PythonCextPyThreadBuiltins {
     abstract static class PyTruffle_tss_get extends CApiUnaryBuiltinNode {
         @Specialization
         Object tssGet(long key) {
-            Object value = getContext().getCApiContext().tssGet(key);
+            Object value = getCApiContext().tssGet(key);
             if (value == null) {
                 return getNULL();
             }
@@ -136,7 +135,7 @@ public final class PythonCextPyThreadBuiltins {
     abstract static class PyTruffle_tss_set extends CApiBinaryBuiltinNode {
         @Specialization
         int tssSet(long key, Object value) {
-            getContext().getCApiContext().tssSet(key, value);
+            getCApiContext().tssSet(key, value);
             return 0;
         }
     }
@@ -145,7 +144,7 @@ public final class PythonCextPyThreadBuiltins {
     abstract static class PyTruffle_tss_delete extends CApiUnaryBuiltinNode {
         @Specialization
         Object tssDelete(long key) {
-            getContext().getCApiContext().tssDelete(key);
+            getCApiContext().tssDelete(key);
             return PNone.NONE;
         }
     }

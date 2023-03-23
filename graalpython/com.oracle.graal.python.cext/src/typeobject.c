@@ -767,10 +767,6 @@ static void PyTruffle_Type_AddSlots(PyTypeObject *cls, PyGetSetDef **getsets, ui
     }
 }
 
-unsigned long PyType_GetFlags(struct _typeobject *type) {
-    return PyTypeObject_tp_flags(type);
-}
-
 // taken from CPython "Objects/typeobject.c"
 static int
 extra_ivars(PyTypeObject *type, PyTypeObject *base)

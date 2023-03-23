@@ -88,7 +88,7 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
     for (i = 0; i < n; i++) {
         item = PyTuple_GetItem(tmp, i);
         Py_INCREF(item);
-        PyTuple_SetItem((PyObject*)newobj, i, item);
+        newobj->ob_item[i] = item; // PyTuple_SETITEM
     }
     Py_DECREF(tmp);
     return (PyObject*) newobj;

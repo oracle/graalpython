@@ -972,7 +972,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private final PythonObjectSlowPathFactory slowPathFactory;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
-        super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
+        super(context, hpyLibrary);
         PythonLanguage language = context.getLanguage();
         useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
         int traceJNISleepTime = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
@@ -2785,9 +2785,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_BYTES, 1);
         members[HPyContextMember.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
         members[HPyContextMember.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
-        members[HPyContextMember.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_HASH, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
+        members[HPyContextMember.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_HASH, 1, ReturnType.INT);
         members[HPyContextMember.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
-        members[HPyContextMember.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_LEN, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
+        members[HPyContextMember.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_LEN, 1, ReturnType.INT);
         members[HPyContextMember.CTX_IMPORT_IMPORTMODULE.ordinal()] = new GraalHPyImportModule();
         members[HPyContextMember.CTX_TUPLE_FROMARRAY.ordinal()] = new GraalHPyTupleFromArray();
         members[HPyContextMember.CTX_TUPLE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PythonBuiltinClassType.PTuple);

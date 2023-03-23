@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
+package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
-public abstract class ConversionNodeSupplier {
+import java.util.Arrays;
 
-    public abstract CExtToNativeNode createToNativeNode();
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-    public abstract CExtToNativeNode getUncachedToNativeNode();
+@ExportLibrary(InteropLibrary.class)
+final class NativeObjectReferenceArrayWrapper implements TruffleObject {
 
-    public abstract CExtAsPythonObjectNode createAsPythonObjectNode();
+    private long[] data;
+    private int length;
 
-    public abstract CExtAsPythonObjectNode getUncachedAsPythonObjectNode();
+    NativeObjectReferenceArrayWrapper() {
+        this.data = new long[1024];
+    }
 
-    public abstract CExtToJavaNode createToJavaNode();
+    void reset() {
+        length = 0;
+    }
 
-    public abstract CExtToJavaNode getUncachedToJavaNode();
+    void add(long pointer) {
+        if (length >= data.length) {
+            this.data = Arrays.copyOf(data, data.length * 2);
+        }
+        data[length++] = pointer;
+    }
 
+    boolean isEmpty() {
+        return length == 0;
+    }
+
+    @ExportMessage
+    boolean hasArrayElements() {
+        return true;
+    }
+
+    @ExportMessage
+    long getArraySize() {
+        return length;
+    }
+
+    @ExportMessage
+    boolean isArrayElementReadable(long i) {
+        return i < length;
+    }
+
+    @ExportMessage
+    Object readArrayElement(long i) {
+        return data[(int) i];
+    }
 }

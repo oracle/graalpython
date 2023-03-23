@@ -69,7 +69,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextPythonRunBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, PyObject, PyObject, PY_COMPILER_FLAGS}, call = Direct)
-    public abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
+    abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
 
         // from compile.h
         private static final int Py_single_input = 256;
@@ -77,7 +77,7 @@ public final class PythonCextPythonRunBuiltins {
         private static final int Py_eval_input = 258;
 
         @Specialization(guards = "checkArgs(source, globals, locals, isMapping)")
-        public Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
+        Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
                         @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
@@ -99,13 +99,13 @@ public final class PythonCextPythonRunBuiltins {
         }
 
         @Specialization(guards = "!isString(source) || !isDict(globals)")
-        public Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals,
+        Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals,
                         @SuppressWarnings("unused") Object locals, @SuppressWarnings("unused") Object flags) {
             throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
 
         @Specialization(guards = {"isString(source)", "isDict(globals)", "!isMapping.execute(locals)"})
-        public Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals, Object locals,
+        Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals, Object locals,
                         @SuppressWarnings("unused") Object flags,
                         @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping) {
             throw raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);

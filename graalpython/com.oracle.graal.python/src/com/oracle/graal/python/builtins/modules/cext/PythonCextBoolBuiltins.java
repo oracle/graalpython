@@ -50,7 +50,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextBoolBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffle_True extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_True extends CApiNullaryBuiltinNode {
         @Specialization
         static boolean run() {
             return true;
@@ -58,7 +58,7 @@ public final class PythonCextBoolBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    public abstract static class PyTruffle_False extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffle_False extends CApiNullaryBuiltinNode {
         @Specialization
         static boolean run() {
             return false;

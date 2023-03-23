@@ -66,9 +66,9 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 public final class PythonCextNamespaceBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    public abstract static class _PyNamespace_New extends CApiUnaryBuiltinNode {
+    abstract static class _PyNamespace_New extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object impDict(PDict dict,
+        Object impDict(PDict dict,
                         @Shared("getIt") @Cached HashingStorageGetIterator getIterator,
                         @Shared("itNext") @Cached HashingStorageIteratorNext itNext,
                         @Shared("itKey") @Cached HashingStorageIteratorKey itKey,
@@ -92,7 +92,7 @@ public final class PythonCextNamespaceBuiltins {
         }
 
         @Specialization(guards = "!isDict(dict)")
-        public Object impGeneric(Object dict,
+        Object impGeneric(Object dict,
                         @Cached InitNode initNode,
                         @Shared("getIt") @Cached HashingStorageGetIterator getIterator,
                         @Shared("itNext") @Cached HashingStorageIteratorNext itNext,
