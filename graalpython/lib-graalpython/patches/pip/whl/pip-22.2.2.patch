@@ -260,3 +260,16 @@ index 78b5c13..18a184c 100644
          raise InstallationError(f"Cannot determine archive format of {location}")
 +    from pip._internal.utils.graalpy import apply_graalpy_patches
 +    apply_graalpy_patches(filename, location)
+diff --git a/pip/_vendor/platformdirs/api.py b/pip/_vendor/platformdirs/api.py
+index 6f6e2c2..7760125 100644
+--- a/pip/_vendor/platformdirs/api.py
++++ b/pip/_vendor/platformdirs/api.py
+@@ -60,7 +60,7 @@ class PlatformDirsABC(ABC):
+     def _append_app_name_and_version(self, *base: str) -> str:
+         params = list(base[1:])
+         if self.appname:
+-            params.append(self.appname)
++            params.append(f'{self.appname}-graalpy')
+             if self.version:
+                 params.append(self.version)
+         return os.path.join(base[0], *params)
