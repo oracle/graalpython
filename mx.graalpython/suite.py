@@ -499,6 +499,9 @@ suite = {
                 "-I\"<path:com.oracle.graal.python.cext>/src\"",
                 "-I\"<path:com.oracle.graal.python.cext>/hpy\""
             ],
+            "ldlibs": [
+                "-lm"
+            ],
             "os_arch": {
                 "windows": {
                     "<others>": {
