@@ -298,6 +298,11 @@ public final class PythonContext extends Python3Core {
         Object runningEventLoop;
 
         /*
+         * Counter for C-level recursion depth used for Py_(Enter/Leave)RecursiveCall.
+         */
+        public int recursionDepth;
+
+        /*
          * The constructor needs to have this particular signature such that we can use it for
          * ContextThreadLocal.
          */

@@ -4543,9 +4543,8 @@ PyAPI_FUNC(char*) Py_EncodeLocale(const wchar_t* a, size_t* b) {
 PyAPI_FUNC(void) Py_EndInterpreter(PyThreadState* a) {
     unimplemented("Py_EndInterpreter"); exit(-1);
 }
-int (*__target__Py_EnterRecursiveCall)(const char*) = NULL;
 PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {
-    int result = (int) __target__Py_EnterRecursiveCall(a);
+    int result = (int) GraalPy_EnterRecursiveCall(a);
     return result;
 }
 PyAPI_FUNC(void) Py_Exit(int a) {
@@ -4627,9 +4626,8 @@ PyAPI_FUNC(void) Py_InitializeEx(int a) {
 PyAPI_FUNC(PyStatus) Py_InitializeFromConfig(const PyConfig* a) {
     unimplemented("Py_InitializeFromConfig"); exit(-1);
 }
-void (*__target__Py_LeaveRecursiveCall)() = NULL;
 PyAPI_FUNC(void) Py_LeaveRecursiveCall() {
-    __target__Py_LeaveRecursiveCall();
+    GraalPy_LeaveRecursiveCall();
 }
 PyAPI_FUNC(int) Py_Main(int a, wchar_t** b) {
     unimplemented("Py_Main"); exit(-1);
@@ -6386,11 +6384,9 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyUnicode_InternInPlace = getAPI("PyUnicode_InternInPlace");
     __target__PyUnicode_New = getAPI("PyUnicode_New");
     __target__PyVectorcall_Call = getAPI("PyVectorcall_Call");
-    __target__Py_EnterRecursiveCall = getAPI("Py_EnterRecursiveCall");
     __target__Py_GetBuildInfo = getAPI("Py_GetBuildInfo");
     __target__Py_GetCompiler = getAPI("Py_GetCompiler");
     __target__Py_GetVersion = getAPI("Py_GetVersion");
-    __target__Py_LeaveRecursiveCall = getAPI("Py_LeaveRecursiveCall");
     __target__Py_NewRef = getAPI("Py_NewRef");
     __target__Py_XNewRef = getAPI("Py_XNewRef");
     __target___PyASCIIObject_LENGTH = getAPI("_PyASCIIObject_LENGTH");
