@@ -162,7 +162,6 @@ public abstract class StringLiterals {
 
     public static final TruffleString T_HPY_SUFFIX = tsLiteral(".hpy.so");
     public static final TruffleString T_EXT_SO = tsLiteral(".so");
-    public static final TruffleString T_EXT_DYLIB = tsLiteral(".dylib");
     public static final TruffleString T_EXT_PYD = tsLiteral(".pyd");
 
     public static final TruffleString T_NATIVE = tsLiteral("native");
