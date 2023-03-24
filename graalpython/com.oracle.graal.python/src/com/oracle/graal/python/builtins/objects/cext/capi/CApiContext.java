@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.JavaStringToTruffleString;
@@ -103,7 +102,6 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
@@ -1114,26 +1112,26 @@ public final class CApiContext extends CExtContext {
         return pointer;
     }
 
-    private record ProcCacheItem(ArgDescriptor signature, Object callable) {
+    private record ProcCacheItem(SlotMethodDef slot, Object callable) {
 
         @Override
         public boolean equals(Object o) {
             if (o instanceof ProcCacheItem other) {
-                return signature == other.signature && callable == other.callable;
+                return slot == other.slot && callable == other.callable;
             }
             return false;
         }
 
         @Override
         public int hashCode() {
-            return System.identityHashCode(signature) + 31 * System.identityHashCode(callable);
+            return System.identityHashCode(slot) + 31 * System.identityHashCode(callable);
         }
     }
 
     private final Map<ProcCacheItem, Object> procWrappers = new WeakHashMap<>();
 
     @TruffleBoundary
-    public Object getOrCreateProcWrapper(ArgDescriptor signature, Object callable, BiFunction<ArgDescriptor, Object, Object> factory) {
-        return procWrappers.computeIfAbsent(new ProcCacheItem(signature, callable), (cacheItem) -> factory.apply(cacheItem.signature, cacheItem.callable));
+    public Object getOrCreateProcWrapper(SlotMethodDef slot, Object callable) {
+        return procWrappers.computeIfAbsent(new ProcCacheItem(slot, callable), (cacheItem) -> cacheItem.slot.wrapperFactory.apply(cacheItem.callable));
     }
 }
