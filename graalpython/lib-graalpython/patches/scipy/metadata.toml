@@ -1,0 +1,4 @@
+[[rules]]
+# pin 1.9.3
+version = '== 1.9.3'
+patch = 'scipy-1.9.3.patch'

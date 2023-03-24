@@ -1,0 +1,4 @@
+[[rules]]
+# pin 1.23.5
+version = '== 1.23.5'
+patch = 'numpy-1.23.5.patch'
