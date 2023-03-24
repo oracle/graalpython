@@ -1,0 +1,9 @@
+[[rules]]
+# pin 0.29.32
+version = '== 0.29.32'
+patch = 'Cython-0.29.32.patch'
+
+[[rules]]
+version = '== 0.29.30'
+patch = 'wheel-Cython-0.29.30.patch'
+subdir = 'src'
