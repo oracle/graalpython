@@ -139,6 +139,11 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
+
+    /**
+     * The default C-level call recursion limit like {@code Py_DEFAULT_RECURSION_LIMIT}.
+     */
+    public static final int DEFAULT_RECURSION_LIMIT = 1000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
 
     /**
