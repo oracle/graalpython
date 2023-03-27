@@ -1950,7 +1950,6 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_is_gc", ret = inquiry, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_finalize", ret = destructor, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_vectorcall", ret = vectorcallfunc, args = {PyTypeObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_length", ret = lenfunc, args = {PySequenceMethods}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_ass_item", ret = ssizeobjargproc, args = {PySequenceMethods}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_contains", ret = objobjproc, args = {PySequenceMethods}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_inplace_concat", ret = binaryfunc, args = {PySequenceMethods}, call = Ignored)
