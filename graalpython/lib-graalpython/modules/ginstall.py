@@ -484,10 +484,12 @@ library_dirs = {lapack_lib}"""
     @pip_package()
     def ninja(**kwargs):
         install_with_pip("scikit-build==0.16.6")
-        ninja_build_env = {
-            'CC': 'gcc',
-            'CXX': 'g++',
-        }
+        ninja_build_env = {}
+        if sys.platform.startswith('linux'):
+            ninja_build_env = {
+                'CC': 'gcc',
+                'CXX': 'g++',
+            }
         install_from_pypi("ninja==1.11.1", env=ninja_build_env, **kwargs)
 
     @pip_package()
