@@ -65,21 +65,21 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_NAME;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_SUBCLASSES;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_CALL;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_GETATTRO;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_HASH;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_INIT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_ITER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_ITERNEXT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_REPR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_SETATTRO;
+import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_STR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -174,7 +174,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
@@ -491,7 +491,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_NUMBER, key)")
         static Object doTpAsNumber(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            // TODO check for type and return 'NULL'
             return new PyNumberMethodsWrapper(object);
         }
 
@@ -514,24 +513,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
-        Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("lookupLen") @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen) {
-            if (lookupLen.execute(object) != PNone.NO_VALUE) {
-                return new PySequenceMethodsWrapper(object);
-            } else {
-                return getContext().getNativeNull().getPtr();
-            }
+        Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return new PySequenceMethodsWrapper(object);
         }
 
         @Specialization(guards = "eq(TP_AS_MAPPING, key)")
-        Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetitem,
-                        @Shared("lookupLen") @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen) {
-            if (lookupGetitem.execute(object) != PNone.NO_VALUE && lookupLen.execute(object) != PNone.NONE) {
-                return new PyMappingMethodsWrapper(object);
-            } else {
-                return getContext().getNativeNull().getPtr();
-            }
+        Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return new PyMappingMethodsWrapper(object);
         }
 
         @Specialization(guards = "eq(TP_NEW, key)")
@@ -550,15 +538,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_INIT, key)")
         static Object doTpInit(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode) {
-            return PyProcsWrapper.createInitWrapper(getAttrNode.execute(object, T___INIT__));
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_INIT);
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
         static Object doTpHash(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic getHashNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getHashNode.execute(object, T___HASH__));
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_HASH);
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
@@ -656,48 +643,38 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         static Object doTpGetattro(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return PyProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object, T___GETATTRIBUTE__));
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_GETATTRO);
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
         static Object doTpSetattro(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return PyProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object, T___SETATTR__));
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_SETATTRO);
         }
 
         @Specialization(guards = "eq(TP_ITER, key)")
         static Object doTpIter(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached ToSulongNode toSulongNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            Object method = lookupAttrNode.execute(object, T___ITER__);
-            if (method instanceof PNone) {
-                return toSulongNode.execute(method);
-            }
-            return PyProcsWrapper.createUnaryFuncWrapper(method);
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_ITER);
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")
         static Object doTpIternext(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached ToSulongNode toSulongNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            Object method = lookupAttrNode.execute(object, T___NEXT__);
-            if (method instanceof PNone) {
-                return toSulongNode.execute(method);
-            }
-            return PyProcsWrapper.createUnaryFuncWrapper(method);
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_ITERNEXT);
         }
 
         @Specialization(guards = "eq(TP_STR, key)")
         static Object doTpStr(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return PyProcsWrapper.createUnaryFuncWrapper(lookupAttrNode.execute(object, T___STR__));
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_STR);
         }
 
         @Specialization(guards = "eq(TP_REPR, key)")
         static Object doTpRepr(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return PyProcsWrapper.createUnaryFuncWrapper(lookupAttrNode.execute(object, T___REPR__));
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_REPR);
         }
 
         @Specialization(guards = "eq(TP_DICT, key)")
@@ -743,13 +720,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_CALL, key)")
         @SuppressWarnings("unused")
         static Object doTpCall(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            Object callMethod = lookupAttrNode.execute(object, T___CALL__);
-            if (callMethod != PNone.NO_VALUE) {
-                return PyProcsWrapper.createTernaryFunctionWrapper(callMethod);
-            }
-            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
+                        @Cached LookupNativeSlotNode lookup) {
+            return lookup.execute(object, TP_CALL);
         }
 
         @Specialization(guards = "eq(TP_MRO, key)")

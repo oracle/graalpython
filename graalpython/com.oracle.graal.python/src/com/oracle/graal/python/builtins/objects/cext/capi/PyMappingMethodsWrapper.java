@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MP_LENGTH;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MP_SUBSCRIPT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.builtins.objects.cext.capi.ReadSlotByNameNode.getSlot;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -75,17 +61,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
-    @CompilationFinal(dimensions = 1) private static final String[] MAPPING_METHODS = new String[]{
-                    MP_LENGTH.getMemberNameJavaString(),
-                    MP_SUBSCRIPT.getMemberNameJavaString(),
-                    MP_ASS_SUBSCRIPT.getMemberNameJavaString(),
-    };
-
-    @CompilationFinal(dimensions = 1) private static final TruffleString[] MAPPING_METHODS_MAPPING = new TruffleString[]{
-                    T___LEN__,
-                    T___GETITEM__,
-                    T___SETITEM__,
-    };
+    @CompilationFinal(dimensions = 1) private static SlotMethodDef[] SLOTS = new SlotMethodDef[]{SlotMethodDef.MP_LENGTH, SlotMethodDef.MP_SUBSCRIPT, SlotMethodDef.MP_ASS_SUBSCRIPT};
 
     public PyMappingMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
@@ -102,7 +78,7 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberReadable(String member) {
-        return isValidMember(member);
+        return getSlot(member, SLOTS) != null;
     }
 
     @ExportMessage
@@ -112,13 +88,15 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Exclusive @Cached ReadMethodNode readMethodNode,
-                    @Exclusive @Cached ToSulongNode toSulongNode,
+                    @Cached ReadSlotByNameNode readSlotByNameNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            // translate key to attribute name
-            return toSulongNode.execute(readMethodNode.execute(getPythonClass(), member));
+            Object result = readSlotByNameNode.execute(this, member, SLOTS);
+            if (result == null) {
+                throw UnknownIdentifierException.create(member);
+            }
+            return result;
         } finally {
             gil.release(mustRelease);
         }
@@ -136,47 +114,5 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
     public Object getNativeType() {
         // TODO implement native type
         return null;
-    }
-
-    @GenerateUncached
-    @ImportStatic(PyMappingMethodsWrapper.class)
-    abstract static class ReadMethodNode extends Node {
-
-        public abstract Object execute(PythonManagedClass clazz, String key) throws UnknownIdentifierException;
-
-        @Specialization(guards = {"isValidMember(key)", "eq(cachedKey, key)"})
-        static Object getMethodCached(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
-                        @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupNode) throws UnknownIdentifierException {
-            return getMethod(clazz, cachedKey, lookupNode);
-        }
-
-        @Specialization(replaces = "getMethodCached")
-        static Object getMethod(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
-                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupNode) throws UnknownIdentifierException {
-            TruffleString translate = translate(key);
-            if (translate != null) {
-                return lookupNode.execute(clazz, translate);
-            }
-            throw UnknownIdentifierException.create(key);
-        }
-
-        protected static boolean eq(String expected, String actual) {
-            return expected.equals(actual);
-        }
-    }
-
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    private static TruffleString translate(String key) {
-        for (int i = 0; i < MAPPING_METHODS.length; i++) {
-            if (MAPPING_METHODS[i].equals(key)) {
-                return MAPPING_METHODS_MAPPING[i];
-            }
-        }
-        return null;
-    }
-
-    protected static boolean isValidMember(String member) {
-        return translate(member) != null;
     }
 }
