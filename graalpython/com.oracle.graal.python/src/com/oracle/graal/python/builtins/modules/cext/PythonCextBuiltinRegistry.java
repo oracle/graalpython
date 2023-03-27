@@ -1859,7 +1859,7 @@ public abstract class PythonCextBuiltinRegistry {
             case 387:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_itemNodeGen.create();
             case 388:
-                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.PyGetSlotDummyPtrNodeGen.create();
+                return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_lengthNodeGen.create();
             case 389:
                 return com.oracle.graal.python.builtins.modules.cext.PythonCextSlotBuiltinsFactory.Py_get_PySequenceMethods_sq_repeatNodeGen.create();
             case 390:
