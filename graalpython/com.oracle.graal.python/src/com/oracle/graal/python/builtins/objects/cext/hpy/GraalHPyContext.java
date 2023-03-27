@@ -367,7 +367,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * @param name The name of the module to load (also just required for creating appropriate error
      *            messages).
      * @param path The path of the C extension module to load (usually something ending with
-     *            {@code .so} or {@code .dylib} or similar).
+     *            {@code .so} or {@code .pyd} or similar).
      * @param checkResultNode An adopted node instance. This is necessary because the result check
      *            could raise an exception and only an adopted node will report useful source
      *            locations.
