@@ -213,6 +213,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -583,8 +584,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMappingMethods_mp_ass_subscript extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.MP_ASS_SUBSCRIPT.getProcsWrapper(getContext(), object);
+        Object get(PyMappingMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_ASS_SUBSCRIPT);
         }
     }
 
@@ -592,8 +593,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMappingMethods_mp_length extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.MP_LENGTH.getProcsWrapper(getContext(), object);
+        Object get(PyMappingMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_LENGTH);
         }
     }
 
@@ -601,8 +602,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyMappingMethods_mp_subscript extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.MP_SUBSCRIPT.getProcsWrapper(getContext(), object);
+        Object get(PyMappingMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_SUBSCRIPT);
         }
     }
 
@@ -610,8 +611,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PySequenceMethods_sq_length extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.SQ_LENGTH.getProcsWrapper(getContext(), object);
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_LENGTH);
         }
     }
 
@@ -818,8 +819,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_absolute extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_ABSOLUTE.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ABSOLUTE);
         }
     }
 
@@ -827,8 +828,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_add extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_ADD.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ADD);
         }
     }
 
@@ -836,8 +837,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_and extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_AND.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_AND);
         }
     }
 
@@ -845,8 +846,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_bool extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_BOOL.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_BOOL);
         }
     }
 
@@ -854,8 +855,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_divmod extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_DIVMOD.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_DIVMOD);
         }
     }
 
@@ -863,8 +864,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_float extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_FLOAT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOAT);
         }
     }
 
@@ -872,8 +873,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_floor_divide extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_FLOOR_DIVIDE.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOOR_DIVIDE);
         }
     }
 
@@ -881,8 +882,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_index extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INDEX.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INDEX);
         }
     }
 
@@ -890,8 +891,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_add extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_ADD.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_ADD);
         }
     }
 
@@ -899,8 +900,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_and extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_AND.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_AND);
         }
     }
 
@@ -908,8 +909,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_floor_divide extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE);
         }
     }
 
@@ -917,8 +918,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_lshift extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_LSHIFT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_LSHIFT);
         }
     }
 
@@ -926,8 +927,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_multiply extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_MULTIPLY.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_MULTIPLY);
         }
     }
 
@@ -935,8 +936,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_or extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_OR.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_OR);
         }
     }
 
@@ -944,8 +945,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_power extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_POWER.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_POWER);
         }
     }
 
@@ -953,8 +954,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_remainder extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_REMAINDER.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_REMAINDER);
         }
     }
 
@@ -962,8 +963,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_rshift extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_RSHIFT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_RSHIFT);
         }
     }
 
@@ -971,8 +972,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_subtract extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_SUBTRACT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_SUBTRACT);
         }
     }
 
@@ -980,8 +981,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_true_divide extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_TRUE_DIVIDE.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_TRUE_DIVIDE);
         }
     }
 
@@ -989,8 +990,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_inplace_xor extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INPLACE_XOR.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_XOR);
         }
     }
 
@@ -998,8 +999,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_int extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INT);
         }
     }
 
@@ -1007,8 +1008,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_invert extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_INVERT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INVERT);
         }
     }
 
@@ -1016,8 +1017,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_lshift extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_LSHIFT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_LSHIFT);
         }
     }
 
@@ -1025,8 +1026,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_multiply extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_MULTIPLY.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_MULTIPLY);
         }
     }
 
@@ -1034,8 +1035,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_negative extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_NEGATIVE.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_NEGATIVE);
         }
     }
 
@@ -1043,8 +1044,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_or extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_OR.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_OR);
         }
     }
 
@@ -1052,8 +1053,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_positive extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_POSITIVE.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POSITIVE);
         }
     }
 
@@ -1061,8 +1062,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_power extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_POWER.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POWER);
         }
     }
 
@@ -1070,8 +1071,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_remainder extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_REMAINDER.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_REMAINDER);
         }
     }
 
@@ -1079,8 +1080,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_rshift extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_RSHIFT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_RSHIFT);
         }
     }
 
@@ -1088,8 +1089,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_subtract extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_SUBTRACT.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_SUBTRACT);
         }
     }
 
@@ -1097,8 +1098,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_true_divide extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_TRUE_DIVIDE.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_TRUE_DIVIDE);
         }
     }
 
@@ -1106,8 +1107,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PyNumberMethods_nb_xor extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.NB_XOR.getProcsWrapper(getContext(), object);
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_XOR);
         }
     }
 
@@ -1136,8 +1137,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PySequenceMethods_sq_concat extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.SQ_CONCAT.getProcsWrapper(getContext(), object);
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_CONCAT);
         }
     }
 
@@ -1145,8 +1146,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PySequenceMethods_sq_item extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.SQ_ITEM.getProcsWrapper(getContext(), object);
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_ITEM);
         }
     }
 
@@ -1154,8 +1155,8 @@ public final class PythonCextSlotBuiltins {
     public abstract static class Py_get_PySequenceMethods_sq_repeat extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(Object object) {
-            return SlotMethodDef.SQ_REPEAT.getProcsWrapper(getContext(), object);
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_REPEAT);
         }
     }
 
@@ -1308,7 +1309,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_CALL.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_CALL);
         }
     }
 
@@ -1422,7 +1423,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_GETATTRO.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_GETATTRO);
         }
     }
 
@@ -1431,7 +1432,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_HASH.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_HASH);
         }
     }
 
@@ -1440,7 +1441,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_INIT.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_INIT);
         }
     }
 
@@ -1466,7 +1467,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_ITER.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITER);
         }
     }
 
@@ -1475,7 +1476,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_ITERNEXT.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITERNEXT);
         }
     }
 
@@ -1526,7 +1527,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_REPR.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_REPR);
         }
     }
 
@@ -1535,7 +1536,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_RICHCOMPARE.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_RICHCOMPARE);
         }
     }
 
@@ -1544,7 +1545,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_SETATTRO.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_SETATTRO);
         }
     }
 
@@ -1553,7 +1554,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_STR.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_STR);
         }
     }
 
@@ -1572,7 +1573,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_DESCR_GET.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_GET);
         }
     }
 
@@ -1581,7 +1582,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         Object get(Object object) {
-            return SlotMethodDef.TP_DESCR_SET.getProcsWrapper(getContext(), object);
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_SET);
         }
     }
 
