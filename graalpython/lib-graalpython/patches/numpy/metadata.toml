@@ -1,4 +1,25 @@
 [[rules]]
+version = '== 1.16.4'
+patch = 'numpy-1.16.4.patch'
+
+[[rules]]
+version = '== 1.19.5'
+patch = 'numpy-1.19.5.patch'
+
+[[rules]]
+version = '== 1.21.6'
+patch = 'numpy-1.21.6.patch'
+
+[[rules]]
+version = '== 1.22.4'
+patch = 'numpy-1.22.4.patch'
+
+[[rules]]
+version = '== 1.23.4'
+patch = 'numpy-1.23.4.patch'
+
+[[rules]]
 # pin 1.23.5
+install-priority = 10
 version = '== 1.23.5'
 patch = 'numpy-1.23.5.patch'
