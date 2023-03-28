@@ -25,19 +25,6 @@ JAVA_LAUNCHER = "Py2BinLauncher"
 JAVA_LAUNCHER_FILE = f"{JAVA_LAUNCHER}.java"
 
 
-def get_tools():
-    """
-    Determine the path to javac and native-image
-    """
-    if jh := os.environ.get("JAVA_HOME"):
-        javac = os.path.join(jh, "bin", "javac")
-        native_image = os.path.join(jh, "bin", "native-image")
-    if not os.path.exists(native_image):
-        print("Please point JAVA_HOME to a GraalVM installation with Python and native image")
-        sys.exit(1)
-    return javac, native_image
-
-
 def parse_path_constants(javafile):
     """
     Determine the constants used by the Java launcher pertaining to the layout
@@ -137,7 +124,6 @@ def main(args):
 
     parsed_args = parser.parse_args(args)
 
-    javac, native_image = get_tools()
     java_launcher_template = os.path.join(os.path.dirname(__file__), JAVA_LAUNCHER_FILE)
     resource_zip, vfs_prefix, home_prefix, venv_prefix, proj_prefix = parse_path_constants(java_launcher_template)
 
