@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.L
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Byte;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Double;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Empty;
+import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Generic;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Int;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Long;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Uninitialized;
@@ -2826,7 +2827,12 @@ public abstract class SequenceStorageNodes {
             return s;
         }
 
-        // TODO native sequence storage
+        @Specialization(guards = "isObjectStorage(s)")
+        static NativeSequenceStorage doNative(NativeSequenceStorage s, @SuppressWarnings("unused") Object val) {
+            return s;
+        }
+
+        // TODO primitive native storages?
 
         @Specialization(guards = "isAssignCompatibleNode.execute(s, indicationStorage)", limit = "1")
         static TypedSequenceStorage doTyped(TypedSequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage,
@@ -2861,6 +2867,10 @@ public abstract class SequenceStorageNodes {
 
         public static ListGeneralizationNode create() {
             return ListGeneralizationNodeGen.create();
+        }
+
+        protected static boolean isObjectStorage(NativeSequenceStorage storage) {
+            return storage.getElementType() == Generic;
         }
     }
 

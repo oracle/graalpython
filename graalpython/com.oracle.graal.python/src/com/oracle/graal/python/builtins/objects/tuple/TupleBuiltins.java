@@ -280,7 +280,7 @@ public class TupleBuiltins extends PythonBuiltins {
         @InliningCutoff
         @Specialization(guards = "indexCheck.execute(key)", limit = "1")
         static Object doIndex(VirtualFrame frame, PTuple tuple, Object key,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheck,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
@@ -293,8 +293,9 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization
+        @Specialization(guards = "indexCheck.execute(key) || isPSlice(key)", limit = "1")
         static Object doNative(VirtualFrame frame, PythonAbstractNativeObject tuple, Object key,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached GetNativeTupleStorage asNativeStorage) {
             return getItemNode.execute(frame, asNativeStorage.execute(tuple), key);
