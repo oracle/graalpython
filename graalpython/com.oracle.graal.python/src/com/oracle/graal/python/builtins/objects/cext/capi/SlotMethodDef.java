@@ -101,8 +101,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetAttr
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
-import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.util.Function;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum SlotMethodDef {
@@ -162,16 +162,66 @@ public enum SlotMethodDef {
     NB_TRUE_DIVIDE(T___TRUEDIV__, BinaryFuncWrapper::new),
     NB_XOR(T___XOR__, BinaryFuncWrapper::new);
 
-    public final String jMemberName;
+    public final NativeMember nativeMember;
     public final TruffleString methodName;
-    public final NativeCAPISymbol getter;
     public final Function<Object, Object> wrapperFactory;
 
     SlotMethodDef(TruffleString methodName, Function<Object, Object> wrapperFactory) {
         this.methodName = methodName;
         this.wrapperFactory = wrapperFactory;
-        this.jMemberName = name().toLowerCase();
-        this.getter = NativeCAPISymbol.getByName(StringLiterals.J_GET_ + jMemberName);
-        assert this.getter != null;
+        this.nativeMember = NativeMember.valueOf(name());
+    }
+
+    public String getMemberNameJavaString() {
+        return nativeMember.getMemberNameJavaString();
+    }
+
+    public NativeCAPISymbol getGetter() {
+        return nativeMember.getGetterFunctionName();
+    }
+
+    public enum SlotGroup {
+        AS_SEQUENCE(SQ_LENGTH, SQ_ITEM, SQ_REPEAT, SQ_CONCAT),
+        AS_MAPPING(MP_LENGTH, MP_SUBSCRIPT, MP_ASS_SUBSCRIPT),
+        AS_NUMBER(
+                        NB_ABSOLUTE,
+                        NB_ADD,
+                        NB_AND,
+                        NB_BOOL,
+                        NB_DIVMOD,
+                        NB_FLOAT,
+                        NB_FLOOR_DIVIDE,
+                        NB_INDEX,
+                        NB_INPLACE_ADD,
+                        NB_INPLACE_AND,
+                        NB_INPLACE_FLOOR_DIVIDE,
+                        NB_INPLACE_LSHIFT,
+                        NB_INPLACE_MULTIPLY,
+                        NB_INPLACE_OR,
+                        NB_INPLACE_POWER,
+                        NB_INPLACE_REMAINDER,
+                        NB_INPLACE_RSHIFT,
+                        NB_INPLACE_SUBTRACT,
+                        NB_INPLACE_TRUE_DIVIDE,
+                        NB_INPLACE_XOR,
+                        NB_INT,
+                        NB_INVERT,
+                        NB_LSHIFT,
+                        NB_MULTIPLY,
+                        NB_NEGATIVE,
+                        NB_OR,
+                        NB_POSITIVE,
+                        NB_POWER,
+                        NB_REMAINDER,
+                        NB_RSHIFT,
+                        NB_SUBTRACT,
+                        NB_TRUE_DIVIDE,
+                        NB_XOR);
+
+        @CompilationFinal(dimensions = 1) public final SlotMethodDef[] slots;
+
+        SlotGroup(SlotMethodDef... slots) {
+            this.slots = slots;
+        }
     }
 }

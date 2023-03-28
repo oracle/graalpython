@@ -40,43 +40,76 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateUncached
-@GenerateCached(false)
-@GenerateInline
 public abstract class ReadSlotByNameNode extends Node {
-    public abstract Object execute(Node inliningTarget, PythonNativeWrapper wrapper, String member, SlotMethodDef[] slots);
+    protected final SlotMethodDef[] slots;
 
-    @Specialization(guards = {"cachedMember.equals(member)", "slot != null"})
-    Object cachedMember(PythonNativeWrapper wrapper, @SuppressWarnings("unused") String member, @SuppressWarnings("unused") SlotMethodDef[] slots,
-                    @SuppressWarnings("unused") @Cached("member") String cachedMember,
-                    @Cached("getSlot(cachedMember, slots)") SlotMethodDef slot,
-                    @Cached LookupNativeSlotNode lookup) {
-        return lookup.execute(wrapper.getDelegate(), slot);
+    public ReadSlotByNameNode(SlotGroup group) {
+        this.slots = group.slots;
     }
 
-    @Specialization(replaces = "cachedMember")
-    Object generic(PythonNativeWrapper wrapper, String member, SlotMethodDef[] slots,
-                    @Cached LookupNativeSlotNode lookup) {
-        SlotMethodDef slot = getSlot(member, slots);
-        if (slot != null) {
-            return lookup.execute(wrapper.getDelegate(), slot);
-        }
+    public abstract Object execute(PythonNativeWrapper wrapper, String member);
+
+    @Specialization(guards = {"cachedMember.equals(member)", "slot != null"}, limit = "slots.length")
+    Object cachedMember(PythonNativeWrapper wrapper, @SuppressWarnings("unused") String member,
+                    @SuppressWarnings("unused") @Cached("member") String cachedMember,
+                    @SuppressWarnings("unused") @Cached("getSlot(cachedMember)") SlotMethodDef slot,
+                    @Cached(parameters = "slot") LookupNativeSlotNode lookup) {
+        return lookup.execute(wrapper.getDelegate());
+    }
+
+    @Specialization(guards = "getSlot(member) == null")
+    @SuppressWarnings("unused")
+    Object miss(PythonNativeWrapper wrapper, String member) {
         return null;
     }
 
+    private static final ReadSlotByNameNode[] UNCACHED = new ReadSlotByNameNode[SlotGroup.values().length];
+    static {
+        for (int i = 0; i < SlotGroup.values().length; i++) {
+            UNCACHED[i] = new Uncached(SlotGroup.values()[i]);
+        }
+    }
+
+    public static ReadSlotByNameNode getUncached(SlotGroup group) {
+        return UNCACHED[group.ordinal()];
+    }
+
+    @GenerateCached(false)
+    private static final class Uncached extends ReadSlotByNameNode {
+
+        public Uncached(SlotGroup group) {
+            super(group);
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        @Override
+        @TruffleBoundary
+        public Object execute(PythonNativeWrapper wrapper, String member) {
+            SlotMethodDef slot = getSlot(member);
+            if (slot != null) {
+                return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), slot);
+            }
+            return null;
+        }
+    }
+
     @ExplodeLoop
-    public static SlotMethodDef getSlot(String member, SlotMethodDef[] defs) {
-        for (SlotMethodDef slot : defs) {
-            if (slot.jMemberName.equals(member)) {
+    public SlotMethodDef getSlot(String member) {
+        for (SlotMethodDef slot : slots) {
+            if (slot.getMemberNameJavaString().equals(member)) {
                 return slot;
             }
         }

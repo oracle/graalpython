@@ -65,15 +65,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_NAME;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_SUBCLASSES;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_CALL;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_GETATTRO;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_HASH;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_INIT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_ITER;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_ITERNEXT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_REPR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_SETATTRO;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.TP_STR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ITEMSIZE__;
@@ -404,12 +395,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return expected.getMemberNameJavaString().equals(actual);
         }
 
+        protected static boolean eq(SlotMethodDef expected, String actual) {
+            return expected.getMemberNameJavaString().equals(actual);
+        }
+
         protected final PythonContext getContext() {
             return PythonContext.get(this);
         }
     }
 
     @GenerateUncached
+    @ImportStatic(SlotMethodDef.class)
     abstract static class ReadTypeNativeMemberNode extends ReadNativeMemberNode {
 
         public static final TruffleString T_SEQUENCE_CLEAR = tsLiteral("sequence_clear");
@@ -514,9 +510,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
         Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookupLen) {
+                        @Cached(parameters = "SQ_LENGTH") LookupNativeSlotNode lookupLen) {
             Object nativeNull = getContext().getNativeNull().getPtr();
-            if (lookupLen.execute(object, SlotMethodDef.SQ_LENGTH) != nativeNull) {
+            if (lookupLen.execute(object) != nativeNull) {
                 return new PySequenceMethodsWrapper(object);
             } else {
                 return nativeNull;
@@ -525,9 +521,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_MAPPING, key)")
         Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookupLen) {
+                        @Cached(parameters = "MP_LENGTH") LookupNativeSlotNode lookupLen) {
             Object nativeNull = getContext().getNativeNull().getPtr();
-            if (lookupLen.execute(object, SlotMethodDef.MP_LENGTH) != nativeNull) {
+            if (lookupLen.execute(object) != nativeNull) {
                 return new PyMappingMethodsWrapper(object);
             } else {
                 return nativeNull;
@@ -550,14 +546,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_INIT, key)")
         static Object doTpInit(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_INIT);
+                        @Cached(parameters = "TP_INIT") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
         static Object doTpHash(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_HASH);
+                        @Cached(parameters = "TP_HASH") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
@@ -655,38 +651,38 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         static Object doTpGetattro(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_GETATTRO);
+                        @Cached(parameters = "TP_GETATTRO") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
         static Object doTpSetattro(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_SETATTRO);
+                        @Cached(parameters = "TP_SETATTRO") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_ITER, key)")
         static Object doTpIter(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_ITER);
+                        @Cached(parameters = "TP_ITER") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")
         static Object doTpIternext(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_ITERNEXT);
+                        @Cached(parameters = "TP_ITERNEXT") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_STR, key)")
         static Object doTpStr(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_STR);
+                        @Cached(parameters = "TP_STR") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_REPR, key)")
         static Object doTpRepr(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_REPR);
+                        @Cached(parameters = "TP_REPR") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_DICT, key)")
@@ -732,8 +728,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_CALL, key)")
         @SuppressWarnings("unused")
         static Object doTpCall(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
-                        @Cached LookupNativeSlotNode lookup) {
-            return lookup.execute(object, TP_CALL);
+                        @Cached(parameters = "TP_CALL") LookupNativeSlotNode lookup) {
+            return lookup.execute(object);
         }
 
         @Specialization(guards = "eq(TP_MRO, key)")
