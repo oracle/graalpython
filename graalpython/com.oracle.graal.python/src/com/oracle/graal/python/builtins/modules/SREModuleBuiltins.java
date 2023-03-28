@@ -480,6 +480,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         private static final TruffleString T__GETLOCALE = tsLiteral("_getlocale");
 
+        // limit of 2 specializations to allow inlining of both a must_advance=False and a
+        // must_advance=True version in re builtins like sub, split, findall
         @Specialization(guards = {"tRegexCache == cachedTRegexCache", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!cachedTRegexCache.isLocaleSensitive()"}, limit = "2")
         Object cached(TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
                         @Cached("tRegexCache") TRegexCache cachedTRegexCache,
@@ -493,6 +495,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return localeNonSensitive(tRegexCache, method, mustAdvance, method, mustAdvance);
         }
 
+        // limit of 6 specializations = 3 Python methods * 2 values of mustAdvance
         @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "6")
         Object localeNonSensitive(TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
                         @Cached("method") PythonMethod cachedMethod,
@@ -505,6 +508,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        // limit of 6 specializations = 3 Python methods * 2 values of mustAdvance
         @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.isLocaleSensitive()"}, limit = "6")
         Object localeSensitive(TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
                         @Cached("method") PythonMethod cachedMethod,
@@ -686,6 +690,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                             tRegexCallExec, createMatchFromTRegexResultNode);
         }
 
+        // limit of 3 specializations = 3 Python methods
         @Specialization(guards = "method == cachedMethod", limit = "3", replaces = {"doCached", "doCachedRegex"})
         @SuppressWarnings("truffle-static-method")
         @ReportPolymorphism.Megamorphic
@@ -763,6 +768,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Child private BufferToTruffleStringNode bufferToTruffleStringNode;
 
+        // limit of 2 specializations to allow inlining of both a must_advance=False and a
+        // must_advance=True version in re builtins like sub, split, findall
         @Specialization(guards = "callable == cachedCallable", limit = "2")
         @SuppressWarnings("truffle-static-method")
         Object doCached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
