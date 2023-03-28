@@ -187,6 +187,7 @@ public class CApiTransitions {
             super(storage);
             type = storage.getElementType();
             ptr = storage.getPtr();
+            size = storage.length();
             LOGGER.finer(() -> PythonUtils.formatJString("new NativeStorageReference<%s>", ptr));
         }
 

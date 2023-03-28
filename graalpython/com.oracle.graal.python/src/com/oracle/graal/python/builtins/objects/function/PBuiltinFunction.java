@@ -165,17 +165,18 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (builtin.isStaticmethod()) {
             flags |= CExtContext.METH_STATIC;
         }
-        int params = signature.getParameterIds().length;
-        if (signature.takesKeywordArgs() || signature.takesVarArgs()) {
-            flags |= CExtContext.METH_VARARGS;
-            if (signature.takesKeywordArgs()) {
-                flags |= CExtContext.METH_KEYWORDS;
+        if (!signature.takesKeywordArgs() && !signature.takesVarArgs()) {
+            int params = signature.getParameterIds().length;
+            if (params == 1) {
+                // only 'self'
+                return flags | CExtContext.METH_NOARGS;
+            } else if (params == 2) {
+                return flags | CExtContext.METH_O;
             }
-        } else if (params == 1) {
-            // only 'self'
-            flags |= CExtContext.METH_NOARGS;
-        } else if (params == 2) {
-            flags |= CExtContext.METH_O;
+        }
+        flags |= CExtContext.METH_VARARGS;
+        if (signature.takesKeywordArgs()) {
+            flags |= CExtContext.METH_KEYWORDS;
         }
         return flags;
     }

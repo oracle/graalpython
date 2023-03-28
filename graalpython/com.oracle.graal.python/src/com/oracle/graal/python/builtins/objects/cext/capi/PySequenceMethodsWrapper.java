@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_CONCAT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_ITEM;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_LENGTH;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_REPEAT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
-
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -73,15 +59,11 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ImportStatic(SpecialMethodNames.class)
+@ImportStatic(SlotGroup.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     public PySequenceMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
-    }
-
-    public PythonManagedClass getPythonClass() {
-        return (PythonManagedClass) getDelegate();
     }
 
     @ExportMessage
@@ -90,9 +72,9 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberReadable(String member) {
-        return SQ_REPEAT.getMemberNameJavaString().equals(member) || SQ_ITEM.getMemberNameJavaString().equals(member) || SQ_CONCAT.getMemberNameJavaString().equals(member) ||
-                        SQ_LENGTH.getMemberNameJavaString().equals(member);
+    protected boolean isMemberReadable(String member,
+                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode) {
+        return readSlotByNameNode.getSlot(member) != null;
     }
 
     @ExportMessage
@@ -102,31 +84,13 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Cached LookupAttributeInMRONode.Dynamic lookup,
-                    @Cached ToSulongNode toSulongNode,
-                    @Cached BranchProfile errorProfile,
-                    @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            Object result;
-            try {
-                if (SQ_REPEAT.getMemberNameJavaString().equals(member)) {
-                    result = toSulongNode.execute(lookup.execute(getPythonClass(), T___MUL__));
-                } else if (SQ_ITEM.getMemberNameJavaString().equals(member)) {
-                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(), T___GETITEM__));
-                } else if (SQ_CONCAT.getMemberNameJavaString().equals(member)) {
-                    result = toSulongNode.execute(lookup.execute(getPythonClass(), T___ADD__));
-                } else if (SQ_LENGTH.getMemberNameJavaString().equals(member)) {
-                    result = PyProcsWrapper.createLenfuncWrapper(lookup.execute(getPythonClass(), T___LEN__));
-                } else {
-                    // TODO extend list
-                    throw UnknownIdentifierException.create(member);
-                }
-            } catch (PException e) {
-                errorProfile.enter();
-                transformExceptionToNativeNode.execute(null, e);
-                result = PythonContext.get(gil).getNativeNull();
+            Object result = readSlotByNameNode.execute(this, member);
+            if (result == null) {
+                throw UnknownIdentifierException.create(member);
             }
             return result;
         } finally {
