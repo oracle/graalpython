@@ -42,14 +42,18 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@GenerateCached(false)
+@GenerateInline
 public abstract class ReadSlotByNameNode extends Node {
-    public abstract Object execute(PythonNativeWrapper wrapper, String member, SlotMethodDef[] slots);
+    public abstract Object execute(Node inliningTarget, PythonNativeWrapper wrapper, String member, SlotMethodDef[] slots);
 
     @Specialization(guards = {"cachedMember.equals(member)", "slot != null"})
     Object cachedMember(PythonNativeWrapper wrapper, @SuppressWarnings("unused") String member, @SuppressWarnings("unused") SlotMethodDef[] slots,
