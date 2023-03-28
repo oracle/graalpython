@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -93,11 +93,3 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                                   polyglot_from_PyObjectPtr_array(defs, defcount),
                                   kwdefs, closure);
 }
-
-#undef Py_EnterRecursiveCall
-int Py_EnterRecursiveCall(const char *where) {
-    return 0;
-}
-
-#undef Py_LeaveRecursiveCall
-void Py_LeaveRecursiveCall(void) {}
