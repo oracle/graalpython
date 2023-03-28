@@ -90,7 +90,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
 
     public abstract Object execute(Object type);
 
-    private final static LookupNativeSlotNode[] UNCACHED = new LookupNativeSlotNode[SlotMethodDef.values().length];
+    private static final LookupNativeSlotNode[] UNCACHED = new LookupNativeSlotNode[SlotMethodDef.values().length];
 
     static {
         for (int i = 0; i < SlotMethodDef.values().length; i++) {
