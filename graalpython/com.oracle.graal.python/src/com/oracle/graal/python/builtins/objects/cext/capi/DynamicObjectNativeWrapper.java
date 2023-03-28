@@ -513,13 +513,25 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
-        Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PySequenceMethodsWrapper(object);
+        Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached LookupNativeSlotNode lookupLen) {
+            Object nativeNull = getContext().getNativeNull().getPtr();
+            if (lookupLen.execute(object, SlotMethodDef.SQ_LENGTH) != nativeNull) {
+                return new PySequenceMethodsWrapper(object);
+            } else {
+                return nativeNull;
+            }
         }
 
         @Specialization(guards = "eq(TP_AS_MAPPING, key)")
-        Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMappingMethodsWrapper(object);
+        Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached LookupNativeSlotNode lookupLen) {
+            Object nativeNull = getContext().getNativeNull().getPtr();
+            if (lookupLen.execute(object, SlotMethodDef.MP_LENGTH) != nativeNull) {
+                return new PyMappingMethodsWrapper(object);
+            } else {
+                return nativeNull;
+            }
         }
 
         @Specialization(guards = "eq(TP_NEW, key)")

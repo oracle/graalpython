@@ -1247,8 +1247,13 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_as_mapping extends CApiUnaryBuiltinNode {
 
         @Specialization
-        public Object get(PythonManagedClass object) {
-            return new PyMappingMethodsWrapper(object);
+        public Object get(PythonManagedClass object,
+                        @Cached LookupNativeSlotNode lookupLen) {
+            if (lookupLen.execute(object, SlotMethodDef.MP_LENGTH) != getNULL()) {
+                return new PyMappingMethodsWrapper(object);
+            } else {
+                return getNULL();
+            }
         }
     }
 
@@ -1266,8 +1271,13 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_as_sequence extends CApiUnaryBuiltinNode {
 
         @Specialization
-        public Object get(PythonManagedClass object) {
-            return new PySequenceMethodsWrapper(object);
+        public Object get(PythonManagedClass object,
+                        @Cached LookupNativeSlotNode lookupLen) {
+            if (lookupLen.execute(object, SlotMethodDef.SQ_LENGTH) != getNULL()) {
+                return new PySequenceMethodsWrapper(object);
+            } else {
+                return getNULL();
+            }
         }
     }
 
