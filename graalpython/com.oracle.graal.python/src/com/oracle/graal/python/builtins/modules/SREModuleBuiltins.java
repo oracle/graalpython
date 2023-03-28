@@ -537,10 +537,10 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
         private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
 
-        public abstract void execute(VirtualFrame frame, TRegexCache tRegexCache, Object input);
+        public abstract void execute(VirtualFrame frame, Object input, boolean expectBytes);
 
         @Specialization
-        protected void check(VirtualFrame frame, TRegexCache tRegexCache, Object input,
+        protected void check(VirtualFrame frame, Object input, boolean expectBytes,
                         @Cached BuiltinFunctions.IsInstanceNode isStringNode,
                         @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
                         @Cached ConditionProfile unsupportedInputTypeProfile,
@@ -550,8 +550,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
             if (unsupportedInputTypeProfile.profile(!isString && !isBytes)) {
                 throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
-            if (unexpectedInputTypeProfile.profile(tRegexCache.isBinary() != isBytes)) {
-                if (tRegexCache.isBinary()) {
+            if (unexpectedInputTypeProfile.profile(expectBytes != isBytes)) {
+                if (expectBytes) {
                     throw getRaiseNode().raise(TypeError, T_UNEXPECTED_STR);
                 } else {
                     throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
@@ -607,7 +607,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Child private SliceNodes.CreateSliceNode createSliceNode;
         @Child private PyObjectGetItem getItemNode;
 
-        @Specialization(guards = {"pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
+        @Specialization(guards = {"isSingleContext()", "pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
         protected Object doCached(VirtualFrame frame, Object pattern, Object input, Object posArg, Object endPosArg, int method, boolean mustAdvance,
                         @Cached("pattern") Object cachedPattern,
                         @Cached("method") int cachedMethod,
@@ -626,7 +626,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
-            reCheckInputTypeNode.execute(frame, tRegexCache, input);
+            reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
 
             int pos = asSizeNode.executeExact(frame, indexNode.execute(frame, posArg));
             int endPos = asSizeNode.executeExact(frame, indexNode.execute(frame, endPosArg));
@@ -656,9 +656,33 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return createMatchFromTRegexResultNode.execute(frame, pattern, pos, endPos, regexResult, input);
         }
 
-        @Specialization(guards = "method == cachedMethod", limit = "3", replaces = "doCached")
+        @Specialization(guards = {"tRegexCompileNode.execute(frame, getTRegexCache(readCacheNode, pattern), method, mustAdvance) == compiledRegex", "method == cachedMethod",
+                        "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
+        protected Object doCachedRegex(VirtualFrame frame, Object pattern, Object input, Object posArg, Object endPosArg, int method, boolean mustAdvance,
+                        @Cached("method") int cachedMethod,
+                        @Cached("mustAdvance") boolean cachedMustAdvance,
+                        @Cached @Shared ReadAttributeFromObjectNode readCacheNode,
+                        @Cached @Shared TRegexCompile tRegexCompileNode,
+                        @Cached("getTRegexCache(readCacheNode, pattern)") TRegexCache tRegexCache,
+                        @Cached("tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance)") Object compiledRegex,
+                        @Cached @Shared ConditionProfile fallbackProfile,
+                        @Cached @Shared ConditionProfile truncatingInputProfile,
+                        @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
+                        @Cached @Shared PyNumberIndexNode indexNode,
+                        @Cached @Shared PyNumberAsSizeNode asSizeNode,
+                        @Cached @Shared PyObjectSizeNode lengthNode,
+                        @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
+                        @Cached("create(getMethodName(method))") GetAttributeNode getFallbackMethodNode,
+                        @Cached @Shared TRegexCallExec tRegexCallExec,
+                        @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
+            return doCached(frame, pattern, input, posArg, endPosArg, method, mustAdvance, pattern, cachedMethod, mustAdvance, readCacheNode, tRegexCompileNode, tRegexCache,
+                            compiledRegex, fallbackProfile, truncatingInputProfile, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex, getFallbackMethodNode,
+                            tRegexCallExec, createMatchFromTRegexResultNode);
+        }
+
+        @Specialization(guards = "method == cachedMethod", limit = "3", replaces = {"doCached", "doCachedRegex"})
         @ReportPolymorphism.Megamorphic
-        protected Object doDynamic(VirtualFrame frame, Object pattern, Object inputStringOrBytes, Object posArg, Object endPosArg, int method, boolean mustAdvance,
+        protected Object doDynamic(VirtualFrame frame, Object pattern, Object input, Object posArg, Object endPosArg, int method, boolean mustAdvance,
                         @Cached("method") int cachedMethod,
                         @Cached @Shared ReadAttributeFromObjectNode readCacheNode,
                         @Cached @Shared TRegexCompile tRegexCompileNode,
@@ -674,7 +698,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             TRegexCache tRegexCache = getTRegexCache(readCacheNode, pattern);
             Object compiledRegex = tRegexCompileNode.execute(frame, tRegexCache, method, mustAdvance);
-            return doCached(frame, pattern, inputStringOrBytes, posArg, endPosArg, method, mustAdvance, pattern, cachedMethod, mustAdvance, readCacheNode, tRegexCompileNode, tRegexCache,
+            return doCached(frame, pattern, input, posArg, endPosArg, method, mustAdvance, pattern, cachedMethod, mustAdvance, readCacheNode, tRegexCompileNode, tRegexCache,
                             compiledRegex, fallbackProfile, truncatingInputProfile, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex, getFallbackMethodNode,
                             tRegexCallExec, createMatchFromTRegexResultNode);
         }
