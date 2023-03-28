@@ -70,7 +70,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -80,52 +80,70 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
-@GenerateUncached
 @ImportStatic(LookupAttributeInMRONode.class)
 public abstract class LookupNativeSlotNode extends PNodeWithContext {
-    public abstract Object execute(Object type, SlotMethodDef slot);
+    protected final SlotMethodDef slot;
+
+    public LookupNativeSlotNode(SlotMethodDef slot) {
+        this.slot = slot;
+    }
+
+    public abstract Object execute(Object type);
+
+    private final static LookupNativeSlotNode[] UNCACHED = new LookupNativeSlotNode[SlotMethodDef.values().length];
+
+    static {
+        for (int i = 0; i < SlotMethodDef.values().length; i++) {
+            SlotMethodDef slot = SlotMethodDef.values()[i];
+            UNCACHED[i] = new Uncached(slot);
+        }
+    }
+
+    public static LookupNativeSlotNode getUncached(SlotMethodDef slot) {
+        return UNCACHED[slot.ordinal()];
+    }
 
     @TruffleBoundary
     public static Object executeUncached(Object type, SlotMethodDef slot) {
-        return LookupNativeSlotNodeGen.getUncached().execute(type, slot);
+        return getUncached(slot).execute(type);
     }
 
     @Specialization(guards = {"isSingleContext()", "klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass, SlotMethodDef slot,
+    protected Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findAttr(getContext(), cachedKlass, slot.methodName)") Object cachedValue) {
-        return wrapManagedMethod(slot, cachedValue);
+        return wrapManagedMethod(cachedValue);
     }
 
     @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected Object lookupPBCTCachedMulti(@SuppressWarnings("unused") PythonBuiltinClassType klass, SlotMethodDef slot,
+    protected Object lookupPBCTCachedMulti(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findAttr(getContext(), cachedKlass, slot.methodName)") Object cachedValue) {
-        return wrapManagedMethod(slot, cachedValue);
+        return wrapManagedMethod(cachedValue);
     }
 
     @Specialization(replaces = {"lookupPBCTCached", "lookupPBCTCachedMulti"}, guards = "klass == cachedKlass", //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected Object lookupPBCTCachedOwner(@SuppressWarnings("unused") PythonBuiltinClassType klass, SlotMethodDef slot,
+    protected Object lookupPBCTCachedOwner(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findOwnerInMro(getContext(), cachedKlass, slot.methodName)") PythonBuiltinClassType ownerKlass,
                     @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
         if (ownerKlass == null) {
             return getNULL();
         } else {
-            return wrapManagedMethod(slot, readAttrNode.execute(PythonContext.get(this).lookupType(ownerKlass), slot.methodName));
+            return wrapManagedMethod(readAttrNode.execute(PythonContext.get(this).lookupType(ownerKlass), slot.methodName));
         }
     }
 
     @Specialization(replaces = "lookupPBCTCachedOwner")
-    protected Object lookupPBCTGeneric(PythonBuiltinClassType klass, SlotMethodDef slot,
+    protected Object lookupPBCTGeneric(PythonBuiltinClassType klass,
                     @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
-        return wrapManagedMethod(slot, findAttr(PythonContext.get(this), klass, slot.methodName, readAttrNode));
+        return wrapManagedMethod(findAttr(PythonContext.get(this), klass, slot.methodName, readAttrNode));
     }
 
     // PythonClass specializations:
 
-    protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass, SlotMethodDef slot) {
+    protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
         CompilerAsserts.neverPartOfCompilation();
         // - avoid cases when attributes are stored in a dict containing elements
         // with a potential MRO sideeffect on access.
@@ -151,7 +169,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
                 GetMroStorageNode.getUncached().execute(clsObj).addAttributeInMROFinalAssumption(slot.methodName, attrAssumption);
             }
-            Object value = readSlot(clsObj, slot, ReadAttributeFromObjectNode.getUncachedForceType(), ToSulongNode.getUncached(), PCallCapiFunction.getUncached(), InteropLibrary.getUncached());
+            Object value = readSlot(clsObj, ReadAttributeFromObjectNode.getUncachedForceType(), ToSulongNode.getUncached(), PCallCapiFunction.getUncached(), InteropLibrary.getUncached());
             if (value != null) {
                 return new AttributeAssumptionPair(attrAssumption, value);
             }
@@ -162,12 +180,12 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
     @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     assumptions = "cachedAttrInMROInfo.assumption")
-    protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass, @SuppressWarnings("unused") SlotMethodDef slot,
+    protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameTypeNode,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                    @Cached("findAttrAndAssumptionInMRO(cachedKlass, slot)") AttributeAssumptionPair cachedAttrInMROInfo) {
+                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.value;
     }
 
@@ -176,11 +194,11 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
     // PythonClass#initializeMroShape
     @Specialization(guards = {"!isSingleContext()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected Object lookupConstantMROShape(PythonClass klass, SlotMethodDef slot,
+    protected Object lookupConstantMROShape(PythonClass klass,
                     @Cached GetMroStorageNode getMroStorageNode,
                     @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
-                    @Cached("lookupInMroShape(cachedMroShape, klass, slot  )") MroShapeLookupResult lookupResult) {
-        return wrapManagedMethod(slot, lookupResult.getFromMro(getMroStorageNode.execute(klass), slot.methodName));
+                    @Cached("lookupInMroShape(cachedMroShape, klass)") MroShapeLookupResult lookupResult) {
+        return wrapManagedMethod(lookupResult.getFromMro(getMroStorageNode.execute(klass), slot.methodName));
     }
 
     @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "mroLength < 32"}, //
@@ -188,7 +206,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     replaces = "lookupConstantMROShape", //
                     assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    protected Object lookupConstantMRO(@SuppressWarnings("unused") Object klass, SlotMethodDef slot,
+    protected Object lookupConstantMRO(@SuppressWarnings("unused") Object klass,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached InlinedIsSameTypeNode isSameTypeNode,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
@@ -202,7 +220,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         for (int i = 0; i < mroLength; i++) {
             Object kls = mro.getItemNormalized(i);
-            Object value = readSlot(kls, slot, readAttrNodes[i], toSulongNode, callCapiFunction, interopLibrary);
+            Object value = readSlot(kls, readAttrNodes[i], toSulongNode, callCapiFunction, interopLibrary);
             if (value != null) {
                 return value;
             }
@@ -214,7 +232,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     replaces = {"lookupConstantMROCached", "lookupConstantMRO"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    protected Object lookupCachedLen(@SuppressWarnings("unused") Object klass, SlotMethodDef slot,
+    protected Object lookupCachedLen(@SuppressWarnings("unused") Object klass,
                     @SuppressWarnings("unused") @Cached GetMroStorageNode getMroStorageNode,
                     @Bind("getMroStorageNode.execute(klass)") MroSequenceStorage mro,
                     @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
@@ -225,7 +243,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         for (int i = 0; i < cachedMroLength; i++) {
             Object kls = mro.getItemNormalized(i);
-            Object value = readSlot(kls, slot, readAttrNodes[i], toSulongNode, callCapiFunction, interopLibrary);
+            Object value = readSlot(kls, readAttrNodes[i], toSulongNode, callCapiFunction, interopLibrary);
             if (value != null) {
                 return value;
             }
@@ -235,7 +253,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
 
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
     @Megamorphic
-    protected Object lookupGeneric(Object klass, SlotMethodDef slot,
+    protected Object lookupGeneric(Object klass,
                     @Cached GetMroStorageNode getMroStorageNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
                     @Cached ToSulongNode toSulongNode,
@@ -244,7 +262,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         MroSequenceStorage mro = getMroStorageNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
-            Object value = readSlot(kls, slot, readAttrNode, toSulongNode, callCapiFunction, interopLibrary);
+            Object value = readSlot(kls, readAttrNode, toSulongNode, callCapiFunction, interopLibrary);
             if (value != null) {
                 return value;
             }
@@ -252,7 +270,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         return getNULL();
     }
 
-    public MroShapeLookupResult lookupInMroShape(MroShape shape, Object klass, SlotMethodDef slot) {
+    public MroShapeLookupResult lookupInMroShape(MroShape shape, Object klass) {
         assert MroShape.validate(klass, PythonLanguage.get(this));
         return shape.lookup(slot.methodName);
     }
@@ -261,26 +279,48 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         return getContext().getNativeNull().getPtr();
     }
 
-    private Object readSlot(Object currentType, SlotMethodDef slot, ReadAttributeFromObjectNode readNode, ToSulongNode toSulongNode, PCallCapiFunction callCapiFunction,
+    private Object readSlot(Object currentType, ReadAttributeFromObjectNode readNode, ToSulongNode toSulongNode, PCallCapiFunction callCapiFunction,
                     InteropLibrary interopLibrary) {
         if (currentType instanceof PythonNativeClass) {
-            Object value = callCapiFunction.call(slot.getter, toSulongNode.execute(currentType));
+            Object value = callCapiFunction.call(slot.getGetter(), toSulongNode.execute(currentType));
             if (!interopLibrary.isNull(value)) {
                 return value;
             }
         } else {
             Object value = readNode.execute(currentType, slot.methodName);
             if (value != PNone.NO_VALUE) {
-                return wrapManagedMethod(slot, value);
+                return wrapManagedMethod(value);
             }
         }
         return null;
     }
 
-    private Object wrapManagedMethod(SlotMethodDef slot, Object value) {
+    private Object wrapManagedMethod(Object value) {
         if (value instanceof PNone) {
             return getNULL();
         }
         return getContext().getCApiContext().getOrCreateProcWrapper(slot, value);
+    }
+
+    @GenerateCached(false)
+    private static final class Uncached extends LookupNativeSlotNode {
+        Uncached(SlotMethodDef slot) {
+            super(slot);
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        @Override
+        @TruffleBoundary
+        public Object execute(Object type) {
+            if (type instanceof PythonBuiltinClassType pbct) {
+                return lookupPBCTGeneric(pbct, ReadAttributeFromDynamicObjectNode.getUncached());
+            }
+            return lookupGeneric(type, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), ToSulongNode.getUncached(), PCallCapiFunction.getUncached(),
+                            InteropLibrary.getUncached());
+        }
     }
 }

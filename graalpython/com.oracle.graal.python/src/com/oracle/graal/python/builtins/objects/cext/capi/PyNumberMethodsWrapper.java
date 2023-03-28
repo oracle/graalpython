@@ -40,55 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.ReadSlotByNameNode.getSlot;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_ABSOLUTE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_AND;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_BOOL;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_DIVMOD;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_FLOAT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_FLOOR_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INDEX;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_AND;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_LSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_OR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_POWER;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_REMAINDER;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_RSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_SUBTRACT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_TRUE_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INPLACE_XOR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_INVERT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_LSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_NEGATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_OR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_POSITIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_POWER;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_REMAINDER;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_RSHIFT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_SUBTRACT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_TRUE_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.NB_XOR;
-
+import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -96,51 +59,11 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ImportStatic(SpecialMethodNames.class)
+@ImportStatic(SlotGroup.class)
 public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
-
-    @CompilationFinal(dimensions = 1) private static SlotMethodDef[] SLOTS = new SlotMethodDef[]{
-                    NB_ABSOLUTE,
-                    NB_ADD,
-                    NB_AND,
-                    NB_BOOL,
-                    NB_DIVMOD,
-                    NB_FLOAT,
-                    NB_FLOOR_DIVIDE,
-                    NB_INDEX,
-                    NB_INPLACE_ADD,
-                    NB_INPLACE_AND,
-                    NB_INPLACE_FLOOR_DIVIDE,
-                    NB_INPLACE_LSHIFT,
-                    NB_INPLACE_MULTIPLY,
-                    NB_INPLACE_OR,
-                    NB_INPLACE_POWER,
-                    NB_INPLACE_REMAINDER,
-                    NB_INPLACE_RSHIFT,
-                    NB_INPLACE_SUBTRACT,
-                    NB_INPLACE_TRUE_DIVIDE,
-                    NB_INPLACE_XOR,
-                    NB_INT,
-                    NB_INVERT,
-                    NB_LSHIFT,
-                    NB_MULTIPLY,
-                    NB_NEGATIVE,
-                    NB_OR,
-                    NB_POSITIVE,
-                    NB_POWER,
-                    NB_REMAINDER,
-                    NB_RSHIFT,
-                    NB_SUBTRACT,
-                    NB_TRUE_DIVIDE,
-                    NB_XOR,
-    };
 
     public PyNumberMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
-    }
-
-    public PythonManagedClass getPythonClass() {
-        return (PythonManagedClass) getDelegate();
     }
 
     @SuppressWarnings("static-method")
@@ -151,8 +74,9 @@ public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     @SuppressWarnings("static-method")
     @ExportMessage
-    protected boolean isMemberReadable(String member) {
-        return getSlot(member, SLOTS) != null;
+    protected boolean isMemberReadable(String member,
+                    @Shared("readSlot") @Cached(parameters = "AS_NUMBER") ReadSlotByNameNode readSlotByNameNode) {
+        return readSlotByNameNode.getSlot(member) != null;
     }
 
     @SuppressWarnings("static-method")
@@ -163,12 +87,11 @@ public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Bind("$node") Node inliningTarget,
-                    @Cached ReadSlotByNameNode readSlotByNameNode,
+                    @Shared("readSlot") @Cached(parameters = "AS_NUMBER") ReadSlotByNameNode readSlotByNameNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            Object result = readSlotByNameNode.execute(inliningTarget, this, member, SLOTS);
+            Object result = readSlotByNameNode.execute(this, member);
             if (result == null) {
                 throw UnknownIdentifierException.create(member);
             }

@@ -40,26 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.ReadSlotByNameNode.getSlot;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SQ_CONCAT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SQ_ITEM;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SQ_LENGTH;
-import static com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SQ_REPEAT;
-
+import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -67,18 +59,12 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ImportStatic(SpecialMethodNames.class)
+@ImportStatic(SlotGroup.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     public PySequenceMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
-
-    public PythonManagedClass getPythonClass() {
-        return (PythonManagedClass) getDelegate();
-    }
-
-    @CompilationFinal(dimensions = 1) private static SlotMethodDef[] SLOTS = new SlotMethodDef[]{SQ_LENGTH, SQ_ITEM, SQ_REPEAT, SQ_CONCAT};
 
     @ExportMessage
     protected boolean hasMembers() {
@@ -86,8 +72,9 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberReadable(String member) {
-        return getSlot(member, SLOTS) != null;
+    protected boolean isMemberReadable(String member,
+                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode) {
+        return readSlotByNameNode.getSlot(member) != null;
     }
 
     @ExportMessage
@@ -97,12 +84,11 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Bind("$node") Node inliningTarget,
-                    @Cached ReadSlotByNameNode readSlotByNameNode,
+                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            Object result = readSlotByNameNode.execute(inliningTarget, this, member, SLOTS);
+            Object result = readSlotByNameNode.execute(this, member);
             if (result == null) {
                 throw UnknownIdentifierException.create(member);
             }
