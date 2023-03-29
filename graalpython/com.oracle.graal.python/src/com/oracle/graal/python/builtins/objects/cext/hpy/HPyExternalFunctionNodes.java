@@ -544,6 +544,11 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
+        public boolean isInternal() {
+            return true;
+        }
+
+        @Override
         public boolean isPythonInternal() {
             return true;
         }
