@@ -74,6 +74,19 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
     static int RUSAGE_SELF = 0;
     static int RUSAGE_THREAD = 1;
 
+    static int RLIMIT_CPU = 0;
+    static int RLIMIT_FSIZE = 1;
+    static int RLIMIT_DATA = 2;
+    static int RLIMIT_STACK = 3;
+    static int RLIMIT_CORE = 4;
+    static int RLIMIT_AS = 5;
+    static int RLIMIT_RSS = 5;
+    static int RLIMIT_MEMLOCK = 6;
+    static int RLIMIT_NPROC = 7;
+    static int RLIMIT_NOFILE = 8;
+
+    static long RLIM_INFINITY = Long.MAX_VALUE;
+
     static final StructSequence.BuiltinTypeDescriptor STRUCT_RUSAGE_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructRusage,
                     // @formatter:off The formatter joins these lines making it less readable
@@ -112,6 +125,20 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("RUSAGE_CHILDREN", RUSAGE_CHILDREN);
         addBuiltinConstant("RUSAGE_SELF", RUSAGE_SELF);
         addBuiltinConstant("RUSAGE_THREAD", RUSAGE_THREAD);
+
+        addBuiltinConstant("RLIMIT_CPU", RLIMIT_CPU);
+        addBuiltinConstant("RLIMIT_FSIZE", RLIMIT_FSIZE);
+        addBuiltinConstant("RLIMIT_DATA", RLIMIT_DATA);
+        addBuiltinConstant("RLIMIT_STACK", RLIMIT_STACK);
+        addBuiltinConstant("RLIMIT_CORE", RLIMIT_CORE);
+        addBuiltinConstant("RLIMIT_AS", RLIMIT_AS);
+        addBuiltinConstant("RLIMIT_RSS", RLIMIT_RSS);
+        addBuiltinConstant("RLIMIT_MEMLOCK", RLIMIT_MEMLOCK);
+        addBuiltinConstant("RLIMIT_NPROC", RLIMIT_NPROC);
+        addBuiltinConstant("RLIMIT_NOFILE", RLIMIT_NOFILE);
+
+        addBuiltinConstant("RLIM_INFINITY", RLIM_INFINITY);
+
         StructSequence.initType(core, STRUCT_RUSAGE_DESC);
     }
 
@@ -232,6 +259,25 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
         @Fallback
         PTuple getruusage(@SuppressWarnings("unused") Object who) {
             throw raise(ValueError, ErrorMessages.RUSAGE_NOT_YET_IMPLEMENED);
+        }
+    }
+
+    @Builtin(name = "getpagesize", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetPageSizeNode extends PythonBuiltinNode {
+        @Specialization
+        int getPageSize() {
+            return 4096;
+        }
+    }
+
+    @Builtin(name = "getrlimit", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetRLimitNode extends PythonBuiltinNode {
+        @Specialization
+        PTuple getPageSize(@SuppressWarnings("unused") int which) {
+            // dummy implementation - report "unrestricted" for everything
+            return factory().createTuple(new Object[]{RLIM_INFINITY, RLIM_INFINITY});
         }
     }
 }
