@@ -93,6 +93,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -128,27 +129,23 @@ public class SREModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
         addBuiltinConstant("_with_sre", core.getContext().getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback));
-        addBuiltinConstant("_METHOD_SEARCH", PythonMethod.search);
-        addBuiltinConstant("_METHOD_MATCH", PythonMethod.match);
-        addBuiltinConstant("_METHOD_FULLMATCH", PythonMethod.fullmatch);
+        addBuiltinConstant("_METHOD_SEARCH", PythonMethod.Search);
+        addBuiltinConstant("_METHOD_MATCH", PythonMethod.Match);
+        addBuiltinConstant("_METHOD_FULLMATCH", PythonMethod.FullMatch);
         super.initialize(core);
     }
 
     public enum PythonMethod {
-        search(tsLiteral("search")),
-        match(tsLiteral("match")),
-        fullmatch(tsLiteral("fullmatch"));
+        Search(tsLiteral("search")),
+        Match(tsLiteral("match")),
+        FullMatch(tsLiteral("fullmatch"));
+
+        public static final int PYTHON_METHOD_COUNT = PythonMethod.values().length;
 
         private final TruffleString name;
 
-        private static final PythonMethod[] VALUES = PythonMethod.values();
-
         PythonMethod(TruffleString name) {
             this.name = name;
-        }
-
-        public static PythonMethod fromOrdinal(int ordinal) {
-            return VALUES[ordinal];
         }
 
         public TruffleString getMethodName() {
@@ -301,19 +298,19 @@ public class SREModuleBuiltins extends PythonBuiltins {
         public Object getRegexp(PythonMethod method, boolean mustAdvance) {
             assert !isLocaleSensitive();
             switch (method) {
-                case search:
+                case Search:
                     if (mustAdvance) {
                         return mustAdvanceSearchRegexp;
                     } else {
                         return searchRegexp;
                     }
-                case match:
+                case Match:
                     if (mustAdvance) {
                         return mustAdvanceMatchRegexp;
                     } else {
                         return matchRegexp;
                     }
-                case fullmatch:
+                case FullMatch:
                     if (mustAdvance) {
                         return mustAdvanceFullMatchRegexp;
                     } else {
@@ -333,21 +330,21 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private void setRegexp(PythonMethod method, boolean mustAdvance, Object regexp) {
             assert !isLocaleSensitive();
             switch (method) {
-                case search:
+                case Search:
                     if (mustAdvance) {
                         mustAdvanceSearchRegexp = regexp;
                     } else {
                         searchRegexp = regexp;
                     }
                     break;
-                case match:
+                case Match:
                     if (mustAdvance) {
                         mustAdvanceMatchRegexp = regexp;
                     } else {
                         matchRegexp = regexp;
                     }
                     break;
-                case fullmatch:
+                case FullMatch:
                     if (mustAdvance) {
                         mustAdvanceFullMatchRegexp = regexp;
                     } else {
@@ -476,12 +473,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_compile", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
+    @ImportStatic(PythonMethod.class)
     abstract static class TRegexCompile extends PythonTernaryBuiltinNode {
 
         private static final TruffleString T__GETLOCALE = tsLiteral("_getlocale");
 
-        // limit of 2 specializations to allow inlining of both a must_advance=False and a
-        // must_advance=True version in re builtins like sub, split, findall
+        // limit of 6 specializations = 3 Python methods * 2 values of mustAdvance
+        protected static final int SPECIALIZATION_LIMIT = 2 * PythonMethod.PYTHON_METHOD_COUNT;
+
         @Specialization(guards = {"tRegexCache == cachedTRegexCache", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!cachedTRegexCache.isLocaleSensitive()"}, limit = "2")
         Object cached(TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
                         @Cached("tRegexCache") TRegexCache cachedTRegexCache,
@@ -495,8 +494,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return localeNonSensitive(tRegexCache, method, mustAdvance, method, mustAdvance);
         }
 
-        // limit of 6 specializations = 3 Python methods * 2 values of mustAdvance
-        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "6")
+        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT")
         Object localeNonSensitive(TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached("mustAdvance") boolean cachedMustAdvance) {
@@ -508,8 +506,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        // limit of 6 specializations = 3 Python methods * 2 values of mustAdvance
-        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.isLocaleSensitive()"}, limit = "6")
+        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT")
         Object localeSensitive(TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached("mustAdvance") boolean cachedMustAdvance,
@@ -603,6 +600,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_search", minNumOfPositionalArgs = 6)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
+    @ImportStatic(PythonMethod.class)
     abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
         private static final TruffleString T__PATTERN__TREGEX_CACHE = tsLiteral("_Pattern__tregex_cache");
         protected static final TruffleString T__PATTERN__FALLBACK_COMPILE = tsLiteral("_Pattern__fallback_compile");
@@ -665,7 +663,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"tRegexCompileNode.execute(frame, getTRegexCache(readCacheNode, pattern), method, mustAdvance) == compiledRegex", "method == cachedMethod",
-                        "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
+                        "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1", replaces = "doCached")
         @SuppressWarnings("truffle-static-method")
         protected Object doCachedRegex(VirtualFrame frame, Object pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
                         @Bind("this") Node inliningTarget,
@@ -690,8 +688,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                             tRegexCallExec, createMatchFromTRegexResultNode);
         }
 
-        // limit of 3 specializations = 3 Python methods
-        @Specialization(guards = "method == cachedMethod", limit = "3", replaces = {"doCached", "doCachedRegex"})
+        @Specialization(guards = "method == cachedMethod", limit = "PYTHON_METHOD_COUNT", replaces = {"doCached", "doCachedRegex"})
         @SuppressWarnings("truffle-static-method")
         @ReportPolymorphism.Megamorphic
         protected Object doDynamic(VirtualFrame frame, Object pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
