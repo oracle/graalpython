@@ -271,8 +271,8 @@ public final class CApiCodeGen {
         return builtins.stream().filter(n -> n.name.equals(name)).findFirst();
     }
 
-    private static List<String> MANUAL_VARARGS = Arrays.asList("PyArg_Parse", "PyObject_CallFunction", "PyObject_CallFunctionObjArgs", "PyObject_CallMethod", "PyObject_CallMethodObjArgs",
-                    "PyTuple_Pack", "_PyArg_ParseStack_SizeT", "_PyArg_Parse_SizeT", "_PyObject_CallFunction_SizeT", "_PyObject_CallMethod_SizeT");
+    private static List<String> MANUAL_VARARGS = Arrays.asList("PyArg_Parse", "PyObject_CallFunctionObjArgs", "PyObject_CallMethodObjArgs", "PyTuple_Pack", "_PyArg_ParseStack_SizeT",
+                    "_PyArg_Parse_SizeT", "_PyObject_CallMethodIdObjArgs");
 
     /**
      * Generates all the forwards in capi_forwards.h, either outputting an "unimplemented" message,

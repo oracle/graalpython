@@ -497,62 +497,37 @@ PyAPI_FUNC(PyObject *) PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     }
     va_end(myargs);
 
-    return PyObject_CallObject(callable, args);
-}
-
-#define IS_SINGLE_ARG(_fmt) ((_fmt[0]) != '\0' && (_fmt[1]) == '\0')
-
-#undef PyObject_CallFunction
-PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
-    if (fmt == NULL || fmt[0] == '\0') {
-        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    PyObject* args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-    return _PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
-}
-
-PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
-    if (fmt == NULL || fmt[0] == '\0') {
-        return _PyTruffleObject_Call1(callable, NULL, NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    PyObject* args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-    return _PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
-}
-
-
-PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
-    PyObject* args;
-    if (fmt == NULL || fmt[0] == '\0') {
-        return _PyTruffleObject_CallMethod1(object, method, NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-    return _PyTruffleObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
-}
-
-PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
-    PyObject* args;
-    if (fmt == NULL || fmt[0] == '\0') {
-        return _PyTruffleObject_CallMethod1(object, method, NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-    return _PyTruffleObject_CallMethod1(object, method, args, IS_SINGLE_ARG(fmt));
+    PyObject* result = PyObject_CallObject(callable, args);
+    Py_DECREF(args);
+    return result;
 }
 
 PyObject * PyObject_CallMethodObjArgs(PyObject *a, PyObject *b, ...)  {
     printf("PyObject_CallMethodObjArgs not implemented in capi_native - exiting\n");
     exit(-1);
+}
+
+PyObject * _PyObject_CallMethodIdObjArgs(PyObject *object, struct _Py_Identifier *name, ...) {
+    va_list myargs;
+    va_start(myargs, name);
+    int count = 0;
+    while (count <= 1024) {
+        PyObject *o = va_arg(myargs, PyObject *);
+        if (o == NULL) {
+            break;
+        }
+        callBuffer[count++] = o;
+    }
+    PyObject* args = PyTuple_New(count);
+    for (int i = 0; i < count; i++) {
+        Py_XINCREF(callBuffer[i]);
+        PyTuple_SetItem(args, i, callBuffer[i]);
+    }
+    va_end(myargs);
+
+    PyObject* result = Graal_PyTruffleObject_CallMethod1(object, name->string, args, 0);
+    Py_DECREF(args);
+    return result;
 }
 
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
@@ -613,11 +588,15 @@ static int polyglot_is_value(const void *value) {
     return 0;
 }
 
+// conversion needs to be done on the Java side
+#define truffleString(VALUE) (VALUE)
+
 #include "_warnings.c"
 #include "boolobject.c"
 #include "longobject_shared.c"
 #include "complexobject.c"
 #include "dictobject.c"
+#include "descrobject_shared.c"
 #include "floatobject.c"
 #include "modsupport_shared.c"
 #include "object_shared.c"
