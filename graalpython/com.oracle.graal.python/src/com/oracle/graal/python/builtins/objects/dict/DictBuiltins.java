@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -63,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageEq;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetReverseIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -71,15 +71,14 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -90,8 +89,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -105,7 +106,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -164,35 +164,19 @@ public final class DictBuiltins extends PythonBuiltins {
 
     // setdefault(key[, default])
     @Builtin(name = "setdefault", minNumOfPositionalArgs = 2, parameterNames = {"self", "key", "default"})
+    @ArgumentClinic(name = "default", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
-    public abstract static class SetDefaultNode extends PythonTernaryBuiltinNode {
-        @Child HashingStorageSetItemWithHash setItemWithHash;
+    abstract static class SetDefaultNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization
         public Object doIt(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode,
-                        @Cached HashingStorageGetItemWithHash getItem,
-                        @Cached InlinedBranchProfile hasValue,
-                        @Cached InlinedBranchProfile defaultValProfile) {
-            long keyHash = hashNode.execute(frame, key);
-            Object value = getItem.execute(frame, dict.getDictStorage(), key, keyHash);
-            if (value != null) {
-                hasValue.enter(inliningTarget);
-                return value;
-            }
-            Object newValue = defaultValue;
-            if (defaultValue == PNone.NO_VALUE) {
-                defaultValProfile.enter(inliningTarget);
-                newValue = PNone.NONE;
-            }
-            if (setItemWithHash == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemWithHash = insert(HashingStorageSetItemWithHash.create());
-            }
-            HashingStorage newStorage = setItemWithHash.execute(frame, dict.getDictStorage(), key, keyHash, newValue);
-            dict.setDictStorage(newStorage);
-            return newValue;
+                        @Cached PyDictSetDefault setDefault) {
+            return setDefault.execute(frame, dict, key, defaultValue);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return DictBuiltinsClinicProviders.SetDefaultNodeClinicProviderGen.INSTANCE;
         }
     }
 
