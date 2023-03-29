@@ -352,6 +352,13 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PySys_Audit", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyOS_mystricmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyOS_mystrnicmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_CallObject", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyObject_CallFunction_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_CallFunction", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "_PyObject_CallMethod_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_CallMethod", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = CImpl)
 
     /*
      * Functions that are implemented in C code that needs to run on Sulong:
@@ -408,8 +415,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyModule_GetDef", ret = PyModuleDef, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyModule_GetDict", ret = PyObject, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyModule_GetState", ret = Pointer, args = {PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyObject_CallFunction_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = PolyglotImpl)
-    @CApiBuiltin(name = "_PyObject_CallMethod_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyObject_GetAttrId", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyObject_GetMethod", ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = PolyglotImpl)
     @CApiBuiltin(name = "_PyObject_LookupAttr", ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = PolyglotImpl)
@@ -569,12 +574,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyNumber_Subtract", ret = PyObject, args = {PyObject, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyNumber_TrueDivide", ret = PyObject, args = {PyObject, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyNumber_Xor", ret = PyObject, args = {PyObject, PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyObject_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyObject_CallFunction", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyObject_CallFunctionObjArgs", ret = PyObject, args = {PyObject, VARARGS}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyObject_CallMethod", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyObject_CallMethodObjArgs", ret = PyObject, args = {PyObject, PyObject, VARARGS}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyObject_CallObject", ret = PyObject, args = {PyObject, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyObject_CheckBuffer", ret = Int, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyObject_GenericGetAttr", ret = PyObjectTransfer, args = {PyObject, PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyObject_GenericSetAttr", ret = Int, args = {PyObject, PyObject, PyObject}, call = PolyglotImpl)
@@ -662,6 +663,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_InternInPlace", ret = Void, args = {PyObjectPtr}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyUnicode_New", ret = PyObject, args = {Py_ssize_t, PY_UCS4}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyVectorcall_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = PolyglotImpl)
+    @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = PolyglotImpl)
 
     /*
      * Functions that are not implemented at the moment:
@@ -849,7 +851,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyObject_Call_Prepend", ret = PyObject, args = {PyThreadState, PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethodId_SizeT", ret = PyObject, args = {PyObject, PY_IDENTIFIER, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethodId", ret = PyObject, args = {PyObject, PY_IDENTIFIER, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CheckConsistency", ret = Int, args = {PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CheckCrossInterpreterData", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_DebugMallocStats", ret = Int, args = {FILE_PTR}, call = NotImplemented)
@@ -1070,7 +1071,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyContext_New", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyContextVar_Reset", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCoro_New", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewMember", ret = PyObject, args = {PyTypeObject, PyMemberDef}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewWrapper", ret = PyObject, args = {PyTypeObject, WRAPPERBASE, Pointer}, call = NotImplemented)

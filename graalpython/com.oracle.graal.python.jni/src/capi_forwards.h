@@ -2060,9 +2060,6 @@ PyAPI_FUNC(PyTypeObject*) PyDescrObject_GetType(PyObject* a) {
     PyTypeObject* result = (PyTypeObject*) __target__PyDescrObject_GetType(a);
     return result;
 }
-PyAPI_FUNC(int) PyDescr_IsData(PyObject* a) {
-    unimplemented("PyDescr_IsData"); exit(-1);
-}
 PyObject* (*__target__PyDescr_NewClassMethod)(PyTypeObject*, PyMethodDef*) = NULL;
 PyAPI_FUNC(PyObject*) PyDescr_NewClassMethod(PyTypeObject* a, PyMethodDef* b) {
     PyObject* result = (PyObject*) __target__PyDescr_NewClassMethod(a, b);
@@ -3223,11 +3220,6 @@ PyAPI_FUNC(PyObject*) PyObject_Bytes(PyObject* a) {
     PyObject* result = (PyObject*) GraalPyObject_Bytes(a);
     return result;
 }
-PyObject* (*__target__PyObject_Call)(PyObject*, PyObject*, PyObject*) = NULL;
-PyAPI_FUNC(PyObject*) PyObject_Call(PyObject* a, PyObject* b, PyObject* c) {
-    PyObject* result = (PyObject*) __target__PyObject_Call(a, b, c);
-    return result;
-}
 PyAPI_FUNC(void) PyObject_CallFinalizer(PyObject* a) {
     unimplemented("PyObject_CallFinalizer"); exit(-1);
 }
@@ -3236,11 +3228,6 @@ PyAPI_FUNC(int) PyObject_CallFinalizerFromDealloc(PyObject* a) {
 }
 PyAPI_FUNC(PyObject*) PyObject_CallNoArgs(PyObject* a) {
     unimplemented("PyObject_CallNoArgs"); exit(-1);
-}
-PyObject* (*__target__PyObject_CallObject)(PyObject*, PyObject*) = NULL;
-PyAPI_FUNC(PyObject*) PyObject_CallObject(PyObject* a, PyObject* b) {
-    PyObject* result = (PyObject*) __target__PyObject_CallObject(a, b);
-    return result;
 }
 PyAPI_FUNC(void*) PyObject_Calloc(size_t a, size_t b) {
     unimplemented("PyObject_Calloc"); exit(-1);
@@ -5263,9 +5250,6 @@ PyAPI_FUNC(void) _PyObject_AssertFailed(PyObject* a, const char* b, const char* 
 PyAPI_FUNC(PyObject*) _PyObject_CallMethodId(PyObject* a, _Py_Identifier* b, const char* c, ...) {
     unimplemented("_PyObject_CallMethodId"); exit(-1);
 }
-PyAPI_FUNC(PyObject*) _PyObject_CallMethodIdObjArgs(PyObject* a, struct _Py_Identifier* b, ...) {
-    unimplemented("_PyObject_CallMethodIdObjArgs"); exit(-1);
-}
 PyAPI_FUNC(PyObject*) _PyObject_CallMethodId_SizeT(PyObject* a, _Py_Identifier* b, const char* c, ...) {
     unimplemented("_PyObject_CallMethodId_SizeT"); exit(-1);
 }
@@ -6298,8 +6282,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyOS_strtol = getAPI("PyOS_strtol");
     __target__PyOS_strtoul = getAPI("PyOS_strtoul");
     __target__PyOS_vsnprintf = getAPI("PyOS_vsnprintf");
-    __target__PyObject_Call = getAPI("PyObject_Call");
-    __target__PyObject_CallObject = getAPI("PyObject_CallObject");
     __target__PyObject_CheckBuffer = getAPI("PyObject_CheckBuffer");
     __target__PyObject_GenericGetAttr = getAPI("PyObject_GenericGetAttr");
     __target__PyObject_GenericSetAttr = getAPI("PyObject_GenericSetAttr");
