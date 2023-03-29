@@ -2204,6 +2204,7 @@ public abstract class ExternalFunctionNodes {
      * {@code wrap_sq_delitem}, {@code wrap_sq_setitem}, {@code asdf}.
      */
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class CheckPrimitiveFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization(guards = "!isMinusOne(result)")
