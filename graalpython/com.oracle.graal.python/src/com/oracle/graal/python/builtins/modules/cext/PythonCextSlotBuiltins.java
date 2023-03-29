@@ -127,56 +127,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ITEMSIZE__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKLISTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INVERT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.CharsetEncoder;
@@ -193,7 +144,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNativeMemberInMRONode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
@@ -211,8 +161,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceMethodsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
@@ -263,11 +213,10 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -632,26 +581,38 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = objobjargproc, args = {PyMappingMethods}, call = Ignored)
-    public abstract static class Py_get_PyMappingMethods_mp_ass_subscript extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyMappingMethods_mp_ass_subscript extends CApiUnaryBuiltinNode {
 
-        Py_get_PyMappingMethods_mp_ass_subscript() {
-            super(T___SETITEM__);
+        @Specialization
+        Object get(PyMappingMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_ASS_SUBSCRIPT);
         }
     }
 
     @CApiBuiltin(ret = lenfunc, args = {PyMappingMethods}, call = Ignored)
-    public abstract static class Py_get_PyMappingMethods_mp_length extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyMappingMethods_mp_length extends CApiUnaryBuiltinNode {
 
-        Py_get_PyMappingMethods_mp_length() {
-            super(T___LEN__);
+        @Specialization
+        Object get(PyMappingMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_LENGTH);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyMappingMethods}, call = Ignored)
-    public abstract static class Py_get_PyMappingMethods_mp_subscript extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyMappingMethods_mp_subscript extends CApiUnaryBuiltinNode {
 
-        Py_get_PyMappingMethods_mp_subscript() {
-            super(T___GETITEM__);
+        @Specialization
+        Object get(PyMappingMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.MP_SUBSCRIPT);
+        }
+    }
+
+    @CApiBuiltin(ret = lenfunc, args = {PySequenceMethods}, call = Ignored)
+    public abstract static class Py_get_PySequenceMethods_sq_length extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_LENGTH);
         }
     }
 
@@ -855,266 +816,299 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_absolute extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_absolute extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_absolute() {
-            super(T___ABS__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ABSOLUTE);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_add extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_add extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_add() {
-            super(T___ADD__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_ADD);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_and extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_and extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_and() {
-            super(T___AND__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_AND);
         }
     }
 
     @CApiBuiltin(ret = inquiry, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_bool extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_bool extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_bool() {
-            super(T___BOOL__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_BOOL);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_divmod extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_divmod extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_divmod() {
-            super(T___DIVMOD__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_DIVMOD);
         }
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_float extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_float extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_float() {
-            super(T___FLOAT__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOAT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_floor_divide extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_floor_divide extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_floor_divide() {
-            super(T___FLOORDIV__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_FLOOR_DIVIDE);
         }
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_index extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_index extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_index() {
-            super(T___INDEX__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INDEX);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_add extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_add extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_add() {
-            super(T___IADD__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_ADD);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_and extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_and extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_and() {
-            super(T___IAND__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_AND);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_floor_divide extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_floor_divide extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_floor_divide() {
-            super(T___IFLOORDIV__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_lshift extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_lshift extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_lshift() {
-            super(T___ILSHIFT__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_LSHIFT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_multiply extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_multiply extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_multiply() {
-            super(T___IMUL__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_MULTIPLY);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_or extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_or extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_or() {
-            super(T___IOR__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_OR);
         }
     }
 
     @CApiBuiltin(ret = ternaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_power extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_power extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_power() {
-            super(T___IPOW__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_POWER);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_remainder extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_remainder extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_remainder() {
-            super(T___IMOD__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_REMAINDER);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_rshift extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_rshift extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_rshift() {
-            super(T___IRSHIFT__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_RSHIFT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_subtract extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_subtract extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_subtract() {
-            super(T___ISUB__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_SUBTRACT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_true_divide extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_true_divide extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_true_divide() {
-            super(T___ITRUEDIV__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_TRUE_DIVIDE);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_inplace_xor extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_inplace_xor extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_inplace_xor() {
-            super(T___IXOR__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INPLACE_XOR);
         }
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_int extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_int extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_int() {
-            super(T___INT__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INT);
         }
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_invert extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_invert extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_invert() {
-            super(T___INVERT__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_INVERT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_lshift extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_lshift extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_lshift() {
-            super(T___LSHIFT__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_LSHIFT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_multiply extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_multiply extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_multiply() {
-            super(T___MUL__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_MULTIPLY);
         }
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_negative extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_negative extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_negative() {
-            super(T___NEG__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_NEGATIVE);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_or extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_or extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_or() {
-            super(T___OR__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_OR);
         }
     }
 
     @CApiBuiltin(ret = unaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_positive extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_positive extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_positive() {
-            super(T___POS__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POSITIVE);
         }
     }
 
     @CApiBuiltin(ret = ternaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_power extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_power extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_power() {
-            super(T___POW__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_POWER);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_remainder extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_remainder extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_remainder() {
-            super(T___MOD__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_REMAINDER);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_rshift extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_rshift extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_rshift() {
-            super(T___RSHIFT__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_RSHIFT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_subtract extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_subtract extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_subtract() {
-            super(T___SUB__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_SUBTRACT);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_true_divide extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_true_divide extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_true_divide() {
-            super(T___TRUEDIV__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_TRUE_DIVIDE);
         }
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PyNumberMethods}, call = Ignored)
-    public abstract static class Py_get_PyNumberMethods_nb_xor extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyNumberMethods_nb_xor extends CApiUnaryBuiltinNode {
 
-        Py_get_PyNumberMethods_nb_xor() {
-            super(T___XOR__);
+        @Specialization
+        Object get(PyNumberMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.NB_XOR);
         }
     }
 
@@ -1140,26 +1134,29 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = binaryfunc, args = {PySequenceMethods}, call = Ignored)
-    public abstract static class Py_get_PySequenceMethods_sq_concat extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PySequenceMethods_sq_concat extends CApiUnaryBuiltinNode {
 
-        Py_get_PySequenceMethods_sq_concat() {
-            super(T___MUL__);
+        @Specialization
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_CONCAT);
         }
     }
 
     @CApiBuiltin(ret = ssizeargfunc, args = {PySequenceMethods}, call = Ignored)
-    public abstract static class Py_get_PySequenceMethods_sq_item extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PySequenceMethods_sq_item extends CApiUnaryBuiltinNode {
 
-        Py_get_PySequenceMethods_sq_item() {
-            super(T___GETITEM__);
+        @Specialization
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_ITEM);
         }
     }
 
     @CApiBuiltin(ret = ssizeargfunc, args = {PySequenceMethods}, call = Ignored)
-    public abstract static class Py_get_PySequenceMethods_sq_repeat extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PySequenceMethods_sq_repeat extends CApiUnaryBuiltinNode {
 
-        Py_get_PySequenceMethods_sq_repeat() {
-            super(T___MUL__);
+        @Specialization
+        Object get(PySequenceMethodsWrapper wrapper) {
+            return LookupNativeSlotNode.executeUncached(wrapper.getDelegate(), SlotMethodDef.SQ_REPEAT);
         }
     }
 
@@ -1250,10 +1247,8 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_as_mapping extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
-                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetitem,
-                        @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen) {
-            if (lookupGetitem.execute(object) != PNone.NO_VALUE && lookupLen.execute(object) != PNone.NONE) {
+        public Object get(PythonManagedClass object) {
+            if (LookupNativeSlotNode.executeUncached(object, SlotMethodDef.MP_LENGTH) != getNULL()) {
                 return new PyMappingMethodsWrapper(object);
             } else {
                 return getNULL();
@@ -1275,9 +1270,8 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyTypeObject_tp_as_sequence extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PythonManagedClass object,
-                        @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen) {
-            if (lookupLen.execute(object) != PNone.NO_VALUE) {
+        public Object get(PythonManagedClass object) {
+            if (LookupNativeSlotNode.executeUncached(object, SlotMethodDef.SQ_LENGTH) != getNULL()) {
                 return new PySequenceMethodsWrapper(object);
             } else {
                 return getNULL();
@@ -1319,10 +1313,11 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = ternaryfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_call extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_call extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_call() {
-            super(T___CALL__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_CALL);
         }
     }
 
@@ -1432,26 +1427,29 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = getattrofunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_getattro extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_getattro extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_getattro() {
-            super(T___GETATTRIBUTE__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_GETATTRO);
         }
     }
 
     @CApiBuiltin(ret = hashfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_hash extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_hash extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_hash() {
-            super(T___HASH__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_HASH);
         }
     }
 
     @CApiBuiltin(ret = initproc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_init extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_init extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_init() {
-            super(T___INIT__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_INIT);
         }
     }
 
@@ -1473,18 +1471,20 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = getiterfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_iter extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_iter extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_iter() {
-            super(T___ITER__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITER);
         }
     }
 
     @CApiBuiltin(ret = iternextfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_iternext extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_iternext extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_iternext() {
-            super(T___NEXT__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_ITERNEXT);
         }
     }
 
@@ -1531,34 +1531,38 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = reprfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_repr extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_repr extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_repr() {
-            super(T___REPR__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_REPR);
         }
     }
 
     @CApiBuiltin(ret = richcmpfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_richcompare extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_richcompare extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_richcompare() {
-            super(T_RICHCMP);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_RICHCOMPARE);
         }
     }
 
     @CApiBuiltin(ret = setattrofunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_setattro extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_setattro extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_setattro() {
-            super(T___SETATTR__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_SETATTRO);
         }
     }
 
     @CApiBuiltin(ret = reprfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_str extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_str extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_str() {
-            super(T___STR__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_STR);
         }
     }
 
@@ -1573,18 +1577,20 @@ public final class PythonCextSlotBuiltins {
     }
 
     @CApiBuiltin(ret = descrgetfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_descr_get extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_descr_get extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_descr_get() {
-            super(T___GET__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_GET);
         }
     }
 
     @CApiBuiltin(ret = descrsetfunc, args = {PyTypeObject}, call = Ignored)
-    public abstract static class Py_get_PyTypeObject_tp_descr_set extends PyGetTypeSlotNode {
+    public abstract static class Py_get_PyTypeObject_tp_descr_set extends CApiUnaryBuiltinNode {
 
-        Py_get_PyTypeObject_tp_descr_set() {
-            super(T___SET__);
+        @Specialization
+        Object get(Object object) {
+            return LookupNativeSlotNode.executeUncached(object, SlotMethodDef.TP_DESCR_SET);
         }
     }
 
@@ -1952,7 +1958,6 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_is_gc", ret = inquiry, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_finalize", ret = destructor, args = {PyTypeObject}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PyTypeObject_tp_vectorcall", ret = vectorcallfunc, args = {PyTypeObject}, call = Ignored)
-    @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_length", ret = lenfunc, args = {PySequenceMethods}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_ass_item", ret = ssizeobjargproc, args = {PySequenceMethods}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_contains", ret = objobjproc, args = {PySequenceMethods}, call = Ignored)
     @CApiBuiltin(name = "Py_get_PySequenceMethods_sq_inplace_concat", ret = binaryfunc, args = {PySequenceMethods}, call = Ignored)
@@ -1979,86 +1984,6 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         Object get(@SuppressWarnings("unused") Object object) {
             return getNativeNull();
-        }
-    }
-
-    abstract static class PyGetTypeSlotNode extends CApiUnaryBuiltinNode {
-        private final TruffleString name;
-        private @Child LookupAttributeInMRONode lookup;
-
-        PyGetTypeSlotNode(TruffleString name) {
-            this.name = name;
-            lookup = LookupAttributeInMRONode.create(name);
-        }
-
-        @Specialization
-        Object getWrapper(PythonNativeWrapper object) {
-            return getProcsWrapper(object.getDelegate());
-        }
-
-        @Specialization
-        Object getClass(PythonManagedClass object) {
-            return getProcsWrapper(object);
-        }
-
-        @TruffleBoundary
-        private Object getProcsWrapper(Object type) {
-            Object value = lookup.execute(type);
-            if (value instanceof PNone) {
-                // both None and NO_VALUE can appear
-                return getNULL();
-            }
-            /*
-             * The method can be a slot wrapper that already wraps a native slot function. If it
-             * matches in type and slot name, we should unwrap it to avoid nesting multiple
-             * wrappers.
-             */
-            if (value instanceof PBuiltinFunction function) {
-                Object wrappedPtr = ExternalFunctionNodes.tryGetHiddenCallable(function);
-                // TODO also check that the signature matches
-                if (wrappedPtr != null && name.equalsUncached(function.getName(), TS_ENCODING) &&
-                                function.getEnclosingType() != null && IsSubtypeNode.getUncached().execute(type,
-                                                function.getEnclosingType())) {
-                    return wrappedPtr;
-                }
-            }
-            CApiContext cApiContext = getCApiContext();
-            return cApiContext.getOrCreateProcWrapper(getRetDescriptor(), value, PyGetTypeSlotNode::createProcsWrapper);
-        }
-
-        private static Object createProcsWrapper(ArgDescriptor signature, Object value) {
-            switch (signature) {
-                case unaryfunc:
-                case reprfunc:
-                case iternextfunc:
-                case getiterfunc:
-                    return new PyProcsWrapper.UnaryFuncWrapper(value);
-                case binaryfunc:
-                    return new PyProcsWrapper.BinaryFuncWrapper(value);
-                case ternaryfunc:
-                    return new PyProcsWrapper.TernaryFunctionWrapper(value);
-                case hashfunc:
-                    return new PyProcsWrapper.HashfuncWrapper(value);
-                case inquiry:
-                    return new PyProcsWrapper.InquiryWrapper(value);
-                case initproc:
-                    return new PyProcsWrapper.InitWrapper(value);
-                case ssizeargfunc:
-                    return new PyProcsWrapper.SsizeargfuncWrapper(value);
-                case lenfunc:
-                    return new PyProcsWrapper.LenfuncWrapper(value);
-                case richcmpfunc:
-                    return new PyProcsWrapper.RichcmpFunctionWrapper(value);
-                case objobjargproc:
-                case setattrofunc:
-                case descrsetfunc:
-                    return new PyProcsWrapper.SetAttrWrapper(value);
-                case getattrofunc:
-                    return new PyProcsWrapper.GetAttrWrapper(value);
-                case descrgetfunc:
-                    return new PyProcsWrapper.DescrGetFunctionWrapper(value);
-            }
-            throw CompilerDirectives.shouldNotReachHere("descriptor: " + signature);
         }
     }
 

@@ -125,7 +125,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
@@ -1031,7 +1030,6 @@ public abstract class TypeNodes {
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private PyObjectSizeNode sizeNode;
-        @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private PRaiseNode raiseNode;
         @Child private GetNameNode getTypeNameNode;
         @Child private ReadAttributeFromObjectNode readAttr;
@@ -1130,7 +1128,7 @@ public abstract class TypeNodes {
             }
 
             if (aSlots != null && bSlots != null) {
-                return compareSortedSlots(aSlots, bSlots, getObjectArrayNode());
+                return compareSortedSlots(aSlots, bSlots);
             }
 
             aSlots = getLookupSlots().execute(aType);
@@ -1175,14 +1173,6 @@ public abstract class TypeNodes {
                 instancesHaveDictNode = insert(InstancesOfTypeHaveDictNode.create());
             }
             return instancesHaveDictNode.execute(type);
-        }
-
-        private GetObjectArrayNode getObjectArrayNode() {
-            if (getObjectArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
-            }
-            return getObjectArrayNode;
         }
 
         private ReadAttributeFromObjectNode getReadAttr() {
@@ -1260,9 +1250,9 @@ public abstract class TypeNodes {
     }
 
     @TruffleBoundary
-    private static boolean compareSortedSlots(Object aSlots, Object bSlots, GetObjectArrayNode getObjectArrayNode) {
-        Object[] aArray = getObjectArrayNode.execute(aSlots);
-        Object[] bArray = getObjectArrayNode.execute(bSlots);
+    private static boolean compareSortedSlots(Object aSlots, Object bSlots) {
+        Object[] aArray = GetObjectArrayNode.executeUncached(aSlots);
+        Object[] bArray = GetObjectArrayNode.executeUncached(bSlots);
         if (bArray.length != aArray.length) {
             return false;
         }
@@ -1995,7 +1985,6 @@ public abstract class TypeNodes {
         @Child private CastToJavaIntExactNode castToInt;
         @Child private CastToListNode castToList;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Child private SequenceStorageNodes.AppendNode appendNode;
         @Child private GetMroNode getMroNode;
         @Child private PyObjectSetAttr writeAttrNode;
         @Child private CastToTruffleStringNode castToStringNode;
@@ -2017,6 +2006,7 @@ public abstract class TypeNodes {
 
         @Specialization
         protected PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
+                        @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
@@ -2043,7 +2033,7 @@ public abstract class TypeNodes {
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
             Python3Core core = context.getCore();
-            Object[] array = getObjectArray.execute(bases);
+            Object[] array = getObjectArray.execute(inliningTarget, bases);
 
             PythonAbstractClass[] basesArray;
             if (array.length == 0) {
@@ -2306,14 +2296,6 @@ public abstract class TypeNodes {
             return getItemNode;
         }
 
-        private SequenceStorageNodes.AppendNode setSlotItemNode() {
-            if (appendNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(SequenceStorageNodes.AppendNode.create());
-            }
-            return appendNode;
-        }
-
         /**
          * If a managed type inherits from a native type (which means that the object will be
          * allocated in native) and if the type has {@code __slots__}, we need to do following:
@@ -2514,7 +2496,7 @@ public abstract class TypeNodes {
                     return null;
                 }
 
-                setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
+                SequenceStorageNodes.AppendNode.getUncached().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
                 if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&

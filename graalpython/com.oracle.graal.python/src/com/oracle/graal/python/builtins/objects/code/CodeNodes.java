@@ -42,11 +42,12 @@ package com.oracle.graal.python.builtins.objects.code;
 
 import java.util.Arrays;
 
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeCallTargetNodeGen;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -62,19 +63,19 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -183,79 +184,48 @@ public abstract class CodeNodes {
         }
     }
 
-    public static final class GetCodeCallTargetNode extends Node {
-        private static final GetCodeCallTargetNode UNCACHED = new GetCodeCallTargetNode(false);
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetCodeCallTargetNode extends PNodeWithContext {
 
-        private final boolean isAdoptable;
-        @CompilationFinal private ConditionProfile hasCtProfile;
-        @CompilationFinal private PCode cachedCode1;
-        @CompilationFinal private PCode cachedCode2;
-        @CompilationFinal private RootCallTarget cachedCt1;
-        @CompilationFinal private RootCallTarget cachedCt2;
-
-        private GetCodeCallTargetNode(boolean isAdoptable) {
-            this.isAdoptable = isAdoptable;
+        GetCodeCallTargetNode() {
         }
 
-        public final RootCallTarget execute(PCode code) {
-            if (isAdoptable) {
-                if (hasCtProfile == null) {
-                    if (PythonLanguage.get(this).isSingleContext()) {
-                        if (cachedCode1 == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            cachedCode1 = code;
-                            cachedCt1 = code.initializeCallTarget();
-                            return cachedCt1;
-                        }
-                        if (cachedCode1 == code) {
-                            return cachedCt1;
-                        }
-                        if (cachedCode2 == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            cachedCode2 = code;
-                            cachedCt2 = code.initializeCallTarget();
-                            return cachedCt2;
-                        }
-                        if (cachedCode2 == code) {
-                            return cachedCt2;
-                        }
-                    }
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedCode1 = cachedCode2 = null;
-                    cachedCt1 = cachedCt2 = null;
-                    hasCtProfile = ConditionProfile.create();
-                }
-                RootCallTarget ct = code.callTarget;
-                if (hasCtProfile.profile(ct == null)) {
-                    ct = code.initializeCallTarget();
-                }
-                return ct;
-            } else {
-                RootCallTarget ct = code.callTarget;
-                if (ct == null) {
-                    ct = code.initializeCallTarget();
-                }
-                return ct;
+        public abstract RootCallTarget execute(Node node, PCode code);
+
+        public static RootCallTarget executeUncached(PCode code) {
+            return GetCodeCallTargetNodeGen.getUncached().execute(null, code);
+        }
+
+        @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
+        static RootCallTarget doCachedCode(Node node, @SuppressWarnings("unused") PCode code,
+                        @SuppressWarnings("unused") @Cached(value = "code", weak = true) PCode cachedCode,
+                        @Cached(value = "code.initializeCallTarget()", weak = true) RootCallTarget cachedRootCallTarget) {
+            return cachedRootCallTarget;
+        }
+
+        @Specialization(replaces = "doCachedCode")
+        static RootCallTarget doGeneric(Node node, PCode code,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasCtProfile) {
+            RootCallTarget ct = code.callTarget;
+            if (hasCtProfile.profile(inliningTarget, ct == null)) {
+                ct = code.initializeCallTarget();
             }
-        }
-
-        @NeverDefault
-        public static GetCodeCallTargetNode create() {
-            return new GetCodeCallTargetNode(true);
-        }
-
-        public static GetCodeCallTargetNode getUncached() {
-            return UNCACHED;
+            return ct;
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetCodeSignatureNode extends PNodeWithContext {
-        public abstract Signature execute(PCode code);
+        public abstract Signature execute(Node node, PCode code);
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isSingleContext()", "cachedCode == code"}, limit = "2")
-        protected static Signature doCached(PCode code,
+        protected static Signature doCached(Node node, PCode code,
                         @Cached("code") PCode cachedCode,
                         @Cached("code.initializeCallTarget()") RootCallTarget ct,
                         @Cached("code.initializeSignature(ct)") Signature signature) {
@@ -263,7 +233,7 @@ public abstract class CodeNodes {
         }
 
         @Specialization(replaces = "doCached")
-        protected static Signature doCode(PCode code,
+        protected static Signature doCode(Node node, PCode code,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile signatureProfile,
                         @Cached InlinedConditionProfile ctProfile) {
@@ -279,39 +249,22 @@ public abstract class CodeNodes {
         }
     }
 
-    public static final class GetCodeRootNode extends Node {
-        private static final GetCodeRootNode UNCACHED = new GetCodeRootNode(false);
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetCodeRootNode extends Node {
 
-        private final boolean isAdoptable;
-        @Child private GetCodeCallTargetNode getCodeCallTargetNode;
+        public abstract RootNode execute(Node node, PCode code);
 
-        private GetCodeRootNode(boolean isAdoptable) {
-            this.isAdoptable = isAdoptable;
-            if (!isAdoptable) {
-                getCodeCallTargetNode = GetCodeCallTargetNode.getUncached();
-            }
+        public static RootNode executeUncached(PCode code) {
+            return GetCodeRootNodeGen.getUncached().execute(null, code);
         }
 
-        @Override
-        public boolean isAdoptable() {
-            return isAdoptable;
-        }
-
-        public final RootNode execute(PCode code) {
-            if (getCodeCallTargetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getCodeCallTargetNode = insert(GetCodeCallTargetNode.create());
-            }
-            return getCodeCallTargetNode.execute(code).getRootNode();
-        }
-
-        @NeverDefault
-        public static GetCodeRootNode create() {
-            return new GetCodeRootNode(true);
-        }
-
-        public static GetCodeRootNode getUncached() {
-            return UNCACHED;
+        @Specialization
+        static RootNode doIt(Node node, PCode code,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetCodeCallTargetNode getCodeCallTargetNode) {
+            return getCodeCallTargetNode.execute(inliningTarget, code).getRootNode();
         }
     }
 }

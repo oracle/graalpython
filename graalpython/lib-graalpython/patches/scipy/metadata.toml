@@ -1,0 +1,25 @@
+[[rules]]
+version = '== 1.4.1'
+patch = 'scipy-1.4.1.patch'
+
+[[rules]]
+version = '== 1.7.3'
+patch = 'scipy-1.7.3.patch'
+
+[[rules]]
+version = '== 1.8.1'
+patch = 'scipy-1.8.1.patch'
+
+[[rules]]
+version = '== 1.9.1'
+patch = 'scipy-1.9.1.patch'
+
+[[rules]]
+# pin 1.9.3
+install-priority = 10
+version = '== 1.9.3'
+patch = 'scipy-1.9.3.patch'
+
+[[rules]]
+version = '== 1.10.0'
+patch = 'scipy-1.10.0.patch'

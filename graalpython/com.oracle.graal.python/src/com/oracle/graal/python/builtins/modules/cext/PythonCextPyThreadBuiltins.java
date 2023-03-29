@@ -56,12 +56,13 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockNode;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 public final class PythonCextPyThreadBuiltins {
 
@@ -84,13 +85,29 @@ public final class PythonCextPyThreadBuiltins {
     abstract static class PyThread_acquire_lock extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public int acquire(long id, int waitflag,
-                        @Cached AcquireLockNode acquireNode) {
+        int acquire(long id, int waitflag) {
             PLock lock = getCApiContext().locks.get(id);
             if (lock == null) {
                 throw badInternalCall("lock");
             }
-            return intValue((boolean) acquireNode.execute(null, lock, waitflag != 0 ? -1 : 0, PNone.NONE));
+            boolean result;
+            // N.B: Cannot use AcquireNode because we may be running without a GIL
+            if (waitflag != 0) {
+                result = lock.acquireBlocking(this);
+            } else {
+                result = lock.acquireNonBlocking();
+            }
+            return intValue(result);
+        }
+
+        @Specialization(guards = "lib.isPointer(id)", limit = "1")
+        int acquire(Object id, int waitflag,
+                        @CachedLibrary("id") InteropLibrary lib) {
+            try {
+                return acquire(lib.asPointer(id), waitflag);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
     }
 
@@ -98,15 +115,24 @@ public final class PythonCextPyThreadBuiltins {
     abstract static class PyThread_release_lock extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object release(long id,
-                        @Cached ReleaseLockNode releaseNode) {
+        Object release(long id) {
             CApiContext context = getCApiContext();
             PLock lock = context.locks.get(id);
             if (lock == null) {
                 throw badInternalCall("lock");
             }
-            releaseNode.execute(null, lock);
+            lock.release();
             return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "lib.isPointer(id)", limit = "1")
+        Object release(Object id,
+                        @CachedLibrary("id") InteropLibrary lib) {
+            try {
+                return release(lib.asPointer(id));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
     }
 

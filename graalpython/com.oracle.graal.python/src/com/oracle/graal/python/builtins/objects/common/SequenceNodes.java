@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -51,7 +52,10 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -61,14 +65,20 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class SequenceNodes {
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(PGuards.class)
     public abstract static class LenNode extends Node {
 
-        public abstract int execute(PSequence seq);
+        public abstract int execute(Node node, PSequence seq);
+
+        public static int executeUncached(PSequence seq) {
+            return SequenceNodesFactory.LenNodeGen.getUncached().execute(null, seq);
+        }
 
         @Specialization
         int doPString(PString str,
-                        @Cached StringNodes.StringLenNode lenNode) {
+                        @Cached(inline = false) StringNodes.StringLenNode lenNode) {
             return lenNode.execute(str);
         }
 
@@ -77,15 +87,6 @@ public abstract class SequenceNodes {
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage) {
             return getStorage.execute(seq).length();
         }
-
-        @NeverDefault
-        public static LenNode create() {
-            return SequenceNodesFactory.LenNodeGen.create();
-        }
-
-        public static LenNode getUncached() {
-            return SequenceNodesFactory.LenNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
@@ -93,7 +94,7 @@ public abstract class SequenceNodes {
 
         public abstract SequenceStorage execute(Object seq);
 
-        @Specialization(guards = {"seq.getClass() == cachedClass"})
+        @Specialization(guards = {"seq.getClass() == cachedClass"}, limit = "2")
         static SequenceStorage doSequenceCached(PSequence seq,
                         @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
             return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
@@ -125,24 +126,33 @@ public abstract class SequenceNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class GetObjectArrayNode extends Node {
 
-        public abstract Object[] execute(Object seq);
+        public abstract Object[] execute(Node node, Object seq);
+
+        public static Object[] executeUncached(Object seq) {
+            return GetObjectArrayNodeGen.getUncached().execute(null, seq);
+        }
 
         @Specialization
-        static Object[] doGeneric(Object seq,
+        static Object[] doGeneric(@SuppressWarnings("unused") Node node, Object seq,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
-            return toArrayNode.execute(getSequenceStorageNode.execute(seq));
+            return toArrayNode.execute(inliningTarget, getSequenceStorageNode.execute(seq));
         }
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class SetSequenceStorageNode extends Node {
 
-        public abstract void execute(PSequence s, SequenceStorage storage);
+        public abstract void execute(Node node, PSequence s, SequenceStorage storage);
 
-        @Specialization(guards = "s.getClass() == cachedClass")
+        @Specialization(guards = "s.getClass() == cachedClass", limit = "1")
         static void doSpecial(PSequence s, SequenceStorage storage,
                         @Cached("s.getClass()") Class<? extends PSequence> cachedClass) {
             cachedClass.cast(s).setSequenceStorage(storage);

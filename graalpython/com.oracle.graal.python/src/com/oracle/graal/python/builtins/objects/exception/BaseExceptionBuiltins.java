@@ -211,10 +211,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         public Object args(VirtualFrame frame, PBaseException self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToListNode castToList,
                         @Cached SequenceStorageNodes.CopyInternalArrayNode copy) {
             PList list = castToList.execute(frame, value);
-            self.setArgs(factory().createTuple(copy.execute(list.getSequenceStorage())));
+            self.setArgs(factory().createTuple(copy.execute(inliningTarget, list.getSequenceStorage())));
             return PNone.NONE;
         }
 

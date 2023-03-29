@@ -909,9 +909,8 @@ public abstract class Python3Core {
                     if (zipimporter == PNone.NO_VALUE) {
                         LOGGER.log(Level.FINE, () -> "# can't import zipimport.zipimporter");
                     } else {
-                        SequenceStorageNodes.InsertItemNode insertItem = SequenceStorageNodes.InsertItemNode.getUncached();
                         SequenceStorage store = pathHooksList.getSequenceStorage();
-                        pathHooksList.setSequenceStorage(insertItem.execute(store, 0, zipimporter));
+                        pathHooksList.setSequenceStorage(SequenceStorageNodes.InsertItemNode.executeUncached(store, 0, zipimporter));
                         LOGGER.log(Level.FINE, () -> "# installed zipimport hook");
                     }
                 }

@@ -544,6 +544,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
+                    @Bind("$node") Node inliningTarget,
                     @Cached CastToListInteropNode castToList,
                     @Shared("getClass") @Cached GetClassNode getClass,
                     @Cached PyMappingCheckNode checkMapping,
@@ -576,7 +577,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     Object keysMethod = lookupKeys.execute(null, this, T_KEYS);
                     if (keysMethod != PNone.NO_VALUE) {
                         PList mapKeys = castToList.executeWithGlobalState(callKeys.execute(keysMethod));
-                        int len = lenNode.execute(mapKeys);
+                        int len = lenNode.execute(inliningTarget, mapKeys);
                         for (int i = 0; i < len; i++) {
                             Object key = getItemNode.execute(mapKeys, i);
                             TruffleString tsKey = null;

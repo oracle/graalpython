@@ -43,7 +43,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -297,6 +296,11 @@ public final class PythonContext extends Python3Core {
          * The current running event loop
          */
         Object runningEventLoop;
+
+        /*
+         * Counter for C-level recursion depth used for Py_(Enter/Leave)RecursiveCall.
+         */
+        public int recursionDepth;
 
         /*
          * The constructor needs to have this particular signature such that we can use it for
@@ -1511,7 +1515,7 @@ public final class PythonContext extends Python3Core {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.T___PATH__);
                 if (path instanceof PList) {
-                    Object[] paths = SequenceStorageNodes.CopyInternalArrayNode.getUncached().execute(((PList) path).getSequenceStorage());
+                    Object[] paths = SequenceStorageNodes.CopyInternalArrayNode.executeUncached(((PList) path).getSequenceStorage());
                     for (int i = 0; i < paths.length; i++) {
                         Object pathElement = paths[i];
                         TruffleString strPath;
@@ -2464,10 +2468,12 @@ public final class PythonContext extends Python3Core {
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             TruffleString toolchainId = toTruffleStringUncached(toolchain.getIdentifier());
 
-            // only use '.dylib'/'.pyd' if we are on 'Darwin-native'/'Win32-native'
+            // only use '.pyd' if we are on 'Win32-native'
             TruffleString soExt;
             if (getPythonOS() == PLATFORM_DARWIN && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
-                soExt = T_EXT_DYLIB;
+                // not ".dylib", similar to CPython:
+                // https://github.com/python/cpython/issues/37510
+                soExt = T_EXT_SO;
             } else if (getPythonOS() == PLATFORM_WIN32 && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
                 soExt = T_EXT_PYD;
             } else {

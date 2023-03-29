@@ -40,14 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi8BuiltinNode;
@@ -57,6 +61,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -68,22 +73,29 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCEvalBuiltins {
@@ -133,6 +145,7 @@ public final class PythonCextCEvalBuiltins {
         static Object doGeneric(PCode code, Object globals, Object locals,
                         Object argumentArrayPtr, Object kwsPtr, Object defaultValueArrayPtr,
                         Object kwdefaultsWrapper, Object closureObj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary ptrLib,
                         @Cached NativeToPythonNode elementToJavaNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
@@ -147,7 +160,7 @@ public final class PythonCextCEvalBuiltins {
             PCell[] closure = null;
             if (closureObj != PNone.NO_VALUE) {
                 // CPython also just accesses the object as tuple without further checks.
-                closure = PCell.toCellArray(getObjectArrayNode.execute(closureObj));
+                closure = PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closureObj));
             }
             Object[] kws = unwrapArray(kwsPtr, ptrLib, elementToJavaNode);
 
@@ -159,7 +172,7 @@ public final class PythonCextCEvalBuiltins {
 
             // prepare Python frame arguments
             Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
-            Signature signature = getSignatureNode.execute(code);
+            Signature signature = getSignatureNode.execute(inliningTarget, code);
             Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
 
             // set custom locals
@@ -176,7 +189,7 @@ public final class PythonCextCEvalBuiltins {
                 // TODO(fa): raise appropriate exception
             }
 
-            RootCallTarget rootCallTarget = getCallTargetNode.execute(code);
+            RootCallTarget rootCallTarget = getCallTargetNode.execute(inliningTarget, code);
             return invokeNode.execute(rootCallTarget, pArguments);
         }
 
@@ -198,6 +211,39 @@ public final class PythonCextCEvalBuiltins {
              * So, we just throw a fatal exception which is not a Python exception.
              */
             throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {ConstCharPtr}, call = Direct)
+    abstract static class Py_EnterRecursiveCall extends CApiUnaryBuiltinNode {
+        @Specialization
+        int doGeneric(Object where) {
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
+            PythonThreadState threadState = context.getThreadState(language);
+            if (++threadState.recursionDepth > CApiContext.DEFAULT_RECURSION_LIMIT) {
+                throw raiseRecursionError(this, where);
+            }
+            return 0;
+        }
+
+        @TruffleBoundary
+        private static PException raiseRecursionError(Node node, Object where) {
+            TruffleString msg = CastToTruffleStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(where));
+            TruffleString.ConcatNode.getUncached().execute(ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, msg, TS_ENCODING, false);
+            throw PRaiseNode.raiseUncached(node, RecursionError, msg);
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {}, call = Direct)
+    abstract static class Py_LeaveRecursiveCall extends CApiNullaryBuiltinNode {
+        @Specialization
+        Object doGeneric() {
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
+            PythonThreadState threadState = context.getThreadState(language);
+            --threadState.recursionDepth;
+            return PNone.NO_VALUE;
         }
     }
 }

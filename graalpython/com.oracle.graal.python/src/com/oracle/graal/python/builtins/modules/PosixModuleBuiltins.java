@@ -471,6 +471,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "execv", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "argv"})
     @ArgumentClinic(name = "pathname", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @GenerateNodeFactory
+    @SuppressWarnings("truffle-static-method")
     public abstract static class ExecvNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
@@ -480,23 +481,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object execvArgsList(VirtualFrame frame, PosixPath path, PList argv,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ToArrayNode toArrayNode,
                         @Cached ObjectToOpaquePathNode toOpaquePathNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil) {
-            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
+            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
         @Specialization
         Object execvArgsTuple(VirtualFrame frame, PosixPath path, PTuple argv,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ToArrayNode toArrayNode,
                         @Cached ObjectToOpaquePathNode toOpaquePathNode,
                         @Cached AuditNode auditNode,
                         @Cached GilNode gil) {
-            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
+            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
@@ -507,12 +510,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         private void execv(VirtualFrame frame, PosixPath path, Object argv, SequenceStorage argvStorage,
+                        Node inliningTarget,
                         PosixSupportLibrary posixLib,
                         SequenceStorageNodes.ToArrayNode toArrayNode,
                         ObjectToOpaquePathNode toOpaquePathNode,
                         SysModuleBuiltins.AuditNode auditNode,
                         GilNode gil) {
-            Object[] args = toArrayNode.execute(argvStorage);
+            Object[] args = toArrayNode.execute(inliningTarget, argvStorage);
             if (args.length < 1) {
                 throw raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_EMPTY, "execv()", 2);
             }
@@ -1636,6 +1640,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @SuppressWarnings("truffle-static-method")
     abstract static class UtimeArgsToTimespecNode extends PythonBuiltinBaseNode {
         abstract long[] execute(VirtualFrame frame, Object times, Object ns);
 
@@ -1652,18 +1657,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(ns)"})
         long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
+                        @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached ObjectToTimespecNode objectToTimespecNode) {
-            return convertToTimespec(frame, times, lenNode, getItemNode, objectToTimespecNode);
+            return convertToTimespec(frame, inliningTarget, times, lenNode, getItemNode, objectToTimespecNode);
         }
 
         @Specialization
         long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
+                        @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached SplitLongToSAndNsNode splitLongToSAndNsNode) {
-            return convertToTimespec(frame, ns, lenNode, getItemNode, splitLongToSAndNsNode);
+            return convertToTimespec(frame, inliningTarget, ns, lenNode, getItemNode, splitLongToSAndNsNode);
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isNoValue(ns)"})
@@ -1691,8 +1698,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
         }
 
-        private long[] convertToTimespec(VirtualFrame frame, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode) {
-            if (lenNode.execute(times) != 2) {
+        private long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode) {
+            if (lenNode.execute(inliningTarget, times) != 2) {
                 throw timesTupleError();
             }
             long[] timespec = new long[4];
@@ -2566,14 +2573,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isInteger(value)"})
-        void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
+        static void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
+                        @Bind("this") Node inliningTarget,
                         @Cached("DivMod.create()") BinaryOpNode callDivmod,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached PyLongAsLongNode asLongNode) {
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object divmod = callDivmod.executeObject(frame, value, BILLION);
-            if (!PGuards.isPTuple(divmod) || lenNode.execute((PSequence) divmod) != 2) {
-                throw raise(TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
+            if (!PGuards.isPTuple(divmod) || lenNode.execute(inliningTarget, (PSequence) divmod) != 2) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }
             SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
             timespec[offset] = asLongNode.execute(frame, getItemNode.execute(storage, 0));

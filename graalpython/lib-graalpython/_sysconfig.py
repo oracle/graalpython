@@ -48,9 +48,7 @@ def _get_posix_vars():
 
     # note: this must be kept in sync with _imp.extension_suffixes
     so_abi = sys.implementation.cache_tag + "-" + __graalpython__.platform_id + "-" + sys.implementation._multiarch
-    if darwin_native:
-        so_ext = ".dylib"
-    elif win32_native:
+    if win32_native:
         so_ext = ".pyd"
     else:
         so_ext = ".so"

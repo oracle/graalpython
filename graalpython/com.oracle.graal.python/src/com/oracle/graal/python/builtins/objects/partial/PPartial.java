@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PPartial extends PythonBuiltinObject {
@@ -82,9 +83,9 @@ public final class PPartial extends PythonBuiltinObject {
         return argsTuple;
     }
 
-    public void setArgs(PTuple args, SequenceNodes.GetSequenceStorageNode storageNode, SequenceStorageNodes.ToArrayNode arrayNode) {
+    public void setArgs(Node inliningTarget, PTuple args, SequenceNodes.GetSequenceStorageNode storageNode, SequenceStorageNodes.ToArrayNode arrayNode) {
         this.argsTuple = args;
-        this.args = arrayNode.execute(storageNode.execute(args));
+        this.args = arrayNode.execute(inliningTarget, storageNode.execute(args));
     }
 
     public PDict getKw() {

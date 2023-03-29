@@ -314,11 +314,12 @@ public class CommonGeneratorBuiltins extends PythonBuiltins {
 
             @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
             PBaseException doCreateTuple(VirtualFrame frame, Object type, PTuple value,
+                            @Bind("this") Node inliningTarget,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                             @Shared("callCtor") @Cached CallNode callConstructor) {
                 checkExceptionClass(type);
-                Object[] args = getObjectArrayNode.execute(value);
+                Object[] args = getObjectArrayNode.execute(inliningTarget, value);
                 Object instance = callConstructor.execute(frame, type, args);
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;

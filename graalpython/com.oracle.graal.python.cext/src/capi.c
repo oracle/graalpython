@@ -428,13 +428,76 @@ PyAPI_FUNC(PyObject*) get_##NAME(RECEIVER obj) {        \
 PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
     return obj->NAME;                                  \
 }
-
+#define PRIMITIVE_SUBFIELD_GETTER(RECEIVER, FIELD, RESULT, NAME) \
+PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                    \
+    return obj->FIELD? obj->FIELD->NAME : NULL;                   \
+}
 TYPE_FIELD_GETTER(PyObject*, ob_type)
 PRIMITIVE_FIELD_GETTER(PyObject*, Py_ssize_t, ob_refcnt)
 PRIMITIVE_FIELD_GETTER(PyVarObject*, Py_ssize_t, ob_size)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_dict)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_base)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_bases)
+
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, reprfunc, tp_repr)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, reprfunc, tp_str)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, getattrofunc, tp_getattro)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, setattrofunc, tp_setattro)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, hashfunc, tp_hash)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, ternaryfunc, tp_call)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, getiterfunc, tp_iter)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, iternextfunc, tp_iternext)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, descrgetfunc, tp_descr_get)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, descrsetfunc, tp_descr_set)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, initproc, tp_init)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, richcmpfunc, tp_richcompare)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_add)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_subtract)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_multiply)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_remainder)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_divmod)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, ternaryfunc, nb_power)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_negative)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_positive)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_absolute)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, inquiry, nb_bool)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_invert)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_lshift)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_rshift)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_and)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_xor)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_or)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_int)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_float)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_add)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_subtract)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_multiply)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_remainder)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, ternaryfunc, nb_inplace_power)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_lshift)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_rshift)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_and)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_xor)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_or)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_floor_divide)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_true_divide)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_floor_divide)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_true_divide)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_index)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_matrix_multiply)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_matrix_multiply)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, lenfunc, sq_length)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, binaryfunc, sq_concat)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeargfunc, sq_repeat)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeargfunc, sq_item)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeobjargproc, sq_ass_item)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, objobjproc, sq_contains)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, binaryfunc, sq_inplace_concat)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeargfunc, sq_inplace_repeat)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_mapping, lenfunc, mp_length)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_mapping, binaryfunc, mp_subscript)
+PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_mapping, objobjargproc, mp_ass_subscript)
+
 PRIMITIVE_FIELD_GETTER(PyTypeObject*, const char*, tp_name)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_mro)
 OBJECT_FIELD_GETTER(PyTypeObject*, tp_subclasses)
@@ -2118,9 +2181,17 @@ PyAPI_FUNC(PyObject*) PyWeakref_NewRef(PyObject* a, PyObject* b) {
 PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
     return GraalPy_AtExit(a);
 }
+#undef Py_EnterRecursiveCall
+PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {
+    return GraalPy_EnterRecursiveCall(a);
+}
 #undef Py_GenericAlias
 PyAPI_FUNC(PyObject*) Py_GenericAlias(PyObject* a, PyObject* b) {
     return GraalPy_GenericAlias(a, b);
+}
+#undef Py_LeaveRecursiveCall
+PyAPI_FUNC(void) Py_LeaveRecursiveCall() {
+    GraalPy_LeaveRecursiveCall();
 }
 #undef _PyBytes_Join
 PyAPI_FUNC(PyObject*) _PyBytes_Join(PyObject* a, PyObject* b) {

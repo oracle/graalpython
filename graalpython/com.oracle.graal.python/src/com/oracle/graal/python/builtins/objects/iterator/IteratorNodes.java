@@ -357,10 +357,11 @@ public abstract class IteratorNodes {
 
         @Specialization
         public static Object[] doIt(PSequence iterable,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
             SequenceStorage storage = getStorageNode.execute(iterable);
-            return toArrayNode.execute(storage);
+            return toArrayNode.execute(inliningTarget, storage);
         }
 
         @Specialization(guards = {"!isPSequence(iterable)", "!isString(iterable)"})

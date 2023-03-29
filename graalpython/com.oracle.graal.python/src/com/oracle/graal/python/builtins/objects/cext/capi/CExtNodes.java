@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStri
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -788,44 +789,63 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class FromCharPointerNode extends Node {
-        public abstract Object execute(Object charPtr);
+        public final TruffleString execute(Object charPtr) {
+            return execute(charPtr, Encoding.UTF_8, true);
+        }
+
+        public final TruffleString execute(Object charPtr, boolean copy) {
+            return execute(charPtr, Encoding.UTF_8, copy);
+        }
+
+        public final TruffleString execute(Object charPtr, Encoding encoding) {
+            return execute(charPtr, encoding, true);
+        }
+
+        public abstract TruffleString execute(Object charPtr, Encoding encoding, boolean copy);
 
         @Specialization
-        static TruffleString doCStringWrapper(CStringWrapper cStringWrapper) {
+        static TruffleString doCStringWrapper(CStringWrapper cStringWrapper, @SuppressWarnings("unused") Encoding encoding, @SuppressWarnings("unused") boolean copy) {
             return cStringWrapper.getString();
         }
 
         @Specialization
-        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper,
+        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper, Encoding encoding, boolean copy,
                         @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
             byte[] byteArray = cByteArrayWrapper.getByteArray();
-            // TODO(fa): what is the encoding ? ASCII only ?
-            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.US_ASCII, true), TS_ENCODING);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, encoding, copy), TS_ENCODING);
         }
 
         @Specialization
-        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj,
+        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, Encoding encoding, boolean copy,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(copy);
             Object delegate = obj.getDelegate();
-            if (delegate instanceof PBytesLike) {
-                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                // TODO(fa): what is the encoding ? ASCII only ?
-                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, Encoding.US_ASCII, true), TS_ENCODING);
+            boolean needs_copy;
+            if (delegate instanceof PBytes) {
+                // 'bytes' objects are immutable, so we can safely avoid a copy of the content
+                needs_copy = false;
+            } else if (delegate instanceof PByteArray) {
+                needs_copy = copy;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
             }
-            throw CompilerDirectives.shouldNotReachHere();
+            byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, encoding, needs_copy), TS_ENCODING);
         }
 
         private static Unsafe UNSAFE = PythonUtils.initUnsafe();
 
         @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")
-        static TruffleString doPointer(Object charPtr,
+        static TruffleString doPointer(Object charPtr, Encoding encoding, boolean copy,
                         @CachedLibrary("charPtr") InteropLibrary lib,
                         @Cached TruffleString.FromNativePointerNode fromNative,
-                        @Cached StringMaterializeNode materialize,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PCallCapiFunction callNode) {
             if (lib.isPointer(charPtr)) {
                 long pointer;
                 try {
@@ -837,10 +857,9 @@ public abstract class CExtNodes {
                 while (UNSAFE.getByte(pointer + length) != 0) {
                     length++;
                 }
-                return fromNative.execute(charPtr, 0, length, Encoding.UTF_8, true);
+                return fromNative.execute(charPtr, 0, length, encoding, copy);
             }
-
-            return materialize.execute(factory.createString(new NativeCharSequence(charPtr, 1, false)));
+            return StringMaterializeNode.materializeNativeCharSequence(new NativeCharSequence(charPtr, 1, false), callNode, UnicodeFromWcharNodeGen.getUncached());
         }
 
         static boolean isCArrayWrapper(Object object) {
@@ -2823,7 +2842,7 @@ public abstract class CExtNodes {
             try {
                 Object methodDocPtr = interopLibrary.readMember(methodDef, J_ML_DOC);
                 if (!resultLib.isNull(methodDocPtr)) {
-                    methodDoc = fromCharPointerNode.execute(methodDocPtr);
+                    methodDoc = fromCharPointerNode.execute(methodDocPtr, false);
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 // fall through
@@ -2971,10 +2990,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static void doTuple(PTuple tuple,
+                        @Bind("this") Node inliningTarget,
                         @Cached ToArrayNode toArrayNode,
                         @Cached SubRefCntNode subRefCntNode) {
 
-            Object[] values = toArrayNode.execute(tuple.getSequenceStorage());
+            Object[] values = toArrayNode.execute(inliningTarget, tuple.getSequenceStorage());
             for (int i = 0; i < values.length; i++) {
                 Object value = values[i];
                 if (value instanceof PythonObject) {

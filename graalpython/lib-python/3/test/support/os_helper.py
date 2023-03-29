@@ -430,7 +430,8 @@ def change_cwd(path, quiet=False):
 
 
 @contextlib.contextmanager
-def temp_cwd(name='tempcwd', quiet=False):
+# def temp_cwd(name='tempcwd', quiet=False): # GR-43407 Truffle change - we prefer to create unique tempdir names
+def temp_cwd(name=None, quiet=False):
     """
     Context manager that temporarily creates and changes the CWD.
 

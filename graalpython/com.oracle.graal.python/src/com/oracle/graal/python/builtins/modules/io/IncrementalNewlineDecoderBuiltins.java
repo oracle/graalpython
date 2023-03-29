@@ -288,7 +288,9 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasDecoder()")
+        @SuppressWarnings("truffle-static-method")
         Object withDecoder(VirtualFrame frame, PNLDecoder self,
+                        @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -297,7 +299,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
-            Object[] objects = getObjectArrayNode.execute(state);
+            Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
@@ -316,10 +318,11 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.hasDecoder()")
         Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
+                        @Bind("this") Node inliningTarget,
                         @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
                         @Shared("s") @Cached PyNumberAsSizeNode asSizeNode) {
-            Object[] objects = getObjectArrayNode.execute(state);
+            Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
@@ -330,11 +333,12 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasDecoder()")
         Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
+                        @Bind("this") Node inliningTarget,
                         @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
                         @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object[] objects = getObjectArrayNode.execute(state);
+            Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }

@@ -135,7 +135,7 @@ public abstract class SocketNodes {
             if (!(address instanceof PTuple)) {
                 throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_P, caller, address);
             }
-            Object[] hostAndPort = getObjectArrayNode.execute(address);
+            Object[] hostAndPort = getObjectArrayNode.execute(inliningTarget, address);
             if (hostAndPort.length != 2) {
                 throw raise(TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
             }
@@ -160,7 +160,7 @@ public abstract class SocketNodes {
             if (!(address instanceof PTuple)) {
                 throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_S, caller, address);
             }
-            Object[] hostAndPort = getObjectArrayNode.execute(address);
+            Object[] hostAndPort = getObjectArrayNode.execute(inliningTarget, address);
             if (hostAndPort.length < 2 || hostAndPort.length > 4) {
                 throw raise(TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
             }

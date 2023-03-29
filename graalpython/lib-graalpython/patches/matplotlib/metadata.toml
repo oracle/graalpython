@@ -1,0 +1,13 @@
+[[rules]]
+version = '== 3.5.3'
+patch = 'matplotlib-3.5.3.patch'
+
+[[rules]]
+version = '== 3.6.3'
+patch = 'matplotlib-3.6.3.patch'
+
+[[rules]]
+# pin 3.7.0
+install-priority = 10
+version = '== 3.7.0'
+patch = 'matplotlib-3.7.0.patch'

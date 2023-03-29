@@ -1,7 +1,8 @@
-diff -u -r a/Cython/Build/Dependencies.py b/Cython/Build/Dependencies.py
---- a/Cython/Build/Dependencies.py	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Build/Dependencies.py	2023-01-04 11:56:11.000000000 +0100
-@@ -1094,6 +1094,8 @@
+diff --git a/Cython/Build/Dependencies.py b/Cython/Build/Dependencies.py
+index 7eb55e2..76d4857 100644
+--- a/Cython/Build/Dependencies.py
++++ b/Cython/Build/Dependencies.py
+@@ -1094,6 +1094,8 @@ def cythonize(module_list, exclude=None, nthreads=0, aliases=None, quiet=False,
          progress = progress_fmt.format(i+1, N)
          to_compile[i] = to_compile[i][1:] + (progress,)
  
@@ -10,10 +11,11 @@ diff -u -r a/Cython/Build/Dependencies.py b/Cython/Build/Dependencies.py
      if N <= 1:
          nthreads = 0
      if nthreads:
-diff -u -r a/Cython/Compiler/Builtin.py b/Cython/Compiler/Builtin.py
---- a/Cython/Compiler/Builtin.py	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Compiler/Builtin.py	2023-01-04 11:56:11.000000000 +0100
-@@ -51,11 +51,12 @@
+diff --git a/Cython/Compiler/Builtin.py b/Cython/Compiler/Builtin.py
+index e0d203a..22bd406 100644
+--- a/Cython/Compiler/Builtin.py
++++ b/Cython/Compiler/Builtin.py
+@@ -51,11 +51,12 @@ class _BuiltinOverride(object):
  
  
  class BuiltinAttribute(object):
@@ -27,7 +29,7 @@ diff -u -r a/Cython/Compiler/Builtin.py b/Cython/Compiler/Builtin.py
  
      def declare_in_type(self, self_type):
          if self.field_type_name is not None:
-@@ -63,7 +64,7 @@
+@@ -63,7 +64,7 @@ class BuiltinAttribute(object):
              field_type = builtin_scope.lookup(self.field_type_name).type
          else:
              field_type = self.field_type or PyrexTypes.py_object_type
@@ -36,7 +38,7 @@ diff -u -r a/Cython/Compiler/Builtin.py b/Cython/Compiler/Builtin.py
          entry.is_variable = True
  
  
-@@ -316,9 +317,9 @@
+@@ -316,9 +317,9 @@ builtin_types_table = [
                                                    utility_code=UtilityCode.load("py_dict_clear", "Optimize.c")),
                                      BuiltinMethod("copy",   "T",   "T", "PyDict_Copy")]),
  
@@ -49,10 +51,11 @@ diff -u -r a/Cython/Compiler/Builtin.py b/Cython/Compiler/Builtin.py
                                      ]),
  #    ("file",    "PyFile_Type",     []),  # not in Py3
  
-diff -u -r a/Cython/Compiler/ExprNodes.py b/Cython/Compiler/ExprNodes.py
---- a/Cython/Compiler/ExprNodes.py	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Compiler/ExprNodes.py	2023-01-04 11:56:11.000000000 +0100
-@@ -7208,6 +7208,8 @@
+diff --git a/Cython/Compiler/ExprNodes.py b/Cython/Compiler/ExprNodes.py
+index 2c5d709..5827fe1 100644
+--- a/Cython/Compiler/ExprNodes.py
++++ b/Cython/Compiler/ExprNodes.py
+@@ -7208,6 +7208,8 @@ class AttributeNode(ExprNode):
              if obj.type.is_builtin_type and self.entry and self.entry.is_variable:
                  # accessing a field of a builtin type, need to cast better than result_as() does
                  obj_code = obj.type.cast_code(obj.result(), to_object_struct = True)
@@ -61,10 +64,11 @@ diff -u -r a/Cython/Compiler/ExprNodes.py b/Cython/Compiler/ExprNodes.py
              return "%s%s%s" % (obj_code, self.op, self.member)
  
      def generate_result_code(self, code):
-diff -u -r a/Cython/Compiler/Symtab.py b/Cython/Compiler/Symtab.py
---- a/Cython/Compiler/Symtab.py	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Compiler/Symtab.py	2023-01-04 11:56:11.000000000 +0100
-@@ -203,6 +203,7 @@
+diff --git a/Cython/Compiler/Symtab.py b/Cython/Compiler/Symtab.py
+index 7361a55..6c4d9d9 100644
+--- a/Cython/Compiler/Symtab.py
++++ b/Cython/Compiler/Symtab.py
+@@ -203,6 +203,7 @@ class Entry(object):
      error_on_uninitialized = False
      cf_used = True
      outer_entry = None
@@ -72,7 +76,7 @@ diff -u -r a/Cython/Compiler/Symtab.py b/Cython/Compiler/Symtab.py
  
      def __init__(self, name, cname, type, pos = None, init = None):
          self.name = name
-@@ -436,7 +437,7 @@
+@@ -436,7 +437,7 @@ class Scope(object):
              for scope in sorted(self.subscopes, key=operator.attrgetter('scope_prefix')):
                  yield scope
  
@@ -81,7 +85,7 @@ diff -u -r a/Cython/Compiler/Symtab.py b/Cython/Compiler/Symtab.py
          # Create new entry, and add to dictionary if
          # name is not None. Reports a warning if already
          # declared.
-@@ -475,6 +476,7 @@
+@@ -475,6 +476,7 @@ class Scope(object):
                  error(pos, "'%s' redeclared " % name)
                  entries[name].already_declared_here()
          entry = Entry(name, cname, type, pos = pos)
@@ -89,10 +93,11 @@ diff -u -r a/Cython/Compiler/Symtab.py b/Cython/Compiler/Symtab.py
          entry.in_cinclude = self.in_cinclude
          entry.create_wrapper = create_wrapper
          if name:
-diff -u -r a/Cython/Includes/cpython/slice.pxd b/Cython/Includes/cpython/slice.pxd
---- a/Cython/Includes/cpython/slice.pxd	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Includes/cpython/slice.pxd	2023-01-04 11:56:11.000000000 +0100
-@@ -48,6 +48,13 @@
+diff --git a/Cython/Includes/cpython/slice.pxd b/Cython/Includes/cpython/slice.pxd
+index 202dea7..1e83e66 100644
+--- a/Cython/Includes/cpython/slice.pxd
++++ b/Cython/Includes/cpython/slice.pxd
+@@ -48,6 +48,13 @@ cdef extern from "Python.h":
  
      int PySlice_Unpack(object slice, Py_ssize_t *start, Py_ssize_t *stop,
                         Py_ssize_t *step) except -1
@@ -106,10 +111,24 @@ diff -u -r a/Cython/Includes/cpython/slice.pxd b/Cython/Includes/cpython/slice.p
      # Extract the start, stop and step data members from a slice object as C
      # integers. Silently reduce values larger than PY_SSIZE_T_MAX to
      # PY_SSIZE_T_MAX, silently boost the start and stop values less than
-diff -u -r a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
---- a/Cython/Utility/CythonFunction.c	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Utility/CythonFunction.c	2023-01-04 11:56:11.000000000 +0100
-@@ -1324,9 +1324,9 @@
+diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
+index 1ad27df..0965cb2 100644
+--- a/Cython/Utility/Coroutine.c
++++ b/Cython/Utility/Coroutine.c
+@@ -1299,7 +1299,7 @@ static void __Pyx_Coroutine_del(PyObject *self) {
+         _Py_NewReference(self);
+         __Pyx_SET_REFCNT(self, refcnt);
+     }
+-#if CYTHON_COMPILING_IN_CPYTHON
++#if CYTHON_COMPILING_IN_CPYTHON && !GRAALVM_PYTHON
+     assert(PyType_IS_GC(Py_TYPE(self)) &&
+            _Py_AS_GC(self)->gc.gc_refs != _PyGC_REFS_UNTRACKED);
+ 
+diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
+index b2c67dc..ad80ca4 100644
+--- a/Cython/Utility/CythonFunction.c
++++ b/Cython/Utility/CythonFunction.c
+@@ -1324,9 +1324,9 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
          #if PY_VERSION_HEX < 0x03020000
          PyTypeObject *d_type = descr->d_type;
          #else
@@ -121,10 +140,20 @@ diff -u -r a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
      }
  #endif
      else if (PyMethod_Check(method)) {
-diff -u -r a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
---- a/Cython/Utility/ModuleSetupCode.c	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Utility/ModuleSetupCode.c	2023-01-04 11:56:11.000000000 +0100
-@@ -591,7 +591,7 @@
+diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
+index f8bf885..62fec57 100644
+--- a/Cython/Utility/ModuleSetupCode.c
++++ b/Cython/Utility/ModuleSetupCode.c
+@@ -265,6 +265,8 @@
+   #endif
+ #endif
+ 
++#define CYTHON_UPDATE_DESCRIPTOR_DOC 0
++
+ #if !defined(CYTHON_FAST_PYCCALL)
+ #define CYTHON_FAST_PYCCALL  (CYTHON_FAST_PYCALL && PY_VERSION_HEX >= 0x030600B1)
+ #endif
+@@ -591,7 +593,7 @@ class __Pyx_FakeReference {
    #define __Pyx_PyFrame_SetLineNumber(frame, lineno) PyFrame_SetLineNumber(frame, lineno)
  #else
    #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
@@ -133,7 +162,7 @@ diff -u -r a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
  #endif
  
  #if !CYTHON_FAST_THREAD_STATE || PY_VERSION_HEX < 0x02070000
-@@ -767,7 +767,7 @@
+@@ -767,7 +769,7 @@ static CYTHON_INLINE void * PyThread_tss_get(Py_tss_t *key) {
  #endif
  
  
@@ -142,7 +171,7 @@ diff -u -r a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
    #define __Pyx_SET_REFCNT(obj, refcnt) Py_SET_REFCNT(obj, refcnt)
    #define __Pyx_SET_SIZE(obj, size) Py_SET_SIZE(obj, size)
  #else
-@@ -1076,7 +1076,7 @@
+@@ -1076,7 +1078,7 @@ PyEval_InitThreads();
  static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
      #if PY_VERSION_HEX >= 0x030700A1
      static PY_INT64_T main_interpreter_id = -1;
@@ -151,10 +180,11 @@ diff -u -r a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
      if (main_interpreter_id == -1) {
          main_interpreter_id = current_id;
          return (unlikely(current_id == -1)) ? -1 : 0;
-diff -u -r a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
---- a/Cython/Utility/ObjectHandling.c	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Utility/ObjectHandling.c	2023-01-04 11:56:11.000000000 +0100
-@@ -717,7 +717,7 @@
+diff --git a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
+index 864b658..119f363 100644
+--- a/Cython/Utility/ObjectHandling.c
++++ b/Cython/Utility/ObjectHandling.c
+@@ -717,7 +717,7 @@ bad:
  
  /////////////// SliceTupleAndList.proto ///////////////
  
@@ -163,7 +193,7 @@ diff -u -r a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
  static CYTHON_INLINE PyObject* __Pyx_PyList_GetSlice(PyObject* src, Py_ssize_t start, Py_ssize_t stop);
  static CYTHON_INLINE PyObject* __Pyx_PyTuple_GetSlice(PyObject* src, Py_ssize_t start, Py_ssize_t stop);
  #else
-@@ -727,7 +727,7 @@
+@@ -727,7 +727,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyTuple_GetSlice(PyObject* src, Py_ssize_t
  
  /////////////// SliceTupleAndList ///////////////
  
@@ -172,7 +202,7 @@ diff -u -r a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
  static CYTHON_INLINE void __Pyx_crop_slice(Py_ssize_t* _start, Py_ssize_t* _stop, Py_ssize_t* _length) {
      Py_ssize_t start = *_start, stop = *_stop, length = *_length;
      if (start < 0) {
-@@ -1152,7 +1152,7 @@
+@@ -1152,7 +1152,7 @@ static PyObject *__Pyx__GetNameInClass(PyObject *nmspace, PyObject *name) {
  
  /////////////// SetNameInClass.proto ///////////////
  
@@ -181,7 +211,7 @@ diff -u -r a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
  // Identifier names are always interned and have a pre-calculated hash value.
  #define __Pyx_SetNameInClass(ns, name, value) \
      (likely(PyDict_CheckExact(ns)) ? _PyDict_SetItem_KnownHash(ns, name, value, ((PyASCIIObject *) name)->hash) : PyObject_SetItem(ns, name, value))
-@@ -1201,7 +1201,7 @@
+@@ -1201,7 +1201,7 @@ static CYTHON_INLINE PyObject *__Pyx__GetModuleGlobalName(PyObject *name)
  {
      PyObject *result;
  #if !CYTHON_AVOID_BORROWED_REFS
@@ -190,7 +220,7 @@ diff -u -r a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
      // Identifier names are always interned and have a pre-calculated hash value.
      result = _PyDict_GetItem_KnownHash($moddict_cname, name, ((PyASCIIObject *) name)->hash);
      __PYX_UPDATE_DICT_CACHE($moddict_cname, result, *dict_cached_value, *dict_version)
-@@ -1592,8 +1592,8 @@
+@@ -1592,8 +1592,8 @@ static int __Pyx_TryUnpackUnboundCMethod(__Pyx_CachedCFunction* target) {
      #endif
      {
          PyMethodDescrObject *descr = (PyMethodDescrObject*) method;
@@ -201,10 +231,11 @@ diff -u -r a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
      }
  #endif
      return 0;
-diff -u -r a/Cython/Utility/StringTools.c b/Cython/Utility/StringTools.c
---- a/Cython/Utility/StringTools.c	2023-01-04 11:56:12.000000000 +0100
-+++ b/Cython/Utility/StringTools.c	2023-01-04 11:56:11.000000000 +0100
-@@ -183,7 +183,7 @@
+diff --git a/Cython/Utility/StringTools.c b/Cython/Utility/StringTools.c
+index 98b5e26..0f44675 100644
+--- a/Cython/Utility/StringTools.c
++++ b/Cython/Utility/StringTools.c
+@@ -183,7 +183,7 @@ static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int
  //@requires: BytesEquals
  
  static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int equals) {
@@ -213,7 +244,7 @@ diff -u -r a/Cython/Utility/StringTools.c b/Cython/Utility/StringTools.c
      return PyObject_RichCompareBool(s1, s2, equals);
  #else
  #if PY_MAJOR_VERSION < 3
-@@ -294,7 +294,7 @@
+@@ -294,7 +294,7 @@ static CYTHON_INLINE int __Pyx_PyBytes_Equals(PyObject* s1, PyObject* s2, int eq
  //@requires: IncludeStringH
  
  static CYTHON_INLINE int __Pyx_PyBytes_Equals(PyObject* s1, PyObject* s2, int equals) {

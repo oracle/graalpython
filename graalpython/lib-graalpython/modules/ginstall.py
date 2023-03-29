@@ -84,6 +84,26 @@ def get_module_name(package_name):
     return module_name.replace('-', '_')
 
 
+def have_flang_new():
+    env_path = os.environ.get('PATH', '').split(os.pathsep)
+    for p in env_path:
+        flang_new = os.path.join(p, 'flang-new')
+        if os.path.isfile(flang_new):
+            return True
+    return False
+
+
+def get_flang_new_lib_dir():
+    try:
+        output = subprocess.check_output(['flang-new', '--version'])
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    else:
+        flang_dir = output.splitlines()[-1].split()[-1].strip().decode("utf-8")
+        return os.path.normpath(os.path.join(flang_dir, '..', 'lib'))
+    return None
+
+
 def get_path_env_var(var):
     env_var = os.environ.get(var, None)
     if isinstance(env_var, str) and env_var.lower() == 'none':
@@ -218,7 +238,7 @@ def known_packages():
 
     @pip_package()
     def joblib(**kwargs):
-        install_with_pip("joblib==1.1.0", **kwargs)
+        install_with_pip("joblib==1.2.0", **kwargs)
 
     @pip_package()
     def cppy(**kwargs):
@@ -406,8 +426,15 @@ library_dirs = {lapack_lib}"""
             append_env_var(numpy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
             info(f"have lapack or blas ... CLFAGS={numpy_build_env['CFLAGS']}")
 
-        install_from_pypi("numpy==1.23.5", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
-                          pre_install_hook=make_site_cfg, **kwargs)
+        with_flang = have_flang_new()
+        build_cmd = ["build_ext", "--disable-optimization"]
+        if with_flang:
+            numpy_build_env["FC"] = "flang-new"
+            numpy_build_env["CC"] = "clang"
+            numpy_build_env["CXX"] = "clang++"
+            build_cmd += ["config", "--fcompiler=flang-new"]
+        install_from_pypi("numpy==1.23.5", build_cmd=build_cmd, env=numpy_build_env, pre_install_hook=make_site_cfg,
+                          **kwargs)
 
         # print numpy configuration
         if sys.implementation.name != 'graalpy' or __graalpython__.platform_id != 'managed':
@@ -451,6 +478,21 @@ library_dirs = {lapack_lib}"""
         install_from_pypi("lightfm==1.15", **kwargs)
 
     @pip_package()
+    def meson(**kwargs):
+        install_from_pypi("meson==1.0.0", **kwargs)
+
+    @pip_package()
+    def ninja(**kwargs):
+        install_with_pip("scikit-build==0.16.6")
+        ninja_build_env = {}
+        if sys.platform.startswith('linux'):
+            ninja_build_env = {
+                'CC': 'gcc',
+                'CXX': 'g++',
+            }
+        install_from_pypi("ninja==1.11.1", env=ninja_build_env, **kwargs)
+
+    @pip_package()
     def pytz(**kwargs):
         install_from_pypi("pytz==2022.2.1", **kwargs)
 
@@ -476,7 +518,6 @@ library_dirs = {lapack_lib}"""
                 xit("SciPy can only be installed within a venv.")
             from distutils.sysconfig import get_config_var
             scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
-            scipy_build_env["SCIPY_USE_PYTHRAN"] = "0"
 
         if have_lapack() or have_openblas():
             append_env_var(scipy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
@@ -487,7 +528,34 @@ library_dirs = {lapack_lib}"""
         pybind11(**kwargs)
         pythran(**kwargs)
 
-        install_from_pypi("scipy==1.8.1", env=scipy_build_env, **kwargs)
+        # scipy_version = "1.8.1"
+        scipy_version = "1.9.3"
+        with_meson = False
+        if scipy_version >= "1.9.1":
+            meson(**kwargs)
+            ninja(**kwargs)
+            with_flang = have_flang_new()
+            with_meson = True
+            if with_flang:
+                # until flang-new can compile propack we disable it (during runtime)
+                scipy_build_env["USE_PROPACK"] = "0"
+                scipy_build_env['CC'] = 'clang'
+                scipy_build_env['CXX'] = 'clang++'
+                scipy_build_env['FC'] = 'flang-new'
+                if sys.implementation.name == "graalpy":
+                    cflags = "-flto=full"
+                else:
+                    ld = 'lld'
+                    cflags = "-flto=full -fuse-ld=lld -Wl,--mllvm=-lto-embed-bitcode=optimized,--lto-O0"
+                    scipy_build_env['CC_LD'] = ld
+                    scipy_build_env['CXX_LD'] = ld
+                    scipy_build_env['FC_LD'] = ld
+                scipy_build_env['CFLAGS'] = cflags
+                scipy_build_env['CXXFLAGS'] = cflags
+                scipy_build_env['FFLAGS'] = cflags
+                scipy_build_env['FFLAGS'] = cflags
+                append_env_var(scipy_build_env, 'LDFLAGS', f'-L{get_flang_new_lib_dir()}')
+        install_from_pypi(f"scipy=={scipy_version}", env=scipy_build_env, with_meson=with_meson, **kwargs)
 
     @pip_package()
     def scikit_learn(**kwargs):
@@ -615,7 +683,7 @@ def _download_with_curl_and_extract(dest_dir, url, quiet=False):
 
 
 def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_errors=False, env=None, version=None,
-                      pre_install_hook=None, build_cmd=None, debug_build=False):
+                      pre_install_hook=None, build_cmd=None, debug_build=False, with_meson=False):
     if build_cmd is None:
         build_cmd = []
     if env is None:
@@ -655,7 +723,7 @@ def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_error
         info("auto-patching {}", extracted_dir)
         autopatch_capi.auto_patch_tree(extracted_dir)
 
-    patch_file_path = first_existing(package, versions, os.path.join(patches_dir, "sdist"), ".patch")
+    patch_file_path = first_existing(package, versions, get_sdist_patch(patches_dir), ".patch")
     if patch_file_path:
         run_cmd(["patch", "-d", extracted_dir, "-p1", "-i", patch_file_path], quiet=quiet)
 
@@ -667,24 +735,36 @@ def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_error
         os.path.join(tempdir, bare_name, subdir)
         run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, subdir), "-p1", "-i", patch_file_path], quiet=quiet)
 
+    tmp_cwd = os.path.join(tempdir, bare_name)
     if pre_install_hook:
-        pre_install_hook(os.path.join(tempdir, bare_name))
+        pre_install_hook(tmp_cwd)
 
     if "--user" not in extra_opts and "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
         user_arg = ["--user"]
     else:
         user_arg = []
+
     start = time.time()
-    cmd = [sys.executable]
-    if debug_build and sys.implementation.name == 'graalpy':
-        cmd += ["-debug-java", "--python.ExposeInternalSources", "--python.WithJavaStacktrace=2"]
-    cmd += ["setup.py"] + build_cmd + ["install"] + user_arg + extra_opts
-    status = run_cmd(cmd, env=setup_env,
-                     cwd=os.path.join(tempdir, bare_name), quiet=quiet)
+    if with_meson:
+        for cmd in [
+            ['meson', 'setup', f'--prefix={os.environ.get("VIRTUAL_ENV")}', 'build'],
+            ['meson', 'compile', '-C', 'build', '--ninja-args=-j4'],  # limit concurrency to 4
+            ['meson', 'install', '-C', 'build'],
+        ]:
+            status = run_cmd(cmd, env=setup_env, cwd=tmp_cwd, quiet=quiet)
+            if status != 0 and not ignore_errors:
+                xit(f"An error occurred trying to run `{' '.join(cmd)}'")
+    else:
+        cmd = [sys.executable]
+        if debug_build and sys.implementation.name == 'graalpy':
+            cmd += ["-debug-java", "--python.ExposeInternalSources", "--python.WithJavaStacktrace=2"]
+        cmd += ["setup.py"] + build_cmd + ["install"] + user_arg + extra_opts
+        status = run_cmd(cmd, env=setup_env, cwd=tmp_cwd, quiet=quiet)
+        if status != 0 and not ignore_errors:
+            xit("An error occurred trying to run `setup.py install {!s} {}'", user_arg, " ".join(extra_opts))
+
     end = time.time()
-    if status != 0 and not ignore_errors:
-        xit("An error occurred trying to run `setup.py install {!s} {}'", user_arg, " ".join(extra_opts))
-    elif quiet:
+    if quiet:
         info("{} successfully installed (took {:.2f} s)", package, (end - start))
 
 
@@ -720,6 +800,10 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 # end of code duplicated in pip_hook.py
 
+def get_sdist_patch(patch_dir):
+    sdist = os.path.join(patch_dir, "sdist")
+    return sdist if os.path.isdir(sdist) else patch_dir
+
 
 def install_with_pip(package, msg="", failOnError=False, **kwargs):
     for kw in ['extra_opts', 'debug_build']:
@@ -738,7 +822,7 @@ def package_from_path(pth):
 
 
 def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=True, env=None, pre_install_hook=None,
-                      build_cmd=None, debug_build=False):
+                      build_cmd=None, debug_build=False, with_meson=False):
     if build_cmd is None:
         build_cmd = []
     if extra_opts is None:
@@ -794,7 +878,7 @@ def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=Tru
     if url:
         _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
                           ignore_errors=ignore_errors, env=env, version=version, pre_install_hook=pre_install_hook,
-                          build_cmd=build_cmd, debug_build=debug_build)
+                          build_cmd=build_cmd, debug_build=debug_build, with_meson=with_meson)
     else:
         xit("Package not found: '{!s}'", package)
 

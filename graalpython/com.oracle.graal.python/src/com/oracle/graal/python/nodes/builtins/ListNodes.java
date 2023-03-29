@@ -75,6 +75,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -86,6 +87,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -132,11 +134,12 @@ public abstract class ListNodes {
         @Specialization(guards = "cannotBeOverridden(list, getClassNode)", limit = "1")
         // Don't use PSequence, that might copy storages that we don't allow for lists
         static PList fromList(Object cls, PList list,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
-            return factory.createList(cls, copyNode.execute(getSequenceStorageNode.execute(list)));
+            return factory.createList(cls, copyNode.execute(inliningTarget, getSequenceStorageNode.execute(list)));
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})

@@ -792,7 +792,7 @@ class ReferencesTestCase(TestBase):
 
         del callback, c, d, C
         self.assertEqual(alist, [])  # del isn't enough to clean up cycles
-        gc.collect()
+        gc_collect() # GR-41525 - Truffle change to give the GC more time to run
         self.assertEqual(alist, ["safe_callback called"])
         self.assertEqual(external_wr(), None)
 

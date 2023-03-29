@@ -84,8 +84,6 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -166,6 +164,8 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -197,8 +197,8 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -223,6 +223,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -237,6 +238,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -377,7 +379,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PCallHPyFunction callGetterNode,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
@@ -398,11 +399,11 @@ public abstract class GraalHPyContextFunctions {
                 TruffleString mName;
                 Object mDoc;
                 try {
-                    mName = castToStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "name")));
+                    mName = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "name"));
 
                     // do not eagerly read the doc string; this turned out to be unnecessarily
                     // expensive
-                    mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "doc"));
+                    mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "doc"), false);
                 } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_CREATE_MODULE_FROM_DEFINITION, e);
@@ -1095,18 +1096,12 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            Object valueObj = fromCharPointerNode.execute(arguments[1]);
             TruffleString errorMessage = ErrorMessages.MSG_NOT_SET;
-            if (!interopLib.isNull(valueObj)) {
-                try {
-                    errorMessage = castToTruffleStringNode.execute(valueObj);
-                } catch (CannotCastException e) {
-                    // ignore
-                }
+            if (!interopLib.isNull(arguments[1])) {
+                errorMessage = fromCharPointerNode.execute(arguments[1], false);
             }
             CExtCommonNodes.fatalError(asContextNode, context.getContext(), null, errorMessage, -1);
             throw CompilerDirectives.shouldNotReachHere();
@@ -1170,7 +1165,6 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToJavaStringNode,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached WarnNode warnNode,
                         @CachedLibrary(limit = "2") InteropLibrary interopLib) throws ArityException {
@@ -1181,14 +1175,9 @@ public abstract class GraalHPyContextFunctions {
             } else {
                 category = asPythonObjectNode.execute(arguments[1]);
             }
-            Object valueObj = fromCharPointerNode.execute(arguments[2]);
             TruffleString message = T_EMPTY_STRING;
-            if (!interopLib.isNull(valueObj)) {
-                try {
-                    message = castToJavaStringNode.execute(valueObj);
-                } catch (CannotCastException e) {
-                    // ignore
-                }
+            if (!interopLib.isNull(arguments[2])) {
+                message = fromCharPointerNode.execute(arguments[2]);
             }
             int stackLevel = castToJavaIntNode.execute(arguments[3]);
             warnNode.warnEx(null, category, message, stackLevel);
@@ -1309,7 +1298,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             try {
-                // TODO(fa) provide encoding (utf8)
+                // FromCharPointerNode uses UTF-8 encoding by default
                 TruffleString str = toString.execute(fromCharPointerNode.execute(arguments[1]));
                 return asHandleNode.execute(str);
             } catch (PException e) {
@@ -1544,6 +1533,7 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached SequenceNodes.LenNode lenNode,
@@ -1551,7 +1541,7 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 2);
             Object object = asPythonObjectNode.execute(arguments[1]);
             if (object instanceof PBytes) {
-                return lenNode.execute((PSequence) object);
+                return lenNode.execute(inliningTarget, (PSequence) object);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             return raiseNode.raiseIntWithoutFrame(context, -1, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, object);
@@ -1648,7 +1638,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PInteropGetAttributeNode getAttributeNode,
+                        @Cached PyObjectGetAttr getAttributeNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 3);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
@@ -1731,7 +1721,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PInteropGetAttributeNode getAttributeNode) throws ArityException {
+                        @Cached PyObjectGetAttr getAttributeNode) throws ArityException {
             checkArity(arguments, 3);
             Object receiver = receiverAsPythonObjectNode.execute(arguments[1]);
             Object key;
@@ -1766,12 +1756,12 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         int execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinClassProfile isPStringProfile,
+                        @Cached IsBuiltinObjectProfile isStringProfile,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallTernaryMethodNode callSetAttrNode,
@@ -1786,7 +1776,7 @@ public abstract class GraalHPyContextFunctions {
             switch (mode) {
                 case OBJECT:
                     key = keyAsPythonObjectNode.execute(arguments[2]);
-                    if (!isPStringProfile.profileClass(getClassNode.execute(key), PythonBuiltinClassType.PString)) {
+                    if (!isStringProfile.profileObject(inliningTarget, key, PythonBuiltinClassType.PString)) {
                         return raiseNativeNode.raiseIntWithoutFrame(context, -1, TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
                     }
                     break;
@@ -1830,7 +1820,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PInteropSubscriptNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 3);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
@@ -1851,7 +1841,7 @@ public abstract class GraalHPyContextFunctions {
                     throw CompilerDirectives.shouldNotReachHere();
             }
             try {
-                return asHandleNode.execute(getItemNode.execute(receiver, key));
+                return asHandleNode.execute(getItemNode.execute(null, receiver, key));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return GraalHPyHandle.NULL_HANDLE;
@@ -2689,7 +2679,7 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 4 + docExtra);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object nameObj = callFromStringNode.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], "utf-8");
-            Object doc = withDoc ? fromCharPointerNode.execute(arguments[2]) : null;
+            TruffleString doc = withDoc ? fromCharPointerNode.execute(arguments[2]) : null;
             Object base = asPythonObjectNode.execute(arguments[2 + docExtra]);
             Object dictObj = asPythonObjectNode.execute(arguments[3 + docExtra]);
 
@@ -2799,12 +2789,11 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
             try {
-                TruffleString name = castToStringNode.execute(fromCharPointerNode.execute(arguments[1]));
+                TruffleString name = fromCharPointerNode.execute(arguments[1]);
                 return asHandleNode.execute(AbstractImportNode.importModule(name));
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -3205,7 +3194,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asCapsule,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castStr,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached PRaiseNode raiseNode,
@@ -3221,7 +3209,7 @@ public abstract class GraalHPyContextFunctions {
                 Object result;
                 switch (key) {
                     case CapsuleKey.Pointer:
-                        if (!nameMatches(pyCapsule, arguments[3], interopLib, fromCharPointerNode, castStr, equalNode)) {
+                        if (!nameMatches(pyCapsule, arguments[3], interopLib, fromCharPointerNode, equalNode)) {
                             throw raiseNode.raise(ValueError, INCORRECT_NAME);
                         }
                         result = pyCapsule.getPointer();
@@ -3249,8 +3237,7 @@ public abstract class GraalHPyContextFunctions {
             }
         }
 
-        private static boolean nameMatches(PyCapsule capsule, Object namePtr, InteropLibrary interopLib, FromCharPointerNode fromCharPointerNode, CastToTruffleStringNode castStr,
-                        TruffleString.EqualNode equalNode) {
+        private static boolean nameMatches(PyCapsule capsule, Object namePtr, InteropLibrary interopLib, FromCharPointerNode fromCharPointerNode, TruffleString.EqualNode equalNode) {
             boolean isCapsuleNameNull = capsule.getName() == null;
             boolean isNamePtrNull = interopLib.isNull(namePtr);
 
@@ -3259,8 +3246,8 @@ public abstract class GraalHPyContextFunctions {
                 return isCapsuleNameNull && isNamePtrNull;
             }
 
-            TruffleString name = castStr.execute(fromCharPointerNode.execute(namePtr));
-            TruffleString capsuleName = castStr.execute(fromCharPointerNode.execute(capsule.getName()));
+            TruffleString name = fromCharPointerNode.execute(namePtr);
+            TruffleString capsuleName = fromCharPointerNode.execute(capsule.getName());
             return equalNode.execute(capsuleName, name, TS_ENCODING);
         }
 
@@ -3318,7 +3305,8 @@ public abstract class GraalHPyContextFunctions {
                         pyCapsule.setContext(arguments[3]);
                         break;
                     case CapsuleKey.Name:
-                        pyCapsule.setName(castStr.execute(fromCharPointerNode.execute(arguments[3])));
+                        // we may assume that the pointer is owned
+                        pyCapsule.setName(fromCharPointerNode.execute(arguments[3], false));
                         break;
                     case CapsuleKey.Destructor:
                         pyCapsule.setDestructor(arguments[3]);
@@ -3341,7 +3329,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asCapsule,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castStr,
                         @Cached TruffleString.EqualNode equalNode) throws ArityException {
             checkArity(arguments, 3);
             Object capsule = asCapsule.execute(arguments[1]);
@@ -3349,7 +3336,7 @@ public abstract class GraalHPyContextFunctions {
                 return 0;
             }
             PyCapsule pyCapsule = (PyCapsule) capsule;
-            if (!GraalHPyCapsuleGet.nameMatches(pyCapsule, arguments[2], interopLib, fromCharPointerNode, castStr, equalNode)) {
+            if (!GraalHPyCapsuleGet.nameMatches(pyCapsule, arguments[2], interopLib, fromCharPointerNode, equalNode)) {
                 return 0;
             }
             return 1;
@@ -3382,12 +3369,11 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castStr,
                         @Cached HPyAsPythonObjectNode asObject,
                         @Cached CallNode callContextvar,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 3);
-            TruffleString name = castStr.execute(fromCharPointerNode.execute(arguments[1]));
+            TruffleString name = fromCharPointerNode.execute(arguments[1]);
             Object def = asObject.execute(arguments[2]);
             return asHandleNode.execute(callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def));
         }
@@ -3472,16 +3458,15 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode objNode,
-                        @Cached FromCharPointerNode encodingNode,
-                        @Cached FromCharPointerNode errorsNode,
+                        @Cached FromCharPointerNode fromNativeCharPointerNode,
                         @Cached PyUnicodeFromEncodedObject libNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 4);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object obj = objNode.execute(arguments[1]);
-            Object encoding = encodingNode.execute(arguments[2]);
-            Object errors = errorsNode.execute(arguments[3]);
+            TruffleString encoding = fromNativeCharPointerNode.execute(arguments[2]);
+            TruffleString errors = fromNativeCharPointerNode.execute(arguments[3]);
             try {
                 Object result = libNode.execute(null, obj, encoding, errors);
                 return asHandleNode.execute(result);

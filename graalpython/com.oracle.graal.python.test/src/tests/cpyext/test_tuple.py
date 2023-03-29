@@ -59,11 +59,13 @@ def _reference_getitem(args):
 
 
 def _reference_setitem(args):
-    t = args[0]
+    t = list(args[0])
     idx = args[1]
+    value = args[2]
     if idx < 0 or idx >= len(t):
         raise IndexError('tuple index out of range')
-    return None
+    t[idx] = value
+    return tuple(t)
 
 
 class MyStr(str):
@@ -155,47 +157,33 @@ class TestPyTuple(CPyExtTestCase):
             ((1, 2, 3), 3, str),
         ),
         code="""PyObject* wrap_PyTuple_SetItem(PyObject* original, Py_ssize_t index, PyObject* value) {
-            PyObject* tuple = PyTuple_New(PyTuple_Size(original));
-            for (int i = 0; i < PyTuple_Size(original); i++) {
-                PyTuple_SET_ITEM(tuple, i, Py_NewRef(PyTuple_GetItem(original, i)));
+            Py_ssize_t size = PyTuple_Size(original);
+            if (size < 0)
+                return NULL;
+            PyObject* tuple = PyTuple_New(size);
+            if (!tuple)
+                return NULL;
+            for (int i = 0; i < size; i++) {
+                PyObject* item = PyTuple_GetItem(original, i);
+                if (!item) {
+                    Py_DECREF(tuple);
+                    return NULL;
+                }
+                PyTuple_SET_ITEM(tuple, i, item);
             }
-            if (PyTuple_SetItem(tuple, index, value) == 0) {
-                return Py_NewRef(Py_None);
-            } else {
+            Py_INCREF(value);
+            if (PyTuple_SetItem(tuple, index, value) < 0) {
+                Py_DECREF(tuple);
                 return NULL;
             }
+            return tuple;
         }
         """,
         resultspec="O",
         argspec='OnO',
         arguments=["PyObject* tuple", "Py_ssize_t index", "PyObject* value"],
         callfunction="wrap_PyTuple_SetItem",
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyTuple_SET_ITEM = CPyExtFunction(
-        lambda args: (None, args[1], None),
-        lambda: (
-            (1, str),
-            (1, 0),
-            (1, "asdf"),
-        ),
-        code="""PyObject* wrap_PyTuple_SET_ITEM(Py_ssize_t index, PyObject* value) {
-            PyObject* tuple = PyTuple_New(3);
-            for (int i = 0; i < PyTuple_Size(tuple); i++) {
-                if (i != index) {
-                    PyTuple_SET_ITEM(tuple, i, Py_NewRef(Py_None));
-                }
-            }
-            PyTuple_SET_ITEM(tuple, index, Py_NewRef(value));
-            return tuple;
-        }
-        """,
-        resultspec="O",
-        argspec='nO',
-        arguments=["Py_ssize_t index", "PyObject* value"],
-        callfunction="wrap_PyTuple_SET_ITEM",
-        cmpfunc=unhandled_error_compare
+        cmpfunc=unhandled_error_compare,
     )
 
     # PyTuple_GetSlice

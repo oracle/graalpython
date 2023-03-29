@@ -48,7 +48,6 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_OKAY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_HPY_SUFFIX;
@@ -704,7 +703,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             WriteAttributeToDynamicObjectNode.getUncached().execute(module, T___PATH__, core.factory().createList());
         }
 
-        RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
+        RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.executeUncached(code);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
@@ -775,8 +774,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class SourceHashNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         PBytes run(long magicNumber, Object sourceBuffer,
+                        @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.HashBufferNode hashBufferNode) {
-            long sourceHash = hashBufferNode.execute(sourceBuffer);
+            long sourceHash = hashBufferNode.execute(inliningTarget, sourceBuffer);
             return factory().createBytes(computeHash(magicNumber, sourceHash));
         }
 
@@ -820,7 +820,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
         @Specialization
         Object run() {
-            return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), T_HPY_SUFFIX, T_EXT_SO, T_EXT_DYLIB, T_EXT_PYD});
+            return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), T_HPY_SUFFIX, T_EXT_SO, T_EXT_PYD});
         }
     }
 

@@ -246,7 +246,7 @@ public class CombinationsBuiltins extends PythonBuiltins {
             }
 
             PList indices = (PList) getItemNode.execute(frame, state, 0);
-            Object[] obj = toArrayNode.execute(indices.getSequenceStorage());
+            Object[] obj = toArrayNode.execute(inliningTarget, indices.getSequenceStorage());
             int[] intIndices = new int[obj.length];
             indicesProfile.profileCounted(inliningTarget, obj.length);
             for (int i = 0; indicesProfile.inject(inliningTarget, i < obj.length); i++) {
@@ -258,7 +258,7 @@ public class CombinationsBuiltins extends PythonBuiltins {
             if (noResultProfile.profile(inliningTarget, lastResult instanceof PNone)) {
                 self.setLastResult(null);
             } else {
-                obj = toArrayNode.execute(((PList) lastResult).getSequenceStorage());
+                obj = toArrayNode.execute(inliningTarget, ((PList) lastResult).getSequenceStorage());
                 self.setLastResult(obj);
             }
             Object stopped = getItemNode.execute(frame, state, 2);

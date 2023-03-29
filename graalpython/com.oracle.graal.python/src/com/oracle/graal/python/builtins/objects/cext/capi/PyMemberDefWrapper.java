@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -178,7 +178,7 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
                 CompilerDirectives.transferToInterpreter();
                 throw UnsupportedMessageException.create();
             }
-            setAttrNode.execute(getDelegate(), fromJavaStringNode.execute(member, TS_ENCODING), fromCharPointerNode.execute(value));
+            setAttrNode.execute(getDelegate(), fromJavaStringNode.execute(member, TS_ENCODING), fromCharPointerNode.execute(value, false));
         } finally {
             gil.release(mustRelease);
         }
