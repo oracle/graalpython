@@ -370,6 +370,9 @@ class TestObject(object):
         obj.__dict__["newAttr"] = 123
         assert obj.newAttr == 123, "invalid attr"
 
+        obj.__dict__ = {'a': 1}
+        assert obj.a == 1
+
     def ignore_test_float_subclass(self):
         TestFloatSubclass = CPyExtType("TestFloatSubclass",
                                        """

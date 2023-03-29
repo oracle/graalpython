@@ -587,7 +587,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_iternext},              /* tp_iternext */
         {name}_methods,             /* tp_methods */
         {name}_members,             /* tp_members */
-        0,                          /* tp_getset */
+        {tp_getset},                /* tp_getset */
         {tp_base},                  /* tp_base */
         {tp_dict},                  /* tp_dict */
         {tp_descr_get},             /* tp_descr_get */
