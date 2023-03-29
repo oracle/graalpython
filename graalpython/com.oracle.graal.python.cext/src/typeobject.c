@@ -228,48 +228,101 @@ static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
 }
 
 static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
-    PyTypeObject *basebase;
+    const PyTypeObject *basebase = base->tp_base;
 
-#undef SLOTDEFINED
-#undef COPYSLOT
-#undef SLOTDEFINED2
-#undef COPYSLOT2
-#undef COPYBUF
+#define SLOTDEFINED(BASE, BASEBASE, GETFUNC) \
+    (GETFUNC(BASE) != 0 && (BASEBASE == NULL || GETFUNC(BASE) != GETFUNC(BASEBASE)))
 
-#define SLOTDEFINED(SLOT) \
-    (PyTypeObject_##SLOT(base) != 0 && \
-     (basebase == NULL || PyTypeObject_##SLOT(base) != PyTypeObject_##SLOT(basebase)))
+#define COPYSLOT_GENERIC(SLOT, TYPE, BASE, BASEBASE, GETFUNC) \
+    if (!TYPE->SLOT && SLOTDEFINED(BASE, BASEBASE, GETFUNC)) TYPE->SLOT = GETFUNC(BASE);
 
-#define COPYSLOT(SLOT) \
-    if (!PyTypeObject_##SLOT(type) && SLOTDEFINED(SLOT)) set_PyTypeObject_##SLOT(type, PyTypeObject_##SLOT(base));
+#define COPYSLOT(SLOT) COPYSLOT_GENERIC(SLOT, type, base, basebase, PyTypeObject_##SLOT)
+#define COPYSLOT_GENERIC_GROUP(SLOT, GROUP, PREFIX) COPYSLOT_GENERIC(SLOT, type_##GROUP, base_##GROUP, basebase_##GROUP, PREFIX##_##SLOT)
+#define GROUP_DECL(GROUP, TYPE) \
+    TYPE* type_##GROUP = type->GROUP; \
+    TYPE* base_##GROUP = PyTypeObject_##GROUP(base); \
+    TYPE* basebase_##GROUP = basebase ? PyTypeObject_##GROUP(basebase) : NULL; \
+    if (type_##GROUP != NULL && base_##GROUP != NULL)
+#define COPYASYNC(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_async, PyAsyncMethods)
+#define COPYNUM(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_number, PyNumberMethods)
+#define COPYSEQ(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_sequence, PySequenceMethods)
+#define COPYMAP(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_mapping, PyMappingMethods)
+#define COPYBUF(SLOT) COPYSLOT_GENERIC_GROUP(SLOT, tp_as_buffer,  PyBufferProcs)
 
-#define SLOTDEFINED2(SLOT, SLOT2) \
-    (PyTypeObject_##SLOT(base)->SLOT2 != 0 && \
-     (basebase == NULL || PyTypeObject_##SLOT(base) != PyTypeObject_##SLOT(basebase)))
+    GROUP_DECL(tp_as_number, PyNumberMethods) {
+        COPYNUM(nb_add);
+        COPYNUM(nb_subtract);
+        COPYNUM(nb_multiply);
+        COPYNUM(nb_remainder);
+        COPYNUM(nb_divmod);
+        COPYNUM(nb_power);
+        COPYNUM(nb_negative);
+        COPYNUM(nb_positive);
+        COPYNUM(nb_absolute);
+        COPYNUM(nb_bool);
+        COPYNUM(nb_invert);
+        COPYNUM(nb_lshift);
+        COPYNUM(nb_rshift);
+        COPYNUM(nb_and);
+        COPYNUM(nb_xor);
+        COPYNUM(nb_or);
+        COPYNUM(nb_int);
+        COPYNUM(nb_float);
+        COPYNUM(nb_inplace_add);
+        COPYNUM(nb_inplace_subtract);
+        COPYNUM(nb_inplace_multiply);
+        COPYNUM(nb_inplace_remainder);
+        COPYNUM(nb_inplace_power);
+        COPYNUM(nb_inplace_lshift);
+        COPYNUM(nb_inplace_rshift);
+        COPYNUM(nb_inplace_and);
+        COPYNUM(nb_inplace_xor);
+        COPYNUM(nb_inplace_or);
+        COPYNUM(nb_true_divide);
+        COPYNUM(nb_floor_divide);
+        COPYNUM(nb_inplace_true_divide);
+        COPYNUM(nb_inplace_floor_divide);
+        COPYNUM(nb_index);
+        COPYNUM(nb_matrix_multiply);
+        COPYNUM(nb_inplace_matrix_multiply);
+    }
 
-#define COPYSLOT2(SLOT, SLOT2) \
-    if (!PyTypeObject_##SLOT(type)->SLOT2 && SLOTDEFINED2(SLOT, SLOT2)) PyTypeObject_##SLOT(type)->SLOT2 = PyTypeObject_##SLOT(base)->SLOT2;
+    GROUP_DECL(tp_as_async, PyAsyncMethods) {
+        COPYASYNC(am_await);
+        COPYASYNC(am_aiter);
+        COPYASYNC(am_anext);
+    }
 
-#define COPYBUF(SLOT) COPYSLOT2(tp_as_buffer, SLOT)
+    GROUP_DECL(tp_as_sequence, PySequenceMethods) {
+        COPYSEQ(sq_length);
+        COPYSEQ(sq_concat);
+        COPYSEQ(sq_repeat);
+        COPYSEQ(sq_item);
+        COPYSEQ(sq_ass_item);
+        COPYSEQ(sq_contains);
+        COPYSEQ(sq_inplace_concat);
+        COPYSEQ(sq_inplace_repeat);
+    }
 
-    if (type->tp_as_buffer != NULL && base->tp_as_buffer != NULL) {
-        basebase = base->tp_base;
-        if (basebase->tp_as_buffer == NULL)
-            basebase = NULL;
+    GROUP_DECL(tp_as_mapping, PyMappingMethods) {
+        COPYMAP(mp_length);
+        COPYMAP(mp_subscript);
+        COPYMAP(mp_ass_subscript);
+    }
+
+    GROUP_DECL(tp_as_buffer, PyBufferProcs) {
         COPYBUF(bf_getbuffer);
         COPYBUF(bf_releasebuffer);
     }
 
-    basebase = PyTypeObject_tp_base(base);
-
     COPYSLOT(tp_dealloc);
-    if (PyTypeObject_tp_getattr(type) == NULL && PyTypeObject_tp_getattro(type) == NULL) {
-        set_PyTypeObject_tp_getattr(type, PyTypeObject_tp_getattr(base));
-        set_PyTypeObject_tp_getattro(type, PyTypeObject_tp_getattro(base));
+    if (type->tp_getattr == NULL && type->tp_getattro == NULL) {
+        type->tp_getattr = PyTypeObject_tp_getattr(base);
+        type->tp_getattro = PyTypeObject_tp_getattro(base);
     }
-    if (PyTypeObject_tp_setattr(type) == NULL && PyTypeObject_tp_setattro(type) == NULL) {
-        set_PyTypeObject_tp_setattr(type, PyTypeObject_tp_setattr(base));
-        set_PyTypeObject_tp_setattro(type, PyTypeObject_tp_setattro(base));
+    if (type->tp_setattr == NULL && type->tp_setattro == NULL) {
+        type->tp_setattr = PyTypeObject_tp_setattr(base);
+        type->tp_setattro = PyTypeObject_tp_setattro(base);
     }
     {
         /* Always inherit tp_vectorcall_offset to support PyVectorcall_Call().
@@ -279,11 +332,11 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
 
         /* Inherit _Py_TPFLAGS_HAVE_VECTORCALL for non-heap types
         * if tp_call is not overridden */
-        if (!PyTypeObject_tp_call(type) &&
+        if (!type->tp_call &&
             (PyTypeObject_tp_flags(base) & _Py_TPFLAGS_HAVE_VECTORCALL) &&
-            !(PyTypeObject_tp_flags(type) & Py_TPFLAGS_HEAPTYPE))
+            !(type->tp_flags & Py_TPFLAGS_HEAPTYPE))
         {
-        	set_PyTypeObject_tp_flags(type, PyTypeObject_tp_flags(type) | _Py_TPFLAGS_HAVE_VECTORCALL);
+        	type->tp_flags |= _Py_TPFLAGS_HAVE_VECTORCALL;
         }
         /* COPYSLOT(tp_call); */
     }
@@ -293,24 +346,24 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
     }
     {
         COPYSLOT(tp_alloc);
-        if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_FINALIZE) &&
+        if ((type->tp_flags & Py_TPFLAGS_HAVE_FINALIZE) &&
             (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_FINALIZE)) {
             COPYSLOT(tp_finalize);
         }
-        if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_GC) ==
+        if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) ==
             (PyTypeObject_tp_flags(base) & Py_TPFLAGS_HAVE_GC)) {
             /* They agree about gc. */
             COPYSLOT(tp_free);
         }
-        else if ((PyTypeObject_tp_flags(type) & Py_TPFLAGS_HAVE_GC) &&
-                PyTypeObject_tp_free(type) == NULL &&
+        else if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+                type->tp_free == NULL &&
                 PyTypeObject_tp_free(base) == PyObject_Free) {
             /* A bit of magic to plug in the correct default
              * tp_free function when a derived class adds gc,
              * didn't define tp_free, and the base uses the
              * default non-gc tp_free.
              */
-            set_PyTypeObject_tp_free(type, PyObject_GC_Del);
+            type->tp_free = PyObject_GC_Del;
         }
         /* else they didn't agree about gc, and there isn't something
          * obvious to be done -- the type is on its own.
