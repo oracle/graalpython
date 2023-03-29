@@ -40,14 +40,20 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GENERIC_SET_DICT;
+
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -57,7 +63,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 public abstract class SetDictNode extends PNodeWithContext {
-    public abstract void execute(PythonObject object, PDict dict);
+    public abstract void execute(Object object, PDict dict);
 
     @Specialization
     static void doPythonClass(PythonClass object, PDict dict,
@@ -67,10 +73,26 @@ public abstract class SetDictNode extends PNodeWithContext {
         object.setDictHiddenProp(inliningTarget, dylib, hasMroShapeProfile, dict);
     }
 
-    @Fallback
+    @Specialization(guards = "!isPythonClass(object)")
     static void doPythonObjectNotClass(PythonObject object, PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         object.setDict(dylib, dict);
+    }
+
+    @Specialization
+    void doNativeObject(PythonAbstractNativeObject object, PDict dict,
+                    @Cached CExtNodes.ToSulongNode objectToSulong,
+                    @Cached CExtNodes.ToSulongNode dictToSulong,
+                    @Cached CExtNodes.PCallCapiFunction callGetDictNode,
+                    @Cached CheckPrimitiveFunctionResultNode checkResult) {
+        assert !IsTypeNode.getUncached().execute(object);
+        PythonContext context = getContext();
+        Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToSulong.execute(object), dictToSulong.execute(dict), context.getNativeNull().getPtr());
+        checkResult.execute(context, FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+    }
+
+    protected static boolean isPythonClass(Object object) {
+        return object instanceof PythonClass;
     }
 
     public static SetDictNode getUncached() {

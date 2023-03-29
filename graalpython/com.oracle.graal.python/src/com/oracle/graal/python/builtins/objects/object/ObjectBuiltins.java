@@ -125,7 +125,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.InlineIsBuiltin
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsOtherBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.DeleteDictNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
@@ -648,7 +647,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
                         "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "isNoValue(none)"}, limit = "1")
-        Object dict(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") PNone none,
+        Object dict(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
                         @SuppressWarnings("unused") @Shared("isBuiltinClassProfile") @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
@@ -671,7 +670,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isAnyBuiltinButModule(inliningTarget, otherBuiltinClassProfile, selfClass)", //
                         "!isExactObject(inliningTarget, isBuiltinClassProfile, selfClass)", "!isPythonModule(self)"}, limit = "1")
-        static Object dict(VirtualFrame frame, PythonObject self, PDict dict,
+        static Object dict(VirtualFrame frame, Object self, PDict dict,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("otherBuiltinClassProfile") @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
                         @SuppressWarnings("unused") @Shared("isBuiltinClassProfile") @Cached InlineIsBuiltinClassProfile isBuiltinClassProfile,
@@ -691,16 +690,6 @@ public class ObjectBuiltins extends PythonBuiltins {
 
             setDict.execute(self, dict);
             return PNone.NONE;
-        }
-
-        @Specialization(guards = "isNoValue(none)")
-        Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Cached GetDictIfExistsNode getDict) {
-            PDict dict = getDict.execute(self);
-            if (dict == null) {
-                raise(self, none);
-            }
-            return dict;
         }
 
         @Specialization
