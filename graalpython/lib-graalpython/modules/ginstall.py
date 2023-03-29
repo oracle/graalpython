@@ -723,7 +723,7 @@ def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_error
         info("auto-patching {}", extracted_dir)
         autopatch_capi.auto_patch_tree(extracted_dir)
 
-    patch_file_path = first_existing(package, versions, os.path.join(patches_dir, "sdist"), ".patch")
+    patch_file_path = first_existing(package, versions, get_sdist_patch(patches_dir), ".patch")
     if patch_file_path:
         run_cmd(["patch", "-d", extracted_dir, "-p1", "-i", patch_file_path], quiet=quiet)
 
@@ -799,6 +799,10 @@ def read_first_existing(pkg_name, versions, dir, suffix):
             return f.read()
 
 # end of code duplicated in pip_hook.py
+
+def get_sdist_patch(patch_dir):
+    sdist = os.path.join(patch_dir, "sdist")
+    return sdist if os.path.isdir(sdist) else patch_dir
 
 
 def install_with_pip(package, msg="", failOnError=False, **kwargs):
