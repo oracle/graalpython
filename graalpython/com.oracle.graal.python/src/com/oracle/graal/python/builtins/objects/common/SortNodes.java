@@ -154,6 +154,11 @@ public abstract class SortNodes {
         }
 
         @Override
+        public boolean isInternal() {
+            return true;
+        }
+
+        @Override
         public String getName() {
             return "sort_comparator";
         }

@@ -959,6 +959,11 @@ public abstract class ExternalFunctionNodes {
             return true;
         }
 
+        @Override
+        public boolean isInternal() {
+            return true;
+        }
+
         protected final Object readSelf(VirtualFrame frame) {
             if (readSelfNode != null) {
                 return readSelfNode.execute(frame);
