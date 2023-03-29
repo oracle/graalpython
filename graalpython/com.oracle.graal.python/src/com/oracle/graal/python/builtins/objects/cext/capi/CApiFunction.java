@@ -350,6 +350,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyFloat_AsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_GetFlags", ret = UNSIGNED_LONG, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PySys_Audit", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "PyOS_mystricmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = CImpl)
+    @CApiBuiltin(name = "PyOS_mystrnicmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
 
     /*
      * Functions that are implemented in C code that needs to run on Sulong:
@@ -1212,8 +1214,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyOS_BeforeFork", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_InterruptOccurred", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_getsig", ret = PY_OS_SIGHANDLER, args = {Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyOS_mystricmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyOS_mystrnicmp", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_setsig", ret = PY_OS_SIGHANDLER, args = {Int, PY_OS_SIGHANDLER}, call = NotImplemented)
     @CApiBuiltin(name = "PyOS_Readline", ret = CHAR_PTR, args = {FILE_PTR, FILE_PTR, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyPickleBuffer_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)

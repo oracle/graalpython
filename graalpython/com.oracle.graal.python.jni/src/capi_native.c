@@ -625,6 +625,7 @@ static int polyglot_is_value(const void *value) {
 #include "pylifecycle.c"
 #include "sysmodule.c"
 #include "typeobject_shared.c"
+#include "pystrcmp.c"
 
 /*
  * This mirrors the definition in capi.c that we us on Sulong, and needs to be

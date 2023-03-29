@@ -3179,12 +3179,6 @@ PyAPI_FUNC(char*) PyOS_double_to_string(double a, char b, int c, int d, int* e) 
 PyAPI_FUNC(PyOS_sighandler_t) PyOS_getsig(int a) {
     unimplemented("PyOS_getsig"); exit(-1);
 }
-PyAPI_FUNC(int) PyOS_mystricmp(const char* a, const char* b) {
-    unimplemented("PyOS_mystricmp"); exit(-1);
-}
-PyAPI_FUNC(int) PyOS_mystrnicmp(const char* a, const char* b, Py_ssize_t c) {
-    unimplemented("PyOS_mystrnicmp"); exit(-1);
-}
 PyAPI_FUNC(PyOS_sighandler_t) PyOS_setsig(int a, PyOS_sighandler_t b) {
     unimplemented("PyOS_setsig"); exit(-1);
 }
