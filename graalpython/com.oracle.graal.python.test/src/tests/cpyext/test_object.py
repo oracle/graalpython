@@ -731,6 +731,17 @@ class TestObject(object):
         assert len(obj.some_member.__doc__) == len(expected_doc)
         assert obj.some_member.__doc__ == expected_doc
 
+    def test_multiple_inheritance_with_native(self):
+        _A = CPyExtType("_A","")
+        class B:
+            def __getattr__(self, name):
+                return name
+        class X(_A, B):
+            b = 2
+        x = X()
+        assert x.foo == "foo"
+
+
 class CBytes: 
     def __bytes__(self):
         return b'abc'
