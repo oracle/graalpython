@@ -507,24 +507,11 @@ int PyType_Ready(PyTypeObject* cls) {
     PyObject* mro = GraalPyTruffle_Compute_Mro(cls, truffleString(cls->tp_name));
     set_PyTypeObject_tp_mro(cls, mro);
 
-    /* Inherit special flags from dominant base */
-    if (base != NULL)
-        inherit_special(cls, base);
-
-    /* Initialize tp_dict properly */
-    bases = mro;
-    assert(bases != NULL);
-    assert(PyTuple_Check(bases));
-    n = PyTuple_GET_SIZE(bases);
-    for (i = 1; i < n; i++) {
-        PyObject *b = PyTuple_GET_ITEM(bases, i);
-        if (PyType_Check(b))
-            inherit_slots(cls, (PyTypeObject *)b);
-    }
-
+    /* set new and alloc */
     ADD_IF_MISSING(cls->tp_alloc, PyType_GenericAlloc);
     ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
 
+    /* fill dict */
     // add special methods defined directly on the type structs
     ADD_SLOT_CONV("__dealloc__", cls->tp_dealloc, -1, JWRAPPER_DIRECT);
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
@@ -653,6 +640,19 @@ int PyType_Ready(PyTypeObject* cls) {
     PyBufferProcs* buffers = PyTypeObject_tp_as_buffer(cls);
     if (buffers) {
         // TODO ...
+    }
+
+    /* Inherit slots */
+    if (base != NULL)
+        inherit_special(cls, base);
+    bases = mro;
+    assert(bases != NULL);
+    assert(PyTuple_Check(bases));
+    n = PyTuple_GET_SIZE(bases);
+    for (i = 1; i < n; i++) {
+        PyObject *b = PyTuple_GET_ITEM(bases, i);
+        if (PyType_Check(b))
+            inherit_slots(cls, (PyTypeObject *)b);
     }
 
     // process inherited slots
