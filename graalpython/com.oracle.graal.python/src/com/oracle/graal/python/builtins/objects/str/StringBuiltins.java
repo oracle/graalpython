@@ -186,6 +186,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleString.IndexOfStringNode;
+import com.oracle.truffle.api.strings.TruffleString.LastIndexOfStringNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -752,20 +754,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static int rfind(TruffleString self, TruffleString sub, int start, int end,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("lastIndexOf") @Cached TruffleString.LastIndexOfStringNode lastIndexOfStringNode) {
-            int cpLen = codePointLengthNode.execute(self, TS_ENCODING);
-            int cpStart = adjustStartIndex(start, cpLen);
-            int cpEnd = adjustEndIndex(end, cpLen);
-            if (sub.isEmpty() && cpStart == cpLen) {
-                return cpLen;
-            }
-            if (cpStart >= cpLen) {
-                return -1;
-            }
-            int idx = lastIndexOfStringNode.execute(self, sub, cpEnd, cpStart, TS_ENCODING);
-            if (idx < 0) {
-                return -1;
-            }
-            return idx;
+            return lastIndexOf(self, sub, start, end, codePointLengthNode, lastIndexOfStringNode);
         }
 
         @Specialization
@@ -795,20 +784,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static int find(TruffleString self, TruffleString sub, int start, int end,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfStringNode indexOfStringNode) {
-            int cpLen = codePointLengthNode.execute(self, TS_ENCODING);
-            int cpStart = adjustStartIndex(start, cpLen);
-            int cpEnd = adjustEndIndex(end, cpLen);
-            if (sub.isEmpty() && cpStart == cpLen) {
-                return cpLen;
-            }
-            if (cpStart >= cpLen) {
-                return -1;
-            }
-            int idx = indexOfStringNode.execute(self, sub, cpStart, cpEnd, TS_ENCODING);
-            if (idx < 0) {
-                return -1;
-            }
-            return idx;
+            return indexOf(self, sub, start, end, codePointLengthNode, indexOfStringNode);
         }
 
         @Specialization
@@ -1731,6 +1707,30 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    private static int indexOf(TruffleString self, TruffleString sub, int start, int end, CodePointLengthNode codePointLengthNode, IndexOfStringNode indexOfStringNode) {
+        int cpLen = codePointLengthNode.execute(self, TS_ENCODING);
+        int cpStart = adjustStartIndex(start, cpLen);
+        int cpEnd = adjustEndIndex(end, cpLen);
+        if (cpStart < cpEnd) {
+            return indexOfStringNode.execute(self, sub, cpStart, cpEnd, TS_ENCODING);
+        } else if (sub.isEmpty() && cpStart == cpEnd && cpStart <= cpLen) {
+            return cpStart;
+        }
+        return -1;
+    }
+
+    private static int lastIndexOf(TruffleString self, TruffleString sub, int start, int end, CodePointLengthNode codePointLengthNode, LastIndexOfStringNode lastIndexOfStringNode) {
+        int cpLen = codePointLengthNode.execute(self, TS_ENCODING);
+        int cpStart = adjustStartIndex(start, cpLen);
+        int cpEnd = adjustEndIndex(end, cpLen);
+        if (cpStart < cpEnd) {
+            return lastIndexOfStringNode.execute(self, sub, cpEnd, cpStart, TS_ENCODING);
+        } else if (sub.isEmpty() && cpStart == cpEnd && cpStart <= cpLen) {
+            return cpStart;
+        }
+        return -1;
+    }
+
     @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
     @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
@@ -1745,16 +1745,11 @@ public final class StringBuiltins extends PythonBuiltins {
         public int index(TruffleString self, TruffleString sub, int start, int end,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfStringNode indexOfStringNode) {
-            int cpLen = codePointLengthNode.execute(self, TS_ENCODING);
-            int cpStart = adjustStartIndex(start, cpLen);
-            int cpEnd = adjustEndIndex(end, cpLen);
-            if (cpStart < cpLen) {
-                int idx = indexOfStringNode.execute(self, sub, cpStart, cpEnd, TS_ENCODING);
-                if (idx >= 0) {
-                    return idx;
-                }
+            int idx = indexOf(self, sub, start, end, codePointLengthNode, indexOfStringNode);
+            if (idx < 0) {
+                throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
-            throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
+            return idx;
         }
 
         @Specialization
@@ -1782,19 +1777,11 @@ public final class StringBuiltins extends PythonBuiltins {
         public int rindex(TruffleString self, TruffleString sub, int start, int end,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("lastIndexOf") @Cached TruffleString.LastIndexOfStringNode lastIndexOfStringNode) {
-            int cpLen = codePointLengthNode.execute(self, TS_ENCODING);
-            int cpStart = adjustStartIndex(start, cpLen);
-            int cpEnd = adjustEndIndex(end, cpLen);
-            if (sub.isEmpty() && cpStart == cpLen) {
-                return cpLen;
+            int idx = lastIndexOf(self, sub, start, end, codePointLengthNode, lastIndexOfStringNode);
+            if (idx < 0) {
+                throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
-            if (cpStart < cpLen) {
-                int idx = lastIndexOfStringNode.execute(self, sub, cpEnd, cpStart, TS_ENCODING);
-                if (idx >= 0) {
-                    return idx;
-                }
-            }
-            throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
+            return idx;
         }
 
         @Specialization
