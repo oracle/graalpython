@@ -85,3 +85,7 @@ void PyThread_tss_delete(Py_tss_t *key){
     GraalPyTruffle_tss_delete(key->_key);
     key->_is_initialized = 0;
 }
+
+unsigned long PyThread_get_thread_ident() {
+    return (unsigned long) pthread_self();
+}

@@ -623,6 +623,7 @@ static int polyglot_is_value(const void *value) {
 #include "object_shared.c"
 #include "obmalloc.c"
 #include "pylifecycle.c"
+#include "sysmodule.c"
 #include "typeobject_shared.c"
 
 /*
