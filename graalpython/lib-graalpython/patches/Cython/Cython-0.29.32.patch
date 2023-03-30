@@ -144,15 +144,6 @@ diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
 index f8bf885..62fec57 100644
 --- a/Cython/Utility/ModuleSetupCode.c
 +++ b/Cython/Utility/ModuleSetupCode.c
-@@ -265,6 +265,8 @@
-   #endif
- #endif
- 
-+#define CYTHON_UPDATE_DESCRIPTOR_DOC 0
-+
- #if !defined(CYTHON_FAST_PYCCALL)
- #define CYTHON_FAST_PYCCALL  (CYTHON_FAST_PYCALL && PY_VERSION_HEX >= 0x030600B1)
- #endif
 @@ -591,7 +593,7 @@ class __Pyx_FakeReference {
    #define __Pyx_PyFrame_SetLineNumber(frame, lineno) PyFrame_SetLineNumber(frame, lineno)
  #else
@@ -162,15 +153,6 @@ index f8bf885..62fec57 100644
  #endif
  
  #if !CYTHON_FAST_THREAD_STATE || PY_VERSION_HEX < 0x02070000
-@@ -767,7 +769,7 @@ static CYTHON_INLINE void * PyThread_tss_get(Py_tss_t *key) {
- #endif
- 
- 
--#if PY_VERSION_HEX >= 0x030900A4
-+#if PY_VERSION_HEX >= 0x030900A4 || GRAALVM_PYTHON
-   #define __Pyx_SET_REFCNT(obj, refcnt) Py_SET_REFCNT(obj, refcnt)
-   #define __Pyx_SET_SIZE(obj, size) Py_SET_SIZE(obj, size)
- #else
 @@ -1076,7 +1078,7 @@ PyEval_InitThreads();
  static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
      #if PY_VERSION_HEX >= 0x030700A1
