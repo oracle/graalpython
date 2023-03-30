@@ -117,7 +117,7 @@ def write_folder_to_zipfile(zf, folder, prefix, data_only=False):
 
 
 def main(args):
-    parser = argparse.ArgumentParser(prog='mx graalpytest')
+    parser = argparse.ArgumentParser()
     parser.add_argument('target', help='The target directory to write the skeleton to.')
     parser.add_argument('module', help='Python file or module folder to run')
     parser.add_argument('venv', nargs='?', default=None, help='Python venv to use')
