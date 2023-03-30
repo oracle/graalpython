@@ -280,8 +280,6 @@ public final class CApiCodeGen {
      * builtin in Sulong-executed C code.
      */
     private static boolean generateCForwards(List<CApiBuiltinDesc> builtins) throws IOException {
-        System.out.println("generating C API forwards in capi_forwards.h");
-
         List<String> lines = new ArrayList<>();
 
         lines.add("// explicit #undef, some existing functions are redefined by macros and we need to export precise names:");
