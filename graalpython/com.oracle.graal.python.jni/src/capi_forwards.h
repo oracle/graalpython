@@ -3449,8 +3449,10 @@ PyAPI_FUNC(PyObject*) PyObject_VectorcallDict(PyObject* a, PyObject*const* b, si
     PyObject* result = (PyObject*) __target__PyObject_VectorcallDict(a, b, c, d);
     return result;
 }
+PyObject* (*__target__PyObject_VectorcallMethod)(PyObject*, PyObject*const*, size_t, PyObject*) = NULL;
 PyAPI_FUNC(PyObject*) PyObject_VectorcallMethod(PyObject* a, PyObject*const* b, size_t c, PyObject* d) {
-    unimplemented("PyObject_VectorcallMethod"); exit(-1);
+    PyObject* result = (PyObject*) __target__PyObject_VectorcallMethod(a, b, c, d);
+    return result;
 }
 PyAPI_FUNC(PyObject*) PyPickleBuffer_FromObject(PyObject* a) {
     unimplemented("PyPickleBuffer_FromObject"); exit(-1);
@@ -3754,9 +3756,6 @@ PyAPI_FUNC(void) PySys_AddWarnOptionUnicode(PyObject* a) {
 PyAPI_FUNC(void) PySys_AddXOption(const wchar_t* a) {
     unimplemented("PySys_AddXOption"); exit(-1);
 }
-PyAPI_FUNC(int) PySys_Audit(const char* a, const char* b, ...) {
-    unimplemented("PySys_Audit"); exit(-1);
-}
 PyAPI_FUNC(void) PySys_FormatStderr(const char* a, ...) {
     unimplemented("PySys_FormatStderr"); exit(-1);
 }
@@ -3874,8 +3873,10 @@ PyAPI_FUNC(void*) PyThread_get_key_value(int a) {
 PyAPI_FUNC(size_t) PyThread_get_stacksize() {
     unimplemented("PyThread_get_stacksize"); exit(-1);
 }
+unsigned long (*__target__PyThread_get_thread_ident)() = NULL;
 PyAPI_FUNC(unsigned long) PyThread_get_thread_ident() {
-    unimplemented("PyThread_get_thread_ident"); exit(-1);
+    unsigned long result = (unsigned long) __target__PyThread_get_thread_ident();
+    return result;
 }
 PyAPI_FUNC(unsigned long) PyThread_get_thread_native_id() {
     unimplemented("PyThread_get_thread_native_id"); exit(-1);
@@ -4342,8 +4343,10 @@ PyAPI_FUNC(PyObject*) PyUnicode_EncodeUTF8(const Py_UNICODE* a, Py_ssize_t b, co
 PyAPI_FUNC(PyObject*) PyUnicode_EncodeUnicodeEscape(const Py_UNICODE* a, Py_ssize_t b) {
     unimplemented("PyUnicode_EncodeUnicodeEscape"); exit(-1);
 }
+int (*__target__PyUnicode_FSConverter)(PyObject*, void*) = NULL;
 PyAPI_FUNC(int) PyUnicode_FSConverter(PyObject* a, void* b) {
-    unimplemented("PyUnicode_FSConverter"); exit(-1);
+    int result = (int) __target__PyUnicode_FSConverter(a, b);
+    return result;
 }
 PyAPI_FUNC(int) PyUnicode_FSDecoder(PyObject* a, void* b) {
     unimplemented("PyUnicode_FSDecoder"); exit(-1);
@@ -5310,8 +5313,10 @@ PyAPI_FUNC(PyObject*) _PyObject_GetAttrId(PyObject* a, struct _Py_Identifier* b)
 PyAPI_FUNC(int) _PyObject_GetCrossInterpreterData(PyObject* a, _PyCrossInterpreterData* b) {
     unimplemented("_PyObject_GetCrossInterpreterData"); exit(-1);
 }
+int (*__target___PyObject_GetMethod)(PyObject*, PyObject*, PyObject**) = NULL;
 PyAPI_FUNC(int) _PyObject_GetMethod(PyObject* a, PyObject* b, PyObject** c) {
-    unimplemented("_PyObject_GetMethod"); exit(-1);
+    int result = (int) __target___PyObject_GetMethod(a, b, c);
+    return result;
 }
 PyAPI_FUNC(int) _PyObject_HasLen(PyObject* a) {
     unimplemented("_PyObject_HasLen"); exit(-1);
@@ -6317,6 +6322,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyObject_SetAttrString = getAPI("PyObject_SetAttrString");
     __target__PyObject_SetDoc = getAPI("PyObject_SetDoc");
     __target__PyObject_VectorcallDict = getAPI("PyObject_VectorcallDict");
+    __target__PyObject_VectorcallMethod = getAPI("PyObject_VectorcallMethod");
     __target__PyRun_StringFlags = getAPI("PyRun_StringFlags");
     __target__PySequence_Fast = getAPI("PySequence_Fast");
     __target__PySlice_AdjustIndices = getAPI("PySlice_AdjustIndices");
@@ -6336,6 +6342,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyThreadState_Clear = getAPI("PyThreadState_Clear");
     __target__PyThreadState_DeleteCurrent = getAPI("PyThreadState_DeleteCurrent");
     __target__PyThread_free_lock = getAPI("PyThread_free_lock");
+    __target__PyThread_get_thread_ident = getAPI("PyThread_get_thread_ident");
     __target__PyThread_tss_alloc = getAPI("PyThread_tss_alloc");
     __target__PyThread_tss_create = getAPI("PyThread_tss_create");
     __target__PyThread_tss_delete = getAPI("PyThread_tss_delete");
@@ -6374,6 +6381,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyUnicode_DecodeUTF32 = getAPI("PyUnicode_DecodeUTF32");
     __target__PyUnicode_DecodeUTF8 = getAPI("PyUnicode_DecodeUTF8");
     __target__PyUnicode_DecodeUTF8Stateful = getAPI("PyUnicode_DecodeUTF8Stateful");
+    __target__PyUnicode_FSConverter = getAPI("PyUnicode_FSConverter");
     __target__PyUnicode_FromEncodedObject = getAPI("PyUnicode_FromEncodedObject");
     __target__PyUnicode_FromFormatV = getAPI("PyUnicode_FromFormatV");
     __target__PyUnicode_FromKindAndData = getAPI("PyUnicode_FromKindAndData");
@@ -6426,6 +6434,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyModule_GetDict = getAPI("_PyModule_GetDict");
     __target___PyModule_GetState = getAPI("_PyModule_GetState");
     __target___PyObject_GetAttrId = getAPI("_PyObject_GetAttrId");
+    __target___PyObject_GetMethod = getAPI("_PyObject_GetMethod");
     __target___PyObject_LookupAttr = getAPI("_PyObject_LookupAttr");
     __target___PyObject_LookupAttrId = getAPI("_PyObject_LookupAttrId");
     __target___PyObject_MakeTpCall = getAPI("_PyObject_MakeTpCall");
