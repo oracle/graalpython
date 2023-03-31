@@ -1900,6 +1900,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "fchmod", minNumOfPositionalArgs = 2, parameterNames = {"fd", "mode"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class FChmodNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FChmodNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone fchmod(VirtualFrame frame, int fd, int mode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            auditNode.audit("os.chmod", fd, mode, -1);
+            try {
+                posixLib.fchmod(getPosixSupport(), fd, mode);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, fd);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
