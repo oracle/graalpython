@@ -559,6 +559,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "getgid", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetGidNode extends PythonBuiltinNode {
+        @Specialization
+        long getGid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getgid(getPosixSupport());
+        }
+    }
+
     @Builtin(name = "getppid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPpidNode extends PythonBuiltinNode {
