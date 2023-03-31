@@ -5920,8 +5920,10 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetAllocatedBlocks() {
 PyAPI_FUNC(const PyConfig*) _Py_GetConfig() {
     unimplemented("_Py_GetConfig"); exit(-1);
 }
+_Py_error_handler (*__target___Py_GetErrorHandler)(const char*) = NULL;
 PyAPI_FUNC(_Py_error_handler) _Py_GetErrorHandler(const char* a) {
-    unimplemented("_Py_GetErrorHandler"); exit(-1);
+    _Py_error_handler result = (_Py_error_handler) __target___Py_GetErrorHandler(a);
+    return result;
 }
 Py_hash_t (*__target___Py_HashBytes)(const void*, Py_ssize_t) = NULL;
 PyAPI_FUNC(Py_hash_t) _Py_HashBytes(const void* a, Py_ssize_t b) {
@@ -6471,6 +6473,7 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target___PyUnicode_ToUppercase = getAPI("_PyUnicode_ToUppercase");
     __target___PyUnicode_get_wstr_length = getAPI("_PyUnicode_get_wstr_length");
     __target___Py_FatalErrorFunc = getAPI("_Py_FatalErrorFunc");
+    __target___Py_GetErrorHandler = getAPI("_Py_GetErrorHandler");
     __target___Py_HashBytes = getAPI("_Py_HashBytes");
     __target___Py_HashPointer = getAPI("_Py_HashPointer");
     __target___Py_HashPointerRaw = getAPI("_Py_HashPointerRaw");

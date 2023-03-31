@@ -135,7 +135,7 @@ public enum ArgDescriptor {
     _MOD_PTR("struct _mod*"),
     _NODE_PTR("struct _node*"),
     _PY_CLOCK_INFO_T_PTR("_Py_clock_info_t*"),
-    _PY_ERROR_HANDLER("_Py_error_handler"),
+    _PY_ERROR_HANDLER(ArgBehavior.Int32, "_Py_error_handler"),
     _PY_IDENTIFIER_PTR("struct _Py_Identifier*"),
     _PYARG_PARSER_PTR("struct _PyArg_Parser*"),
     _PYBYTESWRITER_PTR("_PyBytesWriter*"),

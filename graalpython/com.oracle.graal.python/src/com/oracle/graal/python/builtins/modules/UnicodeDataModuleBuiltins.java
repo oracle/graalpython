@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -160,6 +160,22 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         return "1.0.0";         // 1.0
     }
 
+    /**
+     * Returns the name of a Unicode codepoint or null if the name is unknown. Unlike CPython we
+     * skip all codepoint in the private use areas.
+     */
+    public static String getUnicodeName(int cp) {
+        if ((0xe000 <= cp && cp <= 0xf8ff) || (0xF0000 <= cp && cp <= 0xFFFFD) || (0x100000 <= cp && cp <= 0x10FFFD)) {
+            return null;
+        }
+        return getUnicodeNameTB(cp);
+    }
+
+    @TruffleBoundary
+    private static String getUnicodeNameTB(int cp) {
+        return UCharacter.getName(cp);
+    }
+
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
@@ -247,11 +263,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object name(int cp, Object defaultValue,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            if ((0xe000 <= cp && cp <= 0xf8ff) || (0xF0000 <= cp && cp <= 0xFFFFD) || (0x100000 <= cp && cp <= 0x10FFFD)) {
-                // do not populate names from private use areas
-                throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
-            }
-            String result = getName(cp);
+            String result = getUnicodeName(cp);
             if (result == null) {
                 if (defaultValue == PNone.NO_VALUE) {
                     throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
@@ -259,11 +271,6 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
                 return defaultValue;
             }
             return fromJavaStringNode.execute(result, TS_ENCODING);
-        }
-
-        @TruffleBoundary
-        private static String getName(int cp) {
-            return UCharacter.getName(cp);
         }
 
         @Override

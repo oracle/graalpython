@@ -422,8 +422,12 @@ public final class BytesUtils {
     }
 
     public static int unicodeNonAsciiEscape(int codePoint, int startIndex, byte[] buffer) {
+        return unicodeNonAsciiEscape(codePoint, startIndex, buffer, false);
+    }
+
+    public static int unicodeNonAsciiEscape(int codePoint, int startIndex, byte[] buffer, boolean escapeAscii) {
         int i = startIndex;
-        if (codePoint < 128) {
+        if (!escapeAscii && codePoint < 128) {
             buffer[i++] = (byte) codePoint;
         } else if (codePoint < 0x100) {
             i = byteEscape(codePoint, startIndex, buffer);

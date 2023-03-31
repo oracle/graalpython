@@ -5,6 +5,9 @@
 *graalpython.lib-python.3.test.test_codecs.ASCIITest.test_encode_surrogateescape_error
 *graalpython.lib-python.3.test.test_codecs.BasicUnicodeTest.test_basics_capi
 *graalpython.lib-python.3.test.test_codecs.BasicUnicodeTest.test_encoding_map_type_initialized
+*graalpython.lib-python.3.test.test_codecs.CharmapTest.test_decode_with_int2int_map
+*graalpython.lib-python.3.test.test_codecs.CharmapTest.test_decode_with_int2str_map
+*graalpython.lib-python.3.test.test_codecs.CharmapTest.test_decode_with_string_map
 *graalpython.lib-python.3.test.test_codecs.CodePageTest.test_code_page_decode_flags
 *graalpython.lib-python.3.test.test_codecs.CodePageTest.test_code_page_name
 *graalpython.lib-python.3.test.test_codecs.CodePageTest.test_cp1252
@@ -178,6 +181,7 @@
 *graalpython.lib-python.3.test.test_codecs.UnicodeEscapeTest.test_incremental_surrogatepass
 *graalpython.lib-python.3.test.test_codecs.UnicodeEscapeTest.test_mixed_readline_and_read
 *graalpython.lib-python.3.test.test_codecs.UnicodeEscapeTest.test_partial
+*graalpython.lib-python.3.test.test_codecs.UnicodeEscapeTest.test_raw_decode
 *graalpython.lib-python.3.test.test_codecs.UnicodeEscapeTest.test_raw_encode
 *graalpython.lib-python.3.test.test_codecs.UnicodeEscapeTest.test_readline
 *graalpython.lib-python.3.test.test_codecs.UnicodeEscapeTest.test_readlinequeue
