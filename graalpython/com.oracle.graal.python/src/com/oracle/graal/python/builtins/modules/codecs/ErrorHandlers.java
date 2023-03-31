@@ -813,19 +813,20 @@ public final class ErrorHandlers {
     @GenerateInline
     @GenerateCached(false)
     abstract static class ParseDecodingErrorHandlerResultNode extends Node {
-        abstract DecodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, Object result);
+        abstract DecodingErrorHandlerResult execute(VirtualFrame frame, Node node, Object result);
 
         @Specialization
-        static DecodingErrorHandlerResult doTuple(Node inliningTarget, PTuple result,
-                        @Cached(inline = false) SequenceNodes.LenNode lenNode,
-                        @Cached(inline = false) SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+        static DecodingErrorHandlerResult doTuple(Node node, PTuple result,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached(inline = false) CastToTruffleStringCheckedNode castToTruffleStringCheckedNode,
                         @Cached(inline = false) CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached @Shared("raiseNode") PRaiseNode.Lazy raiseNode) {
-            if (lenNode.execute(result) != 2) {
+            if (lenNode.execute(inliningTarget, result) != 2) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
             }
-            Object[] array = getObjectArrayNode.execute(result);
+            Object[] array = getObjectArrayNode.execute(inliningTarget, result);
             TruffleString str = castToTruffleStringCheckedNode.cast(array[0], ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
             int pos = castToJavaIntExactNode.execute(array[1]);
             return new DecodingErrorHandlerResult(str, pos);
@@ -883,20 +884,21 @@ public final class ErrorHandlers {
     @GenerateInline
     @GenerateCached(false)
     abstract static class ParseEncodingErrorHandlerResultNode extends Node {
-        abstract EncodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, Object result);
+        abstract EncodingErrorHandlerResult execute(VirtualFrame frame, Node node, Object result);
 
         @Specialization
-        static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, PTuple result,
-                        @Cached(inline = false) SequenceNodes.LenNode lenNode,
-                        @Cached(inline = false) SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+        static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node node, PTuple result,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached(inline = false) CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached(inline = false) PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached(inline = false) PyBytesCheckNode pyBytesCheckNode,
                         @Cached @Shared PRaiseNode.Lazy raiseNode) {
-            if (lenNode.execute(result) != 2) {
+            if (lenNode.execute(inliningTarget, result) != 2) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
-            Object[] array = getObjectArrayNode.execute(result);
+            Object[] array = getObjectArrayNode.execute(inliningTarget, result);
             boolean isUnicode;
             if (pyUnicodeCheckNode.execute(array[0])) {
                 isUnicode = true;
