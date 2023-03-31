@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArra
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -292,12 +293,14 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         @TruffleBoundary
         static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
-            // create wrapper descriptor
-            Object wrapperDescriptor = CreateFunctionNodeGen.getUncached().execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
-            WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
+            if (!HashingStorageGetItem.hasKeyUncached(tpDict.getDictStorage(), memberName)) {
+                // create wrapper descriptor
+                Object wrapperDescriptor = CreateFunctionNodeGen.getUncached().execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
+                WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
-            // add wrapper descriptor to tp_dict
-            PyDictSetItem.executeUncached(tpDict, memberName, wrapperDescriptor);
+                // add wrapper descriptor to tp_dict
+                PyDictSetItem.executeUncached(tpDict, memberName, wrapperDescriptor);
+            }
             return 0;
         }
     }

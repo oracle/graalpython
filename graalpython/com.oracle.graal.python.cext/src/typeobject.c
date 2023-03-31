@@ -178,34 +178,19 @@ void PyType_Modified(PyTypeObject* type) {
 static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
 
     /* Copying basicsize is connected to the GC flags */
-	unsigned long flags = PyTypeObject_tp_flags(type);
-	unsigned long base_flags = PyTypeObject_tp_flags(base);
+    unsigned long flags = PyTypeObject_tp_flags(type);
+    unsigned long base_flags = PyTypeObject_tp_flags(base);
     if (!(flags & Py_TPFLAGS_HAVE_GC) &&
         (base_flags & Py_TPFLAGS_HAVE_GC) &&
         (!PyTypeObject_tp_traverse(type) && !PyTypeObject_tp_clear(type))) {
-    	flags |= Py_TPFLAGS_HAVE_GC;
+
+        flags |= Py_TPFLAGS_HAVE_GC;
         if (PyTypeObject_tp_traverse(type) == NULL)
             set_PyTypeObject_tp_traverse(type, PyTypeObject_tp_traverse(base));
         if (PyTypeObject_tp_clear(type) == NULL)
-        	set_PyTypeObject_tp_clear(type, PyTypeObject_tp_clear(base));
+            set_PyTypeObject_tp_clear(type, PyTypeObject_tp_clear(base));
     }
-    {
-        /* The condition below could use some explanation.
-           It appears that tp_new is not inherited for static types
-           whose base class is 'object'; this seems to be a precaution
-           so that old extension types don't suddenly become
-           callable (object.__new__ wouldn't insure the invariants
-           that the extension type's own factory function ensures).
-           Heap types, of course, are under our control, so they do
-           inherit tp_new; static extension types that specify some
-           other built-in type as the default also
-           inherit object.__new__. */
-        if (base != &PyBaseObject_Type ||
-            (flags & Py_TPFLAGS_HEAPTYPE)) {
-            if (PyTypeObject_tp_new(type) == NULL)
-            	set_PyTypeObject_tp_new(type, PyTypeObject_tp_new(base)) ;
-        }
-    }
+
     /* Copy other non-function slots */
 
 #undef COPYVAL
@@ -238,7 +223,7 @@ static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
         flags |= _Py_TPFLAGS_MATCH_SELF;
 
     if (flags != PyTypeObject_tp_flags(type)) {
-    	set_PyTypeObject_tp_flags(type, flags);
+        set_PyTypeObject_tp_flags(type, flags);
     }
 }
 
@@ -372,13 +357,55 @@ static void add_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* m
     }
 }
 
-#define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__)     \
+#define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__) \
     add_member((__javacls__), (__tpdict__), (__mname__), (__mtype__), (__moffset__), (__mflags__), (__mdoc__))
 
 
-#define ADD_GETSET(__javacls__, __tpdict__, __name__, __getter__, __setter__, __doc__, __closure__)     \
+#define ADD_GETSET(__javacls__, __tpdict__, __name__, __getter__, __setter__, __doc__, __closure__) \
     add_getset((__javacls__), (__tpdict__), (__name__), (__getter__), (__setter__), (__doc__), (__closure__))
 
+// Set tp_new and the "__new__" key in the type dictionary.
+// Use the Py_TPFLAGS_DISALLOW_INSTANTIATION flag.
+static int
+type_ready_set_new(PyTypeObject *type, PyObject *dict, PyTypeObject *base)
+{
+    /* The condition below could use some explanation.
+
+       It appears that tp_new is not inherited for static types whose base
+       class is 'object'; this seems to be a precaution so that old extension
+       types don't suddenly become callable (object.__new__ wouldn't insure the
+       invariants that the extension type's own factory function ensures).
+
+       Heap types, of course, are under our control, so they do inherit tp_new;
+       static extension types that specify some other built-in type as the
+       default also inherit object.__new__. */
+    newfunc tp_new = PyTypeObject_tp_new(type);
+    unsigned long tp_flags = PyTypeObject_tp_flags(type);
+    if (tp_new == NULL
+        && base == &PyBaseObject_Type
+        && !(tp_flags & Py_TPFLAGS_HEAPTYPE))
+    {
+        set_PyTypeObject_tp_flags(type, tp_flags |= Py_TPFLAGS_DISALLOW_INSTANTIATION);
+    }
+
+    if (!(type->tp_flags & Py_TPFLAGS_DISALLOW_INSTANTIATION)) {
+        if (tp_new != NULL) {
+            // If "__new__" key does not exists in the type dictionary,
+            // set it to tp_new_wrapper().
+            add_slot(type, dict, "__new__", tp_new, METH_KEYWORDS | METH_VARARGS, JWRAPPER_NEW, NULL);
+        }
+        else {
+            // tp_new is NULL: inherit tp_new from base
+            set_PyTypeObject_tp_new(type, PyTypeObject_tp_new(base)) ;
+        }
+    }
+    else {
+        // Py_TPFLAGS_DISALLOW_INSTANTIATION sets tp_new to NULL
+        // not supported yet
+        // set_PyTypeObject_tp_new(type, NULL) ;
+    }
+    return 0;
+}
 
 int PyType_Ready(PyTypeObject* cls) {
 #define RETURN_ERROR(__type__) \
@@ -388,7 +415,7 @@ int PyType_Ready(PyTypeObject* cls) {
         return -1; \
 	} while(0)
 
-#define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
+#define ADD_IF_MISSING(OBJ, SLOT, VAL) if (!(PyTypeObject_##SLOT(OBJ))) { set_PyTypeObject_##SLOT((OBJ), (VAL)); }
 #define ADD_SLOT_CONV(__name__, __meth__, __flags__, __signature__) add_slot(cls, dict, (__name__), (__meth__), (__flags__), (__signature__), NULL)
 
     Py_ssize_t n;
@@ -507,24 +534,10 @@ int PyType_Ready(PyTypeObject* cls) {
     PyObject* mro = GraalPyTruffle_Compute_Mro(cls, truffleString(cls->tp_name));
     set_PyTypeObject_tp_mro(cls, mro);
 
-    /* Inherit special flags from dominant base */
-    if (base != NULL)
-        inherit_special(cls, base);
+    /* set new */
+    type_ready_set_new(cls, dict, base);
 
-    /* Initialize tp_dict properly */
-    bases = mro;
-    assert(bases != NULL);
-    assert(PyTuple_Check(bases));
-    n = PyTuple_GET_SIZE(bases);
-    for (i = 1; i < n; i++) {
-        PyObject *b = PyTuple_GET_ITEM(bases, i);
-        if (PyType_Check(b))
-            inherit_slots(cls, (PyTypeObject *)b);
-    }
-
-    ADD_IF_MISSING(cls->tp_alloc, PyType_GenericAlloc);
-    ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
-
+    /* fill dict */
     // add special methods defined directly on the type structs
     ADD_SLOT_CONV("__dealloc__", cls->tp_dealloc, -1, JWRAPPER_DIRECT);
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
@@ -563,7 +576,9 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT_CONV("__set__", cls->tp_descr_set, -3, JWRAPPER_DESCR_SET);
     ADD_SLOT_CONV("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS, JWRAPPER_INITPROC);
     ADD_SLOT_CONV("__alloc__", cls->tp_alloc, -2, JWRAPPER_ALLOC);
-    ADD_SLOT_CONV("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS, JWRAPPER_NEW);
+    /* Note: '__new__' was added here previously but we don't do it similar to CPython.
+       They also skip it because the appropriate 'slotdef' doesn't have a wrapper.
+       Adding '__new__' is done by function 'type_ready_set_new'. */
     ADD_SLOT_CONV("__free__", cls->tp_free, -1, JWRAPPER_DIRECT);
     ADD_SLOT_CONV("__del__", cls->tp_del, -1, JWRAPPER_DIRECT);
     ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
@@ -654,6 +669,22 @@ int PyType_Ready(PyTypeObject* cls) {
     if (buffers) {
         // TODO ...
     }
+
+    /* Inherit slots */
+    if (base != NULL)
+        inherit_special(cls, base);
+    bases = mro;
+    assert(bases != NULL);
+    assert(PyTuple_Check(bases));
+    n = PyTuple_GET_SIZE(bases);
+    for (i = 1; i < n; i++) {
+        PyObject *b = PyTuple_GET_ITEM(bases, i);
+        if (PyType_Check(b))
+            inherit_slots(cls, (PyTypeObject *)b);
+    }
+
+    ADD_IF_MISSING(cls, tp_alloc, PyType_GenericAlloc);
+    ADD_IF_MISSING(cls, tp_new, PyType_GenericNew);
 
     // process inherited slots
     // CPython doesn't do that in 'PyType_Ready' but we must because a native type can inherit
