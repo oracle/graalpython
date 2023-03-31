@@ -445,15 +445,6 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
-    public void increaseMemoryPressure(long size, Node node) {
-        PythonContext context = getContext();
-        if (allocatedMemory <= context.getOption(PythonOptions.MaxNativeMemory)) {
-            allocatedMemory += size;
-            return;
-        }
-        triggerGC(context, size, node);
-    }
-
     public void increaseMemoryPressure(VirtualFrame frame, GetThreadStateNode getThreadStateNode, IndirectCallNode caller, long size) {
         PythonContext context = getContext();
         if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
