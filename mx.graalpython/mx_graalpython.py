@@ -1211,7 +1211,7 @@ def graalpython_gate_runner(args, tasks):
                 tmpmain = os.path.join(tmpdir, "main.py")
                 with open(tmpmain, "w") as f:
                     f.write("print('hello standalone')")
-                mx.run([svm_image, "-m", "py2bin", tmpstandalone, tmpmain])
+                mx.run([svm_image, "-m", "py2bin", "java", tmpstandalone, tmpmain])
                 mx.run_maven(["-Pjar", "package"], cwd=tmpstandalone) # should compile without GraalVM
                 mx.run_maven(
                     ["-Pnative", "package"],
@@ -1221,6 +1221,19 @@ def graalpython_gate_runner(args, tasks):
                 out = mx.OutputCapture()
                 mx.run(
                     [os.path.join(tmpstandalone, "target", "py2binlauncher")],
+                    nonZeroIsFatal=True,
+                    env={"PYTHONVERBOSE": "1"},
+                    out=mx.TeeOutputCapture(out),
+                    err=mx.TeeOutputCapture(out),
+                )
+                if "hello standalone" not in out.data:
+                    mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+                assert "Using preinitialized context." in out.data
+
+                mx.run([svm_image, "-m", "py2bin", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), tmpstandalone, tmpmain])
+                out = mx.OutputCapture()
+                mx.run(
+                    [os.path.join(tmpdir, "directlauncher")],
                     nonZeroIsFatal=True,
                     env={"PYTHONVERBOSE": "1"},
                     out=mx.TeeOutputCapture(out),
