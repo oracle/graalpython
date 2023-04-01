@@ -538,6 +538,12 @@ int PyType_Ready(PyTypeObject* cls) {
     type_ready_set_new(cls, dict, base);
 
     /* fill dict */
+
+    /*
+     * NOTE: ADD_SLOT_CONV won't overwrite existing attributes, so the order is crucial and must
+     * reflect CPython's 'slotdefs' array.
+     */
+
     // add special methods defined directly on the type structs
     ADD_SLOT_CONV("__dealloc__", cls->tp_dealloc, -1, JWRAPPER_DIRECT);
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
@@ -583,20 +589,7 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT_CONV("__del__", cls->tp_del, -1, JWRAPPER_DIRECT);
     ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
 
-    PySequenceMethods* sequences = PyTypeObject_tp_as_sequence(cls);
-    if (sequences) {
-    	// sequence functions first, so that the number functions take precendence
-        ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
-        ADD_SLOT_CONV("__add__", sequences->sq_concat, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__mul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__getitem__", sequences->sq_item, -2, JWRAPPER_GETITEM);
-        ADD_SLOT_CONV("__setitem__", sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
-        ADD_SLOT_CONV("__delitem__", sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
-        ADD_SLOT_CONV("__contains__", sequences->sq_contains, -2, JWRAPPER_OBJOBJPROC);
-        ADD_SLOT_CONV("__iadd__", sequences->sq_inplace_concat, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
-    }
-
+    // 'tp_as_number' takes precedence over 'tp_as_mapping' and 'tp_as_sequence' !
     PyNumberMethods* numbers = PyTypeObject_tp_as_number(cls);
     if (numbers) {
         ADD_SLOT_CONV("__add__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_L);
@@ -650,12 +643,27 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__imatmul__", numbers->nb_inplace_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
     }
 
+    // 'tp_as_mapping' takes precedence over 'tp_as_sequence' !
     PyMappingMethods* mappings = PyTypeObject_tp_as_mapping(cls);
     if (mappings) {
         ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
         ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
         ADD_SLOT_CONV("__setitem__", mappings->mp_ass_subscript, -3, JWRAPPER_OBJOBJARGPROC);
         ADD_SLOT_CONV("__delitem__", mappings->mp_ass_subscript, -3, JWRAPPER_MP_DELITEM);
+    }
+
+    PySequenceMethods* sequences = PyTypeObject_tp_as_sequence(cls);
+    if (sequences) {
+        // sequence functions first, so that the number functions take precendence
+        ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
+        ADD_SLOT_CONV("__add__", sequences->sq_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__mul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__getitem__", sequences->sq_item, -2, JWRAPPER_GETITEM);
+        ADD_SLOT_CONV("__setitem__", sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
+        ADD_SLOT_CONV("__delitem__", sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
+        ADD_SLOT_CONV("__contains__", sequences->sq_contains, -2, JWRAPPER_OBJOBJPROC);
+        ADD_SLOT_CONV("__iadd__", sequences->sq_inplace_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
     }
 
     PyAsyncMethods* async = PyTypeObject_tp_as_async(cls);

@@ -741,6 +741,42 @@ class TestObject(object):
         x = X()
         assert x.foo == "foo"
 
+    def test_slot_precedence(self):
+        MapAndSeq = CPyExtType("MapAndSeq",
+                               '''
+                               static PyObject * mas_nb_add(PyObject *self, PyObject *other) {
+                                   return PyUnicode_FromString("mas_nb_add");
+                               }
+                               static Py_ssize_t mas_sq_length(PyObject *self) {
+                                   return 111;
+                               }
+                               static PyObject *mas_sq_item(PyObject *self, Py_ssize_t idx) {
+                                   return PyUnicode_FromString("sq_item");
+                               }
+                               static PyObject * mas_sq_concat(PyObject *self, PyObject *other) {
+                                   return PyUnicode_FromString("mas_sq_concat");
+                               }
+                               static Py_ssize_t mas_mp_length(PyObject *self) {
+                                   return 222;
+                               }
+                               static PyObject * mas_mp_subscript(PyObject *self, PyObject *key) {
+                                   return PyUnicode_FromString("mp_subscript");
+                               }
+                               ''',
+                               nb_add='mas_nb_add',
+                               sq_length='mas_sq_length',
+                               sq_item='mas_sq_item',
+                               sq_concat='mas_sq_concat',
+                               mp_length='mas_mp_length',
+                               mp_subscript='mas_mp_subscript',
+                               )
+        obj = MapAndSeq()
+        # Note: len(obj) uses 'PyObject_Lenght' which does not use the attribute but first tries
+        # 'sq_length' and falls back to 'mp_length'. Therefore, we just look at '__len__' here.
+        assert obj.__len__() == 222
+        assert obj['hello'] == 'mp_subscript'
+        assert obj + 'hello' == 'mas_nb_add'
+
 
 class CBytes: 
     def __bytes__(self):
