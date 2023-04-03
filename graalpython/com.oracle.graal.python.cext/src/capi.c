@@ -2041,6 +2041,10 @@ PyAPI_FUNC(int) PyThread_acquire_lock(PyThread_type_lock a, int b) {
 PyAPI_FUNC(PyThread_type_lock) PyThread_allocate_lock() {
     return GraalPyThread_allocate_lock();
 }
+#undef PyThread_get_thread_ident
+PyAPI_FUNC(unsigned long) PyThread_get_thread_ident() {
+    return GraalPyThread_get_thread_ident();
+}
 #undef PyThread_release_lock
 PyAPI_FUNC(void) PyThread_release_lock(PyThread_type_lock a) {
     GraalPyThread_release_lock(a);

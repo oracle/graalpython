@@ -3854,9 +3854,8 @@ PyAPI_FUNC(void*) PyThread_get_key_value(int a) {
 PyAPI_FUNC(size_t) PyThread_get_stacksize() {
     unimplemented("PyThread_get_stacksize"); exit(-1);
 }
-unsigned long (*__target__PyThread_get_thread_ident)() = NULL;
 PyAPI_FUNC(unsigned long) PyThread_get_thread_ident() {
-    unsigned long result = (unsigned long) __target__PyThread_get_thread_ident();
+    unsigned long result = (unsigned long) GraalPyThread_get_thread_ident();
     return result;
 }
 PyAPI_FUNC(unsigned long) PyThread_get_thread_native_id() {
@@ -6318,7 +6317,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyThreadState_Clear = getAPI("PyThreadState_Clear");
     __target__PyThreadState_DeleteCurrent = getAPI("PyThreadState_DeleteCurrent");
     __target__PyThread_free_lock = getAPI("PyThread_free_lock");
-    __target__PyThread_get_thread_ident = getAPI("PyThread_get_thread_ident");
     __target__PyThread_tss_alloc = getAPI("PyThread_tss_alloc");
     __target__PyThread_tss_create = getAPI("PyThread_tss_create");
     __target__PyThread_tss_delete = getAPI("PyThread_tss_delete");
