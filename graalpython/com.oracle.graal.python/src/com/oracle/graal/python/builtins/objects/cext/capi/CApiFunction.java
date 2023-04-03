@@ -610,7 +610,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyStructSequence_InitType2", ret = Int, args = {PyTypeObject, PY_STRUCT_SEQUENCE_DESC}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyStructSequence_NewType", ret = PyTypeObject, args = {PY_STRUCT_SEQUENCE_DESC}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyStructSequence_SetItem", ret = Void, args = {PyObject, Py_ssize_t, PyObject}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyThread_get_thread_ident", ret = UNSIGNED_LONG, args = {}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyThread_free_lock", ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyThread_tss_alloc", ret = PY_TSS_T_PTR, args = {}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyThread_tss_create", ret = Int, args = {PY_TSS_T_PTR}, call = PolyglotImpl)
