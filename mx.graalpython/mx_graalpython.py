@@ -1831,6 +1831,9 @@ def _python_checkpatchfiles():
             'scipy-1.8.1.patch',
             'scipy-1.9.1.patch',
             'scipy-1.10.0.patch',
+            # pandas puts the whole license text in the field. Its BSD-3-Clause
+            'pandas-1.4.3.patch',
+            'pandas-1.5.2.patch',
             # Empty license field, skip it. It's MIT
             'setuptools-60.patch',
             'setuptools-60.9.patch',
