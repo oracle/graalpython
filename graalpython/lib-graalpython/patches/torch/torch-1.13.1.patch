@@ -1,0 +1,258 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e2e1f694..870ef417 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -155,7 +155,7 @@ endif()
+ # Note to developers: if you add an option below, make sure you also add it to
+ # cmake/Summary.cmake so that the summary prints out the option values.
+ include(CMakeDependentOption)
+-option(ATEN_NO_TEST "Do not build ATen test binaries" OFF)
++option(ATEN_NO_TEST "Do not build ATen test binaries" ON)
+ option(BUILD_BINARY "Build C++ binaries" OFF)
+ option(BUILD_DOCS "Build Caffe2 documentation" OFF)
+ option(BUILD_CUSTOM_PROTOBUF "Build and use Caffe2's own protobuf under third_party" ON)
+diff --git a/functorch/csrc/dim/dim.cpp b/functorch/csrc/dim/dim.cpp
+index abdebc24..4f235d66 100644
+--- a/functorch/csrc/dim/dim.cpp
++++ b/functorch/csrc/dim/dim.cpp
+@@ -6,7 +6,7 @@
+ 
+ #include "minpybind.h"
+ #include <frameobject.h>
+-#include <opcode.h>
++// #include <opcode.h>
+ #include <utility>
+ #include <new>
+ #include <iostream>
+@@ -1304,7 +1304,7 @@ static py::object __torch_function__(Arena &A, py::handle orig, py::vector_args
+ }
+ 
+ py::vector_args as_vector_args(Arena& A, py::handle args, py::handle kwargs) {
+-    auto pos_args = (py::handle*) &PyTuple_GET_ITEM(args.ptr(), 0);
++    auto pos_args = (py::handle*) PySequence_Fast_ITEMS(args.ptr());
+     auto pos_n = PyTuple_GET_SIZE(args.ptr());
+     if (!kwargs.ptr()) {
+         return py::vector_args(pos_args, pos_n, nullptr);
+@@ -1421,6 +1421,7 @@ PyTypeObject Tensor::Type = {
+ 
+ // dim() --------------------
+ 
++/*
+ bool relevant_op(_Py_CODEUNIT c) {
+     switch(_Py_OPCODE(c)) {
+         case STORE_NAME:
+@@ -1459,6 +1460,7 @@ py::object getname(PyCodeObject* code, _Py_CODEUNIT c) {
+     }
+     return py::object::steal(PySequence_GetItem(names, _Py_OPARG(c)));
+ }
++*/
+ 
+ py::object create_dim(py::object name, py::handle size) {
+     auto d = Dim::create(std::move(name));
+@@ -1515,6 +1517,7 @@ static PyObject* _dims(PyObject *self,
+         }
+     }
+ 
++    /*
+     PyThreadState* state = PyThreadState_GET();
+     auto f = py::obj<PyFrameObject>::steal(PyThreadState_GetFrame(state));
+     auto c = py::obj<PyCodeObject>::steal(PyFrame_GetCode(f.ptr()));
+@@ -1532,10 +1535,12 @@ static PyObject* _dims(PyObject *self,
+         found_ndims = _Py_OPARG(unpack);
+         names_start++;
+     }
++    */
+ 
+     if (specified_ndims == -1) {
+         if (found_ndims == 0) {
+-            py::raise_error(PyExc_SyntaxError, "dims() must be assigned to a sequence of variable names or have argument n specified");
++            // GraalPy change
++            py::raise_error(PyExc_SyntaxError, "dims() without arguments doesn't work on GraalPy, use the explicit dims(number) form");
+         }
+         specified_ndims = found_ndims;
+     }
+@@ -1545,9 +1550,11 @@ static PyObject* _dims(PyObject *self,
+ 
+     auto genobject = [&](int i) -> py::object {
+         py::object name;
++        /*
+         if (i < found_ndims) {
+             name = getname(c.ptr(), code[names_start + i]);
+         }
++        */
+         if (!name.ptr()) {
+             name = py::unicode_from_format("d%d", i);
+             found_ndims = 0; // once we fail at finding a name, we can find any more
+@@ -2004,12 +2011,12 @@ struct IndexingInfo {
+ };
+ 
+ static Slice<py::handle> as_slice(py::tuple_view tv) {
+-    PyObject** begin = &PyTuple_GET_ITEM(tv.ptr(),0);
++    PyObject** begin = PySequence_Fast_ITEMS(tv.ptr());
+     return Slice<py::handle>((py::handle*)begin, (py::handle*) (begin + tv.size()));
+ }
+ 
+ static Slice<py::handle> as_slice(py::list_view tv) {
+-    PyObject** begin = &PyList_GET_ITEM(tv.ptr(),0);
++    PyObject** begin = PySequence_Fast_ITEMS(tv.ptr());
+     return Slice<py::handle>((py::handle*)begin, (py::handle*) (begin + tv.size()));
+ }
+ 
+diff --git a/setup.py b/setup.py
+index 2ef8b7f2..1f4efd70 100644
+--- a/setup.py
++++ b/setup.py
+@@ -244,6 +244,8 @@ from tools.generate_torch_version import get_torch_version
+ # Parameters parsed from environment
+ ################################################################################
+ 
++os.environ['BUILD_TEST'] = os.environ.get('BUILD_TEST', '0')
++
+ VERBOSE_SCRIPT = True
+ RUN_BUILD_DEPS = True
+ # see if the user passed a quiet flag to setup.py arguments and respect
+@@ -312,7 +314,8 @@ cmake_python_include_dir = sysconfig.get_path("include")
+ ################################################################################
+ package_name = os.getenv('TORCH_PACKAGE_NAME', 'torch')
+ package_type = os.getenv('PACKAGE_TYPE', 'wheel')
+-version = get_torch_version()
++#version = get_torch_version()
++version = '1.13.1'
+ report("Building wheel {}-{}".format(package_name, version))
+ 
+ cmake = CMake()
+diff --git a/third_party/fbgemm/CMakeLists.txt b/third_party/fbgemm/CMakeLists.txt
+index 58dcb9ae..b0ad68aa 100644
+--- a/third_party/fbgemm/CMakeLists.txt
++++ b/third_party/fbgemm/CMakeLists.txt
+@@ -144,7 +144,7 @@ if(MSVC)
+ else(MSVC)
+   string(APPEND CMAKE_CXX_FLAGS " -Wall")
+   string(APPEND CMAKE_CXX_FLAGS " -Wextra")
+-  string(APPEND CMAKE_CXX_FLAGS " -Werror")
++  #string(APPEND CMAKE_CXX_FLAGS " -Werror")
+   string(APPEND CMAKE_CXX_FLAGS " -Wno-deprecated-declarations")
+   target_compile_options(fbgemm_avx2 PRIVATE
+     "-m64" "-mavx2" "-mf16c" "-mfma")
+diff --git a/third_party/gloo/gloo/common/linux.cc b/third_party/gloo/gloo/common/linux.cc
+index c5e6c887..423de67b 100644
+--- a/third_party/gloo/gloo/common/linux.cc
++++ b/third_party/gloo/gloo/common/linux.cc
+@@ -193,8 +193,8 @@ static int getInterfaceSpeedGLinkSettings(int sock, struct ifreq* ifr) {
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+   constexpr auto link_mode_data_nwords = 3 * 127;
+   struct {
+-    struct ethtool_link_settings req;
+     __u32 link_mode_data[link_mode_data_nwords];
++    struct ethtool_link_settings req;
+   } ecmd;
+   int rv;
+ 
+diff --git a/third_party/gloo/gloo/transport/pair.h b/third_party/gloo/gloo/transport/pair.h
+index e14d9cec..6de25a42 100644
+--- a/third_party/gloo/gloo/transport/pair.h
++++ b/third_party/gloo/gloo/transport/pair.h
+@@ -8,6 +8,7 @@
+ 
+ #pragma once
+ 
++#include <array>
+ #include <memory>
+ 
+ #include "gloo/common/logging.h"
+diff --git a/third_party/gloo/gloo/transport/tcp/device.h b/third_party/gloo/gloo/transport/tcp/device.h
+index 6abbceab..ef0ffcab 100644
+--- a/third_party/gloo/gloo/transport/tcp/device.h
++++ b/third_party/gloo/gloo/transport/tcp/device.h
+@@ -8,6 +8,7 @@
+ 
+ #pragma once
+ 
++#include <array>
+ #include <atomic>
+ #include <condition_variable>
+ #include <memory>
+diff --git a/third_party/pybind11/include/pybind11/gil.h b/third_party/pybind11/include/pybind11/gil.h
+index a0b5de15..5a1f0c64 100644
+--- a/third_party/pybind11/include/pybind11/gil.h
++++ b/third_party/pybind11/include/pybind11/gil.h
+@@ -21,7 +21,7 @@ PyThreadState *get_thread_state_unchecked();
+ 
+ PYBIND11_NAMESPACE_END(detail)
+ 
+-#if defined(WITH_THREAD) && !defined(PYPY_VERSION)
++#if defined(WITH_THREAD) && !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+ 
+ /* The functions below essentially reproduce the PyGILState_* API using a RAII
+  * pattern, but there are a few important differences:
+@@ -172,7 +172,7 @@ private:
+     bool disassoc;
+     bool active = true;
+ };
+-#elif defined(PYPY_VERSION)
++#elif defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+ class gil_scoped_acquire {
+     PyGILState_STATE state;
+ 
+diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
+index 8e1ca3b1..b150ac3f 100644
+--- a/torch/csrc/Module.cpp
++++ b/torch/csrc/Module.cpp
+@@ -257,50 +257,14 @@ PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
+     doc_str = all_docs.back().c_str();
+   }
+ 
+-  if (Py_TYPE(obj) == &PyCFunction_Type) {
+-    PyCFunctionObject* f = (PyCFunctionObject*)obj;
+-    if (PyObject_GetDoc((PyObject*)(f))) {
+-      return PyErr_Format(
+-          PyExc_RuntimeError,
+-          "function '%s' already has a docstring",
+-          f->m_ml->ml_name);
+-    }
+-    PyObject_SetDoc((PyObject*)(f), doc_str);
+-  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {
+-    PyMethodDescrObject* m = (PyMethodDescrObject*)obj;
+-    if (m->d_method->ml_doc) {
+-      return PyErr_Format(
+-          PyExc_RuntimeError,
+-          "method '%s' already has a docstring",
+-          m->d_method->ml_name);
+-    }
+-    m->d_method->ml_doc = doc_str;
+-  } else if (strcmp(Py_TYPE(obj)->tp_name, "getset_descriptor") == 0) {
+-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
+-    PyGetSetDescrObject* m = (PyGetSetDescrObject*)obj;
+-    if (m->d_getset->doc) {
+-      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+-      return PyErr_Format(
+-          PyExc_RuntimeError,
+-          "attribute '%s' already has a docstring",
+-          m->d_getset->name);
+-    }
+-    // This field is not const for python < 3.7 yet the content is
+-    // never modified.
+-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+-    m->d_getset->doc = const_cast<char*>(doc_str);
+-  } else if (Py_TYPE(obj) == &PyType_Type) {
+-    PyTypeObject* t = (PyTypeObject*)obj;
+-    if (t->tp_doc) {
+-      return PyErr_Format(
+-          PyExc_RuntimeError, "Type '%s' already has a docstring", t->tp_name);
+-    }
+-    t->tp_doc = doc_str;
+-  } else {
++  if (PyObject_GetDoc(obj)) {
+     return PyErr_Format(
+-        PyExc_TypeError,
+-        "don't know how to add docstring to type '%s'",
+-        Py_TYPE(obj)->tp_name);
++        PyExc_RuntimeError,
++        "object '%100R' already has a docstring",
++        obj);
++  }
++  if (PyObject_SetDoc(obj, doc_str) < 0) {
++      return NULL;
+   }
+ 
+   Py_INCREF(obj);
