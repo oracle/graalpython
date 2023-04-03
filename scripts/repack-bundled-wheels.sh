@@ -72,6 +72,7 @@ patch_wheel() {
     rm ../tmp.whl
     patch -p1 < "../$patch"
     echo 'Marker file for GraalPy' > "$name/.graalpy_bundled"
+    rm "../$wheel"
     zip -r "../$wheel" .
     rm -rf "$tmpdir"
 }
