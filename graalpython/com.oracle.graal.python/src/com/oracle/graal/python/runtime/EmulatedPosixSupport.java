@@ -1943,6 +1943,19 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public long getgid() {
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            String osName = System.getProperty("os.name");
+            if (osName.contains("Linux")) {
+                return new UnixSystem().getGid();
+            }
+        }
+        return 1000;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public long getppid() {
         throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
     }

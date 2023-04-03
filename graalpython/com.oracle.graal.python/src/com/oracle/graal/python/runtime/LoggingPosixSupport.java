@@ -795,6 +795,13 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getgid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getgid", "");
+        return logExit("getgid", "%d", lib.getgid(delegate));
+    }
+
+    @ExportMessage
     final long getppid(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("getppid", "");
