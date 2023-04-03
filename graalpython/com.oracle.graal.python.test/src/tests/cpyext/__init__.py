@@ -49,6 +49,15 @@ __dir__ = __file__.rpartition("/")[0]
 GRAALPYTHON = sys.implementation.name == "graalpy"
 
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
 def unhandled_error_compare(x, y):
     if (isinstance(x, BaseException) and isinstance(y, BaseException)):
         return type(x) == type(y)
@@ -552,6 +561,11 @@ def CPyExtType(name, code, **kwargs):
         {{NULL, NULL, 0, NULL}}
     }};
 
+    static struct PyGetSetDef {name}_getset[] = {{
+        """ + ("""{tp_getset},""" if "tp_getset" in kwargs else "") + """
+        {{NULL, NULL, NULL, NULL, NULL}}
+    }};
+
     static struct PyMemberDef {name}_members[] = {{
         """ + ("""{tp_members},""" if "tp_members" in kwargs else "") + """
         {{NULL, 0, 0, 0, NULL}}
@@ -587,7 +601,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_iternext},              /* tp_iternext */
         {name}_methods,             /* tp_methods */
         {name}_members,             /* tp_members */
-        0,                          /* tp_getset */
+        {name}_getset,              /* tp_getset */
         {tp_base},                  /* tp_base */
         {tp_dict},                  /* tp_dict */
         {tp_descr_get},             /* tp_descr_get */

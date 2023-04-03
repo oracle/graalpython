@@ -155,7 +155,7 @@ public class InstancemethodBuiltins extends PythonBuiltins {
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Specialization
         protected static Object doIt(VirtualFrame frame, PDecoratedMethod self, Object[] arguments, PKeyword[] keywords,
-                        @Cached CallNode callNode) {
+                        @Cached com.oracle.graal.python.nodes.call.CallNode callNode) {
             return callNode.execute(frame, self.getCallable(), arguments, keywords);
         }
 

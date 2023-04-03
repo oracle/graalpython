@@ -39,7 +39,7 @@
 
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare, assert_raises
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -369,6 +369,9 @@ class TestObject(object):
         
         obj.__dict__["newAttr"] = 123
         assert obj.newAttr == 123, "invalid attr"
+
+        obj.__dict__ = {'a': 1}
+        assert obj.a == 1
 
     def ignore_test_float_subclass(self):
         TestFloatSubclass = CPyExtType("TestFloatSubclass",
@@ -740,6 +743,84 @@ class TestObject(object):
             b = 2
         x = X()
         assert x.foo == "foo"
+
+    def test_getset(self):
+        TestGetter = CPyExtType(
+            "TestGetter",
+            """
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                return PyUnicode_FromString("getter");
+            }
+            """,
+            tp_getset='{"foo", foo_getter, (setter)NULL, NULL, NULL}',
+        )
+        obj = TestGetter()
+        assert obj.foo == 'getter'
+
+        def call_set():
+            obj.foo = 'set'
+
+        assert_raises(AttributeError, call_set)
+
+        TestSetter = CPyExtType(
+            "TestSetter",
+            """
+            static int state;
+
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                if (state == 0)
+                    return PyUnicode_FromString("unset");
+                else
+                    return PyUnicode_FromString("set");
+            }
+
+            static int foo_setter(PyObject* self, PyObject* val, void* unused) {
+                state = val != NULL;
+                return 0;
+            }
+            """,
+            tp_getset='{"foo", foo_getter, (setter)foo_setter, NULL, NULL}',
+        )
+        obj = TestSetter()
+        assert obj.foo == 'unset'
+        obj.foo = 'asdf'
+        assert obj.foo == 'set'
+        del obj.foo
+        assert obj.foo == 'unset'
+
+    def test_member_kind_precedence(self):
+        TestWithConflictingMember1 = CPyExtType(
+            "TestWithConflictingMember1",
+            """
+            static PyObject* foo_method(PyObject* self, PyObject* unused) {
+                return PyUnicode_FromString("method");
+            }
+
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                return PyUnicode_FromString("getter");
+            }
+            """,
+            cmembers="PyObject* foo_member;",
+            tp_members='{"foo", T_OBJECT, offsetof(TestWithConflictingMember1Object, foo_member), 0, NULL}',
+            tp_methods='{"foo", foo_method, METH_NOARGS, ""}',
+            tp_getset='{"foo", foo_getter, (setter)NULL, NULL, NULL}',
+        )
+        obj = TestWithConflictingMember1()
+        assert obj.foo() == 'method'
+
+        TestWithConflictingMember2 = CPyExtType(
+            "TestWithConflictingMember2",
+            """
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                return PyUnicode_FromString("getter");
+            }
+            """,
+            cmembers="PyObject* foo_member;",
+            tp_members='{"foo", T_OBJECT, offsetof(TestWithConflictingMember2Object, foo_member), 0, NULL}',
+            tp_getset='{"foo", foo_getter, (setter)NULL, NULL, NULL}',
+        )
+        obj = TestWithConflictingMember2()
+        assert obj.foo is None  # The member takes precedence
 
     def test_slot_precedence(self):
         MapAndSeq = CPyExtType("MapAndSeq",

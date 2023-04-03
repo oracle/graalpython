@@ -959,6 +959,11 @@ public abstract class ExternalFunctionNodes {
             return true;
         }
 
+        @Override
+        public boolean isInternal() {
+            return true;
+        }
+
         protected final Object readSelf(VirtualFrame frame) {
             if (readSelfNode != null) {
                 return readSelfNode.execute(frame);
@@ -2199,6 +2204,7 @@ public abstract class ExternalFunctionNodes {
      * {@code wrap_sq_delitem}, {@code wrap_sq_setitem}, {@code asdf}.
      */
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class CheckPrimitiveFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization(guards = "!isMinusOne(result)")

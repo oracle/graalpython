@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.PopNode;
@@ -91,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -341,8 +341,8 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_SetDefault extends CApiTernaryBuiltinNode {
         @Specialization
         static Object setItem(PDict dict, Object key, Object value,
-                        @Cached DictBuiltins.SetDefaultNode setItemNode) {
-            return setItemNode.execute(null, dict, key, value);
+                        @Cached PyDictSetDefault setDefault) {
+            return setDefault.execute(null, dict, key, value);
         }
 
         @Fallback

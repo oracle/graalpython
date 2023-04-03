@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,6 +12,16 @@ class MyIndexable(object):
         self.value = value
     def __index__(self):
         return self.value
+
+
+def test_index():
+    assert 'bla'.index('a') == 2
+    assertRaises(ValueError, 'bla'.index, 'c')
+    assert ''.index('') == 0
+    assert 'adsf'.index('') == 0
+    assert 'adsf'.index('', 2) == 2
+    assert 'adsf'.index('', 1, 1) == 1
+    assertRaises(ValueError, 'asdf'.index, '', 2, 1)
 
 
 def test_find():
@@ -55,6 +65,12 @@ def test_find():
     assert s.find('cau', MyIndexable(5), MyIndexable(8)) == 5
     assert s.find('cau', None, MyIndexable(8)) == 5
     assert s.find('cau', 2**100) == -1
+
+    assert ''.find('') == 0
+    assert 'adsf'.find('') == 0
+    assert 'adsf'.find('', 2) == 2
+    assert 'adsf'.find('', 1, 1) == 1
+    assert 'asdf'.find('', 2, 1) == -1
 
 
 def test_rfind():
