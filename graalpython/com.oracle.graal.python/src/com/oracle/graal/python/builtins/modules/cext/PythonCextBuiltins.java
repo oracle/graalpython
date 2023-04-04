@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -965,38 +964,6 @@ public final class PythonCextBuiltins {
             return function != null ? function : managedCallable;
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isNoValue(type)", "isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"})
-        static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") TruffleString name, PyCFunctionDecorator callable, PNone wrapper, Object type, Object flags,
-                        @SuppressWarnings("unused") PythonObjectFactory factory) {
-            // This can happen if a native type inherits slots from a managed type. Therefore,
-            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
-            // case, we assume that the object is already callable.
-            // Note, that this will also drop the 'native-to-java' conversion which is usually done
-            // by 'callable.getFun1()'.
-            return ((PythonNativeWrapper) callable.getNativeFunction()).getDelegate();
-        }
-
-        @Specialization(guards = "isDecoratedManagedFunction(callable)")
-        @TruffleBoundary
-        Object doDecoratedManaged(TruffleString name, PyCFunctionDecorator callable, int signature, Object type, int flags, PythonObjectFactory factory) {
-            // This can happen if a native type inherits slots from a managed type. Therefore,
-            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
-            // case, we assume that the object is already callable.
-            // Note, that this will also drop the 'native-to-java' conversion which is usually done
-            // by 'callable.getFun1()'.
-            Object managedCallable = ((PythonNativeWrapper) callable.getNativeFunction()).getDelegate();
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, PythonLanguage.get(this), factory, false);
-            if (function != null) {
-                return function;
-            }
-
-            // Special case: if the returned 'wrappedCallTarget' is null, this indicates we want to
-            // call a Python callable without wrapping and arguments conversion. So, directly use
-            // the callable.
-            return managedCallable;
-        }
-
         @Specialization(guards = {"!isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
         PBuiltinFunction doNativeCallableWithType(TruffleString name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory) {
@@ -1028,7 +995,7 @@ public final class PythonCextBuiltins {
         }
 
         static boolean isDecoratedManagedFunction(Object obj) {
-            return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
+            return false;
         }
     }
 
