@@ -92,7 +92,7 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..7752557
+index 0000000..0271d8a
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
 @@ -0,0 +1,221 @@
@@ -106,7 +106,7 @@ index 0000000..7752557
 +from pip._internal.models.candidate import InstallationCandidate
 +from pip._internal.models.link import Link
 +from pip._vendor import tomli
-+from pip._vendor.packaging.specifiers import Specifier
++from pip._vendor.packaging.specifiers import SpecifierSet
 +from pip._vendor.packaging.version import VERSION_PATTERN
 +
 +PATCHES_BASE_DIRS = [os.path.join(__graalpython__.core_home, "patches")]
@@ -185,7 +185,7 @@ index 0000000..7752557
 +
 +    @staticmethod
 +    def rule_matches_version(rule, version):
-+        return not rule.get('version') or Specifier(rule['version']).contains(version)
++        return not rule.get('version') or SpecifierSet(rule['version']).contains(version)
 +
 +    def get_suggested_version_specs(self, name):
 +        versions = set()
