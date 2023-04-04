@@ -57,7 +57,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -111,11 +114,13 @@ public class CApiTransitions {
     // transfer: steal or borrow reference
 
     public static final class HandleContext {
+        private static final int DEFAULT_CAPACITY = 10;
 
         public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final WeakHashMap<Object, WeakReference<PythonAbstractNativeObject>> managedNativeLookup = new WeakHashMap<>();
-        public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>();
+        public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>(DEFAULT_CAPACITY);
+        public final HandleStack nativeHandlesFreeStack = new HandleStack(DEFAULT_CAPACITY);
         public final Set<NativeStorageReference> nativeStorageReferences = new HashSet<>();
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
@@ -253,6 +258,7 @@ public class CApiTransitions {
                         int index = (int) (reference.pointer - HandleFactory.HANDLE_BASE);
                         assert context.nativeHandles.get(index) != null;
                         context.nativeHandles.set(index, null);
+                        context.nativeHandlesFreeStack.push(index);
                     } else {
                         assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
                         nativeLookupRemove(context, reference.pointer);
@@ -455,9 +461,17 @@ public class CApiTransitions {
         public static long create(PythonNativeWrapper wrapper) {
             assert !(wrapper instanceof TruffleObjectNativeWrapper);
             pollReferenceQueue();
-            int idx = getContext().nativeHandles.size();
-            long pointer = HANDLE_BASE + idx;
-            getContext().nativeHandles.add(new PythonObjectReference(wrapper, pointer));
+            HandleContext handleContext = getContext();
+            int idx = handleContext.nativeHandlesFreeStack.pop();
+            long pointer;
+            if (idx == -1) {
+                pointer = HANDLE_BASE + handleContext.nativeHandles.size();
+                handleContext.nativeHandles.add(new PythonObjectReference(wrapper, pointer));
+            } else {
+                assert idx >= 0;
+                pointer = HANDLE_BASE + idx;
+                handleContext.nativeHandles.set(idx, new PythonObjectReference(wrapper, pointer));
+            }
             return pointer;
         }
     }
@@ -783,7 +797,6 @@ public class CApiTransitions {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
-            assert !(value instanceof PythonAbstractNativeObject);
 
             // this is just a shortcut
             if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(value))) {
@@ -791,7 +804,7 @@ public class CApiTransitions {
             }
             PythonNativeWrapper wrapper;
 
-            HandleContext nativeContext = PythonContext.get(null).nativeContext;
+            HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
 
             if (!interopLibrary.isPointer(value)) {
                 return getManagedReference(value, nativeContext);
@@ -899,7 +912,7 @@ public class CApiTransitions {
         }
     }
 
-    private static Unsafe UNSAFE = PythonUtils.initUnsafe();
+    private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
     private static final int TP_REFCNT_OFFSET = 0;
 
     private static long addNativeRefCount(long pointer, long refCntDelta) {
