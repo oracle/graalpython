@@ -561,9 +561,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
-                        PythonLanguage language,
-                        PythonObjectFactory factory,
-                        boolean doArgAndResultConversion) {
+                        PythonLanguage language, PythonObjectFactory factory, boolean doArgAndResultConversion) {
             return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig),
                             language, factory, doArgAndResultConversion);
         }
@@ -589,19 +587,7 @@ public abstract class ExternalFunctionNodes {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
             InteropLibrary lib = InteropLibrary.getUncached(callable);
             PythonContext context = PythonContext.get(null);
-            if (lib.isPointer(callable)) {
-                long pointer;
-                try {
-                    pointer = lib.asPointer(callable);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-                Object delegate = context.getCApiContext().getClosureDelegate(pointer);
-                if (delegate instanceof PBuiltinFunction function) {
-                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
-                    return function;
-                }
-            }
+            assert !isClosurePointer(context, callable, lib);
             if (flags < 0) {
                 flags = 0;
             }
@@ -621,7 +607,7 @@ public abstract class ExternalFunctionNodes {
             // ensure that 'callable' is executable via InteropLibrary
             Object boundCallable = ensureExecutable(context, callable, sig, lib);
 
-            Object type = SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING) ? null : enclosingType;
+            Object type = (enclosingType == PNone.NO_VALUE || SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING)) ? null : enclosingType;
             // TODO(fa): this should eventually go away
             switch (sig) {
                 case NOARGS:
@@ -634,6 +620,18 @@ public abstract class ExternalFunctionNodes {
                     return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
             }
             return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
+        }
+
+        private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
+            if (lib.isPointer(callable)) {
+                try {
+                    Object delegate = context.getCApiContext().getClosureDelegate(lib.asPointer(callable));
+                    return delegate instanceof PBuiltinFunction;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return false;
         }
 
         @TruffleBoundary
