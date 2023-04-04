@@ -78,7 +78,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
@@ -937,6 +936,7 @@ public final class PythonCextBuiltins {
     }
 
     @GenerateUncached
+    @ImportStatic(CApiGuards.class)
     abstract static class CreateFunctionNode extends PNodeWithContext {
 
         abstract Object execute(TruffleString name, Object callable, Object wrapper, Object type, Object flags, PythonObjectFactory factory);
@@ -964,38 +964,61 @@ public final class PythonCextBuiltins {
             return function != null ? function : managedCallable;
         }
 
-        @Specialization(guards = {"!isNoValue(type)", "!isNativeWrapper(callable)"})
+        @Specialization(guards = {"!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithType(TruffleString name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory) {
-            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, flags, signature, getLanguage(), factory, true);
+        Object doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+            /*
+             * This can happen if a native type inherits slots from a managed type. For example, if
+             * a native type inherits 'base->tp_richcompare' and this is '__truffle_richcompare__'
+             * and we are going to install it as '__eq__', we still need to have a wrapper around
+             * the managed callable since we need to bind the 3rd argument.
+             */
+            Object resolvedCallable = resolveClosurePointer(getContext(), callable, lib);
+            boolean doArgAndResultConversion;
+            if (resolvedCallable != null) {
+                doArgAndResultConversion = false;
+            } else {
+                doArgAndResultConversion = true;
+                resolvedCallable = callable;
+            }
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, getLanguage(), factory, doArgAndResultConversion);
+            return function != null ? function : resolvedCallable;
         }
 
-        @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
+        @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutType(TruffleString name, Object callable, int signature, @SuppressWarnings("unused") PNone type, int flags, PythonObjectFactory factory) {
-            return doNativeCallableWithType(name, callable, signature, null, flags, factory);
-        }
-
-        @Specialization(guards = {"!isNoValue(type)", "isNoValue(wrapper)", "!isNativeWrapper(callable)"})
-        @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutWrapper(TruffleString name, Object callable, Object type,
-                        @SuppressWarnings("unused") PNone wrapper,
-                        @SuppressWarnings("unused") Object flags, PythonObjectFactory factory) {
+        PBuiltinFunction doNativeCallableWithoutWrapper(TruffleString name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper, @SuppressWarnings("unused") Object flags,
+                        PythonObjectFactory factory,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
+            /*
+             * This can happen if a native type inherits slots from a managed type. Therefore,
+             * something like 'base->tp_new' will be a wrapper of the managed '__new__'. In this
+             * case, we can just return the managed callable since we do also not have a wrapper
+             * that could shuffle or bind arguments.
+             */
+            PBuiltinFunction managedCallable = resolveClosurePointer(getContext(), callable, lib);
+            if (managedCallable != null) {
+                return managedCallable;
+            }
             return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0, PExternalFunctionWrapper.DIRECT, getLanguage(), factory, true);
         }
 
-        @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
-        @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutWrapperAndType(TruffleString name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type, Object flags, PythonObjectFactory factory) {
-            return doNativeCallableWithoutWrapper(name, callable, null, wrapper, flags, factory);
-        }
-
-        static boolean isNativeWrapper(Object obj) {
-            return CApiGuards.isNativeWrapper(obj) || isDecoratedManagedFunction(obj);
-        }
-
-        static boolean isDecoratedManagedFunction(Object obj) {
-            return false;
+        private static PBuiltinFunction resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
+            if (lib.isPointer(callable)) {
+                long pointer;
+                try {
+                    pointer = lib.asPointer(callable);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+                Object delegate = context.getCApiContext().getClosureDelegate(pointer);
+                if (delegate instanceof PBuiltinFunction function) {
+                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
+                    return function;
+                }
+            }
+            return null;
         }
     }
 
