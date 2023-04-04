@@ -166,6 +166,7 @@ typedef struct {
     BUILTIN(PyImport_ImportModuleNoBlock, PyObject*, const char*) \
     BUILTIN(PyIndex_Check, int, PyObject*) \
     BUILTIN(PyInstanceMethod_New, PyObject*, PyObject*) \
+    BUILTIN(PyIter_Check, int, PyObject*) \
     BUILTIN(PyIter_Next, PyObject*, PyObject*) \
     BUILTIN(PyList_Append, int, PyObject*, PyObject*) \
     BUILTIN(PyList_AsTuple, PyObject*, PyObject*) \

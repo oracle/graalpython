@@ -530,7 +530,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_GetID", ret = INT64_T, args = {PyInterpreterState}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyInterpreterState_GetIDFromThreadState", ret = INT64_T, args = {PyThreadState}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyInterpreterState_Main", ret = PyInterpreterState, args = {}, call = PolyglotImpl)
-    @CApiBuiltin(name = "PyIter_Check", ret = Int, args = {PyObject}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyLong_FromString", ret = PyObject, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST, Int}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyMapping_GetItemString", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = PolyglotImpl)
     @CApiBuiltin(name = "PyMemoryView_FromBuffer", ret = PyObject, args = {PY_BUFFER}, call = PolyglotImpl)
