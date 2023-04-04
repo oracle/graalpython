@@ -1794,7 +1794,7 @@ public abstract class ExternalFunctionNodes {
         protected Object[] preparePArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
-            return new Object[]{self, arg, SpecialMethodNames.getCompareOpString(op)};
+            return new Object[]{self, arg, op};
         }
 
         @Override
