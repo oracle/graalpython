@@ -381,6 +381,25 @@ public abstract class ExternalFunctionNodes {
             return value >= 0 && value < BY_ID.length ? BY_ID[value] : null;
         }
 
+        static PExternalFunctionWrapper fromMethodFlags(int flags) {
+            if (CExtContext.isMethNoArgs(flags)) {
+                return NOARGS;
+            } else if (CExtContext.isMethO(flags)) {
+                return O;
+            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
+                return KEYWORDS;
+            } else if (CExtContext.isMethVarargs(flags)) {
+                return VARARGS;
+            } else if (CExtContext.isMethMethod(flags)) {
+                return METHOD;
+            } else if (CExtContext.isMethFastcallWithKeywords(flags)) {
+                return FASTCALL_WITH_KEYWORDS;
+            } else if (CExtContext.isMethFastcall(flags)) {
+                return FASTCALL;
+            }
+            throw CompilerDirectives.shouldNotReachHere("illegal method flags");
+        }
+
         @TruffleBoundary
         static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean doArgAndResultConversion, boolean isStatic) {
             Class<?> nodeKlass;
