@@ -77,6 +77,7 @@ def setup(*args, **kwargs):
     # wrap the distutil setup. since we're running in the same process, running
     # a full clean will fail the next build, since distutils thinks it already
     # created the "build" directory
+    shutil.rmtree("build", ignore_errors=True)
     os.makedirs("build", exist_ok=False)
     return distutils_setup(*args, **kwargs)
 
