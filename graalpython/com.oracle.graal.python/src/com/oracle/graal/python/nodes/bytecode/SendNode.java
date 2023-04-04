@@ -47,11 +47,10 @@ import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,11 +83,10 @@ public abstract class SendNode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = "pyIterCheck(iter, inliningTarget, getClassNode, lookupNext)", limit = "1")
+    @Specialization(guards = "iterCheck.execute(inliningTarget, iter)", limit = "1")
     boolean doIterator(VirtualFrame virtualFrame, int stackTop, Object iter, @SuppressWarnings("unused") PNone arg,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached InlinedGetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext,
+                    @SuppressWarnings("unused") @Cached PyIterCheckNode iterCheck,
                     @Cached GetNextNode getNextNode,
                     @Shared("profile") @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
@@ -124,10 +122,6 @@ public abstract class SendNode extends PNodeWithContext {
         Object value = getValue.execute(e.getUnreifiedException());
         frame.setObject(stackTop, null);
         frame.setObject(stackTop - 1, value);
-    }
-
-    protected static boolean pyIterCheck(Object obj, Node inliningTarget, InlinedGetClassNode getClassNode, LookupCallableSlotInMRONode lookupIternext) {
-        return !(lookupIternext.execute(getClassNode.execute(inliningTarget, obj)) instanceof PNone);
     }
 
     public static SendNode create() {

@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 
 import java.util.List;
 
@@ -58,12 +57,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
+import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -174,15 +172,13 @@ public final class ChainBuiltins extends PythonBuiltins {
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
-        abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
-
         @Specialization
         Object setState(VirtualFrame frame, PChain self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
-                        @Cached PyObjectLookupAttr getAttrNode,
-                        @Cached InlinedBranchProfile len2Profile) {
+                        @Cached InlinedBranchProfile len2Profile,
+                        @Cached PyIterCheckNode iterCheckNode) {
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
@@ -191,19 +187,19 @@ public final class ChainBuiltins extends PythonBuiltins {
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             Object source = getItemNode.execute(frame, state, 0);
-            checkIterator(frame, getAttrNode, source);
+            checkIterator(inliningTarget, iterCheckNode, source);
             self.setSource(source);
             if (len == 2) {
                 len2Profile.enter(inliningTarget);
                 Object active = getItemNode.execute(frame, state, 1);
-                checkIterator(frame, getAttrNode, active);
+                checkIterator(inliningTarget, iterCheckNode, active);
                 self.setActive(active);
             }
             return PNone.NONE;
         }
 
-        private void checkIterator(VirtualFrame frame, PyObjectLookupAttr getAttrNode, Object obj) throws PException {
-            if (getAttrNode.execute(frame, obj, T___NEXT__) == PNone.NO_VALUE) {
+        private void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj) throws PException {
+            if (!iterCheckNode.execute(inliningTarget, obj)) {
                 throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }

@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -70,7 +71,6 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -303,21 +303,18 @@ public abstract class IteratorNodes {
         }
     }
 
+    // Used in enterprise, use PyIterCheckNode instead
+    @Deprecated
     @GenerateUncached
     public abstract static class IsIteratorObjectNode extends Node {
 
         public abstract boolean execute(Object o);
 
         @Specialization
-        static boolean doPIterator(@SuppressWarnings("unused") PBuiltinIterator it) {
-            // a PIterator object is guaranteed to be an iterator object
-            return true;
-        }
-
-        @Specialization
-        static boolean doGeneric(Object it,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupAttributeNode) {
-            return lookupAttributeNode.execute(it, SpecialMethodNames.T___NEXT__) != PNone.NO_VALUE;
+        static boolean doGeneric(Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyIterCheckNode iterCheckNode) {
+            return iterCheckNode.execute(inliningTarget, obj);
         }
     }
 
