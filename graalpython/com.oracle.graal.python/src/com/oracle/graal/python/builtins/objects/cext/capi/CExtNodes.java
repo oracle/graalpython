@@ -2865,6 +2865,7 @@ public abstract class CExtNodes {
             // TODO(fa) support static and class methods
             PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
             RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, PythonLanguage.get(callGetNameNode), methodName, true, CExtContext.isMethStatic(flags));
+            mlMethObj = PExternalFunctionWrapper.ensureExecutable(context.getContext(), mlMethObj, sig, InteropLibrary.getUncached());
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
 
