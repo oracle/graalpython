@@ -1397,6 +1397,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
+            target = PExternalFunctionWrapper.ensureExecutable(context.getContext(), target, PExternalFunctionWrapper.GETTER, InteropLibrary.getUncached());
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
@@ -1479,6 +1480,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
+            target = PExternalFunctionWrapper.ensureExecutable(context.getContext(), target, PExternalFunctionWrapper.SETTER, InteropLibrary.getUncached());
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
