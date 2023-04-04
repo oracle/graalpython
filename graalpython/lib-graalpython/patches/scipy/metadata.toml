@@ -15,11 +15,16 @@ version = '== 1.9.1'
 patch = 'scipy-1.9.1.patch'
 
 [[rules]]
-# pin 1.9.3
-install-priority = 10
+# install-priority = 10
 version = '== 1.9.3'
 patch = 'scipy-1.9.3.patch'
 
 [[rules]]
 version = '== 1.10.0'
 patch = 'scipy-1.10.0.patch'
+
+[[rules]]
+# pin to 1.10.1
+install-priority = 10
+version = '== 1.10.1'
+patch = 'scipy-1.10.1.patch'
