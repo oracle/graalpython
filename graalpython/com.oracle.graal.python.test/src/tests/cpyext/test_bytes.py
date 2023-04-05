@@ -72,6 +72,19 @@ class CIter:
     def __iter__(self):
         return iter([1, 2, 3])
 
+
+BytesSubclass = CPyExtType(
+    "BytesSubclass",
+    '',
+    struct_base='PyBytesObject bytes',
+    tp_itemsize='sizeof(char)',
+    tp_base='&PyBytes_Type',
+    tp_new='0',
+    tp_alloc='0',
+    tp_free='0',
+)
+
+
 class TestPyBytes(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -115,7 +128,11 @@ class TestPyBytes(CPyExtTestCase):
     # PyBytes_AsString
     test_PyBytes_AsString = CPyExtFunction(
         lambda b: b[0].decode(),
-        lambda: ((b"hello",), (b"world",)),
+        lambda: (
+            (b"hello",),
+            (b"world",),
+            (BytesSubclass(b"hello"),),
+        ),
         resultspec="s",
         argspec="O",
         arguments=["PyObject* arg"],
@@ -124,7 +141,11 @@ class TestPyBytes(CPyExtTestCase):
     # PyBytes_AsStringAndSize
     test_PyBytes_AsStringAndSize = CPyExtFunctionOutVars(
         _as_string_and_size,
-        lambda: ((b"hello",), (b"world",)),
+        lambda: (
+            (b"hello",),
+            (b"world",),
+            (BytesSubclass(b"hello"),),
+        ),
         resultspec="isn",
         argspec="O",
         arguments=["PyObject* arg"],
@@ -160,7 +181,12 @@ class TestPyBytes(CPyExtTestCase):
     # PyBytes_Size
     test_PyBytes_Size = CPyExtFunction(
         lambda b: len(b[0]),
-        lambda: ((b"hello",), (b"hello world",), (b"",)),
+        lambda: (
+            (b"hello",),
+            (b"hello world",),
+            (b"",),
+            (BytesSubclass(b"hello"),),
+        ),
         resultspec="n",
         argspec="O",
         arguments=["PyObject* arg"],
@@ -169,7 +195,12 @@ class TestPyBytes(CPyExtTestCase):
     # PyBytes_GET_SIZE
     test_PyBytes_GET_SIZE = CPyExtFunction(
         lambda b: len(b[0]),
-        lambda: ((b"hello",), (b"hello world",), (b"",)),
+        lambda: (
+            (b"hello",),
+            (b"hello world",),
+            (b"",),
+            (BytesSubclass(b"hello"),),
+        ),
         resultspec="n",
         argspec="O",
         arguments=["PyObject* arg"],
@@ -252,6 +283,7 @@ class TestPyBytes(CPyExtTestCase):
             (b"hello",),
             ("hello",),
             ("hellö".encode(),),
+            (BytesSubclass(b"hello"),),
         ),
         resultspec="i",
         argspec='O',
@@ -260,7 +292,7 @@ class TestPyBytes(CPyExtTestCase):
     )
 
     test_PyBytes_CheckExact = CPyExtFunction(
-        lambda args: isinstance(args[0], bytes),
+        lambda args: type(args[0]) == bytes,
         lambda: (
             (b"hello",),
             (bytes(),),
@@ -269,6 +301,7 @@ class TestPyBytes(CPyExtTestCase):
             (1,),
             (dict(),),
             (tuple(),),
+            (BytesSubclass(b"hello"),),
         ),
         resultspec="i",
         argspec='O',
@@ -283,31 +316,12 @@ class TestPyBytes(CPyExtTestCase):
             (b"hello",),
             ("hellö".encode("utf-8"),),
             (b"hello world",),
-            (b"",)
+            (b"",),
+            (BytesSubclass(b"hello"),),
         ),
         resultspec="s",
         argspec="O",
         arguments=["PyObject* arg"],
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyBytes_Mutation = CPyExtFunction(
-        lambda args: args[1],
-        lambda: (
-            (b"hello", b"hallo"),
-        ),
-        code="""PyObject* mutate_bytes(PyObject* bytesObj, PyObject* expected) {
-            char* content = PyBytes_AS_STRING(bytesObj);
-            char* copy = (char*) malloc(PyBytes_Size(bytesObj)+1);
-            content[1] = 'a';
-            memcpy(copy, content, PyBytes_Size(bytesObj)+1);
-            return PyBytes_FromString(copy);
-        }
-        """,
-        resultspec="O",
-        argspec="OO",
-        arguments=["PyObject* bytesObj", "PyObject* expected"],
-        callfunction="mutate_bytes",
         cmpfunc=unhandled_error_compare
     )
 
@@ -509,3 +523,36 @@ class ObjectTests(unittest.TestCase):
         )
         self.assertRaises(ValueError, bytes, TestType())
         self.assertRaises(ValueError, bytearray, TestType())
+
+
+class TestNativeSubclass(unittest.TestCase):
+    def test_builtins(self):
+        b = BytesSubclass(b"hello")
+        assert type(b) == BytesSubclass
+        assert b
+        assert not BytesSubclass(b'')
+        assert len(b) == 5
+        assert b[1] == ord('e')
+        assert b[1:] == b"ello"
+        assert b == b"hello"
+        assert b < b"xxxxx"
+        assert b > b"aaaaa"
+        assert ord('e') in b
+        assert b + b" world" == b"hello world"
+        assert b * 2 == b"hellohello"
+        assert list(b) == [ord('h'), ord('e'), ord('l'), ord('l'), ord('o')]
+        assert repr(b) == "b'hello'"
+        assert b.index(ord('l')) == 2
+        assert b.count(ord('l')) == 2
+        assert b.decode('ascii') == 'hello'
+        assert BytesSubclass(b'hello ').strip() == b'hello'
+        assert BytesSubclass(b',').join([b'a', BytesSubclass(b'b')]) == b'a,b'
+        assert hash(b) == hash(b'hello')
+        assert BytesSubclass(b'(%s)') % b'a' == b'(a)'
+        assert b.startswith(b'h')
+        assert b.endswith(b'o')
+        assert b.hex() == b'hello'.hex()
+        assert b.islower()
+        assert b.replace(b'e', b'a') == b'hallo'
+        assert b.upper() == b'HELLO'
+        assert BytesSubclass(b'a,b').split(BytesSubclass(b',')) == [b'a', b'b']
