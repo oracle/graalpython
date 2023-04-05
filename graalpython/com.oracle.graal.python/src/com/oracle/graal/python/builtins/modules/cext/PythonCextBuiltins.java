@@ -1620,9 +1620,9 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffle_Debug extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static Object doIt(Object[] args,
+        static Object doIt(Object arg,
                         @Cached DebugNode debugNode) {
-            debugNode.execute(args);
+            debugNode.execute(new Object[]{arg});
             return 0;
         }
     }
