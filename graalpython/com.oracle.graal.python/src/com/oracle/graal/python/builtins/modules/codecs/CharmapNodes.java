@@ -237,15 +237,15 @@ public final class CharmapNodes {
 
         @Specialization
         static int doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString src, int pos, int len, TruffleString errors, Object mapping, ByteArrayBuilder builder,
-                                          @Cached(inline = false) CastToTruffleStringNode castToTruffleStringNode,
-                                          @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                                          @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                                          @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
-                                          @Cached GetErrorHandlerNode getErrorHandlerNode,
-                                          @Cached CallEncodingErrorHandlerNode callEncodingErrorHandlerNode,
-                                          @Cached(inline = false) ByteArrayBuilder.AppendBytesNode appendBytesNode,
-                                          @Cached CharmapEncodeOutputNode charmapEncodeOutputNode,
-                                          @Cached RaiseEncodeException raiseEncodeException) {
+                        @Cached(inline = false) CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
+                        @Cached GetErrorHandlerNode getErrorHandlerNode,
+                        @Cached CallEncodingErrorHandlerNode callEncodingErrorHandlerNode,
+                        @Cached(inline = false) ByteArrayBuilder.AppendBytesNode appendBytesNode,
+                        @Cached CharmapEncodeOutputNode charmapEncodeOutputNode,
+                        @Cached RaiseEncodeException raiseEncodeException) {
             int errEnd = pos;
             while (errEnd < len) {
                 int cp = codePointAtIndexNode.execute(src, errEnd, TS_ENCODING, ErrorHandling.BEST_EFFORT);
@@ -301,7 +301,7 @@ public final class CharmapNodes {
         @Fallback
         static boolean doGenericMapping(VirtualFrame frame, Node inliningTarget, int cp, Object mapping, ByteArrayBuilder builder,
                         @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
-                         @Cached(inline = false) ByteArrayBuilder.AppendBytesNode appendBytesNode) {
+                        @Cached(inline = false) ByteArrayBuilder.AppendBytesNode appendBytesNode) {
             Object rep = charmapEncodeLookupNode.execute(frame, inliningTarget, cp, mapping);
             if (rep == PNone.NONE) {
                 return false;
@@ -329,7 +329,7 @@ public final class CharmapNodes {
                         @Cached IsBuiltinSubtypeObjectProfile isLookupErrorProfile,
                         @Cached(inline = false) PyLongCheckNode pyLongCheckNode,
                         @Cached(inline = false) PyLongAsLongNode pyLongAsLongNode,
-                        @Cached(inline = false) PyBytesCheckNode pyBytesCheckNode,
+                        @Cached PyBytesCheckNode pyBytesCheckNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object item;
             try {
@@ -348,7 +348,7 @@ public final class CharmapNodes {
                 }
                 return value;
             }
-            if (pyBytesCheckNode.execute(frame, item)) {
+            if (pyBytesCheckNode.execute(inliningTarget, item)) {
                 return item;
             }
             throw raiseNode.get(inliningTarget).raise(TypeError, CHARACTER_MAPPING_MUST_RETURN_INT_BYTES_OR_NONE_NOT_P, item);

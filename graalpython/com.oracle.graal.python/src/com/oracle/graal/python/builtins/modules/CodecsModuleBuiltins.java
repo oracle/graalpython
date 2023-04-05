@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -148,6 +149,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.CharsetMapping.NormalizeEncodingNameNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -411,16 +413,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
      */
     @ImportStatic(StringLiterals.class)
     public abstract static class HandleDecodingErrorNode extends Node {
-        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, PBytesLike inputObject);
+        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
 
         @Specialization(guards = "errorAction == T_STRICT")
-        static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             raiseDecodingErrorNode.raise(decoder, inputObject);
         }
 
         @Specialization(guards = "errorAction == T_BACKSLASHREPLACE")
-        static void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -435,7 +437,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "errorAction == T_SURROGATEPASS")
-        static void doSurrogatepass(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doSurrogatepass(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
@@ -451,7 +453,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "errorAction == T_SURROGATEESCAPE")
-        static void doSurrogateescape(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doSurrogateescape(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -466,11 +468,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static void doCustom(TruffleDecoder decoder, TruffleString errorAction, PBytesLike inputObject,
+        static void doCustom(TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetInternalObjectArrayNode getArray,
+                        @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
@@ -496,10 +499,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 /*- Copy back the bytes variables, which might have been modified by the callback */
                 assert exceptionObject instanceof PBaseException;
                 Object obj = attrNode.get((PBaseException) exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
-                assert obj instanceof PBytesLike;
-                PBytesLike inputobj = (PBytesLike) obj;
-                byte[] input = getBytes.execute(inputobj.getSequenceStorage());
-                int insize = inputobj.getSequenceStorage().length();
+                SequenceStorage inputStorage = getBytesStorage.execute(inliningTarget, obj);
+                byte[] input = getBytes.execute(inputStorage);
+                int insize = inputStorage.length();
 
                 if (newpos < 0) {
                     newpos = insize + newpos;

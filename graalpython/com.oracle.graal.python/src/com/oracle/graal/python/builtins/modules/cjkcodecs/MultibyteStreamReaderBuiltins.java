@@ -75,13 +75,16 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = MultibyteStreamReader)
@@ -141,8 +144,9 @@ public class MultibyteStreamReaderBuiltins extends PythonBuiltins {
         // mbstreamreader_iread
         @Specialization
         TruffleString iread(VirtualFrame frame, MultibyteStreamReaderObject self, TruffleString method, long sizehint,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached PyBytesCheckNode bytesCheckNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
@@ -161,8 +165,8 @@ public class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 }
 
                 if (!(cres instanceof PBytes)) {
-                    Object crestType = getClassNode.execute(cres);
-                    if (!bytesCheckNode.execute(frame, crestType)) {
+                    Object crestType = getClassNode.execute(inliningTarget, cres);
+                    if (!bytesCheckNode.execute(inliningTarget, crestType)) {
                         throw raise(TypeError, STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S, getNameNode.execute(cres));
                     }
                 }

@@ -887,13 +887,12 @@ public final class ErrorHandlers {
         abstract EncodingErrorHandlerResult execute(VirtualFrame frame, Node node, Object result);
 
         @Specialization
-        static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node node, PTuple result,
-                        @Bind("this") Node inliningTarget,
+        static EncodingErrorHandlerResult doTuple(Node inliningTarget, PTuple result,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached(inline = false) CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached(inline = false) PyUnicodeCheckNode pyUnicodeCheckNode,
-                        @Cached(inline = false) PyBytesCheckNode pyBytesCheckNode,
+                        @Cached PyBytesCheckNode pyBytesCheckNode,
                         @Cached @Shared PRaiseNode.Lazy raiseNode) {
             if (lenNode.execute(inliningTarget, result) != 2) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
@@ -902,7 +901,7 @@ public final class ErrorHandlers {
             boolean isUnicode;
             if (pyUnicodeCheckNode.execute(array[0])) {
                 isUnicode = true;
-            } else if (pyBytesCheckNode.execute(frame, array[0])) {
+            } else if (pyBytesCheckNode.execute(inliningTarget, array[0])) {
                 isUnicode = false;
             } else {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -515,10 +515,14 @@ _PyBytesWriter_WriteBytes(_PyBytesWriter *writer, void *ptr,
     return str;
 }
 
-PyObject* bytes_subtype_new(PyTypeObject *type, const char* contents, Py_ssize_t n) {
+PyObject* bytes_subtype_new(PyTypeObject *type, int8_t* contents, Py_ssize_t n) {
     PyObject* bytes = type->tp_alloc(type, n);
     if (bytes != NULL) {
         memcpy(((PyBytesObject*)bytes)->ob_sval, contents, n+1);
     }
     return bytes;
+}
+
+void* PyTruffle_NativeBytesItems(PyBytesObject* bytes) {
+    return polyglot_from_i8_array((int8_t*)bytes->ob_sval, bytes->ob_base.ob_size);
 }

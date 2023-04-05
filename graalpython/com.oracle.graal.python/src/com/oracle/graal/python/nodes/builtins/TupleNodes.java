@@ -165,11 +165,12 @@ public abstract class TupleNodes {
 
         @Specialization
         SequenceStorage getNative(PythonAbstractNativeObject tuple,
-                        @Cached GetNativeTupleStorage getNativeTupleStorage) {
+                        @Cached(inline = false) GetNativeTupleStorage getNativeTupleStorage) {
             return getNativeTupleStorage.execute(tuple);
         }
     }
 
+    @GenerateInline(false)
     public abstract static class GetNativeTupleStorage extends Node {
         public abstract NativeSequenceStorage execute(PythonAbstractNativeObject tuple);
 
