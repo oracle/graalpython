@@ -262,7 +262,7 @@ public class MultibyteCodecUtil {
                     tobj = array[0];
                     newposobj = array[1];
                     isUnicode = unicodeCheckNode.execute(tobj);
-                    isError = !isUnicode && !bytesCheckNode.execute(frame, tobj);
+                    isError = !isUnicode && !bytesCheckNode.execute(inliningTarget, tobj);
                     isError = isError || !longCheckNode.execute(newposobj);
                 }
             }

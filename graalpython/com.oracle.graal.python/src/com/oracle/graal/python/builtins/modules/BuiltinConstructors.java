@@ -314,7 +314,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object bytesMethod = lookupBytes.execute(frame, getClassNode.execute(inliningTarget, source), source);
             if (hasBytes.profile(inliningTarget, bytesMethod != PNone.NO_VALUE)) {
                 Object bytes = callBytes.executeObject(frame, bytesMethod, source);
-                if (check.execute(frame, bytes)) {
+                if (check.execute(inliningTarget, bytes)) {
                     if (cls == PythonBuiltinClassType.PBytes) {
                         return bytes;
                     } else {

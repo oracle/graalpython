@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,47 +41,45 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PyBytes_Check}.
+ * Equivalent of CPython's {@code PyByteArray_Check}.
  */
 @ImportStatic(PGuards.class)
 @GenerateUncached
-@GenerateInline
-@GenerateCached(false)
-public abstract class PyBytesCheckNode extends Node {
+public abstract class PyByteArrayCheckNode extends Node {
 
-    public abstract boolean execute(Node inliningTarget, Object object);
+    public abstract boolean execute(VirtualFrame frame, Object object);
 
     public static boolean executeUncached(Object object) {
-        return PyBytesCheckNodeGen.getUncached().execute(null, object);
+        return PyByteArrayCheckNodeGen.getUncached().execute(null, object);
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    static boolean check(PBytes obj) {
+    static boolean check(PByteArray obj) {
         return true;
     }
 
     @Specialization
-    static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
+    static boolean check(VirtualFrame frame, PythonAbstractNativeObject obj,
+                    @Bind("this") Node inliningTarget,
                     @Cached InlinedGetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        // FIXME we should have a subtype check that doesn't call back to python
-        return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes);
+        return isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray);
     }
 
     @Fallback

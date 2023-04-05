@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -437,12 +438,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         PNone remove(VirtualFrame frame, PByteArray self, Object value,
                         @Cached("createCast()") CastToByteNode cast,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached BytesNodes.FindNode findNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode) {
             self.checkCanResize(this);
             SequenceStorage storage = self.getSequenceStorage();
             int len = storage.length();
-            int pos = findNode.execute(getBytes.execute(self.getSequenceStorage()), len, cast.execute(frame, value), 0, len);
+            int pos = FindNode.find(getBytes.execute(self.getSequenceStorage()), len, cast.execute(frame, value), 0, len, false);
             if (pos != -1) {
                 deleteNode.execute(frame, storage, pos);
                 return PNone.NONE;

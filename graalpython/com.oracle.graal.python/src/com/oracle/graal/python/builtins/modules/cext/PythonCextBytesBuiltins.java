@@ -128,10 +128,11 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         Object doOther(PythonAbstractNativeObject obj,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyBytesCheckNode check,
                         @Cached ToSulongNode toSulongNode,
                         @Cached CExtNodes.PCallCapiFunction callMemberGetterNode) {
-            if (check.execute(null, obj)) {
+            if (check.execute(inliningTarget, obj)) {
                 return callMemberGetterNode.call(NativeMember.OB_SIZE.getGetterFunctionName(), toSulongNode.execute(obj));
             }
             return fallback(obj);
