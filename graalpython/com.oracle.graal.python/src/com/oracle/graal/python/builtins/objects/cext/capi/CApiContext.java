@@ -54,7 +54,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -91,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -1112,26 +1112,25 @@ public final class CApiContext extends CExtContext {
         return pointer;
     }
 
-    private record ProcCacheItem(SlotMethodDef slot, Object callable) {
-
-        @Override
-        public boolean equals(Object o) {
-            if (o instanceof ProcCacheItem other) {
-                return slot == other.slot && callable == other.callable;
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode() {
-            return System.identityHashCode(slot) + 31 * System.identityHashCode(callable);
-        }
-    }
-
-    private final Map<ProcCacheItem, Object> procWrappers = new WeakHashMap<>();
+    /**
+     * A cache for the wrappers of type slot methods. The key is a weak reference to the owner class
+     * and the value is a table of wrappers. In order to ensure pointer identity, it is important
+     * that we use the same wrapper instance as long as the class exists (and the slot wasn't
+     * updated). Also, the key's type is {@link PythonManagedClass} such that any
+     * {@link PythonBuiltinClassType} must be resolved, and we do not accidentally have two
+     * different entries for the same built-in class.
+     */
+    private final WeakIdentityHashMap<PythonManagedClass, PyProcsWrapper[]> procWrappers = new WeakIdentityHashMap<>();
 
     @TruffleBoundary
-    public Object getOrCreateProcWrapper(SlotMethodDef slot, Object callable) {
-        return procWrappers.computeIfAbsent(new ProcCacheItem(slot, callable), (cacheItem) -> cacheItem.slot.wrapperFactory.apply(cacheItem.callable));
+    public Object getOrCreateProcWrapper(PythonManagedClass owner, SlotMethodDef slot, Object callable) {
+        PyProcsWrapper[] slotWrappers = procWrappers.computeIfAbsent(owner, key -> new PyProcsWrapper[SlotMethodDef.values().length]);
+        int idx = slot.ordinal();
+        PyProcsWrapper wrapper = slotWrappers[idx];
+        if (wrapper == null) {
+            wrapper = slot.wrapperFactory.apply(callable);
+            slotWrappers[idx] = wrapper;
+        }
+        return wrapper;
     }
 }
