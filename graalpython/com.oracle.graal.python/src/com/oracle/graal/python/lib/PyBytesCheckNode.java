@@ -42,11 +42,13 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,15 +66,21 @@ public abstract class PyBytesCheckNode extends Node {
 
     @SuppressWarnings("unused")
     @Specialization
-    public static boolean check(PBytes obj) {
+    static boolean check(PBytes obj) {
         return true;
     }
 
     @Specialization(guards = "!isPBytes(obj)")
-    public static boolean check(VirtualFrame frame, Object obj,
+    static boolean check(VirtualFrame frame, Object obj,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedGetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
         return isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes);
+    }
+
+    @Fallback
+    @SuppressWarnings("unused")
+    static boolean check(Object obj) {
+        return false;
     }
 }
