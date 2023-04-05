@@ -288,6 +288,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_PY_SSIZE_PTR_T_TYPEID("get_Py_ssize_ptr_t_typeid"),
     FUN_GET_PYTHREADSTATE_TYPEID("get_PyThreadState_typeid"),
     FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new"),
+    FUN_BYTES_SUBTYPE_NEW("bytes_subtype_new"),
     FUN_FLOAT_SUBTYPE_NEW("float_subtype_new"),
     FUN_SUBCLASS_CHECK("truffle_subclass_check"),
     FUN_BASETYPE_CHECK("truffle_BASETYPE_check"),

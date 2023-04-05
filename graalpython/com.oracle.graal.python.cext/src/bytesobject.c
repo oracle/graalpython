@@ -514,3 +514,11 @@ _PyBytesWriter_WriteBytes(_PyBytesWriter *writer, void *ptr,
 
     return str;
 }
+
+PyObject* bytes_subtype_new(PyTypeObject *type, const char* contents, Py_ssize_t n) {
+    PyObject* bytes = type->tp_alloc(type, n);
+    if (bytes != NULL) {
+        memcpy(((PyBytesObject*)bytes)->ob_sval, contents, n+1);
+    }
+    return bytes;
+}

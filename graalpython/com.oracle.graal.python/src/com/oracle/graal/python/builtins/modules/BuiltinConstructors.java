@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_BYTES_SUBTYPE_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
@@ -125,7 +126,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -177,6 +180,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseN
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
@@ -289,42 +293,66 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(source)")
-        PBytes doEmpty(VirtualFrame frame, Object cls, PNone source, PNone encoding, PNone errors) {
-            return factory().createBytes(cls, PythonUtils.EMPTY_BYTE_ARRAY);
+        static Object doEmpty(Object cls, PNone source, PNone encoding, PNone errors,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateBytes createBytes) {
+            return createBytes.execute(inliningTarget, cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         @Specialization(guards = "!isNoValue(source)")
         @SuppressWarnings("truffle-static-method")
-        PBytes doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
+        Object doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached InlinedConditionProfile hasBytes,
                         @Cached("create(Bytes)") LookupSpecialMethodSlotNode lookupBytes,
                         @Cached CallUnaryMethodNode callBytes,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Cached InlinedConditionProfile isBytes,
-                        @Shared @Cached BytesNodes.BytesInitNode bytesInitNode) {
+                        @Cached PyBytesCheckNode check,
+                        @Shared @Cached BytesNodes.BytesInitNode bytesInitNode,
+                        @Shared @Cached CreateBytes createBytes) {
             Object bytesMethod = lookupBytes.execute(frame, getClassNode.execute(inliningTarget, source), source);
             if (hasBytes.profile(inliningTarget, bytesMethod != PNone.NO_VALUE)) {
                 Object bytes = callBytes.executeObject(frame, bytesMethod, source);
-                if (isBytes.profile(inliningTarget, bytes instanceof PBytes)) {
+                if (check.execute(frame, bytes)) {
                     if (cls == PythonBuiltinClassType.PBytes) {
-                        return (PBytes) bytes;
+                        return bytes;
                     } else {
-                        return factory().createBytes(cls, toBytesNode.execute(frame, bytes));
+                        return createBytes.execute(inliningTarget, cls, toBytesNode.execute(frame, bytes));
                     }
                 } else {
                     throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, bytes);
                 }
             }
-            return factory().createBytes(cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
+            return createBytes.execute(inliningTarget, cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
         }
 
         @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
-        PBytes dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+        Object dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached BytesNodes.BytesInitNode bytesInitNode) {
-            return factory().createBytes(cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
+                        @Shared @Cached BytesNodes.BytesInitNode bytesInitNode,
+                        @Shared @Cached CreateBytes createBytes) {
+            return createBytes.execute(inliningTarget, cls, bytesInitNode.execute(frame, inliningTarget, source, encoding, errors));
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class CreateBytes extends PNodeWithContext {
+            abstract Object execute(Node inliningTarget, Object cls, byte[] bytes);
+
+            @Specialization(guards = "!isNativeClass(cls)")
+            PBytes doManaged(Object cls, byte[] bytes,
+                            @Cached PythonObjectFactory factory) {
+                return factory.createBytes(cls, bytes);
+            }
+
+            @Specialization
+            Object doNative(PythonNativeClass cls, byte[] bytes,
+                            @Cached PythonToNativeNode toNative,
+                            @Cached NativeToPythonNode toPython,
+                            @Cached PCallCapiFunction call) {
+                return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), new CArrayWrappers.CByteArrayWrapper(bytes), bytes.length));
+            }
         }
     }
 
