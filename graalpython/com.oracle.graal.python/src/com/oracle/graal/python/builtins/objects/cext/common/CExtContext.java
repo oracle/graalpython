@@ -333,12 +333,10 @@ public abstract class CExtContext {
             if (loaded) {
                 String name = spec.name.toJavaStringUncached();
                 if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-                    if (cApiContext.supportsNativeBackend) {
-                        GraalHPyContext.loadJNIBackend();
-                        getLogger().config("loading module " + spec.path + " as native");
-                        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-                        library = GraalHPyContext.evalNFI(context, (panama ? "with panama " : "") + "load \"" + spec.path + "\"", "load " + spec.name);
-                    }
+                    GraalHPyContext.loadJNIBackend();
+                    getLogger().config("loading module " + spec.path + " as native");
+                    boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+                    library = GraalHPyContext.evalNFI(context, (panama ? "with panama " : "") + "load \"" + spec.path + "\"", "load " + spec.name);
                 }
             } else {
                 cApiContext.supportsNativeBackend = false;
