@@ -93,7 +93,15 @@ import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 public abstract class CExtContext {
 
-    private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
+    // Due to the cycle CExtContext -> CApiContext < CExtContext this needs to be done lazily
+    private static TruffleLogger LOGGER;
+
+    private static TruffleLogger getLogger() {
+        if (LOGGER == null) {
+            LOGGER = CApiContext.getLogger(CExtContext.class);
+        }
+        return LOGGER;
+    }
 
     public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null) {
         @Override
@@ -327,7 +335,7 @@ public abstract class CExtContext {
                 if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
                     if (cApiContext.supportsNativeBackend) {
                         GraalHPyContext.loadJNIBackend();
-                        LOGGER.config("loading module " + spec.path + " as native");
+                        getLogger().config("loading module " + spec.path + " as native");
                         boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
                         library = GraalHPyContext.evalNFI(context, (panama ? "with panama " : "") + "load \"" + spec.path + "\"", "load " + spec.name);
                     }
@@ -342,12 +350,12 @@ public abstract class CExtContext {
             try {
                 if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
                     if (cApiContext.supportsNativeBackend) {
-                        LOGGER.config("loading module " + spec.path + " as native (no bitcode found)");
+                        getLogger().config("loading module " + spec.path + " as native (no bitcode found)");
                     } else {
                         throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.CANNOT_MULTICONTEXT);
                     }
                 } else {
-                    LOGGER.config("loading module " + spec.path + " as llvm bitcode");
+                    getLogger().config("loading module " + spec.path + " as llvm bitcode");
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
