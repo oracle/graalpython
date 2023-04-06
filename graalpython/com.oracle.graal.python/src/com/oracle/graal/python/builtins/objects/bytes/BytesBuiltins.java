@@ -534,6 +534,7 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
+        @SuppressWarnings("truffle-static-method")
         long hash(VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAcquireLibrary acquireLib,
