@@ -450,7 +450,7 @@ public abstract class BytesNodes {
         @Specialization(guards = "!isPBytes(obj)")
         static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached InlinedGetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             return isSubtypeNode.execute(null, type, PythonBuiltinClassType.PBytes) || isSubtypeNode.execute(null, type, PythonBuiltinClassType.PByteArray);
         }
