@@ -228,7 +228,6 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
-    private static final TruffleLogger LOGGER = CApiContext.getLogger(DynamicObjectNativeWrapper.class);
     static final String J_GP_OBJECT = "gp_object";
     static final TruffleString T_GP_OBJECT = tsLiteral(J_GP_OBJECT);
     static final TruffleString T_VALUE = tsLiteral("value");
