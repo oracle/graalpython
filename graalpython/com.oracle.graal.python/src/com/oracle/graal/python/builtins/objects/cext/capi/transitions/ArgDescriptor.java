@@ -317,7 +317,7 @@ public enum ArgDescriptor {
     func_objvoid("PyObject*(*)(void)"),
     func_objcharsizevoidptr("PyObject*(*)(const char*, Py_ssize_t, void*)"),
 
-    IterResult(ArgBehavior.PyObject, "void*", CheckIterNextResultNodeGen::create),
+    IterResult(ArgBehavior.PyObject, "void*", CheckIterNextResultNodeGen::create, true),
     InquiryResult(ArgBehavior.Int32, "int", CheckInquiryResultNodeGen::create),
     InitResult(ArgBehavior.Int32, "int", InitCheckFunctionResultNodeGen::create),
     PrimitiveResult32(ArgBehavior.Int32, "int", CheckPrimitiveFunctionResultNodeGen::create),
@@ -354,6 +354,13 @@ public enum ArgDescriptor {
         this.cSignature = cSignature;
         this.checkResult = checkResult;
         this.transfer = false;
+    }
+
+    ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult, boolean transfer) {
+        this.behavior = behavior;
+        this.cSignature = cSignature;
+        this.checkResult = checkResult;
+        this.transfer = transfer;
     }
 
     public static CExtToJavaNode[] createNativeToPython(ArgDescriptor[] args) {

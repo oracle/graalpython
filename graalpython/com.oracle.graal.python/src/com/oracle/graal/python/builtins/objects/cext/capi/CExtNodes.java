@@ -87,13 +87,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidP
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethodRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
@@ -150,7 +143,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -185,6 +177,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -2870,9 +2863,11 @@ public abstract class CExtNodes {
 
             // CPy-style methods
             // TODO(fa) support static and class methods
-            PRootNode rootNode = createWrapperRootNode(PythonLanguage.get(callGetNameNode), flags, methodName);
+            PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
+            RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, PythonLanguage.get(callGetNameNode), methodName, true, CExtContext.isMethStatic(flags));
+            mlMethObj = PExternalFunctionWrapper.ensureExecutable(context.getContext(), mlMethObj, sig, InteropLibrary.getUncached());
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
-            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, PythonUtils.getOrCreateCallTarget(rootNode));
+            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
@@ -2893,26 +2888,6 @@ public abstract class CExtNodes {
             return true;
         }
 
-        @TruffleBoundary
-        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, TruffleString name) {
-            boolean isStatic = CExtContext.isMethStatic(flags);
-            if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, isStatic, PExternalFunctionWrapper.NOARGS);
-            } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, isStatic, PExternalFunctionWrapper.O);
-            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.KEYWORDS);
-            } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, isStatic, PExternalFunctionWrapper.VARARGS);
-            } else if (CExtContext.isMethMethod(flags)) {
-                return new MethMethodRoot(language, name, isStatic, PExternalFunctionWrapper.METHOD);
-            } else if (CExtContext.isMethFastcallWithKeywords(flags)) {
-                return new MethFastcallWithKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL_WITH_KEYWORDS);
-            } else if (CExtContext.isMethFastcall(flags)) {
-                return new MethFastcallRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL);
-            }
-            throw new IllegalStateException("illegal method flags");
-        }
     }
 
     @GenerateUncached

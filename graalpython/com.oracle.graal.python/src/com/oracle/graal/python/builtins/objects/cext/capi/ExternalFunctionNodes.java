@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PointerContainer;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
@@ -130,6 +131,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -166,10 +168,12 @@ public abstract class ExternalFunctionNodes {
     static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new TruffleString[]{KW_CALLABLE, KW_CLOSURE};
 
     public static PKeyword[] createKwDefaults(Object callable) {
+        assert InteropLibrary.getUncached().isExecutable(callable);
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable)};
     }
 
     public static PKeyword[] createKwDefaults(Object callable, Object closure) {
+        assert InteropLibrary.getUncached().isExecutable(callable);
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
@@ -381,6 +385,25 @@ public abstract class ExternalFunctionNodes {
             return value >= 0 && value < BY_ID.length ? BY_ID[value] : null;
         }
 
+        static PExternalFunctionWrapper fromMethodFlags(int flags) {
+            if (CExtContext.isMethNoArgs(flags)) {
+                return NOARGS;
+            } else if (CExtContext.isMethO(flags)) {
+                return O;
+            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
+                return KEYWORDS;
+            } else if (CExtContext.isMethVarargs(flags)) {
+                return VARARGS;
+            } else if (CExtContext.isMethMethod(flags)) {
+                return METHOD;
+            } else if (CExtContext.isMethFastcallWithKeywords(flags)) {
+                return FASTCALL_WITH_KEYWORDS;
+            } else if (CExtContext.isMethFastcall(flags)) {
+                return FASTCALL;
+            }
+            throw CompilerDirectives.shouldNotReachHere("illegal method flags");
+        }
+
         @TruffleBoundary
         static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean doArgAndResultConversion, boolean isStatic) {
             Class<?> nodeKlass;
@@ -538,9 +561,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
-                        PythonLanguage language,
-                        PythonObjectFactory factory,
-                        boolean doArgAndResultConversion) {
+                        PythonLanguage language, PythonObjectFactory factory, boolean doArgAndResultConversion) {
             return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig),
                             language, factory, doArgAndResultConversion);
         }
@@ -565,19 +586,8 @@ public abstract class ExternalFunctionNodes {
                         PythonObjectFactory factory, boolean doArgAndResultConversion) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
             InteropLibrary lib = InteropLibrary.getUncached(callable);
-            if (lib.isPointer(callable)) {
-                long pointer;
-                try {
-                    pointer = lib.asPointer(callable);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-                Object delegate = PythonContext.get(null).getCApiContext().getClosureDelegate(pointer);
-                if (delegate instanceof PBuiltinFunction function) {
-                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
-                    return function;
-                }
-            }
+            PythonContext context = PythonContext.get(null);
+            assert !isClosurePointer(context, callable, lib);
             if (flags < 0) {
                 flags = 0;
             }
@@ -593,7 +603,11 @@ public abstract class ExternalFunctionNodes {
             } else {
                 defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
-            Object type = SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING) ? null : enclosingType;
+
+            // ensure that 'callable' is executable via InteropLibrary
+            Object boundCallable = ensureExecutable(context, callable, sig, lib);
+
+            Object type = (enclosingType == PNone.NO_VALUE || SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING)) ? null : enclosingType;
             // TODO(fa): this should eventually go away
             switch (sig) {
                 case NOARGS:
@@ -603,9 +617,50 @@ public abstract class ExternalFunctionNodes {
                 case FASTCALL:
                 case FASTCALL_WITH_KEYWORDS:
                 case METHOD:
-                    return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
+                    return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
             }
-            return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
+            return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
+        }
+
+        private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
+            if (lib.isPointer(callable)) {
+                try {
+                    Object delegate = context.getCApiContext().getClosureDelegate(lib.asPointer(callable));
+                    return delegate instanceof PBuiltinFunction;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return false;
+        }
+
+        @TruffleBoundary
+        public static Object ensureExecutable(PythonContext context, Object callable, PExternalFunctionWrapper sig, InteropLibrary lib) {
+            if (!lib.isExecutable(callable)) {
+                Env env = context.getEnv();
+                boolean panama = PythonOptions.UsePanama.getValue(env.getOptions());
+                Object nfiSignature = env.parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + sig.signature, sig.name()).build()).call();
+
+                /*
+                 * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM
+                 * pointer (that is still not executable). To avoid unnecessary indirections, we
+                 * test 'isPointer(callable)' and if so, we retrieve the bare long value using
+                 * 'asPointer(callable)' and wrap it in our own PointerContainer.
+                 */
+                Object funPtr;
+                if (lib.isPointer(callable)) {
+                    try {
+                        funPtr = new PointerContainer(lib.asPointer(callable));
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                } else {
+                    funPtr = callable;
+                }
+                return SignatureLibrary.getUncached().bind(nfiSignature, funPtr);
+            }
+            // nothing to do
+            return callable;
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
@@ -695,8 +750,6 @@ public abstract class ExternalFunctionNodes {
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-        @CompilationFinal private Object signature;
-        @Child private SignatureLibrary signatureLib;
 
         private final PExternalFunctionWrapper provider;
 
@@ -751,22 +804,7 @@ public abstract class ExternalFunctionNodes {
 
             CApiTiming.enter();
             try {
-                Object result;
-                if (!lib.isExecutable(callable)) {
-                    if (signature == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-                        signature = getContext().getEnv().parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + provider.signature, "exec").build()).call();
-                    }
-                    if (signatureLib == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        signatureLib = insert(SignatureLibrary.getFactory().create(signature));
-                    }
-                    result = signatureLib.call(signature, callable, cArguments);
-                } else {
-                    result = lib.execute(callable, cArguments);
-                }
-
+                Object result = lib.execute(callable, cArguments);
                 result = checkResultNode.execute(ctx, name, result);
                 if (convertReturnValue != null) {
                     result = convertReturnValue.execute(result);
@@ -1756,7 +1794,7 @@ public abstract class ExternalFunctionNodes {
         protected Object[] preparePArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
-            return new Object[]{self, arg, SpecialMethodNames.getCompareOpString(op)};
+            return new Object[]{self, arg, op};
         }
 
         @Override
