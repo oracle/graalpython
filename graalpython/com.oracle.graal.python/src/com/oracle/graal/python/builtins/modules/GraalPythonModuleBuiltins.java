@@ -67,8 +67,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.nodes.Node;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -105,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -136,6 +133,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -150,6 +148,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -628,17 +627,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 pathNames[i] = toTruffleStringUncached(toolPaths.get(i).toString().replace("\\", "/"));
             }
             return PythonObjectFactory.getUncached().createList(pathNames);
-        }
-    }
-
-    // Equivalent of PyObject_TypeCheck
-    @Builtin(name = "type_check", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class TypeCheckNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean typeCheck(Object instance, Object cls,
-                        @Cached PyObjectTypeCheck typeCheckNode) {
-            return typeCheckNode.execute(instance, cls);
         }
     }
 
