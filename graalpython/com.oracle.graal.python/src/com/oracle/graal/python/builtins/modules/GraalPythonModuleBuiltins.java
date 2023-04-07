@@ -60,10 +60,15 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -128,6 +133,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -630,6 +636,65 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "determine_system_toolchain", maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class DetermineSystemToolchain extends PythonUnaryBuiltinNode {
+        /**
+         * This is derived from {@code distutils.unixccompiler._is_gcc}
+         */
+        private static final String[] C_COMPILER_PRECEDENCE = {"gcc", "clang"};
+        private static final String[] CXX_COMPILER_PRECEDENCE = {"g++", "clang++"};
+
+        private static final PKeyword[] GENERIC_TOOLCHAIN = {
+                        new PKeyword(tsLiteral("CC"), tsLiteral("cc")),
+                        new PKeyword(tsLiteral("CXX"), tsLiteral("c++")),
+                        new PKeyword(tsLiteral("AR"), tsLiteral("ar")),
+                        new PKeyword(tsLiteral("RANLIB"), tsLiteral("ranlib")),
+                        new PKeyword(tsLiteral("LD"), tsLiteral("ld")),
+                        new PKeyword(tsLiteral("NM"), tsLiteral("nm"))
+        };
+
+        @Specialization
+        PDict doGeneric(@SuppressWarnings("unused") Object unused) {
+            return factory().createDict(fromToolchain());
+        }
+
+        @TruffleBoundary
+        private static PKeyword[] fromToolchain() {
+            PKeyword[] result = GENERIC_TOOLCHAIN;
+            int id = which();
+            if (id >= 0) {
+                assert id < C_COMPILER_PRECEDENCE.length;
+                result = Arrays.copyOf(GENERIC_TOOLCHAIN, GENERIC_TOOLCHAIN.length);
+                result[0] = new PKeyword(tsLiteral("CC"), tsLiteral(C_COMPILER_PRECEDENCE[id]));
+                result[1] = new PKeyword(tsLiteral("CXX"), tsLiteral(CXX_COMPILER_PRECEDENCE[id]));
+            }
+            return result;
+        }
+
+        private static int which() {
+            CompilerAsserts.neverPartOfCompilation();
+            String path = System.getenv("PATH");
+            if (path != null) {
+                for (int i = 0; i < C_COMPILER_PRECEDENCE.length; i++) {
+                    int last = 0;
+                    for (int j = path.indexOf(File.pathSeparatorChar); j != -1; j = path.indexOf(File.pathSeparatorChar, last)) {
+                        Path resolvedProgramName = Paths.get(path.substring(last, j)).resolve(C_COMPILER_PRECEDENCE[i]);
+                        if (Files.isExecutable(resolvedProgramName)) {
+                            return i;
+                        }
+                        /*
+                         * next start is the char after the separator because we have "path0:path1"
+                         * and 'i' points to ':'
+                         */
+                        last = j + 1;
+                    }
+                }
+            }
+            return -1;
+        }
+    }
+
     @Builtin(name = "posix_module_backend", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PosixModuleBackendNode extends PythonBuiltinNode {
@@ -650,7 +715,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // Internal builtin used for testing: changes strategy of newly allocated set or map
+// Internal builtin used for testing: changes strategy of newly allocated set or map
     @Builtin(name = "set_storage_strategy", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStorageStrategyNode extends PythonBinaryBuiltinNode {
