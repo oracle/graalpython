@@ -682,6 +682,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void killpg(long pgid, int signal,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("killpg", "%d, %d", pgid, signal);
+        try {
+            lib.killpg(delegate, pgid, signal);
+        } catch (PosixException e) {
+            throw logException("killpg", e);
+        }
+    }
+
+    @ExportMessage
     public Object mmap(long length, int prot, int flags, int fd, long offset,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("mmap", "%d, %d, %d, %d, %d", length, prot, flags, fd, offset);
@@ -805,7 +816,36 @@ public class LoggingPosixSupport extends PosixSupport {
     final long getppid(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("getppid", "");
-        return logExit("getppid", "%d", lib.getuid(delegate));
+        return logExit("getppid", "%d", lib.getppid(delegate));
+    }
+
+    @ExportMessage
+    final long getpgid(long pid,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getpgid", "%d", pid);
+        try {
+            return logExit("getpgid", "%d", lib.getpgid(delegate, pid));
+        } catch (PosixException e) {
+            throw logException("getpgid", e);
+        }
+    }
+
+    @ExportMessage
+    final void setpgid(long pid, long pgid,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("setpgid", "%d, %d", pid, pgid);
+        try {
+            lib.setpgid(delegate, pid, pgid);
+        } catch (PosixException e) {
+            throw logException("setpgid", e);
+        }
+    }
+
+    @ExportMessage
+    final long getpgrp(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getpgrp", "");
+        return logExit("getpgrp", "%d", lib.getpgrp(delegate));
     }
 
     @ExportMessage

@@ -541,6 +541,10 @@ int32_t call_kill(int64_t pid, int32_t signal) {
     return kill(pid, signal);
 }
 
+int32_t call_killpg(int64_t pgid, int32_t signal) {
+    return killpg(pgid, signal);
+}
+
 int64_t call_getuid() {
     return getuid();
 }
@@ -551,6 +555,18 @@ int64_t call_getgid() {
 
 int64_t call_getppid() {
     return getppid();
+}
+
+int64_t call_getpgid(int64_t pid) {
+    return getpgid(pid);
+}
+
+int32_t call_setpgid(int64_t pid, int64_t pgid) {
+	return setpgid(pid, pgid);
+}
+
+int64_t call_getpgrp() {
+    return getpgrp();
 }
 
 int64_t call_getsid(int64_t pid) {

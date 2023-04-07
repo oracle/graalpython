@@ -1839,6 +1839,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    public long killpg(long pgid, int signal) {
+        throw new UnsupportedPosixFeatureException("Emulated killpg not supported");
+    }
+
+    @ExportMessage
     public long[] waitpid(long pid, int options,
                     @CachedLibrary("this") PosixSupportLibrary posixLib) throws PosixException {
         try {
@@ -1958,6 +1964,24 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public long getppid() {
         throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getpgid(long pid) {
+        throw new UnsupportedPosixFeatureException("Emulated getpgid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void setpgid(long pid, long pgid) {
+        throw new UnsupportedPosixFeatureException("Emulated setpgid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getpgrp() {
+        throw new UnsupportedPosixFeatureException("Emulated getpgrp not supported");
     }
 
     @ExportMessage
