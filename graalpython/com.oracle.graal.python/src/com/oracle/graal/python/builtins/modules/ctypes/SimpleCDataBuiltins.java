@@ -76,7 +76,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -96,7 +95,6 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
     }
 
     static void Simple_set_value(VirtualFrame frame, CDataObject self, Object value,
-                    PythonObjectFactory factory,
                     PRaiseNode raiseNode,
                     PyObjectStgDictNode pyObjectStgDictNode,
                     SetFuncNode setFuncNode,
@@ -110,7 +108,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         Object result = setFuncNode.execute(frame, dict.setfunc, self.b_ptr, value, dict.size);
 
         /* consumes the refcount the setfunc returns */
-        keepRefNode.execute(frame, self, 0, result, factory);
+        keepRefNode.execute(frame, self, 0, result);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -134,8 +132,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
                         @Cached KeepRefNode keepRefNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             if (args.length > 0) {
-                Simple_set_value(frame, self, args[0],
-                                factory(), getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
+                Simple_set_value(frame, self, args[0], getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
             }
             return PNone.NONE;
         }
@@ -152,7 +149,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for CDataObject instances";
             assert dict.getfunc != FieldGet.nil;
-            return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size, factory());
+            return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size);
         }
 
         @Specialization
@@ -160,8 +157,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-            Simple_set_value(frame, self, value,
-                            factory(), getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
+            Simple_set_value(frame, self, value, getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
             return PNone.NONE;
         }
     }
@@ -184,7 +180,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
             }
             /* call stgdict.getfunc */
             StgDictObject dict = pyObjectStgDictNode.execute(self);
-            return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size, factory());
+            return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size);
         }
     }
 
@@ -232,7 +228,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
             }
 
             StgDictObject dict = pyObjectStgDictNode.execute(self);
-            TruffleString val = fromJavaStringNode.execute(toStringBoundary(getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size, factory())), TS_ENCODING);
+            TruffleString val = fromJavaStringNode.execute(toStringBoundary(getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size)), TS_ENCODING);
             return simpleTruffleStringFormatNode.format("%s(%s)", getNameNode.execute(clazz), val);
         }
 

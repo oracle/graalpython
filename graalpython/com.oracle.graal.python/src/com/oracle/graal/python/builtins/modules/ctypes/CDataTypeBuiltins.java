@@ -211,7 +211,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached PyCDataAtAddress atAddress) {
             Object buf = asVoidPtr.execute(value);
-            return atAddress.execute(type, buf, 0, factory());
+            return atAddress.execute(type, buf, 0);
         }
 
         @SuppressWarnings("unused")
@@ -261,9 +261,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
             auditNode.audit("ctypes.cdata/buffer", buffer, buffer.getLength(), offset);
 
-            CDataObject result = atAddress.execute(type, buffer, offset, factory());
+            CDataObject result = atAddress.execute(type, buffer, offset);
 
-            keepRefNode.execute(frame, result, -1, buffer, factory());
+            keepRefNode.execute(frame, result, -1, buffer);
 
             return result;
         }
@@ -341,22 +341,23 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             DLHandler handle = getHandleFromLongObject(obj, getContext(), asVoidPtr, getRaiseNode());
-            Object address = dlSymNode.execute(frame, handle, name, getContext(), factory(), ValueError);
-            return atAddress.execute(type, address, 0, factory());
+            Object address = dlSymNode.execute(frame, handle, name, ValueError);
+            return atAddress.execute(type, address, 0);
         }
     }
 
     protected abstract static class PyCDataAtAddress extends PNodeWithRaise {
 
-        abstract CDataObject execute(Object type, Object obj, int offset, PythonObjectFactory factory);
+        abstract CDataObject execute(Object type, Object obj, int offset);
 
         /*
          * Box a memory block into a CData instance.
          */
         @Specialization
-        CDataObject PyCData_AtAddress_bytes(Object type, byte[] buf, int offset, PythonObjectFactory factory,
+        CDataObject PyCData_AtAddress_bytes(Object type, byte[] buf, int offset,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached PythonObjectFactory factory) {
             // auditNode.audit("ctypes.cdata", buf);
             // assert(PyType_Check(type));
             StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
@@ -376,10 +377,11 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(obj)")
-        CDataObject PyCData_AtAddress(Object type, Object obj, @SuppressWarnings("unused") int offset, PythonObjectFactory factory,
+        CDataObject PyCData_AtAddress(Object type, Object obj, @SuppressWarnings("unused") int offset,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached AuditNode auditNode) {
+                        @Cached AuditNode auditNode,
+                        @Cached PythonObjectFactory factory) {
             auditNode.audit("ctypes.cdata", obj);
             // assert(PyType_Check(type));
             StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
@@ -403,7 +405,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     // corresponds to PyCData_get
     @ImportStatic(FieldGet.class)
     protected abstract static class PyCDataGetNode extends PNodeWithRaise {
-        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr, PythonObjectFactory factory);
+        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr);
 
         @Specialization(guards = "getfunc != nil")
         Object withFunc(@SuppressWarnings("unused") Object type,
@@ -411,9 +413,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") Object src,
                         @SuppressWarnings("unused") int index,
                         int size, PtrValue adr,
-                        PythonObjectFactory factory,
                         @Cached GetFuncNode getFuncNode) {
-            return getFuncNode.execute(getfunc, adr, size, factory);
+            return getFuncNode.execute(getfunc, adr, size);
         }
 
         @Specialization(guards = "getfunc == nil")
@@ -422,7 +423,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         Object src,
                         int index,
                         int size, PtrValue adr,
-                        PythonObjectFactory factory,
+                        @Cached PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached InlinedIsSameTypeNode isSameTypeNode,
@@ -431,7 +432,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(type);
             if (dict != null && dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, type, getBaseClassNode, isSameTypeNode)) {
-                return getFuncNode.execute(dict.getfunc, adr, size, factory);
+                return getFuncNode.execute(dict.getfunc, adr, size);
             }
             return PyCData_FromBaseObj(type, src, index, adr, factory, getRaiseNode(), pyTypeStgDictNode);
         }
@@ -442,10 +443,10 @@ public class CDataTypeBuiltins extends PythonBuiltins {
      */
     protected abstract static class PyCDataSetNode extends PNodeWithRaise {
 
-        abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr, PythonObjectFactory factory);
+        abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr);
 
         @Specialization
-        void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr, PythonObjectFactory factory,
+        void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr,
                         @Cached SetFuncNode setFuncNode,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -453,7 +454,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached GetNameNode getName,
-                        @Cached KeepRefNode keepRefNode) {
+                        @Cached KeepRefNode keepRefNode,
+                        @Cached PythonObjectFactory factory) {
             if (!pyTypeCheck.isCDataObject(dst)) {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
@@ -471,7 +473,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             /*
              * If KeepRef fails, we are stumped. The dst memory block has already been changed
              */
-            keepRefNode.execute(frame, dst, index, result, factory);
+            keepRefNode.execute(frame, dst, index, result);
         }
 
         /*
@@ -594,20 +596,21 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     protected abstract static class KeepRefNode extends PNodeWithRaise {
 
-        abstract void execute(VirtualFrame frame, CDataObject target, int index, Object keep, PythonObjectFactory factory);
+        abstract void execute(VirtualFrame frame, CDataObject target, int index, Object keep);
 
         @Specialization
         @SuppressWarnings("unused")
-        static void none(CDataObject target, int index, PNone keep, PythonObjectFactory factory) {
+        static void none(CDataObject target, int index, PNone keep) {
             /* Optimization: no need to store None */
         }
 
         @Specialization(guards = "!isNone(keep)")
-        void KeepRef(VirtualFrame frame, CDataObject target, int index, Object keep, PythonObjectFactory factory,
+        void KeepRef(VirtualFrame frame, CDataObject target, int index, Object keep,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached HashingStorageSetItem setItem) {
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached PythonObjectFactory factory) {
             CDataObject ob = PyCData_GetContainer(target, factory);
             if (!PGuards.isDict(ob.b_objects)) {
                 ob.b_objects = keep; /* refcount consumed */
