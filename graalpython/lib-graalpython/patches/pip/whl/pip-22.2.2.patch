@@ -23,14 +23,14 @@ index 47ed927..1d182de 100644
      "of pip is available for download. Implied with --no-index.",
  )
 diff --git a/pip/_internal/index/package_finder.py b/pip/_internal/index/package_finder.py
-index 9bf247f..8167348 100644
+index 9bf247f..3e8f187 100644
 --- a/pip/_internal/index/package_finder.py
 +++ b/pip/_internal/index/package_finder.py
 @@ -38,6 +38,7 @@ from pip._internal.utils.logging import indent_log
  from pip._internal.utils.misc import build_netloc
  from pip._internal.utils.packaging import check_requires_python
  from pip._internal.utils.unpacking import SUPPORTED_EXTENSIONS
-+from pip._internal.utils.graalpy import apply_graalpy_sort_order
++from pip._internal.utils.graalpy import apply_graalpy_sort_order, get_graalpy_candidates
  
  __all__ = ["FormatControl", "BestCandidateResult", "PackageFinder"]
  
@@ -42,6 +42,40 @@ index 9bf247f..8167348 100644
      def _sort_key(self, candidate: InstallationCandidate) -> CandidateSortingKey:
          """
          Function to pass as the `key` argument to a call to sorted() to sort
+@@ -851,8 +853,11 @@ class PackageFinder:
+ 
+             logger.debug("Local files found: %s", ", ".join(paths))
+ 
++        # We add links for few packages that don't publish sdists
++        graalpy_candidates = get_graalpy_candidates(project_name)
++
+         # This is an intentional priority ordering
+-        return file_candidates + page_candidates
++        return file_candidates + page_candidates + graalpy_candidates
+ 
+     def make_candidate_evaluator(
+         self,
+diff --git a/pip/_internal/network/download.py b/pip/_internal/network/download.py
+index 79b82a5..1eddfa3 100644
+--- a/pip/_internal/network/download.py
++++ b/pip/_internal/network/download.py
+@@ -6,6 +6,7 @@ import mimetypes
+ import os
+ from typing import Iterable, Optional, Tuple
+ 
++from pip._internal.utils.graalpy import LinkWithFilename
+ from pip._vendor.requests.models import CONTENT_CHUNK_SIZE, Response
+ 
+ from pip._internal.cli.progress_bars import get_download_progress_renderer
+@@ -98,7 +99,7 @@ def _get_http_response_filename(resp: Response, link: Link) -> str:
+     filename = link.filename  # fallback
+     # Have a look at the Content-Disposition header for a better guess
+     content_disposition = resp.headers.get("content-disposition")
+-    if content_disposition:
++    if content_disposition and not isinstance(link, LinkWithFilename):
+         filename = parse_content_disposition(content_disposition, filename)
+     ext: Optional[str] = splitext(filename)[1]
+     if not ext:
 diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
 index 1af8978..15fee7f 100644
 --- a/pip/_internal/operations/install/wheel.py
@@ -58,18 +92,21 @@ index 1af8978..15fee7f 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..5dbb916
+index 0000000..0271d8a
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,221 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
 +import re
 +from pathlib import Path
++from urllib.parse import urlparse
 +
++from pip._internal.models.candidate import InstallationCandidate
++from pip._internal.models.link import Link
 +from pip._vendor import tomli
-+from pip._vendor.packaging.specifiers import Specifier
++from pip._vendor.packaging.specifiers import SpecifierSet
 +from pip._vendor.packaging.version import VERSION_PATTERN
 +
 +PATCHES_BASE_DIRS = [os.path.join(__graalpython__.core_home, "patches")]
@@ -135,6 +172,10 @@ index 0000000..5dbb916
 +        if metadata := self._repository.get(normalize_name(name)):
 +            return metadata['rules']
 +
++    def get_add_sources(self, name):
++        if metadata := self._repository.get(normalize_name(name)):
++            return metadata.get('add-sources')
++
 +    def get_priority_for_version(self, name, version):
 +        if rules := self.get_rules(name):
 +            for rule in rules:
@@ -144,7 +185,7 @@ index 0000000..5dbb916
 +
 +    @staticmethod
 +    def rule_matches_version(rule, version):
-+        return not rule.get('version') or Specifier(rule['version']).contains(version)
++        return not rule.get('version') or SpecifierSet(rule['version']).contains(version)
 +
 +    def get_suggested_version_specs(self, name):
 +        versions = set()
@@ -251,6 +292,31 @@ index 0000000..5dbb916
 +        return priority, default_sort_key
 +
 +    return wrapper
++
++
++class LinkWithFilename(Link):
++    def __init__(self, url: str, filename: str):
++        super().__init__(url)
++        self._filename = filename
++
++    @property
++    def filename(self) -> str:
++        return self._filename
++
++
++def get_graalpy_candidates(name):
++    repository = get_patch_repository()
++    candidates = []
++    for add_source in repository.get_add_sources(name) or []:
++        version = add_source['version']
++        url = add_source['url']
++        match = re.search(r'\.(tar\.(?:gz|bz2|xz)|zip|whl)$', urlparse(url).path)
++        assert match, "Couldn't determine URL suffix"
++        suffix = match.group(1)
++        # We need to force the filename to match the usual convention, otherwise we won't find a patch
++        link = LinkWithFilename(url, f'{name}-{version}.{suffix}')
++        candidates.append(InstallationCandidate(name=name, version=version, link=link))
++    return candidates
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
 index 78b5c13..18a184c 100644
 --- a/pip/_internal/utils/unpacking.py

@@ -316,6 +316,15 @@ if sys.implementation.name == "graalpy":
             self.run_venv_pip_install('foo')
             assert self.run_test_fun() == "Unpatched"
 
+        def test_version_range_multiple(self):
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{
+                'patch': 'foo.patch',
+                'version': '> 1.0.0, < 2.0.0',
+            }])
+            self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "Patched"
+
         def test_version_selection_default(self):
             self.add_package_to_index('foo', '1.0.0', 'wheel')
             self.add_package_to_index('foo', '1.1.0', 'wheel')
