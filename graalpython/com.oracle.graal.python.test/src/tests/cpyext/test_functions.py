@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,17 @@ def kw_fun(a, b=0, c=0):
 
 def kwonly_fun(**kwargs):
     return kwargs
+
+
+def ident(arg, *others):
+    return (len(others), arg, others)
+
+
+def identCallResult(arg):
+    if type(arg) is tuple:
+        return ident(*arg)
+    else:
+        return ident(arg)
 
 
 class TestPyObject(CPyExtTestCase):
@@ -168,6 +179,20 @@ class TestPyObject(CPyExtTestCase):
         ),
         arguments=["PyObject* callable", "const char* fmt"],
         argspec="Os",
+        callfunction="PyObject_CallFunction",
+    )
+    test_PyObject_CallFunction1 = CPyExtFunction(
+        lambda args: identCallResult(args[2]),
+        lambda: (
+            (ident, "O", "123"),
+            (ident, "O", "12"),
+            (ident, "O", tuple()),
+            (ident, "O", ("12",)),
+            (ident, "O", ("12", "13")),
+            (ident, "O", ("12", "13", "asdf")),
+        ),
+        arguments=["PyObject* callable", "const char* fmt", "PyObject* arg"],
+        argspec="OsO",
         callfunction="PyObject_CallFunction",
     )
 

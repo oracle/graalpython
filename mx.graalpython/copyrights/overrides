@@ -195,6 +195,7 @@ graalpython/com.oracle.graal.python.cext/include/pymath.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyport.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pystate.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/pystrcmp.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pystrhex.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pystrtod.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pythonrun.h,python.copyright
@@ -236,6 +237,7 @@ graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyrig
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/posix/fork_exec.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/capsule.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/descrobject_shared.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/complexobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
@@ -246,6 +248,7 @@ graalpython/com.oracle.graal.python.cext/src/mysnprintf.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/mystrtoul.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrhex.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrtod.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/pystrcmp.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/sliceobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodeobject.c,python.copyright

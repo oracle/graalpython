@@ -125,39 +125,15 @@ int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
 
-#define IS_SINGLE_ARG(_fmt) ((_fmt[0]) != '\0' && (_fmt[1]) == '\0')
-
-PyObject* PyObject_Call(PyObject* callable, PyObject* args, PyObject* kwargs) {
-	return Graal_PyTruffleObject_Call1(callable, args, kwargs, 0);
+PyObject * _PyObject_CallMethodIdObjArgs(PyObject *callable, struct _Py_Identifier *name, ...) {
+    va_list vargs;
+    va_start(vargs, name);
+    // the arguments are given as a variable list followed by NULL
+    PyObject *result = GraalPyTruffleObject_CallMethodObjArgs(callable, _PyUnicode_FromId(name), &vargs);
+    va_end(vargs);
+    return result;
 }
 
-PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
-	return Graal_PyTruffleObject_Call1(callable, args, NULL, 0);
-}
-
-PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
-    if (fmt == NULL || fmt[0] == '\0') {
-	    return Graal_PyTruffleObject_Call1(callable, NULL, NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    PyObject* args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-	return Graal_PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
-}
-
-PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
-    if (fmt == NULL || fmt[0] == '\0') {
-	    return Graal_PyTruffleObject_Call1(callable, NULL, NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    PyObject* args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-	return Graal_PyTruffleObject_Call1(callable, args, NULL, IS_SINGLE_ARG(fmt));
-}
-
-typedef PyObject *(*call_fun_obj_args_t)(PyObject *, void *);
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     va_list vargs;
     va_start(vargs, callable);
@@ -167,20 +143,6 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     return result;
 }
 
-typedef PyObject *(*call_method_t)(PyObject *, void *, void *, int32_t);
-PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
-    PyObject* args;
-    if (fmt == NULL || fmt[0] == '\0') {
-        return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-    return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), args, IS_SINGLE_ARG(fmt));
-}
-
-typedef PyObject *(*call_meth_obj_args_t)(PyObject *, void *, void *);
 PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
     va_list vargs;
     va_start(vargs, name);
@@ -188,18 +150,6 @@ PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
     PyObject *result = GraalPyTruffleObject_CallMethodObjArgs(callable, name, &vargs);
     va_end(vargs);
     return result;
-}
-
-PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
-    PyObject* args;
-    if (fmt == NULL || fmt[0] == '\0') {
-        return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), NULL, 0);
-    }
-    va_list va;
-    va_start(va, fmt);
-    args = Py_VaBuildValue(fmt, va);
-    va_end(va);
-    return Graal_PyTruffleObject_CallMethod1(object, truffleString(method), args, IS_SINGLE_ARG(fmt));
 }
 
 PyObject* _PyObject_MakeTpCall(PyThreadState *tstate, PyObject *callable,
@@ -345,6 +295,98 @@ PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwarg
     return result;
 }
 
+
+// Taken from cpython object.c
+/* Specialized version of _PyObject_GenericGetAttrWithDict
+   specifically for the LOAD_METHOD opcode.
+
+   Return 1 if a method is found, 0 if it's a regular attribute
+   from __dict__ or something returned by using a descriptor
+   protocol.
+
+   `method` will point to the resolved attribute or NULL.  In the
+   latter case, an error will be set.
+*/
+int
+_PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method)
+{
+    PyTypeObject *tp = Py_TYPE(obj);
+    PyObject *descr;
+    descrgetfunc f = NULL;
+    PyObject **dictptr, *dict;
+    PyObject *attr;
+    int meth_found = 0;
+
+    assert(*method == NULL);
+
+    if (Py_TYPE(obj)->tp_getattro != PyObject_GenericGetAttr
+            || !PyUnicode_Check(name)) {
+        *method = PyObject_GetAttr(obj, name);
+        return 0;
+    }
+
+    if (tp->tp_dict == NULL && PyType_Ready(tp) < 0)
+        return 0;
+
+    descr = _PyType_Lookup(tp, name);
+    if (descr != NULL) {
+        Py_INCREF(descr);
+        if (_PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_METHOD_DESCRIPTOR)) {
+            meth_found = 1;
+        } else {
+            f = Py_TYPE(descr)->tp_descr_get;
+            if (f != NULL && PyDescr_IsData(descr)) {
+                *method = f(descr, obj, (PyObject *)Py_TYPE(obj));
+                Py_DECREF(descr);
+                return 0;
+            }
+        }
+    }
+
+    dictptr = _PyObject_GetDictPtr(obj);
+    if (dictptr != NULL && (dict = *dictptr) != NULL) {
+        Py_INCREF(dict);
+        attr = PyDict_GetItemWithError(dict, name);
+        if (attr != NULL) {
+            Py_INCREF(attr);
+            *method = attr;
+            Py_DECREF(dict);
+            Py_XDECREF(descr);
+            return 0;
+        }
+        else {
+            Py_DECREF(dict);
+            if (PyErr_Occurred()) {
+                Py_XDECREF(descr);
+                return 0;
+            }
+        }
+    }
+
+    if (meth_found) {
+        *method = descr;
+        return 1;
+    }
+
+    if (f != NULL) {
+        *method = f(descr, obj, (PyObject *)Py_TYPE(obj));
+        Py_DECREF(descr);
+        return 0;
+    }
+
+    if (descr != NULL) {
+        *method = descr;
+        return 0;
+    }
+
+    PyErr_Format(PyExc_AttributeError,
+                 "'%.50s' object has no attribute '%U'",
+                 tp->tp_name, name);
+
+//    set_attribute_error_context(obj, name);
+    return 0;
+}
+
 // Taken from cpython call.c
 PyObject* PyObject_VectorcallDict(PyObject *callable, PyObject *const *args,
                        size_t nargsf, PyObject *kwargs) {
@@ -379,6 +421,41 @@ PyObject* PyObject_VectorcallDict(PyObject *callable, PyObject *const *args,
     }
     return res;
 }
+
+// Taken from cpython call.c
+PyObject *
+PyObject_VectorcallMethod(PyObject *name, PyObject *const *args,
+                           size_t nargsf, PyObject *kwnames)
+{
+    assert(name != NULL);
+    assert(args != NULL);
+    assert(PyVectorcall_NARGS(nargsf) >= 1);
+
+    PyThreadState *tstate = _PyThreadState_GET();
+    PyObject *callable = NULL;
+    /* Use args[0] as "self" argument */
+    int unbound = _PyObject_GetMethod(args[0], name, &callable);
+    if (callable == NULL) {
+        return NULL;
+    }
+
+    if (unbound) {
+        /* We must remove PY_VECTORCALL_ARGUMENTS_OFFSET since
+         * that would be interpreted as allowing to change args[-1] */
+        nargsf &= ~PY_VECTORCALL_ARGUMENTS_OFFSET;
+    }
+    else {
+        /* Skip "self". We can keep PY_VECTORCALL_ARGUMENTS_OFFSET since
+         * args[-1] in the onward call is args[0] here. */
+        args++;
+        nargsf--;
+    }
+    PyObject *result = _PyObject_VectorcallTstate(tstate, callable,
+                                                  args, nargsf, kwnames);
+    Py_DECREF(callable);
+    return result;
+}
+
 
 // Taken from CPython object.c
 int

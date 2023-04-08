@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_TYPE_LOCK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 
@@ -172,6 +173,15 @@ public final class PythonCextPyThreadBuiltins {
         Object tssDelete(long key) {
             getCApiContext().tssDelete(key);
             return PNone.NONE;
+        }
+    }
+
+    @CApiBuiltin(ret = UNSIGNED_LONG, args = {}, call = Direct)
+    abstract static class PyThread_get_thread_ident extends CApiNullaryBuiltinNode {
+        @SuppressWarnings("deprecation") // deprecated in JDK19
+        @Specialization
+        long get() {
+            return Thread.currentThread().getId();
         }
     }
 }

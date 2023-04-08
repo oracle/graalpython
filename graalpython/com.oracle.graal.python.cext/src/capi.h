@@ -268,6 +268,7 @@ typedef struct {
     BUILTIN(PyThreadState_GetDict, PyObject*) \
     BUILTIN(PyThread_acquire_lock, int, PyThread_type_lock, int) \
     BUILTIN(PyThread_allocate_lock, PyThread_type_lock) \
+    BUILTIN(PyThread_get_thread_ident, unsigned long) \
     BUILTIN(PyThread_release_lock, void, PyThread_type_lock) \
     BUILTIN(PyTraceBack_Here, int, PyFrameObject*) \
     BUILTIN(PyTraceMalloc_Track, int, unsigned int, uintptr_t, size_t) \
