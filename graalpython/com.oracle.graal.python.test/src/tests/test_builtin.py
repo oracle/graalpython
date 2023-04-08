@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -90,4 +90,22 @@ class BuiltinTest(unittest.TestCase):
 
     def test_min(self):
         self.assertEqual(min((), default=1, key="adsf"), 1)
+
+    def test_sort_keyfunc(self):
+        lists = [[], [1], [1,2], [1,2,3], [1,3,2], [3,2,1], [9,3,8,1,7,9,3,6,7,8]]
         
+        for l in lists:
+            count = 0
+            
+            def keyfunc(v):
+                nonlocal count
+                count += 1
+                return v
+            
+            result = sorted(l, key = keyfunc)
+            self.assertEqual(len(l), count)
+            self.assertEqual(sorted(l), result)
+            count = 0
+            result = sorted(l, key = keyfunc, reverse = True)
+            self.assertEqual(len(l), count)
+            self.assertEqual(sorted(l, reverse = True), result)       

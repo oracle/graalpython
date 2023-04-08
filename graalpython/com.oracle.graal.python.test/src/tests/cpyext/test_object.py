@@ -153,6 +153,39 @@ class TestObject(object):
         tester = TestIndex()
         assert [0, 1][tester] == 1
 
+    def test_slots_binops(self):
+        TestSlotsBinop = CPyExtType("TestSlotsBinop",
+                             """
+                             PyObject* test_int_impl(PyObject* self) {
+                                 PyErr_SetString(PyExc_RuntimeError, "Should not call __int__");
+                                 return NULL;
+                             }
+                             PyObject* test_index_impl(PyObject* self) {
+                                 PyErr_SetString(PyExc_RuntimeError, "Should not call __index__");
+                                 return NULL;
+                             }
+                             PyObject* test_mul_impl(PyObject* a, PyObject* b) {
+                                 return PyLong_FromLong(42);
+                             }
+                             """,
+                             nb_int="test_int_impl",
+                             nb_index="test_index_impl",
+                             nb_multiply="test_mul_impl"
+        )
+        assert [4, 2] * TestSlotsBinop() == 42
+
+    def test_index(self):
+        TestIndex = CPyExtType("TestIndex",
+                             """
+                             PyObject* test_index(PyObject* self) {
+                                 return PyLong_FromLong(1);
+                             }
+                             """,
+                             nb_index="test_index"
+        )
+        tester = TestIndex()
+        assert [0, 1][tester] == 1
+
     def test_getattro(self):
         return  # TODO: not working yet
         # XXX: Cludge to get type into C
