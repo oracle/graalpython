@@ -518,7 +518,9 @@ _PyBytesWriter_WriteBytes(_PyBytesWriter *writer, void *ptr,
 PyObject* bytes_subtype_new(PyTypeObject *type, int8_t* contents, Py_ssize_t n) {
     PyObject* bytes = type->tp_alloc(type, n);
     if (bytes != NULL) {
-        memcpy(((PyBytesObject*)bytes)->ob_sval, contents, n+1);
+        char* dst = ((PyBytesObject*)bytes)->ob_sval;
+        memcpy(dst, contents, n);
+        dst[n] = '\0';
     }
     return bytes;
 }
