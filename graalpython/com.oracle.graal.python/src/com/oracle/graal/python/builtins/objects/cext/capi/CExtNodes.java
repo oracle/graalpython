@@ -137,7 +137,9 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -210,6 +212,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -1737,20 +1740,25 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class LookupNativeMemberInMRONode extends Node {
 
-        public abstract Object execute(Object cls, NativeMember nativeMemberName, Object managedMemberName);
+        public abstract Object execute(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName);
 
-        @Specialization
-        static Object doSingleContext(Object cls, NativeMember nativeMemberName, Object managedMemberName,
-                        @Cached GetMroStorageNode getMroNode,
-                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
-                        @Cached GetTypeMemberNode getTypeMemberNode) {
+        static boolean isTpAlloc(Object cls, HiddenKey key) {
+            return cls instanceof PythonClass && key == TypeBuiltins.TYPE_ALLOC;
+        }
+
+        @Specialization(guards = "!isTpAlloc(cls, managedMemberName)")
+        static Object doSingleContext(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName,
+                                      @Cached GetMroStorageNode getMroNode,
+                                      @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                                      @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                                      @Cached GetTypeMemberNode getTypeMemberNode) {
 
             MroSequenceStorage mroStorage = getMroNode.execute(cls);
             int n = mroStorage.length();
 
             for (int i = 0; i < n; i++) {
                 PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
+
                 Object result;
                 if (PGuards.isManagedClass(mroCls)) {
                     result = readAttrNode.execute(mroCls, managedMemberName);
@@ -1763,7 +1771,22 @@ public abstract class CExtNodes {
                 }
             }
 
-            return PNone.NO_VALUE;
+            return readAttrNode.execute(PythonContext.get(readAttrNode).lookupType(PythonBuiltinClassType.PythonObject), managedMemberName);
+        }
+
+        @Specialization(guards = "isTpAlloc(cls, managedMemberName)")
+        static Object doToAllocManaged(Object cls, @SuppressWarnings("unused") NativeMember nativeMemberName, HiddenKey managedMemberName,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+
+            Object alloc = readAttrNode.execute(cls, managedMemberName);
+            if (alloc == PNone.NO_VALUE) {
+                PythonObject object = PythonContext.get(readAttrNode).lookupType(PythonBuiltinClassType.PythonObject);
+                Object pyTypeGenericAlloc = readAttrNode.execute(object, managedMemberName);
+                writeAttrNode.execute(cls, managedMemberName, pyTypeGenericAlloc);
+                alloc = pyTypeGenericAlloc;
+            }
+            return alloc;
         }
     }
 
