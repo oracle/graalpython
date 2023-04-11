@@ -1229,7 +1229,10 @@ def graalpython_gate_runner(args, tasks):
                 if "hello standalone" not in out.data:
                     mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
-                mx.run([svm_image, "-m", "standalone", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), "-m", tmpmain])
+                mx.run(
+                    [svm_image, "-m", "standalone", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), "-m", tmpmain],
+                    env=dict(tuple(os.environ.items()) + (("JAVA_HOME", os.path.dirname(os.path.dirname(svm_image))),))
+                )
                 out = mx.OutputCapture()
                 mx.run(
                     [os.path.join(tmpdir, "directlauncher")],
