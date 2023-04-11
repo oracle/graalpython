@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
@@ -961,5 +962,35 @@ public abstract class BytesNodes {
             return end < 0 ? 0 : end;
         }
         return endIn;
+    }
+
+    @GenerateCached(false)
+    public abstract static class AbstractComparisonBaseNode extends PythonBinaryBuiltinNode {
+        protected boolean doCmp(byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
+            int compareResult = 0;
+            if (shortcutLength() && selfLength != otherLength) {
+                return shortcutLengthResult();
+            }
+            for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
+                compareResult = Byte.compare(selfArray[i], otherArray[i]);
+                if (compareResult != 0) {
+                    break;
+                }
+            }
+            if (compareResult == 0) {
+                compareResult = Integer.compare(selfLength, otherLength);
+            }
+            return fromCompareResult(compareResult);
+        }
+
+        protected boolean shortcutLength() {
+            return false;
+        }
+
+        protected boolean shortcutLengthResult() {
+            return false;
+        }
+
+        protected abstract boolean fromCompareResult(int compareResult);
     }
 }

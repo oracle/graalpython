@@ -30,10 +30,16 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
@@ -53,15 +59,18 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -100,6 +109,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -784,4 +794,107 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return commonReduce(2, bytes, len, clazz, dict, factory(), appendCodePointNode, toStringNode);
         }
     }
+
+    @GenerateCached(false)
+    abstract static class AbstractComparisonNode extends BytesNodes.AbstractComparisonBaseNode {
+        @Specialization
+        @SuppressWarnings("truffle-static-method")
+        boolean cmp(PBytesLike self, PBytesLike other,
+                        @Shared @Cached GetInternalByteArrayNode getArray) {
+            SequenceStorage selfStorage = self.getSequenceStorage();
+            SequenceStorage otherStorage = other.getSequenceStorage();
+            return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
+        }
+
+        @Specialization
+        @SuppressWarnings("truffle-static-method")
+        Object cmp(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetBytesStorage getBytesStorage,
+                        @Shared @Cached GetInternalByteArrayNode getArray,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            if (!acquireLib.hasBuffer(other)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
+            Object otherBuffer = acquireLib.acquireReadonly(other, frame, this);
+            try {
+                return doCmp(getArray.execute(selfStorage), selfStorage.length(),
+                                bufferLib.getInternalOrCopiedByteArray(otherBuffer), bufferLib.getBufferLength(otherBuffer));
+            } finally {
+                bufferLib.release(otherBuffer);
+            }
+        }
+    }
+
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class EqNode extends AbstractComparisonNode {
+        @Override
+        protected boolean fromCompareResult(int compareResult) {
+            return compareResult == 0;
+        }
+
+        @Override
+        protected boolean shortcutLength() {
+            return true;
+        }
+    }
+
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class NeNode extends AbstractComparisonNode {
+        @Override
+        protected boolean fromCompareResult(int compareResult) {
+            return compareResult != 0;
+        }
+
+        @Override
+        protected boolean shortcutLength() {
+            return true;
+        }
+
+        @Override
+        protected boolean shortcutLengthResult() {
+            return true;
+        }
+    }
+
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class LtNode extends AbstractComparisonNode {
+        @Override
+        protected boolean fromCompareResult(int compareResult) {
+            return compareResult < 0;
+        }
+    }
+
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends AbstractComparisonNode {
+        @Override
+        protected boolean fromCompareResult(int compareResult) {
+            return compareResult <= 0;
+        }
+    }
+
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends AbstractComparisonNode {
+        @Override
+        protected boolean fromCompareResult(int compareResult) {
+            return compareResult > 0;
+        }
+    }
+
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends AbstractComparisonNode {
+        @Override
+        protected boolean fromCompareResult(int compareResult) {
+            return compareResult >= 0;
+        }
+    }
+
 }
