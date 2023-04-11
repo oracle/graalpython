@@ -56,8 +56,7 @@ def _get_posix_vars():
 
     use_system_toolchain = __graalpython__.use_system_toolchain
     if use_system_toolchain:
-        def get_toolchain(name):
-            return dict(CC='cc',CXX='c++',AR='ar',RANLIB='ranlib',LD='ld',NM='nm')[name]
+        get_toolchain = __graalpython__.determine_system_toolchain().get
     else:
         get_toolchain = __graalpython__.get_toolchain_tool_path
 
