@@ -552,7 +552,15 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateCached(false)
     abstract static class AbstractCmpNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object eq(VirtualFrame frame, Object self, Object other,
+        boolean cmp(PBytesLike self, PBytesLike other,
+                        @Cached GetInternalByteArrayNode getArray) {
+            SequenceStorage selfStorage = self.getSequenceStorage();
+            SequenceStorage otherStorage = other.getSequenceStorage();
+            return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
+        }
+
+        @Specialization
+        Object cmp(VirtualFrame frame, Object self, Object other,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             if (!acquireLib.hasBuffer(other)) {
@@ -562,30 +570,31 @@ public class BytesBuiltins extends PythonBuiltins {
             try {
                 Object otherBuffer = acquireLib.acquireReadonly(other, frame, this);
                 try {
-                    int selfLength = bufferLib.getBufferLength(selfBuffer);
-                    byte[] selfArray = bufferLib.getInternalOrCopiedByteArray(selfBuffer);
-                    int otherLength = bufferLib.getBufferLength(otherBuffer);
-                    byte[] otherArray = bufferLib.getInternalOrCopiedByteArray(otherBuffer);
-                    int compareResult = 0;
-                    if (shortcutLength() && selfLength != otherLength) {
-                        return shortcutLengthResult();
-                    }
-                    for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
-                        compareResult = Byte.compare(selfArray[i], otherArray[i]);
-                        if (compareResult != 0) {
-                            break;
-                        }
-                    }
-                    if (compareResult == 0) {
-                        compareResult = Integer.compare(selfLength, otherLength);
-                    }
-                    return fromCompareResult(compareResult);
+                    return doCmp(bufferLib.getInternalOrCopiedByteArray(selfBuffer), bufferLib.getBufferLength(selfBuffer),
+                                    bufferLib.getInternalOrCopiedByteArray(otherBuffer), bufferLib.getBufferLength(otherBuffer));
                 } finally {
                     bufferLib.release(otherBuffer);
                 }
             } finally {
                 bufferLib.release(selfBuffer);
             }
+        }
+
+        private boolean doCmp(byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
+            int compareResult = 0;
+            if (shortcutLength() && selfLength != otherLength) {
+                return shortcutLengthResult();
+            }
+            for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
+                compareResult = Byte.compare(selfArray[i], otherArray[i]);
+                if (compareResult != 0) {
+                    break;
+                }
+            }
+            if (compareResult == 0) {
+                compareResult = Integer.compare(selfLength, otherLength);
+            }
+            return fromCompareResult(compareResult);
         }
 
         protected boolean shortcutLength() {
