@@ -31,6 +31,7 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.adjustEn
 import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.adjustStartIndex;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toLower;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toUpper;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DECODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENDSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVEPREFIX;
@@ -563,11 +564,11 @@ public class BytesBuiltins extends PythonBuiltins {
             return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
         }
 
-        @Specialization(guards = "check.execute(inliningTarget, other)", limit = "1")
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "check.execute(inliningTarget, other)"}, limit = "1")
         @SuppressWarnings("truffle-static-method")
         boolean cmp(Object self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
+                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
                         @Shared @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
@@ -575,12 +576,20 @@ public class BytesBuiltins extends PythonBuiltins {
             return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
         }
 
-        @Specialization(guards = "!check.execute(inliningTarget, other)", limit = "1")
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "!check.execute(inliningTarget, other)"}, limit = "1")
         @SuppressWarnings("unused")
         static Object cmp(Object self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyBytesCheckNode check) {
+                        @Shared @Cached PyBytesCheckNode check) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @Specialization(guards = "!check.execute(inliningTarget, self)", limit = "1")
+        @SuppressWarnings({"unused", "truffle-static-method"})
+        Object error(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyBytesCheckNode check) {
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, J___EQ__, J_BYTES, self);
         }
     }
 

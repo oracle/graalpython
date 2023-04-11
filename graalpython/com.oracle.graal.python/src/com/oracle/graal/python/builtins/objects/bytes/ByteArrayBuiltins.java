@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
@@ -78,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -799,24 +801,22 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     abstract static class AbstractComparisonNode extends BytesNodes.AbstractComparisonBaseNode {
         @Specialization
         @SuppressWarnings("truffle-static-method")
-        boolean cmp(PBytesLike self, PBytesLike other,
+        boolean cmp(PByteArray self, PBytesLike other,
                         @Shared @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
             return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
         }
 
-        @Specialization
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "acquireLib.hasBuffer(other)"}, limit = "3")
         @SuppressWarnings("truffle-static-method")
         Object cmp(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyByteArrayCheckNode check,
                         @Cached GetBytesStorage getBytesStorage,
                         @Shared @Cached GetInternalByteArrayNode getArray,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary("other") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-            if (!acquireLib.hasBuffer(other)) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
             SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
             Object otherBuffer = acquireLib.acquireReadonly(other, frame, this);
             try {
@@ -825,6 +825,23 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             } finally {
                 bufferLib.release(otherBuffer);
             }
+        }
+
+        @Specialization(guards = {"check.execute(inliningTarget, self)", "!acquireLib.hasBuffer(other)"}, limit = "1")
+        @SuppressWarnings("unused")
+        static Object cmp(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyByteArrayCheckNode check,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @Specialization(guards = "!check.execute(inliningTarget, self)", limit = "1")
+        @SuppressWarnings({"truffle-static-method", "unused"})
+        Object error(VirtualFrame frame, Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyByteArrayCheckNode check) {
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, J___EQ__, J_BYTEARRAY, self);
         }
     }
 
