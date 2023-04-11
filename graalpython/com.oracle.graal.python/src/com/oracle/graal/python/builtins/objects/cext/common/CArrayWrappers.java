@@ -42,11 +42,11 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.byteArraySupport;
 
 import java.lang.reflect.Field;
+import java.nio.ByteOrder;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -63,6 +63,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -269,7 +270,6 @@ public abstract class CArrayWrappers {
      * used like a {@code char*} pointer.
      */
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public static final class CByteArrayWrapper extends CArrayWrapper {
 
         public CByteArrayWrapper(byte[] delegate) {
@@ -281,8 +281,65 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        long getArraySize() {
+        @SuppressWarnings("static-method")
+        boolean hasBufferElements() {
+            return true;
+        }
+
+        @ExportMessage
+        @ExportMessage(name = "getArraySize")
+        long getBufferSize() {
             return getByteArray().length;
+        }
+
+        @ExportMessage
+        byte readBufferByte(long byteOffset) throws InvalidBufferOffsetException {
+            try {
+                return getByteArray()[(int) byteOffset];
+            } catch (ArrayIndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidBufferOffsetException.create(byteOffset, getByteArray().length);
+            }
+        }
+
+        @ExportMessage
+        short readBufferShort(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+            try {
+                return byteArraySupport(order).getShort(getByteArray(), byteOffset);
+            } catch (IndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidBufferOffsetException.create(byteOffset, getByteArray().length);
+            }
+        }
+
+        @ExportMessage
+        int readBufferInt(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+            try {
+                return byteArraySupport(order).getInt(getByteArray(), byteOffset);
+            } catch (IndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidBufferOffsetException.create(byteOffset, getByteArray().length);
+            }
+        }
+
+        @ExportMessage
+        long readBufferLong(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+            try {
+                return byteArraySupport(order).getLong(getByteArray(), byteOffset);
+            } catch (IndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidBufferOffsetException.create(byteOffset, getByteArray().length);
+            }
+        }
+
+        @ExportMessage
+        float readBufferFloat(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+            return Float.intBitsToFloat(readBufferInt(order, byteOffset));
+        }
+
+        @ExportMessage
+        double readBufferDouble(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+            return Double.longBitsToDouble(readBufferLong(order, byteOffset));
         }
 
         @ExportMessage
@@ -315,21 +372,8 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        boolean isArrayElementReadable(long identifier) {
-            return 0 <= identifier && identifier < getArraySize();
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean hasNativeType() {
-            return true;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        Object getNativeType(
-                        @Cached GetLLVMType getLLVMType) {
-            return getLLVMType.execute(LLVMType.int8_ptr_t);
+        boolean isArrayElementReadable(long index) {
+            return 0 <= index && index < getBufferSize();
         }
 
         @ExportMessage

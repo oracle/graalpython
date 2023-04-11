@@ -117,6 +117,10 @@ public final class PythonUtils {
         }
     }
 
+    public static ByteArraySupport byteArraySupport(ByteOrder order) {
+        return order == ByteOrder.LITTLE_ENDIAN ? ByteArraySupport.littleEndian() : ByteArraySupport.bigEndian();
+    }
+
     private PythonUtils() {
         // no instances
     }
