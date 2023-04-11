@@ -1211,7 +1211,7 @@ def graalpython_gate_runner(args, tasks):
                 tmpmain = os.path.join(tmpdir, "main.py")
                 with open(tmpmain, "w") as f:
                     f.write("print('hello standalone')")
-                mx.run([svm_image, "-m", "py2bin", "java", tmpstandalone, tmpmain])
+                mx.run([svm_image, "-m", "standalone", "java", "-o", tmpstandalone, "-m", tmpmain])
                 mx.run_maven(["-Pjar", "package"], cwd=tmpstandalone) # should compile without GraalVM
                 mx.run_maven(
                     ["-Pnative", "package"],
@@ -1229,7 +1229,7 @@ def graalpython_gate_runner(args, tasks):
                 if "hello standalone" not in out.data:
                     mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
-                mx.run([svm_image, "-m", "py2bin", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), tmpstandalone, tmpmain])
+                mx.run([svm_image, "-m", "standalone", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), "-m", tmpmain])
                 out = mx.OutputCapture()
                 mx.run(
                     [os.path.join(tmpdir, "directlauncher")],
