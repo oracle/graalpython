@@ -177,6 +177,7 @@ def build_binary(targetdir, jc, java_file, ni, parsed_args):
             ]
         cmd += [
             "--language:python",
+            "-H:-CopyLanguageResources",
             "-o",
             output,
             JAVA_LAUNCHER,
