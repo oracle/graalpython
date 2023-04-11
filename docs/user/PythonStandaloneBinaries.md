@@ -28,7 +28,7 @@ Use `graalpy -m standalone binary --help` for further options.
 
 ## Embedding GraalPy in Java Applications
 
-Suppose now we wanted to distribute our `my_script.py` script as a Jar that can run on any GraalVM that includes GraalPy.
+Suppose now we wanted to distribute our `my_script.py` script as a JAR that can run on any GraalVM that includes GraalPy.
 To prepare such a Java project, the `standalone` GraalPy tool has another command:
 
 ```
