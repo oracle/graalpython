@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,13 +54,6 @@ static PyObject* null_error(void) {
         PyErr_SetString(PyExc_SystemError, "null argument to internal routine");
     }
     return NULL;
-}
-
-int PyIter_Check(PyObject *obj) {
-    PyTypeObject *tp = Py_TYPE(obj);
-    return (tp->tp_iternext != NULL &&
-            tp->tp_iternext != &_PyObject_NextNotImplemented &&
-            ((PyObject *)tp->tp_iternext) != Py_NotImplemented);
 }
 
 static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop) {
@@ -480,16 +473,6 @@ PyObject ** _PySequence_Fast_ITEMS(PyObject *o) {
     return PyList_Check(o) ? PyListObject_ob_item(o) : PyTupleObject_ob_item(o);
 }
 
-int _PyIter_Check(PyObject* obj) {
-	iternextfunc func = PyTypeObject_tp_iternext(Py_TYPE(obj));
-	return func != NULL && func != &_PyObject_NextNotImplemented;
-
-}
-int _PyIndex_Check(PyObject* obj) {
-	PyNumberMethods* methods = PyTypeObject_tp_as_number(Py_TYPE(obj));
-	return methods != NULL && PyNumberMethods_nb_index(methods) != NULL;
-
-}
 PyObject* _PySequence_ITEM(PyObject* obj, Py_ssize_t index) {
 	PySequenceMethods* methods = PyTypeObject_tp_as_sequence(Py_TYPE(obj));
 	return PySequenceMethods_sq_item(methods)(obj, index);

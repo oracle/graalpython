@@ -65,18 +65,20 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyByteArrayCheckNode;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -86,17 +88,20 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -113,6 +118,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -128,17 +135,11 @@ public abstract class BytesNodes {
     @GenerateCached(false)
     public abstract static class CreateBytesNode extends Node {
 
-        public abstract PBytesLike execute(Node node, PythonObjectFactory factory, PBytesLike basedOn, Object bytes);
-
-        @Specialization
-        static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, byte[] bytes) {
-            return factory.createBytes(bytes);
+        public final PBytesLike execute(Node inliningTarget, PythonObjectFactory factory, Object basedOn, byte[] bytes) {
+            return execute(inliningTarget, factory, basedOn, new ByteSequenceStorage(bytes));
         }
 
-        @Specialization
-        static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, byte[] bytes) {
-            return factory.createByteArray(bytes);
-        }
+        public abstract PBytesLike execute(Node inliningTarget, PythonObjectFactory factory, Object basedOn, SequenceStorage bytes);
 
         @Specialization
         static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, SequenceStorage bytes) {
@@ -150,14 +151,17 @@ public abstract class BytesNodes {
             return factory.createByteArray(bytes);
         }
 
-        @Specialization
-        static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, PBytesLike bytes) {
-            return factory.createBytes(bytes.getSequenceStorage());
+        @Specialization(guards = "checkBytes.execute(inliningTarget, basedOn)", limit = "1")
+        static PBytesLike bytes(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
+                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
+            return factory.createBytes(bytes);
         }
 
-        @Specialization
-        static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, PBytesLike bytes) {
-            return factory.createByteArray(bytes.getSequenceStorage());
+        @Specialization(guards = "!checkBytes.execute(inliningTarget, basedOn)", limit = "1")
+        static PBytesLike bytearray(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
+                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
+            assert PyByteArrayCheckNode.executeUncached(basedOn);
+            return factory.createByteArray(bytes);
         }
     }
 
@@ -230,6 +234,12 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(VirtualFrame frame, Object obj);
 
+        @Specialization(limit = "2")
+        byte[] doBytes(PBytesLike bytes,
+                        @CachedLibrary("bytes") PythonBufferAccessLibrary bufferLib) {
+            return bufferLib.getCopiedByteArray(bytes);
+        }
+
         @Specialization(limit = "3")
         byte[] doBuffer(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -283,111 +293,83 @@ public abstract class BytesNodes {
         }
     }
 
-    @SuppressWarnings({"truffle-static-method", "truffle-inlining"})
-    public abstract static class FindNode extends PNodeWithContext {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class NeedleToBytesNode extends PNodeWithContext {
+        public abstract byte[] execute(VirtualFrame frame, Node inliningTarget, Object needle);
 
-        public abstract int execute(byte[] self, int len1, byte[] sub, int start, int end);
+        @Specialization(guards = "indexCheck.execute(needle)", limit = "1")
+        static byte[] number(VirtualFrame frame, Object needle,
+                        @SuppressWarnings("unused") @Shared @Cached(inline = false) PyIndexCheckNode indexCheck,
+                        @Cached(inline = false) CastToByteNode castToByteNode) {
+            return new byte[]{castToByteNode.execute(frame, needle)};
+        }
 
-        public abstract int execute(byte[] self, int len1, byte sub, int start, int end);
-
-        public abstract int execute(SequenceStorage self, int len1, Object sub, int start, int end);
-
-        @Specialization
-        int find(byte[] haystack, int len1, byte needle, int start, int end,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile earlyExit) {
-            if (earlyExit.profile(inliningTarget, start >= len1)) {
-                return -1;
+        @Specialization(guards = "!indexCheck.execute(needle)", limit = "3")
+        static byte[] bytesLike(Object needle,
+                        @SuppressWarnings("unused") @Shared @Cached(inline = false) PyIndexCheckNode indexCheck,
+                        @CachedLibrary("needle") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            Object buffer = acquireLib.acquireReadonly(needle);
+            try {
+                return bufferLib.getCopiedByteArray(buffer);
+            } finally {
+                bufferLib.release(buffer);
             }
-            return findElement(haystack, needle, start, end > len1 ? len1 : end);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class FindNode extends PNodeWithContext {
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, Object self, Object needle, int start, int end, boolean reverse);
+
+        public final int execute(VirtualFrame frame, Node inliningTarget, Object self, Object needle, int start, int end) {
+            return execute(frame, inliningTarget, self, needle, start, end, false);
+        }
+
+        public final int executeReverse(VirtualFrame frame, Node inliningTarget, Object self, Object needle, int start, int end) {
+            return execute(frame, inliningTarget, self, needle, start, end, true);
         }
 
         @Specialization
-        int find(byte[] haystack, int len1, byte[] needle, int start, int end,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile earlyExit1,
-                        @Cached @Shared InlinedConditionProfile earlyExit2,
-                        @Cached @Exclusive InlinedConditionProfile lenIsOne) {
+        static int find(VirtualFrame frame, Node inliningTarget, Object self, Object needle, int start, int end, boolean reverse,
+                        @Cached NeedleToBytesNode needleToBytesNode,
+                        @Cached GetBytesStorage getBytesStorage,
+                        @Cached(inline = false) GetInternalByteArrayNode getInternalArray) {
+            SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
+            int len = storage.length();
+            return find(getInternalArray.execute(storage), storage.length(), needleToBytesNode.execute(frame, inliningTarget, needle), adjustStartIndex(start, len), adjustEndIndex(end, len), reverse);
+        }
+
+        public static int find(byte[] haystack, int len1, byte needle, int start, int end, boolean reverse) {
+            if (start >= len1) {
+                return -1;
+            }
+            return findElement(haystack, needle, start, end, reverse);
+        }
+
+        public static int find(byte[] haystack, int len1, byte[] needle, int start, int end, boolean reverse) {
             int len2 = needle.length;
 
-            if (earlyExit1.profile(inliningTarget, len2 == 0 && start <= len1)) {
-                return emptySubIndex(start, end);
+            if (len2 == 0 && start <= len1) {
+                if (!reverse) {
+                    return start;
+                } else {
+                    return end;
+                }
             }
-            if (earlyExit2.profile(inliningTarget, start >= len1 || len1 < len2)) {
-                return -1;
-            }
-            if (lenIsOne.profile(inliningTarget, len2 == 1)) {
-                return findElement(haystack, needle[0], start, end);
-            }
-
-            return findSubSequence(haystack, needle, len2, start, end > len1 ? len1 : end);
-        }
-
-        @Specialization
-        int find(SequenceStorage self, int len1, PBytesLike sub, int start, int end,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile earlyExit1,
-                        @Cached @Shared InlinedConditionProfile earlyExit2,
-                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
-            byte[] haystack = getBytes.execute(self);
-            byte[] needle = getBytes.execute(sub.getSequenceStorage());
-            int len2 = sub.getSequenceStorage().length();
-
-            if (earlyExit1.profile(inliningTarget, len2 == 0 && start <= len1)) {
-                return emptySubIndex(start, end);
-            }
-            if (earlyExit2.profile(inliningTarget, start >= len1 || len1 < len2)) {
+            if (start >= len1 || len1 < len2) {
                 return -1;
             }
             if (len2 == 1) {
-                return findElement(haystack, needle[0], start, end);
+                return findElement(haystack, needle[0], start, end, reverse);
             }
 
-            return findSubSequence(haystack, needle, len2, start, end > len1 ? len1 : end);
+            return findSubSequence(haystack, needle, len2, start, end, reverse);
         }
 
-        @Specialization
-        int find(SequenceStorage self, int len1, int sub, int start, int end,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile earlyExit,
-                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached @Shared CastToJavaByteNode cast) {
-            if (earlyExit.profile(inliningTarget, start >= len1)) {
-                return -1;
-            }
-            byte[] haystack = getBytes.execute(self);
-            return findElement(haystack, cast.execute(sub), start, end > len1 ? len1 : end);
-        }
-
-        @Specialization(guards = "!isBytes(sub)")
-        int useIndex(SequenceStorage self, int len1, Object sub, int start, int end,
-                        @Bind("this") Node inliningTarget,
-                        @Cached @Shared InlinedConditionProfile earlyExit,
-                        @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached @Shared CastToJavaByteNode cast,
-                        @Cached @Shared SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (earlyExit.profile(inliningTarget, start >= len1)) {
-                return -1;
-            }
-            if (indexCheckNode.execute(sub)) {
-                byte[] haystack = getBytes.execute(self);
-                byte subByte = cast.execute(indexNode.execute(null, sub));
-                return findElement(haystack, subByte, start, end > len1 ? len1 : end);
-            } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "a bytes-like object", sub);
-            }
-        }
-
-        // Overridden in RFind
-        @SuppressWarnings("unused")
-        protected int emptySubIndex(int start, int end) {
-            return start;
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        protected static int isEqual(int i, byte[] haystack, byte[] needle, int len2) {
+        private static int isEqual(int i, byte[] haystack, byte[] needle, int len2) {
             for (int j = 0; j < len2; j++) {
                 if (haystack[i + j] != needle[j]) {
                     return -1;
@@ -396,9 +378,17 @@ public abstract class BytesNodes {
             return i;
         }
 
-        @TruffleBoundary(allowInlining = true)
-        protected int findSubSequence(byte[] haystack, byte[] needle, int len2, int start, int end) {
+        private static int findSubSequence(byte[] haystack, byte[] needle, int len2, int start, int end, boolean reverse) {
             // TODO implement a more efficient algorithm
+            if (!reverse) {
+                return findSubSequenceForward(haystack, needle, len2, start, end);
+            } else {
+                return findSubSequenceReverse(haystack, needle, len2, start, end);
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static int findSubSequenceForward(byte[] haystack, byte[] needle, int len2, int start, int end) {
             for (int i = start; i < end - len2 + 1; i++) {
                 if (isEqual(i, haystack, needle, len2) != -1) {
                     return i;
@@ -408,33 +398,7 @@ public abstract class BytesNodes {
         }
 
         @TruffleBoundary(allowInlining = true)
-        protected int findElement(byte[] haystack, byte sub, int start, int end) {
-            for (int i = start; i < end; i++) {
-                if (haystack[i] == sub) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        @NeverDefault
-        public static FindNode create() {
-            return FindNodeGen.create();
-        }
-    }
-
-    @SuppressWarnings("truffle-inlining")
-    public abstract static class RFindNode extends FindNode {
-
-        @Override
-        protected int emptySubIndex(int start, int end) {
-            return (end - start) + start;
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        @Override
-        protected int findSubSequence(byte[] haystack, byte[] needle, int len2, int start, int end) {
-            // TODO implement a more efficient algorithm
+        private static int findSubSequenceReverse(byte[] haystack, byte[] needle, int len2, int start, int end) {
             for (int i = end - len2; i >= start; i--) {
                 if (isEqual(i, haystack, needle, len2) != -1) {
                     return i;
@@ -443,10 +407,17 @@ public abstract class BytesNodes {
             return -1;
         }
 
+        private static int findElement(byte[] haystack, byte sub, int start, int end, boolean reverse) {
+            if (!reverse) {
+                return findElementForward(haystack, sub, start, end);
+            } else {
+                return findElementReverse(haystack, sub, start, end);
+            }
+        }
+
         @TruffleBoundary(allowInlining = true)
-        @Override
-        protected int findElement(byte[] haystack, byte sub, int start, int end) {
-            for (int i = end - 1; i >= start; i--) {
+        private static int findElementForward(byte[] haystack, byte sub, int start, int end) {
+            for (int i = start; i < end; i++) {
                 if (haystack[i] == sub) {
                     return i;
                 }
@@ -454,65 +425,41 @@ public abstract class BytesNodes {
             return -1;
         }
 
-        @NeverDefault
-        public static RFindNode create() {
-            return BytesNodesFactory.RFindNodeGen.create();
+        @TruffleBoundary(allowInlining = true)
+        private static int findElementReverse(byte[] haystack, byte sub, int start, int end) {
+            for (int i = end - 1; i >= start; i--) {
+                if (haystack[i] == sub) {
+                    return i;
+                }
+            }
+            return -1;
         }
     }
 
-    public static class FromSequenceStorageNode extends Node {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class BytesLikeCheck extends PNodeWithContext {
 
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Child private CastToByteNode castToByteNode;
+        public abstract boolean execute(Node inliningTarget, Object object);
 
-        public byte[] execute(VirtualFrame frame, SequenceStorage storage) {
-            int len = storage.length();
-            byte[] bytes = new byte[len];
-            for (int i = 0; i < len; i++) {
-                Object item = getGetItemNode().execute(storage, i);
-                bytes[i] = getCastToByteNode().execute(frame, item);
-            }
-            return bytes;
+        @SuppressWarnings("unused")
+        @Specialization
+        static boolean check(PBytesLike obj) {
+            return true;
         }
 
-        private SequenceStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList()));
-            }
-            return getItemNode;
+        @Specialization(guards = "!isPBytes(obj)")
+        static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
+                        @Cached InlinedGetClassNode getClassNode,
+                        @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
+            Object type = getClassNode.execute(inliningTarget, obj);
+            return isSubtypeNode.execute(null, type, PythonBuiltinClassType.PBytes) || isSubtypeNode.execute(null, type, PythonBuiltinClassType.PByteArray);
         }
 
-        private CastToByteNode getCastToByteNode() {
-            if (castToByteNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToByteNode = insert(CastToByteNode.create());
-            }
-            return castToByteNode;
-        }
-
-        public static FromSequenceStorageNode create() {
-            return new FromSequenceStorageNode();
-        }
-    }
-
-    public static class FromSequenceNode extends Node {
-
-        @Child private FromSequenceStorageNode fromSequenceStorageNode;
-        @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode;
-
-        public byte[] execute(VirtualFrame frame, PSequence sequence) {
-            if (fromSequenceStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                fromSequenceStorageNode = insert(FromSequenceStorageNode.create());
-                getSequenceStorageNode = insert(SequenceNodes.GetSequenceStorageNode.create());
-            }
-
-            return fromSequenceStorageNode.execute(frame, getSequenceStorageNode.execute(sequence));
-        }
-
-        public static FromSequenceNode create() {
-            return new FromSequenceNode();
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean check(Object obj) {
+            return false;
         }
     }
 
@@ -637,7 +584,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
-        static byte[] fromObject(VirtualFrame frame, Node node, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        static byte[] fromObject(VirtualFrame frame, @SuppressWarnings("unused") Node node, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Bind("this") Node inliningTarget,
                         @Cached(inline = false) PyIndexCheckNode indexCheckNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
@@ -961,5 +908,89 @@ public abstract class BytesNodes {
             }
             throw shouldNotReachHere();
         }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetBytesStorage extends Node {
+        public abstract SequenceStorage execute(Node inliningTarget, Object bytes);
+
+        @Specialization
+        SequenceStorage getManaged(PBytesLike bytes) {
+            return bytes.getSequenceStorage();
+        }
+
+        @Specialization
+        SequenceStorage getNative(PythonAbstractNativeObject bytes,
+                        @Cached(inline = false) GetNativeBytesStorage getNativeTupleStorage) {
+            return getNativeTupleStorage.execute(bytes);
+        }
+    }
+
+    @GenerateInline(false)
+    public abstract static class GetNativeBytesStorage extends Node {
+        public abstract NativeSequenceStorage execute(PythonAbstractNativeObject tuple);
+
+        @Specialization
+        NativeSequenceStorage getNative(PythonAbstractNativeObject bytes,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached PCallCapiFunction callCapiFunction) {
+            assert PyBytesCheckNode.executeUncached(bytes) || PyByteArrayCheckNode.executeUncached(bytes);
+            try {
+                Object interopArray = callCapiFunction.call(NativeCAPISymbol.FUN_PY_TRUFFLE_NATIVE_BYTES_ITEMS, bytes.getPtr());
+                int size = (int) lib.getArraySize(interopArray);
+                return NativeSequenceStorage.create(interopArray, size, size, ListStorageType.Byte, false);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    public static int adjustStartIndex(int startIn, int len) {
+        if (startIn < 0) {
+            int start = startIn + len;
+            return start < 0 ? 0 : start;
+        }
+        return startIn;
+    }
+
+    public static int adjustEndIndex(int endIn, int len) {
+        if (endIn > len) {
+            return len;
+        } else if (endIn < 0) {
+            int end = endIn + len;
+            return end < 0 ? 0 : end;
+        }
+        return endIn;
+    }
+
+    @GenerateCached(false)
+    public abstract static class AbstractComparisonBaseNode extends PythonBinaryBuiltinNode {
+        protected boolean doCmp(byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
+            int compareResult = 0;
+            if (shortcutLength() && selfLength != otherLength) {
+                return shortcutLengthResult();
+            }
+            for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
+                compareResult = Byte.compare(selfArray[i], otherArray[i]);
+                if (compareResult != 0) {
+                    break;
+                }
+            }
+            if (compareResult == 0) {
+                compareResult = Integer.compare(selfLength, otherLength);
+            }
+            return fromCompareResult(compareResult);
+        }
+
+        protected boolean shortcutLength() {
+            return false;
+        }
+
+        protected boolean shortcutLengthResult() {
+            return false;
+        }
+
+        protected abstract boolean fromCompareResult(int compareResult);
     }
 }

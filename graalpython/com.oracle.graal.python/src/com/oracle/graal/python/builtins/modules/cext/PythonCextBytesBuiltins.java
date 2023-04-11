@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -129,11 +130,10 @@ public final class PythonCextBytesBuiltins {
         @Specialization
         Object doOther(PythonAbstractNativeObject obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedGetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PyBytesCheckNode check,
                         @Cached ToSulongNode toSulongNode,
                         @Cached CExtNodes.PCallCapiFunction callMemberGetterNode) {
-            if (PyBytesCheckNode.check(null, obj, inliningTarget, getClassNode, isSubtypeNode)) {
+            if (check.execute(inliningTarget, obj)) {
                 return callMemberGetterNode.call(NativeMember.OB_SIZE.getGetterFunctionName(), toSulongNode.execute(obj));
             }
             return fallback(obj);
@@ -149,28 +149,18 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
     abstract static class PyTruffleBytes_Concat extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object concat(PBytes original, Object newPart,
+        static Object concat(Object original, Object newPart,
                         @Cached BytesBuiltins.AddNode addNode) {
             return addNode.execute(null, original, newPart);
-        }
-
-        @Fallback
-        Object fallback(Object original, @SuppressWarnings("unused") Object newPart) {
-            throw raiseFallback(original, PythonBuiltinClassType.PBytes);
         }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class _PyBytes_Join extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object join(PBytes original, Object newPart,
+        static Object join(Object original, Object newPart,
                         @Cached BytesBuiltins.JoinNode joinNode) {
             return joinNode.execute(null, original, newPart);
-        }
-
-        @Fallback
-        Object fallback(Object original, @SuppressWarnings("unused") Object newPart) {
-            throw raiseFallback(original, PythonBuiltinClassType.PBytes);
         }
     }
 
@@ -390,10 +380,11 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyTruffle_Bytes_CheckEmbeddedNull extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static int doBytes(PBytes bytes,
+        static int doBytes(Object bytes,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetBytesStorage getBytesStorage,
                         @Cached GetItemScalarNode getItemScalarNode) {
-
-            SequenceStorage sequenceStorage = bytes.getSequenceStorage();
+            SequenceStorage sequenceStorage = getBytesStorage.execute(inliningTarget, bytes);
             int len = sequenceStorage.length();
             try {
                 for (int i = 0; i < len; i++) {

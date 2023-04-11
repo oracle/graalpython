@@ -168,9 +168,10 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         public abstract PBaseException execute(Node inliningTarget, PBaseException exceptionObject, TruffleString encoding, Object inputObject, int startPos, int endPos, TruffleString reason);
 
         @Specialization(guards = "exceptionObject == null")
-        static PBaseException createNew(Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, Object inputObject, int startPos, int endPos, TruffleString reason,
-                                 @Cached CallNode callNode,
-                                 @Cached PRaiseNode.Lazy raiseNode) {
+        static PBaseException createNew(Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, Object inputObject, int startPos, int endPos,
+                        TruffleString reason,
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = callNode.execute(UnicodeDecodeError, encoding, inputObject, startPos, endPos, reason);
             if (obj instanceof PBaseException exception) {
                 return exception;

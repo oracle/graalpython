@@ -45,8 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -137,10 +136,10 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static int doPBytes(PBytes object,
+    static int doPBytes(PBytesLike object,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
-        return BytesBuiltins.LenNode.len(object);
+        return object.getSequenceStorage().length();
     }
 
     @Fallback

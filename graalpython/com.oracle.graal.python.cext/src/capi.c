@@ -1633,6 +1633,10 @@ PyAPI_FUNC(int) PyIndex_Check(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyInstanceMethod_New(PyObject* a) {
     return GraalPyInstanceMethod_New(a);
 }
+#undef PyIter_Check
+PyAPI_FUNC(int) PyIter_Check(PyObject* a) {
+    return GraalPyIter_Check(a);
+}
 #undef PyIter_Next
 PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
     return GraalPyIter_Next(a);

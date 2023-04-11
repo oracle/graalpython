@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,52 +41,84 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PyBytes_Check}.
+ * Check if the object is iterable - has {@code __next__} method. Equivalent of CPython's
+ * {@code PyIter_Check}.
  */
-@ImportStatic(PGuards.class)
-@GenerateUncached
+@ImportStatic(SpecialMethodSlot.class)
 @GenerateInline
 @GenerateCached(false)
-public abstract class PyBytesCheckNode extends Node {
-
+@GenerateUncached
+public abstract class PyIterCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
 
-    public static boolean executeUncached(Object object) {
-        return PyBytesCheckNodeGen.getUncached().execute(null, object);
-    }
-
-    @SuppressWarnings("unused")
     @Specialization
-    static boolean check(PBytes obj) {
+    static boolean doIterator(@SuppressWarnings("unused") PBuiltinIterator object) {
         return true;
     }
 
+    @InliningCutoff
     @Specialization
-    static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
-                    @Cached InlinedGetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        // FIXME we should have a subtype check that doesn't call back to python
-        return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes);
+    static boolean doPythonObject(Node inliningTarget, PythonAbstractObject object,
+                    @Shared @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext) {
+        return !(lookupNext.execute(getClassNode.execute(inliningTarget, object)) instanceof PNone);
     }
 
-    @Fallback
-    @SuppressWarnings("unused")
-    static boolean check(Object obj) {
+    @Specialization
+    static boolean doInt(@SuppressWarnings("unused") Integer object) {
         return false;
+    }
+
+    @Specialization
+    static boolean doLong(@SuppressWarnings("unused") Long object) {
+        return false;
+    }
+
+    @Specialization
+    static boolean doBoolean(@SuppressWarnings("unused") Boolean object) {
+        return false;
+    }
+
+    @Specialization
+    static boolean doDouble(@SuppressWarnings("unused") Double object) {
+        return false;
+    }
+
+    @Specialization
+    static boolean doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        return false;
+    }
+
+    @InliningCutoff
+    @Specialization(replaces = "doPythonObject")
+    static boolean doGeneric(Node inliningTarget, Object object,
+                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
+                    @Shared @Cached InlinedGetClassNode getClassNode,
+                    @Shared @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext) {
+        Object type = getClassNode.execute(inliningTarget, object);
+        if (type == PythonBuiltinClassType.ForeignObject) {
+            return interopLibrary.isIterator(object);
+        }
+        return !(lookupNext.execute(type) instanceof PNone);
     }
 }

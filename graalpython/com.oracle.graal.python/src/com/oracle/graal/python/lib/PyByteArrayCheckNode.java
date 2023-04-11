@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,50 +38,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.cext;
+package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.lib.PyIterCheckNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
-public final class PythonCextIterBuiltins {
+/**
+ * Equivalent of CPython's {@code PyByteArray_Check}.
+ */
+@ImportStatic(PGuards.class)
+@GenerateUncached
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyByteArrayCheckNode extends Node {
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyIter_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        int check(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyIterCheckNode check) {
-            return check.execute(inliningTarget, obj) ? 1 : 0;
-        }
+    public abstract boolean execute(Node inliningTarget, Object object);
+
+    public static boolean executeUncached(Object object) {
+        return PyByteArrayCheckNodeGen.getUncached().execute(null, object);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PySeqIter_New extends CApiUnaryBuiltinNode {
-        @Specialization
-        PSequenceIterator call(Object seq) {
-            return factory().createSequenceIterator(seq);
-        }
+    @SuppressWarnings("unused")
+    @Specialization
+    static boolean check(PByteArray obj) {
+        return true;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyCallIter_New extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object getItem(Object it, Object sentinel,
-                        @Cached IterNode iterNode) {
-            return iterNode.execute(null, it, sentinel);
-        }
+    @Specialization
+    static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
+                    @Cached InlinedGetClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray);
+    }
+
+    @Fallback
+    @SuppressWarnings("unused")
+    static boolean check(Object obj) {
+        return false;
     }
 }

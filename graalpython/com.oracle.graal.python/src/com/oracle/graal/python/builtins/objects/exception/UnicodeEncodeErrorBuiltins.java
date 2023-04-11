@@ -169,7 +169,8 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         public abstract PBaseException execute(Node inliningTarget, PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject, int startPos, int endPos, TruffleString reason);
 
         @Specialization(guards = "exceptionObject == null")
-        static PBaseException createNew(Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject, int startPos, int endPos, TruffleString reason,
+        static PBaseException createNew(Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject, int startPos, int endPos,
+                        TruffleString reason,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object obj = callNode.execute(UnicodeEncodeError, encoding, inputObject, startPos, endPos, reason);

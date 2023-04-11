@@ -2689,9 +2689,8 @@ PyAPI_FUNC(PyInterpreterState*) PyInterpreterState_Next(PyInterpreterState* a) {
 PyAPI_FUNC(PyThreadState*) PyInterpreterState_ThreadHead(PyInterpreterState* a) {
     unimplemented("PyInterpreterState_ThreadHead"); exit(-1);
 }
-int (*__target__PyIter_Check)(PyObject*) = NULL;
 PyAPI_FUNC(int) PyIter_Check(PyObject* a) {
-    int result = (int) __target__PyIter_Check(a);
+    int result = (int) GraalPyIter_Check(a);
     return result;
 }
 PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
@@ -6229,7 +6228,6 @@ void initializeCAPIForwards(void* (*getAPI)(const char*)) {
     __target__PyInterpreterState_GetID = getAPI("PyInterpreterState_GetID");
     __target__PyInterpreterState_GetIDFromThreadState = getAPI("PyInterpreterState_GetIDFromThreadState");
     __target__PyInterpreterState_Main = getAPI("PyInterpreterState_Main");
-    __target__PyIter_Check = getAPI("PyIter_Check");
     __target__PyLong_FromString = getAPI("PyLong_FromString");
     __target__PyMapping_GetItemString = getAPI("PyMapping_GetItemString");
     __target__PyMemoryView_FromBuffer = getAPI("PyMemoryView_FromBuffer");
