@@ -128,7 +128,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -351,7 +351,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             @Cached PythonToNativeNode toNative,
                             @Cached NativeToPythonNode toPython,
                             @Cached PCallCapiFunction call) {
-                return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), new CArrayWrappers.CByteArrayWrapper(bytes), bytes.length));
+                CByteArrayWrapper wrapper = new CByteArrayWrapper(bytes);
+                try {
+                    return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), wrapper, bytes.length));
+                } finally {
+                    wrapper.free();
+                }
             }
         }
     }
