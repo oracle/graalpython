@@ -79,7 +79,9 @@ def ensure_directories(zf, path):
             zf.writestr(zipfile.ZipInfo(dirname), b"")
 
 
-def bundle_python_resources(zipname, vfs_prefix, home_prefix, venv_prefix, proj_prefix, project, venv=None):
+def bundle_python_resources(
+    zipname, vfs_prefix, home_prefix, venv_prefix, proj_prefix, project, venv=None
+):
     """
     Bundle the Python core, stdlib, venv, and module into a zip file.
     """
@@ -197,18 +199,16 @@ def main(args):
 
     subparsers = parser.add_subparsers(required=True)
 
-    module_argument_args = {
-        "dest": "module",
-        "help": "Python file or module folder to run",
-    }
-    venv_argument_args = {"dest": "venv", "help": "Python venv to use", "nargs": "?"}
-
     parser_bin = subparsers.add_parser(
         "binary", help="Create a standalone binary from the Python code directly."
     )
-    parser_bin.add_argument(**module_argument_args)
-    parser_bin.add_argument(**venv_argument_args)
-    parser_bin.add_argument('-o', '--output', required=True, help='Output filename for the binary')
+    parser_bin.add_argument(
+        "-m", "--module", help="Python file or module folder to run", required=True
+    )
+    parser_bin.add_argument("--venv", help="Python venv to bundle")
+    parser_bin.add_argument(
+        "-o", "--output", help="Output filename for the binary", required=True
+    )
     parser_bin.add_argument(
         "-Os", action="store_true", help="Optimize the binary for size, not speed"
     )
@@ -226,10 +226,15 @@ def main(args):
         help="Create a Java project from the Python code. This gives the most flexibility, as the project can be used to build both standalone Jar files or native binaries using Maven.",
     )
     parser_jar.add_argument(
-        "target", help="The directory to write the Java project to."
+        "-m", "--module", help="Python file or module folder to run", required=True
     )
-    parser_jar.add_argument(**module_argument_args)
-    parser_jar.add_argument(**venv_argument_args)
+    parser_jar.add_argument("--venv", help="Python venv to bundle")
+    parser_jar.add_argument(
+        "-o",
+        "--output-directory",
+        help="The directory to write the Java project to.",
+        required=True,
+    )
 
     parsed_args = parser.parse_args(args)
 
@@ -242,13 +247,13 @@ def main(args):
         proj_prefix,
     ) = parse_path_constants(java_launcher_template)
 
-    preparing_java_project = hasattr(parsed_args, 'target')
+    preparing_java_project = hasattr(parsed_args, "output_directory")
 
     if preparing_java_project:
         ni, jc = "", ""
         resource_prefix = os.path.join("src", "main", "resources")
         code_prefix = os.path.join("src", "main", "java")
-        targetdir = parsed_args.target
+        targetdir = parsed_args.output_directory
     else:
         ni, jc = get_tools()
         resource_prefix = ""
