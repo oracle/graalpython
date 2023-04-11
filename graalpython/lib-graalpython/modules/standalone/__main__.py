@@ -166,8 +166,8 @@ def build_binary(targetdir, jc, java_file, ni, parsed_args):
         cmd = [jc, java_file]
         if parsed_args.verbose:
             print(f"Compiling code for Python standalone entry point: {' '.join(cmd)}")
-            subprocess.check_call(cmd)
-            cmd = [ni] + parsed_args.ni_args[:]
+        subprocess.check_call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd = [ni] + parsed_args.ni_args[:]
         if parsed_args.Os:
             cmd += [
                 "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
@@ -181,7 +181,7 @@ def build_binary(targetdir, jc, java_file, ni, parsed_args):
         ]
         if parsed_args.verbose:
             print(f"Building Python standalone binary: {' '.join(cmd)}")
-            subprocess.check_call(cmd)
+        subprocess.check_call(cmd)
     finally:
         os.chdir(cwd)
 

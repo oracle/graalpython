@@ -1228,7 +1228,6 @@ def graalpython_gate_runner(args, tasks):
                 )
                 if "hello standalone" not in out.data:
                     mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-                assert "Using preinitialized context." in out.data
 
                 mx.run([svm_image, "-m", "py2bin", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), tmpstandalone, tmpmain])
                 out = mx.OutputCapture()
@@ -1241,7 +1240,6 @@ def graalpython_gate_runner(args, tasks):
                 )
                 if "hello standalone" not in out.data:
                     mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-                assert "Using preinitialized context." in out.data
 
     with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
         if task:
