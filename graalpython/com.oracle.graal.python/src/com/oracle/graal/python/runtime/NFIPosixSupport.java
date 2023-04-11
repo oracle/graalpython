@@ -194,6 +194,7 @@ public final class NFIPosixSupport extends PosixSupport {
         set_blocking("(sint32, sint32):sint32"),
         get_terminal_size("(sint32, [sint32]):sint32"),
         call_kill("(sint64, sint32):sint32"),
+        call_killpg("(sint64, sint32):sint32"),
         call_abort("():void"),
         call_waitpid("(sint64, [sint32], sint32):sint64"),
         call_wcoredump("(sint32):sint32"),
@@ -207,6 +208,9 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getuid("():sint64"),
         call_getgid("():sint64"),
         call_getppid("():sint64"),
+        call_getpgid("(sint64):sint64"),
+        call_setpgid("(sint64,sint64):sint32"),
+        call_getpgrp("():sint64"),
         call_getsid("(sint64):sint64"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
@@ -1014,6 +1018,15 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public void killpg(long pgid, int signal,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_killpg, pgid, signal);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
     public long[] waitpid(long pid, int options,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int[] status = new int[1];
@@ -1099,6 +1112,30 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public long getppid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callLong(this, PosixNativeFunction.call_getppid);
+    }
+
+    @ExportMessage
+    public void setpgid(long pid, long pgid,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_setpgid, pid, pgid);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public long getpgid(long pid,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long res = invokeNode.callLong(this, PosixNativeFunction.call_getpgid, pid);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return res;
+    }
+
+    @ExportMessage
+    public long getpgrp(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callLong(this, PosixNativeFunction.call_getpgrp);
     }
 
     @ExportMessage
