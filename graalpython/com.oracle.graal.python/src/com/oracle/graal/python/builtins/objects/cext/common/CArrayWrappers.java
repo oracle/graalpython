@@ -289,16 +289,24 @@ public abstract class CArrayWrappers {
         @ExportMessage
         @ExportMessage(name = "getArraySize")
         long getBufferSize() {
-            return getByteArray().length;
+            return getByteArray().length + 1;
         }
 
         @ExportMessage
         byte readBufferByte(long byteOffset) throws InvalidBufferOffsetException {
+            byte[] bytes = getByteArray();
+            /*
+             * FIXME we only allow reading the NULL byte when reading by bytes, we should also allow
+             * that when reading ints etc.
+             */
+            if (byteOffset == bytes.length) {
+                return 0;
+            }
             try {
-                return getByteArray()[(int) byteOffset];
+                return bytes[(int) byteOffset];
             } catch (ArrayIndexOutOfBoundsException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw InvalidBufferOffsetException.create(byteOffset, getByteArray().length);
+                throw InvalidBufferOffsetException.create(byteOffset, bytes.length);
             }
         }
 
