@@ -46,13 +46,13 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -60,9 +60,11 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @ImportStatic(PGuards.class)
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyByteArrayCheckNode extends Node {
 
-    public abstract boolean execute(VirtualFrame frame, Object object);
+    public abstract boolean execute(Node inliningTarget, Object object);
 
     public static boolean executeUncached(Object object) {
         return PyByteArrayCheckNodeGen.getUncached().execute(null, object);
@@ -75,11 +77,10 @@ public abstract class PyByteArrayCheckNode extends Node {
     }
 
     @Specialization
-    static boolean check(VirtualFrame frame, PythonAbstractNativeObject obj,
-                    @Bind("this") Node inliningTarget,
+    static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
                     @Cached InlinedGetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray);
+        return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray);
     }
 
     @Fallback
