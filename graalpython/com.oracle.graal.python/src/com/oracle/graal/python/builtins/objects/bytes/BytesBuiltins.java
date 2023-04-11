@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -550,67 +551,42 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @GenerateCached(false)
-    abstract static class AbstractCmpNode extends PythonBinaryBuiltinNode {
+    // N.B. bytes only allow comparing to bytes, bytearray has its own implementation that uses
+    // buffer API
+    abstract static class AbstractComparisonNode extends BytesNodes.AbstractComparisonBaseNode {
         @Specialization
-        boolean cmp(PBytesLike self, PBytesLike other,
-                        @Cached GetInternalByteArrayNode getArray) {
+        @SuppressWarnings("truffle-static-method")
+        boolean cmp(PBytes self, PBytes other,
+                        @Shared @Cached GetInternalByteArrayNode getArray) {
             SequenceStorage selfStorage = self.getSequenceStorage();
             SequenceStorage otherStorage = other.getSequenceStorage();
             return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
         }
 
-        @Specialization
-        Object cmp(VirtualFrame frame, Object self, Object other,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-            if (!acquireLib.hasBuffer(other)) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            Object selfBuffer = acquireLib.acquireReadonly(self, frame, this);
-            try {
-                Object otherBuffer = acquireLib.acquireReadonly(other, frame, this);
-                try {
-                    return doCmp(bufferLib.getInternalOrCopiedByteArray(selfBuffer), bufferLib.getBufferLength(selfBuffer),
-                                    bufferLib.getInternalOrCopiedByteArray(otherBuffer), bufferLib.getBufferLength(otherBuffer));
-                } finally {
-                    bufferLib.release(otherBuffer);
-                }
-            } finally {
-                bufferLib.release(selfBuffer);
-            }
+        @Specialization(guards = "check.execute(inliningTarget, other)", limit = "1")
+        @SuppressWarnings("truffle-static-method")
+        boolean cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
+                        @Cached GetBytesStorage getBytesStorage,
+                        @Shared @Cached GetInternalByteArrayNode getArray) {
+            SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
+            SequenceStorage otherStorage = getBytesStorage.execute(inliningTarget, other);
+            return doCmp(getArray.execute(selfStorage), selfStorage.length(), getArray.execute(otherStorage), otherStorage.length());
         }
 
-        private boolean doCmp(byte[] selfArray, int selfLength, byte[] otherArray, int otherLength) {
-            int compareResult = 0;
-            if (shortcutLength() && selfLength != otherLength) {
-                return shortcutLengthResult();
-            }
-            for (int i = 0; i < Math.min(selfLength, otherLength); i++) {
-                compareResult = Byte.compare(selfArray[i], otherArray[i]);
-                if (compareResult != 0) {
-                    break;
-                }
-            }
-            if (compareResult == 0) {
-                compareResult = Integer.compare(selfLength, otherLength);
-            }
-            return fromCompareResult(compareResult);
+        @Specialization(guards = "!check.execute(inliningTarget, other)", limit = "1")
+        @SuppressWarnings("unused")
+        static Object cmp(Object self, Object other,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyBytesCheckNode check) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
-
-        protected boolean shortcutLength() {
-            return false;
-        }
-
-        protected boolean shortcutLengthResult() {
-            return false;
-        }
-
-        protected abstract boolean fromCompareResult(int compareResult);
     }
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends AbstractCmpNode {
+    public abstract static class EqNode extends AbstractComparisonNode {
         @Override
         protected boolean fromCompareResult(int compareResult) {
             return compareResult == 0;
@@ -624,7 +600,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NeNode extends AbstractCmpNode {
+    public abstract static class NeNode extends AbstractComparisonNode {
         @Override
         protected boolean fromCompareResult(int compareResult) {
             return compareResult != 0;
@@ -643,7 +619,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends AbstractCmpNode {
+    abstract static class LtNode extends AbstractComparisonNode {
         @Override
         protected boolean fromCompareResult(int compareResult) {
             return compareResult < 0;
@@ -652,7 +628,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LeNode extends AbstractCmpNode {
+    abstract static class LeNode extends AbstractComparisonNode {
         @Override
         protected boolean fromCompareResult(int compareResult) {
             return compareResult <= 0;
@@ -661,7 +637,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GtNode extends AbstractCmpNode {
+    abstract static class GtNode extends AbstractComparisonNode {
         @Override
         protected boolean fromCompareResult(int compareResult) {
             return compareResult > 0;
@@ -670,7 +646,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GeNode extends AbstractCmpNode {
+    abstract static class GeNode extends AbstractComparisonNode {
         @Override
         protected boolean fromCompareResult(int compareResult) {
             return compareResult >= 0;
