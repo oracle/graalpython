@@ -109,6 +109,31 @@ class TestObject(object):
         tester = TestInt()
         assert int(tester) == 42
 
+    def test_inherit_slots_with_managed_class(self):
+        TestTpAllocWithManaged = CPyExtType("TestTpAllocWithManaged",
+                             """
+                             static PyObject *test_alloc(PyTypeObject *type, Py_ssize_t nitems) {
+                                 PyErr_SetString(PyExc_RuntimeError, "Should not call this tp_alloc");
+                                 return NULL;
+                             }
+                             """,
+                             tp_alloc="test_alloc"
+        )
+        TestTpAllocCall = CPyExtType("TestTpAllocCall",
+                                '''
+                                static PyObject* testslots_tp_alloc(PyObject* self, PyObject *cls) {
+                                    return ((PyTypeObject *)cls)->tp_alloc((PyTypeObject *) cls, 0);
+                                }
+                                ''',
+                                tp_methods='{"createObj", (PyCFunction)testslots_tp_alloc, METH_O, ""}'
+                                )
+        class managed(TestTpAllocWithManaged):
+            pass
+        t = TestTpAllocCall()
+
+        assert t.createObj(managed) != None
+        
+
     def test_float_binops(self):
         TestFloatBinop = CPyExtType("TestFloatBinop",
                              """

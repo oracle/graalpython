@@ -130,7 +130,9 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -203,6 +205,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -1718,22 +1721,31 @@ public abstract class CExtNodes {
      * Use this node to lookup a native type member like {@code tp_alloc}.<br>
      * <p>
      * This node basically implements the native member inheritance that is done by
-     * {@code inherit_special} or other code in {@code PyType_Ready}.
+     * {@code inherit_special} or other code in {@code PyType_Ready}. In addition, we do a special
+     * case for special slots assignment that happens within {@Code type_new_alloc} for heap types.
      * </p>
      * <p>
      * Since it may be that a managed types needs to emulate such members but there is no
-     * corresponding Python attribute (e.g. {@code tp_alloc}), such members are stored as hidden
-     * keys on the managed type. However, the MRO may contain native types and in this case, we need
-     * to access the native member.
+     * corresponding Python attribute (e.g. {@code tp_vectorcall_offset}), such members are stored
+     * as hidden keys on the managed type. However, the MRO may contain native types and in this
+     * case, we need to access the native member.
      * </p>
      */
     @GenerateUncached
     public abstract static class LookupNativeMemberInMRONode extends Node {
 
-        public abstract Object execute(Object cls, NativeMember nativeMemberName, Object managedMemberName);
+        public abstract Object execute(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName);
 
-        @Specialization
-        static Object doSingleContext(Object cls, NativeMember nativeMemberName, Object managedMemberName,
+        static boolean isSpecialHeapSlot(Object cls, HiddenKey key) {
+            return cls instanceof PythonClass && (key == TypeBuiltins.TYPE_ALLOC || key == TypeBuiltins.TYPE_DEL);
+            // mq: not supported yet
+            // key == TypeBuiltins.TYPE_DEALLOC (subtype_dealloc)
+            // key == TypeBuiltins.TYPE_TRAVERSE (subtype_traverse)
+            // key == TypeBuiltins.TYPE_CLEAR (subtype_clear)
+        }
+
+        @Specialization(guards = "!isSpecialHeapSlot(cls, managedMemberName)")
+        static Object doSingleContext(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
@@ -1744,6 +1756,7 @@ public abstract class CExtNodes {
 
             for (int i = 0; i < n; i++) {
                 PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
+
                 Object result;
                 if (PGuards.isManagedClass(mroCls)) {
                     result = readAttrNode.execute(mroCls, managedMemberName);
@@ -1756,7 +1769,34 @@ public abstract class CExtNodes {
                 }
             }
 
-            return PNone.NO_VALUE;
+            return readAttrNode.execute(PythonContext.get(readAttrNode).lookupType(PythonBuiltinClassType.PythonObject), managedMemberName);
+        }
+
+        @TruffleBoundary
+        static Object createSpecialHeapSlot(Object cls, HiddenKey managedMemberName, Node node) {
+            Object func;
+            if (managedMemberName == TypeBuiltins.TYPE_ALLOC || managedMemberName == TypeBuiltins.TYPE_DEL) {
+                PythonObject object = PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject);
+                // We need to point to PyType_GenericAlloc or PyObject_GC_Del
+                func = ReadAttributeFromObjectNode.getUncachedForceType().execute(object, managedMemberName);
+                WriteAttributeToObjectNode.getUncached().execute(cls, managedMemberName, func);
+            } else {
+                // managedMemberName == TypeBuiltins.TYPE_DEALLOC
+                // managedMemberName == TypeBuiltins.TYPE_CLEAR
+                // managedMemberName == TypeBuiltins.TYPE_TRAVERSE
+                throw PRaiseNode.raiseUncached(node, SystemError, tsLiteral("not supported yet!"));
+            }
+            return func;
+        }
+
+        @Specialization(guards = "isSpecialHeapSlot(cls, managedMemberName)")
+        static Object doToAllocOrDelManaged(Object cls, @SuppressWarnings("unused") NativeMember nativeMemberName, HiddenKey managedMemberName,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
+            Object func = readAttrNode.execute(cls, managedMemberName);
+            if (func == PNone.NO_VALUE) {
+                func = createSpecialHeapSlot(cls, managedMemberName, readAttrNode);
+            }
+            return func;
         }
     }
 
