@@ -13,10 +13,10 @@ index ad18b245..b18f3b89 100644
    ],
 diff --git a/mesonpy_wrapper.py b/mesonpy_wrapper.py
 new file mode 100644
-index 00000000..8527d7f7
+index 00000000..c5932c9e
 --- /dev/null
 +++ b/mesonpy_wrapper.py
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,74 @@
 +import mesonpy 
 +import os 
 +import sys
@@ -27,13 +27,12 @@ index 00000000..8527d7f7
 +def get_flang_new_lib_dir():
 +    try:
 +        output = subprocess.check_output(['flang-new', '--version'])
-+    except (OSError, subprocess.CalledProcessError):
-+        pass
-+    else:
 +        flang_dir = output.splitlines()[-1].split()[-1].strip().decode("utf-8")
 +        return os.path.join(flang_dir, "flang-new"), os.path.normpath(os.path.join(flang_dir, '..', 'lib'))
-+    return None, None
-+
++    except Exception as e:
++        print(f"An exception occured while trying to get 'flang-new' library path: {e}")
++        return None, None
++        
 +
 +def append_env_var(env, var, value):
 +    env[var] = '{} {}'.format(env.get(var, ''), value)
