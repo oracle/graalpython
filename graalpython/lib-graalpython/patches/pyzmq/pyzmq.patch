@@ -1,0 +1,12 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 1908e16..89ec895 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -20,6 +20,7 @@ requires = [
+     "setuptools",
+     "wheel",
+     "packaging",
++    "cython",
+     "cffi; implementation_name == 'pypy'",
+ ]
+ build-backend = "setuptools.build_meta"
