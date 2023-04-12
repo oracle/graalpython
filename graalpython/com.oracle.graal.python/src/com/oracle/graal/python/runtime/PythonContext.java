@@ -2492,4 +2492,13 @@ public final class PythonContext extends Python3Core {
         return null;
     }
 
+    private int dlopenFlags = PosixConstants.RTLD_NOW.value;
+
+    public int getDlopenFlags() {
+        return dlopenFlags;
+    }
+
+    public void setDlopenFlags(int dlopenFlags) {
+        this.dlopenFlags = dlopenFlags;
+    }
 }

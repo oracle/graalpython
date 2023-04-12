@@ -150,6 +150,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.SetDlopenFlagsClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.ExcInfoNodeFactory;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
@@ -1943,6 +1944,31 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SysModuleBuiltinsClinicProviders.SetIntMaxStrDigitsClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "getdlopenflags")
+    @GenerateNodeFactory
+    abstract static class GetDlopenFlags extends PythonBuiltinNode {
+        @Specialization
+        Object get() {
+            return getContext().getDlopenFlags();
+        }
+    }
+
+    @Builtin(name = "setdlopenflags", minNumOfPositionalArgs = 1, parameterNames = {"flags"}, numOfPositionalOnlyArgs = 1)
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class SetDlopenFlags extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        Object set(int flags) {
+            getContext().setDlopenFlags(flags);
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SetDlopenFlagsClinicProviderGen.INSTANCE;
         }
     }
 }
