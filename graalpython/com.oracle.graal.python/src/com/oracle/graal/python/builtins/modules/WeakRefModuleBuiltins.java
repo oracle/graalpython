@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMembe
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -266,7 +265,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetWeakRefsNode extends PythonBuiltinNode {
         @Specialization
-        public Object getRefs(@SuppressWarnings("unused") PythonObject pythonObject) {
+        public Object getRefs(@SuppressWarnings("unused") Object object) {
             return PNone.NONE;
         }
     }
