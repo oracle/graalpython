@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -299,6 +300,17 @@ public abstract class CExtContext {
         return false;
     }
 
+    private static String dlopenFlagsToString(int flags) {
+        String str = "RTLD_NOW";
+        if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
+            str = "RTLD_LAZY";
+        }
+        if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
+            str += "|RTLD_GLOBAL";
+        }
+        return str;
+    }
+
     /**
      * This method loads a C extension module (C API or HPy API) and will initialize the
      * corresponding native contexts if necessary.
@@ -335,8 +347,11 @@ public abstract class CExtContext {
                 if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
                     GraalHPyContext.loadJNIBackend();
                     getLogger().config("loading module " + spec.path + " as native");
-                    boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-                    library = GraalHPyContext.evalNFI(context, (panama ? "with panama " : "") + "load \"" + spec.path + "\"", "load " + spec.name);
+                    String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
+                    if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
+                        loadExpr = "with panama " + loadExpr;
+                    }
+                    library = GraalHPyContext.evalNFI(context, loadExpr, "load " + spec.name);
                 }
             } else {
                 cApiContext.supportsNativeBackend = false;
