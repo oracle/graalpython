@@ -128,14 +128,14 @@
                 <buildArg>-H:-CopyLanguageResources</buildArg>
                 <buildArg>--initialize-at-build-time=Py2BinLauncher$JarFileSystem</buildArg>
               </buildArgs>
-              <!-- Remove the properties below to include the Python JIT compier -->
+              <!-- Remove the properties below to include the Python JIT compiler -->
               <jvmArgs>
                 <arg>-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime</arg>
                 <arg>-Dpolyglot.engine.WarnInterpreterOnly=false</arg>
               </jvmArgs>
               <!-- Flip the property below for verbose or quiet image build -->
               <verbose>true</verbose>
-              <!-- Flip the property below to include debug symbols for the image -->
+              <!-- Flip the property below to include debug symbols in the native executable -->
               <debug>false</debug>
             </configuration>
           </plugin>
