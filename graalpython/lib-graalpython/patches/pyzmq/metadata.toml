@@ -1,0 +1,4 @@
+[[rules]]
+# The patch just makes it re-cythonize to pick up our cython changes
+patch = 'pyzmq.patch'
+dist-type = 'sdist'
