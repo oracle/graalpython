@@ -80,6 +80,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -351,7 +352,15 @@ public abstract class CExtContext {
                     if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
                         loadExpr = "with panama " + loadExpr;
                     }
-                    library = GraalHPyContext.evalNFI(context, loadExpr, "load " + spec.name);
+                    try {
+                        library = GraalHPyContext.evalNFI(context, loadExpr, "load " + spec.name);
+                    } catch (AbstractTruffleException e) {
+                        if (e instanceof PException pe) {
+                            throw pe;
+                        } else {
+                            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
+                        }
+                    }
                 }
             } else {
                 cApiContext.supportsNativeBackend = false;
