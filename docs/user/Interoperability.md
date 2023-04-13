@@ -38,27 +38,26 @@ You can import a global value from the entire polyglot scope:
 ```
 
 This global value should then work as expected:
+    
 * Accessing attributes assumes it reads from the `members` namespace.
-```python
->>> ruby_polyglot.to_s
-<foreign object at ...>
-```
+    ```python
+    >>> ruby_polyglot.to_s
+    <foreign object at ...>
+    ```
 
-* Calling methods on the result tries to do a straight invoke and falls
-back to reading the member and trying to execute it.
-```python
->>> ruby_polyglot.to_s()
-Polyglot
-```
+* Calling methods on the result tries to do a straight invoke and falls back to reading the member and trying to execute it.
+    ```python
+    >>> ruby_polyglot.to_s()
+    Polyglot
+    ```
 
 * Accessing items is supported both with strings and numbers.
-```python
->>> ruby_polyglot.methods()[10] is not None
-True
-```
+    ```python
+    >>> ruby_polyglot.methods()[10] is not None
+    True
+    ```
 
-You can export some object from Python to other supported languages so they can import
-it:
+You can export some object from Python to other supported languages so they can import it:
 ```python
 >>> foo = object()
 >>> polyglot.export_value(value=foo, name="python_foo")
@@ -77,7 +76,7 @@ In this case the function name is used as the globally exported name:
 ```
 
 Here is an example of how to use the JavaScript regular expression engine to
-match Python strings.
+match Python strings:
 ```python
 >>> js_re = polyglot.eval(string="RegExp()", language="js")
 
@@ -101,7 +100,7 @@ To run this example, first install the required R library:
 R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
 ```
 
-This example also uses [image_magix.py](http://graalvm.org/docs/examples/image_magix.py) and works
+This example also uses [image_magix.py](examples/image_magix.py) and works
 on a JPEG image input (you can try with [this image](https://www.graalvm.org/resources/img/python_demo_picture.jpg)). These files have to be in the same folder that the script below is located in and executed from.
 ```python
 import polyglot
