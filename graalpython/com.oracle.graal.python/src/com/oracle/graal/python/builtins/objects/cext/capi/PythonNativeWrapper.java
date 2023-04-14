@@ -47,7 +47,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class PythonNativeWrapper implements TruffleObject {
 
@@ -105,9 +107,12 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         this.nativePointer = nativePointer;
     }
 
-    public final boolean isNative(
-                    @Cached ConditionProfile hasNativePointerProfile) {
+    public final boolean isNative(ConditionProfile hasNativePointerProfile) {
         return hasNativePointerProfile.profile(nativePointer != UNINITIALIZED);
+    }
+
+    public final boolean isNative(Node inliningTarget, InlinedConditionProfile hasNativePointerProfile) {
+        return hasNativePointerProfile.profile(inliningTarget, nativePointer != UNINITIALIZED);
     }
 
     public final boolean isNative() {
