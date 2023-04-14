@@ -13,10 +13,10 @@ index 5b4a1d52..c29ec297 100644
    ],
 diff --git a/mesonpy_wrapper.py b/mesonpy_wrapper.py
 new file mode 100644
-index 00000000..c5932c9e
+index 00000000..21cceae0
 --- /dev/null
 +++ b/mesonpy_wrapper.py
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,82 @@
 +import mesonpy 
 +import os 
 +import sys
@@ -25,12 +25,14 @@ index 00000000..c5932c9e
 +
 +
 +def get_flang_new_lib_dir():
++    if sys.implementation.name == "graalpy" and __graalpython__.use_system_toolchain:
++        return None, None
 +    try:
 +        output = subprocess.check_output(['flang-new', '--version'])
 +        flang_dir = output.splitlines()[-1].split()[-1].strip().decode("utf-8")
 +        return os.path.join(flang_dir, "flang-new"), os.path.normpath(os.path.join(flang_dir, '..', 'lib'))
 +    except Exception as e:
-+        print(f"An exception occured while trying to get 'flang-new' library path: {e}")
++        print(f"INFO: flang-new not detected, could not find library path. Reason: {e}")
 +        return None, None
 +        
 +
@@ -82,17 +84,23 @@ index 00000000..c5932c9e
 +
 +
 +def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    if config_settings is None:
++        config_settings = {}
++    config_settings['compile-args'] = '-j4'
 +    scipy_build_env = get_build_env()
 +    with env_vars(scipy_build_env):
 +        return mesonpy.build_wheel(wheel_directory, config_settings=config_settings, metadata_directory=metadata_directory)
 +
 +
 +def build_sdist(sdist_directory, config_settings=None):
++    if config_settings is None:
++        config_settings = {}
++    config_settings['compile-args'] = '-j4'
 +    scipy_build_env = get_build_env()
 +    with env_vars(scipy_build_env):
 +        return mesonpy.build_sdist(sdist_directory, config_settings=config_settings)
 diff --git a/pyproject.toml b/pyproject.toml
-index 6dc1d407..44e32508 100644
+index 6dc1d407..da3e4e6d 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
 @@ -8,7 +8,9 @@
@@ -154,19 +162,6 @@ index 6dc1d407..44e32508 100644
  ]
  
  [project]
-@@ -131,6 +96,12 @@ source = "https://github.com/scipy/scipy"
- download = "https://github.com/scipy/scipy/releases"
- tracker = "https://github.com/scipy/scipy/issues"
- 
-+
-+# limit the number of jobs of the ninja build 
-+[tool.ninja]
-+jobs = 4
-+
-+
- [tool.doit]
- dodoFile = "do.py"
- 
 diff --git a/scipy/_lib/_ccallback_c.pyx b/scipy/_lib/_ccallback_c.pyx
 index 871fb5d3..864656f4 100644
 --- a/scipy/_lib/_ccallback_c.pyx
