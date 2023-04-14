@@ -12,7 +12,7 @@ index 317be69..4e409e4 100644
          op = instr.opcode
          if op in GLOBAL_OPS:
 diff --git a/cloudpickle/cloudpickle_fast.py b/cloudpickle/cloudpickle_fast.py
-index 63aaffa..65ff18c 100644
+index 63aaffa..873f462 100644
 --- a/cloudpickle/cloudpickle_fast.py
 +++ b/cloudpickle/cloudpickle_fast.py
 @@ -21,6 +21,7 @@ import struct
@@ -28,7 +28,7 @@ index 63aaffa..65ff18c 100644
              assert hasattr(self, 'proto')
  
 -    if pickle.HIGHEST_PROTOCOL >= 5 and not PYPY:
-+    if pickle.HIGHEST_PROTOCOL >= 5 and platform.python_implementation() == 'CPython':
++    if pickle.HIGHEST_PROTOCOL >= 5 and not hasattr(Pickler, 'dispatch'):
          # Pickler is the C implementation of the CPython pickler and therefore
          # we rely on reduce_override method to customize the pickler behavior.
  
