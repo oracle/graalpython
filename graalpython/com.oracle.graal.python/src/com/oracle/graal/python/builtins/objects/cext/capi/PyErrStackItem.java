@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,11 +47,13 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -131,8 +133,9 @@ public final class PyErrStackItem extends PythonNativeWrapper {
 
     @ExportMessage
     protected void toNative(
-                    @Cached ConditionProfile isNativeProfile) {
-        if (!isNative(isNativeProfile)) {
+                    @Bind("$node") Node inliningTarget,
+                    @Cached InlinedConditionProfile isNativeProfile) {
+        if (!isNative(inliningTarget, isNativeProfile)) {
             CApiTransitions.firstToNative(this);
         }
     }

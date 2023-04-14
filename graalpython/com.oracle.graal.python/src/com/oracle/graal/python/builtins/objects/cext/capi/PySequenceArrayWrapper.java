@@ -391,10 +391,17 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void toNative(
-                    @Exclusive @Cached ToNativeArrayNode toNativeArrayNode) {
-        if (!isPointer()) {
-            toNativeArrayNode.execute(this);
+                    @Cached GilNode gil,
+                    @Cached ToNativeArrayNode toNativeArrayNode) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!isPointer()) {
+                toNativeArrayNode.execute(this);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
+
     }
 
     @GenerateUncached

@@ -379,15 +379,12 @@ class EnvBuilder:
         # intended for the global Python environment
         cmd = [context.env_exec_cmd, '-Im', 'ensurepip', '--upgrade',
                                                          '--default-pip']
-        output = None
         try:
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        except:
-            if output:
-                if isinstance(output, bytes):
-                    output = output.decode()
-                print("Error output", output, sep="\n\n")
-            raise
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as err:
+            if err.output:
+                print('Error output of "ensurepip":', err.output.decode(errors='replace'), sep='\n\n')
+            raise err
 
     def setup_scripts(self, context):
         """

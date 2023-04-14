@@ -1672,10 +1672,6 @@ public abstract class CExtNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        static Object doSlowPath(Object obj, NativeMember memberName) {
-            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(memberName.getGetterFunctionName(), ToSulongNode.getUncached().execute(obj)));
-        }
-
         @NeverDefault
         static CExtAsPythonObjectNode createForMember(NativeMember member) {
             switch (member.getType()) {

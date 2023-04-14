@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -55,13 +54,27 @@ class VenvTest():
         shutil.rmtree(self.env_dir2)
 
     def test_create_and_use_basic_venv(self):
-        subprocess.check_output([sys.executable, "-m", "venv", self.env_dir, "--without-pip"])
-        run = subprocess.getoutput(". %s/bin/activate; python -m site" % self.env_dir)
+        run = None
+        run_output = ''
+        try:
+            subprocess.check_output([sys.executable, "-m", "venv", self.env_dir, "--without-pip"], stderr=subprocess.STDOUT)
+            run = subprocess.getoutput(". %s/bin/activate; python -m site" % self.env_dir)
+        except subprocess.CalledProcessError as err:
+            if err.output:
+                run_output = err.output.decode(errors="replace")
+        assert run, run_output
         assert "ENABLE_USER_SITE: False" in run, run
         assert self.env_dir in run, run
 
     def test_create_and_use_venv_with_pip(self):
-        subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2])
-        run = subprocess.getoutput("%s/bin/python -m pip list" % self.env_dir2)
+        run = None
+        msg = ''
+        try:
+            subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2], stderr=subprocess.STDOUT)
+            run = subprocess.getoutput("%s/bin/python -m pip list" % self.env_dir2)
+        except subprocess.CalledProcessError as err:
+            if err.output:
+                run_output = err.output.decode(errors="replace")
+        assert run, run_output
         assert "pip" in run, run
         assert "setuptools" in run, run
