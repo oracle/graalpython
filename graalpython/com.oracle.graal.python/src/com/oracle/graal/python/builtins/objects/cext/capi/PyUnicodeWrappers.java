@@ -61,13 +61,16 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializ
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
@@ -98,8 +101,9 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         protected void toNative(
-                        @Cached ConditionProfile isNativeProfile) {
-            if (!isNative(isNativeProfile)) {
+                        @Bind("$node") Node inliningTarget,
+                        @Cached InlinedConditionProfile isNativeProfile) {
+            if (!isNative(inliningTarget, isNativeProfile)) {
                 CApiTransitions.firstToNative(this);
             }
         }
