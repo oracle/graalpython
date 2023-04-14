@@ -129,9 +129,9 @@ class TestGC1():
             b = GCTestClass.getCounters()
             assert b == (1,1,0,0)
             del o
-            gc.collect()
-            time.sleep(1)
-            gc.collect()
+            for i in range(4):
+                gc.collect()
+                time.sleep(1)
             c = GCTestClass.getCounters()
             assert c == (1,1,1,1)
 
