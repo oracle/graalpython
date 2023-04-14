@@ -112,7 +112,7 @@ index 202dea7..1e83e66 100644
      # integers. Silently reduce values larger than PY_SSIZE_T_MAX to
      # PY_SSIZE_T_MAX, silently boost the start and stop values less than
 diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
-index 1ad27df..0965cb2 100644
+index 474e6d2..e15f984 100644
 --- a/Cython/Utility/Coroutine.c
 +++ b/Cython/Utility/Coroutine.c
 @@ -1299,7 +1299,7 @@ static void __Pyx_Coroutine_del(PyObject *self) {
@@ -141,10 +141,10 @@ index b2c67dc..ad80ca4 100644
  #endif
      else if (PyMethod_Check(method)) {
 diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
-index f8bf885..62fec57 100644
+index f8bf885..94d0ca6 100644
 --- a/Cython/Utility/ModuleSetupCode.c
 +++ b/Cython/Utility/ModuleSetupCode.c
-@@ -591,7 +593,7 @@ class __Pyx_FakeReference {
+@@ -591,7 +591,7 @@ class __Pyx_FakeReference {
    #define __Pyx_PyFrame_SetLineNumber(frame, lineno) PyFrame_SetLineNumber(frame, lineno)
  #else
    #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
@@ -153,7 +153,20 @@ index f8bf885..62fec57 100644
  #endif
  
  #if !CYTHON_FAST_THREAD_STATE || PY_VERSION_HEX < 0x02070000
-@@ -1076,7 +1078,7 @@ PyEval_InitThreads();
+@@ -838,11 +838,7 @@ static CYTHON_INLINE void * PyThread_tss_get(Py_tss_t *key) {
+   #define __Pyx_PyType_AsAsync(obj) NULL
+ #endif
+ #ifndef __Pyx_PyAsyncMethodsStruct
+-    typedef struct {
+-        unaryfunc am_await;
+-        unaryfunc am_aiter;
+-        unaryfunc am_anext;
+-    } __Pyx_PyAsyncMethodsStruct;
++    #define __Pyx_PyAsyncMethodsStruct PyAsyncMethods
+ #endif
+ 
+ 
+@@ -1076,7 +1072,7 @@ PyEval_InitThreads();
  static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
      #if PY_VERSION_HEX >= 0x030700A1
      static PY_INT64_T main_interpreter_id = -1;
