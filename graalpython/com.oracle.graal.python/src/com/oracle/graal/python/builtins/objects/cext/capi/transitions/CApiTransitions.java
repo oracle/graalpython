@@ -221,6 +221,7 @@ public class CApiTransitions {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public static void pollReferenceQueue() {
         HandleContext context = getContext();
         if (!context.referenceQueuePollActive) {
@@ -300,9 +301,7 @@ public class CApiTransitions {
             LOGGER.info("GC A Lot - calling System.gc (opportunities=" + GCALotTotalCounter + ")");
             GCALotCounter = 0;
             System.gc();
-            try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-                pollReferenceQueue();
-            }
+            pollReferenceQueue();
         }
     }
 
@@ -515,6 +514,7 @@ public class CApiTransitions {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public static void firstToNative(PythonNativeWrapper obj) {
         /*
          * This method is called from 'toNative' messages. Therefore, we don't know the exact time
@@ -529,6 +529,7 @@ public class CApiTransitions {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public static void firstToNative(PythonNativeWrapper obj, long ptr) {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             /*
