@@ -1731,9 +1731,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (!obj.isNative()) {
                 obj.setRefCount(Long.MAX_VALUE / 2); // make this object immortal
                 long ptr = coerceToLong(callNativeUnary.call(NativeCAPISymbol.FUN_PYTRUFFLE_ALLOCATE_MEMORY_VIEW, obj), lib);
-                if (!obj.isNative()) {
-                    CApiTransitions.firstToNative(obj, ptr);
-                }
+                CApiTransitions.firstToNative(obj, ptr);
             }
         }
     }
@@ -1788,9 +1786,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (!obj.isNative()) {
                 obj.setRefCount(Long.MAX_VALUE / 2); // make this object immortal
                 long ptr = coerceToLong(callNativeUnary.call(allocFunction, obj), lib);
-                if (!obj.isNative()) {
-                    CApiTransitions.firstToNative(obj, ptr);
-                }
+                CApiTransitions.firstToNative(obj, ptr);
             }
         }
     }
