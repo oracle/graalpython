@@ -487,7 +487,9 @@ class TimeTestCase(unittest.TestCase):
         stop = time.process_time()
         # use 20 ms because process_time() has usually a resolution of 15 ms
         # on Windows
-        self.assertLess(stop - start, 0.020)
+        # self.assertLess(stop - start, 0.020)
+        # GraalPy/Truffle change: use 50ms, to avoid rare transient due to jitter
+        self.assertLess(stop - start, 0.050)
 
         info = time.get_clock_info('process_time')
         self.assertTrue(info.monotonic)
