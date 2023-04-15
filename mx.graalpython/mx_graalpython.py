@@ -614,6 +614,7 @@ class GraalPythonTags(object):
     shared_object = 'python-so'
     shared_object_sandboxed = 'python-so-sandboxed'
     graalvm = 'python-graalvm'
+    embedding = 'python-standalone-embedding'
     graalvm_sandboxed = 'python-graalvm-sandboxed'
     svm = 'python-svm'
     native_image_embedder = 'python-native-image-embedder'
@@ -684,6 +685,8 @@ def _graalvm_home(*, envfile, extra_dy=""):
         mx_args = ["--env", envfile]
         if dy:
             mx_args = ["--dy", dy] + mx_args
+        if mx._opts.verbose:
+            mx.run_mx(mx_args + ["graalvm-show"])
         mx.run_mx(mx_args + ["build"])
         out = mx.OutputCapture()
         mx.run_mx(mx_args + ["graalvm-home"], out=out)
@@ -1199,6 +1202,47 @@ def graalpython_gate_runner(args, tasks):
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
             assert "Using preinitialized context." in out.data
+
+    with Task('GraalPython standalone build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm, GraalPythonTags.embedding], report=True) as task:
+        if task:
+            svm_image = python_svm()
+            with tempfile.TemporaryDirectory() as tmpdir:
+                tmpstandalone = os.path.join(tmpdir, "target")
+                tmpmain = os.path.join(tmpdir, "main.py")
+                with open(tmpmain, "w") as f:
+                    f.write("print('hello standalone')")
+                mx.run([svm_image, "-m", "standalone", "java", "-o", tmpstandalone, "-m", tmpmain])
+                mx.run_maven(["-Pjar", "package"], cwd=tmpstandalone) # should compile without GraalVM
+                mx.run_maven(
+                    ["-Pnative", "package"],
+                    cwd=tmpstandalone,
+                    env=dict(tuple(os.environ.items()) + (("JAVA_HOME", os.path.dirname(os.path.dirname(svm_image))),))
+                )
+                out = mx.OutputCapture()
+                mx.run(
+                    [os.path.join(tmpstandalone, "target", "py2binlauncher")],
+                    nonZeroIsFatal=True,
+                    env={"PYTHONVERBOSE": "1"},
+                    out=mx.TeeOutputCapture(out),
+                    err=mx.TeeOutputCapture(out),
+                )
+                if "hello standalone" not in out.data:
+                    mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+
+                mx.run(
+                    [svm_image, "-m", "standalone", "binary", "-Os", "-o", os.path.join(tmpdir, "directlauncher"), "-m", tmpmain],
+                    env=dict(tuple(os.environ.items()) + (("JAVA_HOME", os.path.dirname(os.path.dirname(svm_image))),))
+                )
+                out = mx.OutputCapture()
+                mx.run(
+                    [os.path.join(tmpdir, "directlauncher")],
+                    nonZeroIsFatal=True,
+                    env={"PYTHONVERBOSE": "1"},
+                    out=mx.TeeOutputCapture(out),
+                    err=mx.TeeOutputCapture(out),
+                )
+                if "hello standalone" not in out.data:
+                    mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
     with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
         if task:
