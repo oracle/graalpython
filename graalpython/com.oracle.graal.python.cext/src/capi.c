@@ -432,6 +432,12 @@ PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
 PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                    \
     return obj->FIELD? obj->FIELD->NAME : NULL;                   \
 }
+
+#define PRIMITIVE_EMBEDDED_FIELD_GETTER(RECEIVER, FIELD, RESULT, NAME) \
+PyAPI_FUNC(RESULT) get_##FIELD##_##NAME(RECEIVER obj) { \
+    return obj->FIELD.NAME; \
+}
+
 TYPE_FIELD_GETTER(PyObject*, ob_type)
 PRIMITIVE_FIELD_GETTER(PyObject*, Py_ssize_t, ob_refcnt)
 PRIMITIVE_FIELD_GETTER(PyVarObject*, Py_ssize_t, ob_size)
@@ -514,6 +520,8 @@ PRIMITIVE_FIELD_GETTER(PyTypeObject*, unsigned long, tp_flags)
 PRIMITIVE_FIELD_GETTER(PyModuleDef_Base*, Py_ssize_t, m_index)
 PRIMITIVE_FIELD_GETTER(PyModuleDef*, Py_ssize_t, m_size)
 PRIMITIVE_FIELD_GETTER(PyModuleDef*, const char*, m_doc)
+PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, real)
+PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, imag)
 
 char* get_ob_sval(PyObject* op) {
 	return ((PyBytesObject *)(op))->ob_sval;
