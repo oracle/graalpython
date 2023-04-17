@@ -482,13 +482,19 @@ static PyObject* callBuffer[1024];
 PyAPI_FUNC(PyObject *) PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     va_list myargs;
     va_start(myargs, callable);
+    PyObject *arg;
     int count = 0;
     while (count <= 1024) {
-        PyObject *o = va_arg(myargs, PyObject *);
-        if (o == NULL) {
+        arg = va_arg(myargs, PyObject *);
+        if (arg == NULL) {
             break;
         }
-        callBuffer[count++] = o;
+        callBuffer[count++] = arg;
+    }
+    // test if buffer was too small
+    if (arg != NULL) {
+        fprintf(stderr, "argument buffer for 'PyObject_CallFunctionObjArgs' is too small");
+        exit(-1);
     }
     PyObject* args = PyTuple_New(count);
     for (int i = 0; i < count; i++) {
@@ -502,9 +508,46 @@ PyAPI_FUNC(PyObject *) PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     return result;
 }
 
-PyObject * PyObject_CallMethodObjArgs(PyObject *a, PyObject *b, ...)  {
-    printf("PyObject_CallMethodObjArgs not implemented in capi_native - exiting\n");
-    exit(-1);
+PyObject * PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)  {
+    if ((obj == NULL || name == NULL) && !PyErr_Occurred()) {
+        PyErr_SetString(PyExc_SystemError,
+                         "null argument to internal routine");
+        return NULL;
+    }
+
+    PyObject *callable = NULL;
+    int is_method = _PyObject_GetMethod(obj, name, &callable);
+    if (callable == NULL) {
+        return NULL;
+    }
+    obj = is_method ? obj : NULL;
+
+    va_list myargs;
+    va_start(myargs, name);
+    PyObject *arg;
+    int count = 0;
+    while (count <= 1024) {
+        arg = va_arg(myargs, PyObject *);
+        if (arg == NULL) {
+            break;
+        }
+        callBuffer[count++] = arg;
+    }
+    // test if buffer was too small
+    if (arg != NULL) {
+        fprintf(stderr, "argument buffer for 'PyObject_CallMethodObjArgs' is too small");
+        exit(-1);
+    }
+    PyObject* args = PyTuple_New(count);
+    for (int i = 0; i < count; i++) {
+        Py_INCREF(callBuffer[i]);
+        PyTuple_SetItem(args, i, callBuffer[i]);
+    }
+    va_end(myargs);
+
+    PyObject* result = PyObject_CallObject(callable, args);
+    Py_DECREF(args);
+    return result;
 }
 
 PyObject * _PyObject_CallMethodIdObjArgs(PyObject *object, struct _Py_Identifier *name, ...) {
