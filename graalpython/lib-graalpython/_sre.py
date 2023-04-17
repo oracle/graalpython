@@ -327,12 +327,15 @@ class Pattern():
     def _search(self, string, pos, endpos, method=_METHOD_SEARCH, must_advance=False):
         return tregex_search(self, string, pos, endpos, method, must_advance)
 
+    @__graalpython__.force_split_direct_calls
     def search(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_SEARCH)
 
+    @__graalpython__.force_split_direct_calls
     def match(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_MATCH)
 
+    @__graalpython__.force_split_direct_calls
     def fullmatch(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_FULLMATCH)
 
@@ -346,6 +349,7 @@ class Pattern():
         else:
             return str(elem)
 
+    @__graalpython__.force_split_direct_calls
     def finditer(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -368,6 +372,7 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return
 
+    @__graalpython__.force_split_direct_calls
     def findall(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -392,9 +397,11 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return matchlist
 
+    @__graalpython__.force_split_direct_calls
     def sub(self, repl, string, count=0):
         return self.subn(repl, string, count)[0]
 
+    @__graalpython__.force_split_direct_calls
     def subn(self, repl, string, count=0):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -440,6 +447,7 @@ class Pattern():
         else:
             return "".join(result), n
 
+    @__graalpython__.force_split_direct_calls
     def split(self, string, maxsplit=0):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -500,9 +508,11 @@ class SREScanner(object):
             self.__must_advance = match.start() == self.__start
         return match
 
+    @__graalpython__.force_split_direct_calls
     def match(self):
         return self.__match_search(_METHOD_MATCH)
 
+    @__graalpython__.force_split_direct_calls
     def search(self):
         return self.__match_search(_METHOD_SEARCH)
 

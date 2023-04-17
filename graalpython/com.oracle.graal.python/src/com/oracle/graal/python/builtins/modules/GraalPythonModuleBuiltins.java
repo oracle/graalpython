@@ -504,6 +504,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "force_split_direct_calls", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ForceSplitDirectCallsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object doIt(PFunction func) {
+            func.setForceSplitDirectCalls(true);
+            return func;
+        }
+    }
+
     @Builtin(name = "get_toolchain_tools_for_venv")
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
