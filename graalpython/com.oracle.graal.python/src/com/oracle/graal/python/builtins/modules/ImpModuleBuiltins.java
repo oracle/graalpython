@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_HPY_SUFFIX;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SITE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.FrozenModules;
 import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
@@ -128,12 +126,12 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -254,31 +252,26 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
         static final int MAGIC_NUMBER = 21000 + Compiler.BYTECODE_VERSION * 10;
-
-        @Child private IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
-        @Child private PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().createDispatched(1);
+        static final byte[] MAGIC_NUMBER_BYTES = new byte[4];
+        static {
+            ByteArraySupport.littleEndian().putInt(MAGIC_NUMBER_BYTES, 0, MAGIC_NUMBER);
+            MAGIC_NUMBER_BYTES[2] = '\r';
+            MAGIC_NUMBER_BYTES[3] = '\n';
+        }
 
         @Specialization(guards = "isSingleContext()")
-        public PBytes runCachedSingleContext(@SuppressWarnings("unused") VirtualFrame frame,
-                        @Cached(value = "getMagicNumberPBytes(frame)", weak = true) PBytes magicBytes) {
+        public PBytes runCachedSingleContext(
+                        @Cached(value = "getMagicNumberPBytes()", weak = true) PBytes magicBytes) {
             return magicBytes;
         }
 
         @Specialization(replaces = "runCachedSingleContext")
-        public PBytes run(@SuppressWarnings("unused") VirtualFrame frame,
-                        @Cached(value = "getMagicNumberBytes(frame)", dimensions = 1) byte[] magicBytes) {
-            return factory().createBytes(magicBytes);
+        public PBytes run() {
+            return factory().createBytes(MAGIC_NUMBER_BYTES);
         }
 
-        protected PBytes getMagicNumberPBytes(VirtualFrame frame) {
-            return factory().createBytes(getMagicNumberBytes(frame));
-        }
-
-        @NeverDefault
-        protected byte[] getMagicNumberBytes(VirtualFrame frame) {
-            PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, T_LITTLE, false);
-            byte[] magicBytes = bufferLib.getInternalOrCopiedByteArray(magic);
-            return new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'};
+        protected PBytes getMagicNumberPBytes() {
+            return factory().createBytes(MAGIC_NUMBER_BYTES);
         }
     }
 
