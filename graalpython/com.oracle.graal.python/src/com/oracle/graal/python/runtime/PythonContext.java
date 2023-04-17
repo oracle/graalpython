@@ -2151,6 +2151,12 @@ public final class PythonContext extends Python3Core {
         return null;
     }
 
+    /**
+     * This method is intended to be called to re-acquire the GIL after a {@link StackOverflowError}
+     * was catched. To reduce the probability that re-acquiring the GIL causes again a
+     * {@link StackOverflowError}, it is important to keep this method as simple as possible. In
+     * particular, do not add calls if there is a way to avoid it.
+     */
     public void reacquireGilAfterStackOverflow() {
         while (!ownsGil()) {
             try {

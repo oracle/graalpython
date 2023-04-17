@@ -122,6 +122,12 @@ public final class PException extends AbstractTruffleException {
         return new RuntimeException();
     }
 
+    /*
+     * Note: we use this method to convert a Java StackOverflowError into a Python RecursionError.
+     * At the time when this is done, some Java stack frames were already unwinded but there is no
+     * guarantee on how many. Therefore, it is important that this method is simple. In particular,
+     * do not add calls if that can be avoided.
+     */
     public static PException fromObject(PBaseException actual, Node node, Throwable wrapped) {
         PException pException = new PException(actual, node, wrapped);
         actual.setException(pException);

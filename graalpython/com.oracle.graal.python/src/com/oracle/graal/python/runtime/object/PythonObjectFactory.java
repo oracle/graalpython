@@ -933,6 +933,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBaseException(cls, getShape(cls), data, args));
     }
 
+    /*
+     * Note: we use this method to convert a Java StackOverflowError into a Python RecursionError.
+     * At the time when this is done, some Java stack frames were already unwinded but there is no
+     * guarantee on how many. Therefore, it is important that this method is simple. In particular,
+     * do not add calls if that can be avoided.
+     */
     public final PBaseException createBaseException(Object cls, TruffleString format, Object[] args) {
         return createBaseException(cls, null, format, args);
     }
