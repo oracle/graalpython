@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
@@ -109,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -144,6 +146,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -248,6 +251,13 @@ public final class PythonCextBuiltins {
         if (t instanceof ThreadDeath td) {
             // ThreadDeath subclasses are used internally by Truffle
             throw td;
+        }
+        if (t instanceof StackOverflowError soe) {
+            PythonContext context = PythonContext.get(null);
+            context.reacquireGilAfterStackOverflow();
+            PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
+            PException pe = ExceptionUtils.wrapJavaException(soe, null, newException);
+            throw pe;
         }
         // everything else: log and convert to PException (SystemError)
         CompilerDirectives.transferToInterpreter();
