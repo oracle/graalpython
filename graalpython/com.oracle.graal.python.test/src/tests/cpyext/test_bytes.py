@@ -56,11 +56,17 @@ def _reference_from_object(args):
         return bytes(obj)
     raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
 
+def _as_string(args):
+    if not isinstance(args[0], bytes):
+        return TypeError()
+    return args[0].decode()
 
 def _as_string_and_size(args):
+    if not isinstance(args[0], bytes):
+        return TypeError()
     arg_bytes = args[0]
     s = arg_bytes.decode("utf-8")
-    return (0, s, len(s))
+    return s, len(s)
 
 
 def _reference_format(args):
@@ -127,30 +133,43 @@ class TestPyBytes(CPyExtTestCase):
 
     # PyBytes_AsString
     test_PyBytes_AsString = CPyExtFunction(
-        lambda b: b[0].decode(),
+        _as_string,
         lambda: (
             (b"hello",),
             (b"world",),
             (BytesSubclass(b"hello"),),
+            (list(),),
+            ("hello",)
         ),
         resultspec="s",
         argspec="O",
         arguments=["PyObject* arg"],
+        cmpfunc=unhandled_error_compare
     )
 
     # PyBytes_AsStringAndSize
-    test_PyBytes_AsStringAndSize = CPyExtFunctionOutVars(
+    test_PyBytes_AsStringAndSize = CPyExtFunction(
         _as_string_and_size,
         lambda: (
             (b"hello",),
             (b"world",),
             (BytesSubclass(b"hello"),),
+            (list(),),
+            ("hello",)
         ),
-        resultspec="isn",
+        code="""
+        static PyObject* wrap_PyBytes_AsStringAndSize(PyObject* arg) {
+            char* s;
+            Py_ssize_t sz;
+            if (PyBytes_AsStringAndSize(arg, &s, &sz) < 0)
+                return NULL;
+            return Py_BuildValue("sn", s, sz);
+        }
+        """,
+        callfunction='wrap_PyBytes_AsStringAndSize',
         argspec="O",
         arguments=["PyObject* arg"],
-        resultvars=("char* s", "Py_ssize_t sz"),
-        resulttype="int"
+        cmpfunc=unhandled_error_compare
     )
 
     test_native_storage = CPyExtFunction(
