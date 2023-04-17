@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
@@ -258,6 +259,10 @@ public final class PythonCextBuiltins {
             PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
             PException pe = ExceptionUtils.wrapJavaException(soe, null, newException);
             throw pe;
+        }
+        if (t instanceof OutOfMemoryError oome) {
+            PBaseException newException = PythonContext.get(null).factory().createBaseException(MemoryError);
+            throw ExceptionUtils.wrapJavaException(oome, null, newException);
         }
         // everything else: log and convert to PException (SystemError)
         CompilerDirectives.transferToInterpreter();
