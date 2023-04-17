@@ -121,7 +121,7 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
 DEFAULT_PYPY_BENCHMARKS = [
     "ai",
     # "bm_chameleon",
-    "bm_dulwich_log",
+    # "bm_dulwich_log",
     "bm_mako",
     "bm_mdp",
     "chaos",
