@@ -266,7 +266,11 @@ def _bisect_benchmark(argv, bisect_id, email_to):
     primary_suite = mx.primary_suite()
 
     def checkout_enterprise():
+        # First try to get the revision we explicitly specify in ci-overlays. If that doesn't match with graal, then we
+        # fall back on mx checkout-downstream
         suite = get_suite('graalpython')
+        ce_suite = get_suite('/vm')
+        ce_rev = ce_suite.vc.tip(ce_suite.vc_dir).strip()
         ee_suite = get_suite('/vm-enterprise')
         overlays = '../ci-overlays'
         if not os.path.isdir(overlays):
@@ -278,13 +282,20 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         with open(constants_file) as f:
             ee_rev = json.load(f)['GRAAL_ENTERPRISE_REVISION']
         ee_suite.vc.update_to_branch(ee_suite.vc_dir, ee_rev)
+        mx.run_mx(['sforceimports'], suite=ee_suite)
+        if ce_suite.vc.tip(ce_suite.vc_dir).strip() != ce_rev:
+            # The enterprise rev specified in ci-overlays imports newer graal than graalpython does. Fall back to
+            # mx checkout-downstream to find older compatible enterprise rev
+            ce_suite.vc.update_to_branch(ce_suite.vc_dir, ce_rev)
+            mx.run_mx(['checkout-downstream', 'vm', 'vm-enterprise', '--no-fetch'], suite=ee_suite)
 
     def checkout_suite(suite, commit):
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
-        if args.enterprise and suite.name != 'vm-enterprise':
-            checkout_enterprise()
+        if args.enterprise:
+            if suite.name != 'vm-enterprise':
+                checkout_enterprise()
             # Make sure vm is imported before vm-enterprise
             get_suite('/vm')
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
