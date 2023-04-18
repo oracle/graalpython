@@ -493,8 +493,7 @@ PyAPI_FUNC(PyObject *) PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     }
     // test if buffer was too small
     if (arg != NULL) {
-        fprintf(stderr, "argument buffer for 'PyObject_CallFunctionObjArgs' is too small");
-        exit(-1);
+        Py_FatalError("argument buffer for 'PyObject_CallFunctionObjArgs' is too small");
     }
     PyObject* args = PyTuple_New(count);
     for (int i = 0; i < count; i++) {
@@ -535,8 +534,7 @@ PyObject * PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)  {
     }
     // test if buffer was too small
     if (arg != NULL) {
-        fprintf(stderr, "argument buffer for 'PyObject_CallMethodObjArgs' is too small");
-        exit(-1);
+        Py_FatalError("argument buffer for 'PyObject_CallMethodObjArgs' is too small");
     }
     PyObject* args = PyTuple_New(count);
     for (int i = 0; i < count; i++) {
