@@ -282,8 +282,7 @@ public final class CApiContext extends CExtContext {
             try {
                 return lib.asPointer(ptr);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException();
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
         return ptr;

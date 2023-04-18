@@ -194,6 +194,8 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_MP_LENGTH("get_mp_length"),
     FUN_GET_MP_SUBSCRIPT("get_mp_subscript"),
     FUN_GET_MP_ASS_SUBSCRIPT("get_mp_ass_subscript"),
+    FUN_GET_PY_COMPLEX_CVAL_REAL("get_cval_real"),
+    FUN_GET_PY_COMPLEX_CVAL_IMAG("get_cval_imag"),
     FUN_GET_PYMODULEDEF_M_METHODS("get_PyModuleDef_m_methods"),
     FUN_GET_PYMODULEDEF_M_SLOTS("get_PyModuleDef_m_slots"),
     FUN_GET_BYTE_ARRAY_TYPE_ID("get_byte_array_typeid"),
