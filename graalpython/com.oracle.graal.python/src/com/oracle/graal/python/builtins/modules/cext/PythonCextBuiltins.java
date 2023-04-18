@@ -1409,10 +1409,11 @@ public final class PythonCextBuiltins {
             // this will also be called if the allocation failed
             if (!lib.isNull(pointerObject)) {
                 CApiContext cApiContext = getCApiContext();
-                cApiContext.getTraceMallocDomain(cachedDomainIdx).track(pointerObject, size);
+                Object key = CApiContext.asPointer(pointerObject, lib);
+                cApiContext.getTraceMallocDomain(cachedDomainIdx).track(key, size);
                 cApiContext.increaseMemoryPressure(null, getThreadStateNode, this, size);
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(pointerObject)));
+                    LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(key)));
                 }
             }
             return 0;
@@ -1438,20 +1439,23 @@ public final class PythonCextBuiltins {
         @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
         int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
-                        @Cached("lookupDomain(domain)") int cachedDomainIdx) {
+                        @Cached("lookupDomain(domain)") int cachedDomainIdx,
+                        @CachedLibrary("pointerObject") InteropLibrary lib) {
 
             CApiContext cApiContext = getCApiContext();
-            long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(pointerObject);
+            Object key = CApiContext.asPointer(pointerObject, lib);
+            long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(key);
             cApiContext.reduceMemoryPressure(trackedMemorySize);
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(() -> PythonUtils.formatJString("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(pointerObject)));
+                LOGGER.fine(() -> PythonUtils.formatJString("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(key)));
             }
             return 0;
         }
 
         @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(int domain, Object pointerObject) {
-            return doCachedDomainIdx(domain, pointerObject, domain, lookupDomain(domain));
+        int doGeneric(int domain, Object pointerObject,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return doCachedDomainIdx(domain, pointerObject, domain, lookupDomain(domain), lib);
         }
 
         int lookupDomain(int domain) {
