@@ -79,6 +79,9 @@ char* PyBytes_AsString(PyObject *obj) {
 
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
     *s = (char*)GraalPyTruffle_Bytes_AsString(obj);
+    if (*s == NULL) {
+        return -1;
+    }
     if (len != NULL) {
         *len = GraalPyBytes_Size(obj);
         return 0;
