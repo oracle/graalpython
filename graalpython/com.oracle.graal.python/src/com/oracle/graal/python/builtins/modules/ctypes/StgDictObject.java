@@ -81,7 +81,7 @@ public final class StgDictObject extends PDict {
     int ndim;
     int[] shape;
 
-    TruffleString[] fieldsNames;
+    Object[] fieldsNames;
     int[] fieldsOffsets;
     FFI_TYPES[] fieldsTypes;
 
