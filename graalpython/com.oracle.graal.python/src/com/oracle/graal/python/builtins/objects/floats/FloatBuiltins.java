@@ -129,6 +129,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFloat)
 public final class FloatBuiltins extends PythonBuiltins {
@@ -863,9 +864,20 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public static TruffleString hexD(double value,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        static TruffleString doDouble(double value,
+                        @Shared @Cached FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(makeHexNumber(value), TS_ENCODING);
+        }
+
+        @Specialization
+        TruffleString doNative(VirtualFrame frame, PythonAbstractNativeObject value,
+                        @Shared @Cached FromJavaStringNode fromJavaStringNode,
+                        @Cached FromNativeSubclassNode fromNativeSubclassNode) {
+            Double dvalue = fromNativeSubclassNode.execute(frame, value);
+            if (dvalue != null) {
+                return fromJavaStringNode.execute(makeHexNumber(dvalue), TS_ENCODING);
+            }
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCR_S_FOR_P_OBJ_DOESNT_APPLY_TO_P, "hex", 1.0, value);
         }
     }
 
