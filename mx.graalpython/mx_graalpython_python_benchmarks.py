@@ -650,7 +650,7 @@ class PyPySuite(PySuite):
 
 
 class NumPySuite(PySuite):
-    VERSION = "v1.16.4"
+    VERSION = "v1.23.5"
 
     PREREQUISITES = """
     setuptools==63.1.0
