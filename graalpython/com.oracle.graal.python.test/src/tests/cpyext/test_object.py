@@ -473,11 +473,40 @@ class TestObject(object):
                                        nb_add="fp_add",
                                        tp_new="fp_tpnew",
                                        post_ready_code="testFloatSubclassPtr = &TestFloatSubclassType; Py_INCREF(testFloatSubclassPtr);"
-        )
+                                       )
         tester = TestFloatSubclass(41.0)
         res = tester + 1
         assert res == 42.0, "expected 42.0 but was %s" % res
         assert hash(tester) != 0
+
+    def test_float_subclass2(self):
+        NativeFloatSubclass = CPyExtType(
+            "NativeFloatSubclass",
+            """
+            static PyObject* fp_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+                PyObject *result = PyFloat_Type.tp_new(type, args, kwds);
+                NativeFloatSubclassObject *nfs = (NativeFloatSubclassObject *)result;
+                nfs->myobval = PyFloat_AsDouble(result);
+                return result;
+            }
+
+            static PyObject* fp_tp_repr(PyObject* self) {
+                NativeFloatSubclassObject *nfs = (NativeFloatSubclassObject *)self;
+                return PyUnicode_FromFormat("native %S", PyFloat_FromDouble(nfs->myobval));
+            }
+            """,
+            struct_base="PyFloatObject base",
+            cmembers="double myobval;",
+            tp_base="&PyFloat_Type",
+            tp_new="fp_tp_new",
+            tp_repr="fp_tp_repr"
+        )
+        class MyFloat(NativeFloatSubclass):
+            pass
+        assert MyFloat() == 0.0
+        assert MyFloat(123.0) == 123.0
+        assert repr(MyFloat()) == "native 0.0"
+        assert repr(MyFloat(123.0)) == "native 123.0"
 
     def test_custom_basicsize(self):
         TestCustomBasicsize = CPyExtType("TestCustomBasicsize", 
