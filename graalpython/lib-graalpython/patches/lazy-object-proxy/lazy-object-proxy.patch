@@ -1,0 +1,13 @@
+diff --git a/setup.py b/setup.py
+index 341ae64..3cfcd70 100755
+--- a/setup.py
++++ b/setup.py
+@@ -136,7 +136,7 @@ setup(
+     ],
+     cmdclass={'build_ext': OptionalBuildExt},
+     ext_modules=[]
+-    if hasattr(sys, 'pypy_version_info')
++    if sys.implementation.name != 'cpython'
+     else [
+         Extension(
+             splitext(relpath(path, 'src').replace(os.sep, '.'))[0],
