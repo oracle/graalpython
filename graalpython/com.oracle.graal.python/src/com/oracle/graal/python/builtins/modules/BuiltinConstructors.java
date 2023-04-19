@@ -968,59 +968,54 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // Used for the recursive call
         protected abstract double executeDouble(VirtualFrame frame, PythonBuiltinClassType cls, Object arg) throws UnexpectedResultException;
 
-        protected final boolean isPrimitiveFloat(Node inliningTarget, Object cls, InlineIsBuiltinClassProfile isPrimitiveProfile) {
-            return isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PFloat);
-        }
-
         @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
-        double floatFromDouble(@SuppressWarnings("unused") Object cls, double arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
+        static double floatFromDouble(@SuppressWarnings("unused") Object cls, double arg,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
         @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
-        double floatFromInt(@SuppressWarnings("unused") Object cls, int arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
+        static double floatFromInt(@SuppressWarnings("unused") Object cls, int arg,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
         @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
-        double floatFromLong(@SuppressWarnings("unused") Object cls, long arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
+        static double floatFromLong(@SuppressWarnings("unused") Object cls, long arg,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg;
         }
 
         @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
-        double floatFromBoolean(@SuppressWarnings("unused") Object cls, boolean arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
+        static double floatFromBoolean(@SuppressWarnings("unused") Object cls, boolean arg,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return arg ? 1d : 0d;
         }
 
         @Specialization(guards = "isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", limit = "1")
-        double floatFromString(VirtualFrame frame, @SuppressWarnings("unused") Object cls, TruffleString obj,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
+        static double floatFromString(VirtualFrame frame, @SuppressWarnings("unused") Object cls, TruffleString obj,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
                         @Shared("fromString") @Cached PyFloatFromString fromString) {
             return fromString.execute(frame, obj);
         }
 
         @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "isNoValue(obj)"}, limit = "1")
-        double floatFromNoValue(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone obj,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
+        static double floatFromNoValue(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone obj,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
             return 0.0;
         }
 
         @Specialization(guards = {"isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "!isNoValue(obj)"}, //
                         replaces = "floatFromString", limit = "1")
-        @SuppressWarnings("truffle-static-method")
-        double floatFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
+        static double floatFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
+                        @SuppressWarnings("unused") @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
                         @Cached IsBuiltinObjectProfile stringProfile,
                         @Shared("fromString") @Cached PyFloatFromString fromString,
                         @Cached PyNumberFloatNode pyNumberFloat) {
@@ -1030,7 +1025,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return pyNumberFloat.execute(frame, obj);
         }
 
-        @Specialization(guards = {"!isNativeClass(cls)", "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)"}, //
+        @Specialization(guards = {"!needsNativeAllocation(cls)", "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", "isNoValue(obj)"}, //
+                        limit = "1")
+        Object floatFromNoneManagedSubclass(Object cls, PNone obj,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("isFloat") @Cached InlineIsBuiltinClassProfile isPrimitiveFloatProfile) {
+            return factory().createFloat(cls, floatFromNoValue(cls, obj, inliningTarget, isPrimitiveFloatProfile));
+        }
+
+        @Specialization(guards = {"!needsNativeAllocation(cls)", "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)"}, //
                         limit = "1")
         Object floatFromObjectManagedSubclass(VirtualFrame frame, Object cls, Object obj,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
@@ -1046,8 +1049,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
-        @Specialization(guards = "isSubtypeOfFloat(frame, isSubtype, cls)", limit = "1")
-        static Object floatFromObjectNativeSubclass(VirtualFrame frame, PythonNativeClass cls, Object obj,
+        @Specialization(guards = { //
+                        "needsNativeAllocation(cls)", //
+                        "!isPrimitiveFloat(this, cls, isPrimitiveFloatProfile)", //
+                        "isSubtypeOfFloat(frame, isSubtype, cls)"}, limit = "1")
+        static Object floatFromObjectNativeSubclass(VirtualFrame frame, Object cls, Object obj,
+                        @Bind("this") @SuppressWarnings("unused") Node inliningTarget,
+                        @Shared("isFloat") @Cached @SuppressWarnings("unused") InlineIsBuiltinClassProfile isPrimitiveFloatProfile,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.FloatSubtypeNew subtypeNew,
                         @Shared @Cached FloatNode recursiveCallNode) {
@@ -1058,7 +1066,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        protected static boolean isSubtypeOfFloat(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {
+        protected final boolean isPrimitiveFloat(Node inliningTarget, Object cls, InlineIsBuiltinClassProfile isPrimitiveProfile) {
+            return isPrimitiveProfile.profileIsBuiltinClass(inliningTarget, cls, PythonBuiltinClassType.PFloat);
+        }
+
+        protected static boolean isSubtypeOfFloat(VirtualFrame frame, IsSubtypeNode isSubtypeNode, Object cls) {
             return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PFloat);
         }
     }

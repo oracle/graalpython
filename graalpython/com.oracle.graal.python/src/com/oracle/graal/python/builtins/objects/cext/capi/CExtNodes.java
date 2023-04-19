@@ -260,8 +260,8 @@ public abstract class CExtNodes {
             return result;
         }
 
-        @Specialization(guards = "isNativeClass(object)")
-        protected Object callNativeConstructor(Object object, Object arg,
+        @Specialization(guards = "needsNativeAllocation(object)")
+        Object callNativeConstructor(Object object, Object arg,
                         @Cached ToSulongNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
@@ -270,8 +270,7 @@ public abstract class CExtNodes {
                 Object result = interopLibrary.execute(importCAPISymbolNode.execute(getFunction()), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("C subtype_new function failed", e);
+                throw CompilerDirectives.shouldNotReachHere("C subtype_new function failed", e);
             }
         }
     }
