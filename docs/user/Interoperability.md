@@ -100,7 +100,7 @@ To run this example, first install the required R library:
 R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
 ```
 
-This example also uses [image_magix.py](examples/image_magix.py) and works
+This example also uses [image_magix.py](https://www.graalvm.org/resources/img/python/image_magix.py) and works
 on a JPEG image input (you can try with [this image](https://www.graalvm.org/resources/img/python_demo_picture.jpg)). These files have to be in the same folder that the script below is located in and executed from.
 ```python
 import polyglot
