@@ -11,3 +11,16 @@ index 6411894..05f0678 100644
              else:
                  # Transient effects exist also on CPython, e.g. from
                  # OS scheduling
+diff --git a/asv/util.py b/asv/util.py
+index 52eb96e..98daf61 100644
+--- a/asv/util.py
++++ b/asv/util.py
+@@ -544,7 +544,7 @@ def check_output(args, valid_return_codes=(0,), timeout=600, dots=True,
+     else:
+         kwargs['close_fds'] = True
+-        posix = getattr(os, 'setpgid', None)
++        posix = getattr(os, 'setpgid', None) and sys.implementation.name != "graalpy"
+         if posix:
+             # Run the subprocess in a separate process group, so that we
+             # can kill it and all child processes it spawns e.g. on
+             # timeouts. Note that subprocess.Popen will wait until exec()
