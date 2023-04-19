@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -65,6 +66,7 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.VMRuntime;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -525,7 +527,14 @@ public final class PythonUtils {
 
     @TruffleBoundary
     public static void dumpHeap(String path) {
-        if (SERVER != null) {
+        if (ImageInfo.inImageCode()) {
+            try {
+                VMRuntime.dumpHeap(path, true);
+            } catch (UnsupportedOperationException | IOException e) {
+                System.err.println("Heap dump creation failed." + e.getMessage());
+                e.printStackTrace();
+            }
+        } else if (SERVER != null) {
             try {
                 Class<?> mxBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
                 Object mxBean = ManagementFactory.newPlatformMXBeanProxy(SERVER,
