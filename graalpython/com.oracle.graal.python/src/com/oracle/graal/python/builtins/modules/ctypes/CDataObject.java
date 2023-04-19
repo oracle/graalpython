@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -58,7 +59,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(PythonBufferAcquireLibrary.class)
@@ -221,7 +221,7 @@ public class CDataObject extends PythonBuiltinObject {
             this.nativePointer = null;
         }
 
-        private int getIndex(String field, TruffleString.ToJavaStringNode toJavaStringNode) {
+        private int getIndex(String field, CastToJavaStringNode toJavaStringNode) {
             String[] fields = getMembers(true, toJavaStringNode);
             for (int i = 0; i < fields.length; i++) {
                 if (fields[i].equals(field)) {
@@ -238,7 +238,7 @@ public class CDataObject extends PythonBuiltinObject {
 
         @ExportMessage
         String[] getMembers(@SuppressWarnings("unused") boolean includeInternal,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Shared @Cached CastToJavaStringNode toJavaStringNode) {
             if (members == null) {
                 members = new String[this.stgDict.fieldsNames.length];
                 for (int i = 0; i < this.stgDict.fieldsNames.length; i++) {
@@ -250,13 +250,13 @@ public class CDataObject extends PythonBuiltinObject {
 
         @ExportMessage
         boolean isMemberReadable(String member,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Shared @Cached CastToJavaStringNode toJavaStringNode) {
             return getIndex(member, toJavaStringNode) != -1;
         }
 
         @ExportMessage
         final boolean isMemberModifiable(String member,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @Shared @Cached CastToJavaStringNode toJavaStringNode) {
             return isMemberReadable(member, toJavaStringNode);
         }
 
@@ -267,7 +267,7 @@ public class CDataObject extends PythonBuiltinObject {
 
         @ExportMessage
         Object readMember(String member,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws UnknownIdentifierException {
+                        @Shared @Cached CastToJavaStringNode toJavaStringNode) throws UnknownIdentifierException {
             int idx = getIndex(member, toJavaStringNode);
             if (idx != -1) {
                 return CtypesNodes.getValue(stgDict.fieldsTypes[idx], storage, stgDict.fieldsOffsets[idx]);
@@ -277,7 +277,7 @@ public class CDataObject extends PythonBuiltinObject {
 
         @ExportMessage
         void writeMember(String member, Object value,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws UnknownIdentifierException {
+                        @Shared @Cached CastToJavaStringNode toJavaStringNode) throws UnknownIdentifierException {
             int idx = getIndex(member, toJavaStringNode);
             if (idx != -1) {
                 CtypesNodes.setValue(stgDict.fieldsTypes[idx], storage, stgDict.fieldsOffsets[idx], value);
