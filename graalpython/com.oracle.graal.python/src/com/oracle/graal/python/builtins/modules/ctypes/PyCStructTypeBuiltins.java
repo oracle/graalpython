@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -56,7 +57,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,7 +68,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCStructType)
-public class PyCStructTypeBuiltins extends PythonBuiltins {
+public final class PyCStructTypeBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -81,15 +85,30 @@ public class PyCStructTypeBuiltins extends PythonBuiltins {
     protected abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached WriteAttributeToObjectNode writeNode,
-                        @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
+        PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
+                        @Shared @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached WriteAttributeToObjectNode writeNode,
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             writeNode.execute(object, key, value);
             if (equalNode.execute(key, StructUnionTypeBuiltins.T__fields_, TS_ENCODING)) {
                 updateStgDict.execute(frame, object, value, true, factory());
             }
             return PNone.NONE;
+        }
+
+        @Specialization(replaces = "doStringKey")
+        PNone doGenericKey(VirtualFrame frame, Object object, Object keyObject, Object value,
+                        @Shared @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached WriteAttributeToObjectNode writeNode,
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
+                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+            TruffleString key;
+            try {
+                key = castKeyToStringNode.execute(keyObject);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
+            }
+            return doStringKey(frame, object, key, value, equalNode, writeNode, updateStgDict);
         }
     }
 }
