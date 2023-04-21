@@ -282,7 +282,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             }
 
             p.restype = restype;
-            if (restype == PNone.NONE) {
+            if (restype == null || restype == PNone.NONE) {
                 p.setfunc = FieldSet.nil;
                 p.ffi_restype = new FFIType();
             } else {
