@@ -13,10 +13,10 @@ index ad18b245..b18f3b89 100644
    ],
 diff --git a/mesonpy_wrapper.py b/mesonpy_wrapper.py
 new file mode 100644
-index 00000000..3f5beb79
+index 00000000..21cceae0
 --- /dev/null
 +++ b/mesonpy_wrapper.py
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,82 @@
 +import mesonpy 
 +import os 
 +import sys
@@ -99,12 +99,6 @@ index 00000000..3f5beb79
 +    scipy_build_env = get_build_env()
 +    with env_vars(scipy_build_env):
 +        return mesonpy.build_sdist(sdist_directory, config_settings=config_settings)
-+
-+def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None):
-+    if config_settings is None:
-+        config_settings = {}
-+    config_settings['compile-args'] = '-j4'
-+    
 diff --git a/pyproject.toml b/pyproject.toml
 index 454a3c2e..370f0e8e 100644
 --- a/pyproject.toml
