@@ -167,15 +167,7 @@ def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **k
 def known_packages():
     @pip_package()
     def pytest(**kwargs):
-        setuptools(**kwargs)
-        wcwidth(**kwargs)
-        pluggy(**kwargs)
-        atomicwrites(**kwargs)
-        more_itertools(**kwargs)
-        attrs(**kwargs)
-        packaging(**kwargs)
-        py(**kwargs)
-        install_from_pypi("pytest==5.1.0", **kwargs)
+        install_with_pip("pytest", **kwargs)
 
     @pip_package()
     def pytest_parallel(**kwargs):
@@ -398,16 +390,11 @@ def known_packages():
 
     @pip_package()
     def pytz(**kwargs):
-        install_from_pypi("pytz==2022.2.1", **kwargs)
+        install_with_pip("pytz", **kwargs)
 
     @pip_package()
     def pandas(**kwargs):
-        pytz(**kwargs)
-        six(**kwargs)
-        dateutil(**kwargs)
-        numpy(**kwargs)
-
-        install_from_pypi("pandas==1.5.2", **kwargs)
+        install_with_pip("pandas", **kwargs)
 
     @pip_package()
     def scipy(**kwargs):
@@ -415,25 +402,7 @@ def known_packages():
 
     @pip_package()
     def scikit_learn(**kwargs):
-        # honor following selected env variables: BLAS, LAPACK, ATLAS
-        scikit_learn_build_env = {}
-        for key in ("BLAS", "LAPACK", "ATLAS"):
-            if key in os.environ:
-                scikit_learn_build_env[key] = os.environ[key]
-
-        if sys.implementation.name == "graalpy":
-            if not os.environ.get("VIRTUAL_ENV", None):
-                xit("scikit-learn can only be installed within a venv.")
-            from distutils.sysconfig import get_config_var
-            scikit_learn_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
-
-        # install dependencies
-        numpy(**kwargs)
-        scipy(**kwargs)
-        joblib(**kwargs)
-        threadpoolctl(**kwargs)
-
-        install_from_pypi("scikit-learn==1.1.3", env=scikit_learn_build_env, **kwargs)
+        install_with_pip("scikit-learn", **kwargs)
 
     @pip_package()
     def cycler(**kwargs):

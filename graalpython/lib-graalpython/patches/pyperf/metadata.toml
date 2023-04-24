@@ -1,0 +1,12 @@
+[[rules]]
+version = '== 2.3.0'
+patch = 'pyperf-2.3.0.patch'
+
+[[rules]]
+version = '== 2.3.1'
+patch = 'pyperf-2.3.1.patch'
+
+[[rules]]
+install_priority = 10
+version = '== 2.5.0'
+patch = 'pyperf-2.5.0.patch'

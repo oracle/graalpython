@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 0.12.0'
+patch = 'pythran-0.12.0.patch'

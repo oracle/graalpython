@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 2.2.1'
+patch = 'cloudpickle-2.2.1.patch'

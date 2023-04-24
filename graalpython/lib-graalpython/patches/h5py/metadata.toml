@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 2.10.0'
+patch = 'h5py-2.10.0.patch'
