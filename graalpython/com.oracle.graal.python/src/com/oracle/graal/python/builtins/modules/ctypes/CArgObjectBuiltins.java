@@ -153,8 +153,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
         switch (f) {
             case PyCArrayTypeParamFunc: // Corresponds to PyCArrayType_paramfunc
                 parg.tag = 'P';
-                // parg.pffi_type = FFIType.ffi_type_pointer;
-                parg.pffi_type = stgDict.ffi_type_pointer;
+                parg.pffi_type = FFIType.ffi_type_uint8_array;
                 parg.value = self.b_ptr;
                 parg.obj = self;
                 return parg;

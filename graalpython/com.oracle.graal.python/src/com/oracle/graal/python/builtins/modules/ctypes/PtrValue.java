@@ -88,8 +88,10 @@ final class PtrValue implements TruffleObject {
     }
 
     protected Object getPrimitiveValue(FFIType type) {
-        if (ptr instanceof PrimitiveStorage) {
-            return ((PrimitiveStorage) ptr).value;
+        if (ptr instanceof PrimitiveStorage storage) {
+            return storage.value;
+        } else if (ptr instanceof NativePointerStorage storage) {
+            return storage.value;
         } else {
             return readArrayElement(type, 0);
         }
@@ -225,13 +227,12 @@ final class PtrValue implements TruffleObject {
                 return new ByteArrayStorage(type.type, new byte[size]);
 
             case FFI_TYPE_STRUCT: // TODO
+            case FFI_TYPE_POINTER:
                 if (value == null) {
                     return new ByteArrayStorage(type.type, new byte[size]);
                 } else {
                     return new NativePointerStorage(value, t);
                 }
-            case FFI_TYPE_POINTER:
-                return new NativePointerStorage(value, t);
             default:
                 throw CompilerDirectives.shouldNotReachHere("Not supported type!");
 

@@ -208,7 +208,7 @@ final class FFIType {
         this.alignment = alignment;
         this.type = type;
         this.elements = elements;
-        this.asArray = asArray == null ? this : asArray;
+        this.asArray = asArray;
         this.callback = callback;
     }
 
@@ -237,7 +237,7 @@ final class FFIType {
     }
 
     protected FFIType getAsArray() {
-        return asArray;
+        return asArray != null ? asArray : this;
     }
 
     protected boolean isCallback() {

@@ -113,6 +113,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PrimitiveStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -1043,20 +1045,32 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedGetClassNode getClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
             if (!pyTypeCheck.isCDataObject(obj)) {
                 return error(null, obj, offset, inliningTarget, getClassNode);
             }
             FFIType ffiType = pyObjectStgDictNode.execute(obj).ffi_type_pointer;
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = 'P';
-            // parg.pffi_type = FFIType.ffi_type_pointer;
-            parg.pffi_type = ffiType.getAsArray();
+            parg.pffi_type = FFIType.ffi_type_uint8_array;
             parg.obj = obj;
-            if (parg.pffi_type != ffiType && !obj.b_ptr.isManagedBytes()) {
-                parg.value = PtrValue.allocate(parg.pffi_type, ffiType.size);
-                parg.value.writeArrayElement(ffiType, 0, obj.b_ptr.getPrimitiveValue(ffiType));
-                obj.b_ptr.ptr = parg.value.ptr;
+            if (obj.b_ptr.isNil()) {
+                obj.b_ptr = PtrValue.allocate(parg.pffi_type, ffiType.size);
+            } else if (obj.b_ptr.ptr instanceof PrimitiveStorage storage) {
+                obj.b_ptr = PtrValue.allocate(parg.pffi_type, ffiType.size);
+                obj.b_ptr.writeArrayElement(ffiType, 0, storage.getValue());
+            } else if (obj.b_ptr.ptr instanceof NativePointerStorage storage) {
+                obj.b_ptr = PtrValue.allocate(parg.pffi_type, ffiType.size);
+                long ptr = 0;
+                if (storage.getValue() != null && lib.isPointer(storage.getValue())) {
+                    try {
+                        ptr = lib.asPointer(storage.getValue());
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere("Cannot take pointer of a managed pointer");
+                    }
+                }
+                obj.b_ptr.writeArrayElement(ffiType, 0, ptr);
             }
             parg.value = obj.b_ptr.ref(offset);
 
@@ -1421,13 +1435,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-
+        
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-
+        
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;
@@ -1554,9 +1568,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 /* If it has an stgdict, it is a CDataObject */
                 PyCArgObject carg = paramFunc(dict.paramfunc, (CDataObject) obj, dict, factory, codePointAtIndexNode);
                 pa.ffi_type = carg.pffi_type;
-                // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
-                assert carg.value.offset == 0 : "TODO";
-                pa.value = carg.value.ptr.getValue();
+                if (carg.pffi_type == FFIType.ffi_type_pointer) {
+                    pa.value = carg.value.getPrimitiveValue(carg.pffi_type);
+                } else {
+                    assert carg.value.offset == 0 : "TODO";
+                    pa.value = carg.value.ptr.getValue();
+                }
                 return;
             }
 

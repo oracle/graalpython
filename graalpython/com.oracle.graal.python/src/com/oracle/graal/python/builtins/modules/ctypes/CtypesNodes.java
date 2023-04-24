@@ -232,6 +232,7 @@ public class CtypesNodes {
             case FFI_TYPE_SINT64_ARRAY:
             case FFI_TYPE_UINT64:
             case FFI_TYPE_SINT64:
+            case FFI_TYPE_POINTER:
                 return SERIALIZE_LE.getLong(storage, offset);
             case FFI_TYPE_FLOAT_ARRAY:
             case FFI_TYPE_FLOAT:

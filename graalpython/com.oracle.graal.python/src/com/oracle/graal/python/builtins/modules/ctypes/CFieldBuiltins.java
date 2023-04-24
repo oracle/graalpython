@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PrimitiveStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesWithoutFrameNode;
@@ -1096,22 +1097,30 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == P_get")
-        static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+        static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached PythonObjectFactory factory) {
+            assert size == 8;
             if (ptr.isNil()) {
-                return PNone.NONE;
+                return 0L;
             }
             Object p;
-            if (ptr.ptr instanceof MemoryViewStorage) {
-                PMemoryView mv = ((MemoryViewStorage) ptr.ptr).value;
+            if (ptr.ptr instanceof MemoryViewStorage storage) {
+                PMemoryView mv = storage.value;
                 p = mv.getBufferPointer();
+                // TODO this doesn't work for managed memory views that didn't go native
                 p = p != null ? p : mv.getBuffer();
-            } else if (ptr.isNativePointer()) {
-                p = ((NativePointerStorage) ptr.ptr).value;
-                p = p != null ? p : PNone.NONE;
+            } else if (ptr.ptr instanceof NativePointerStorage storage) {
+                p = storage.getValue();
+                if (p == null) {
+                    return 0L;
+                }
+            } else if (ptr.ptr instanceof ByteArrayStorage storage) {
+                return PythonUtils.arrayAccessor.getLong(storage.value, 0);
+            } else if (ptr.ptr instanceof PrimitiveStorage storage) {
+                return storage.getValue();
             } else {
-                p = PNone.NONE;
+                return 0L;
             }
             if (ilib.isPointer(p)) {
                 try {
