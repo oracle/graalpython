@@ -73,7 +73,12 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         return -1;
     }
     long result = GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
-    *overflow = result == -1L && PyErr_Occurred() != NULL;
+    if (result == -1L && PyErr_Occurred() != NULL) {
+    	PyErr_Clear();
+    	*overflow = 1;
+    } else {
+    	*overflow = 0;
+    }
     return result;
 }
 
@@ -87,7 +92,12 @@ long long PyLong_AsLongLong(PyObject *obj) {
 
 long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
     long long result = PyLong_AsLongLong(obj);
-    *overflow = result == -1L && PyErr_Occurred() != NULL;
+    if (result == -1L && PyErr_Occurred() != NULL) {
+    	PyErr_Clear();
+    	*overflow = 1;
+    } else {
+    	*overflow = 0;
+    }
     return result;
 }
 
