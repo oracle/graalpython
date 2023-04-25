@@ -43,7 +43,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class PGenerator extends PythonBuiltinObject {
+public class PGenerator extends PythonBuiltinObject {
 
     private TruffleString name;
     private TruffleString qualname;
@@ -63,15 +63,13 @@ public final class PGenerator extends PythonBuiltinObject {
     private final FrameInfo frameInfo;
     // running means it is currently on the stack, not just started
     private boolean running;
-
-    private boolean runningAsync;
-
     private final boolean isCoroutine;
 
     // An explicit isIterableCoroutine argument is needed for iterable coroutines (generally created
     // via types.coroutine)
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
                     PythonBuiltinClassType cls, boolean isIterableCoroutine) {
+        // note: also done in PAsyncGen.create
         rootNode.createGeneratorFrame(arguments);
         return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments, cls, isIterableCoroutine);
     }
@@ -81,7 +79,7 @@ public final class PGenerator extends PythonBuiltinObject {
         return create(lang, name, qualname, rootNode, callTargets, arguments, cls, false);
     }
 
-    private PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls,
+    protected PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls,
                     boolean isIterableCoroutine) {
         super(cls, cls.getInstanceShape(lang));
         this.name = name;
@@ -191,13 +189,5 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public boolean isCoroutine() {
         return isCoroutine;
-    }
-
-    public boolean isRunningAsync() {
-        return runningAsync;
-    }
-
-    public void setRunningAsync(boolean runningAsync) {
-        this.runningAsync = runningAsync;
     }
 }

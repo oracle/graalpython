@@ -238,6 +238,9 @@ public final class CodeUnit {
         if (isCoroutine()) {
             flagNames.add("CO_COROUTINE");
         }
+        if (isAsyncGenerator()) {
+            flagNames.add("CO_ASYNC_GENERATOR");
+        }
         if (!flagNames.isEmpty()) {
             sb.append("Flags: ").append(String.join(" | ", flagNames)).append("\n");
         }

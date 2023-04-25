@@ -208,6 +208,7 @@ import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.PAsyncGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -879,8 +880,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCoroutineWrapper(getLanguage(), generator));
     }
 
-    public final PGenerator createAsyncGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PAsyncGenerator));
+    public final PAsyncGen createAsyncGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PAsyncGen.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
     }
 
     public final PMappingproxy createMappingproxy(Object object) {
@@ -1516,12 +1517,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new MultibyteCodecObject(type, getShape(type), codec));
     }
 
-    public PAsyncGenASend createAsyncGeneratorASend(PGenerator receiver, Object message) {
+    public PAsyncGenASend createAsyncGeneratorASend(PAsyncGen receiver, Object message) {
         return trace(new PAsyncGenASend(getLanguage(), receiver, message));
     }
 
-    public PAsyncGenAThrow createAsyncGeneratorAThrow() {
-        return trace(new PAsyncGenAThrow(getLanguage()));
+    public PAsyncGenAThrow createAsyncGeneratorAThrow(PAsyncGen receiver, Object arg1, Object arg2, Object arg3) {
+        return trace(new PAsyncGenAThrow(getLanguage(), receiver, arg1, arg2, arg3));
     }
 
     public PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(Object wrapped) {

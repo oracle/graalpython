@@ -42,8 +42,11 @@ package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -51,13 +54,19 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ANEXT_INVALID_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.ASYNC_FOR_NO_ANEXT_ITERATION;
 
 @GenerateUncached
@@ -75,18 +84,34 @@ public abstract class GetANextNode extends PNodeWithContext {
 
     @Specialization
     Object doGeneric(Frame frame, Object receiver,
-                    @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
-                    @Cached GetClassNode getAsyncIterType,
-                    @Cached PRaiseNode raiseNoANext,
-                    @Cached TypeNodes.GetNameNode getName,
-                    @Cached InlinedBranchProfile errorProfile,
-                    @Cached CallUnaryMethodNode callANext) {
+                     @Bind("this") Node inliningTarget,
+                     @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
+                     @Cached GetClassNode getAsyncIterType,
+                     @Cached InlinedGetClassNode.GetPythonObjectClassNode getANextType,
+                     @Cached PRaiseNode raiseNoANext,
+                     @Cached TypeNodes.GetNameNode getName,
+                     @Cached InlinedBranchProfile errorProfile,
+                     @Cached CallUnaryMethodNode callANext,
+                     @Cached PRaiseNode raiseInvalidObject,
+                     @Cached GetAwaitableNode getAwaitable) {
         Object type = getAsyncIterType.execute(receiver);
         Object getter = getANext.execute(frame, type, receiver);
         if (getter == PNone.NO_VALUE) {
-            errorProfile.enter(this);
-            raiseNoANext.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_ITERATION, getName.execute(type));
+            errorProfile.enter(inliningTarget);
+            throw raiseNoANext.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_ITERATION, getName.execute(type));
         }
-        return callANext.executeObject(frame, getter, receiver);
+        Object anext = callANext.executeObject(frame, getter, receiver);
+        try {
+            return getAwaitable.execute(frame, anext);
+        } catch(PException e) {
+            errorProfile.enter(inliningTarget);
+            Object aNextName;
+            if (anext instanceof PythonObject) {
+                aNextName = getName.execute(getANextType.execute(inliningTarget, (PythonObject) anext));
+            } else {
+                aNextName = anext.getClass().getName();
+            }
+            throw raiseInvalidObject.raise(PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, aNextName);
+        }
     }
 }

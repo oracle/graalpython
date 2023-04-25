@@ -41,8 +41,8 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -78,12 +78,12 @@ public abstract class SetupAwithNode extends PNodeWithContext {
         Object enter = lookupAEnter.execute(frame, type, contextManager);
         if (enter == PNone.NO_VALUE) {
             errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___ENTER__});
+            throw raiseNode.raise(AttributeError, new Object[]{T___AENTER__});
         }
         Object exit = lookupAExit.execute(frame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
             errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___EXIT__});
+            throw raiseNode.raise(AttributeError, new Object[]{T___AEXIT__});
         }
         Object res = callEnter.executeObject(frame, enter, contextManager);
         frame.setObject(++stackTop, exit);

@@ -103,4 +103,14 @@ public class CoroutineWrapperBuiltins extends PythonBuiltins {
             return throwNode.execute(frame, self.coroutine, typ, val, tp);
         }
     }
+
+    @Builtin(name = "close", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class CloseNode extends PythonBuiltinNode {
+        @Specialization
+        public Object doThrow(VirtualFrame frame, PCoroutineWrapper self,
+                              @Cached CommonGeneratorBuiltins.CloseNode closeNode) {
+            return closeNode.execute(frame, self.coroutine);
+        }
+    }
 }

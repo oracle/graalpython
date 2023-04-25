@@ -46,10 +46,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PAsyncGen;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -75,7 +76,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object getCode(PGenerator self,
+        public Object getCode(PAsyncGen self,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile hasCodeProfile) {
             return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory());
@@ -86,7 +87,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetAwait extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object getAwait(PGenerator self) {
+        public Object getAwait(PAsyncGen self) {
             Object yieldFrom = self.getYieldFrom();
             return yieldFrom != null ? yieldFrom : PNone.NONE;
         }
@@ -96,7 +97,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFrame extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object getFrame(VirtualFrame frame, PGenerator self,
+        public Object getFrame(VirtualFrame frame, PAsyncGen self,
                         @Cached GeneratorBuiltins.GetFrameNode getFrame) {
             return getFrame.execute(frame, self);
         }
@@ -106,7 +107,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsRunning extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean isRunning(PGenerator self) {
+        public boolean isRunning(PAsyncGen self) {
             return self.isRunning();
         }
     }
@@ -115,17 +116,19 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ASend extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object aSend(PGenerator self, Object sent) {
+        public Object aSend(PAsyncGen self, Object sent) {
             return factory().createAsyncGeneratorASend(self, sent);
         }
     }
 
-    @Builtin(name = "athrow", declaresExplicitSelf = true, minNumOfPositionalArgs = 2)
+    @Builtin(name = "athrow", declaresExplicitSelf = true, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public abstract static class AThrow extends PythonBinaryBuiltinNode {
+    public abstract static class AThrow extends PythonBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3);
+
         @Specialization
-        public Object athrow(PGenerator self, Object thrown) {
-            return factory().createAsyncGeneratorAThrow();
+        public Object athrow(PAsyncGen self, Object arg1, Object arg2, Object arg3) {
+            return factory().createAsyncGeneratorAThrow(self, arg1, arg2, arg3);
         }
     }
 
@@ -133,7 +136,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AIter extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object aIter(PGenerator self) {
+        public Object aIter(PAsyncGen self) {
             return self;
         }
     }
@@ -142,7 +145,7 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ANext extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object aNext(PGenerator self) {
+        public Object aNext(PAsyncGen self) {
             return factory().createAsyncGeneratorASend(self, PNone.NONE);
         }
     }
@@ -151,8 +154,8 @@ public class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AClose extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object aNext(PGenerator self) {
-            return factory().createAsyncGeneratorAThrow();
+        public Object aClose(PAsyncGen self) {
+            return factory().createAsyncGeneratorAThrow(self, null, PNone.NO_VALUE, PNone.NO_VALUE);
         }
     }
 }

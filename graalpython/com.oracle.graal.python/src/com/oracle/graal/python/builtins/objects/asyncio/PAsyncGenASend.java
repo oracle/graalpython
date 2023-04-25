@@ -44,8 +44,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.runtime.PAsyncGen;
 
-public class PAsyncGenASend extends PythonBuiltinObject {
+public final class PAsyncGenASend extends PythonBuiltinObject {
     public AwaitableState getState() {
         return state;
     }
@@ -60,11 +61,11 @@ public class PAsyncGenASend extends PythonBuiltinObject {
         CLOSED
     }
 
-    public final PGenerator receiver;
+    public final PAsyncGen receiver;
     public final Object message;
     private AwaitableState state = AwaitableState.INIT;
 
-    public PAsyncGenASend(PythonLanguage lang, PGenerator receiver, Object message) {
+    public PAsyncGenASend(PythonLanguage lang, PAsyncGen receiver, Object message) {
         super(PythonBuiltinClassType.PAsyncGenASend, PythonBuiltinClassType.PAsyncGenASend.getInstanceShape(lang));
         this.receiver = receiver;
         this.message = message;

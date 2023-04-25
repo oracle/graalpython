@@ -42,10 +42,34 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.runtime.PAsyncGen;
 
-public class PAsyncGenAThrow extends PythonBuiltinObject {
-    public PAsyncGenAThrow(PythonLanguage language) {
+import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.AwaitableState;
+
+public final class PAsyncGenAThrow extends PythonBuiltinObject {
+    public final PAsyncGen receiver;
+
+    public final Object arg1; // may be null in case of aclose()
+    public final Object arg2;
+    public final Object arg3;
+
+    private AwaitableState state = AwaitableState.INIT;
+
+    public PAsyncGenAThrow(PythonLanguage language, PAsyncGen agen, Object arg1, Object arg2, Object arg3) {
         super(PythonBuiltinClassType.PAsyncGenAThrow, PythonBuiltinClassType.PAsyncGenAThrow.getInstanceShape(language));
+        this.receiver = agen;
+        this.arg1 = arg1;
+        this.arg2 = arg2;
+        this.arg3 = arg3;
+    }
+
+    public AwaitableState getState() {
+        return state;
+    }
+
+    public void setState(AwaitableState state) {
+        this.state = state;
     }
 }

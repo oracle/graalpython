@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.runtime.PAsyncGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -139,19 +139,25 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
         }
     }
 
-    private static PException handleAGError(PGenerator self, PException exception,
-                    Node inliningTarget,
-                    BuiltinClassProfiles.IsBuiltinObjectProfile isStopAsyncIteration,
-                    BuiltinClassProfiles.IsBuiltinObjectProfile isGeneratorExit) {
+    /*
+     * The following two functions are the equivalent of async_gen_unwrap_value. The assumption made
+     * is that gen_send and throw of CPython will not return NULL unless they also set an error. If
+     * a PException happens, handleAGError is used, otherwise, unwrapAGYield is used.
+     */
+
+    static PException handleAGError(PAsyncGen self, PException exception,
+                                    Node inliningTarget,
+                                    BuiltinClassProfiles.IsBuiltinObjectProfile isStopAsyncIteration,
+                                    BuiltinClassProfiles.IsBuiltinObjectProfile isGeneratorExit) {
         if (isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration) ||
                         isGeneratorExit.profileException(inliningTarget, exception, PythonBuiltinClassType.GeneratorExit)) {
-            self.markAsFinished();
+            self.markClosed();
         }
         self.setRunningAsync(false);
         return exception;
     }
 
-    private static Object unwrapAGYield(PGenerator self, Object result,
+    static Object unwrapAGYield(PAsyncGen self, Object result,
                     Node inliningTarget,
                     BuiltinClassProfiles.IsBuiltinObjectProfile isAGWrappedValue,
                     PRaiseNode raise) {
