@@ -798,7 +798,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             GenericPyCDataNew(dict, self);
             self.paramflags = paramflags;
 
-            self.b_ptr = PtrValue.nativePointer(address); // TODO
+            Object addressObj = address instanceof PythonNativeVoidPtr ptr ? ptr.getPointerObject() : address;
+            self.b_ptr = PtrValue.nativePointer(addressObj); // TODO
             keepRefNode.execute(frame, self, 0, dll);
 
             self.callable = self;
