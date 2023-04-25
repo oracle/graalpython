@@ -284,10 +284,9 @@ public class AsyncGenThrowBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Close extends PythonUnaryBuiltinNode {
         @Specialization
-        public static Object close(VirtualFrame frame, PAsyncGenAThrow self,
-                        @Cached Throw throwNode) {
-            // TODO check on this
-            return throwNode.execute(frame, self, PNone.NONE, PNone.NO_VALUE, PNone.NO_VALUE);
+        public static Object close(PAsyncGenAThrow self) {
+            self.setState(AwaitableState.CLOSED);
+            return PNone.NONE;
         }
     }
 }
