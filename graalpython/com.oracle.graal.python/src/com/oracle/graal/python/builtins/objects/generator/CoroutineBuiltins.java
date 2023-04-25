@@ -46,17 +46,62 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCoroutine)
 public class CoroutineBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CoroutineBuiltinsFactory.getFactories();
+    }
+    @Builtin(name = "cr_code", isGetter = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetCode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object getCode(PGenerator self,
+                              @Bind("this") Node inliningTarget,
+                              @Cached InlinedConditionProfile hasCodeProfile) {
+            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory());
+        }
+    }
+
+    @Builtin(name = "cr_await", isGetter = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetAwait extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object getAwait(PGenerator self) {
+            Object yieldFrom = self.getYieldFrom();
+            return yieldFrom != null ? yieldFrom : PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "cr_frame", isGetter = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetFrame extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object getFrame(VirtualFrame frame, PGenerator self,
+                               @Cached GeneratorBuiltins.GetFrameNode getFrame) {
+            return getFrame.execute(frame, self);
+        }
+    }
+
+    @Builtin(name = "cr_running", isGetter = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class IsRunning extends PythonUnaryBuiltinNode {
+        @Specialization
+        public boolean isRunning(PGenerator self) {
+            return self.isRunning();
+        }
     }
 
     @Builtin(name = "__await__", minNumOfPositionalArgs = 1)
