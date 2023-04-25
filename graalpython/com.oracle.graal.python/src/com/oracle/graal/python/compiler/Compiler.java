@@ -1517,10 +1517,17 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(GET_ITER);
             }
             addOp(CALL_COMPREHENSION);
-            if (generators[0].isAsync) {
-                addOp(GET_AWAITABLE);
-                addOp(LOAD_NONE);
-                addYieldFrom();
+            // a genexpr will create an asyncgen, which we cannot await
+            if (type != ComprehensionType.GENEXPR) {
+                for (ComprehensionTy gen: generators) {
+                    // if we have a non-genexpr async comprehension, the call will produce a coroutine which we need to await
+                    if (gen.isAsync) {
+                        addOp(GET_AWAITABLE);
+                        addOp(LOAD_NONE);
+                        addYieldFrom();
+                        break;
+                    }
+                }
             }
             return null;
         } finally {
@@ -1554,7 +1561,6 @@ public class Compiler implements SSTreeVisitor<Void> {
             unit.useNextBlock(asyncForTry);
             unit.pushBlock(new BlockInfo.AsyncForLoopExit(asyncForTry, asyncForExcept));
             addOp(GET_ANEXT);
-            addOp(GET_AWAITABLE);
             addOp(LOAD_NONE);
             addYieldFrom();
             unit.popBlock();
@@ -1579,6 +1585,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                 collectionStackDepth++;
             }
             if (type == ComprehensionType.GENEXPR) {
+                if (generators[i].isAsync) {
+                    addOp(ASYNCGEN_WRAP);
+                }
                 addOp(YIELD_VALUE);
                 addOp(RESUME_YIELD);
                 addOp(POP_TOP);
@@ -2137,7 +2146,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.pushBlock(new BlockInfo.AsyncForLoop(head, end));
         addOp(DUP_TOP);
         addOp(GET_ANEXT);
-        addOp(GET_AWAITABLE);
         unit.useNextBlock(loopTry);
         unit.pushBlock(new BlockInfo.AsyncForLoopExit(loopTry, except));
         addOp(LOAD_NONE);
