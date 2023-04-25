@@ -111,10 +111,19 @@ equal_ignore_case(PyObject *left, PyObject *right)
     if (PyUnicode_GET_LENGTH(right) != len) {
         return 0;
     }
-    const Py_UCS1 *p1 = PyUnicode_1BYTE_DATA(left);
-    const Py_UCS1 *p2 = PyUnicode_1BYTE_DATA(right);
-    for (; len; len--, p1++, p2++) {
-        if (Py_TOLOWER(*p1) != Py_TOLOWER(*p2)) {
+
+	/*
+	 * Modified in GraalPy:
+	 * PyUnicode_IS_ASCII does not imply PyUnicode_1BYTE_KIND, so use the
+	 * proper PyUnicode_READ idiom for iterating the strings.
+	 */
+	int left_kind = PyUnicode_KIND(left);
+    int right_kind = PyUnicode_KIND(right);
+    void* left_data = PyUnicode_DATA(left);
+    void* right_data = PyUnicode_DATA(right);
+
+    for (int i = 0; i < len; i++) {
+        if (Py_TOLOWER(PyUnicode_READ(left_kind, left_data, i)) != Py_TOLOWER(PyUnicode_READ(right_kind, right_data, i))) {
             return 0;
         }
     }
