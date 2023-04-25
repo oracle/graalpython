@@ -159,6 +159,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
@@ -3679,6 +3680,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // info is not null guaranteed by parser
     public Void visit(StmtTy.Break node) {
         setLocation(node);
         setLocation(node);
@@ -3691,6 +3693,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // info is not null guaranteed by parser
     public Void visit(StmtTy.Continue node) {
         setLocation(node);
         BlockInfo.Loop info = unwindBlockStack(UnwindType.CONTINUE);

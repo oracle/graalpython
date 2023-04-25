@@ -69,6 +69,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -312,6 +313,7 @@ public class AsyncHandler {
      * regular intervals to run on a separate thread, or if it will be polled. The caller needs to
      * ensure that the AsyncAction passed into this method does not block in the latter case.
      */
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // context.get() is never null here
     void registerAction(Supplier<AsyncAction> actionSupplier) {
         CompilerAsserts.neverPartOfCompilation();
         if (ImageInfo.inImageBuildtimeCode() || context.get().getOption(PythonOptions.NoAsyncActions)) {

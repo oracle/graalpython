@@ -447,7 +447,7 @@ public abstract class ExternalFunctionNodes {
                         return null;
                     }
                     nodeKlass = MethKeywordsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, isStatic, sig) : l -> new MethKeywordsRoot(l, name, isStatic);
+                    rootNodeFunction = l -> new MethKeywordsRoot(l, name, isStatic, sig);
                     break;
                 case VARARGS:
                     nodeKlass = MethVarargsRoot.class;

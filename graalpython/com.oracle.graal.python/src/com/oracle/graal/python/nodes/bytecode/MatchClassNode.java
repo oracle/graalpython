@@ -186,8 +186,4 @@ public abstract class MatchClassNode extends PNodeWithContext {
     public static MatchClassNode create() {
         return MatchClassNodeGen.create();
     }
-
-    public static MatchClassNode getUncached() {
-        return MatchClassNodeGen.getUncached();
-    }
 }

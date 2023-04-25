@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2021 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -374,7 +374,7 @@ ACTION_MAPPINGS_RE = {
 }
 
 LICENSE = '''/*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -904,6 +904,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(IMPORTS)
         className = os.path.splitext(os.path.basename(self.file.name))[0]
         self.print('@SuppressWarnings({"all", "cast"})')
+        self.print('@SuppressFBWarnings')
         self.print("public final class %s extends AbstractParser {" % className)
         # Java needs a few fields declarations. Also, we're now in a class
         self.level += 1

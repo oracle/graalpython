@@ -172,6 +172,7 @@ public class PythonProvider implements LanguageProvider {
             "bool:True", BOOL, "True",
             "bool:False", BOOL, "False",
             "int", INT, "1",
+            // "int:0", INT, "0", // disabled due to GR-45046
             "float", FLOAT, "1.1",
             "complex", COMPLEX, "1.0j",
             "str", STR, "class pstr(str):\n pass\npstr('hello world')",
@@ -522,8 +523,12 @@ public class PythonProvider implements LanguageProvider {
             Value par0 = parameters.get(0);
             Value par1 = parameters.get(1);
 
-            // If anumber/Boolean should be divided, ignore if divisor is Boolean false
-            if (!par0.isNumber() && !par0.isBoolean() || !par1.isBoolean() || par1.asBoolean()) {
+            // If a number should be divided by 0 or false, expect an exception
+            if ((par0.isNumber() || par0.isBoolean()) && (par1.isBoolean() && par1.asBoolean() == false || par1.isNumber() && par1.fitsInInt() && par1.asInt() == 0)) {
+                if (snippetRun.getException() == null || !snippetRun.getException().getMessage().contains("division by zero")) {
+                    throw new AssertionError("Division by 0 should have raised");
+                }
+            } else {
                 ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
             }
         }
