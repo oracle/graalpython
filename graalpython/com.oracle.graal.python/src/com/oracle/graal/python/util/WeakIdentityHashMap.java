@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -373,6 +373,7 @@ public class WeakIdentityHashMap<K,V>
     /**
      * Expunges stale entries from the table.
      */
+    @SuppressFBWarnings(value = "SA_FIELD_SELF_ASSIGNMENT")
     private void expungeStaleEntries() {
         for (Object x; (x = queue.poll()) != null; ) {
             synchronized (queue) {
@@ -838,6 +839,7 @@ public class WeakIdentityHashMap<K,V>
             index = isEmpty() ? 0 : table.length;
         }
 
+        @SuppressFBWarnings(value = "SA_FIELD_SELF_ASSIGNMENT")
         public boolean hasNext() {
             Entry<K,V>[] t = table;
 
