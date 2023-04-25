@@ -201,6 +201,8 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
+import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
+import com.oracle.graal.python.nodes.bytecode.GetANextNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -210,6 +212,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
@@ -2582,6 +2585,37 @@ public final class BuiltinFunctions extends PythonBuiltins {
              */
 
             return cls;
+        }
+    }
+
+    @Builtin(name = "anext", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class ANext extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object doGeneric(VirtualFrame frame, Object asyncIter,
+                                @Bind("this") Node inliningTarget,
+                                @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
+                                @Cached InlinedGetClassNode getAsyncIterType,
+                                @Cached PRaiseNode raiseNoANext,
+                                @Cached CallUnaryMethodNode callANext,
+                                @Cached TypeNodes.GetNameNode getName) {
+            // TODO: two argument anext
+            Object type = getAsyncIterType.execute(inliningTarget, asyncIter);
+            Object getter = getANext.execute(frame, type, asyncIter);
+            if (getter == NO_VALUE) {
+                throw raiseNoANext.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, getName.execute(type));
+            }
+            return callANext.executeObject(frame, getter, asyncIter);
+        }
+    }
+
+    @Builtin(name = "aiter", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class AIter extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object doGeneric(VirtualFrame frame, Object arg,
+                                @Cached GetAIterNode aiter) {
+            return aiter.execute(frame, arg);
         }
     }
 }
