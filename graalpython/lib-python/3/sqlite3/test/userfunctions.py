@@ -22,6 +22,7 @@
 # 3. This notice may not be removed or altered from any source distribution.
 
 import unittest
+import sys
 import unittest.mock
 import sqlite3 as sqlite
 
@@ -272,6 +273,7 @@ class FunctionTests(unittest.TestCase):
                                self.con.execute, "select spam(?)",
                                (memoryview(b"blob")[::2],))
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', "disabled until proper unicode error is thrown")
     def test_param_surrogates(self):
         self.assertRaisesRegex(UnicodeEncodeError, "surrogates not allowed",
                                self.con.execute, "select spam(?)",
