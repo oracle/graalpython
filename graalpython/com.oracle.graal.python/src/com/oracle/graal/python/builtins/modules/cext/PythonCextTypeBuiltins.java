@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CreateFu
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyObjectSetAttrNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
@@ -79,6 +81,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -87,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictSetDefault;
@@ -331,17 +337,17 @@ public final class PythonCextTypeBuiltins {
         abstract GetSetDescriptor execute(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure);
 
         @Specialization
+        @TruffleBoundary
         GetSetDescriptor createGetSet(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
             assert !(doc instanceof CArrayWrapper);
-            PythonContext context = PythonContext.get(this);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, PythonLanguage.get(this));
-                getter = PExternalFunctionWrapper.ensureExecutable(context, getter, PExternalFunctionWrapper.GETTER, interopLibrary);
+                getter = NativeCExtSymbol.ensureExecutable(getter, PExternalFunctionWrapper.GETTER);
                 get = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
 
@@ -349,7 +355,7 @@ public final class PythonCextTypeBuiltins {
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, PythonLanguage.get(this));
-                setter = PExternalFunctionWrapper.ensureExecutable(context, setter, PExternalFunctionWrapper.SETTER, interopLibrary);
+                setter = NativeCExtSymbol.ensureExecutable(setter, PExternalFunctionWrapper.SETTER);
                 set = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }
 
@@ -384,4 +390,56 @@ public final class PythonCextTypeBuiltins {
             return 0;
         }
     }
+    /*-
+    @CApiBuiltin(ret = Void, args = {Pointer, PyTypeObject}, call = Ignored)
+    abstract static class PyTruffle_InitializeTypeStructure extends CApiBinaryBuiltinNode {
+
+    static Object init(Object struct, PythonManagedClass clazz,
+                    @Cached CStructAccess.ReadI64Node readI64,
+                    @Cached CStructAccess.ReadPointerNode readPointer
+                    ) {
+        long original_flags = readI64.read(struct, CFields.PyTypeObject__tp_flags);
+        long basicsize = readI64.read(struct, CFields.PyTypeObject__tp_basicsize);
+        long itemsize = readI64.read(struct, CFields.PyTypeObject__tp_itemsize);
+        Object alloc_fun = readPointer.read(struct, CFields.PyTypeObject__tp_alloc);
+        Object dealloc_fun = readPointer.read(struct, CFields.PyTypeObject__tp_dealloc);
+        Object free_fun = readPointer.read(struct, CFields.PyTypeObject__tp_free);
+        long vectorcall_offset = readI64.read(struct, CFields.PyTypeObject__tp_vectorcall_offset);
+        Object as_buffer = readPointer.read(struct, CFields.PyTypeObject__tp_as_buffer);
+
+
+    //            unsigned long original_flags = structure->tp_flags;
+    //            Py_ssize_t basicsize = structure->tp_basicsize;
+    //            Py_ssize_t itemsize = structure->tp_itemsize;
+    //            allocfunc alloc_fun = structure->tp_alloc;
+    //            destructor dealloc_fun = structure->tp_dealloc;
+    //            freefunc free_fun = structure->tp_free;
+    //            Py_ssize_t vectorcall_offset = structure->tp_vectorcall_offset;
+    //            PyBufferProcs* as_buffer = structure->tp_as_buffer;
+    //            PyTypeObject* type_handle = assign_managed(structure, ptype);
+    //            // write flags as specified in the dummy to the PythonClass object
+    //            set_PyTypeObject_tp_flags(type_handle, original_flags | Py_TPFLAGS_READY | Py_TPFLAGS_IMMUTABLETYPE);
+    //            set_PyTypeObject_tp_basicsize(type_handle, basicsize);
+    //            set_PyTypeObject_tp_itemsize(type_handle, itemsize);
+    //            if (alloc_fun) {
+    //                set_PyTypeObject_tp_alloc(type_handle, alloc_fun);
+    //            }
+    //            if (dealloc_fun) {
+    //                set_PyTypeObject_tp_dealloc(type_handle, dealloc_fun);
+    //            }
+    //            if (free_fun) {
+    //                set_PyTypeObject_tp_free(type_handle, free_fun);
+    //            }
+    //            if (vectorcall_offset) {
+    //                set_PyTypeObject_tp_vectorcall_offset (type_handle, vectorcall_offset);
+    //            }
+    //            if (as_buffer) {
+    //                set_PyTypeObject_tp_as_buffer(type_handle, as_buffer);
+    //            }
+
+            return PNone.NO_VALUE;
+        }
+    
+    }
+    */
 }

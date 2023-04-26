@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PTR_ARRAY_TYPE_ID;
-
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
@@ -62,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -83,7 +79,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -94,13 +89,11 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     /** Number of bytes that constitute a single element. */
@@ -504,61 +497,6 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             }
         }
         throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        return true;
-    }
-
-    @ExportMessage
-    Object getNativeType(
-                    @Exclusive @Cached GetTypeIDNode getTypeIDNode) {
-        return getTypeIDNode.execute(getDelegate());
-    }
-
-    @GenerateUncached
-    @ImportStatic(PySequenceArrayWrapper.class)
-    abstract static class GetTypeIDNode extends PNodeWithContext {
-
-        public abstract Object execute(Object delegate);
-
-        @NeverDefault
-        protected static Object callGetByteArrayTypeIDUncached() {
-            return PCallCapiFunction.getUncached().call(FUN_GET_BYTE_ARRAY_TYPE_ID, 0);
-        }
-
-        @NeverDefault
-        protected static Object callGetPtrArrayTypeIDUncached() {
-            return PCallCapiFunction.getUncached().call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
-        }
-
-        @Specialization(guards = {"isSingleContext()", "hasByteArrayContent(object)"})
-        Object doByteArray(@SuppressWarnings("unused") Object object,
-                        @Exclusive @Cached("callGetByteArrayTypeIDUncached()") Object nativeType) {
-            // TODO(fa): use weak reference ?
-            return nativeType;
-        }
-
-        @Specialization(guards = {"isSingleContext()", "!hasByteArrayContent(object)"})
-        Object doPtrArray(@SuppressWarnings("unused") Object object,
-                        @Exclusive @Cached("callGetPtrArrayTypeIDUncached()") Object nativeType) {
-            // TODO(fa): use weak reference ?
-            return nativeType;
-        }
-
-        @Specialization(guards = "hasByteArrayContent(object)", replaces = "doByteArray")
-        Object doByteArrayMultiCtx(@SuppressWarnings("unused") Object object,
-                        @Shared("callUnaryNode") @Cached PCallCapiFunction callUnaryNode) {
-            return callUnaryNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, 0);
-        }
-
-        @Specialization(guards = "!hasByteArrayContent(object)", replaces = "doPtrArray")
-        Object doPtrArrayMultiCtx(@SuppressWarnings("unused") Object object,
-                        @Shared("callUnaryNode") @Cached PCallCapiFunction callUnaryNode) {
-            return callUnaryNode.call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
-        }
     }
 
     protected static boolean hasByteArrayContent(Object object) {

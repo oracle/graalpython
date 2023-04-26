@@ -40,37 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.J_GP_OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_TYPE;
-
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ReadNativeMemberDispatchNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
-import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Idempotent;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
-
-    // every 'PyObject *' provides 'ob_base', 'ob_type', and 'ob_refcnt'
-    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {J_GP_OBJECT, OB_BASE.getMemberNameJavaString(), OB_TYPE.getMemberNameJavaString(), OB_REFCNT.getMemberNameJavaString()};
 
     public TruffleObjectNativeWrapper(Object foreignObject) {
         super(foreignObject);
@@ -79,98 +56,6 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     public static TruffleObjectNativeWrapper wrap(Object foreignObject) {
         assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
         return new TruffleObjectNativeWrapper(foreignObject);
-    }
-
-    @ExplodeLoop
-    private static int indexOf(String member) {
-        for (int i = 0; i < MEMBERS.length; i++) {
-            if (MEMBERS[i].equals(member)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    @ExportMessage
-    boolean hasMembers() {
-        return true;
-    }
-
-    @ExportMessage
-    @ExplodeLoop
-    boolean isMemberReadable(String member) {
-        return indexOf(member) != -1;
-    }
-
-    @ExportMessage
-    boolean isMemberModifiable(String member) {
-        // we only allow to write to 'ob_refcnt'
-        return OB_REFCNT.getMemberNameJavaString().equals(member);
-    }
-
-    @ExportMessage
-    boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
-        return false;
-    }
-
-    @ExportMessage
-    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new InteropArray(MEMBERS);
-    }
-
-    @ExportMessage(name = "readMember")
-    abstract static class ReadNode {
-
-        @Specialization(guards = {"key == cachedObBase", "isObBase(cachedObBase)"}, limit = "1")
-        static Object doObBaseCached(TruffleObjectNativeWrapper object, @SuppressWarnings("unused") String key,
-                        @Cached("key") @SuppressWarnings("unused") String cachedObBase) {
-            return object;
-        }
-
-        @Specialization
-        static Object execute(TruffleObjectNativeWrapper object, String key,
-                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                        @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
-            boolean mustRelease = gil.acquire();
-            try {
-                Object delegate = object.getDelegate();
-
-                // special key for the debugger
-                if (J_GP_OBJECT.equals(key)) {
-                    return delegate;
-                }
-                return readNativeMemberNode.execute(delegate, object, key);
-            } finally {
-                gil.release(mustRelease);
-            }
-        }
-
-        @Idempotent
-        protected static boolean isObBase(String key) {
-            return OB_BASE.getMemberNameJavaString().equals(key);
-        }
-    }
-
-    @ExportMessage
-    void writeMember(String member, Object value,
-                    @Cached WriteNativeMemberNode writeNativeMemberNode,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
-        boolean mustRelease = gil.acquire();
-        try {
-            CompilerDirectives.shouldNotReachHere("refcnt operation");
-            if (OB_REFCNT.getMemberNameJavaString().equals(member)) {
-                Object delegate = getDelegate();
-                writeNativeMemberNode.execute(delegate, this, member, value);
-            } else {
-                CompilerDirectives.transferToInterpreter();
-                if (indexOf(member) == -1) {
-                    throw UnknownIdentifierException.create(member);
-                }
-                throw UnsupportedMessageException.create();
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
     }
 
     @ExportMessage
@@ -187,16 +72,5 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     void toNative(
                     @Cached ToNativeNode toNativeNode) {
         toNativeNode.execute(this);
-    }
-
-    @ExportMessage
-    boolean hasNativeType() {
-        return true;
-    }
-
-    @ExportMessage
-    Object getNativeType(
-                    @Cached PGetDynamicTypeNode getDynamicTypeNode) {
-        return getDynamicTypeNode.execute(this);
     }
 }

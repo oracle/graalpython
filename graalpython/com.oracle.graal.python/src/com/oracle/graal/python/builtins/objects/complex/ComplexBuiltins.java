@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.complex;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__imag;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__real;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
@@ -82,9 +84,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
@@ -106,7 +106,6 @@ import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -117,8 +116,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -811,13 +808,10 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         static long doNative(PythonAbstractNativeObject self,
-                        @Cached ToSulongNode toSulongNode,
-                        @Cached PCallCapiFunction callGetRealNode,
-                        @Cached PCallCapiFunction callGetImagNode) {
-            Object ptr = toSulongNode.execute(self);
-            Object realObj = callGetRealNode.call(NativeCAPISymbol.FUN_GET_PY_COMPLEX_CVAL_REAL, ptr);
-            Object imagObj = callGetImagNode.call(NativeCAPISymbol.FUN_GET_PY_COMPLEX_CVAL_IMAG, ptr);
-            return complexHash(expectDouble(realObj), expectDouble(imagObj));
+                        @Cached CStructAccess.ReadDoubleNode read) {
+            double real = read.readFromObj(self, PyComplexObject__cval__real);
+            double imag = read.readFromObj(self, PyComplexObject__cval__imag);
+            return complexHash(real, imag);
         }
 
         private static long complexHash(double real, double imag) {
@@ -826,22 +820,6 @@ public final class ComplexBuiltins extends PythonBuiltins {
             long imagHash = PyObjectHashNode.hash(imag);
             return realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
         }
-
-        private static double expectDouble(Object val) {
-            if (val instanceof Double) {
-                return (double) val;
-            }
-            InteropLibrary lib = InteropLibrary.getUncached(val);
-            if (lib.fitsInDouble(val)) {
-                try {
-                    return lib.asDouble(val);
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
     }
 
     @GenerateNodeFactory

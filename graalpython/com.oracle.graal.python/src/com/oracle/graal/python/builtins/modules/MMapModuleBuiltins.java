@@ -61,6 +61,9 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltinsClinicProviders.MMapNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -84,7 +87,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = "mmap")
 public final class MMapModuleBuiltins extends PythonBuiltins {
 
-    public static final TruffleString T_INIT_BUFFERPROTOCOL = tsLiteral("init_bufferprotocol");
+    public static final TruffleString T_INIT_BUFFERPROTOCOL = tsLiteral("mmap_init_bufferprotocol");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -130,9 +133,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         core.getContext().registerCApiHook(() -> {
-            PythonModule mmap = (PythonModule) AbstractImportNode.importModule(toTruffleStringUncached("_mmap"));
-            Object innitBufferCallable = PyObjectLookupAttr.getUncached().execute(null, mmap, T_INIT_BUFFERPROTOCOL);
-            CallUnaryMethodNode.getUncached().executeObject(innitBufferCallable, PythonBuiltinClassType.PMMap);
+            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL, PythonToNativeNode.executeUncached(PythonBuiltinClassType.PMMap));
         });
     }
 

@@ -88,8 +88,8 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
         return NULL;
     }
     return Graal_PyTruffleEval_EvalCodeEx(_co, globals, locals != NULL ? locals : Py_None,
-                                  polyglot_from_PyObjectPtr_array(args, argcount),
-                                  polyglot_from_PyObjectPtr_array(kws, kwcount * 2),
-                                  polyglot_from_PyObjectPtr_array(defs, defcount),
+                                  args, argcount,
+                                  kws, kwcount,
+                                  defs, defcount,
                                   kwdefs, closure);
 }

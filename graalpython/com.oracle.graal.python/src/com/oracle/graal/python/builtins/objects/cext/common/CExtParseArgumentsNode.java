@@ -51,6 +51,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.util.ArrayList;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextDictBuiltins.PyDict_GetItem;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTupleBuiltins.PyTuple_GetItem;
@@ -61,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
@@ -69,9 +72,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertSingleArgNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
@@ -167,6 +172,9 @@ public abstract class CExtParseArgumentsNode {
                         @Cached(value = "format", allowUncached = true) @SuppressWarnings("unused") TruffleString cachedFormat,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached CStructAccess.ReadPointerNode read,
+                        @Cached FromCharPointerNode fromPtr,
                         @Cached("createConvertArgNodes(cachedFormat, lengthNode)") ConvertSingleArgNode[] convertArgNodes,
                         @Cached HashingStorageLen kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode,
@@ -178,14 +186,32 @@ public abstract class CExtParseArgumentsNode {
                 }
                 int length = lengthNode.execute(format, TS_ENCODING);
                 ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
+                TruffleString[] kwdNameStrings = extractNames(kwdnames, lib, read, fromPtr);
                 int i = 0;
                 while (i < length) {
-                    i = convertArgNodes[i].execute(state, kwdsDict, format, i, length, kwdnames, varargs, codepointAtIndexNode);
+                    i = convertArgNodes[i].execute(state, kwdsDict, format, i, length, kwdNameStrings, varargs, codepointAtIndexNode);
                 }
                 checkExcessArgs(argv, state, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
+            }
+        }
+
+        private static TruffleString[] extractNames(Object kwdnames, InteropLibrary lib, CStructAccess.ReadPointerNode read, FromCharPointerNode fromPtr) {
+            if (kwdnames == null || PGuards.isNullOrZero(kwdnames, lib)) {
+                return null;
+            } else {
+                ArrayList<TruffleString> list = new ArrayList<>();
+                int i = 0;
+                while (true) {
+                    Object element = read.readArrayElement(kwdnames, i++);
+                    if (PGuards.isNullOrZero(element, lib)) {
+                        break;
+                    }
+                    list.add(fromPtr.execute(element, false));
+                }
+                return list.toArray(new TruffleString[list.size()]);
             }
         }
 
@@ -196,6 +222,9 @@ public abstract class CExtParseArgumentsNode {
                         @Cached HashingStorageLen kwdsLenNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached CStructAccess.ReadPointerNode read,
+                        @Cached FromCharPointerNode fromPtr,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 PDict kwdsDict = null;
@@ -204,9 +233,10 @@ public abstract class CExtParseArgumentsNode {
                 }
                 int length = lengthNode.execute(format, TS_ENCODING);
                 ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
+                TruffleString[] kwdNameStrings = extractNames(kwdnames, lib, read, fromPtr);
                 int i = 0;
                 while (i < length) {
-                    i = convertArgNode.execute(state, kwdsDict, format, i, length, kwdnames, varargs, codepointAtIndexNode);
+                    i = convertArgNode.execute(state, kwdsDict, format, i, length, kwdNameStrings, varargs, codepointAtIndexNode);
                 }
                 checkExcessArgs(argv, state, raiseNode);
                 return 1;
@@ -245,7 +275,7 @@ public abstract class CExtParseArgumentsNode {
 
     abstract static class ConvertSingleArgNode extends Node {
 
-        public abstract int execute(ParserState state, Object kwds, TruffleString format, int formatIdx, int formatLength, Object kwdnames, Object varargs,
+        public abstract int execute(ParserState state, Object kwds, TruffleString format, int formatIdx, int formatLength, TruffleString[] kwdnames, Object varargs,
                         TruffleString.CodePointAtIndexNode codepointAtIndexNode) throws InteropException;
 
         private static char charFromPString(PString arg, TruffleString.ReadCharUTF16Node readCharNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -271,7 +301,8 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization
-        int doArg(ParserState state, Object kwds, TruffleString format, int formatIdx, int formatLength, Object kwdnames, Object varargs, TruffleString.CodePointAtIndexNode codepointAtIndexNode,
+        int doArg(ParserState state, Object kwds, TruffleString format, int formatIdx, int formatLength, TruffleString[] kwdnames, Object varargs,
+                        TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached AsNativeDoubleNode asDoubleNode,
@@ -283,7 +314,14 @@ public abstract class CExtParseArgumentsNode {
                         @Cached IsBuiltinClassProfile isBytesProfile,
                         @Cached GetArgNode getArgNode,
                         @Cached GetNextVaArgNode getVaArgNode,
-                        @Cached WriteNextVaArgNode writeOutVarNode,
+                        @Cached GetNextVaArgNode getOutVarNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CStructAccess.WriteByteNode writeByteNode,
+                        @Cached CStructAccess.WriteI16Node writeI16Node,
+                        @Cached CStructAccess.WriteIntNode writeIntNode,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached CStructAccess.WriteFloatNode writeFloatNode,
+                        @Cached CStructAccess.WriteDoubleNode writeDoubleNode,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached ToSulongNode toNativeNode,
                         @Cached PRaiseNativeNode raiseNode,
@@ -315,14 +353,14 @@ public abstract class CExtParseArgumentsNode {
                     case FORMAT_UPPER_S: {
                         // simple cases without variants
                         Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
+                        Object outVar = getOutVarNode.execute(varargs);
                         if (skipOptionalArg(arg, state.restOptional)) {
                             // skip vararg element
-                            getVaArgNode.getVoidPtr(varargs);
                         } else {
                             switch (c) {
                                 case FORMAT_UPPER_S:
                                     if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PBytes)) {
-                                        writeOutVarNode.writePyObject(varargs, toNativeNode.execute(arg));
+                                        writePointerNode.write(outVar, toNativeNode.execute(arg));
                                     } else {
                                         throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "bytes", arg);
                                     }
@@ -336,13 +374,13 @@ public abstract class CExtParseArgumentsNode {
                                         // TODO(fa) MAX_VALUE should be retrieved from Sulong
                                         throw raise(raiseNode, OverflowError, ErrorMessages.UNSIGNED_BYTE_INT_GREATER_THAN_MAX);
                                     }
-                                    writeOutVarNode.writeUInt8(varargs, ival);
+                                    writeByteNode.write(outVar, (byte) ival);
                                     break;
                                 }
 
                                 case FORMAT_UPPER_B:
                                     // C type: unsigned char
-                                    writeOutVarNode.writeUInt8(varargs, asNativePrimitiveNode.toInt64(arg, false));
+                                    writeByteNode.write(outVar, (byte) asNativePrimitiveNode.toInt64(arg, false));
                                     break;
 
                                 case FORMAT_LOWER_H: {
@@ -355,49 +393,47 @@ public abstract class CExtParseArgumentsNode {
                                     } else if (ival > Short.MAX_VALUE) {
                                         throw raise(raiseNode, OverflowError, ErrorMessages.SIGNED_SHORT_INT_GREATER_THAN_MAX);
                                     }
-                                    writeOutVarNode.writeInt16(varargs, ival);
+                                    writeI16Node.write(outVar, (short) ival);
                                     break;
                                 }
                                 case FORMAT_UPPER_H:
                                     // C type: short int sized bitfield
-                                    writeOutVarNode.writeInt16(varargs, asNativePrimitiveNode.toInt64(arg, false));
+                                    writeI16Node.write(outVar, (short) asNativePrimitiveNode.toInt64(arg, false));
                                     break;
                                 case FORMAT_LOWER_I: {
                                     // C type: signed int
                                     long ival = asNativePrimitiveNode.toInt64(arg, true);
-                                    // TODO(fa) MIN_VALUE and MAX_VALUE should be retrieved from
-                                    // Sulong
                                     if (ival < Integer.MIN_VALUE) {
                                         throw raise(raiseNode, OverflowError, ErrorMessages.SIGNED_INT_LESS_THAN_MIN);
                                     } else if (ival > Integer.MAX_VALUE) {
                                         throw raise(raiseNode, OverflowError, ErrorMessages.SIGNED_INT_GREATER_THAN_MAX);
                                     }
-                                    writeOutVarNode.writeInt32(varargs, ival);
+                                    writeIntNode.write(outVar, (int) ival);
                                     break;
                                 }
                                 case FORMAT_UPPER_I:
                                     // C type: int sized bitfield
-                                    writeOutVarNode.writeUInt32(varargs, asNativePrimitiveNode.toInt64(arg, false));
+                                    writeIntNode.write(outVar, (int) asNativePrimitiveNode.toInt64(arg, false));
                                     break;
                                 case FORMAT_LOWER_L:
                                 case FORMAT_UPPER_L:
                                     // C type: signed long and signed long long
-                                    writeOutVarNode.writeInt64(varargs, asNativePrimitiveNode.toInt64(arg, true));
+                                    writeLongNode.write(outVar, asNativePrimitiveNode.toInt64(arg, true));
                                     break;
                                 case FORMAT_LOWER_K:
                                 case FORMAT_UPPER_K:
                                     // C type: unsigned long and unsigned long long
-                                    writeOutVarNode.writeUInt64(varargs, asNativePrimitiveNode.toUInt64(arg, false));
+                                    writeLongNode.write(outVar, asNativePrimitiveNode.toUInt64(arg, false));
                                     break;
                                 case FORMAT_LOWER_N:
                                     // C type: PySSize_t
                                     if (arg instanceof PythonNativeVoidPtr) {
-                                        writeOutVarNode.writePyObject(varargs, ((PythonNativeVoidPtr) arg).getPointerObject());
+                                        writePointerNode.write(outVar, ((PythonNativeVoidPtr) arg).getPointerObject());
                                     } else {
                                         // TODO(fa): AsNativePrimitiveNode coerces using '__int__',
                                         // but here we must
                                         // use '__index__'
-                                        writeOutVarNode.writeInt64(varargs, asNativePrimitiveNode.toInt64(arg, true));
+                                        writeLongNode.write(outVar, asNativePrimitiveNode.toInt64(arg, true));
                                     }
                                     break;
                                 case FORMAT_LOWER_C: {
@@ -409,7 +445,7 @@ public abstract class CExtParseArgumentsNode {
                                     }
 
                                     if (s != null && s.length() == 1) {
-                                        writeOutVarNode.writeInt8(varargs, getItemNode.execute(s, 0));
+                                        writeByteNode.write(outVar, (byte) (int) getItemNode.execute(s, 0));
                                     } else {
                                         throw raise(raiseNode, TypeError, ErrorMessages.MUST_BE_BYTE_STRING_LEGTH1_NOT_P, arg);
                                     }
@@ -434,31 +470,34 @@ public abstract class CExtParseArgumentsNode {
                                     } else {
                                         throw raise(raiseNode, SystemError, ErrorMessages.UNSUPPORTED_STR_TYPE, arg.getClass());
                                     }
-                                    writeOutVarNode.writeInt32(varargs, (int) singleChar);
+                                    writeIntNode.write(outVar, singleChar);
                                     break;
                                 }
                                 case FORMAT_LOWER_F:
-                                    writeOutVarNode.writeFloat(varargs, (float) asDoubleNode.executeDouble(arg));
+                                    writeFloatNode.write(outVar, (float) asDoubleNode.executeDouble(arg));
                                     break;
                                 case FORMAT_LOWER_D:
-                                    writeOutVarNode.writeDouble(varargs, asDoubleNode.execute(arg));
+                                    writeDoubleNode.write(outVar, asDoubleNode.executeDouble(arg));
                                     break;
-                                case FORMAT_UPPER_D:
-                                    writeOutVarNode.writeComplex(varargs, asComplexNode.execute(arg));
+                                case FORMAT_UPPER_D: {
+                                    PComplex complex = asComplexNode.execute(arg);
+                                    writeDoubleNode.writeArrayElement(outVar, 0, complex.getReal());
+                                    writeDoubleNode.writeArrayElement(outVar, 1, complex.getImag());
                                     break;
+                                }
                                 case FORMAT_LOWER_P:
-                                    writeOutVarNode.writeInt32(varargs, isTrueNode.execute(null, arg) ? 1 : 0);
+                                    writeIntNode.write(outVar, isTrueNode.execute(null, arg) ? 1 : 0);
                                     break;
                                 case FORMAT_UPPER_Y:
                                     if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PByteArray)) {
-                                        writeOutVarNode.writePyObject(varargs, toNativeNode.execute(arg));
+                                        writePointerNode.write(outVar, toNativeNode.execute(arg));
                                     } else {
                                         throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "bytearray", arg);
                                     }
                                     break;
                                 case FORMAT_UPPER_U:
                                     if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PString)) {
-                                        writeOutVarNode.writePyObject(varargs, toNativeNode.execute(arg));
+                                        writePointerNode.write(outVar, toNativeNode.execute(arg));
                                     } else {
                                         throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "str", arg);
                                     }
@@ -476,11 +515,11 @@ public abstract class CExtParseArgumentsNode {
 
                         if (skipOptionalArg(arg, state.restOptional)) {
                             // skip vararg elements
-                            getVaArgNode.getVoidPtr(varargs);
-                            getVaArgNode.getVoidPtr(varargs);
+                            getVaArgNode.execute(varargs);
+                            getVaArgNode.execute(varargs);
                             if (la2 == '#') {
                                 // skip third vararg element
-                                getVaArgNode.getVoidPtr(varargs);
+                                getVaArgNode.execute(varargs);
                             }
                         } else {
                             convertExtendedArgNode.execute(c, la1, la2, arg, varargs);
@@ -499,10 +538,10 @@ public abstract class CExtParseArgumentsNode {
 
                         if (skipOptionalArg(arg, state.restOptional)) {
                             // skip vararg element
-                            getVaArgNode.getVoidPtr(varargs);
+                            getVaArgNode.execute(varargs);
                             if (la == '#' || la == '!' || la == '&') {
                                 // skip second vararg element
-                                getVaArgNode.getVoidPtr(varargs);
+                                getVaArgNode.execute(varargs);
                             }
                         } else {
                             convertArgNode.execute(c, la, arg, varargs);
@@ -622,21 +661,21 @@ public abstract class CExtParseArgumentsNode {
         void doBufferR(@SuppressWarnings("unused") int c, int la, Object arg, Object varargs,
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached PCallCapiFunction callGetBufferRwNode,
-                        @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached ToSulongNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
             if (la == '*') {
                 /* formatIdx++; */
                 // 'y*'; output to 'Py_buffer*'
-                Object pybufferPtr = getVaArgNode.getPyObjectPtr(varargs);
+                Object pybufferPtr = getVaArgNode.execute(varargs);
                 getbuffer(callGetBufferRwNode, raiseNode, arg, argToSulongNode, pybufferPtr, true);
             } else {
-                Object voidPtr = getVaArgNode.getVoidPtr(varargs);
-                Object count = convertbuffer(callGetBufferRwNode, raiseNode, arg, argToSulongNode, voidPtr);
+                Object voidPtr = getVaArgNode.execute(varargs);
+                int count = convertbuffer(callGetBufferRwNode, raiseNode, arg, argToSulongNode, voidPtr);
                 if (la == '#') {
                     /* formatIdx++; */
                     // 'y#'
-                    writeOutVarNode.writeInt64(varargs, count);
+                    writeLongNode.write(getVaArgNode.execute(varargs), count);
                 }
             }
         }
@@ -645,35 +684,37 @@ public abstract class CExtParseArgumentsNode {
         static void doCString(@SuppressWarnings("unused") int c, int la, Object arg, Object varargs,
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached AsCharPointerNode asCharPointerNode,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached CStructAccess.WriteIntNode writeIntNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached StringLenNode stringLenNode,
-                        @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
                         @Cached ToSulongNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la == '*') {
                 /* formatIdx++; */
                 // 's*' or 'z*'
-                getVaArgNode.getPyObjectPtr(varargs);
+                getVaArgNode.execute(varargs);
                 // TODO(fa) create Py_buffer
             } else if (la == '#') {
                 /* formatIdx++; */
                 // 's#' or 'z#'
                 if (c == FORMAT_LOWER_Z && PGuards.isPNone(arg)) {
-                    writeOutVarNode.writePyObject(varargs, toNativeNode.execute(PythonContext.get(toNativeNode).getNativeNull()));
-                    writeOutVarNode.writeInt32(varargs, 0);
+                    writePointerNode.write(getVaArgNode.execute(varargs), toNativeNode.execute(PythonContext.get(toNativeNode).getNativeNull()));
+                    writeIntNode.write(getVaArgNode.execute(varargs), 0);
                 } else if (PGuards.isString(arg)) {
                     // TODO(fa) we could use CStringWrapper to do the copying lazily
-                    writeOutVarNode.writePyObject(varargs, asCharPointerNode.execute(arg));
-                    writeOutVarNode.writeInt64(varargs, (long) stringLenNode.execute(arg));
+                    writePointerNode.write(getVaArgNode.execute(varargs), asCharPointerNode.execute(arg, true));
+                    writeLongNode.write(getVaArgNode.execute(varargs), stringLenNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_GOT_P, c == FORMAT_LOWER_Z ? "str or None" : "str", arg);
                 }
             } else {
                 // 's' or 'z'
                 if (c == FORMAT_LOWER_Z && PGuards.isPNone(arg)) {
-                    writeOutVarNode.writePyObject(varargs, toNativeNode.execute(PythonContext.get(toNativeNode).getNativeNull()));
+                    writePointerNode.write(getVaArgNode.execute(varargs), toNativeNode.execute(PythonContext.get(toNativeNode).getNativeNull()));
                 } else if (PGuards.isString(arg)) {
                     // TODO(fa) we could use CStringWrapper to do the copying lazily
-                    writeOutVarNode.writePyObject(varargs, asCharPointerNode.execute(arg));
+                    writePointerNode.write(getVaArgNode.execute(varargs), asCharPointerNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_GOT_P, c == FORMAT_LOWER_Z ? "str or None" : "str", arg);
                 }
@@ -688,25 +729,25 @@ public abstract class CExtParseArgumentsNode {
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached NativeToPythonNode typeToJavaNode,
                         @Cached ToSulongNode toNativeNode,
-                        @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la == '!') {
                 /* formatIdx++; */
-                Object argValue = getVaArgNode.getPyObjectPtr(varargs);
+                Object argValue = getVaArgNode.execute(varargs);
                 Object typeObject = typeToJavaNode.execute(argValue);
                 assert PGuards.isClass(typeObject, IsTypeNode.getUncached());
                 if (!isSubtypeNode.execute(getClassNode.execute(arg), typeObject)) {
                     raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_P_GOT_P, typeObject, arg);
                     throw ParseArgumentsException.raise();
                 }
-                writeOutVarNode.writePyObject(varargs, toNativeNode.execute(arg));
+                writePointerNode.write(getVaArgNode.execute(varargs), toNativeNode.execute(arg));
             } else if (la == '&') {
                 /* formatIdx++; */
-                Object converter = getVaArgNode.getPyObjectPtr(varargs);
-                Object output = getVaArgNode.getPyObjectPtr(varargs);
+                Object converter = getVaArgNode.execute(varargs);
+                Object output = getVaArgNode.execute(varargs);
                 executeConverterNode.execute(converter, arg, output);
             } else {
-                writeOutVarNode.writePyObject(varargs, toNativeNode.execute(arg));
+                writePointerNode.write(getVaArgNode.execute(varargs), toNativeNode.execute(arg));
             }
         }
 
@@ -720,7 +761,7 @@ public abstract class CExtParseArgumentsNode {
                 throw raise(raiseNode, TypeError, ErrorMessages.INVALID_USE_OF_W_FORMAT_CHAR);
 
             }
-            Object pybufferPtr = getVaArgNode.getPyObjectPtr(varargs);
+            Object pybufferPtr = getVaArgNode.execute(varargs);
             getbuffer(callGetBufferRwNode, raiseNode, arg, toNativeNode, pybufferPtr, false);
         }
 
@@ -783,10 +824,10 @@ public abstract class CExtParseArgumentsNode {
      */
     @ImportStatic(CExtParseArgumentsNode.class)
     abstract static class ConvertParArgNode extends Node {
-        public abstract void execute(ParserState state, Object kwds, int c, Object kwdnames) throws InteropException;
+        public abstract void execute(ParserState state, Object kwds, int c, TruffleString[] kwdnames) throws InteropException;
 
         @Specialization(guards = "c == FORMAT_PAR_OPEN")
-        static void doParOpen(ParserState state, Object kwds, @SuppressWarnings("unused") int c, Object kwdnames,
+        static void doParOpen(ParserState state, Object kwds, @SuppressWarnings("unused") int c, TruffleString[] kwdnames,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached PythonObjectFactory factory,
@@ -812,7 +853,7 @@ public abstract class CExtParseArgumentsNode {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "c == FORMAT_PAR_CLOSE")
-        static void doParClose(ParserState state, Object kwds, int c, Object kwdnames,
+        static void doParClose(ParserState state, Object kwds, int c, TruffleString[] kwdnames,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
             if (state.v.prev == null) {
                 CompilerDirectives.transferToInterpreter();
@@ -848,12 +889,13 @@ public abstract class CExtParseArgumentsNode {
         void doEncodedString(@SuppressWarnings("unused") int c, int la1, int la2, Object arg, Object varargs,
                         @Cached AsCharPointerNode asCharPointerNode,
                         @Cached GetNextVaArgNode getVaArgNode,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached NativeToPythonNode argToJavaNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached WriteNextVaArgNode writeOutVarNode,
                         @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-            Object encoding = getVaArgNode.getCharPtr(varargs);
-            final boolean recodeStrings;
+            Object encoding = getVaArgNode.execute(varargs);
+            boolean recodeStrings;
             if (la1 == 's') {
                 recodeStrings = true;
             } else if (la1 == 't') {
@@ -863,10 +905,10 @@ public abstract class CExtParseArgumentsNode {
             }
             // XXX: TODO: actual support for the en-/re-coding of objects, proper error handling
             // TODO(tfel) we could use CStringWrapper to do the copying lazily
-            writeOutVarNode.writePyObject(varargs, asCharPointerNode.execute(arg));
+            writePointerNode.write(getVaArgNode.execute(varargs), asCharPointerNode.execute(arg, true));
             if (la2 == '#') {
-                final int size = sizeNode.execute(null, argToJavaNode.execute(arg));
-                writeOutVarNode.writeInt64(varargs, size);
+                int size = sizeNode.execute(null, argToJavaNode.execute(arg));
+                writeLongNode.write(getVaArgNode.execute(varargs), size);
             }
         }
 
@@ -882,11 +924,11 @@ public abstract class CExtParseArgumentsNode {
      */
     abstract static class GetArgNode extends Node {
 
-        public abstract Object execute(ParserState state, Object kwds, Object kwdnames, boolean keywords_only) throws InteropException;
+        public abstract Object execute(ParserState state, Object kwds, TruffleString[] kwdnames, boolean keywords_only) throws InteropException;
 
         @Specialization(guards = {"kwds == null", "!keywordsOnly"})
         @SuppressWarnings("unused")
-        static Object doNoKeywords(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
+        static Object doNoKeywords(ParserState state, Object kwds, TruffleString[] kwdnames, boolean keywordsOnly,
                         @Bind("this") Node inliningTarget,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
@@ -907,14 +949,12 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(replaces = "doNoKeywords")
-        Object doGeneric(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
+        Object doGeneric(ParserState state, Object kwds, TruffleString[] kwdnames, boolean keywordsOnly,
                         @Bind("this") Node inliningTarget,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
-                        @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
                         @Cached PyDict_GetItem getDictItemNode,
-                        @Cached PCallCapiFunction callCStringToString,
-                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) {
 
             Object out = null;
             if (!keywordsOnly) {
@@ -925,11 +965,8 @@ public abstract class CExtParseArgumentsNode {
             }
             // only the bottom argstack can have keyword names
             if (kwds != null && out == null && state.v.prev == null && kwdnames != null) {
-                Object kwdnamePtr = kwdnamesLib.readArrayElement(kwdnames, state.v.argnum);
-                // TODO(fa) check if this is the NULL pointer since the kwdnames are always
-                // NULL-terminated
-                Object kwdname = callCStringToString.call(PythonContext.get(this).getCApiContext(), NativeCAPISymbol.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
-                if (kwdname instanceof TruffleString) {
+                TruffleString kwdname = kwdnames[state.v.argnum];
+                if (kwdname != null) {
                     /*
                      * the cast to PDict is safe because either it is null or a PDict (ensured by
                      * the guards)

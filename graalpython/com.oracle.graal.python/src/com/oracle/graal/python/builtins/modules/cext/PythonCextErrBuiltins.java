@@ -168,6 +168,35 @@ public final class PythonCextErrBuiltins {
         }
     }
 
+    /*
+     * TODO: this ignores the current exception, behaving exactly like PyErr_Restore
+     */
+    @CApiBuiltin(ret = Void, args = {PyObject, PyObject, PyObject}, call = Direct)
+    abstract static class _PyErr_ChainExceptions extends CApiTernaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object run(PNone typ, PNone val, PNone tb) {
+            getContext().setCurrentException(getLanguage(), null);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
+            PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
+            context.setCurrentException(language, PException.fromExceptionInfo(val, (LazyTraceback) null, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object run(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
+            PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
+            context.setCurrentException(language, PException.fromExceptionInfo(val, tb, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+            return PNone.NONE;
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
     abstract static class PyTruffleErr_Fetch extends CApiNullaryBuiltinNode {
         @Specialization

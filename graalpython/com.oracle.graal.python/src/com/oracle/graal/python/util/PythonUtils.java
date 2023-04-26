@@ -41,6 +41,7 @@
 package com.oracle.graal.python.util;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
@@ -75,6 +76,8 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -93,6 +96,8 @@ import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -436,6 +441,15 @@ public final class PythonUtils {
         int r = (int) x;
         if (r != x) {
             throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static int toIntError(long x) {
+        int r = (int) x;
+        if (r != x) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_INT_OVERFLOW);
         }
         return r;
     }
@@ -884,5 +898,22 @@ public final class PythonUtils {
             CompilerAsserts.neverPartOfCompilation();
         }
         CompilerDirectives.transferToInterpreter();
+    }
+
+    public static boolean isBitSet(int state, int position) {
+        return ((state >>> position) & 0x1) != 0;
+    }
+
+    public static String formatPointer(Object pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        InteropLibrary lib = InteropLibrary.getUncached();
+        if (lib.isPointer(pointer)) {
+            try {
+                return String.format("%s#0x%016x", pointer.getClass().getSimpleName(), lib.asPointer(pointer));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+        return String.valueOf(pointer);
     }
 }

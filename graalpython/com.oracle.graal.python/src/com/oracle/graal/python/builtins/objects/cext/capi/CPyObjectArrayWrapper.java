@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -59,7 +57,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 import sun.misc.Unsafe;
 
@@ -67,7 +64,6 @@ import sun.misc.Unsafe;
  * A native wrapper for Python object arrays to be used like a {@code PyObject *arr[]}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
 
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
@@ -136,19 +132,6 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     boolean isArrayElementReadable(long identifier) {
         return 0 <= identifier && identifier < wrappers.length;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasNativeType() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object getNativeType(
-                    @Cached GetLLVMType getLLVMType) {
-        return getLLVMType.execute(LLVMType.PyObject_ptr_ptr_t);
     }
 
     /**

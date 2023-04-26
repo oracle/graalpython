@@ -44,11 +44,15 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
@@ -63,6 +67,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -80,13 +85,11 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Emulates CPython's {@code PyThreadState} struct.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PThreadState extends PythonNativeWrapper {
     public static final String J_CUR_EXC_TYPE = "curexc_type";
     public static final String J_CUR_EXC_VALUE = "curexc_value";
@@ -501,22 +504,26 @@ public final class PThreadState extends PythonNativeWrapper {
     }
 
     @ExportMessage
+    @TruffleBoundary
     protected void toNative(
                     @Bind("$node") Node inliningTarget,
                     @Cached InlinedConditionProfile isNativeProfile) {
         if (!isNative(inliningTarget, isNativeProfile)) {
-            CApiTransitions.firstToNative(this);
+
+            Object ptr = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(CStructs.PyThreadState, true);
+            PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
+            CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
+            Object nullValue = PythonContext.get(null).getNativeNull().getPtr();
+            PDict threadStateDict = threadState.getDict();
+            if (threadStateDict == null) {
+                threadStateDict = PythonObjectFactory.getUncached().createDict();
+                threadState.setDict(threadStateDict);
+            }
+            writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
+            writePtrNode.write(ptr, CFields.PyThreadState__interp, nullValue);
+
+            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+            CApiTransitions.firstToNative(this, coerceToLong(ptr, InteropLibrary.getUncached()));
         }
-    }
-
-    @ExportMessage
-    protected boolean hasNativeType() {
-        return true;
-    }
-
-    @ExportMessage(name = "getNativeType")
-    Object getNativeType(
-                    @Cached GetLLVMType getLLVMType) {
-        return getLLVMType.execute(LLVMType.PyThreadState);
     }
 }

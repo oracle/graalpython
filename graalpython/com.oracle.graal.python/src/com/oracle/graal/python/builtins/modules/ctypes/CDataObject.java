@@ -143,7 +143,6 @@ public class CDataObject extends PythonBuiltinObject {
 
     @SuppressWarnings("static-method")
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public static class CDataObjectWrapper extends PythonNativeWrapper {
 
         final byte[] storage;
@@ -244,20 +243,6 @@ public class CDataObject extends PythonBuiltinObject {
             if (!isNative(inliningTarget, isNativeProfile)) {
                 CApiTransitions.firstToNative(this);
             }
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean hasNativeType() {
-            // TODO implement native type
-            return false;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        Object getNativeType() {
-            // TODO implement native type
-            return null;
         }
     }
 }

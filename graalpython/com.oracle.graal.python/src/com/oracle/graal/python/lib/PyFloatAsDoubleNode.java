@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,8 +50,7 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ImportCAPISymbolNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -72,8 +72,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -117,10 +115,8 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached InlinedGetClassNode getClassNode,
                     @SuppressWarnings("unused") @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                    @Cached ToSulongNode toSulongNode,
-                    @Cached ImportCAPISymbolNode importSymNode) {
-        return FromNativeSubclassNode.readObFval(object, toSulongNode, interopLibrary, importSymNode);
+                    @Cached CStructAccess.ReadDoubleNode read) {
+        return read.readFromObj(object, PyFloatObject__ob_fval);
     }
 
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)",

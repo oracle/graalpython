@@ -54,13 +54,11 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Emulates {@code _PyErr_StackItem}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyErrStackItem extends PythonNativeWrapper {
 
     public static final String J_EXC_TYPE = "exc_type";
@@ -136,19 +134,5 @@ public final class PyErrStackItem extends PythonNativeWrapper {
         if (!isNative(inliningTarget, isNativeProfile)) {
             CApiTransitions.firstToNative(this);
         }
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object getNativeType() {
-        // TODO implement native type
-        return null;
     }
 }

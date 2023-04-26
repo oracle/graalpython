@@ -125,13 +125,6 @@ void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
 	return polyglot_from_i8_array(arr, len);
 }
 
-void* graal_hpy_from_wchar_array(wchar_t *arr, uint64_t len) {
-    if (len == -1) {
-        len = (uint64_t) wcslen(arr);
-    }
-	return polyglot_from_wchar_t_array(arr, len);
-}
-
 void* graal_hpy_from_HPyMeth(void *ptr) {
 	return polyglot_from_HPyMeth(ptr);
 }
@@ -154,7 +147,7 @@ void* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
 	}
 	return NULL;
 }
-
+/* TODO: diabled because of polyglot_from_string
 void* graal_hpy_get_m_name(HPyModuleDef *moduleDef) {
 	return polyglot_from_string(moduleDef->name, SRC_CS);
 }
@@ -166,9 +159,11 @@ void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
 	}
 	return polyglot_from_string("", SRC_CS);
 }
+*/
 
 /* getters for HPyMeth */
 
+/* TODO: diabled because of polyglot_from_string
 void* graal_hpy_get_ml_name(HPyMeth *methodDef) {
 	return polyglot_from_string(methodDef->name, SRC_CS);
 }
@@ -176,6 +171,7 @@ void* graal_hpy_get_ml_name(HPyMeth *methodDef) {
 void* graal_hpy_get_ml_doc(HPyMeth *methodDef) {
 	return polyglot_from_string(methodDef->doc, SRC_CS);
 }
+*/
 
 HPyFunc_Signature graal_hpy_meth_get_signature(HPyMeth *methodDef) {
 	return methodDef->signature;
@@ -251,15 +247,19 @@ void* graal_hpy_legacy_slot_get_descrs(cpy_PyTypeSlot *slot) {
 
 /* getters for legacy cpy_PyMethodDef */
 
+/* TODO: diabled because of polyglot_from_string
 void* graal_hpy_legacy_methoddef_get_ml_name(cpy_PyMethodDef *methodDef) {
 	return polyglot_from_string(methodDef->ml_name, SRC_CS);
 }
+*/
 
 /* getters for legacy cpy_PyGetSetDef */
 
+/* TODO: diabled because of polyglot_from_string
 void* graal_hpy_legacy_getsetdef_get_name(cpy_PyGetSetDef *getSetDef) {
 	return polyglot_from_string(getSetDef->name, SRC_CS);
 }
+*/
 
 /* getters for HPyDef */
 
@@ -335,20 +335,24 @@ uint64_t graal_hpy_module_init_globals(HPyModuleDef *moduleDef, intptr_t startID
 	return 0;
 }
 
+/* TODO: diabled because of polyglot_from_string
 void* graal_hpy_from_string(const char *ptr) {
 	return polyglot_from_string(ptr, SRC_CS);
 }
+*/
 
 int graal_hpy_get_errno() {
 	return errno;
 }
 
+/* TODO: diabled because of polyglot_from_string
 char *graal_hpy_get_strerror(int i) {
 	if (i != 0) {
 		return strerror(i);
 	}
 	return "Error";
 }
+*/
 
 uint64_t graal_hpy_strlen(const char *ptr) {
 	return strlen(ptr);
@@ -505,6 +509,7 @@ double graal_hpy_read_d(void* object, HPy_ssize_t offset) {
     return ReadMember(object, offset, double);
 }
 
+/* TODO: diabled because of polyglot_from_string
 void* graal_hpy_read_string(void* object, HPy_ssize_t offset) {
     char *ptr = ReadMember(object, offset, char*);
     if (ptr != NULL) {
@@ -517,6 +522,7 @@ void* graal_hpy_read_string_in_place(void* object, HPy_ssize_t offset) {
     char *addr = (char*) (((char*)object) + offset);
     return polyglot_from_string(addr, "utf-8");
 }
+*/
 
 void* graal_hpy_read_HPy(void* object, HPy_ssize_t offset) {
     return UNWRAP(ReadMember(object, offset, HPy));
@@ -589,11 +595,11 @@ void graal_hpy_write_string(void* object, HPy_ssize_t offset, char* value) {
 void graal_hpy_write_string_in_place(void* object, HPy_ssize_t offset, char* value) {
 	char *addr = (char*) (((char*)object) + offset);
 	size_t n;
-	if (polyglot_has_array_elements(value)) {
-		n = polyglot_get_array_size(value);
-	} else {
+//	if (polyglot_has_array_elements(value)) {
+//		n = polyglot_get_array_size(value);
+//	} else {
 		n = strlen(value);
-	}
+//	}
 	memcpy(addr, value, n);
 }
 

@@ -41,6 +41,9 @@
 #include "capi.h"
 #include <stdio.h>
 #include <time.h>
+#include <dlfcn.h>
+#include <truffle.h>
+#include <trufflenfi.h>
 
 #define ASSERTIONS
 
@@ -102,57 +105,81 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* tuple);
 
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
+PyAPI_DATA(PyTypeObject) mmap_object_type;
 
-PyTypeObject PyType_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("type", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS, sizeof(PyHeapTypeObject), sizeof(PyMemberDef));
-PyTypeObject _PyExc_BaseException = 		PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
-PyTypeObject _PyExc_StopIteration = 		PY_TRUFFLE_TYPE("StopIteration", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyStopIterationObject));
-PyTypeObject _PyNamespace_Type = 			PY_TRUFFLE_TYPE("SimpleNamespace", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(_PyNamespaceObject));
-PyTypeObject _PyNone_Type = 				PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
-PyTypeObject _PyNotImplemented_Type = 		PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
-PyTypeObject _PyWeakref_CallableProxyType = PY_TRUFFLE_TYPE("weakcallableproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWeakReference));
-PyTypeObject _PyWeakref_ProxyType = 		PY_TRUFFLE_TYPE("weakproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWeakReference));
-PyTypeObject _PyWeakref_RefType = 			PY_TRUFFLE_TYPE("weakref", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyWeakReference));
-PyTypeObject Arraytype = 					PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_SEQUENCE, sizeof(arrayobject));
-PyTypeObject PyArrayIter_Type = 			PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
-PyTypeObject PyBaseObject_Type = 			PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del);
-PyTypeObject PyBool_Type = 					PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(struct _longobject));
-PyTypeObject PyByteArray_Type = 			PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyByteArrayObject));
-PyTypeObject PyBytes_Type = 				PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, PyBytesObject_SIZE, sizeof(char));
-PyTypeObject PyCapsule_Type = 				PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
-PyTypeObject PyCFunction_Type = 			PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
-PyTypeObject PyCMethod_Type = 				PY_TRUFFLE_TYPE("builtin_method", &PyCFunction_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
-PyTypeObject PyCode_Type = 					PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
-PyTypeObject PyComplex_Type = 				PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyComplexObject));
-PyTypeObject PyDict_Type = 					PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_MAPPING, sizeof(PyDictObject));
-PyTypeObject PyDictProxy_Type = 			PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_MAPPING, sizeof(mappingproxyobject));
-PyTypeObject PyEllipsis_Type = 				PY_TRUFFLE_TYPE("ellipsis", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
-PyTypeObject PyFloat_Type = 				PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyFloatObject));
-PyTypeObject PyFrame_Type = 				PY_TRUFFLE_TYPE_WITH_ITEMSIZE("frame", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject), sizeof(PyObject *));
-PyTypeObject PyFrozenSet_Type = 			PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_MATCH_SELF, sizeof(PySetObject));
-PyTypeObject PyFunction_Type = 				PY_TRUFFLE_TYPE("function", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyFunctionObject));
-PyTypeObject PyGen_Type = 					PY_TRUFFLE_TYPE("generator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGenObject));
-PyTypeObject PyGetSetDescr_Type = 			PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
-PyTypeObject PyInstanceMethod_Type = 		PY_TRUFFLE_TYPE("instancemethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyInstanceMethodObject));
-PyTypeObject PyList_Type = 					PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyListObject));
-PyTypeObject PyLong_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, offsetof(PyLongObject, ob_digit), sizeof(PyObject *));
-PyTypeObject PyMemberDescr_Type = 			PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
-PyTypeObject PyMemoryView_Type = 			PY_TRUFFLE_TYPE_WITH_ITEMSIZE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_SEQUENCE, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t));
-PyTypeObject PyMethod_Type = 				PY_TRUFFLE_TYPE("method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMethodObject));
-PyTypeObject PyMethodDescr_Type = 			PY_TRUFFLE_TYPE("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyMethodDescrObject));
-PyTypeObject PyModule_Type = 				PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyModuleObject));
-PyTypeObject PyModuleDef_Type = 			PY_TRUFFLE_TYPE("moduledef", &PyType_Type, 0, sizeof(struct PyModuleDef));
-PyTypeObject PyProperty_Type = 				PY_TRUFFLE_TYPE("property", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(propertyobject));
-PyTypeObject PySet_Type = 					PY_TRUFFLE_TYPE("set", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_MATCH_SELF, sizeof(PySetObject));
-PyTypeObject PySlice_Type = 				PY_TRUFFLE_TYPE("slice", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PySliceObject));
-PyTypeObject PyStaticMethod_Type = 			PY_TRUFFLE_TYPE("staticmethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PyType_Type));
-PyTypeObject PySuper_Type = 				PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
-PyTypeObject PyTraceBack_Type = 			PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
-PyTypeObject PyTuple_Type = 				PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, (destructor)PyTruffle_Tuple_Dealloc, 0, 0);
-PyTypeObject PyUnicode_Type = 				PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyUnicodeObject));
-/* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
-PyTypeObject PyWrapperDescr_Type = 			PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
-// dummy definitions:
-PyTypeObject _PyBytesIOBuffer_Type =		PY_TRUFFLE_TYPE("_io._BytesIOBuffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, 0);
+// used for sizeof(...)
+typedef struct {
+    PyObject_HEAD
+    PyObject *iters;
+    PyObject *func;
+} mapobject;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *start;
+    PyObject *stop;
+    PyObject *step;
+    PyObject *length;
+} rangeobject;
+
+typedef struct {
+    PyObject_HEAD
+    Py_ssize_t tuplesize;
+    PyObject *ittuple;     /* tuple of iterators */
+    PyObject *result;
+    int strict;
+} zipobject;
+
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
+PyTypeObject GLOBAL_NAME = {\
+    PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
+    #__TYPE_NAME__,                              /* tp_name */\
+    (__SIZE__),                                 /* tp_basicsize */\
+    (__ITEMSIZE__),                             /* tp_itemsize */\
+    (__DEALLOC__),                              /* tp_dealloc */\
+    (__VCALL_OFFSET__),                         /* tp_vectorcall_offset */\
+    0,                                          /* tp_getattr */\
+    0,                                          /* tp_setattr */\
+    0,                                          /* tp_reserved */\
+    0,                                          /* tp_repr */\
+    0,                                          /* tp_as_number */\
+    0,                                          /* tp_as_sequence */\
+    0,                                          /* tp_as_mapping */\
+    0,                                          /* tp_hash */\
+    0,                                          /* tp_call */\
+    0,                                          /* tp_str */\
+    0,                                          /* tp_getattro */\
+    0,                                          /* tp_setattro */\
+    0,                                          /* tp_as_buffer */\
+    0,                                          /* tp_flags */\
+    0,                                          /* tp_doc */\
+    0,                                          /* tp_traverse */\
+    0,                                          /* tp_clear */\
+    0,                                          /* tp_richcompare */\
+    0,                                          /* tp_weaklistoffset */\
+    0,                                          /* tp_iter */\
+    0,                                          /* tp_iternext */\
+    0,                                          /* tp_methods */\
+    0,                                          /* tp_members */\
+    0,                                          /* tp_getset */\
+    0,                                          /* tp_base */\
+    0,                                          /* tp_dict */\
+    0,                                          /* tp_descr_get */\
+    0,                                          /* tp_descr_set */\
+    0,                                          /* tp_dictoffset */\
+    0,                                          /* tp_init */\
+    (__ALLOC__),                                /* tp_alloc */\
+    0,                                          /* tp_new */\
+    (__FREE__),                                 /* tp_free */\
+    0,                                          /* tp_is_gc */\
+};
+
+#define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) PyTypeObject GLOBAL_NAME;
+
+PY_TYPE_OBJECTS
+
+#undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
 /*
  * This header includes definitions for constant arrays like:
@@ -173,195 +200,46 @@ CAPI_BUILTINS
 }
 
 uint32_t Py_Truffle_Options;
-cache_query_t points_to_py_handle_space;
-ptr_cache_t pythonToNative;
-void_ptr_cache_t javaStringToTruffleString;
 
-
-void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
+void initialize_type_structure(PyTypeObject* structure, const char* name) {
     // Store the Sulong struct type id to be used for instances of this class
-    GraalPyTruffle_Set_SulongType(ptype, tid);
 
-    unsigned long original_flags = structure->tp_flags;
-    Py_ssize_t basicsize = structure->tp_basicsize;
-    Py_ssize_t itemsize = structure->tp_itemsize;
-    allocfunc alloc_fun = structure->tp_alloc;
-    destructor dealloc_fun = structure->tp_dealloc;
-    freefunc free_fun = structure->tp_free;
-    Py_ssize_t vectorcall_offset = structure->tp_vectorcall_offset;
-    PyBufferProcs* as_buffer = structure->tp_as_buffer;
-    PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
-    // write flags as specified in the dummy to the PythonClass object
-    set_PyTypeObject_tp_flags(type_handle, original_flags | Py_TPFLAGS_READY | Py_TPFLAGS_IMMUTABLETYPE);
-    set_PyTypeObject_tp_basicsize(type_handle, basicsize);
-    set_PyTypeObject_tp_itemsize(type_handle, itemsize);
-    if (alloc_fun) {
-    	set_PyTypeObject_tp_alloc(type_handle, alloc_fun);
-    }
-    if (dealloc_fun) {
-    	set_PyTypeObject_tp_dealloc(type_handle, dealloc_fun);
-    }
-    if (free_fun) {
-    	set_PyTypeObject_tp_free(type_handle, free_fun);
-    }
-    if (free_fun) {
-    	set_PyTypeObject_tp_free(type_handle, free_fun);
-    }
-    if (vectorcall_offset) {
-    	set_PyTypeObject_tp_vectorcall_offset (type_handle, vectorcall_offset);
-    }
-    if (as_buffer) {
-    	set_PyTypeObject_tp_as_buffer(type_handle, as_buffer);
-    }
+	PyTruffle_Log(PY_TRUFFLE_LOG_FINEST, "initialize_type_structure: %s", structure->tp_name);
+	GraalPyTruffle_SetTypeStore(name, structure);
 }
 
-static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {
-    PyTypeObject* ptype = GraalPyTruffle_Type(truffleString(typname));
-    initialize_type_structure(structure, ptype, tid);
-}
-
-#define TYPES_AND_STRUCTS \
-declare_struct(PyType_Type, type, _typeobject) \
-declare_struct(PyBaseObject_Type, object, _object) \
-declare_type(PyUnicode_Type, str, PyUnicodeObject) \
-declare_struct(PyLong_Type, int, _longobject) \
-declare_type(PyBytes_Type, bytes, PyBytesObject) \
-declare_type(PyDict_Type, dict, PyDictObject) \
-declare_type(PyTuple_Type, tuple, PyTupleObject) \
-declare_type(PyList_Type, list, PyListObject) \
-declare_type(Arraytype, array, arrayobject) \
-declare_type(PyArrayIter_Type, arrayiterator, arrayiterobject) \
-declare_type(PyComplex_Type, complex, PyComplexObject) \
-declare_type(PyModule_Type, module, PyModuleObject) \
-declare_type(PyModuleDef_Type, moduledef, PyModuleDef) \
-declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject) \
-declare_type(PySet_Type, set, PySetObject) \
-declare_type(PyFloat_Type, float, PyFloatObject) \
-declare_type(PySlice_Type, slice, PySliceObject) \
-declare_type(PyByteArray_Type, bytearray, PyByteArrayObject) \
-declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject) \
-declare_type(PyCMethod_Type, builtin_method, PyCMethodObject) \
-declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject) \
-declare_type(PyCapsule_Type, capsule, PyCapsule) \
-declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject) \
-declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject) \
-declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject) \
-declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject) \
-declare_type(_PyExc_StopIteration, StopIteration, PyStopIterationObject) \
-declare_type(PyFunction_Type, function, PyFunctionObject) \
-declare_type(PyMethod_Type, method, PyMethodObject) \
-declare_type(PyInstanceMethod_Type, instancemethod, PyInstanceMethodObject) \
-declare_type(PyCode_Type, code, PyCodeObject) \
-declare_type(PyFrame_Type, frame, PyFrameObject) \
-declare_type(PyTraceBack_Type, traceback, PyTracebackObject) \
-declare_type(_PyWeakref_RefType, ReferenceType, PyWeakReference) \
-declare_type(PyGen_Type, generator, PyGenObject) \
-declare_type(PyProperty_Type, property, propertyobject) \
-initialize_type(PySuper_Type, super, _object) \
-initialize_type(_PyNone_Type, NoneType, _object) \
-initialize_type(PyFrozenSet_Type, frozenset, PySetObject) \
-initialize_type(PyBool_Type, bool, _longobject) \
-initialize_type(_PyNotImplemented_Type, NotImplementedType, _object) \
-initialize_type(PyDictProxy_Type, mappingproxy, _object) \
-initialize_type(PyEllipsis_Type, ellipsis, _object) \
-initialize_type(_PyWeakref_ProxyType, ProxyType, PyWeakReference) \
-initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference)
-/* The last few types use the same object structure as others, and thus
- POLYGLOT_DECLARE_TYPE should not be called again */
-
-#define initialize_type(typeobject, typename, structtype) // empty
-#define declare_struct(typeobject, typename, structtype) POLYGLOT_DECLARE_STRUCT(structtype);
-#define declare_type(typeobject, typename, objecttype) POLYGLOT_DECLARE_TYPE(objecttype);
-TYPES_AND_STRUCTS
-#undef initialize_type
-#undef declare_struct
-#undef declare_type
-
+#undef bool
 static void initialize_builtin_types_and_structs() {
-#define initialize_type(typeobject, typename, structtype)          \
-	initialize_builtin_type(&typeobject, #typename, polyglot_ ## structtype ## _typeid());
-#define declare_struct(typeobject, typename, structtype) initialize_type(typeobject, typename, structtype)
-#define declare_type(typeobject, typename, objecttype) initialize_type(typeobject, typename, objecttype)
-	 TYPES_AND_STRUCTS
-#undef initialize_type
-#undef declare_struct
-#undef declare_type
+	clock_t t = clock();
+    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) initialize_type_structure(&GLOBAL_NAME, #__TYPE_NAME__);
+#define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
+    PY_TYPE_OBJECTS
+#undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
+
+	// fix up for circular dependency:
+	PyType_Type.tp_base = &PyBaseObject_Type;
+
+	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
  }
 
+int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
+	// TODO(fa) readonly flag
+    return PyBuffer_FillInfo(view, (PyObject*)self, GraalPyTruffle_GetMMapData(self), PyObject_Size((PyObject *)self), 0, flags);
+}
 
-POLYGLOT_DECLARE_TYPE(newfunc);
-POLYGLOT_DECLARE_TYPE(Py_buffer);
+PyAPI_FUNC(void) mmap_init_bufferprotocol(PyObject* mmap_type) {
+	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "mmap_init_bufferprotocol");
+	assert(PyType_Check(mmap_type));
 
-/* primitive and pointer type declarations */
-
-#define REGISTER_BASIC_TYPE(typename)                                     \
-    POLYGLOT_DECLARE_TYPE(typename);                                      \
-    NO_INLINE PyAPI_FUNC(polyglot_typeid) get_ ## typename ## _typeid(void)  { \
-        return polyglot_ ## typename ## _typeid();                        \
-    }
-
-/* just a renaming to avoid name clash with Java types */
-typedef void*              void_ptr_t;
-typedef char               char_t;
-typedef float              float_t;
-typedef double             double_t;
-typedef int                int_t;
-typedef unsigned int       uint_t;
-typedef long               long_t;
-typedef unsigned long      ulong_t;
-typedef long long          longlong_t;
-typedef unsigned long long ulonglong_t;
-
-REGISTER_BASIC_TYPE(void_ptr_t);
-REGISTER_BASIC_TYPE(int_t);
-REGISTER_BASIC_TYPE(uint_t);
-REGISTER_BASIC_TYPE(long_t);
-REGISTER_BASIC_TYPE(ulong_t);
-REGISTER_BASIC_TYPE(longlong_t);
-REGISTER_BASIC_TYPE(ulonglong_t);
-REGISTER_BASIC_TYPE(int64_t);
-REGISTER_BASIC_TYPE(int32_t);
-REGISTER_BASIC_TYPE(int16_t);
-REGISTER_BASIC_TYPE(int8_t);
-REGISTER_BASIC_TYPE(uint64_t);
-REGISTER_BASIC_TYPE(uint32_t);
-REGISTER_BASIC_TYPE(uint16_t);
-REGISTER_BASIC_TYPE(uint8_t);
-REGISTER_BASIC_TYPE(Py_complex);
-REGISTER_BASIC_TYPE(char_t);
-REGISTER_BASIC_TYPE(PyObject);
-REGISTER_BASIC_TYPE(PyMethodDef);
-REGISTER_BASIC_TYPE(PyTypeObject);
-REGISTER_BASIC_TYPE(float_t);
-REGISTER_BASIC_TYPE(double_t);
-REGISTER_BASIC_TYPE(Py_ssize_t);
-REGISTER_BASIC_TYPE(size_t);
-REGISTER_BASIC_TYPE(PyThreadState);
-
-/* For pointers, make them look like an array of size 1 such that it is
-   possible to dereference the pointer by accessing element 0. */
-#define REGISTER_POINTER_TYPE(basetype, ptrtype)                                  \
-    typedef basetype* ptrtype;                                                    \
-    POLYGLOT_DECLARE_TYPE(ptrtype);                                               \
-    NO_INLINE PyAPI_FUNC(polyglot_typeid) get_ ## ptrtype ## _typeid(void)  { \
-        return polyglot_array_typeid(polyglot_ ## basetype ## _typeid(), 1);      \
-    }
-
-REGISTER_POINTER_TYPE(int64_t, int64_ptr_t);
-REGISTER_POINTER_TYPE(int32_t, int32_ptr_t);
-REGISTER_POINTER_TYPE(int16_t, int16_ptr_t);
-REGISTER_POINTER_TYPE(int8_t, int8_ptr_t);
-REGISTER_POINTER_TYPE(char_t, char_ptr_t);
-REGISTER_POINTER_TYPE(uint64_t, uint64_ptr_t);
-REGISTER_POINTER_TYPE(uint32_t, uint32_ptr_t);
-REGISTER_POINTER_TYPE(uint16_t, uint16_ptr_t);
-REGISTER_POINTER_TYPE(uint8_t, uint8_ptr_t);
-REGISTER_POINTER_TYPE(Py_complex, Py_complex_ptr_t);
-REGISTER_POINTER_TYPE(PyObject, PyObject_ptr_t);
-REGISTER_POINTER_TYPE(PyObject_ptr_t, PyObject_ptr_ptr_t);
-REGISTER_POINTER_TYPE(float_t, float_ptr_t);
-REGISTER_POINTER_TYPE(double_t, double_ptr_t);
-REGISTER_POINTER_TYPE(Py_ssize_t, Py_ssize_ptr_t);
+	static PyBufferProcs mmap_as_buffer = {
+	    (getbufferproc)mmap_getbuffer,
+	    (releasebufferproc)NULL,
+	};
+	set_PyTypeObject_tp_as_buffer(mmap_type, &mmap_as_buffer);
+	((PyTypeObject*) mmap_type)->tp_as_buffer = &mmap_as_buffer;
+}
 
 struct _longobject* _Py_FalseStructReference;
 struct _longobject* _Py_TrueStructReference;
@@ -400,157 +278,25 @@ static void initialize_bufferprocs() {
         (getbufferproc)bytes_buffer_getbuffer,       /* bf_getbuffer */
         (releasebufferproc)NULL,                     /* bf_releasebuffer */
     };
-    set_PyTypeObject_tp_as_buffer(&PyBytes_Type, &bytes_as_buffer);
+    PyBytes_Type.tp_as_buffer = &bytes_as_buffer;
+    GraalPy_set_PyTypeObject_tp_as_buffer(&PyBytes_Type, &bytes_as_buffer);
 
     static PyBufferProcs bytearray_as_buffer = {
         (getbufferproc)bytearray_getbuffer,          /* bf_getbuffer */
         (releasebufferproc)bytearray_releasebuffer,  /* bf_releasebuffer */
     };
-    set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
+    PyByteArray_Type.tp_as_buffer = &bytearray_as_buffer;
+    GraalPy_set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
         (getbufferproc)memoryview_getbuffer,         /* bf_getbuffer */
         (releasebufferproc)memoryview_releasebuffer, /* bf_releasebuffer */
     };
-    set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
+    PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
+    GraalPy_set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
 }
 
-/** to be used from Java code only; reads native fields */
-#define TYPE_FIELD_GETTER(RECEIVER, NAME) \
-PyAPI_FUNC(PyTypeObject*) get_##NAME(RECEIVER obj) {  \
-    return obj->NAME;                     \
-}
-#define OBJECT_FIELD_GETTER(RECEIVER, NAME) \
-PyAPI_FUNC(PyObject*) get_##NAME(RECEIVER obj) {        \
-    return (PyObject*) obj->NAME;           \
-}
-#define OBJECT_FIELD_SETTER(RECEIVER, NAME) \
-PyAPI_FUNC(void) set_##NAME(RECEIVER obj, PyObject* value) {        \
-    Py_XINCREF(value);                      \
-    Py_XSETREF(obj->NAME, value);           \
-}
-#define PRIMITIVE_FIELD_GETTER(RECEIVER, RESULT, NAME) \
-PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
-    return obj->NAME;                                  \
-}
-#define PRIMITIVE_FIELD_SETTER(RECEIVER, TYPE, NAME) \
-PyAPI_FUNC(void) set_##NAME(RECEIVER obj, TYPE value) {                      \
-    obj->NAME = value;                                  \
-}
-#define PRIMITIVE_SUBFIELD_GETTER(RECEIVER, FIELD, RESULT, NAME) \
-PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                    \
-    return obj->FIELD? obj->FIELD->NAME : NULL;                   \
-}
-
-#define PRIMITIVE_EMBEDDED_FIELD_GETTER(RECEIVER, FIELD, RESULT, NAME) \
-PyAPI_FUNC(RESULT) get_##FIELD##_##NAME(RECEIVER obj) { \
-    return obj->FIELD.NAME; \
-}
-
-TYPE_FIELD_GETTER(PyObject*, ob_type)
-PRIMITIVE_FIELD_GETTER(PyObject*, Py_ssize_t, ob_refcnt)
-PRIMITIVE_FIELD_GETTER(PyVarObject*, Py_ssize_t, ob_size)
-OBJECT_FIELD_GETTER(PyTypeObject*, tp_dict)
-OBJECT_FIELD_GETTER(PyTypeObject*, tp_base)
-OBJECT_FIELD_GETTER(PyTypeObject*, tp_bases)
-
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, reprfunc, tp_repr)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, reprfunc, tp_str)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, getattrofunc, tp_getattro)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, setattrofunc, tp_setattro)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, hashfunc, tp_hash)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, ternaryfunc, tp_call)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, getiterfunc, tp_iter)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, iternextfunc, tp_iternext)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, descrgetfunc, tp_descr_get)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, descrsetfunc, tp_descr_set)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, initproc, tp_init)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, richcmpfunc, tp_richcompare)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_add)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_subtract)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_multiply)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_remainder)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_divmod)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, ternaryfunc, nb_power)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_negative)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_positive)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_absolute)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, inquiry, nb_bool)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_invert)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_lshift)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_rshift)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_and)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_xor)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_or)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_int)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_float)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_add)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_subtract)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_multiply)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_remainder)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, ternaryfunc, nb_inplace_power)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_lshift)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_rshift)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_and)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_xor)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_or)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_floor_divide)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_true_divide)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_floor_divide)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_true_divide)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, unaryfunc, nb_index)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_matrix_multiply)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_number, binaryfunc, nb_inplace_matrix_multiply)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, lenfunc, sq_length)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, binaryfunc, sq_concat)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeargfunc, sq_repeat)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeargfunc, sq_item)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeobjargproc, sq_ass_item)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, objobjproc, sq_contains)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, binaryfunc, sq_inplace_concat)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_sequence, ssizeargfunc, sq_inplace_repeat)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_mapping, lenfunc, mp_length)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_mapping, binaryfunc, mp_subscript)
-PRIMITIVE_SUBFIELD_GETTER(PyTypeObject*, tp_as_mapping, objobjargproc, mp_ass_subscript)
-
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, const char*, tp_name)
-OBJECT_FIELD_GETTER(PyTypeObject*, tp_mro)
-OBJECT_FIELD_GETTER(PyTypeObject*, tp_subclasses)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_vectorcall_offset)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_dictoffset)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_weaklistoffset)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_itemsize)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_basicsize)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, allocfunc, tp_alloc)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, destructor, tp_dealloc)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, freefunc, tp_free)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, PyBufferProcs*, tp_as_buffer)
-PRIMITIVE_FIELD_GETTER(PyTypeObject*, unsigned long, tp_flags)
-PRIMITIVE_FIELD_GETTER(PyModuleDef_Base*, Py_ssize_t, m_index)
-PRIMITIVE_FIELD_GETTER(PyModuleDef*, Py_ssize_t, m_size)
-PRIMITIVE_FIELD_GETTER(PyModuleDef*, const char*, m_doc)
-PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, real)
-PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, imag)
-OBJECT_FIELD_GETTER(PyBaseExceptionObject*, args);
-OBJECT_FIELD_GETTER(PyBaseExceptionObject*, context);
-OBJECT_FIELD_GETTER(PyBaseExceptionObject*, cause);
-OBJECT_FIELD_GETTER(PyBaseExceptionObject*, traceback);
-PRIMITIVE_FIELD_GETTER(PyBaseExceptionObject*, char, suppress_context);
-OBJECT_FIELD_SETTER(PyBaseExceptionObject*, args);
-OBJECT_FIELD_SETTER(PyBaseExceptionObject*, context);
-PyAPI_FUNC(void) set_cause(PyBaseExceptionObject* obj, PyObject* value) {
-    Py_XSETREF(obj->cause, value);
-    obj->suppress_context = 1;
-}
-OBJECT_FIELD_SETTER(PyBaseExceptionObject*, traceback);
-PRIMITIVE_FIELD_SETTER(PyBaseExceptionObject*, char, suppress_context);
-
-
-char* get_ob_sval(PyObject* op) {
-	return ((PyBytesObject *)(op))->ob_sval;
-}
-
-int64_t get_methods_flags(PyTypeObject *cls) {
+PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
     if (cls == NULL) {
         return 0;
     }
@@ -624,7 +370,7 @@ int64_t get_methods_flags(PyTypeObject *cls) {
 
 // not quite as in CPython, this assumes that x is already a double. The rest of
 // the implementation is in the Float constructor in Java
-PyObject* float_subtype_new(PyTypeObject *type, double x) {
+PyAPI_FUNC(PyObject*) float_subtype_new(PyTypeObject *type, double x) {
     PyObject* newobj = type->tp_alloc(type, 0);
     if (newobj == NULL) {
         Py_DECREF(newobj);
@@ -632,64 +378,6 @@ PyObject* float_subtype_new(PyTypeObject *type, double x) {
     }
     ((PyFloatObject *)newobj)->ob_fval = x;
     return newobj;
-}
-
-/**
- * To be used from Java code only. Reads native 'PyModuleDef.m_methods' field and
- * returns a typed pointer that can be used as interop array.
- */
-PyAPI_FUNC(PyMethodDef*) get_PyModuleDef_m_methods(PyModuleDef* moduleDef) {
-    PyMethodDef* members = moduleDef->m_methods;
-    if (members) {
-        uint64_t i = 0;
-        while (members[i].ml_name != NULL) {
-        	i++;
-        }
-        return polyglot_from_PyMethodDef_array(members, i);
-    }
-	return NULL;
-}
-
-POLYGLOT_DECLARE_TYPE(PyModuleDef_Slot);
-/**
- * To be used from Java code only. Reads native 'PyModuleDef.m_slots' field and
- * returns a typed pointer that can be used as interop array.
- */
-PyAPI_FUNC(PyModuleDef_Slot*) get_PyModuleDef_m_slots(PyModuleDef* moduleDef) {
-    PyModuleDef_Slot* slots = moduleDef->m_slots;
-    if (slots) {
-        uint64_t i = 0;
-        while (slots[i].slot != 0) {
-        	i++;
-        }
-        return polyglot_from_PyModuleDef_Slot_array(slots, i);
-    }
-	return NULL;
-}
-
-/** to be used from Java code only; returns the type ID for a byte array */
-PyAPI_FUNC(polyglot_typeid) get_byte_array_typeid(uint64_t len) {
-    return polyglot_array_typeid(polyglot_i8_typeid(), len);
-}
-
-/** to be used from Java code only; returns the type ID for a uint32_t array */
-PyAPI_FUNC(polyglot_typeid) get_uint32_t_array_typeid(uint64_t len) {
-    return polyglot_array_typeid(polyglot_uint32_t_typeid(), len);
-}
-
-/** to be used from Java code only; returns the type ID for a 'PyObject*' array */
-PyAPI_FUNC(polyglot_typeid) get_ptr_array_typeid(uint64_t len) {
-    return polyglot_array_typeid(polyglot_PyObjectPtr_typeid(), len);
-}
-
-/** to be used from Java code only; returns the type ID PyThreadState */
-PyAPI_FUNC(polyglot_typeid) get_thread_state_typeid() {
-    return polyglot_PyThreadState_typeid();
-}
-
-/** to be used from Java code only; returns the type ID newfunc */
-PyAPI_FUNC(polyglot_typeid) get_newfunc_typeid() {
-    return polyglot_newfunc_typeid();
 }
 
 /** to be used from Java code only; calls INCREF */
@@ -761,41 +449,9 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) 
     return 0;
 }
 
-PyAPI_FUNC(uint64_t) PyTruffle_Wchar_Size() {
-    return SIZEOF_WCHAR_T;
-}
-
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
 PyAPI_FUNC(void) PyTruffle_Free(intptr_t val) {
     PyMem_RawFree((void*) val);
-}
-
-PyAPI_FUNC(const char*) PyTruffle_StringToCstr(void* o, int32_t strLen) {
-    const char *buffer;
-    const char *str;
-    uint64_t bufsize = 4 * (strLen + 1) * sizeof(char);
-    uint64_t written;
-
-    // we allocate 4 bytes for a char; this will in all cases be enough
-    buffer = (const char*) malloc(bufsize);
-
-    written = polyglot_as_string(o, buffer, bufsize, SRC_CS) + 1;
-
-    str = (const char*) PyMem_RawMalloc(written * sizeof(char));
-    memcpy(str, buffer, written * sizeof(char));
-    free(buffer);
-
-    return str;
-}
-
-/* Use this function to decode a C char array to a Java string using the source file encoding. */
-PyAPI_FUNC(void*) PyTruffle_CstrToString(void* o) {
-    return truffleString(o);
-}
-
-/* Use this function to decode a C ASCII string to a Java string. */
-PyAPI_FUNC(void*) PyTruffle_AsciiToString(void* ptr) {
-    return polyglot_from_string(ptr, "ascii");
 }
 
 /* To be used from Java code only.
@@ -805,265 +461,14 @@ PyAPI_FUNC(PyObject*) PyTruffle_Object_New(PyTypeObject* cls) {
     return cls->tp_alloc(cls, 0);
 }
 
-PyAPI_FUNC(void) PyTruffle_PatchType(PyTypeObject* result, PyTypeObject* base) {
-	result->tp_base = base;
+PyAPI_FUNC(void*) PyTruffle_Add_Offset(void* value, long offset) {
+	return ((char*) value) + offset;
 }
 
-PyAPI_FUNC(void*) PyTruffle_ConvertToPointer(uint64_t value) {
-	return (void*) value;
-}
-
-PyAPI_FUNC(void) PyTruffle_PopulateType(PyTypeObject* result, PyTypeObject* type, int isType) {
-    result->ob_base.ob_base.ob_refcnt = GraalPy_get_PyObject_ob_refcnt(_PyObject_CAST(type));
-    if (isType) {
-    	// self-reference
-    	result->ob_base.ob_base.ob_type = result;
-    } else {
-    	result->ob_base.ob_base.ob_type = GraalPy_get_PyObject_ob_type(_PyObject_CAST(type));
-    }
-	result->ob_base.ob_size = GraalPy_get_PyVarObject_ob_size(_PyVarObject_CAST(type));
-
-#define COPY_SLOT(NAME) result->NAME = GraalPy_get_PyTypeObject_##NAME(type);
-	COPY_SLOT(tp_name)
-	COPY_SLOT(tp_basicsize)
-	COPY_SLOT(tp_itemsize)
-	COPY_SLOT(tp_dealloc)
-	COPY_SLOT(tp_vectorcall_offset)
-	COPY_SLOT(tp_getattr)
-	COPY_SLOT(tp_setattr)
-	COPY_SLOT(tp_repr)
-	COPY_SLOT(tp_hash)
-	COPY_SLOT(tp_call)
-	COPY_SLOT(tp_str)
-	COPY_SLOT(tp_getattro)
-	COPY_SLOT(tp_setattro)
-	COPY_SLOT(tp_flags)
-	COPY_SLOT(tp_doc)
-	COPY_SLOT(tp_traverse)
-	COPY_SLOT(tp_clear)
-	COPY_SLOT(tp_richcompare)
-	COPY_SLOT(tp_weaklistoffset)
-	COPY_SLOT(tp_iter)
-	COPY_SLOT(tp_iternext)
-	COPY_SLOT(tp_methods)
-	COPY_SLOT(tp_members)
-	COPY_SLOT(tp_getset)
-	if (!isType) {
-		COPY_SLOT(tp_base)
-	}
-	COPY_SLOT(tp_dict)
-	COPY_SLOT(tp_descr_get)
-	COPY_SLOT(tp_descr_set)
-	COPY_SLOT(tp_dictoffset)
-	COPY_SLOT(tp_init)
-	COPY_SLOT(tp_alloc)
-	COPY_SLOT(tp_new)
-	COPY_SLOT(tp_free)
-	COPY_SLOT(tp_is_gc)
-	COPY_SLOT(tp_bases)
-	COPY_SLOT(tp_mro)
-	COPY_SLOT(tp_cache)
-	COPY_SLOT(tp_subclasses)
-	COPY_SLOT(tp_weaklist)
-	COPY_SLOT(tp_del)
-	COPY_SLOT(tp_version_tag)
-	COPY_SLOT(tp_finalize)
-	COPY_SLOT(tp_vectorcall)
-//	COPY_SLOT(tp_print)
-#undef COPY_SLOT
-	PyAsyncMethods* async = GraalPy_get_PyTypeObject_tp_as_async(type);
-	if (async == NULL) {
-		result->tp_as_async = NULL;
-	} else {
-		result->tp_as_async = (PyAsyncMethods*) malloc(sizeof(PyAsyncMethods));
-#define COPY_SLOT(NAME) result->tp_as_async->NAME = GraalPy_get_PyAsyncMethods_##NAME(async);
-		COPY_SLOT(am_await)
-		COPY_SLOT(am_aiter)
-		COPY_SLOT(am_anext)
-#undef COPY_SLOT
-	}
-	PyNumberMethods* number = GraalPy_get_PyTypeObject_tp_as_number(type);
-	if (number == NULL) {
-		result->tp_as_number = NULL;
-	} else {
-		result->tp_as_number = (PyNumberMethods*) malloc(sizeof(PyNumberMethods));
-#define COPY_SLOT(NAME) result->tp_as_number->NAME = GraalPy_get_PyNumberMethods_##NAME(number);
-		COPY_SLOT(nb_add)
-		COPY_SLOT(nb_subtract)
-		COPY_SLOT(nb_multiply)
-		COPY_SLOT(nb_remainder)
-		COPY_SLOT(nb_divmod)
-		COPY_SLOT(nb_power)
-		COPY_SLOT(nb_negative)
-		COPY_SLOT(nb_positive)
-		COPY_SLOT(nb_absolute)
-		COPY_SLOT(nb_bool)
-		COPY_SLOT(nb_invert)
-		COPY_SLOT(nb_lshift)
-		COPY_SLOT(nb_rshift)
-		COPY_SLOT(nb_and)
-		COPY_SLOT(nb_xor)
-		COPY_SLOT(nb_or)
-		COPY_SLOT(nb_int)
-		COPY_SLOT(nb_float)
-		COPY_SLOT(nb_inplace_add)
-		COPY_SLOT(nb_inplace_subtract)
-		COPY_SLOT(nb_inplace_multiply)
-		COPY_SLOT(nb_inplace_remainder)
-		COPY_SLOT(nb_inplace_power)
-		COPY_SLOT(nb_inplace_lshift)
-		COPY_SLOT(nb_inplace_rshift)
-		COPY_SLOT(nb_inplace_and)
-		COPY_SLOT(nb_inplace_xor)
-		COPY_SLOT(nb_inplace_or)
-		COPY_SLOT(nb_floor_divide)
-		COPY_SLOT(nb_true_divide)
-		COPY_SLOT(nb_inplace_floor_divide)
-		COPY_SLOT(nb_inplace_true_divide)
-		COPY_SLOT(nb_index)
-		COPY_SLOT(nb_matrix_multiply)
-		COPY_SLOT(nb_inplace_matrix_multiply)
-#undef COPY_SLOT
-	}
-	PySequenceMethods* sequence = GraalPy_get_PyTypeObject_tp_as_sequence(type);
-	if (sequence == NULL) {
-		result->tp_as_sequence = NULL;
-	} else {
-		result->tp_as_sequence = (PySequenceMethods*) malloc(sizeof(PySequenceMethods));
-#define COPY_SLOT(NAME) result->tp_as_sequence->NAME = GraalPy_get_PySequenceMethods_##NAME(sequence);
-		COPY_SLOT(sq_length)
-		COPY_SLOT(sq_concat)
-		COPY_SLOT(sq_repeat)
-		COPY_SLOT(sq_item)
-		COPY_SLOT(sq_ass_item)
-		COPY_SLOT(sq_contains)
-		COPY_SLOT(sq_inplace_concat)
-		COPY_SLOT(sq_inplace_repeat)
-#undef COPY_SLOT
-	}
-	PyMappingMethods* mapping = GraalPy_get_PyTypeObject_tp_as_mapping(type);
-	if (mapping == NULL) {
-		result->tp_as_mapping = NULL;
-	} else {
-		result->tp_as_mapping = (PyMappingMethods*) malloc(sizeof(PyMappingMethods));
-#define COPY_SLOT(NAME) result->tp_as_mapping->NAME = GraalPy_get_PyMappingMethods_##NAME(mapping);
-		COPY_SLOT(mp_length)
-		COPY_SLOT(mp_subscript)
-		COPY_SLOT(mp_ass_subscript)
-#undef COPY_SLOT
-	}
-	PyBufferProcs* buffer = GraalPy_get_PyTypeObject_tp_as_buffer(type);
-	if (buffer == NULL) {
-		result->tp_as_buffer = NULL;
-	} else {
-		result->tp_as_buffer = buffer; // is always a native pointer
-
-//		result->tp_as_buffer = (PyBufferProcs*) malloc(sizeof(PyBufferProcs));
-//#define COPY_SLOT(NAME) result->tp_as_buffer->NAME = GraalPy_get_PyBufferProcs_##NAME(buffer);
-//		COPY_SLOT(bf_getbuffer)
-//		COPY_SLOT(bf_releasebuffer)
-//#undef COPY_SLOT
-	}
-}
-
-PyAPI_FUNC(PyTypeObject*) PyTruffle_AllocateType(PyTypeObject* type) {
-	return (PyTypeObject*) PyMem_RawMalloc(sizeof(PyTypeObject));
-}
-
-PyAPI_FUNC(PyMethodDef*) PyTruffle_AllocateMethodDef(PyMethodDef* type) {
-	PyMethodDef* result = (PyMethodDef*) PyMem_RawMalloc(sizeof(PyMethodDef));
-
-#define COPY_SLOT(NAME) result->NAME = type->NAME;
-	COPY_SLOT(ml_name)
-	COPY_SLOT(ml_meth)
-	COPY_SLOT(ml_flags)
-	COPY_SLOT(ml_doc)
-#undef COPY_SLOT
-	return result;
-}
-
-PyAPI_FUNC(PyDateTime_CAPI*) PyTruffle_AllocateDateTimeAPI(PyDateTime_CAPI* api) {
-	PyDateTime_CAPI* result = (PyDateTime_CAPI*) PyMem_RawMalloc(sizeof(PyDateTime_CAPI));
-
-#define COPY_SLOT(NAME) result->NAME = api->NAME;
-	COPY_SLOT(DateType)
-	COPY_SLOT(DateTimeType)
-	COPY_SLOT(TimeType)
-	COPY_SLOT(DeltaType)
-	COPY_SLOT(TZInfoType)
-	COPY_SLOT(TimeZone_UTC)
-	COPY_SLOT(Date_FromDate)
-	COPY_SLOT(DateTime_FromDateAndTime)
-	COPY_SLOT(Time_FromTime)
-	COPY_SLOT(Delta_FromDelta)
-	COPY_SLOT(TimeZone_FromTimeZone)
-	COPY_SLOT(DateTime_FromTimestamp)
-	COPY_SLOT(Date_FromTimestamp)
-	COPY_SLOT(DateTime_FromDateAndTimeAndFold)
-	COPY_SLOT(Time_FromTimeAndFold)
-#undef COPY_SLOT
-	return result;
-}
-
-PyAPI_FUNC(PyMemoryViewObject*) PyTruffle_AllocateMemoryView(PyMemoryViewObject* view) {
-	PyMemoryViewObject* result = (PyMemoryViewObject*) PyMem_RawMalloc(sizeof(PyMemoryViewObject));
-
-	result->ob_base.ob_base.ob_refcnt = 0x1000; // TODO: immortal for now
-	result->ob_base.ob_base.ob_type = Py_TYPE(view);
-#define COPY_SLOT(NAME) result->NAME = view->NAME;
-//	COPY_SLOT(mbuf)
-//	COPY_SLOT(hash)
-	COPY_SLOT(flags)
-	COPY_SLOT(exports)
-//	COPY_SLOT(weakreflist)
-	COPY_SLOT(view.buf)
-	COPY_SLOT(view.obj)
-	COPY_SLOT(view.len)
-	COPY_SLOT(view.itemsize)
-	COPY_SLOT(view.readonly)
-	COPY_SLOT(view.ndim)
-	COPY_SLOT(view.format)
-	COPY_SLOT(view.shape)
-	COPY_SLOT(view.strides)
-	COPY_SLOT(view.suboffsets)
-	COPY_SLOT(view.internal)
-#undef COPY_SLOT
-	return result;
-}
-
-#define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
-    PyAPI_FUNC(void*) PyTruffle_##__jtype__##ArrayToNative(const void* jarray, int64_t len) { \
-        int64_t i; \
-        int64_t size = len + 1; \
-        __ctype__* carr = (__ctype__*) malloc(size * sizeof(__ctype__)); \
-        carr[len] = (__ctype__)0; \
-        for (i=0; i < len; i++) { \
-            carr[i] = __element_cast__(polyglot_get_array_element(jarray, i)); \
-        } \
-        return polyglot_from_##__polyglot_type__##_array(carr, len); \
-    } \
-    PyAPI_FUNC(void*) PyTruffle_##__jtype__##ArrayRealloc(const void* array, int64_t len) { \
-        int64_t size = len + 1; \
-        __ctype__* carr = (__ctype__*) realloc(array, size * sizeof(__ctype__)); \
-        carr[len] = (__ctype__)0; \
-        return polyglot_from_##__polyglot_type__##_array(carr, len); \
-    }
-
-PRIMITIVE_ARRAY_TO_NATIVE(Byte, int8_t, i8, polyglot_as_i8);
-PRIMITIVE_ARRAY_TO_NATIVE(Int, int32_t, i32, polyglot_as_i32);
-PRIMITIVE_ARRAY_TO_NATIVE(Long, int64_t, i64, polyglot_as_i64);
-PRIMITIVE_ARRAY_TO_NATIVE(Double, double, double, polyglot_as_double);
-PRIMITIVE_ARRAY_TO_NATIVE(Object, PyObjectPtr, PyObjectPtr, (PyObjectPtr));
-
-PyAPI_FUNC(void) PyTruffle_PrimitiveArrayFree(void* array) {
-    free(array);
-}
-
-PyAPI_FUNC(void) PyTruffle_ObjectArrayFree(PyObject** array, int32_t size) {
+PyAPI_FUNC(void) PyTruffle_ObjectArrayRelease(PyObject** array, int32_t size) {
     for (int i = 0; i < size; i++) {
         Py_DECREF(array[i]);
     }
-    free(array);
 }
 
 PyAPI_FUNC(void) PyTruffle_SetStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
@@ -1074,47 +479,46 @@ PyAPI_FUNC(void) PyTruffle_InitializeStorageItem(PyObject** ptr, int32_t index, 
     ptr[index] = newitem;
 }
 
-PyAPI_FUNC(Py_ssize_t) PyTruffle_Object_Size(PyObject *op) {
-    return ((PyVarObject*)op)->ob_size;
-}
-
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
-PyAPI_FUNC(int) ReadShortMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadShortMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, short);
 }
 
-PyAPI_FUNC(int) ReadIntMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadIntMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, int);
 }
 
-PyAPI_FUNC(long) ReadLongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(long) ReadLongMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, long);
 }
 
-PyAPI_FUNC(double) ReadFloatMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(double) ReadFloatMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, float);
 }
 
-PyAPI_FUNC(double) ReadDoubleMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(double) ReadDoubleMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, double);
 }
 
-PyAPI_FUNC(void*) ReadStringMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(void*) ReadStringMember(void* object, Py_ssize_t offset) {
     char *ptr = ReadMember(object, offset, char*);
     if (ptr != NULL) {
-    	return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
+    	return truffleString(ReadMember(object, offset, char*));
     }
     return NULL;
 }
 
-PyAPI_FUNC(void*) ReadStringInPlaceMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(void*) ReadStringInPlaceMember(void* object, Py_ssize_t offset) {
     char *addr = (char*) (((char*)object) + offset);
-    return polyglot_from_string(addr, "utf-8");
+    return truffleString(addr);
 }
 
+PyAPI_FUNC(void*) ReadPointerMember(void* object, Py_ssize_t offset) {
+    return ReadMember(object, offset, void*);
+}
 
-PyAPI_FUNC(PyObject*) ReadObjectMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(PyObject*) ReadObjectMember(void* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
         member = Py_None;
@@ -1123,27 +527,27 @@ PyAPI_FUNC(PyObject*) ReadObjectMember(PyObject* object, Py_ssize_t offset) {
     return member;
 }
 
-PyAPI_FUNC(int) ReadCharMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadCharMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, char);
 }
 
-PyAPI_FUNC(int) ReadUByteMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadUByteMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned char);
 }
 
-PyAPI_FUNC(int) ReadUShortMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadUShortMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned short);
 }
 
-PyAPI_FUNC(long) ReadUIntMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(long) ReadUIntMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned int);
 }
 
-PyAPI_FUNC(unsigned long) ReadULongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(unsigned long) ReadULongMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned long);
 }
 
-PyAPI_FUNC(PyObject*) ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(PyObject*) ReadObjectExMember(void* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
         return NULL;
@@ -1153,64 +557,64 @@ PyAPI_FUNC(PyObject*) ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
     }
 }
 
-PyAPI_FUNC(long long) ReadLongLongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(long long) ReadLongLongMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, long long);
 }
 
-PyAPI_FUNC(unsigned long long) ReadULongLongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(unsigned long long) ReadULongLongMember(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned long long);
 }
 
-PyAPI_FUNC(Py_ssize_t) ReadPySSizeT(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(Py_ssize_t) ReadPySSizeT(void* object, Py_ssize_t offset) {
     return ReadMember(object, offset, Py_ssize_t);
 }
 
 
 #define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = (T)(value)
 
-PyAPI_FUNC(int) WriteShortMember(PyObject* object, Py_ssize_t offset, short value) {
+PyAPI_FUNC(int) WriteShortMember(void* object, Py_ssize_t offset, short value) {
     WriteMember(object, offset, value, short);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteIntMember(PyObject* object, Py_ssize_t offset, int value) {
+PyAPI_FUNC(int) WriteIntMember(void* object, Py_ssize_t offset, int value) {
     WriteMember(object, offset, value, int);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteLongMember(PyObject* object, Py_ssize_t offset, long value) {
+PyAPI_FUNC(int) WriteLongMember(void* object, Py_ssize_t offset, long value) {
     WriteMember(object, offset, value, long);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteFloatMember(PyObject* object, Py_ssize_t offset, float value) {
+PyAPI_FUNC(int) WriteFloatMember(void* object, Py_ssize_t offset, double value) {
     WriteMember(object, offset, value, float);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteDoubleMember(PyObject* object, Py_ssize_t offset, double value) {
+PyAPI_FUNC(int) WriteDoubleMember(void* object, Py_ssize_t offset, double value) {
     WriteMember(object, offset, value, double);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteStringMember(PyObject* object, Py_ssize_t offset, char* value) {
+PyAPI_FUNC(int) WriteStringMember(void* object, Py_ssize_t offset, char* value) {
     WriteMember(object, offset, value, char*);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteStringInPlaceMember(PyObject* object, Py_ssize_t offset, char* value) {
+PyAPI_FUNC(int) WriteStringInPlaceMember(void* object, Py_ssize_t offset, char* value) {
     char *addr = (char*) (((char*) object) + offset);
     size_t n;
-    if (polyglot_has_array_elements(value)) {
-        n = polyglot_get_array_size(value);
-    } else {
+//    if (polyglot_has_array_elements(value)) {
+//        n = polyglot_get_array_size(value);
+//    } else {
         n = strlen(value);
-    }
+//    }
     memcpy(addr, value, n);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
+PyAPI_FUNC(int) WriteObjectMember(void* object, Py_ssize_t offset, PyObject* value) {
     /* We first need to decref the old value. */
     PyObject *oldv = ReadMember(object, offset, PyObject*);
     Py_XINCREF(value);
@@ -1219,37 +623,37 @@ PyAPI_FUNC(int) WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject*
     return 0;
 }
 
-PyAPI_FUNC(int) WriteCharMember(PyObject* object, Py_ssize_t offset, char value) {
+PyAPI_FUNC(int) WriteCharMember(void* object, Py_ssize_t offset, char value) {
     WriteMember(object, offset, value, char);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteByteMember(PyObject* object, Py_ssize_t offset, char value) {
+PyAPI_FUNC(int) WriteByteMember(void* object, Py_ssize_t offset, char value) {
     WriteMember(object, offset, value, char);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteUByteMember(PyObject* object, Py_ssize_t offset, unsigned char value) {
+PyAPI_FUNC(int) WriteUByteMember(void* object, Py_ssize_t offset, unsigned char value) {
     WriteMember(object, offset, value, uint8_t);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteUShortMember(PyObject* object, Py_ssize_t offset, unsigned short value) {
+PyAPI_FUNC(int) WriteUShortMember(void* object, Py_ssize_t offset, unsigned short value) {
     WriteMember(object, offset, value, unsigned short);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteUIntMember(PyObject* object, Py_ssize_t offset, unsigned int value) {
+PyAPI_FUNC(int) WriteUIntMember(void* object, Py_ssize_t offset, unsigned int value) {
     WriteMember(object, offset, value, unsigned int);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteULongMember(PyObject* object, Py_ssize_t offset, unsigned long value) {
+PyAPI_FUNC(int) WriteULongMember(void* object, Py_ssize_t offset, unsigned long value) {
     WriteMember(object, offset, value, unsigned long);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
+PyAPI_FUNC(int) WriteObjectExMember(void* object, Py_ssize_t offset, PyObject* value) {
     PyObject *oldv = ReadMember(object, offset, PyObject*);
     if (value == NULL && oldv == NULL) {
         return 1;
@@ -1260,17 +664,17 @@ PyAPI_FUNC(int) WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObjec
     return 0;
 }
 
-PyAPI_FUNC(int) WriteLongLongMember(PyObject* object, Py_ssize_t offset, long long value) {
+PyAPI_FUNC(int) WriteLongLongMember(void* object, Py_ssize_t offset, long long value) {
     WriteMember(object, offset, value, long long);
     return 0;
 }
 
-PyAPI_FUNC(int) WriteULongLongMember(PyObject* object, Py_ssize_t offset, unsigned long long value) {
+PyAPI_FUNC(int) WriteULongLongMember(void* object, Py_ssize_t offset, unsigned long long value) {
     WriteMember(object, offset, value, unsigned long long);
     return 0;
 }
 
-PyAPI_FUNC(int) WritePySSizeT(PyObject* object, Py_ssize_t offset, Py_ssize_t value) {
+PyAPI_FUNC(int) WritePySSizeT(void* object, Py_ssize_t offset, Py_ssize_t value) {
     WriteMember(object, offset, value, Py_ssize_t);
     return 0;
 }
@@ -1307,17 +711,8 @@ PyAPI_FUNC(void*) truffle_ptr_add(void* x, Py_ssize_t y) {
     return x + y;
 }
 
-PyAPI_FUNC(double) truffle_read_ob_fval(PyFloatObject* fobj) {
-    return fobj->ob_fval;
-}
-
 PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
     memcpy(dest + dest_offset, src + src_offset, len);
-}
-
-/* called from Java to get number of bits per long digit */
-PyAPI_FUNC(int32_t) get_long_bits_in_digit() {
-    return PYLONG_BITS_IN_DIGIT;
 }
 
 PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
@@ -1346,10 +741,6 @@ PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_
     return type->tp_basicsize > basicsize;
 }
 
-PyAPI_FUNC(void) truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
-    type->tp_flags = flags;
-}
-
 PyAPI_FUNC(void) truffle_check_type_ready(PyTypeObject* type) {
     if (!(type->tp_flags & Py_TPFLAGS_READY)) {
         PyType_Ready(type);
@@ -1358,6 +749,10 @@ PyAPI_FUNC(void) truffle_check_type_ready(PyTypeObject* type) {
 
 PyAPI_FUNC(int) truffle_BASETYPE_check(PyObject* type) {
     return PyType_HasFeature(Py_TYPE(type), Py_TPFLAGS_BASETYPE);
+}
+
+PyAPI_FUNC(void*) truffle_va_arg_pointer(va_list* va) {
+	return va_arg(*va, void*);
 }
 
 PyAPI_FUNC(void*) truffle_get_constant(int entry) {
@@ -1409,53 +804,34 @@ PyAPI_FUNC(void*) truffle_get_constant(int entry) {
 	return NULL;
 }
 
-/*
- * These locations need to be shared between native and Sulong - if the native parts are initialized,
- * we assign_managed them to share them.
- */
-PyAPI_FUNC(void) initialize_native_locations(void* allocateMemory, void* maxNativeMemory, void* nativeMemoryGCBarrier) {
-	truffle_assign_managed(&PyTruffle_AllocatedMemory, allocateMemory);
-	truffle_assign_managed(&PyTruffle_MaxNativeMemory, maxNativeMemory);
-	truffle_assign_managed(&PyTruffle_NativeMemoryGCBarrier, nativeMemoryGCBarrier);
-}
-
 // defined in 'exceptions.c'
 void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
-void* _graalvm_llvm_va_arg(void* valist,void* type);
 
-// forcing the _graalvm_llvm_va_arg function to be available
-void forceVA(int a, ...) {
-	va_list va;
-	va_start(va, a);
-	_graalvm_llvm_va_arg(&va, polyglot_i32_typeid());
-	va_end(va);
-}
+TruffleContext* TRUFFLE_CONTEXT;
 
-PyAPI_FUNC(void) initialize_graal_capi(ptr_cache_t _pythonToNative, void_ptr_cache_t _javaStringToTruffleString, cache_query_t _points_to_py_handle_space, void* (*getBuiltin)(int id)) {
-	clock_t t;
-	t = clock();
-    forceVA(1, 2, 3);
+PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int id), int is_sulong) {
+	clock_t t = clock();
 
-	pythonToNative = _pythonToNative;
-	javaStringToTruffleString = _javaStringToTruffleString;
-	points_to_py_handle_space = _points_to_py_handle_space;
+	if (env) {
+		TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
+	}
 
 	initialize_builtins(getBuiltin);
-
+	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
 
+
     // initialize global variables like '_Py_NoneStruct', etc.
-	initialize_builtin_types_and_structs();
     initialize_globals();
+	initialize_builtin_types_and_structs();
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
 
     // TODO: initialize during cext initialization doesn't work at the moment
-    // This is hardcoded the same way in capi_native.c
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
 
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
@@ -1469,6 +845,10 @@ PyAPI_FUNC(void) initialize_graal_capi(ptr_cache_t _pythonToNative, void_ptr_cac
 #undef PyByteArray_Resize
 PyAPI_FUNC(int) PyByteArray_Resize(PyObject* a, Py_ssize_t b) {
     return GraalPyByteArray_Resize(a, b);
+}
+#undef PyBytes_AsString
+PyAPI_FUNC(char*) PyBytes_AsString(PyObject* a) {
+    return GraalPyBytes_AsString(a);
 }
 #undef PyBytes_FromObject
 PyAPI_FUNC(PyObject*) PyBytes_FromObject(PyObject* a) {
@@ -1500,19 +880,19 @@ PyAPI_FUNC(const char*) PyCapsule_GetName(PyObject* a) {
 }
 #undef PyCapsule_GetPointer
 PyAPI_FUNC(void*) PyCapsule_GetPointer(PyObject* a, const char* b) {
-    return GraalPyCapsule_GetPointer(a, truffleString(b));
+    return GraalPyCapsule_GetPointer(a, b);
 }
 #undef PyCapsule_Import
 PyAPI_FUNC(void*) PyCapsule_Import(const char* a, int b) {
-    return GraalPyCapsule_Import(truffleString(a), b);
+    return GraalPyCapsule_Import(a, b);
 }
 #undef PyCapsule_IsValid
 PyAPI_FUNC(int) PyCapsule_IsValid(PyObject* a, const char* b) {
-    return GraalPyCapsule_IsValid(a, truffleString(b));
+    return GraalPyCapsule_IsValid(a, b);
 }
 #undef PyCapsule_New
 PyAPI_FUNC(PyObject*) PyCapsule_New(void* a, const char* b, PyCapsule_Destructor c) {
-    return GraalPyCapsule_New(a, truffleString(b), c);
+    return GraalPyCapsule_New(a, b, c);
 }
 #undef PyCapsule_SetContext
 PyAPI_FUNC(int) PyCapsule_SetContext(PyObject* a, void* b) {
@@ -1524,7 +904,7 @@ PyAPI_FUNC(int) PyCapsule_SetDestructor(PyObject* a, PyCapsule_Destructor b) {
 }
 #undef PyCapsule_SetName
 PyAPI_FUNC(int) PyCapsule_SetName(PyObject* a, const char* b) {
-    return GraalPyCapsule_SetName(a, truffleString(b));
+    return GraalPyCapsule_SetName(a, b);
 }
 #undef PyCapsule_SetPointer
 PyAPI_FUNC(int) PyCapsule_SetPointer(PyObject* a, void* b) {
@@ -1552,7 +932,7 @@ PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject
 }
 #undef PyCode_NewEmpty
 PyAPI_FUNC(PyCodeObject*) PyCode_NewEmpty(const char* a, const char* b, int c) {
-    return GraalPyCode_NewEmpty(truffleString(a), truffleString(b), c);
+    return GraalPyCode_NewEmpty(a, b, c);
 }
 #undef PyCode_NewWithPosOnlyArgs
 PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, int o, PyObject* p) {
@@ -1560,11 +940,11 @@ PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, 
 }
 #undef PyCodec_Decoder
 PyAPI_FUNC(PyObject*) PyCodec_Decoder(const char* a) {
-    return GraalPyCodec_Decoder(truffleString(a));
+    return GraalPyCodec_Decoder(a);
 }
 #undef PyCodec_Encoder
 PyAPI_FUNC(PyObject*) PyCodec_Encoder(const char* a) {
-    return GraalPyCodec_Encoder(truffleString(a));
+    return GraalPyCodec_Encoder(a);
 }
 #undef PyComplex_FromDoubles
 PyAPI_FUNC(PyObject*) PyComplex_FromDoubles(double a, double b) {
@@ -1580,7 +960,7 @@ PyAPI_FUNC(double) PyComplex_RealAsDouble(PyObject* a) {
 }
 #undef PyContextVar_New
 PyAPI_FUNC(PyObject*) PyContextVar_New(const char* a, PyObject* b) {
-    return GraalPyContextVar_New(truffleString(a), b);
+    return GraalPyContextVar_New(a, b);
 }
 #undef PyContextVar_Set
 PyAPI_FUNC(PyObject*) PyContextVar_Set(PyObject* a, PyObject* b) {
@@ -1660,11 +1040,11 @@ PyAPI_FUNC(int) PyErr_GivenExceptionMatches(PyObject* a, PyObject* b) {
 }
 #undef PyErr_NewException
 PyAPI_FUNC(PyObject*) PyErr_NewException(const char* a, PyObject* b, PyObject* c) {
-    return GraalPyErr_NewException(truffleString(a), b, c);
+    return GraalPyErr_NewException(a, b, c);
 }
 #undef PyErr_NewExceptionWithDoc
 PyAPI_FUNC(PyObject*) PyErr_NewExceptionWithDoc(const char* a, const char* b, PyObject* c, PyObject* d) {
-    return GraalPyErr_NewExceptionWithDoc(truffleString(a), truffleString(b), c, d);
+    return GraalPyErr_NewExceptionWithDoc(a, b, c, d);
 }
 #undef PyErr_Occurred
 PyAPI_FUNC(PyObject*) PyErr_Occurred() {
@@ -1780,7 +1160,7 @@ PyAPI_FUNC(PyObject*) PyImport_Import(PyObject* a) {
 }
 #undef PyImport_ImportModule
 PyAPI_FUNC(PyObject*) PyImport_ImportModule(const char* a) {
-    return GraalPyImport_ImportModule(truffleString(a));
+    return GraalPyImport_ImportModule(a);
 }
 #undef PyImport_ImportModuleLevelObject
 PyAPI_FUNC(PyObject*) PyImport_ImportModuleLevelObject(PyObject* a, PyObject* b, PyObject* c, PyObject* d, int e) {
@@ -1788,7 +1168,7 @@ PyAPI_FUNC(PyObject*) PyImport_ImportModuleLevelObject(PyObject* a, PyObject* b,
 }
 #undef PyImport_ImportModuleNoBlock
 PyAPI_FUNC(PyObject*) PyImport_ImportModuleNoBlock(const char* a) {
-    return GraalPyImport_ImportModuleNoBlock(truffleString(a));
+    return GraalPyImport_ImportModuleNoBlock(a);
 }
 #undef PyIndex_Check
 PyAPI_FUNC(int) PyIndex_Check(PyObject* a) {
@@ -1916,11 +1296,11 @@ PyAPI_FUNC(PyObject*) PyMethod_New(PyObject* a, PyObject* b) {
 }
 #undef PyModule_AddIntConstant
 PyAPI_FUNC(int) PyModule_AddIntConstant(PyObject* a, const char* b, long c) {
-    return GraalPyModule_AddIntConstant(a, truffleString(b), c);
+    return GraalPyModule_AddIntConstant(a, b, c);
 }
 #undef PyModule_AddObjectRef
 PyAPI_FUNC(int) PyModule_AddObjectRef(PyObject* a, const char* b, PyObject* c) {
-    return GraalPyModule_AddObjectRef(a, truffleString(b), c);
+    return GraalPyModule_AddObjectRef(a, b, c);
 }
 #undef PyModule_GetNameObject
 PyAPI_FUNC(PyObject*) PyModule_GetNameObject(PyObject* a) {
@@ -1928,7 +1308,7 @@ PyAPI_FUNC(PyObject*) PyModule_GetNameObject(PyObject* a) {
 }
 #undef PyModule_New
 PyAPI_FUNC(PyObject*) PyModule_New(const char* a) {
-    return GraalPyModule_New(truffleString(a));
+    return GraalPyModule_New(a);
 }
 #undef PyModule_NewObject
 PyAPI_FUNC(PyObject*) PyModule_NewObject(PyObject* a) {
@@ -1936,7 +1316,7 @@ PyAPI_FUNC(PyObject*) PyModule_NewObject(PyObject* a) {
 }
 #undef PyModule_SetDocString
 PyAPI_FUNC(int) PyModule_SetDocString(PyObject* a, const char* b) {
-    return GraalPyModule_SetDocString(a, truffleString(b));
+    return GraalPyModule_SetDocString(a, b);
 }
 #undef PyNumber_Absolute
 PyAPI_FUNC(PyObject*) PyNumber_Absolute(PyObject* a) {
@@ -2032,7 +1412,7 @@ PyAPI_FUNC(int) PyObject_HasAttr(PyObject* a, PyObject* b) {
 }
 #undef PyObject_HasAttrString
 PyAPI_FUNC(int) PyObject_HasAttrString(PyObject* a, const char* b) {
-    return GraalPyObject_HasAttrString(a, truffleString(b));
+    return GraalPyObject_HasAttrString(a, b);
 }
 #undef PyObject_Hash
 PyAPI_FUNC(Py_hash_t) PyObject_Hash(PyObject* a) {
@@ -2068,7 +1448,7 @@ PyAPI_FUNC(PyObject*) PyObject_RichCompare(PyObject* a, PyObject* b, int c) {
 }
 #undef PyObject_SetDoc
 PyAPI_FUNC(int) PyObject_SetDoc(PyObject* a, const char* b) {
-    return GraalPyObject_SetDoc(a, truffleString(b));
+    return GraalPyObject_SetDoc(a, b);
 }
 #undef PyObject_SetItem
 PyAPI_FUNC(int) PyObject_SetItem(PyObject* a, PyObject* b, PyObject* c) {
@@ -2088,7 +1468,7 @@ PyAPI_FUNC(PyObject*) PyObject_Type(PyObject* a) {
 }
 #undef PyRun_StringFlags
 PyAPI_FUNC(PyObject*) PyRun_StringFlags(const char* a, int b, PyObject* c, PyObject* d, PyCompilerFlags* e) {
-    return GraalPyRun_StringFlags(truffleString(a), b, c, d, e);
+    return GraalPyRun_StringFlags(a, b, c, d, e);
 }
 #undef PySeqIter_New
 PyAPI_FUNC(PyObject*) PySeqIter_New(PyObject* a) {
@@ -2208,7 +1588,7 @@ PyAPI_FUNC(PyObject*) PyStructSequence_New(PyTypeObject* a) {
 }
 #undef PySys_GetObject
 PyAPI_FUNC(PyObject*) PySys_GetObject(const char* a) {
-    return GraalPySys_GetObject(truffleString(a));
+    return GraalPySys_GetObject(a);
 }
 #undef PyThreadState_Get
 PyAPI_FUNC(PyThreadState*) PyThreadState_Get() {
@@ -2312,11 +1692,11 @@ PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
 }
 #undef PyUnicodeDecodeError_Create
 PyAPI_FUNC(PyObject*) PyUnicodeDecodeError_Create(const char* a, const char* b, Py_ssize_t c, Py_ssize_t d, Py_ssize_t e, const char* f) {
-    return GraalPyUnicodeDecodeError_Create(truffleString(a), b, c, d, e, truffleString(f));
+    return GraalPyUnicodeDecodeError_Create(a, b, c, d, e, f);
 }
 #undef PyUnicode_AsEncodedString
 PyAPI_FUNC(PyObject*) PyUnicode_AsEncodedString(PyObject* a, const char* b, const char* c) {
-    return GraalPyUnicode_AsEncodedString(a, truffleString(b), truffleString(c));
+    return GraalPyUnicode_AsEncodedString(a, b, c);
 }
 #undef PyUnicode_AsUnicodeEscapeString
 PyAPI_FUNC(PyObject*) PyUnicode_AsUnicodeEscapeString(PyObject* a) {
@@ -2336,7 +1716,7 @@ PyAPI_FUNC(int) PyUnicode_Contains(PyObject* a, PyObject* b) {
 }
 #undef PyUnicode_DecodeFSDefault
 PyAPI_FUNC(PyObject*) PyUnicode_DecodeFSDefault(const char* a) {
-    return GraalPyUnicode_DecodeFSDefault(truffleString(a));
+    return GraalPyUnicode_DecodeFSDefault(a);
 }
 #undef PyUnicode_EncodeFSDefault
 PyAPI_FUNC(PyObject*) PyUnicode_EncodeFSDefault(PyObject* a) {
@@ -2352,7 +1732,7 @@ PyAPI_FUNC(PyObject*) PyUnicode_Format(PyObject* a, PyObject* b) {
 }
 #undef PyUnicode_FromEncodedObject
 PyAPI_FUNC(PyObject*) PyUnicode_FromEncodedObject(PyObject* a, const char* b, const char* c) {
-    return GraalPyUnicode_FromEncodedObject(a, truffleString(b), truffleString(c));
+    return GraalPyUnicode_FromEncodedObject(a, b, c);
 }
 #undef PyUnicode_FromObject
 PyAPI_FUNC(PyObject*) PyUnicode_FromObject(PyObject* a) {
@@ -2364,7 +1744,7 @@ PyAPI_FUNC(PyObject*) PyUnicode_FromOrdinal(int a) {
 }
 #undef PyUnicode_FromString
 PyAPI_FUNC(PyObject*) PyUnicode_FromString(const char* a) {
-    return GraalPyUnicode_FromString(truffleString(a));
+    return GraalPyUnicode_FromString(a);
 }
 #undef PyUnicode_Join
 PyAPI_FUNC(PyObject*) PyUnicode_Join(PyObject* a, PyObject* b) {
@@ -2404,15 +1784,15 @@ PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
 }
 #undef Py_CompileString
 PyAPI_FUNC(PyObject*) Py_CompileString(const char* a, const char* b, int c) {
-    return GraalPy_CompileString(truffleString(a), truffleString(b), c);
+    return GraalPy_CompileString(a, b, c);
 }
 #undef Py_CompileStringExFlags
 PyAPI_FUNC(PyObject*) Py_CompileStringExFlags(const char* a, const char* b, int c, PyCompilerFlags* d, int e) {
-    return GraalPy_CompileStringExFlags(truffleString(a), truffleString(b), c, d, e);
+    return GraalPy_CompileStringExFlags(a, b, c, d, e);
 }
 #undef Py_CompileStringObject
 PyAPI_FUNC(PyObject*) Py_CompileStringObject(const char* a, PyObject* b, int c, PyCompilerFlags* d, int e) {
-    return GraalPy_CompileStringObject(truffleString(a), b, c, d, e);
+    return GraalPy_CompileStringObject(a, b, c, d, e);
 }
 #undef Py_EnterRecursiveCall
 PyAPI_FUNC(int) Py_EnterRecursiveCall(const char* a) {
@@ -2444,7 +1824,11 @@ PyAPI_FUNC(int) _PyDict_SetItem_KnownHash(PyObject* a, PyObject* b, PyObject* c,
 }
 #undef _PyErr_BadInternalCall
 PyAPI_FUNC(void) _PyErr_BadInternalCall(const char* a, int b) {
-    Graal_PyErr_BadInternalCall(truffleString(a), b);
+    Graal_PyErr_BadInternalCall(a, b);
+}
+#undef _PyErr_ChainExceptions
+PyAPI_FUNC(void) _PyErr_ChainExceptions(PyObject* a, PyObject* b, PyObject* c) {
+    Graal_PyErr_ChainExceptions(a, b, c);
 }
 #undef _PyErr_Occurred
 PyAPI_FUNC(PyObject*) _PyErr_Occurred(PyThreadState* a) {
@@ -2452,7 +1836,7 @@ PyAPI_FUNC(PyObject*) _PyErr_Occurred(PyThreadState* a) {
 }
 #undef _PyErr_WriteUnraisableMsg
 PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
-    Graal_PyErr_WriteUnraisableMsg(truffleString(a), b);
+    Graal_PyErr_WriteUnraisableMsg(a, b);
 }
 #undef _PyList_Extend
 PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
@@ -2461,6 +1845,10 @@ PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
 #undef _PyList_SET_ITEM
 PyAPI_FUNC(void) _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
     Graal_PyList_SET_ITEM(a, b, c);
+}
+#undef _PyLong_AsByteArray
+PyAPI_FUNC(int) _PyLong_AsByteArray(PyLongObject* a, unsigned char* b, size_t c, int d, int e) {
+    return Graal_PyLong_AsByteArray(a, b, c, d, e);
 }
 #undef _PyLong_Sign
 PyAPI_FUNC(int) _PyLong_Sign(PyObject* a) {
@@ -2478,13 +1866,17 @@ PyAPI_FUNC(PyObject*) _PyNumber_Index(PyObject* a) {
 PyAPI_FUNC(void) _PyObject_Dump(PyObject* a) {
     Graal_PyObject_Dump(a);
 }
+#undef _PyObject_MakeTpCall
+PyAPI_FUNC(PyObject*) _PyObject_MakeTpCall(PyThreadState* a, PyObject* b, PyObject*const* c, Py_ssize_t d, PyObject* e) {
+    return Graal_PyObject_MakeTpCall(a, b, c, d, e);
+}
 #undef _PyTraceMalloc_NewReference
 PyAPI_FUNC(int) _PyTraceMalloc_NewReference(PyObject* a) {
     return Graal_PyTraceMalloc_NewReference(a);
 }
 #undef _PyTraceback_Add
 PyAPI_FUNC(void) _PyTraceback_Add(const char* a, const char* b, int c) {
-    Graal_PyTraceback_Add(truffleString(a), truffleString(b), c);
+    Graal_PyTraceback_Add(a, b, c);
 }
 #undef _PyTruffleErr_CreateAndSetException
 PyAPI_FUNC(void) _PyTruffleErr_CreateAndSetException(PyObject* a, PyObject* b) {
@@ -2496,7 +1888,7 @@ PyAPI_FUNC(PyObject*) _PyTruffleObject_Call1(PyObject* a, PyObject* b, PyObject*
 }
 #undef _PyTruffleObject_CallMethod1
 PyAPI_FUNC(PyObject*) _PyTruffleObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
-    return Graal_PyTruffleObject_CallMethod1(a, truffleString(b), c, d);
+    return Graal_PyTruffleObject_CallMethod1(a, b, c, d);
 }
 #undef _PyTuple_SET_ITEM
 PyAPI_FUNC(int) _PyTuple_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
@@ -2508,26 +1900,271 @@ PyAPI_FUNC(PyObject*) _PyType_Lookup(PyTypeObject* a, PyObject* b) {
 }
 #undef _PyUnicode_AsASCIIString
 PyAPI_FUNC(PyObject*) _PyUnicode_AsASCIIString(PyObject* a, const char* b) {
-    return Graal_PyUnicode_AsASCIIString(a, truffleString(b));
+    return Graal_PyUnicode_AsASCIIString(a, b);
 }
 #undef _PyUnicode_AsLatin1String
 PyAPI_FUNC(PyObject*) _PyUnicode_AsLatin1String(PyObject* a, const char* b) {
-    return Graal_PyUnicode_AsLatin1String(a, truffleString(b));
+    return Graal_PyUnicode_AsLatin1String(a, b);
 }
 #undef _PyUnicode_AsUTF8String
 PyAPI_FUNC(PyObject*) _PyUnicode_AsUTF8String(PyObject* a, const char* b) {
-    return Graal_PyUnicode_AsUTF8String(a, truffleString(b));
+    return Graal_PyUnicode_AsUTF8String(a, b);
 }
 #undef _PyUnicode_EqualToASCIIString
 PyAPI_FUNC(int) _PyUnicode_EqualToASCIIString(PyObject* a, const char* b) {
-    return Graal_PyUnicode_EqualToASCIIString(a, truffleString(b));
+    return Graal_PyUnicode_EqualToASCIIString(a, b);
 }
 #undef _Py_GetErrorHandler
 PyAPI_FUNC(_Py_error_handler) _Py_GetErrorHandler(const char* a) {
-    return Graal_Py_GetErrorHandler(truffleString(a));
+    return Graal_Py_GetErrorHandler(a);
+}
+#undef _Py_HashBytes
+PyAPI_FUNC(Py_hash_t) _Py_HashBytes(const void* a, Py_ssize_t b) {
+    return Graal_Py_HashBytes(a, b);
 }
 #undef _Py_HashDouble
 PyAPI_FUNC(Py_hash_t) _Py_HashDouble(PyObject* a, double b) {
     return Graal_Py_HashDouble(a, b);
+}
+PyAPI_FUNC(int64_t*) PyTruffle_constants() {
+    static int64_t constants[] = {
+        (int64_t) SIZEOF_WCHAR_T,
+        (int64_t) PYLONG_BITS_IN_DIGIT,
+        (int64_t) READONLY,
+        0xdead1111 // marker value
+    };
+    return constants;
+}
+PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_offsets() {
+    static Py_ssize_t offsets[] = {
+        offsetof(PyObject, ob_refcnt),
+        offsetof(PyObject, ob_type),
+        offsetof(PyVarObject, ob_size),
+        offsetof(PyModuleDef, m_name),
+        offsetof(PyModuleDef, m_doc),
+        offsetof(PyModuleDef, m_size),
+        offsetof(PyModuleDef, m_methods),
+        offsetof(PyModuleDef, m_slots),
+        offsetof(PyModuleDef, m_traverse),
+        offsetof(PyModuleDef, m_clear),
+        offsetof(PyModuleDef, m_free),
+        offsetof(PyModuleDef_Slot, slot),
+        offsetof(PyModuleDef_Slot, value),
+        offsetof(PyMethodDef, ml_name),
+        offsetof(PyMethodDef, ml_meth),
+        offsetof(PyMethodDef, ml_flags),
+        offsetof(PyMethodDef, ml_doc),
+        offsetof(PyMemoryViewObject, hash),
+        offsetof(PyMemoryViewObject, flags),
+        offsetof(PyMemoryViewObject, exports),
+        offsetof(PyMemoryViewObject, view),
+        offsetof(PyMemoryViewObject, ob_array),
+        offsetof(Py_buffer, buf),
+        offsetof(Py_buffer, obj),
+        offsetof(Py_buffer, len),
+        offsetof(Py_buffer, itemsize),
+        offsetof(Py_buffer, readonly),
+        offsetof(Py_buffer, ndim),
+        offsetof(Py_buffer, format),
+        offsetof(Py_buffer, shape),
+        offsetof(Py_buffer, strides),
+        offsetof(Py_buffer, suboffsets),
+        offsetof(Py_buffer, internal),
+        offsetof(PyDateTime_CAPI, DateType),
+        offsetof(PyDateTime_CAPI, DateTimeType),
+        offsetof(PyDateTime_CAPI, TimeType),
+        offsetof(PyDateTime_CAPI, DeltaType),
+        offsetof(PyDateTime_CAPI, TZInfoType),
+        offsetof(PyDateTime_CAPI, TimeZone_UTC),
+        offsetof(PyDateTime_CAPI, Date_FromDate),
+        offsetof(PyDateTime_CAPI, DateTime_FromDateAndTime),
+        offsetof(PyDateTime_CAPI, Time_FromTime),
+        offsetof(PyDateTime_CAPI, Delta_FromDelta),
+        offsetof(PyDateTime_CAPI, TimeZone_FromTimeZone),
+        offsetof(PyDateTime_CAPI, DateTime_FromTimestamp),
+        offsetof(PyDateTime_CAPI, Date_FromTimestamp),
+        offsetof(PyDateTime_CAPI, DateTime_FromDateAndTimeAndFold),
+        offsetof(PyDateTime_CAPI, Time_FromTimeAndFold),
+        offsetof(PyNumberMethods, nb_add),
+        offsetof(PyNumberMethods, nb_subtract),
+        offsetof(PyNumberMethods, nb_multiply),
+        offsetof(PyNumberMethods, nb_remainder),
+        offsetof(PyNumberMethods, nb_divmod),
+        offsetof(PyNumberMethods, nb_power),
+        offsetof(PyNumberMethods, nb_negative),
+        offsetof(PyNumberMethods, nb_positive),
+        offsetof(PyNumberMethods, nb_absolute),
+        offsetof(PyNumberMethods, nb_bool),
+        offsetof(PyNumberMethods, nb_invert),
+        offsetof(PyNumberMethods, nb_lshift),
+        offsetof(PyNumberMethods, nb_rshift),
+        offsetof(PyNumberMethods, nb_and),
+        offsetof(PyNumberMethods, nb_xor),
+        offsetof(PyNumberMethods, nb_or),
+        offsetof(PyNumberMethods, nb_int),
+        offsetof(PyNumberMethods, nb_reserved),
+        offsetof(PyNumberMethods, nb_float),
+        offsetof(PyNumberMethods, nb_inplace_add),
+        offsetof(PyNumberMethods, nb_inplace_subtract),
+        offsetof(PyNumberMethods, nb_inplace_multiply),
+        offsetof(PyNumberMethods, nb_inplace_remainder),
+        offsetof(PyNumberMethods, nb_inplace_power),
+        offsetof(PyNumberMethods, nb_inplace_lshift),
+        offsetof(PyNumberMethods, nb_inplace_rshift),
+        offsetof(PyNumberMethods, nb_inplace_and),
+        offsetof(PyNumberMethods, nb_inplace_xor),
+        offsetof(PyNumberMethods, nb_inplace_or),
+        offsetof(PyNumberMethods, nb_floor_divide),
+        offsetof(PyNumberMethods, nb_true_divide),
+        offsetof(PyNumberMethods, nb_inplace_floor_divide),
+        offsetof(PyNumberMethods, nb_inplace_true_divide),
+        offsetof(PyNumberMethods, nb_index),
+        offsetof(PyNumberMethods, nb_matrix_multiply),
+        offsetof(PyNumberMethods, nb_inplace_matrix_multiply),
+        offsetof(PySequenceMethods, sq_length),
+        offsetof(PySequenceMethods, sq_concat),
+        offsetof(PySequenceMethods, sq_repeat),
+        offsetof(PySequenceMethods, sq_item),
+        offsetof(PySequenceMethods, was_sq_slice),
+        offsetof(PySequenceMethods, sq_ass_item),
+        offsetof(PySequenceMethods, was_sq_ass_slice),
+        offsetof(PySequenceMethods, sq_contains),
+        offsetof(PySequenceMethods, sq_inplace_concat),
+        offsetof(PySequenceMethods, sq_inplace_repeat),
+        offsetof(PyMappingMethods, mp_length),
+        offsetof(PyMappingMethods, mp_subscript),
+        offsetof(PyMappingMethods, mp_ass_subscript),
+        offsetof(PyAsyncMethods, am_await),
+        offsetof(PyAsyncMethods, am_aiter),
+        offsetof(PyAsyncMethods, am_anext),
+        offsetof(PyAsyncMethods, am_send),
+        offsetof(PyBufferProcs, bf_getbuffer),
+        offsetof(PyBufferProcs, bf_releasebuffer),
+        offsetof(PyTypeObject, tp_name),
+        offsetof(PyTypeObject, tp_basicsize),
+        offsetof(PyTypeObject, tp_itemsize),
+        offsetof(PyTypeObject, tp_dealloc),
+        offsetof(PyTypeObject, tp_vectorcall_offset),
+        offsetof(PyTypeObject, tp_getattr),
+        offsetof(PyTypeObject, tp_setattr),
+        offsetof(PyTypeObject, tp_as_async),
+        offsetof(PyTypeObject, tp_repr),
+        offsetof(PyTypeObject, tp_as_number),
+        offsetof(PyTypeObject, tp_as_sequence),
+        offsetof(PyTypeObject, tp_as_mapping),
+        offsetof(PyTypeObject, tp_hash),
+        offsetof(PyTypeObject, tp_call),
+        offsetof(PyTypeObject, tp_str),
+        offsetof(PyTypeObject, tp_getattro),
+        offsetof(PyTypeObject, tp_setattro),
+        offsetof(PyTypeObject, tp_as_buffer),
+        offsetof(PyTypeObject, tp_flags),
+        offsetof(PyTypeObject, tp_doc),
+        offsetof(PyTypeObject, tp_traverse),
+        offsetof(PyTypeObject, tp_clear),
+        offsetof(PyTypeObject, tp_richcompare),
+        offsetof(PyTypeObject, tp_weaklistoffset),
+        offsetof(PyTypeObject, tp_iter),
+        offsetof(PyTypeObject, tp_iternext),
+        offsetof(PyTypeObject, tp_methods),
+        offsetof(PyTypeObject, tp_members),
+        offsetof(PyTypeObject, tp_getset),
+        offsetof(PyTypeObject, tp_base),
+        offsetof(PyTypeObject, tp_dict),
+        offsetof(PyTypeObject, tp_descr_get),
+        offsetof(PyTypeObject, tp_descr_set),
+        offsetof(PyTypeObject, tp_dictoffset),
+        offsetof(PyTypeObject, tp_init),
+        offsetof(PyTypeObject, tp_alloc),
+        offsetof(PyTypeObject, tp_new),
+        offsetof(PyTypeObject, tp_free),
+        offsetof(PyTypeObject, tp_is_gc),
+        offsetof(PyTypeObject, tp_bases),
+        offsetof(PyTypeObject, tp_mro),
+        offsetof(PyTypeObject, tp_cache),
+        offsetof(PyTypeObject, tp_subclasses),
+        offsetof(PyTypeObject, tp_weaklist),
+        offsetof(PyTypeObject, tp_del),
+        offsetof(PyTypeObject, tp_version_tag),
+        offsetof(PyTypeObject, tp_finalize),
+        offsetof(PyTypeObject, tp_vectorcall),
+        offsetof(PyBytesObject, ob_shash),
+        offsetof(PyBytesObject, ob_sval),
+        offsetof(PyListObject, ob_item),
+        offsetof(PyListObject, allocated),
+        offsetof(PyTupleObject, ob_item),
+        offsetof(PyFloatObject, ob_fval),
+        offsetof(PyModuleDef_Base, m_index),
+        offsetof(PyComplexObject, cval.real),
+        offsetof(PyComplexObject, cval.imag),
+        offsetof(PyASCIIObject, length),
+        offsetof(PyASCIIObject, hash),
+        offsetof(PyASCIIObject, state),
+        offsetof(PyASCIIObject, wstr),
+        offsetof(PyCompactUnicodeObject, utf8_length),
+        offsetof(PyCompactUnicodeObject, utf8),
+        offsetof(PyCompactUnicodeObject, wstr_length),
+        offsetof(PyUnicodeObject, data),
+        offsetof(PyGetSetDef, name),
+        offsetof(PyGetSetDef, get),
+        offsetof(PyGetSetDef, set),
+        offsetof(PyGetSetDef, doc),
+        offsetof(PyGetSetDef, closure),
+        offsetof(PyMemberDef, name),
+        offsetof(PyMemberDef, type),
+        offsetof(PyMemberDef, offset),
+        offsetof(PyMemberDef, flags),
+        offsetof(PyMemberDef, doc),
+        offsetof(PyThreadState, interp),
+        offsetof(PyThreadState, dict),
+        offsetof(PyBaseExceptionObject, dict),
+        offsetof(PyBaseExceptionObject, args),
+        offsetof(PyBaseExceptionObject, traceback),
+        offsetof(PyBaseExceptionObject, context),
+        offsetof(PyBaseExceptionObject, cause),
+        offsetof(PyBaseExceptionObject, suppress_context),
+        0xdead2222 // marker value
+    };
+    return offsets;
+}
+PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_sizes() {
+    static Py_ssize_t sizes[] = {
+        sizeof(PyModuleDef),
+        sizeof(PyModuleDef_Slot),
+        sizeof(PyMethodDef),
+        sizeof(PyObject),
+        sizeof(PyBytesObject),
+        sizeof(PyListObject),
+        sizeof(PyVarObject),
+        sizeof(PyMemoryViewObject),
+        sizeof(Py_buffer),
+        sizeof(PyDateTime_CAPI),
+        sizeof(PyNumberMethods),
+        sizeof(PySequenceMethods),
+        sizeof(PyMappingMethods),
+        sizeof(PyAsyncMethods),
+        sizeof(PyBufferProcs),
+        sizeof(PyTypeObject),
+        sizeof(PyTupleObject),
+        sizeof(PyFloatObject),
+        sizeof(PyLongObject),
+        sizeof(PyModuleDef_Base),
+        sizeof(PyComplexObject),
+        sizeof(PyDateTime_Date),
+        sizeof(PyDateTime_Time),
+        sizeof(PyDateTime_DateTime),
+        sizeof(PyDateTime_Delta),
+        sizeof(PyASCIIObject),
+        sizeof(PyCompactUnicodeObject),
+        sizeof(PyBaseExceptionObject),
+        sizeof(PyUnicodeObject),
+        sizeof(Py_UNICODE),
+        sizeof(PyGetSetDef),
+        sizeof(PyMemberDef),
+        sizeof(PyThreadState),
+        sizeof(wchar_t),
+        0xdead3333 // marker value
+    };
+    return sizes;
 }
 // {{end CAPI_BUILTINS}}

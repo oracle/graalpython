@@ -29,7 +29,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
         GraalPyTruffleModule_AddFunctionToModule(def,
                        mod,
                        truffleString(def->ml_name),
-                       function_pointer_to_java(def->ml_meth),
+                       def->ml_meth,
                        def->ml_flags,
                        get_method_flags_wrapper(def->ml_flags),
 					   truffleString(def->ml_doc));
@@ -37,7 +37,6 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     return 0;
 }
 
-POLYGLOT_DECLARE_TYPE(PyModuleDef);
 PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
     if (!PyModuleDef_Init(moduledef))
         return NULL;
@@ -57,7 +56,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
             return NULL;
         }
         memset(md_state, 0, PyModuleDef_m_size(moduledef));
-        set_PyModuleObject_md_state(mod, md_state);
+        GraalPy_set_PyModuleObject_md_state(mod, md_state);
     }
 
     if (PyModuleDef_m_methods(moduledef) != NULL) {
@@ -72,7 +71,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         }
     }
 
-    set_PyModuleObject_md_def(mod, polyglot_from_PyModuleDef(moduledef));
+    GraalPy_set_PyModuleObject_md_def(mod, moduledef);
     return (PyObject*) mod;
 }
 
@@ -85,7 +84,7 @@ PyObject* PyModule_GetDict(PyObject* o) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    return PyModuleObject_md_dict(o);
+    return GraalPy_get_PyModuleObject_md_dict((PyModuleObject*) o);
 }
 
 PyModuleDef* PyModule_GetDef(PyObject* m) {
@@ -93,7 +92,7 @@ PyModuleDef* PyModule_GetDef(PyObject* m) {
         PyErr_BadArgument();
         return NULL;
     }
-    return PyModuleObject_md_def(m);
+    return GraalPy_get_PyModuleObject_md_def((PyModuleObject*) m);
 }
 
 void* PyModule_GetState(PyObject *m) {
@@ -101,7 +100,7 @@ void* PyModule_GetState(PyObject *m) {
         PyErr_BadArgument();
         return NULL;
     }
-    return PyModuleObject_md_state(m);
+    return GraalPy_get_PyModuleObject_md_state((PyModuleObject*) m);
 }
 
 // partially taken from CPython "Objects/moduleobject.h"
@@ -115,17 +114,17 @@ const char * PyModule_GetName(PyObject *m) {
 
 PyModuleDef* _PyModule_GetDef(PyObject *mod) {
     assert(PyModule_Check(mod));
-    return PyModuleObject_md_def(mod);
+    return GraalPy_get_PyModuleObject_md_def((PyModuleObject*) mod);
 }
 
 void* _PyModule_GetState(PyObject* mod) {
     assert(PyModule_Check(mod));
-    return PyModuleObject_md_state(mod);
+    return GraalPy_get_PyModuleObject_md_state((PyModuleObject*) mod);
 }
 
 PyObject* _PyModule_GetDict(PyObject *mod) {
     assert(PyModule_Check(mod));
-    PyObject *dict = PyModuleObject_md_dict(mod);
+    PyObject *dict = GraalPy_get_PyModuleObject_md_dict((PyModuleObject*) mod);
     // _PyModule_GetDict(mod) must not be used after calling module_clear(mod)
     assert(dict != NULL);
     return dict;

@@ -40,82 +40,84 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ImportStatic(SlotGroup.class)
 public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     public PyNumberMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
 
-    public PythonManagedClass getWrappedClass() {
-        return (PythonManagedClass) getDelegate();
-    }
+    @GenerateUncached
+    public abstract static class AllocateNode extends PNodeWithContext {
 
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    protected boolean hasMembers() {
-        return true;
-    }
+        public abstract Object execute(PythonManagedClass clazz);
 
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    protected boolean isMemberReadable(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_NUMBER") ReadSlotByNameNode readSlotByNameNode) {
-        return readSlotByNameNode.getSlot(member) != null;
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    protected Object readMember(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_NUMBER") ReadSlotByNameNode readSlotByNameNode,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object result = readSlotByNameNode.execute(getWrappedClass(), member);
-            if (result == null) {
-                throw UnknownIdentifierException.create(member);
-            }
-            return result;
-        } finally {
-            gil.release(mustRelease);
+        static Object getValue(PythonManagedClass obj, SlotMethodDef slot) {
+            return LookupNativeSlotNode.executeUncached(obj, slot);
         }
-    }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
+        @Specialization
+        Object alloc(PythonManagedClass obj,
+                        @Cached CStructAccess.AllocateNode allocNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode) {
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
+            Object mem = allocNode.alloc(CStructs.PyNumberMethods);
+
+            Object nullValue = getContext().getNativeNull().getPtr();
+
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_absolute, getValue(obj, SlotMethodDef.NB_ABSOLUTE));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_add, getValue(obj, SlotMethodDef.NB_ADD));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_and, getValue(obj, SlotMethodDef.NB_AND));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_bool, getValue(obj, SlotMethodDef.NB_BOOL));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_divmod, getValue(obj, SlotMethodDef.NB_DIVMOD));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_float, getValue(obj, SlotMethodDef.NB_FLOAT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_floor_divide, getValue(obj, SlotMethodDef.NB_FLOOR_DIVIDE));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_index, getValue(obj, SlotMethodDef.NB_INDEX));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_add, getValue(obj, SlotMethodDef.NB_INPLACE_ADD));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_and, getValue(obj, SlotMethodDef.NB_INPLACE_AND));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_floor_divide, getValue(obj, SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_lshift, getValue(obj, SlotMethodDef.NB_INPLACE_LSHIFT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_matrix_multiply, nullValue);
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_multiply, getValue(obj, SlotMethodDef.NB_INPLACE_MULTIPLY));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_or, getValue(obj, SlotMethodDef.NB_INPLACE_OR));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_power, getValue(obj, SlotMethodDef.NB_INPLACE_POWER));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_remainder, getValue(obj, SlotMethodDef.NB_INPLACE_REMAINDER));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_rshift, getValue(obj, SlotMethodDef.NB_INPLACE_RSHIFT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_subtract, getValue(obj, SlotMethodDef.NB_INPLACE_SUBTRACT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_true_divide, getValue(obj, SlotMethodDef.NB_INPLACE_TRUE_DIVIDE));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_xor, getValue(obj, SlotMethodDef.NB_INPLACE_XOR));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_int, getValue(obj, SlotMethodDef.NB_INT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_invert, getValue(obj, SlotMethodDef.NB_INVERT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_lshift, getValue(obj, SlotMethodDef.NB_LSHIFT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_matrix_multiply, nullValue);
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_multiply, getValue(obj, SlotMethodDef.NB_MULTIPLY));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_negative, getValue(obj, SlotMethodDef.NB_NEGATIVE));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_or, getValue(obj, SlotMethodDef.NB_OR));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_positive, getValue(obj, SlotMethodDef.NB_POSITIVE));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_power, getValue(obj, SlotMethodDef.NB_POWER));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_remainder, getValue(obj, SlotMethodDef.NB_REMAINDER));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_reserved, nullValue);
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_rshift, getValue(obj, SlotMethodDef.NB_RSHIFT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_subtract, getValue(obj, SlotMethodDef.NB_SUBTRACT));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_true_divide, getValue(obj, SlotMethodDef.NB_TRUE_DIVIDE));
+            writePointerNode.write(mem, CFields.PyNumberMethods__nb_xor, getValue(obj, SlotMethodDef.NB_XOR));
+
+            return mem;
+        }
     }
 }

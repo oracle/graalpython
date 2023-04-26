@@ -339,7 +339,7 @@ public abstract class CExtContext {
             boolean loaded = cApiContext.ensureNative();
             if (loaded) {
                 String name = spec.name.toJavaStringUncached();
-                if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
+                if ((nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
                     GraalHPyJNIContext.loadJNIBackend();
                     getLogger().config("loading module " + spec.path + " as native");
                     String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
@@ -387,17 +387,6 @@ public abstract class CExtContext {
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
-    }
-
-    private static boolean isForcedLLVM(String name) {
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 &&
-                        ("_cpython_unicodedata".equals(name) || "_cpython_sre".equals(name) || "_sqlite3".equals(name))) {
-            // We build these internal extensions with the LLVM toolchain and link against the
-            // bitcode python-native,
-            // not the fully native pythonjni. We cannot load them natively on Windows like that.
-            return true;
-        }
-        return "_mmap".equals(name) || "_cpython_struct".equals(name);
     }
 
     public static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {

@@ -50,7 +50,7 @@ import com.oracle.truffle.api.object.HiddenKey;
  * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
  * but our copy should just never become stale.
  */
-public interface PythonNativeClass extends PythonAbstractClass {
+public interface PythonNativeClass extends PythonAbstractClass, PythonNativeObject {
 
     public static final HiddenKey INSTANCESHAPE = new HiddenKey("instanceshape");
 

@@ -47,9 +47,8 @@ import java.util.IllegalFormatException;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -103,10 +102,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode toNative,
-                        @Cached CApiTransitions.NativeToPythonNode toPython,
-                        @Cached CExtNodes.PCallCapiFunction callGetter) {
-            return noValueToNone(toPython.execute(callGetter.call(NativeMember.CAUSE.getGetterFunctionName(), toNative.execute(exception))));
+                        @Cached CStructAccess.ReadObjectNode readObject) {
+            return noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__cause));
         }
 
         @Specialization
@@ -140,10 +137,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode excToNative,
-                        @Cached CApiTransitions.PythonToNativeNode valueToNative,
-                        @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.CAUSE.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNativeNull(inliningTarget, value)));
+                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+            writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__cause, noneToNativeNull(inliningTarget, value));
         }
 
         @Specialization
@@ -171,10 +166,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode toNative,
-                        @Cached CApiTransitions.NativeToPythonNode toPython,
-                        @Cached CExtNodes.PCallCapiFunction callGetter) {
-            return noValueToNone(toPython.execute(callGetter.call(NativeMember.CONTEXT.getGetterFunctionName(), toNative.execute(exception))));
+                        @Cached CStructAccess.ReadObjectNode readObject) {
+            return noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__context));
         }
 
         @Specialization
@@ -208,10 +201,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode excToNative,
-                        @Cached CApiTransitions.PythonToNativeNode valueToNative,
-                        @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.CONTEXT.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNativeNull(inliningTarget, value)));
+                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+            writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__context, noneToNativeNull(inliningTarget, value));
         }
 
         @Specialization
@@ -239,9 +230,9 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static boolean doNative(Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode toNative,
-                        @Cached CExtNodes.PCallCapiFunction callGetter) {
-            return (byte) callGetter.call(NativeMember.SUPPRESS_CONTEXT.getGetterFunctionName(), toNative.execute(noneToNativeNull(inliningTarget, exception))) != 0;
+                        @Cached CStructAccess.ReadByteNode read) {
+
+            return read.readFromObj(exception, CFields.PyBaseExceptionObject__suppress_context) != 0;
         }
 
         @Specialization
@@ -269,9 +260,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, boolean value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode excToNative,
-                        @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.SUPPRESS_CONTEXT.getSetterFunctionName(), excToNative.execute(exception), (byte) (value ? 1 : 0));
+                        @Cached CStructAccess.WriteByteNode write) {
+            write.writeToObject(exception, CFields.PyBaseExceptionObject__suppress_context, value ? (byte) 1 : (byte) 0);
         }
 
         @Specialization
@@ -309,10 +299,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static Object doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode toNative,
-                        @Cached CApiTransitions.NativeToPythonNode toPython,
-                        @Cached CExtNodes.PCallCapiFunction callGetter) {
-            return noValueToNone(toPython.execute(callGetter.call(NativeMember.TRACEBACK.getGetterFunctionName(), toNative.execute(exception))));
+                        @Cached CStructAccess.ReadObjectNode readObject) {
+            return noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__traceback));
         }
 
         @Specialization
@@ -344,10 +332,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode excToNative,
-                        @Cached CApiTransitions.PythonToNativeNode valueToNative,
-                        @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.TRACEBACK.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(noneToNativeNull(inliningTarget, value)));
+                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+            writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__traceback, noneToNativeNull(inliningTarget, value));
         }
 
         @Specialization
@@ -404,10 +390,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static PTuple doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode toNative,
-                        @Cached CApiTransitions.NativeToPythonNode toPython,
-                        @Cached CExtNodes.PCallCapiFunction callGetter) {
-            return (PTuple) toPython.execute(callGetter.call(NativeMember.ARGS.getGetterFunctionName(), toNative.execute(exception)));
+                        @Cached CStructAccess.ReadObjectNode readObject) {
+            return (PTuple) noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__args));
         }
 
         @Specialization
@@ -436,10 +420,8 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)")
         static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, PTuple argsTuple,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached CApiTransitions.PythonToNativeNode excToNative,
-                        @Cached CApiTransitions.PythonToNativeNode valueToNative,
-                        @Cached CExtNodes.PCallCapiFunction callSetter) {
-            callSetter.call(NativeMember.ARGS.getSetterFunctionName(), excToNative.execute(exception), valueToNative.execute(argsTuple));
+                        @Cached CStructAccess.WriteObjectNewRefNode writeObject) {
+            writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__args, argsTuple);
         }
 
         @Specialization

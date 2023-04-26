@@ -79,7 +79,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     /** {@code true} if the MRO contains a native class. */
     private final boolean needsNativeAllocation;
-    @CompilationFinal private Object sulongType;
     @CompilationFinal private boolean mroInitialized = false;
 
     public PTuple mroStore;
@@ -374,15 +373,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     public PythonClassNativeWrapper getClassNativeWrapper() {
         return (PythonClassNativeWrapper) super.getNativeWrapper();
-    }
-
-    public final Object getSulongType() {
-        return sulongType;
-    }
-
-    @TruffleBoundary
-    public final void setSulongType(Object dynamicSulongType) {
-        this.sulongType = dynamicSulongType;
     }
 
     public boolean needsNativeAllocation() {

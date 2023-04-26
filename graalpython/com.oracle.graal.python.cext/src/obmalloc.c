@@ -70,8 +70,8 @@ size_t PyTruffle_NativeMemoryGCBarrier = 0;
 
 void PyTruffle_InitializeNativeMemorySize() {
 	PyTruffle_AllocatedMemory = 0;
-	PyTruffle_MaxNativeMemory = GraalPyTruffle_MaxNativeMemory();
-	PyTruffle_NativeMemoryGCBarrier = GraalPyTruffle_InitialNativeMemory();
+	PyTruffle_MaxNativeMemory = GraalPyTruffle_GetMaxNativeMemory();
+	PyTruffle_NativeMemoryGCBarrier = GraalPyTruffle_GetInitialNativeMemory();
 }
 
 int PyTruffle_AllocMemory(size_t size) {
@@ -81,7 +81,7 @@ int PyTruffle_AllocMemory(size_t size) {
 			PyTruffle_InitializeNativeMemorySize();
 			continue;
 		}
-	    PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG, "PyTruffle_Object_Alloc: exceeding PyTruffle_NativeMemoryGCBarrier (%lu) with allocation of size %lu\n", PyTruffle_NativeMemoryGCBarrier, size);
+	    PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG, "PyTruffle_AllocMemory: exceeding PyTruffle_NativeMemoryGCBarrier (%lu) with allocation of size %lu, current PyTruffle_AllocatedMemory: %lu\n", PyTruffle_NativeMemoryGCBarrier, size, PyTruffle_AllocatedMemory);
 
 	    size_t delay = 0;
 	    int iteration = 0;
@@ -98,9 +98,9 @@ int PyTruffle_AllocMemory(size_t size) {
 			if (PyTruffle_NativeMemoryGCBarrier > PyTruffle_MaxNativeMemory) {
 				PyTruffle_NativeMemoryGCBarrier = PyTruffle_MaxNativeMemory;
 			}
-			PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG, "PyTruffle_Object_Alloc: enlarging PyTruffle_NativeMemoryGCBarrier to %lu\n", PyTruffle_NativeMemoryGCBarrier);
+			PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG, "PyTruffle_AllocMemory: enlarging PyTruffle_NativeMemoryGCBarrier to %lu\n", PyTruffle_NativeMemoryGCBarrier);
 		} else {
-			PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "PyTruffle_Object_Alloc: native memory exhausted while allocating %lu bytes\n", size);
+			PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "PyTruffle_AllocMemory: native memory exhausted while allocating %lu bytes\n", size);
 			return 1;
 		}
 	}
@@ -110,7 +110,7 @@ int PyTruffle_AllocMemory(size_t size) {
 
 void PyTruffle_FreeMemory(size_t size) {
     if (PyTruffle_AllocatedMemory < size) {
-        PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "PyTruffle_FreeMemory: assertion failure: underflow of memory allocation tracking\n");
+        PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "PyTruffle_FreeMemory: freed memory size (%lu) is larger than allocated memory size (%lu)\n", size, PyTruffle_AllocMemory);
         PyTruffle_AllocatedMemory = size;
     }
     PyTruffle_AllocatedMemory -= size;
@@ -122,7 +122,7 @@ void _PyObject_Free(void* ptr) {
 	if (ptr == NULL) {
 		return;
 	}
-	if(points_to_py_handle_space(ptr) || polyglot_is_value(ptr)) {
+	if(points_to_py_handle_space(ptr)) {
 	    GraalPyTruffle_Object_Free(ptr);
 	} else {
         mem_head_t* ptr_with_head = AS_MEM_HEAD(ptr);

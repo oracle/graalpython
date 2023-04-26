@@ -49,12 +49,7 @@ void initialize_hashes() {
     _PyHASH_INF = GraalPyTruffle_HashConstant(0);
     _PyHASH_NAN = GraalPyTruffle_HashConstant(1);
     _PyHASH_IMAG = GraalPyTruffle_HashConstant(2);
-    GraalPyTruffleHash_InitSecret(polyglot_from_i8_array((int8_t *)&_Py_HashSecret, sizeof(_Py_HashSecret)));
-}
-
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-	// TODO: ignores length?
-	return Graal_PyTruffle_HashBytes(polyglot_from_string(src, "ascii"));
+    GraalPyTruffleHash_InitSecret((int8_t *)&_Py_HashSecret);
 }
 
 /* taken from CPython */

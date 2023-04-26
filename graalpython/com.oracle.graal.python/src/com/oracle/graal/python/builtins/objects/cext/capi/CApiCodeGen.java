@@ -70,8 +70,14 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
 /**
  * This class generates the contents of the {@link PythonCextBuiltinRegistry} class and the code
@@ -362,11 +368,7 @@ public final class CApiCodeGen {
                 line = "    " + (value.returnType == ArgDescriptor.Void ? "" : "return ") + "Graal" + name + "(";
                 for (int i = 0; i < value.arguments.length; i++) {
                     line += (i == 0 ? "" : ", ");
-                    if (value.arguments[i] == ConstCharPtrAsTruffleString) {
-                        line += "truffleString(" + argName(i) + ")";
-                    } else {
-                        line += argName(i);
-                    }
+                    line += argName(i);
                 }
                 line += ");";
                 lines.add(line);
@@ -374,11 +376,44 @@ public final class CApiCodeGen {
             }
         }
 
+        lines.add("PyAPI_FUNC(int64_t*) PyTruffle_constants() {");
+        lines.add("    static int64_t constants[] = {");
+        for (CConstants constant : CConstants.VALUES) {
+            lines.add("        (int64_t) " + constant.name() + ",");
+        }
+        lines.add("        0xdead1111 // marker value");
+        lines.add("    };");
+        lines.add("    return constants;");
+        lines.add("}");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_offsets() {");
+        lines.add("    static Py_ssize_t offsets[] = {");
+        for (CFields field : CFields.VALUES) {
+            int delim = field.name().indexOf("__");
+            assert delim != -1;
+            String struct = field.name().substring(0, delim);
+            String name = field.name().substring(delim + 2);
+            name = name.replace("__", "."); // to allow inlined structs
+            lines.add("        offsetof(" + struct + ", " + name + "),");
+        }
+        lines.add("        0xdead2222 // marker value");
+        lines.add("    };");
+        lines.add("    return offsets;");
+        lines.add("}");
+        lines.add("PyAPI_FUNC(Py_ssize_t*) PyTruffle_struct_sizes() {");
+        lines.add("    static Py_ssize_t sizes[] = {");
+        for (CStructs struct : CStructs.VALUES) {
+            lines.add("        sizeof(" + struct.name() + "),");
+        }
+        lines.add("        0xdead3333 // marker value");
+        lines.add("    };");
+        lines.add("    return sizes;");
+        lines.add("}");
+
         return writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.c"), lines);
     }
 
     /**
-     * Generates the builtin specification in capi.h, which includes only the builtins implmemented
+     * Generates the builtin specification in capi.h, which includes only the builtins implemented
      * in Java code. Additionally, it generates helpers for all "Py_get_" and "Py_set_" builtins.
      */
     private static boolean generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
@@ -400,18 +435,18 @@ public final class CApiCodeGen {
             String name = entry.name;
             if (!name.endsWith("_dummy")) {
                 if (name.startsWith("Py_get_")) {
-                    assert entry.arguments.length == 1;
+                    assert entry.arguments.length == 1 : name;
                     String type = entry.arguments[0].name().replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_';
+                    assert name.charAt(7 + type.length()) == '_' : name;
                     String field = name.substring(7 + type.length() + 1); // after "_"
                     macro.append("#define " + name.substring(7) + "(OBJ) ( points_to_py_handle_space(OBJ) ? Graal" + name + "((" + type + "*) (OBJ)) : ((" + type + "*) (OBJ))->" + field + " )");
                     lines.add(macro.toString());
                 } else if (name.startsWith("Py_set_")) {
-                    assert entry.arguments.length == 2;
+                    assert entry.arguments.length == 2 : name;
                     String type = entry.arguments[0].name().replace("Wrapper", "");
                     StringBuilder macro = new StringBuilder();
-                    assert name.charAt(7 + type.length()) == '_';
+                    assert name.charAt(7 + type.length()) == '_' : name;
                     String field = name.substring(7 + type.length() + 1); // after "_"
                     macro.append("#define set_" + name.substring(7) + "(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) Graal" + name + "((" + type + "*) (OBJ), (VALUE)); else  ((" + type +
                                     "*) (OBJ))->" + field + " = (VALUE); }");
@@ -571,7 +606,18 @@ public final class CApiCodeGen {
 
         TreeSet<String> messages = new TreeSet<>();
         for (CApiBuiltinDesc function : builtins) {
-            if (InteropLibrary.getUncached().isMemberInvocable(capiLibrary, function.name)) {
+            boolean hasMember = InteropLibrary.getUncached().isMemberReadable(capiLibrary, function.name);
+            if (hasMember) {
+                try {
+                    InteropLibrary.getUncached().readMember(capiLibrary, function.name);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                } catch (UnknownIdentifierException e) {
+                    // NFI lied to us!
+                    hasMember = false;
+                }
+            }
+            if (hasMember) {
                 if (function.call == CImpl || function.call == CApiCallPath.PolyglotImpl || function.call == CApiCallPath.Direct) {
                     // ok
                 } else {

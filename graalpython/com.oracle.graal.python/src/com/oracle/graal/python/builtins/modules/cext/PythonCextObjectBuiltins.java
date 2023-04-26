@@ -44,11 +44,13 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
@@ -78,11 +80,13 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -126,8 +130,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -179,7 +181,7 @@ public class PythonCextObjectBuiltins {
             while (true) {
                 Object object;
                 try {
-                    object = getVaArgs.getPyObjectPtr(vaList);
+                    object = getVaArgs.execute(vaList);
                 } catch (InteropException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -232,45 +234,40 @@ public class PythonCextObjectBuiltins {
     }
 
     // directly called without landing function
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Pointer, Int, Pointer, Pointer}, call = Ignored)
-    abstract static class _PyTruffleObject_MakeTpCall extends CApi5BuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = Direct)
+    abstract static class _PyObject_MakeTpCall extends CApi5BuiltinNode {
 
         @Specialization
-        static Object doGeneric(Object callable, Object argsArray, int nargs, Object kwargsObj, Object kwvalues,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached NativeToPythonNode toJavaNode,
+        static Object doGeneric(@SuppressWarnings("unused") Object threadState, Object callable, Object argsArray, long nargs, Object kwargs,
+                        @Cached CStructAccess.ReadObjectNode readNode,
+                        @Cached CStructAccess.ReadObjectNode readKwNode,
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             try {
-                Object[] args = new Object[nargs];
-                for (int i = 0; i < args.length; i++) {
-                    args[i] = toJavaNode.execute(lib.readArrayElement(argsArray, i));
-                }
-                PKeyword[] keywords = PKeyword.EMPTY_KEYWORDS;
-                if (!lib.isNull(kwargsObj)) {
-                    Object kwargs = toJavaNode.execute(kwargsObj);
-                    if (kwargs instanceof PDict) {
-                        keywords = castKwargsNode.execute(kwargs);
-                    } else if (kwargs instanceof PTuple) {
-                        // We have a tuple with kw names and an array with kw values
-                        PTuple kwTuple = (PTuple) kwargs;
-                        SequenceStorage storage = kwTuple.getSequenceStorage();
-                        int kwcount = storage.length();
-                        keywords = new PKeyword[kwcount];
-                        for (int i = 0; i < kwcount; i++) {
-                            TruffleString name = castToTruffleStringNode.execute(getItemScalarNode.execute(storage, i));
-                            Object value = toJavaNode.execute(lib.readArrayElement(kwvalues, i));
-                            keywords[i] = new PKeyword(name, value);
-                        }
-                    } else {
-                        throw CompilerDirectives.shouldNotReachHere("_PyObject_MakeTpCall: keywords must be NULL, a tuple or a dict");
+
+                Object[] args = readNode.readPyObjectArray(argsArray, (int) nargs);
+                PKeyword[] keywords;
+                if (kwargs instanceof PNone) {
+                    keywords = PKeyword.EMPTY_KEYWORDS;
+                } else if (kwargs instanceof PDict) {
+                    keywords = castKwargsNode.execute(kwargs);
+                } else if (kwargs instanceof PTuple) {
+                    // We have a tuple with kw names and an array with kw values
+                    PTuple kwTuple = (PTuple) kwargs;
+                    SequenceStorage storage = kwTuple.getSequenceStorage();
+                    int kwcount = storage.length();
+                    Object[] kwValues = readKwNode.readPyObjectArray(args, kwcount, (int) nargs);
+                    keywords = new PKeyword[kwcount];
+                    for (int i = 0; i < kwcount; i++) {
+                        TruffleString name = castToTruffleStringNode.execute(getItemScalarNode.execute(storage, i));
+                        keywords[i] = new PKeyword(name, kwValues[i]);
                     }
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere("_PyObject_MakeTpCall: keywords must be NULL, a tuple or a dict");
                 }
                 return callNode.execute(null, callable, args, keywords);
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
             } catch (CannotCastException e) {
                 // I think we can just assume that there won't be more than
                 // Integer.MAX_VALUE arguments.
@@ -525,7 +522,8 @@ public class PythonCextObjectBuiltins {
 
         @Specialization
         @TruffleBoundary
-        int doGeneric(Object ptrObject) {
+        int doGeneric(Object ptrObject,
+                        @Cached CStructAccess.ReadI64Node readI64) {
             PythonContext context = getContext();
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
             CApiContext cApiContext = context.getCApiContext();
@@ -565,7 +563,7 @@ public class PythonCextObjectBuiltins {
                 PythonNativeWrapper wrapper = (PythonNativeWrapper) resolved;
                 refCnt = wrapper.getRefCount();
             } else {
-                refCnt = GetRefCntNodeGen.getUncached().execute(cApiContext, ptrObject);
+                refCnt = readI64.read(PythonToNativeNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
             }
             pythonObject = NativeToPythonNode.executeUncached(ptrObject);
 

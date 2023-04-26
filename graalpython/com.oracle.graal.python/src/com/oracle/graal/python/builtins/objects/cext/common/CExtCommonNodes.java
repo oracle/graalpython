@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
@@ -62,17 +60,14 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -104,7 +99,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -115,16 +109,14 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import sun.misc.Unsafe;
 
 public abstract class CExtCommonNodes {
     @TruffleBoundary
@@ -201,6 +193,7 @@ public abstract class CExtCommonNodes {
             String name = symbol.getName();
             try {
                 Object nativeSymbol = InteropLibrary.getUncached().readMember(llvmLibrary, name);
+                nativeSymbol = NativeCExtSymbol.ensureExecutable(nativeSymbol, symbol);
                 dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
                 return nativeSymbol;
             } catch (UnknownIdentifierException e) {
@@ -301,6 +294,68 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateUncached
+    @ImportStatic(CApiGuards.class)
+    public abstract static class ReadUnicodeArrayNode extends PNodeWithContext {
+
+        public abstract int[] execute(Object array, int length, int elementSize);
+
+        @Specialization(guards = "elementSize == 1")
+        static int[] read1(Object array, int length, @SuppressWarnings("unused") int elementSize,
+                        @Bind("$node") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile calcLength,
+                        @Cached CStructAccess.ReadByteNode read) {
+            int len = length;
+            if (calcLength.profile(inliningTarget, len == -1)) {
+                do {
+                    len++;
+                } while (read.readArrayElement(array, len) != 0);
+            }
+            int[] result = new int[len];
+            for (int i = 0; i < len; i++) {
+                result[i] = read.readArrayElement(array, i) & 0xFF;
+            }
+            return result;
+        }
+
+        @Specialization(guards = "elementSize == 2")
+        static int[] read2(Object array, int length, @SuppressWarnings("unused") int elementSize,
+                        @Bind("$node") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile calcLength,
+                        @Cached CStructAccess.ReadI16Node read) {
+            int len = length;
+            if (calcLength.profile(inliningTarget, len == -1)) {
+                do {
+                    len++;
+                } while (read.readArrayElement(array, len) != 0);
+            }
+            int[] result = new int[len];
+            for (int i = 0; i < len; i++) {
+                result[i] = read.readArrayElement(array, i) & 0xFFFF;
+            }
+            return result;
+        }
+
+        @Specialization(guards = "elementSize == 4")
+        static int[] read4(Object array, int length, @SuppressWarnings("unused") int elementSize,
+                        @Bind("$node") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile calcLength,
+                        @Cached CStructAccess.ReadI32Node read) {
+            int len = length;
+            if (calcLength.profile(inliningTarget, len == -1)) {
+                do {
+                    len++;
+                } while (read.readArrayElement(array, len) != 0);
+            }
+            int[] result = new int[len];
+            for (int i = 0; i < len; i++) {
+                result[i] = read.readArrayElement(array, i);
+            }
+            return result;
+        }
+    }
+
+    // TODO(ls): currently unused?
     /**
      * Note: we always need the element size because if some native wrapper comes along, we might
      * lose the element size. This would lead in incorrect element accesses. This problem is most
@@ -311,47 +366,24 @@ public abstract class CExtCommonNodes {
     @ImportStatic(CApiGuards.class)
     public abstract static class UnicodeFromWcharNode extends PNodeWithContext {
 
-        public abstract TruffleString execute(Object arr, int elementSize);
+        public abstract TruffleString execute(Object arr, int length, int elementSize);
 
         // most common cases (decoding from native pointer) are first
 
-        @Specialization(guards = "!isNativeWrapper(arr)", rewriteOn = UnexpectedCodepointException.class)
-        static TruffleString doUnicodeBMP(Object arr, int elementSize,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary elemLib,
-                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) throws UnexpectedCodepointException {
-            try {
-                if (!lib.hasArrayElements(arr)) {
-                    throw raiseNode.raise(SystemError, ErrorMessages.PROVIDED_OBJ_NOT_ARRAY);
-                }
-                long arraySize = lib.getArraySize(arr);
-                char[] chars = readUnicodeBMPWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize), elementSize);
-                return switchEncodingNode.execute(fromCharArray.execute(chars), TS_ENCODING);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(ValueError, ErrorMessages.ARRAY_SIZE_TOO_LARGE);
-            } catch (IllegalArgumentException e) {
-                throw raiseNode.raise(LookupError, ErrorMessages.M, e);
-            } catch (InteropException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.M, e);
-            }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(arr)", replaces = "doUnicodeBMP")
-        static TruffleString doUnicode(Object arr, int elementSize,
+        @Specialization(guards = "!isNativeWrapper(arr)")
+        static TruffleString doUnicode(Object arr, int length, int elementSize,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (!lib.hasArrayElements(arr)) {
                     throw raiseNode.raise(SystemError, ErrorMessages.PROVIDED_OBJ_NOT_ARRAY);
                 }
                 long arraySize = lib.getArraySize(arr);
                 int[] codePoints = readWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize), elementSize);
-                // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
+                // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
                 // but might change in the future
                 return switchEncodingNode.execute(fromIntArrayNode.execute(codePoints, 0, codePoints.length), TS_ENCODING);
             } catch (OverflowException e) {
@@ -362,12 +394,12 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static TruffleString doCStringWrapper(CStringWrapper obj, @SuppressWarnings("unused") int sizeofWchar) {
+        static TruffleString doCStringWrapper(CStringWrapper obj, int length, @SuppressWarnings("unused") int sizeofWchar) {
             return obj.getString();
         }
 
         @Specialization(rewriteOn = UnexpectedCodepointException.class)
-        static TruffleString doCByteArrayWrapperBMP(CByteArrayWrapper obj, int elementSize,
+        static TruffleString doCByteArrayWrapperBMP(CByteArrayWrapper obj, int length, int elementSize,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
             byte[] bytes = obj.getByteArray();
@@ -376,23 +408,23 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(replaces = "doCByteArrayWrapperBMP")
-        static TruffleString doCByteArrayWrapper(CByteArrayWrapper obj, int elementSize,
+        static TruffleString doCByteArrayWrapper(CByteArrayWrapper obj, int length, int elementSize,
                         @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             byte[] bytes = obj.getByteArray();
             int[] i = decodeBytesUnicode(bytes, elementSize);
-            // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
+            // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
             // but might change in the future
             return switchEncodingNode.execute(fromIntArrayNode.execute(i, 0, i.length), TS_ENCODING);
         }
 
         @Specialization
-        static TruffleString doCIntArrayWrapper(CIntArrayWrapper obj, int elementSize,
+        static TruffleString doCIntArrayWrapper(CIntArrayWrapper obj, int length, int elementSize,
                         @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (elementSize == Integer.BYTES) {
                 int[] codePoints = obj.getIntArray();
-                // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
+                // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
                 // but might change in the future
                 return switchEncodingNode.execute(fromIntArrayNode.execute(codePoints, 0, codePoints.length), TS_ENCODING);
             }
@@ -400,7 +432,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(rewriteOn = UnexpectedCodepointException.class)
-        static TruffleString doSequenceArrayWrapperBMP(PySequenceArrayWrapper obj, int elementSize,
+        static TruffleString doSequenceArrayWrapperBMP(PySequenceArrayWrapper obj, int length, int elementSize,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
@@ -414,7 +446,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(replaces = "doSequenceArrayWrapperBMP")
-        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, int elementSize,
+        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, int length, int elementSize,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -422,7 +454,7 @@ public abstract class CExtCommonNodes {
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 int[] i = decodeBytesUnicode(bytes, elementSize);
-                // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
+                // fromIntArrayNode return utf32, which is at this point the same as TS_ENCODING,
                 // but might change in the future
                 return switchEncodingNode.execute(fromIntArrayNode.execute(i, 0, i.length), TS_ENCODING);
             }
@@ -708,7 +740,6 @@ public abstract class CExtCommonNodes {
 
     @GenerateUncached
     public abstract static class GetByteArrayNode extends Node {
-        private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
         public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
 
@@ -729,41 +760,9 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static byte[] doNativePointer(NativePointer nativePointer, long n) throws OverflowException {
-            /*
-             * This specialization is only reached if native access is allowed since NativePointer
-             * objects are **ONLY** created in JNI upcalls. So, it is not necessary to test if
-             * native access is allowed here.
-             */
-            assert PythonContext.get(null).getEnv().isNativeAccessAllowed();
-            long pointer = nativePointer.asPointer();
-            long size;
-            if (n < 0) {
-                size = 0;
-                while (UNSAFE.getByte(pointer + size) != 0) {
-                    size++;
-                }
-            } else {
-                size = n;
-            }
-            byte[] bytes = new byte[PInt.intValueExact(size)];
-            UNSAFE.copyMemory(null, pointer, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, size);
-            return bytes;
-        }
-
-        @Specialization(limit = "5")
         static byte[] doForeign(Object obj, long n,
-                        @CachedLibrary("obj") InteropLibrary interopLib,
-                        @CachedLibrary(limit = "1") InteropLibrary elementLib) throws InteropException, OverflowException {
-            long size = n < 0 ? interopLib.getArraySize(obj) : n;
-            byte[] bytes = new byte[PInt.intValueExact(size)];
-            for (int i = 0; i < bytes.length; i++) {
-                Object elem = interopLib.readArrayElement(obj, i);
-                if (elementLib.fitsInByte(elem)) {
-                    bytes[i] = elementLib.asByte(elem);
-                }
-            }
-            return bytes;
+                        @Cached CStructAccess.ReadByteNode readNode) {
+            return readNode.readByteArray(obj, (int) n);
         }
 
         private static byte[] subRangeIfNeeded(byte[] bytes, long n) {
@@ -773,63 +772,6 @@ public abstract class CExtCommonNodes {
             } else {
                 return bytes;
             }
-        }
-    }
-
-    /**
-     * Reads elements of a C array with the provided {@code sourceElementType} and converts that
-     * into a Java {@code int[]}.
-     * <p>
-     * Example: If you want to read elements from a {@code Py_ssize_t *c_arr} and convert that into
-     * a Java {@code int[]}:
-     *
-     * <pre>
-     * int[] values = getIntArrayNode.execute(ptrObject, LLVMType.Py_ssize_t, len);
-     * </pre>
-     * </p>
-     * The node will throw a {@link UnsupportedTypeException} if the elements do not fit into Java
-     * {@code int}.
-     */
-    @GenerateUncached
-    public abstract static class GetIntArrayNode extends Node {
-
-        public abstract int[] execute(Object obj, int n, LLVMType sourceElementType) throws UnsupportedTypeException;
-
-        @Specialization(limit = "2")
-        static int[] doPointer(Object obj, int n, LLVMType sourceElementType,
-                        @Cached ConditionProfile isArrayProfile,
-                        @Cached GetLLVMType getLLVMType,
-                        @Cached PCallCapiFunction callFromTyped,
-                        @Cached PCallCapiFunction callGetByteArrayTypeId,
-                        @CachedLibrary("obj") InteropLibrary ptrLib,
-                        @CachedLibrary(limit = "1") InteropLibrary elementLib) throws UnsupportedTypeException {
-            Object arrayPtr = obj;
-            if (!isArrayProfile.profile(ptrLib.hasArrayElements(obj))) {
-                // we first need to attach a type to the pointer object
-                Object typeId = callGetByteArrayTypeId.call(NativeCAPISymbol.FUN_POLYGLOT_ARRAY_TYPEID, getLLVMType.execute(sourceElementType), n);
-                arrayPtr = callFromTyped.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, obj, typeId);
-            }
-            try {
-                assert n == PInt.intValueExact(ptrLib.getArraySize(arrayPtr));
-                int[] values = new int[n];
-                for (int i = 0; i < n; i++) {
-                    values[i] = castToInt(ptrLib.readArrayElement(arrayPtr, i), elementLib);
-                }
-                return values;
-            } catch (UnsupportedMessageException | InvalidArrayIndexException | OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        private static int castToInt(Object value, InteropLibrary elementLib) throws UnsupportedTypeException {
-            if (elementLib.fitsInInt(value)) {
-                try {
-                    return elementLib.asInt(value);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            }
-            throw UnsupportedTypeException.create(new Object[]{value});
         }
     }
 
@@ -1175,6 +1117,12 @@ public abstract class CExtCommonNodes {
                         @CachedLibrary("value") InteropLibrary interopLib) {
             return PNone.NONE;
         }
+
+        @Specialization
+        static TruffleString doNative(Object value,
+                        @Cached FromCharPointerNode fromPtr) {
+            return fromPtr.execute(value);
+        }
     }
 
     /**
@@ -1409,24 +1357,6 @@ public abstract class CExtCommonNodes {
 
         public static GetIndexNode create() {
             return new GetIndexNode();
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class SizeofWCharNode extends Node {
-
-        public abstract long execute(CApiContext context);
-
-        @Specialization
-        static long doCached(@SuppressWarnings("unused") CApiContext capiContext,
-                        @Exclusive @Cached(value = "getWcharSize()", allowUncached = true) long wcharSize) {
-            return wcharSize;
-        }
-
-        static long getWcharSize() {
-            long wcharSize = (long) PCallCapiFunction.getUncached().call(FUN_WHCAR_SIZE);
-            assert wcharSize >= 0L;
-            return wcharSize;
         }
     }
 }

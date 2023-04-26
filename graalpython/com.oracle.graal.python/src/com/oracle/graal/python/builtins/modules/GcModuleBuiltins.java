@@ -161,12 +161,6 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization
-        public boolean isTracked(@SuppressWarnings("unused") PythonNativeClass object) {
-            // TODO: this is not correct
-            return true;
-        }
-
         @Fallback
         public boolean isTracked(@SuppressWarnings("unused") Object object) {
             return true;

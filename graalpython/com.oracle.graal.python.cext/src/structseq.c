@@ -40,7 +40,7 @@
  */
 #include "capi.h"
 
-#define REAL_SIZE_TP(tp) PyLong_AsSsize_t(PyDict_GetItem((tp)->tp_dict, truffleString("n_fields")))
+#define REAL_SIZE_TP(tp) PyLong_AsSsize_t(PyDict_GetItemString((tp)->tp_dict, "n_fields"))
 #define REAL_SIZE(op) REAL_SIZE_TP(Py_TYPE(op))
 
 const char* const PyStructSequence_UnnamedField = "unnamed field";
@@ -71,11 +71,8 @@ count_members(PyStructSequence_Desc *desc, Py_ssize_t *n_unnamed_members) {
 }
 
 int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) {
-    Py_ssize_t n_members, n_unnamed_members, n_named_members;
-    Py_ssize_t i;
 
-    memset(type, 0, sizeof(PyTypeObject));
-
+	memset(type, 0, sizeof(PyTypeObject));
 
     // copy generic fields (CPython mem-copies a template)
     type->tp_name = desc->name;
@@ -92,59 +89,13 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
         return -1;
     Py_INCREF(type);
 
-    n_members = count_members(desc, &n_unnamed_members);
-    n_named_members = n_members - n_unnamed_members;
-    // put field names and doc strings into two lists
-    void** field_names = (void **) truffle_managed_malloc(n_named_members * sizeof(void *));
-    void** field_docs = (void **) truffle_managed_malloc(n_named_members * sizeof(void *));
-    PyStructSequence_Field* fields = desc->fields;
-    int j = 0;
-    for (i = 0; i < n_members; i++) {
-        if (fields[i].name != PyStructSequence_UnnamedField) {
-            field_names[j] = truffleString(fields[i].name);
-            field_docs[j] = truffleString(fields[i].doc);
-            j++;
-        }
-    }
-
     // this initializes the type dict (adds attributes)
-    return GraalPyTruffleStructSequence_InitType2(
-            type,
-            /* TODO(fa): use polyglot_from_VoidPtr_array once this is visible */
-            polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_names, (uint64_t) n_members),
-            polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_docs, (uint64_t) n_members),
-            desc->n_in_sequence
-    );
+    return GraalPyTruffleStructSequence_InitType2(type, desc->fields, desc->n_in_sequence);
 }
 
 PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc) {
-    Py_ssize_t n_members, n_unnamed_members, n_named_members;
-    Py_ssize_t i;
-
-    n_members = count_members(desc, &n_unnamed_members);
-    n_named_members = n_members - n_unnamed_members;
-    // put field names and doc strings into two lists
-    void** field_names = (void **) truffle_managed_malloc(n_named_members * sizeof(void *));
-    void** field_docs = (void **) truffle_managed_malloc(n_named_members * sizeof(void *));
-    PyStructSequence_Field* fields = desc->fields;
-    int j = 0;
-    for (i = 0; i < n_members; i++) {
-        if (fields[i].name != PyStructSequence_UnnamedField) {
-            field_names[j] = truffleString(fields[i].name);
-            field_docs[j] = truffleString(fields[i].doc);
-            j++;
-        }
-    }
-
     // we create the new type managed
-    return GraalPyTruffleStructSequence_NewType(
-            truffleString(desc->name),
-            truffleString(desc->doc),
-            /* TODO(fa): use polyglot_from_VoidPtr_array once this is visible */
-            polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_names, (uint64_t) n_members),
-            polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_docs, (uint64_t) n_members),
-            desc->n_in_sequence
-    );
+	return GraalPyTruffleStructSequence_NewType(truffleString(desc->name), truffleString(desc->doc), desc->fields, desc->n_in_sequence);
 }
 
 // taken from CPython "Objects/structseq.c"

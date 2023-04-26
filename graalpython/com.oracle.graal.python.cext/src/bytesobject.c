@@ -50,7 +50,7 @@ PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
         return NULL;
     }
     if (str != NULL) {
-        return GraalPyTruffleBytes_FromStringAndSize(polyglot_from_i8_array(str, sz), sz);
+        return GraalPyTruffleBytes_FromStringAndSize(str, sz);
     }
     return GraalPyTruffle_Bytes_EmptyWithCapacity(sz);
 }
@@ -61,24 +61,21 @@ PyObject* PyByteArray_FromStringAndSize(const char* str, Py_ssize_t sz) {
         return NULL;
     }
     if (str != NULL) {
-        return GraalPyTruffleByteArray_FromStringAndSize(polyglot_from_i8_array(str, sz), sz);
+        return GraalPyTruffleByteArray_FromStringAndSize(str, sz);
     }
     return GraalPyTruffle_ByteArray_EmptyWithCapacity(sz);
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	if (str != NULL) {
-		return GraalPyTruffleBytes_FromStringAndSize(polyglot_from_i8_array(str, strlen(str)), strlen(str));
+		return GraalPyTruffleBytes_FromStringAndSize(str, strlen(str));
 	}
 	return GraalPyTruffle_Bytes_EmptyWithCapacity(0);
 }
 
-char* PyBytes_AsString(PyObject *obj) {
-    return (char*)GraalPyTruffle_Bytes_AsString(obj);
-}
 
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
-    *s = (char*)GraalPyTruffle_Bytes_AsString(obj);
+    *s = (char*)PyBytes_AsString(obj);
     if (*s == NULL) {
         return -1;
     }
@@ -526,8 +523,4 @@ PyObject* bytes_subtype_new(PyTypeObject *type, int8_t* contents, Py_ssize_t n) 
         dst[n] = '\0';
     }
     return bytes;
-}
-
-void* PyTruffle_NativeBytesItems(PyBytesObject* bytes) {
-    return polyglot_from_i8_array((int8_t*)bytes->ob_sval, bytes->ob_base.ob_size);
 }

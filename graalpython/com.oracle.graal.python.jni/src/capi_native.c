@@ -39,7 +39,6 @@
  * SOFTWARE.
  */
 
-#define EXCLUDE_POLYGLOT_API
 #define Py_BUILD_CORE
 
 #include <Python.h>
@@ -50,119 +49,12 @@
 #include <pycore_pymem.h>
 #include <pycore_moduleobject.h>
 
-#include <trufflenfi.h>
-
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
 
-TruffleContext* TRUFFLE_CONTEXT;
-
-#define PY_TYPE_OBJECTS(OBJECT) \
-OBJECT(PyAsyncGen_Type, async_generator) \
-OBJECT(PyBaseObject_Type, object) \
-OBJECT(PyBool_Type, bool) \
-OBJECT(PyByteArrayIter_Type, unimplemented) \
-OBJECT(PyByteArray_Type, bytearray) \
-OBJECT(PyBytesIter_Type, unimplemented) \
-OBJECT(PyBytes_Type, bytes) \
-OBJECT(PyCFunction_Type, builtin_function_or_method) \
-OBJECT(PyCallIter_Type, unimplemented) \
-OBJECT(PyCapsule_Type, capsule) \
-OBJECT(PyCell_Type, cell) \
-OBJECT(PyClassMethodDescr_Type, unimplemented) \
-OBJECT(PyClassMethod_Type, unimplemented) \
-OBJECT(PyCmpWrapper_Type, unimplemented) \
-OBJECT(PyCode_Type, code) \
-OBJECT(PyComplex_Type, complex) \
-OBJECT(PyContextToken_Type, unimplemented) \
-OBJECT(PyContextVar_Type, unimplemented) \
-OBJECT(PyContext_Type, unimplemented) \
-OBJECT(PyCoro_Type, unimplemented) \
-OBJECT(PyDictItems_Type, unimplemented) \
-OBJECT(PyDictIterItem_Type, unimplemented) \
-OBJECT(PyDictIterKey_Type, unimplemented) \
-OBJECT(PyDictIterValue_Type, unimplemented) \
-OBJECT(PyDictKeys_Type, unimplemented) \
-OBJECT(PyDictProxy_Type, mappingproxy) \
-OBJECT(PyDictRevIterItem_Type, unimplemented) \
-OBJECT(PyDictRevIterKey_Type, unimplemented) \
-OBJECT(PyDictRevIterValue_Type, unimplemented) \
-OBJECT(PyDictValues_Type, unimplemented) \
-OBJECT(PyDict_Type, dict) \
-OBJECT(PyEllipsis_Type, ellipsis) \
-OBJECT(PyEnum_Type, unimplemented) \
-OBJECT(PyFilter_Type, unimplemented) \
-OBJECT(PyFloat_Type, float) \
-OBJECT(PyFrame_Type, frame) \
-OBJECT(PyFrozenSet_Type, frozenset) \
-OBJECT(PyFunction_Type, function) \
-OBJECT(PyGen_Type, generator) \
-OBJECT(PyGetSetDescr_Type, getset_descriptor) \
-OBJECT(PyInstanceMethod_Type, instancemethod) \
-OBJECT(PyListIter_Type, unimplemented) \
-OBJECT(PyListRevIter_Type, unimplemented) \
-OBJECT(PyList_Type, list) \
-OBJECT(PyLongRangeIter_Type, unimplemented) \
-OBJECT(PyLong_Type, int) \
-OBJECT(PyMap_Type, map) \
-OBJECT(PyMemberDescr_Type, member_descriptor) \
-OBJECT(PyMemoryView_Type, memoryview) \
-OBJECT(PyMethodDescr_Type, method_descriptor) \
-OBJECT(PyMethod_Type, method) \
-OBJECT(PyModuleDef_Type, moduledef) \
-OBJECT(PyModule_Type, module) \
-OBJECT(PyNullImporter_Type, unimplemented) \
-OBJECT(PyODictItems_Type, unimplemented) \
-OBJECT(PyODictIter_Type, unimplemented) \
-OBJECT(PyODictKeys_Type, unimplemented) \
-OBJECT(PyODictValues_Type, unimplemented) \
-OBJECT(PyODict_Type, unimplemented) \
-OBJECT(PyPickleBuffer_Type, unimplemented) \
-OBJECT(PyProperty_Type, property) \
-OBJECT(PyRangeIter_Type, unimplemented) \
-OBJECT(PyRange_Type, range) \
-OBJECT(PyReversed_Type, unimplemented) \
-OBJECT(PySTEntry_Type, unimplemented) \
-OBJECT(PySeqIter_Type, unimplemented) \
-OBJECT(PySetIter_Type, unimplemented) \
-OBJECT(PySet_Type, set) \
-OBJECT(PySlice_Type, slice) \
-OBJECT(PySortWrapper_Type, unimplemented) \
-OBJECT(PyStaticMethod_Type, unimplemented) \
-OBJECT(PyStdPrinter_Type, unimplemented) \
-OBJECT(PySuper_Type, super) \
-OBJECT(PyTraceBack_Type, traceback) \
-OBJECT(PyTupleIter_Type, unimplemented) \
-OBJECT(PyTuple_Type, tuple) \
-OBJECT(PyType_Type, type) \
-OBJECT(PyUnicodeIter_Type, unimplemented) \
-OBJECT(PyUnicode_Type, str) \
-OBJECT(PyWrapperDescr_Type, wrapper_descriptor) \
-OBJECT(PyZip_Type, zip) \
-OBJECT(_PyAIterWrapper_Type, unimplemented) \
-OBJECT(_PyAsyncGenASend_Type, unimplemented) \
-OBJECT(_PyAsyncGenAThrow_Type, unimplemented) \
-OBJECT(_PyAsyncGenWrappedValue_Type, unimplemented) \
-OBJECT(_PyCoroWrapper_Type, unimplemented) \
-OBJECT(_PyHamtItems_Type, unimplemented) \
-OBJECT(_PyHamtKeys_Type, unimplemented) \
-OBJECT(_PyHamtValues_Type, unimplemented) \
-OBJECT(_PyHamt_ArrayNode_Type, unimplemented) \
-OBJECT(_PyHamt_BitmapNode_Type, unimplemented) \
-OBJECT(_PyHamt_CollisionNode_Type, unimplemented) \
-OBJECT(_PyHamt_Type, unimplemented) \
-OBJECT(_PyInterpreterID_Type, unimplemented) \
-OBJECT(_PyManagedBuffer_Type, unimplemented) \
-OBJECT(_PyMethodWrapper_Type, unimplemented) \
-OBJECT(_PyNamespace_Type, unimplemented) \
-OBJECT(_PyNone_Type, NoneType) \
-OBJECT(_PyNotImplemented_Type, NotImplementedType) \
-OBJECT(_PyWeakref_CallableProxyType, unimplemented) \
-OBJECT(_PyWeakref_ProxyType, unimplemented) \
-OBJECT(_PyWeakref_RefType, ReferenceType) \
-OBJECT(_PyBytesIOBuffer_Type, _BytesIOBuffer) \
-
+#define MUST_INLINE __attribute__((always_inline)) inline
+/*
 #define TYPE_OBJECTS \
 TYPE_OBJECT(PyTypeObject*, PyCapsule_Type, capsule, _object) \
 
@@ -196,74 +88,6 @@ GLOBAL_VAR(int, Py_UnbufferedStdioFlag) \
 GLOBAL_VAR(int, Py_HashRandomizationFlag) \
 GLOBAL_VAR(int, Py_IsolatedFlag) \
 
-#define EXCEPTIONS \
-EXCEPTION(ArithmeticError) \
-EXCEPTION(AssertionError) \
-EXCEPTION(AttributeError) \
-EXCEPTION(BaseException) \
-EXCEPTION(BlockingIOError) \
-EXCEPTION(BrokenPipeError) \
-EXCEPTION(BufferError) \
-EXCEPTION(BytesWarning) \
-EXCEPTION(ChildProcessError) \
-EXCEPTION(ConnectionAbortedError) \
-EXCEPTION(ConnectionError) \
-EXCEPTION(ConnectionRefusedError) \
-EXCEPTION(ConnectionResetError) \
-EXCEPTION(DeprecationWarning) \
-EXCEPTION(EncodingWarning) \
-EXCEPTION(EnvironmentError) \
-EXCEPTION(EOFError) \
-EXCEPTION(Exception) \
-EXCEPTION(FileExistsError) \
-EXCEPTION(FileNotFoundError) \
-EXCEPTION(FloatingPointError) \
-EXCEPTION(FutureWarning) \
-EXCEPTION(GeneratorExit) \
-EXCEPTION(ImportError) \
-EXCEPTION(ImportWarning) \
-EXCEPTION(IndentationError) \
-EXCEPTION(IndexError) \
-EXCEPTION(InterruptedError) \
-EXCEPTION(IOError) \
-EXCEPTION(IsADirectoryError) \
-EXCEPTION(KeyboardInterrupt) \
-EXCEPTION(KeyError) \
-EXCEPTION(LookupError) \
-EXCEPTION(MemoryError) \
-EXCEPTION(ModuleNotFoundError) \
-EXCEPTION(NameError) \
-EXCEPTION(NotADirectoryError) \
-EXCEPTION(NotImplementedError) \
-EXCEPTION(OSError) \
-EXCEPTION(OverflowError) \
-EXCEPTION(PendingDeprecationWarning) \
-EXCEPTION(PermissionError) \
-EXCEPTION(ProcessLookupError) \
-EXCEPTION(RecursionError) \
-EXCEPTION(ReferenceError) \
-EXCEPTION(ResourceWarning) \
-EXCEPTION(RuntimeError) \
-EXCEPTION(RuntimeWarning) \
-EXCEPTION(StopAsyncIteration) \
-EXCEPTION(StopIteration) \
-EXCEPTION(SyntaxError) \
-EXCEPTION(SyntaxWarning) \
-EXCEPTION(SystemError) \
-EXCEPTION(SystemExit) \
-EXCEPTION(TabError) \
-EXCEPTION(TimeoutError) \
-EXCEPTION(TypeError) \
-EXCEPTION(UnboundLocalError) \
-EXCEPTION(UnicodeDecodeError) \
-EXCEPTION(UnicodeEncodeError) \
-EXCEPTION(UnicodeError) \
-EXCEPTION(UnicodeTranslateError) \
-EXCEPTION(UnicodeWarning) \
-EXCEPTION(UserWarning) \
-EXCEPTION(ValueError) \
-EXCEPTION(Warning) \
-EXCEPTION(ZeroDivisionError) \
 
 
 #define DEFINE_TYPE_OBJECT(NAME, TYPENAME) PyTypeObject NAME;
@@ -283,14 +107,14 @@ GLOBAL_VAR_COPIES
 #undef GLOBAL_VAR
 
 #define EXCEPTION(NAME) PyObject* PyExc_##NAME;
-EXCEPTIONS
+PY_EXCEPTIONS
 #undef EXCEPTION
 
 
 #define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef BUILTIN
-
+*/
 
 uint32_t Py_Truffle_Options;
 
@@ -301,16 +125,14 @@ int initNativeForwardCalled = 0;
 /**
  * Returns 1 on success, 0 on error (if it was already initialized).
  */
-PyAPI_FUNC(int) initNativeForward(TruffleEnv* env, void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
+PyAPI_FUNC(int) initNativeForward(void* (*getBuiltin)(int), void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*), void (*initialize_native_locations)(void*,void*,void*)) {
     if (initNativeForwardCalled) {
     	return 0;
     }
     initNativeForwardCalled = 1;
     clock_t t;
     t = clock();
-
-    TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
-
+/*
 #define SET_TYPE_OBJECT_STORE(NAME, TYPENAME) setTypeStore(#TYPENAME, (void*) &NAME);
     PY_TYPE_OBJECTS(SET_TYPE_OBJECT_STORE)
 #undef SET_TYPE_OBJECT_STORE
@@ -328,7 +150,7 @@ PyAPI_FUNC(int) initNativeForward(TruffleEnv* env, void* (*getBuiltin)(int), voi
 #undef GLOBAL_VAR
 
 #define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) getType(#NAME);
-    EXCEPTIONS
+	PY_EXCEPTIONS
 #undef EXCEPTION
 
     // now force all classes toNative:
@@ -343,6 +165,7 @@ PyAPI_FUNC(int) initNativeForward(TruffleEnv* env, void* (*getBuiltin)(int), voi
 #define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
 CAPI_BUILTINS
 #undef BUILTIN
+*/
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
     initializeCAPIForwards(getAPI);
 
@@ -399,55 +222,6 @@ inline void assertHandleOrPointer(PyObject* o) {
 }
 
 /*
-PyAPI_FUNC(struct _typeobject*) _Py_TYPE(PyObject* a) {
-    assertHandleOrPointer(a);
-    return IS_HANDLE(a) ? _Py_TYPE_Inlined(a) : a->ob_type;
-}
-
-PyAPI_FUNC(Py_ssize_t) _Py_SIZE(PyVarObject* a) {
-    assertHandleOrPointer((PyObject*) a);
-    return IS_HANDLE(a) ? _Py_SIZE_Inlined(a) : a->ob_size;
-}
-
-PyAPI_FUNC(void) _Py_SET_TYPE(PyObject* a, struct _typeobject* b) {
-    assertHandleOrPointer(a);
-    assertHandleOrPointer((PyObject*) b);
-    if (IS_HANDLE(a)) {
-        _Py_SET_TYPE_Inlined(a, b);
-    } else {
-        a->ob_type = b;
-    }
-}
-*/
-
-/*
-#undef _Py_Dealloc
-
-void Py_DecRef(PyObject *a) {
-    LOG("0x%lx", (unsigned long) a)
-    if (IS_HANDLE(a)) {
-        Py_DecRef_Inlined(a);
-    } else {
-        Py_ssize_t refcnt = --a->Py_HIDE_IMPL_FIELD(ob_refcnt);
-        if (refcnt != 0) {
-            // TODO: check for negative refcnt
-        } else {
-            _Py_Dealloc(a);
-        }
-    }
-}
-
-void Py_IncRef(PyObject *a) {
-    LOG("0x%lx", (unsigned long) a)
-    if (IS_HANDLE(a)) {
-        Py_IncRef_Inlined(a);
-    } else {
-        a->Py_HIDE_IMPL_FIELD(ob_refcnt)++;
-    }
-}
-*/
-
-/*
 This is a workaround for C++ modules, namely PyTorch, that declare global/static variables with destructors that call
 _Py_DECREF. The destructors get called by libc during exit during which we cannot make upcalls as that would segfault.
 So we rebind them to no-ops when exiting.
@@ -461,31 +235,6 @@ void nop_GraalPy_set_PyObject_ob_refcnt(PyObject* obj, Py_ssize_t refcnt) {
 PyAPI_FUNC(void) finalizeCAPI() {
 	GraalPy_get_PyObject_ob_refcnt = nop_GraalPy_get_PyObject_ob_refcnt;
 	GraalPy_set_PyObject_ob_refcnt = nop_GraalPy_set_PyObject_ob_refcnt;
-}
-
-#define _PYGILSTATE_LOCKED   0x1
-#define _PYGILSTATE_ATTACHED 0x2
-
-PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
-    int result = 0;
-    if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
-        (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
-        result |= _PYGILSTATE_ATTACHED;
-    }
-    int locked = PyTruffleGILState_Ensure();
-    if (locked) {
-        result |= _PYGILSTATE_LOCKED;
-    }
-    return result;
-}
-
-PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE state) {
-    if (state & _PYGILSTATE_LOCKED) {
-        PyTruffleGILState_Release();
-    }
-    if (state & _PYGILSTATE_ATTACHED) {
-        (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
-    }
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
@@ -506,99 +255,6 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
 }
 
 int (*PyOS_InputHook)(void) = NULL;
-
-static PyObject* callBuffer[1024];
-PyAPI_FUNC(PyObject *) PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
-    va_list myargs;
-    va_start(myargs, callable);
-    PyObject *arg;
-    int count = 0;
-    while (count <= 1024) {
-        arg = va_arg(myargs, PyObject *);
-        if (arg == NULL) {
-            break;
-        }
-        callBuffer[count++] = arg;
-    }
-    // test if buffer was too small
-    if (arg != NULL) {
-        Py_FatalError("argument buffer for 'PyObject_CallFunctionObjArgs' is too small");
-    }
-    PyObject* args = PyTuple_New(count);
-    for (int i = 0; i < count; i++) {
-        Py_XINCREF(callBuffer[i]);
-        PyTuple_SetItem(args, i, callBuffer[i]);
-    }
-    va_end(myargs);
-
-    PyObject* result = PyObject_CallObject(callable, args);
-    Py_DECREF(args);
-    return result;
-}
-
-PyObject * PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)  {
-    if ((obj == NULL || name == NULL) && !PyErr_Occurred()) {
-        PyErr_SetString(PyExc_SystemError,
-                         "null argument to internal routine");
-        return NULL;
-    }
-
-    PyObject *callable = NULL;
-    int is_method = _PyObject_GetMethod(obj, name, &callable);
-    if (callable == NULL) {
-        return NULL;
-    }
-    obj = is_method ? obj : NULL;
-
-    va_list myargs;
-    va_start(myargs, name);
-    PyObject *arg;
-    int count = 0;
-    while (count <= 1024) {
-        arg = va_arg(myargs, PyObject *);
-        if (arg == NULL) {
-            break;
-        }
-        callBuffer[count++] = arg;
-    }
-    // test if buffer was too small
-    if (arg != NULL) {
-        Py_FatalError("argument buffer for 'PyObject_CallMethodObjArgs' is too small");
-    }
-    PyObject* args = PyTuple_New(count);
-    for (int i = 0; i < count; i++) {
-        Py_INCREF(callBuffer[i]);
-        PyTuple_SetItem(args, i, callBuffer[i]);
-    }
-    va_end(myargs);
-
-    PyObject* result = PyObject_CallObject(callable, args);
-    Py_DECREF(args);
-    return result;
-}
-
-PyObject * _PyObject_CallMethodIdObjArgs(PyObject *object, struct _Py_Identifier *name, ...) {
-    va_list myargs;
-    va_start(myargs, name);
-    int count = 0;
-    while (count <= 1024) {
-        PyObject *o = va_arg(myargs, PyObject *);
-        if (o == NULL) {
-            break;
-        }
-        callBuffer[count++] = o;
-    }
-    PyObject* args = PyTuple_New(count);
-    for (int i = 0; i < count; i++) {
-        Py_XINCREF(callBuffer[i]);
-        PyTuple_SetItem(args, i, callBuffer[i]);
-    }
-    va_end(myargs);
-
-    PyObject* result = Graal_PyTruffleObject_CallMethod1(object, name->string, args, 0);
-    Py_DECREF(args);
-    return result;
-}
 
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
     printf("_PyArg_ParseStack_SizeT not implemented in capi_native - exiting\n");
@@ -646,36 +302,58 @@ PyThreadState * PyThreadState_Get() {
     return &mainThreadState;
 }
 
-char _PyByteArray_empty_string[] = "";
-
 /*
  * The following source files contain code that can be compiled directly and does not need to be called via stubs in Sulong:
  */
-#define COMPILING_NATIVE_CAPI
-
-// there are only pointers, no polyglot values
-static int polyglot_is_value(const void *value) {
-    return 0;
-}
-
-// conversion needs to be done on the Java side
-#define truffleString(VALUE) (VALUE)
 
 #include "_warnings.c"
+#include "abstract.c"
 #include "boolobject.c"
-#include "bytearrayobject_shared.c"
-#include "longobject_shared.c"
+#include "bytearrayobject.c"
+#include "bytesobject.c"
+#include "ceval.c"
+#include "classobject.c"
+#include "codecs.c"
+#include "compile.c"
 #include "complexobject.c"
+#include "context.c"
+#include "descrobject.c"
 #include "dictobject.c"
-#include "descrobject_shared.c"
+#include "errors.c"
+#include "fileobject.c"
 #include "floatobject.c"
+#include "frameobject.c"
+#include "genobject.c"
+#include "getbuildinfo.c"
+#include "getcompiler.c"
+#include "getversion.c"
+#include "import.c"
+#include "longobject.c"
+#include "memoryobject.c"
+#include "methodobject.c"
 #include "modsupport_shared.c"
-#include "object_shared.c"
+#include "moduleobject.c"
+#include "mysnprintf.c"
+#include "mystrtoul.c"
+#include "object.c"
 #include "obmalloc.c"
+#include "pyhash.c"
 #include "pylifecycle.c"
-#include "sysmodule.c"
-#include "typeobject_shared.c"
+#include "pystate.c"
 #include "pystrcmp.c"
+#include "pystrhex.c"
+#include "pystrtod.c"
+#include "pytime.c"
+#include "setobject.c"
+#include "signals.c"
+#include "sliceobject.c"
+#include "sysmodule.c"
+#include "structseq.c"
+#include "thread.c"
+#include "traceback.c"
+#include "unicodectype.c"
+#include "weakrefobject.c"
+
 
 /*
  * This mirrors the definition in capi.c that we us on Sulong, and needs to be

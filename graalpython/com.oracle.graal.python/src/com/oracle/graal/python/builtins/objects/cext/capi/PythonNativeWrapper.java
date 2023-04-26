@@ -118,7 +118,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         return nativePointer != UNINITIALIZED;
     }
 
-    protected static long coerceToLong(Object allocated, InteropLibrary lib) {
+    public static long coerceToLong(Object allocated, InteropLibrary lib) {
         if (allocated instanceof Long) {
             return (long) allocated;
         } else {

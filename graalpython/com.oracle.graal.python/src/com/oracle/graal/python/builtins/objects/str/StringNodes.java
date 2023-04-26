@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -82,7 +82,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -98,6 +97,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -120,9 +120,11 @@ public abstract class StringNodes {
 
         @Specialization(guards = {"x.isNativeCharSequence()", "!x.isMaterialized()"}, replaces = "doMaterializedNative")
         static TruffleString doNative(PString x,
-                        @Cached PCallCapiFunction callCStringToStringNode,
-                        @Cached UnicodeFromWcharNode fromWcharNode) {
-            TruffleString materialized = materializeNativeCharSequence(x.getNativeCharSequence(), callCStringToStringNode, fromWcharNode);
+                        @Cached ReadUnicodeArrayNode readArray,
+                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
+            NativeCharSequence sequence = x.getNativeCharSequence();
+            assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
+            TruffleString materialized = fromArray.execute(readArray.execute(sequence.getPtr(), sequence.getElements(), sequence.getElementSize()));
             x.setMaterialized(materialized);
             return materialized;
         }
@@ -130,35 +132,6 @@ public abstract class StringNodes {
         @Specialization(guards = "x.isMaterialized()")
         static TruffleString doMaterialized(PString x) {
             return x.getMaterialized();
-        }
-
-        public static TruffleString materializeNativeCharSequence(NativeCharSequence nativeCharSequence,
-                        PCallCapiFunction callCStringToStringNode,
-                        UnicodeFromWcharNode fromWcharNode) {
-            // cast guaranteed by the guard
-            TruffleString materialized;
-            if (nativeCharSequence.isAsciiOnly()) {
-                materialized = (TruffleString) callCStringToStringNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_ASCII_TO_STRING, nativeCharSequence.getPtr());
-            } else {
-                switch (nativeCharSequence.getElementSize()) {
-                    case 1:
-                        materialized = (TruffleString) callCStringToStringNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
-                        break;
-                    case 2:
-                    case 4:
-                        /*
-                         * TODO(fa): Attach LLVM type to pointer depending on the element size. In
-                         * order that UnicodeFromWcharNode works properly, the pointer must be typed
-                         * since it will try to read the elements via interop. We should do that
-                         * here since we want this to be done as late as possible.
-                         */
-                        materialized = fromWcharNode.execute(nativeCharSequence.getPtr(), nativeCharSequence.getElementSize());
-                        break;
-                    default:
-                        throw CompilerDirectives.shouldNotReachHere("illegal element size");
-                }
-            }
-            return materialized;
         }
 
         @NeverDefault

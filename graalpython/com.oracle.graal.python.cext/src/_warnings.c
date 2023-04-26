@@ -176,10 +176,6 @@ exit:
     return ret;
 }
 
-void _PyErr_ChainExceptions(PyObject* a, PyObject* b, PyObject* c) {
-	// empty dummy implementation
-}
-
 PyObject* _PyErr_FormatFromCause(PyObject *exception, const char *format, ...) {
 	// dummy implementation that ignores the cause
     va_list args;

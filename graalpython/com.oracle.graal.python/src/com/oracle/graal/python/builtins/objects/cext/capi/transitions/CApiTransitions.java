@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
@@ -69,7 +70,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -95,7 +98,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 
 import sun.misc.Unsafe;
 
@@ -237,7 +239,10 @@ public class CApiTransitions {
                             assert context.referenceQueuePollActive;
                             if (!referencesToBeFreed.isEmpty()) {
                                 LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
-                                PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_BULK_DEALLOC, referencesToBeFreed, referencesToBeFreed.getArraySize());
+                                Object array = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(referencesToBeFreed.getArraySize() * Long.BYTES);
+                                CStructAccessFactory.WriteLongNodeGen.getUncached().writeLongArray(array, referencesToBeFreed.getArray(), (int) referencesToBeFreed.getArraySize(), 0, 0);
+                                PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_BULK_DEALLOC, array, referencesToBeFreed.getArraySize());
+                                CStructAccessFactory.FreeNodeGen.getUncached().free(array);
                                 referencesToBeFreed.reset();
                             }
                             context.referenceQueuePollActive = false;
@@ -275,11 +280,9 @@ public class CApiTransitions {
                         LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeStorageReference %s", reference));
                         context.nativeStorageReferences.remove(entry);
                         if (reference.type == ListStorageType.Generic) {
-                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_FREE, reference.ptr, reference.size);
-                        } else {
-                            assert reference.type != ListStorageType.Uninitialized;
-                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_PRIMITIVE_ARRAY_FREE, reference.ptr);
+                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
                         }
+                        CStructAccessFactory.FreeNodeGen.getUncached().free(reference.ptr);
                     }
                 }
             }
@@ -522,10 +525,15 @@ public class CApiTransitions {
             // nothing to do
         }
 
+        @ExportMessage
+        public boolean isNull() {
+            return pointer == 0;
+        }
+
         @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
-            return String.format("<%016x>", pointer);
+            return String.format("<0x%016x>", pointer);
         }
     }
 
@@ -953,6 +961,99 @@ public class CApiTransitions {
         }
     }
 
+    @GenerateUncached
+    @GenerateInline(false)
+    @ImportStatic(CApiGuards.class)
+    public abstract static class NativePtrToPythonNode extends PNodeWithContext {
+
+        public abstract Object execute(long object, boolean stealing);
+
+        @TruffleBoundary
+        public static Object executeUncached(long object, boolean stealing) {
+            return NativePtrToPythonNodeGen.getUncached().execute(object, stealing);
+        }
+
+        @Specialization
+        @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
+        Object doNonWrapper(long pointer, boolean stealing,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached InlinedConditionProfile isZeroProfile,
+                        @Cached InlinedConditionProfile createNativeProfile,
+                        @Cached InlinedConditionProfile isNativeProfile,
+                        @Cached InlinedConditionProfile isNativeWrapperProfile,
+                        @Cached InlinedConditionProfile isHandleSpaceProfile,
+                        @Cached InlinedConditionProfile isPrimitiveProfile) {
+
+            PythonNativeWrapper wrapper;
+
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            HandleContext nativeContext = pythonContext.nativeContext;
+
+            if (isZeroProfile.profile(inliningTarget, pointer == 0)) {
+                return PNone.NO_VALUE;
+            }
+            assert pythonContext.ownsGil();
+            if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
+                PythonObjectReference reference = nativeContext.nativeHandles.get(HandlePointerConverter.pointerToHandleIndex(pointer));
+                if (reference == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
+                }
+                wrapper = reference.get();
+                if (wrapper == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
+                }
+            } else {
+                IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
+                if (isNativeProfile.profile(inliningTarget, lookup != null)) {
+                    Object ref = lookup.get();
+                    if (createNativeProfile.profile(inliningTarget, ref == null)) {
+                        LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
+                        return createAbstractNativeObject(pointer, stealing, pointer);
+                    }
+                    if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
+                        wrapper = (PythonNativeWrapper) ref;
+                    } else {
+                        PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
+                        if (stealing) {
+                            addNativeRefCount(pointer, -1);
+                        }
+                        return result;
+                    }
+                } else {
+                    return createAbstractNativeObject(pointer, stealing, pointer);
+                }
+            }
+            return handleWrapper(inliningTarget, isPrimitiveProfile, stealing, wrapper);
+        }
+
+        private static Object handleWrapper(Node node, InlinedConditionProfile isPrimitiveProfile, boolean transfer, PythonNativeWrapper wrapper) {
+            if (transfer) {
+                assert wrapper.getRefCount() >= PythonNativeWrapper.MANAGED_REFCNT;
+                decRef(wrapper, 1);
+            }
+            if (isPrimitiveProfile.profile(node, wrapper instanceof PrimitiveNativeWrapper)) {
+                PrimitiveNativeWrapper primitive = (PrimitiveNativeWrapper) wrapper;
+                if (primitive.isBool()) {
+                    return primitive.getBool();
+                } else if (primitive.isInt()) {
+                    return primitive.getInt();
+                } else if (primitive.isLong()) {
+                    return primitive.getLong();
+                } else if (primitive.isByte()) {
+                    return primitive.getByte();
+                } else if (primitive.isDouble()) {
+                    return primitive.getDouble();
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                return wrapper.getDelegate();
+            }
+        }
+    }
+
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
     private static final int TP_REFCNT_OFFSET = 0;
 
@@ -993,7 +1094,7 @@ public class CApiTransitions {
 
     @TruffleBoundary
     public static boolean isBackendPointerObject(Object obj) {
-        return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer"));
+        return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("PointerContainer"));
     }
 
     @TruffleBoundary
@@ -1040,41 +1141,6 @@ public class CApiTransitions {
                 }
             }
             return null;
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class PythonToNativeTransfer implements TruffleObject {
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public Object execute(Object[] args,
-                        @Cached PythonToNativeNewRefNode toNative) {
-            assert args.length == 1;
-            return toNative.execute(args[0]);
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class JavaStringToTruffleString implements TruffleObject {
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public Object execute(Object[] args,
-                        @Cached FromJavaStringNode fromJavaString) {
-            assert args.length == 1;
-            assert args[0] instanceof String;
-            return fromJavaString.execute((String) args[0], PythonUtils.TS_ENCODING);
         }
     }
 }

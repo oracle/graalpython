@@ -47,9 +47,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.AttributeAssumptionPair;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -119,8 +121,8 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         // (PythonMangedClass returns MappingProxy, which is read-only). Native classes could
         // possibly do so, but for now leaving it as it is.
         PDict dict;
-        if (klass instanceof PythonAbstractNativeObject) {
-            Object nativedict = CExtNodes.GetTypeMemberNode.getUncached().execute(klass, NativeMember.TP_DICT);
+        if (klass instanceof PythonAbstractNativeObject nativeKlass) {
+            Object nativedict = CStructAccess.ReadObjectNode.getUncached().readFromObj(nativeKlass, CFields.PyTypeObject__tp_dict);
             dict = nativedict == PNone.NO_VALUE ? null : (PDict) nativedict;
         } else {
             dict = GetDictIfExistsNode.getUncached().execute(klass);
@@ -136,7 +138,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
                 GetMroStorageNode.getUncached().execute(clsObj).addAttributeInMROFinalAssumption(slot.methodName, attrAssumption);
             }
-            Object value = readSlot(clsObj, ReadAttributeFromObjectNode.getUncachedForceType(), ToSulongNode.getUncached(), PCallCapiFunction.getUncached(), InteropLibrary.getUncached());
+            Object value = readSlot(clsObj, ReadAttributeFromObjectNode.getUncachedForceType(), CStructAccess.ReadPointerNode.getUncached(), InteropLibrary.getUncached());
             if (value != null) {
                 return new AttributeAssumptionPair(attrAssumption, value);
             }
@@ -182,12 +184,11 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("mro.length()") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes,
-                    @Cached ToSulongNode toSulongNode,
-                    @Cached PCallCapiFunction callCapiFunction,
+                    @Cached CStructAccess.ReadPointerNode readPointerNode,
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         for (int i = 0; i < mroLength; i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
-            Object value = readSlot(kls, readAttrNodes[i], toSulongNode, callCapiFunction, interopLibrary);
+            Object value = readSlot(kls, readAttrNodes[i], readPointerNode, interopLibrary);
             if (value != null) {
                 return value;
             }
@@ -205,12 +206,11 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
                     @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
                     @Cached("mro.length()") int cachedMroLength,
                     @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes,
-                    @Cached ToSulongNode toSulongNode,
-                    @Cached PCallCapiFunction callCapiFunction,
+                    @Cached CStructAccess.ReadPointerNode readPointerNode,
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         for (int i = 0; i < cachedMroLength; i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
-            Object value = readSlot(kls, readAttrNodes[i], toSulongNode, callCapiFunction, interopLibrary);
+            Object value = readSlot(kls, readAttrNodes[i], readPointerNode, interopLibrary);
             if (value != null) {
                 return value;
             }
@@ -223,13 +223,12 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
     protected Object lookupGeneric(PythonManagedClass klass,
                     @Cached GetMroStorageNode getMroStorageNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
-                    @Cached ToSulongNode toSulongNode,
-                    @Cached PCallCapiFunction callCapiFunction,
+                    @Cached CStructAccess.ReadPointerNode readPointerNode,
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         MroSequenceStorage mro = getMroStorageNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
-            Object value = readSlot(kls, readAttrNode, toSulongNode, callCapiFunction, interopLibrary);
+            Object value = readSlot(kls, readAttrNode, readPointerNode, interopLibrary);
             if (value != null) {
                 return value;
             }
@@ -246,12 +245,19 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         return getContext().getNativeNull().getPtr();
     }
 
-    private Object readSlot(PythonAbstractClass currentType, ReadAttributeFromObjectNode readNode, ToSulongNode toSulongNode, PCallCapiFunction callCapiFunction,
+    private Object readSlot(PythonAbstractClass currentType, ReadAttributeFromObjectNode readNode, CStructAccess.ReadPointerNode readPointerNode,
                     InteropLibrary interopLibrary) {
-        if (currentType instanceof PythonNativeClass) {
-            Object value = callCapiFunction.call(slot.getGetter(), toSulongNode.execute(currentType));
-            if (!interopLibrary.isNull(value)) {
-                return value;
+        if (currentType instanceof PythonAbstractNativeObject nativeObject) {
+            Object value = readPointerNode.readFromObj(nativeObject, slot.typeField);
+            if (!PGuards.isNullOrZero(value, interopLibrary)) {
+                if (slot.methodsField == null) {
+                    return value;
+                } else {
+                    value = readPointerNode.read(value, slot.methodsField);
+                    if (!PGuards.isNullOrZero(value, interopLibrary)) {
+                        return value;
+                    }
+                }
             }
         } else {
             assert currentType instanceof PythonManagedClass;
@@ -289,7 +295,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         @Override
         @TruffleBoundary
         public Object execute(PythonManagedClass type) {
-            return lookupGeneric(type, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), ToSulongNode.getUncached(), PCallCapiFunction.getUncached(),
+            return lookupGeneric(type, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), CStructAccess.ReadPointerNode.getUncached(),
                             InteropLibrary.getUncached());
         }
     }

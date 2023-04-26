@@ -326,7 +326,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     HashlibHash("HASH", "_hashlib", Flags.PUBLIC_BASE_WODICT),
     HashlibHashXof("HASHXOF", "_hashlib", Flags.PUBLIC_DERIVED_WODICT),
     HashlibHmac("HMAC", "_hashlib", Flags.PUBLIC_BASE_WODICT),
-    UnsupportedDigestmodError("UnsupportedDigestmodError", "_hashlib", Flags.EXCEPTION),
+    UnsupportedDigestmodError("UnsupportedDigestmodError", "_hashlib"),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", "ast", Flags.PUBLIC_BASE_WDICT),
@@ -351,7 +351,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CField("CField", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     DictRemover("DictRemover", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     StructParam("StructParam_Type", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    ArgError("ArgumentError", J__CTYPES, Flags.EXCEPTION),
+    ArgError("ArgumentError", J__CTYPES),
 
     // _multibytecodec
     MultibyteCodec("MultibyteCodec", "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
@@ -363,99 +363,99 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
-    PBaseException("BaseException", J_BUILTINS, Flags.EXCEPTION),
-    SystemExit("SystemExit", J_BUILTINS, Flags.EXCEPTION),
-    KeyboardInterrupt("KeyboardInterrupt", J_BUILTINS, Flags.EXCEPTION),
-    GeneratorExit("GeneratorExit", J_BUILTINS, Flags.EXCEPTION),
-    Exception("Exception", J_BUILTINS, Flags.EXCEPTION),
-    StopIteration("StopIteration", J_BUILTINS, Flags.EXCEPTION),
-    StopAsyncIteration("StopAsyncIteration", J_BUILTINS, Flags.EXCEPTION),
-    ArithmeticError("ArithmeticError", J_BUILTINS, Flags.EXCEPTION),
-    FloatingPointError("FloatingPointError", J_BUILTINS, Flags.EXCEPTION),
-    OverflowError("OverflowError", J_BUILTINS, Flags.EXCEPTION),
-    ZeroDivisionError("ZeroDivisionError", J_BUILTINS, Flags.EXCEPTION),
-    AssertionError("AssertionError", J_BUILTINS, Flags.EXCEPTION),
-    AttributeError("AttributeError", J_BUILTINS, Flags.EXCEPTION),
-    BufferError("BufferError", J_BUILTINS, Flags.EXCEPTION),
-    EOFError("EOFError", J_BUILTINS, Flags.EXCEPTION),
-    ImportError("ImportError", J_BUILTINS, Flags.EXCEPTION),
-    ModuleNotFoundError("ModuleNotFoundError", J_BUILTINS, Flags.EXCEPTION),
-    LookupError("LookupError", J_BUILTINS, Flags.EXCEPTION),
-    IndexError("IndexError", J_BUILTINS, Flags.EXCEPTION),
-    KeyError("KeyError", J_BUILTINS, Flags.EXCEPTION),
-    MemoryError("MemoryError", J_BUILTINS, Flags.EXCEPTION),
-    NameError("NameError", J_BUILTINS, Flags.EXCEPTION),
-    UnboundLocalError("UnboundLocalError", J_BUILTINS, Flags.EXCEPTION),
-    OSError("OSError", J_BUILTINS, Flags.EXCEPTION),
-    BlockingIOError("BlockingIOError", J_BUILTINS, Flags.EXCEPTION),
-    ChildProcessError("ChildProcessError", J_BUILTINS, Flags.EXCEPTION),
-    ConnectionError("ConnectionError", J_BUILTINS, Flags.EXCEPTION),
-    BrokenPipeError("BrokenPipeError", J_BUILTINS, Flags.EXCEPTION),
-    ConnectionAbortedError("ConnectionAbortedError", J_BUILTINS, Flags.EXCEPTION),
-    ConnectionRefusedError("ConnectionRefusedError", J_BUILTINS, Flags.EXCEPTION),
-    ConnectionResetError("ConnectionResetError", J_BUILTINS, Flags.EXCEPTION),
-    FileExistsError("FileExistsError", J_BUILTINS, Flags.EXCEPTION),
-    FileNotFoundError("FileNotFoundError", J_BUILTINS, Flags.EXCEPTION),
-    InterruptedError("InterruptedError", J_BUILTINS, Flags.EXCEPTION),
-    IsADirectoryError("IsADirectoryError", J_BUILTINS, Flags.EXCEPTION),
-    NotADirectoryError("NotADirectoryError", J_BUILTINS, Flags.EXCEPTION),
-    PermissionError("PermissionError", J_BUILTINS, Flags.EXCEPTION),
-    ProcessLookupError("ProcessLookupError", J_BUILTINS, Flags.EXCEPTION),
-    TimeoutError("TimeoutError", J_BUILTINS, Flags.EXCEPTION),
-    ZLibError("error", "zlib", Flags.EXCEPTION),
-    CSVError("Error", "_csv", Flags.EXCEPTION),
-    LZMAError("LZMAError", "_lzma", Flags.EXCEPTION),
-    StructError("StructError", J__STRUCT, Flags.EXCEPTION),
-    PickleError("PickleError", "_pickle", Flags.EXCEPTION),
-    PicklingError("PicklingError", "_pickle", Flags.EXCEPTION),
-    UnpicklingError("UnpicklingError", "_pickle", Flags.EXCEPTION),
-    SocketGAIError("gaierror", J__SOCKET, Flags.EXCEPTION),
-    SocketHError("herror", J__SOCKET, Flags.EXCEPTION),
-    BinasciiError("Error", "binascii", Flags.EXCEPTION),
-    BinasciiIncomplete("Incomplete", "binascii", Flags.EXCEPTION),
-    SSLError("SSLError", J__SSL, Flags.EXCEPTION),
-    SSLZeroReturnError("SSLZeroReturnError", J__SSL, Flags.EXCEPTION),
-    SSLWantReadError("SSLWantReadError", J__SSL, Flags.EXCEPTION),
-    SSLWantWriteError("SSLWantWriteError", J__SSL, Flags.EXCEPTION),
-    SSLSyscallError("SSLSyscallError", J__SSL, Flags.EXCEPTION),
-    SSLEOFError("SSLEOFError", J__SSL, Flags.EXCEPTION),
-    SSLCertVerificationError("SSLCertVerificationError", J__SSL, Flags.EXCEPTION),
+    PBaseException("BaseException", J_BUILTINS),
+    SystemExit("SystemExit", J_BUILTINS),
+    KeyboardInterrupt("KeyboardInterrupt", J_BUILTINS),
+    GeneratorExit("GeneratorExit", J_BUILTINS),
+    Exception("Exception", J_BUILTINS),
+    StopIteration("StopIteration", J_BUILTINS),
+    StopAsyncIteration("StopAsyncIteration", J_BUILTINS),
+    ArithmeticError("ArithmeticError", J_BUILTINS),
+    FloatingPointError("FloatingPointError", J_BUILTINS),
+    OverflowError("OverflowError", J_BUILTINS),
+    ZeroDivisionError("ZeroDivisionError", J_BUILTINS),
+    AssertionError("AssertionError", J_BUILTINS),
+    AttributeError("AttributeError", J_BUILTINS),
+    BufferError("BufferError", J_BUILTINS),
+    EOFError("EOFError", J_BUILTINS),
+    ImportError("ImportError", J_BUILTINS),
+    ModuleNotFoundError("ModuleNotFoundError", J_BUILTINS),
+    LookupError("LookupError", J_BUILTINS),
+    IndexError("IndexError", J_BUILTINS),
+    KeyError("KeyError", J_BUILTINS),
+    MemoryError("MemoryError", J_BUILTINS),
+    NameError("NameError", J_BUILTINS),
+    UnboundLocalError("UnboundLocalError", J_BUILTINS),
+    OSError("OSError", J_BUILTINS),
+    BlockingIOError("BlockingIOError", J_BUILTINS),
+    ChildProcessError("ChildProcessError", J_BUILTINS),
+    ConnectionError("ConnectionError", J_BUILTINS),
+    BrokenPipeError("BrokenPipeError", J_BUILTINS),
+    ConnectionAbortedError("ConnectionAbortedError", J_BUILTINS),
+    ConnectionRefusedError("ConnectionRefusedError", J_BUILTINS),
+    ConnectionResetError("ConnectionResetError", J_BUILTINS),
+    FileExistsError("FileExistsError", J_BUILTINS),
+    FileNotFoundError("FileNotFoundError", J_BUILTINS),
+    InterruptedError("InterruptedError", J_BUILTINS),
+    IsADirectoryError("IsADirectoryError", J_BUILTINS),
+    NotADirectoryError("NotADirectoryError", J_BUILTINS),
+    PermissionError("PermissionError", J_BUILTINS),
+    ProcessLookupError("ProcessLookupError", J_BUILTINS),
+    TimeoutError("TimeoutError", J_BUILTINS),
+    ZLibError("error", "zlib"),
+    CSVError("Error", "_csv"),
+    LZMAError("LZMAError", "_lzma"),
+    StructError("StructError", J__STRUCT),
+    PickleError("PickleError", "_pickle"),
+    PicklingError("PicklingError", "_pickle"),
+    UnpicklingError("UnpicklingError", "_pickle"),
+    SocketGAIError("gaierror", J__SOCKET),
+    SocketHError("herror", J__SOCKET),
+    BinasciiError("Error", "binascii"),
+    BinasciiIncomplete("Incomplete", "binascii"),
+    SSLError("SSLError", J__SSL),
+    SSLZeroReturnError("SSLZeroReturnError", J__SSL),
+    SSLWantReadError("SSLWantReadError", J__SSL),
+    SSLWantWriteError("SSLWantWriteError", J__SSL),
+    SSLSyscallError("SSLSyscallError", J__SSL),
+    SSLEOFError("SSLEOFError", J__SSL),
+    SSLCertVerificationError("SSLCertVerificationError", J__SSL),
     PForeignException("ForeignException", Flags.FOREIGN_EXCEPTION),
 
     // todo: all OS errors
 
-    ReferenceError("ReferenceError", J_BUILTINS, Flags.EXCEPTION),
-    RuntimeError("RuntimeError", J_BUILTINS, Flags.EXCEPTION),
-    NotImplementedError("NotImplementedError", J_BUILTINS, Flags.EXCEPTION),
-    SyntaxError("SyntaxError", J_BUILTINS, Flags.EXCEPTION),
-    IndentationError("IndentationError", J_BUILTINS, Flags.EXCEPTION),
-    TabError("TabError", J_BUILTINS, Flags.EXCEPTION),
-    SystemError("SystemError", J_BUILTINS, Flags.EXCEPTION),
-    TypeError("TypeError", J_BUILTINS, Flags.EXCEPTION),
-    ValueError("ValueError", J_BUILTINS, Flags.EXCEPTION),
-    UnicodeError("UnicodeError", J_BUILTINS, Flags.EXCEPTION),
-    UnicodeDecodeError("UnicodeDecodeError", J_BUILTINS, Flags.EXCEPTION),
-    UnicodeEncodeError("UnicodeEncodeError", J_BUILTINS, Flags.EXCEPTION),
-    UnicodeTranslateError("UnicodeTranslateError", J_BUILTINS, Flags.EXCEPTION),
-    RecursionError("RecursionError", J_BUILTINS, Flags.EXCEPTION),
+    ReferenceError("ReferenceError", J_BUILTINS),
+    RuntimeError("RuntimeError", J_BUILTINS),
+    NotImplementedError("NotImplementedError", J_BUILTINS),
+    SyntaxError("SyntaxError", J_BUILTINS),
+    IndentationError("IndentationError", J_BUILTINS),
+    TabError("TabError", J_BUILTINS),
+    SystemError("SystemError", J_BUILTINS),
+    TypeError("TypeError", J_BUILTINS),
+    ValueError("ValueError", J_BUILTINS),
+    UnicodeError("UnicodeError", J_BUILTINS),
+    UnicodeDecodeError("UnicodeDecodeError", J_BUILTINS),
+    UnicodeEncodeError("UnicodeEncodeError", J_BUILTINS),
+    UnicodeTranslateError("UnicodeTranslateError", J_BUILTINS),
+    RecursionError("RecursionError", J_BUILTINS),
 
-    IOUnsupportedOperation("UnsupportedOperation", "io", Flags.EXCEPTION),
+    IOUnsupportedOperation("UnsupportedOperation", "io"),
 
-    Empty("Empty", "_queue", Flags.EXCEPTION),
+    Empty("Empty", "_queue"),
 
     // warnings
-    Warning("Warning", J_BUILTINS, Flags.EXCEPTION),
-    BytesWarning("BytesWarning", J_BUILTINS, Flags.EXCEPTION),
-    DeprecationWarning("DeprecationWarning", J_BUILTINS, Flags.EXCEPTION),
-    FutureWarning("FutureWarning", J_BUILTINS, Flags.EXCEPTION),
-    ImportWarning("ImportWarning", J_BUILTINS, Flags.EXCEPTION),
-    PendingDeprecationWarning("PendingDeprecationWarning", J_BUILTINS, Flags.EXCEPTION),
-    ResourceWarning("ResourceWarning", J_BUILTINS, Flags.EXCEPTION),
-    RuntimeWarning("RuntimeWarning", J_BUILTINS, Flags.EXCEPTION),
-    SyntaxWarning("SyntaxWarning", J_BUILTINS, Flags.EXCEPTION),
-    UnicodeWarning("UnicodeWarning", J_BUILTINS, Flags.EXCEPTION),
-    UserWarning("UserWarning", J_BUILTINS, Flags.EXCEPTION),
-    EncodingWarning("EncodingWarning", J_BUILTINS, Flags.EXCEPTION),
+    Warning("Warning", J_BUILTINS),
+    BytesWarning("BytesWarning", J_BUILTINS),
+    DeprecationWarning("DeprecationWarning", J_BUILTINS),
+    FutureWarning("FutureWarning", J_BUILTINS),
+    ImportWarning("ImportWarning", J_BUILTINS),
+    PendingDeprecationWarning("PendingDeprecationWarning", J_BUILTINS),
+    ResourceWarning("ResourceWarning", J_BUILTINS),
+    RuntimeWarning("RuntimeWarning", J_BUILTINS),
+    SyntaxWarning("SyntaxWarning", J_BUILTINS),
+    UnicodeWarning("UnicodeWarning", J_BUILTINS),
+    UserWarning("UserWarning", J_BUILTINS),
+    EncodingWarning("EncodingWarning", J_BUILTINS),
 
     // contextvars
     ContextVarsToken("Token", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
@@ -471,7 +471,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     private static class Flags {
 
-        static final Flags EXCEPTION = new Flags(true, true, true);
         static final Flags FOREIGN_EXCEPTION = new Flags(false, false, true);
         static final Flags PRIVATE_DERIVED_WDICT = new Flags(false, false, true);
         static final Flags PRIVATE_BASE_WDICT = new Flags(false, true, true);
@@ -500,7 +499,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final TruffleString printName;
     private final boolean basetype;
     private final boolean isBuiltinWithDict;
-    private final boolean isException;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType type;
@@ -545,7 +543,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         }
         this.basetype = flags.isBaseType;
         this.isBuiltinWithDict = flags.isBuiltinWithDict;
-        this.isException = flags == Flags.EXCEPTION;
         this.methodsFlags = methodsFlags;
         this.weaklistoffset = -1;
     }
@@ -889,9 +886,5 @@ public enum PythonBuiltinClassType implements TruffleObject {
     public Object send(Message message, Object[] args,
                     @CachedLibrary(limit = "1") ReflectionLibrary lib) throws Exception {
         return lib.send(PythonContext.get(lib).lookupType(this), message, args);
-    }
-
-    public static boolean isExceptionType(PythonBuiltinClassType type) {
-        return type.isException;
     }
 }

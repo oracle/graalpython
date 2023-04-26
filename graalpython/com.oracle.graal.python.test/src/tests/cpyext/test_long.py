@@ -330,7 +330,12 @@ class TestPyLong(CPyExtTestCase):
         lambda args: int(args[0], args[1]),
         lambda: (
             ("  12 ", 10),
+            ("  12abg13 ", 22),
             ("12", 0),
+            ("12321321", 0),
+            ("0x132f1", 0),
+            ("0x132132ff213213213231", 0),
+            ("13123441234123423412341234123412341234124312341234213213213213213231", 0),
         ),
         code='''PyObject* wrap_PyLong_FromString(const char* str, int base) {
             char* pend;
@@ -347,6 +352,14 @@ class TestPyLong(CPyExtTestCase):
         lambda: (
             (0, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x00\x00'),
             (4294967299, 8, False, True, b'\x00\x00\x00\x01\x00\x00\x00\x03'),
+            (2147483647, 4, False, True, b'\x7f\xff\xff\xff'),
+            (-2147483648, 4, False, True, b'\x80\x00\x00\x00'),
+            (2147483647, 5, False, True, b'\x00\x7f\xff\xff\xff'),
+            (-2147483648, 5, False, True, b'\xff\x80\x00\x00\x00'),
+            (9223372036854775807, 8, False, True, b'\x7f\xff\xff\xff\xff\xff\xff\xff'),
+            (-9223372036854775808, 8, False, True, b'\x80\x00\x00\x00\x00\x00\x00\x00'),
+            (9223372036854775807, 9, False, True, b'\x00\x7f\xff\xff\xff\xff\xff\xff\xff'),
+            (-9223372036854775808, 9, False, True, b'\xff\x80\x00\x00\x00\x00\x00\x00\x00'),
             (1234, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x04\xd2'),
             (0xdeadbeefdead, 8, False, True, b'\x00\x00\xde\xad\xbe\xef\xde\xad'),
             (0xdeadbeefdead, 8, True, True, b'\xad\xde\xef\xbe\xad\xde\x00\x00'),

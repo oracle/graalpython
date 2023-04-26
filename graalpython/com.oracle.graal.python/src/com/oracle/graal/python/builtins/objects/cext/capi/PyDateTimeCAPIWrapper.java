@@ -40,11 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATETIME_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATE_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DELTA_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_TIME_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SET_PY_DATETIME_IDS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SET_PY_DATETIME_TYPES;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
@@ -54,37 +50,24 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeOtherNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetBasicSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * This wrapper emulates the following native API:
@@ -115,54 +98,17 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * </pre>
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
     static final TruffleString T_PYDATETIME_CAPSULE_NAME = tsLiteral("datetime.datetime_CAPI");
 
-    private static final String J_DATE_TYPE = "DateType";
-    private static final String J_DATETIME_TYPE = "DateTimeType";
-    private static final String J_TIME_TYPE = "TimeType";
-    private static final String J_DELTA_TYPE = "DeltaType";
-    private static final String J_TZ_INFO_TYPE = "TZInfoType";
-
-    private static final String J_TIMEZONE_UTC = "TimeZone_UTC";
-
-    private static final String J_DATE_FROM_DATE = "Date_FromDate";
-    private static final String J_DATETIME_FROM_DATE_AND_TIME = "DateTime_FromDateAndTime";
-    private static final String J_TIME_FROM_TIME = "Time_FromTime";
-    private static final String J_DELTA_FROM_DELTA = "Delta_FromDelta";
-    private static final String J_TIMEZONE_FROM_TIMEZONE = "TimeZone_FromTimeZone";
-    private static final String J_DATETIME_FROM_TIMESTAMP = "DateTime_FromTimestamp";
-    private static final String J_DATE_FROM_TIMESTAMP = "Date_FromTimestamp";
-    private static final String J_TIME_FROM_TIME_AND_FOLD = "Time_FromTimeAndFold";
-    private static final String J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD = "DateTime_FromDateAndTimeAndFold";
-
     private static final TruffleString T_TIMEDELTA = tsLiteral("timedelta");
-    private static final TruffleString T_TZINFO = tsLiteral("tzinfo");
+    public static final TruffleString T_TZINFO = tsLiteral("tzinfo");
     private static final TruffleString T_TIMEZONE = tsLiteral("timezone");
     private static final TruffleString T_UTC = tsLiteral("utc");
     public static final TruffleString T_FROMTIMESTAMP = tsLiteral("fromtimestamp");
     public static final TruffleString T_FOLD = tsLiteral("fold");
-
-    // IMPORTANT: if you modify this array, also adopt INVOCABLE_MEMBER_START_IDX
-    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {J_DATE_TYPE, J_DATETIME_TYPE, J_TIME_TYPE, J_DELTA_TYPE, J_TZ_INFO_TYPE, J_TIMEZONE_UTC,
-                    J_DATE_FROM_DATE, J_DATETIME_FROM_DATE_AND_TIME, J_TIME_FROM_TIME, J_DELTA_FROM_DELTA, J_TIMEZONE_FROM_TIMEZONE,
-                    J_DATETIME_FROM_TIMESTAMP, J_DATE_FROM_TIMESTAMP, J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD, J_TIME_FROM_TIME_AND_FOLD};
-
-    // IMPORTANT: this is the index of the first function; keep it in sync with MEMBERS !!
-    private static final int INVOCABLE_MEMBER_START_IDX = 6;
-
-    @ExplodeLoop
-    private static int indexOf(String member) {
-        for (int i = 0; i < MEMBERS.length; i++) {
-            if (MEMBERS[i].equals(member)) {
-                return i;
-            }
-        }
-        return -1;
-    }
 
     private Object dateType;
     private Object datetimeType;
@@ -171,7 +117,6 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     private Object tzInfoType;
     private Object timezoneUTC;
 
-    private Object nativeType;
     private Object dateFromDateWrapper;
     private Object datetimeFromDateAndTimeWrapper;
     private Object timeFromTimeWrapper;
@@ -197,19 +142,19 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
 
         PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetime, T_DATE);
-        SetBasicSizeNode.executeUncached(date, (long) callCapiFunction.call(FUN_GET_DATETIME_DATE_BASICSIZE, capiContext.getLLVMLibrary()));
+        SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());
         wrapper.dateType = toSulongNode.execute(date);
 
         PythonManagedClass dt = (PythonManagedClass) getAttr.execute(null, datetime, T_DATETIME);
-        SetBasicSizeNode.executeUncached(dt, (long) callCapiFunction.call(FUN_GET_DATETIME_DATETIME_BASICSIZE, capiContext.getLLVMLibrary()));
+        SetBasicSizeNode.executeUncached(dt, CStructs.PyDateTime_DateTime.size());
         wrapper.datetimeType = toSulongNode.execute(dt);
 
         PythonManagedClass time = (PythonManagedClass) getAttr.execute(null, datetime, T_TIME);
-        SetBasicSizeNode.executeUncached(time, (long) callCapiFunction.call(FUN_GET_DATETIME_TIME_BASICSIZE, capiContext.getLLVMLibrary()));
+        SetBasicSizeNode.executeUncached(time, CStructs.PyDateTime_Time.size());
         wrapper.timeType = toSulongNode.execute(time);
 
         PythonManagedClass delta = (PythonManagedClass) getAttr.execute(null, datetime, T_TIMEDELTA);
-        SetBasicSizeNode.executeUncached(delta, (long) callCapiFunction.call(FUN_GET_DATETIME_DELTA_BASICSIZE, capiContext.getLLVMLibrary()));
+        SetBasicSizeNode.executeUncached(delta, CStructs.PyDateTime_Delta.size());
         wrapper.deltaType = toSulongNode.execute(delta);
 
         wrapper.tzInfoType = toSulongNode.execute(getAttr.execute(null, datetime, T_TZINFO));
@@ -226,191 +171,10 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         wrapper.datetimeFromDateAndTimeAdFoldWrapper = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_DateTime_FromDateAndTimeAndFold;
         wrapper.timeFromTimeAndFold = PythonCextBuiltinRegistry.PyTruffleDateTimeCAPI_Time_FromTimeAndFold;
 
-        wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
-                        toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
+        callCapiFunction.call(FUN_SET_PY_DATETIME_TYPES);
 
         setAttr.execute(null, datetime, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(wrapper, T_PYDATETIME_CAPSULE_NAME, null));
         assert getAttr.execute(null, datetime, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasMembers() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    Object getMembers(boolean includeInternal) {
-        return new InteropArray(PythonUtils.EMPTY_STRING_ARRAY);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isMemberReadable(String member) {
-        return indexOf(member) != -1;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isMemberInvocable(String member) {
-        return indexOf(member) >= INVOCABLE_MEMBER_START_IDX;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isMemberModifiable(String member) {
-        return isMemberReadable(member);
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    boolean isMemberInsertable(String member) {
-        return false;
-    }
-
-    @ExportMessage
-    Object readMember(String member,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
-        boolean mustRelease = gil.acquire();
-        try {
-            return getMember(member);
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    private Object getMember(String member) throws UnknownIdentifierException {
-        switch (member) {
-            case J_DATE_TYPE:
-                return dateType;
-            case J_DATETIME_TYPE:
-                return datetimeType;
-            case J_TIME_TYPE:
-                return timeType;
-            case J_DELTA_TYPE:
-                return deltaType;
-            case J_TZ_INFO_TYPE:
-                return tzInfoType;
-            case J_TIMEZONE_UTC:
-                return timezoneUTC;
-            case J_DATE_FROM_DATE:
-                return dateFromDateWrapper;
-            case J_DATETIME_FROM_DATE_AND_TIME:
-                return datetimeFromDateAndTimeWrapper;
-            case J_TIME_FROM_TIME:
-                return timeFromTimeWrapper;
-            case J_DELTA_FROM_DELTA:
-                return deltaFromDeltaWrapper;
-            case J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD:
-                return datetimeFromDateAndTimeAdFoldWrapper;
-            case J_TIME_FROM_TIME_AND_FOLD:
-                return timeFromTimeAndFold;
-            case J_TIMEZONE_FROM_TIMEZONE:
-                return timezoneFromTimezoneWrapper;
-            case J_DATETIME_FROM_TIMESTAMP:
-                return datetimeFromTimestamp;
-            case J_DATE_FROM_TIMESTAMP:
-                return dateFromTimestamp;
-            default:
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw UnknownIdentifierException.create(member);
-        }
-    }
-
-    @ExportMessage
-    Object invokeMember(String member, Object[] args,
-                    @Exclusive @Cached GilNode gil,
-                    @Exclusive @Cached PythonToNativeNewRefNode toSulongNode,
-                    @CachedLibrary(limit = "3") InteropLibrary lib,
-                    @Cached CExtNodes.PRaiseNativeNode raiseNode,
-                    @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws UnknownIdentifierException {
-        boolean mustRelease = gil.acquire();
-        try {
-            return lib.execute(getMember(member), args);
-        } catch (UnsupportedTypeException | UnsupportedMessageException ex) {
-            return raiseNode.raise(null, PythonContext.get(raiseNode).getNativeNull(), PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, member, ex);
-        } catch (ArityException ex) {
-            return raiseNode.raise(null, PythonContext.get(raiseNode).getNativeNull(), PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, member,
-                            ex.getExpectedMinArity(), ex.getActualArity());
-        } catch (PException e) {
-            transformExceptionToNativeNode.execute(null, e);
-            return toSulongNode.execute(PythonContext.get(gil).getNativeNull());
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    void writeMember(String member, Object value,
-                    @Exclusive @Cached NativeToPythonNode toJavaNode,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
-        boolean mustRelease = gil.acquire();
-        try {
-            switch (member) {
-                case J_DATE_TYPE:
-                    dateType = toJavaNode.execute(value);
-                    break;
-                case J_DATETIME_TYPE:
-                    datetimeType = toJavaNode.execute(value);
-                    break;
-                case J_TIME_TYPE:
-                    timeType = toJavaNode.execute(value);
-                    break;
-                case J_DELTA_TYPE:
-                    deltaType = toJavaNode.execute(value);
-                    break;
-                case J_TZ_INFO_TYPE:
-                    tzInfoType = toJavaNode.execute(value);
-                    break;
-                case J_TIMEZONE_UTC:
-                    timezoneUTC = toJavaNode.execute(value);
-                    break;
-                case J_DATE_FROM_DATE:
-                    dateFromDateWrapper = value;
-                    break;
-                case J_DATETIME_FROM_DATE_AND_TIME:
-                    datetimeFromDateAndTimeWrapper = value;
-                    break;
-                case J_TIME_FROM_TIME:
-                    timeFromTimeWrapper = value;
-                    break;
-                case J_DELTA_FROM_DELTA:
-                    deltaFromDeltaWrapper = value;
-                    break;
-                case J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD:
-                    datetimeFromDateAndTimeAdFoldWrapper = value;
-                    break;
-                case J_TIME_FROM_TIME_AND_FOLD:
-                    timeFromTimeAndFold = value;
-                    break;
-                case J_TIMEZONE_FROM_TIMEZONE:
-                    timezoneFromTimezoneWrapper = value;
-                    break;
-                case J_DATETIME_FROM_TIMESTAMP:
-                    datetimeFromTimestamp = value;
-                    break;
-                case J_DATE_FROM_TIMESTAMP:
-                    dateFromTimestamp = value;
-                    break;
-                default:
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw UnknownIdentifierException.create(member);
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasNativeType() {
-        return true;
-    }
-
-    @ExportMessage
-    Object getNativeType() {
-        return nativeType;
     }
 
     @ExportMessage
@@ -424,8 +188,33 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
+    @TruffleBoundary
     protected void toNative(
-                    @Cached ToNativeOtherNode toNativeNode) {
-        toNativeNode.execute(this, NativeCAPISymbol.FUN_PYTRUFFLE_ALLOCATE_DATETIME_API);
+                    @Cached CStructAccess.AllocateNode allocNode,
+                    @Cached CStructAccess.WritePointerNode writePointerNode,
+                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+        if (!isNative()) {
+            setRefCount(Long.MAX_VALUE / 2); // make this object immortal
+
+            Object mem = allocNode.alloc(CStructs.PyDateTime_CAPI);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateType, dateType);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTimeType, datetimeType);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeType, timeType);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DeltaType, deltaType);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TZInfoType, tzInfoType);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_UTC, timezoneUTC);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromDate, dateFromDateWrapper);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, datetimeFromDateAndTimeWrapper);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTime, timeFromTimeWrapper);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, deltaFromDeltaWrapper);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, timezoneFromTimezoneWrapper);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, datetimeFromTimestamp);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, dateFromTimestamp);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold, datetimeFromDateAndTimeAdFoldWrapper);
+            writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, timeFromTimeAndFold);
+
+            long ptr = coerceToLong(mem, lib);
+            CApiTransitions.firstToNative(this, ptr);
+        }
     }
 }

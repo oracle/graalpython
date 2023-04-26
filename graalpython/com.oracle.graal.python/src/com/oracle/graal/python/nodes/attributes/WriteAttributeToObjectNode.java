@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -343,7 +343,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = "!canBeSpecial(keyObj, codePointLengthNode, codePointAtIndexNode)")
         static boolean writeNativeClassSimple(PythonAbstractNativeObject object, TruffleString keyObj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
+                        @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
@@ -356,7 +356,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
              * we need to load the dict differently. We must not use 'PythonObjectLibrary.getDict'
              * here but read member 'tp_dict'.
              */
-            Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
+            Object dict = getNativeDict.readFromObj(object, PyTypeObject__tp_dict);
             if (dict instanceof PDict) {
                 return writeToDict((PDict) dict, keyObj, value, inliningTarget, updateStorage, setHashingStorageItem);
             }
@@ -366,7 +366,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = "!isHiddenKey(keyObj)", replaces = "writeNativeClassSimple")
         static boolean writeNativeClassGeneric(PythonAbstractNativeObject object, Object keyObj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
+                        @Shared @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
                         @Cached InlinedBranchProfile canBeSpecialSlot,
@@ -383,7 +383,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                  * and we need to load the dict differently. We must not use
                  * 'PythonObjectLibrary.getDict' here but read member 'tp_dict'.
                  */
-                Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
+                Object dict = getNativeDict.readFromObj(object, PyTypeObject__tp_dict);
                 if (dict instanceof PDict) {
                     return writeToDict((PDict) dict, keyObj, value, inliningTarget, updateStorage, setHashingStorageItem);
                 }

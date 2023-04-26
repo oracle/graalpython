@@ -75,7 +75,6 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * </pre>
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @SuppressWarnings("static-method")
 public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     public static final String J_NAME = "name";
@@ -197,19 +196,5 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw InvalidArrayIndexException.create(index);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object getNativeType() {
-        // TODO implement native type
-        return null;
     }
 }

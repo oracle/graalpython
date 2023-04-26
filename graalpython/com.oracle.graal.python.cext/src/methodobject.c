@@ -59,7 +59,7 @@ PyObject *PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
 PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls) {
     return GraalPyTruffleCMethod_NewEx(ml,
                                                truffleString(PyMethodDef_ml_name(ml)),
-											   function_pointer_to_java(PyMethodDef_ml_meth(ml)),
+											   PyMethodDef_ml_meth(ml),
 											   PyMethodDef_ml_flags(ml),
 											   get_method_flags_wrapper(PyMethodDef_ml_flags(ml)),
                                                self,

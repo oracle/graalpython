@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__allocated;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__ob_item;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LIST;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
@@ -49,8 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -78,9 +80,9 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -95,9 +97,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -364,16 +363,13 @@ public abstract class ListNodes {
 
         @Specialization
         NativeSequenceStorage getNative(PythonAbstractNativeObject list,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached PCallCapiFunction callCapiFunction) {
+                        @Cached CStructAccess.ReadPointerNode getContents,
+                        @Cached CStructAccess.ReadI64Node readI64Node) {
             assert IsSubtypeNode.getUncached().execute(InlinedGetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
-            try {
-                Object interopArray = callCapiFunction.call(NativeCAPISymbol.FUN_PY_TRUFFLE_NATIVE_LIST_ITEMS, list.getPtr());
-                int size = (int) lib.getArraySize(interopArray);
-                return NativeSequenceStorage.create(interopArray, size, size, ListStorageType.Generic, false);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            Object array = getContents.readFromObj(list, PyListObject__ob_item);
+            int size = (int) readI64Node.readFromObj(list, PyVarObject__ob_size);
+            int allocated = (int) readI64Node.readFromObj(list, PyListObject__allocated);
+            return NativeObjectSequenceStorage.create(array, size, allocated, false);
         }
     }
 }

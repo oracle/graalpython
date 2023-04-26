@@ -40,23 +40,33 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__length;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state_ready_shift;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyUnicodeObject__data;
+import static com.oracle.graal.python.util.PythonUtils.isBitSet;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 /**
  * Casts a Python string to a TruffleString without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -84,15 +94,57 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
         return materializeNode.execute(x);
     }
 
+    @GenerateUncached
+    public abstract static class ReadNativeStringNode extends PNodeWithContext {
+
+        public abstract TruffleString execute(Object pointer);
+
+        @Specialization
+        static TruffleString read(Object pointer,
+                        @Cached CStructAccess.ReadI32Node readI32,
+                        @Cached CStructAccess.ReadI64Node readI64,
+                        @Cached CStructAccess.ReadPointerNode readPointer,
+                        @Cached CStructAccess.ReadByteNode readByte,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached TruffleString.FromNativePointerNode fromNative,
+                        @Cached TruffleString.FromByteArrayNode fromBytes) {
+            int state = readI32.read(pointer, PyASCIIObject__state);
+            boolean ready = isBitSet(state, PyASCIIObject__state_ready_shift);
+            if (!ready) {
+                throw CompilerDirectives.shouldNotReachHere("not implemented - need to call _PyUnicode_Ready for native string");
+            }
+            int kind = (state >> CFields.PyASCIIObject__state_kind_shift) & 0x7;
+            Object data = readPointer.read(pointer, PyUnicodeObject__data);
+            long length = readI64.read(pointer, PyASCIIObject__length);
+
+            Encoding encoding;
+            if (kind == 1) {
+                // isBitSet(state, PyASCIIObject__state_ascii_shift))
+                // ascii doesn't matter, codepoint 0-127 are the same in ascii and latin1
+                encoding = Encoding.ISO_8859_1;
+            } else if (kind == 2) {
+                encoding = Encoding.UTF_16LE;
+            } else {
+                assert kind == 4;
+                encoding = Encoding.UTF_32LE;
+            }
+            int bytes = PythonUtils.toIntError(length * kind);
+
+            if (lib.isPointer(data) || data instanceof Long) {
+                return fromNative.execute(data, 0, bytes, encoding, false);
+            }
+            byte[] result = readByte.readByteArray(pointer, bytes);
+            return fromBytes.execute(result, encoding, false);
+        }
+    }
+
     @Specialization
     static TruffleString doNativeObject(PythonNativeObject x,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
-                    @Cached ToSulongNode toSulongNode) {
+                    @Cached ReadNativeStringNode read) {
         if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
-            // read the native data
-            return (TruffleString) callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
+            return read.execute(x.getPtr());
         }
         // the object's type is not a subclass of 'str'
         throw CannotCastException.INSTANCE;

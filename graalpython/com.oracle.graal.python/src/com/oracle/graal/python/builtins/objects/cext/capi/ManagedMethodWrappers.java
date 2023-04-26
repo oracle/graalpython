@@ -63,7 +63,6 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wrappers for methods used by native code.
@@ -71,14 +70,10 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public abstract class ManagedMethodWrappers {
 
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public abstract static class MethodWrapper extends PythonNativeWrapper {
 
-        private final Object typeid;
-
-        public MethodWrapper(Object method, Object typeid) {
+        public MethodWrapper(Object method) {
             super(method);
-            this.typeid = typeid;
         }
 
         @ExportMessage
@@ -100,24 +95,13 @@ public abstract class ManagedMethodWrappers {
         }
 
         protected abstract String getSignature();
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        public boolean hasNativeType() {
-            return typeid != null;
-        }
-
-        @ExportMessage
-        public Object getNativeType() {
-            return typeid;
-        }
     }
 
     @ExportLibrary(InteropLibrary.class)
     static final class MethKeywords extends MethodWrapper {
 
-        public MethKeywords(Object method, Object typeid) {
-            super(method, typeid);
+        public MethKeywords(Object method) {
+            super(method);
         }
 
         @ExportMessage
@@ -180,7 +164,7 @@ public abstract class ManagedMethodWrappers {
     static final class MethVarargs extends MethodWrapper {
 
         public MethVarargs(Object method) {
-            super(method, null);
+            super(method);
         }
 
         @SuppressWarnings("static-method")
@@ -227,8 +211,8 @@ public abstract class ManagedMethodWrappers {
     /**
      * Creates a wrapper for signature {@code meth(*args, **kwargs)}.
      */
-    public static MethodWrapper createKeywords(Object method, Object typeid) {
-        return new MethKeywords(method, typeid);
+    public static MethodWrapper createKeywords(Object method) {
+        return new MethKeywords(method);
     }
 
     /**

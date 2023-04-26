@@ -40,80 +40,58 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ImportStatic(SlotGroup.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     public PySequenceMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
 
-    public PythonManagedClass getWrappedClass() {
-        return (PythonManagedClass) getDelegate();
-    }
+    @GenerateUncached
+    public abstract static class AllocateNode extends PNodeWithContext {
 
-    @ExportMessage
-    protected boolean hasMembers() {
-        return true;
-    }
+        public abstract Object execute(PythonManagedClass clazz);
 
-    @ExportMessage
-    protected boolean isMemberReadable(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode) {
-        return readSlotByNameNode.getSlot(member) != null;
-    }
+        static Object getValue(PythonManagedClass obj, SlotMethodDef slot) {
+            return LookupNativeSlotNode.executeUncached(obj, slot);
+        }
 
-    @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
+        @Specialization
+        Object alloc(PythonManagedClass obj,
+                        @Cached CStructAccess.AllocateNode allocNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode) {
 
-    @ExportMessage
-    protected Object readMember(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_SEQUENCE") ReadSlotByNameNode readSlotByNameNode,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object result = readSlotByNameNode.execute(getWrappedClass(), member);
-            if (result == null) {
-                throw UnknownIdentifierException.create(member);
-            }
-            return result;
-        } finally {
-            gil.release(mustRelease);
+            Object mem = allocNode.alloc(CStructs.PyNumberMethods);
+
+            Object nullValue = getContext().getNativeNull().getPtr();
+
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_length, getValue(obj, SlotMethodDef.SQ_LENGTH));
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_concat, getValue(obj, SlotMethodDef.SQ_CONCAT));
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_repeat, getValue(obj, SlotMethodDef.SQ_REPEAT));
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_item, getValue(obj, SlotMethodDef.SQ_ITEM));
+            writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_slice, nullValue);
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_ass_item, nullValue);
+            writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_ass_slice, nullValue);
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_contains, nullValue);
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_inplace_concat, nullValue);
+            writePointerNode.write(mem, CFields.PySequenceMethods__sq_inplace_repeat, nullValue);
+
+            return mem;
         }
     }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
-    }
-
 }

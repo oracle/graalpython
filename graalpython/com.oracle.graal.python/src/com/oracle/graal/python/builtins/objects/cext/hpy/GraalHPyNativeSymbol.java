@@ -52,7 +52,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
 
     POLYGLOT_FROM_STRING("polyglot_from_string"),
-    POLYGLOT_FROM_TYPED("polyglot_from_typed"),
 
     GRAAL_HPY_ALLOCATE_BUFFER("graal_hpy_allocate_buffer"),
     GRAAL_HPY_BUFFER_TO_NATIVE("graal_hpy_buffer_to_native"),
@@ -222,5 +221,9 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
             assert !MAP.containsKey(symbol.name);
             MAP.put(symbol.name, symbol);
         }
+    }
+
+    public String getSignature() {
+        return null;
     }
 }

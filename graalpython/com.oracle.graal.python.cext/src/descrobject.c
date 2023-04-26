@@ -56,8 +56,8 @@ PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
     setter setter_fun = PyGetSetDef_set(getset);
     return GraalPyTruffleDescr_NewGetSet(truffleString(PyGetSetDef_name(getset)),
                     type,
-                    getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
-                    setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
+                    getter_fun,
+                    setter_fun,
                     PyGetSetDef_doc(getset),
 					PyGetSetDef_closure(getset));
 }
@@ -73,4 +73,8 @@ PyTypeObject* PyDescrObject_GetType(PyObject* descr) {
 
 PyObject* PyDescrObject_GetName(PyObject* descr) {
 	return PyDescrObject_d_name(descr);
+}
+
+int PyDescr_IsData(PyObject *ob) {
+    return Py_TYPE(ob)->tp_descr_set != NULL;
 }

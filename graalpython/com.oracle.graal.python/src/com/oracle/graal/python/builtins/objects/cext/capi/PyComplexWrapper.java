@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -51,13 +49,11 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Emulates type {@code Py_complex}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyComplexWrapper extends PythonNativeWrapper {
 
     public static final String J_REAL = "real";
@@ -115,18 +111,5 @@ public final class PyComplexWrapper extends PythonNativeWrapper {
     @ExportMessage
     long asPointer() {
         return getNativePointer();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasNativeType() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object getNativeType(
-                    @Cached GetLLVMType getLLVMType) {
-        return getLLVMType.execute(LLVMType.Py_complex);
     }
 }

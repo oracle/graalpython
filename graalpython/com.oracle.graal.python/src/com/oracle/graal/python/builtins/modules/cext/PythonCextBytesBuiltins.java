@@ -45,14 +45,14 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 
@@ -73,14 +73,13 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -120,26 +119,25 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PyBytes_Size extends CApiUnaryBuiltinNode {
         @Specialization
-        static int doPBytes(PBytes obj,
+        static long doPBytes(PBytes obj,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(null, obj);
         }
 
         @Specialization
-        Object doOther(PythonAbstractNativeObject obj,
+        long doOther(PythonAbstractNativeObject obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyBytesCheckNode check,
-                        @Cached ToSulongNode toSulongNode,
-                        @Cached PCallCapiFunction callMemberGetterNode) {
+                        @Cached CStructAccess.ReadI64Node readI64Node) {
             if (check.execute(inliningTarget, obj)) {
-                return callMemberGetterNode.call(NativeMember.OB_SIZE.getGetterFunctionName(), toSulongNode.execute(obj));
+                return readI64Node.readFromObj(obj, PyVarObject__ob_size);
             }
             return fallback(obj);
         }
 
         @Fallback
         @TruffleBoundary
-        int fallback(Object obj) {
+        long fallback(Object obj) {
             throw raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
         }
     }
@@ -240,7 +238,7 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {INT8_T_PTR, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
     @ImportStatic(CApiGuards.class)
     abstract static class PyTruffleByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
         @Specialization
@@ -397,8 +395,8 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
-    abstract static class PyTruffle_Bytes_AsString extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
+    abstract static class PyBytes_AsString extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doBytes(PBytes bytes) {
             return new PySequenceArrayWrapper(bytes, 1);
@@ -408,10 +406,9 @@ public final class PythonCextBytesBuiltins {
         Object doNative(PythonAbstractNativeObject obj,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ToSulongNode toSulong,
-                        @Cached PCallCapiFunction callMemberGetterNode) {
+                        @Cached CStructAccess.GetElementPtrNode getArray) {
             if (isSubtypeNode.execute(getClassNode.execute(this, obj), PythonBuiltinClassType.PBytes)) {
-                return callMemberGetterNode.call(NativeMember.OB_SVAL.getGetterFunctionName(), toSulong.execute(obj));
+                return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
             return doError(obj);
         }

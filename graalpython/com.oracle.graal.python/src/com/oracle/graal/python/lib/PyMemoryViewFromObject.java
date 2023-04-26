@@ -63,8 +63,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -148,7 +147,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
             int[] suboffsets = cBuffer.getSuboffsets();
             int flags = initFlagsNode.execute(cBuffer.getDims(), cBuffer.getItemSize(), shape, strides, suboffsets);
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
-            Object pythonBuffer = NativeSequenceStorage.create(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), SequenceStorage.ListStorageType.Byte, false);
+            Object pythonBuffer = NativeByteSequenceStorage.create(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), false);
             TruffleString format = cBuffer.getFormat();
             return factory.createMemoryView(PythonContext.get(this), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode),

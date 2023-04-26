@@ -40,79 +40,46 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef.SlotGroup;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.LookupNativeSlotNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
  */
-@ExportLibrary(InteropLibrary.class)
-@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ImportStatic(SlotGroup.class)
 public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
     public PyMappingMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
 
-    public PythonManagedClass getWrappedClass() {
-        return (PythonManagedClass) getDelegate();
-    }
+    @GenerateUncached
+    public abstract static class AllocateNode extends PNodeWithContext {
 
-    @ExportMessage
-    protected boolean hasMembers() {
-        return true;
-    }
+        public abstract Object execute(PythonManagedClass clazz);
 
-    @ExportMessage
-    protected boolean isMemberReadable(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_MAPPING") ReadSlotByNameNode readSlotByNameNode) {
-        return readSlotByNameNode.getSlot(member) != null;
-    }
-
-    @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    protected Object readMember(String member,
-                    @Shared("readSlot") @Cached(parameters = "AS_MAPPING") ReadSlotByNameNode readSlotByNameNode,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object result = readSlotByNameNode.execute(getWrappedClass(), member);
-            if (result == null) {
-                throw UnknownIdentifierException.create(member);
-            }
-            return result;
-        } finally {
-            gil.release(mustRelease);
+        static Object getValue(PythonManagedClass obj, SlotMethodDef slot) {
+            return LookupNativeSlotNode.executeUncached(obj, slot);
         }
-    }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
-    }
+        @Specialization
+        Object alloc(PythonManagedClass obj,
+                        @Cached CStructAccess.AllocateNode allocNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode) {
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
+            Object mem = allocNode.alloc(CStructs.PyMappingMethods);
+
+            writePointerNode.write(mem, CFields.PyMappingMethods__mp_length, getValue(obj, SlotMethodDef.MP_LENGTH));
+            writePointerNode.write(mem, CFields.PyMappingMethods__mp_subscript, getValue(obj, SlotMethodDef.MP_SUBSCRIPT));
+            writePointerNode.write(mem, CFields.PyMappingMethods__mp_ass_subscript, getValue(obj, SlotMethodDef.MP_ASS_SUBSCRIPT));
+
+            return mem;
+        }
     }
 }

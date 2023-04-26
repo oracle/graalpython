@@ -40,13 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.byteArraySupport;
 
 import java.nio.ByteOrder;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -67,7 +65,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 import sun.misc.Unsafe;
 
@@ -174,7 +171,6 @@ public abstract class CArrayWrappers {
      * wrapper let's a TruffleString look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public static final class CStringWrapper extends CArrayWrapper {
 
         public CStringWrapper(TruffleString delegate) {
@@ -224,19 +220,6 @@ public abstract class CArrayWrappers {
         final boolean isArrayElementReadable(long identifier,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return 0 <= identifier && identifier < getArraySize(codePointLengthNode);
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean hasNativeType() {
-            return true;
-        }
-
-        @ExportMessage
-        Object getNativeType(
-                        @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, getArraySize(codePointLengthNode));
         }
 
         @ExportMessage

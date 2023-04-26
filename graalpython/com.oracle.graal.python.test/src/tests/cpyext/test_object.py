@@ -554,7 +554,7 @@ class TestObject(object):
         TestSlots = CPyExtType("TestSlots", 
                                '''
                                static PyObject* testslots_bincomp(PyObject* cls) {
-                                   return ((PyTypeObject*)cls)->tp_basicsize == sizeof(TestSlotsObject) ? Py_True : Py_False;
+                                   return Py_NewRef(((PyTypeObject*)cls)->tp_basicsize == sizeof(TestSlotsObject) ? Py_True : Py_False);
                                }
                                ''',
                               includes='#include "datetime.h"',

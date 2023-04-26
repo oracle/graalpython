@@ -332,7 +332,7 @@ int PyObject_CheckBuffer(PyObject *obj) {
 
 // taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
-    PyBufferProcs *pb = PyTypeObject_tp_as_buffer(Py_TYPE(obj));
+    PyBufferProcs *pb = Py_TYPE(obj)->tp_as_buffer;
 
     if (pb == NULL || pb->bf_getbuffer == NULL) {
         PyErr_Format(PyExc_TypeError,
@@ -499,7 +499,7 @@ PyObject ** _PySequence_Fast_ITEMS(PyObject *o) {
 }
 
 PyObject* _PySequence_ITEM(PyObject* obj, Py_ssize_t index) {
-	PySequenceMethods* methods = PyTypeObject_tp_as_sequence(Py_TYPE(obj));
-	return PySequenceMethods_sq_item(methods)(obj, index);
+	PySequenceMethods* methods = Py_TYPE(obj)->tp_as_sequence;
+	return methods->sq_item(obj, index);
 }
 
