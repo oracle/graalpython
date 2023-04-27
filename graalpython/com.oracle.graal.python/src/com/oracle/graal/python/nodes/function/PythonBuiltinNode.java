@@ -31,8 +31,5 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild(value = "arguments", type = ReadArgumentNode[].class)
 public abstract class PythonBuiltinNode extends PythonBuiltinBaseNode {
-
     public abstract Object execute(VirtualFrame frame);
-
-    protected abstract ReadArgumentNode[] getArguments();
 }

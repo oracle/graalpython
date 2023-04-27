@@ -127,11 +127,6 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         public Object execute(VirtualFrame frame) {
             throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
         }
-
-        @Override
-        protected ReadArgumentNode[] getArguments() {
-            return EMPTY_ARGS;
-        }
     }
 
     @TruffleBoundary
