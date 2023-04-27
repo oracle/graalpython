@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DLHa
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -104,6 +105,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -405,24 +407,17 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     // corresponds to PyCData_get
     @ImportStatic(FieldGet.class)
     protected abstract static class PyCDataGetNode extends PNodeWithRaise {
-        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr);
+        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr, boolean fromArray);
 
         @Specialization(guards = "getfunc != nil")
-        Object withFunc(@SuppressWarnings("unused") Object type,
-                        FieldGet getfunc,
-                        @SuppressWarnings("unused") Object src,
-                        @SuppressWarnings("unused") int index,
-                        int size, PtrValue adr,
+        @SuppressWarnings("unused")
+        Object withFunc(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr, boolean fromArray,
                         @Cached GetFuncNode getFuncNode) {
-            return getFuncNode.execute(getfunc, adr, size);
+            return getFuncNode.execute(getfunc, adr, size, fromArray);
         }
 
         @Specialization(guards = "getfunc == nil")
-        Object WithoutFunc(Object type,
-                        @SuppressWarnings("unused") FieldGet getfunc,
-                        Object src,
-                        int index,
-                        int size, PtrValue adr,
+        Object WithoutFunc(Object type, @SuppressWarnings("unused") FieldGet getfunc, Object src, int index, int size, PtrValue adr, boolean fromArray,
                         @Cached PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -432,7 +427,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(type);
             if (dict != null && dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, type, getBaseClassNode, isSameTypeNode)) {
-                return getFuncNode.execute(dict.getfunc, adr, size);
+                return getFuncNode.execute(dict.getfunc, adr, size, fromArray);
             }
             return PyCData_FromBaseObj(type, src, index, adr, factory, getRaiseNode(), pyTypeStgDictNode);
         }
@@ -443,10 +438,10 @@ public class CDataTypeBuiltins extends PythonBuiltins {
      */
     protected abstract static class PyCDataSetNode extends PNodeWithRaise {
 
-        abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr);
+        abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr, boolean intoArray);
 
         @Specialization
-        void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr,
+        void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr, boolean intoArray,
                         @Cached SetFuncNode setFuncNode,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -460,7 +455,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
 
-            Object result = PyCDataSetInternal(frame, type, setfunc, value, size, ptr, factory,
+            Object result = PyCDataSetInternal(frame, type, setfunc, value, size, ptr, intoArray,
+                            factory,
                             pyTypeCheck,
                             setFuncNode,
                             callNode,
@@ -480,7 +476,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
          * Helper function for PyCData_set below.
          */
         // corresponds to _PyCData_set
-        Object PyCDataSetInternal(VirtualFrame frame, Object type, FieldSet setfunc, Object value, int size, PtrValue ptr, PythonObjectFactory factory,
+        Object PyCDataSetInternal(VirtualFrame frame, Object type, FieldSet setfunc, Object value, int size, PtrValue ptr, boolean intoArray,
+                        PythonObjectFactory factory,
                         PyTypeCheck pyTypeCheck,
                         SetFuncNode setFuncNode,
                         CallNode callNode,
@@ -495,7 +492,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             if (!pyTypeCheck.isCDataObject(value)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(type);
                 if (dict != null && dict.setfunc != FieldSet.nil) {
-                    return setFuncNode.execute(frame, dict.setfunc, ptr, value, size);
+                    return setFuncNode.execute(frame, dict.setfunc, ptr, value, size, intoArray);
                 }
                 /*
                  * If value is a tuple, we try to call the type with the tuple and use the result!
@@ -505,7 +502,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                     Object ob = callNode.execute(frame, type, value);
                     // throw raise(RuntimeError, "(%s) ", getName.execute(type));
                     // XXX we never return `null` it will throw elsewhere.
-                    return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr, factory,
+                    return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr, intoArray,
+                                    factory,
                                     pyTypeCheck,
                                     setFuncNode,
                                     callNode,
@@ -523,8 +521,11 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             CDataObject src = (CDataObject) value;
 
             if (isInstanceNode.executeWith(frame, value, type)) {
-                // memcpy(ptr, src.b_ptr, size); TODO
-                // PyCPointerTypeObject_Check(type);
+                if (ptr.ptr instanceof ByteArrayStorage dstStorage) {
+                    if (src.b_ptr.ptr instanceof ByteArrayStorage srcStorage) {
+                        PythonUtils.arraycopy(srcStorage.value, src.b_ptr.offset, dstStorage.value, ptr.offset, size);
+                    }
+                }
                 return GetKeepedObjects(src, factory);
             }
 
@@ -652,28 +653,11 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     }
 
     static void PyCData_MallocBuffer(CDataObject obj, StgDictObject dict) {
-        obj.b_ptr = PtrValue.allocate(dict.ffi_type_pointer, dict.size);
-        /*- XXX: (mq) This might not be necessary in our end but will keep it until we fully support ctypes.
-            if (dict.size <= sizeof(obj.b_value)) {
-                /* No need to call malloc, can use the default buffer * /
-                obj.b_ptr.ptr = obj.b_value;
-                /*
-                 * The b_needsfree flag does not mean that we actually did call PyMem_Malloc to allocate
-                 * the memory block; instead it means we are the *owner* of the memory and are
-                 * responsible for freeing resources associated with the memory. This is also the reason
-                 * that b_needsfree is exposed to Python.
-                 * /
-                obj.b_needsfree = 1;
-            } else {
-                /*
-                 * In python 2.4, and ctypes 0.9.6, the malloc call took about 33% of the creation time
-                 * for c_int().
-                 * /
-                obj.b_ptr = (char *)PyMem_Malloc(dict.size);
-                obj.b_needsfree = 1;
-                memset(obj.b_ptr, 0, dict.size);
-            }
-        */
+        if (dict.size == 0) {
+            obj.b_ptr = PtrValue.nil();
+        } else {
+            obj.b_ptr = PtrValue.allocate(dict.ffi_type_pointer, dict.size);
+        }
         obj.b_size = dict.size;
     }
 
