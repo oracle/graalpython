@@ -10,7 +10,7 @@ permalink: /reference-manual/python/FAQ/
 
 It depends, but is currently unlikely.
 The first goal with GraalPy was to show that NumPy and related packages can run using the managed GraalVM LLVM runtime.
-The GraalVM team continues to improve the number of passing CPython unittests, and to track the compatibility with popular PyPI packages.
+The GraalVM team continues to improve the number of passing CPython unit tests, and to track the compatibility with popular PyPI packages.
 
 ### Can GraalPy replace my Jython use case?
 
@@ -21,17 +21,17 @@ See the [Jython Migration](Jython.md) guide for details.
 
 On GraalVM, Python C extension modules run using the GraalVM LLVM runtime.
 To use such modules, you cannot use binary distributions, but instead you must install them from source using GraalPy, which will transparently produce LLVM bitcode during the build process.
-However, many of the core features of Python (including, e.g., large parts of the `os` API) are implemented in pure Java and many standard library modules and packages work without running any LLVM bitcode.
-So even though the Python runtime depends on the GraalVM LLVM runtime, for many use cases you can disallow native modules entirely.
+However, many of the core features of Python (including, for example, large parts of the `os` API) are implemented in pure Java and many standard library modules and packages work without running any LLVM bitcode.
+So even though GraalPy depends on the GraalVM LLVM runtime, for many use cases you can disallow native modules entirely.
 
-### Can I use the GraalVM sandboxing features with Python?
+### Can I use the GraalVM sandboxing features with GraalPy?
 
 Yes, you can.
 As an embedder, you can selectively disable features.
 For example, you can disable native code execution or filesystem access.
 Also, GraalVM's managed execution mode for LLVM fully works for running extensions such as NumPy in a safer manner.
 
-### Do all the GraalVM polyglot features work with Python?
+### Do all the GraalVM polyglot features work with GraalPy?
 
 The team is continuously working to ensure all polyglot features of GraalVM work as a Python user would expect.
 There are still many cases where expectations are unclear or where multiple behaviors are imaginable.
@@ -41,7 +41,7 @@ convenient and least surprising behavior.
 ### What performance can I expect from GraalPy?
 
 For the pure Python code, performance after warm-up can be expected to be around 5-6 times faster than CPython 3.8 (or 6-7x faster than Jython).
-For native extensions running as LLVM bitcode, CPython is currently slower -- you can expect to see between 0.1x and 0.5x performance.
+For native extensions running as LLVM bitcode, CPython is currently slower--you can expect to see between 0.1x and 0.5x performance.
 
 ### I heard languages with JIT compilers have slow startup. Is that true for GraalPy?
 

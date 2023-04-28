@@ -112,7 +112,7 @@ modules that we have adapted from C Python.
 
 GraalPy provides proper debug options. It is possible to either debug the Python code, using a Chrome debugger, 
 or the Java code, using your preferred IDE.
-The following commands should be executed in a virtual environment, which provides a `graalpy` executable.
+The following commands should be run in a virtual environment, which provides a `graalpy` executable.
 
 For debug Python side code run this:
 
