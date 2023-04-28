@@ -6,7 +6,7 @@ permalink: /reference-manual/python/standalone-binaries/
 ---
 # Standalone Applications with Python
 
-With GraalVM Python implementation (GraalPy), you can distribute Python applications or libraries as standalone binaries or JAR files without any external dependencies.
+With GraalPy, you can distribute Python applications or libraries as standalone binaries or JAR files without any external dependencies.
 The [Truffle framework](https://github.com/oracle/graal/tree/master/truffle) that GraalPy is built on, and the [Sulong LLVM runtime](https://github.com/oracle/graal/tree/master/sulong) that GraalPy leverages for managed execution of Python's native extensions enables users to completely virtualize all filesystem accesses of Python programs, including those to the standard library and installed packages.
 
 GraalPy comes with a module that can create standalone binaries or Java project skeletons.

@@ -8,18 +8,18 @@ permalink: /reference-manual/python/Jython/
 
 Most Jython code that uses Java integration will be based on a
 stable Jython release, and these only come in Python 2.x versions.
-GraalVM's Python runtime, in contrast, is only targeting Python 3.x.
-GraalVM does not provide a full compatibility with these earlier 2.x versions of Jython.
+GraalPy, in contrast, is only targeting Python 3.x.
+GraalPy does not provide a full compatibility with these earlier 2.x versions of Jython.
 Thus, a significant migration step will have to be taken to migrate all your code to Python 3.
 
-For Jython-specific features, follow this document to learn about migration to GraalVM's Python runtime.
+For Jython-specific features, follow this document to learn about migration to GraalPy.
 
 Note that some features of Jython have a negative impact on runtime performance, and are disabled by default.
-To make migration easier, you can enable some features with a command line flag on GraalVM: `--python.EmulateJython`.
+To make migration easier, you can enable some features with a command line flag on GraalPy: `--python.EmulateJython`.
 
 ## Importing Java Packages
 
-There are certain features of Jython's Java integration that are enabled by default on GraalVM's Python runtime.
+There are certain features of Jython's Java integration that are enabled by default on GraalPy.
 Here is an example:
 
     >>> import java.awt as awt
@@ -30,8 +30,8 @@ Here is an example:
     'java.awt.Dimension[width=200,height=200]'
     >>> win.show()
 
-This example works exactly the same on both Jython and Python on GraalVM.
-However, on GraalVM only packages in the `java` namespace can be directly imported.
+This example works exactly the same on both Jython and GraalPy.
+However, on GraalPy only packages in the `java` namespace can be directly imported.
 Importing classes from packages outside the `java` namespace also requires the `--python.EmulateJython` option to be active.
 
 Additionally, importing Java packages as Python modules is only supported under very specific circumstances.
@@ -246,7 +246,7 @@ To migrate from this usage, switch to the [GraalVM SDK](https://mvnrepository.co
 Using this SDK, no APIs particular to Python are exposed, everything is done through the GraalVM API, with maximum configurability of the Python runtime.
 
 The other option to embed Jython in Java is via [JSR 223](https://www.jcp.org/en/jsr/detail?id=223) by using the classes of the the `javax.script` package, and, in particular, via the `ScriptEngine` class.
-We do not recommend this approach, since the `ScriptEngine` APIs are not a clean fit for the options and capabilities of GraalVM Python.
+We do not recommend this approach, since the `ScriptEngine` APIs are not a clean fit for the options and capabilities of GraalPy.
 However, to migrate existing code, the NetBeans project provides packages on Maven Central to help here.
 Remove Jython and add the following dependencies instead (using a Maven `pom.xml` as an example):
 
@@ -263,7 +263,7 @@ Remove Jython and add the following dependencies instead (using a Maven `pom.xml
 </dependency>
 ```
 
-Afterwards, basic usage of GraalVM's Python can be achieved by replacing
+Afterwards, basic usage of GraalPy can be achieved by replacing
 
 ```java
 ScriptEngine python = new ScriptEngineManager().getEngineByName("python");

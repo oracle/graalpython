@@ -1,24 +1,19 @@
 ---
 layout: docs-experimental
 toc_group: python
-link_title: Installing Supported Packages
+link_title: Installing Packages
 permalink: /reference-manual/python/Packages/
 ---
-# Installing Supported Packages
+# Installing Packages
 
-## Create a Virtual Environment
+## Pip
 
-The best way of using GraalVM's Python runtime is from a virtual environment.
-This generates wrapper scripts and makes the implementation usable from shell as the standard Python interpreter.
-To create the virtual environment with GraalVM:
-```shell
-graalpy -m venv <venv-dir>
-```
+The `pip` package installer is available and working when using a GraalPy virtual environment.
 
-To activate the environment in your shell session call:
-```shell
-source <venv-dir>/bin/activate
-```
+Our `pip` ships some patches for packages that we test internally, these will be applied automatically where necessary.
+Support for as many extension modules as possible is a high priority for us.
+We are actively building out our support for the Python C API to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully.
+This means that some might already work, but we're still actively working on compatibility especially with native extensions.
 
 ### Using `ginstall`
 At the moment, there are not enough standard libraries implemented to run the standard package installers for many packages.
@@ -38,7 +33,7 @@ If all goes well (also consider native dependencies of NumPy), you should be abl
 The support for more extensions is a high priority.
 The GraalVM team is actively working to enable support for the Python C API, as well as to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow, and alike, work.
 Other extensions might currently work, but they are not actively tested.
-Note that to try extensions on GraalVM's Python runtime, you have to download, build, and install them manually for now.
+Note that to try extensions on GraalPy, you have to download, build, and install them manually for now.
 
 ### Using `pip`
 

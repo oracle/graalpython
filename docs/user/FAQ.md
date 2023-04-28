@@ -6,21 +6,21 @@ permalink: /reference-manual/python/FAQ/
 ---
 # Frequently Asked Questions
 
-### Does module/package XYZ work on GraalVM's Python runtime?
+### Does module/package XYZ work on GraalPy?
 
 It depends, but is currently unlikely.
-The first goal with GraalVM's Python runtime was to show that NumPy and related packages can run using the managed GraalVM LLVM runtime.
+The first goal with GraalPy was to show that NumPy and related packages can run using the managed GraalVM LLVM runtime.
 The GraalVM team continues to improve the number of passing CPython unittests, and to track the compatibility with popular PyPI packages.
 
-### Can the GraalVM Python runtime replace my Jython use case?
+### Can GraalPy replace my Jython use case?
 
 It can, but there are some caveats, like Python code subclassing Java classes or use through the `javax.script.ScriptEngine` not being supported.
 See the [Jython Migration](Jython.md) guide for details.
 
-### Do I need to compile and run native modules as LLVM bitcode to use on GraalVM's Python runtime?
+### Do I need to compile and run native modules as LLVM bitcode to use on GraalPy?
 
 On GraalVM, Python C extension modules run using the GraalVM LLVM runtime.
-To use such modules, you cannot use binary distributions, but instead you must install them from source using the GraalVM Python runtime, which will transparently produce LLVM bitcode during the build process.
+To use such modules, you cannot use binary distributions, but instead you must install them from source using GraalPy, which will transparently produce LLVM bitcode during the build process.
 However, many of the core features of Python (including, e.g., large parts of the `os` API) are implemented in pure Java and many standard library modules and packages work without running any LLVM bitcode.
 So even though the Python runtime depends on the GraalVM LLVM runtime, for many use cases you can disallow native modules entirely.
 
@@ -35,19 +35,19 @@ Also, GraalVM's managed execution mode for LLVM fully works for running extensio
 
 The team is continuously working to ensure all polyglot features of GraalVM work as a Python user would expect.
 There are still many cases where expectations are unclear or where multiple behaviors are imaginable.
-The team is actively looking at use cases and continuously evolving the GraalVM Python runtime to provide the most
-convenient and least surprising behaviour.
+The team is actively looking at use cases and continuously evolving GraalPy to provide the most
+convenient and least surprising behavior.
 
-### What performance can I expect from GraalVM's Python runtime?
+### What performance can I expect from GraalPy?
 
 For the pure Python code, performance after warm-up can be expected to be around 5-6 times faster than CPython 3.8 (or 6-7x faster than Jython).
 For native extensions running as LLVM bitcode, CPython is currently slower -- you can expect to see between 0.1x and 0.5x performance.
 
-### I heard languages with JIT compilers have slow startup. Is that true for GraalVM's Python runtime?
+### I heard languages with JIT compilers have slow startup. Is that true for GraalPy?
 
 It depends.
-When you use [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md) with Python, or the `graalpy` launcher of GraalVM, startup is competitive with CPython.
-In any case, both with Native Image or when running on the JVM, you first need to warm up to reach peak performance. This is a complicated story in itself, but, in general, it can take a while (a minute or two) after you have reached and are running your core workload.
+When you use [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md) with Python, or the `graalpy` launcher, startup is competitive with CPython.
+In any case, both with a native executable created by Native Image or when running on the JVM, you first need to warm up to reach peak performance. This is a complicated story in itself, but, in general, it can take a while (a minute or two) after you have reached and are running your core workload.
 
 ### Can I share warmed-up code between multiple Python contexts?
 

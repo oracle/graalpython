@@ -55,7 +55,7 @@ are:
 
 For the most part, built-in modules and classes are implemented in the
 `com.oracle.graal.python.builtins` package. For each module or class, there's
-Java class annoted with `@CoreFunctions`. Each function in a module or a class
+Java class annotated with `@CoreFunctions`. Each function in a module or a class
 is implemented in a Node annotated with `@Builtin`. Take a look at the existing
 implementations to get a feel for how this is done. For now, when adding new
 classes or modules, they need to be added to the list in
@@ -109,9 +109,9 @@ modules that we have adapted from C Python.
 
 ### Debug options
 
-The GraalVM implementation of Python provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
+GraalPy provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
 or the java code, using your preferred IDE.
-The following commands should be executed in a virtualenv environment, which provides a graalpy executable.
+The following commands should be executed in a virtual environment, which provides a graalpy executable.
 
 For debug Python side code call this:
 

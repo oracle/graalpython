@@ -5,14 +5,14 @@ link_title: Tooling Support for Python
 permalink: /reference-manual/python/Tooling/
 ---
 # Tooling Support for Python
-GraalVM Python runtime can run many standard Python tools as well as tools from the GraalVM ecosystem.
+GraalPy can run many standard Python tools as well as tools from the GraalVM ecosystem.
 The `graalpy --help:tools` command will give you more information about GraalVM tools currently supported on Python.
 
 ## Debugger
 The built-in `breakpoint()` function will use `pdb` by default.
 
 ### PDB
-The standard python debugger `pdb` is supported on GraalVM. Refer to the offical [PDB documentation](https://docs.python.org/3/library/pdb.html) for usage.
+The standard python debugger `pdb` is supported on GraalPy. Refer to the official [PDB documentation](https://docs.python.org/3/library/pdb.html) for usage.
 
 ### Chrome Inspector
 To enable [GraalVM's Chrome Inspector](https://github.com/oracle/graal/blob/master/docs/tools/chrome-debugger.md) debugger, pass the `--inspect` option to the `graalpy` launcher.
@@ -20,10 +20,10 @@ The built-in `breakpoint()` function will work using the Chrome Inspector implem
 
 ## Code Coverage
 
-GraalVM comes with a coverage instrument that can be used with `--coverage`.
+GraalPy comes with a coverage instrument that can be used with `--coverage`.
 Use the `graalpy --help:tools` command to see details on how to use it.
 
-In order to work better with existing Python code, the standard library `trace` module is partially supported with this low-overhead GraalVM coverage instrument.
+In order to work better with existing Python code, the standard library `trace` module is partially supported with this low-overhead coverage instrument.
 So you can do this:
 ```shell
 graalpy -m trace -m -c -s my_script.py
