@@ -329,7 +329,8 @@ the next commands will not work.
 To run the JVM configuration:
 
 ```bash
-mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm \
+mx --env ../../graal/vm/mx.vm/ce \
+    --exclude-components=slgm \
     --dynamicimports /vm benchmark meso:nbody3 \
     -- --python-vm=graalpython \
     --jvm=graalvm-ce-python \
