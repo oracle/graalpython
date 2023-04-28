@@ -127,63 +127,53 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return invokeNode.execute(frame, callTarget, arguments);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, //
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObjectSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getBuiltin(frame, func, 1)") PythonBuiltinBaseNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @Cached("getBuiltin(frame, func, 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, //
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObject(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
                     @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getBuiltin(frame, func, 1)") PythonBuiltinBaseNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @Cached("getBuiltin(frame, func, 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
         return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
         return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 

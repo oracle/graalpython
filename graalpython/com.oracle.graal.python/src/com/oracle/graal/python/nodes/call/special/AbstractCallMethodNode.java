@@ -197,10 +197,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return true;
     }
 
-    protected static boolean frameIsUnused(PythonBuiltinBaseNode builtinNode) {
-        return builtinNode == null || !builtinNode.getClass().getAnnotation(GeneratedBy.class).value().getAnnotationsByType(Builtin.class)[0].needsFrame();
-    }
-
     PythonVarargsBuiltinNode getVarargs(VirtualFrame frame, Object func) {
         CompilerAsserts.neverPartOfCompilation();
         if (func instanceof PBuiltinFunction builtinFunc) {
