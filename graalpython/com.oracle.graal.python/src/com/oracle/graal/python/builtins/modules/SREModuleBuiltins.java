@@ -649,8 +649,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached("create(method.getMethodName())") GetAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
-            reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
-
             int pos = asSizeNode.executeExact(frame, indexNode.execute(frame, posArg));
             int endPos = asSizeNode.executeExact(frame, indexNode.execute(frame, endPosArg));
             int length = lengthNode.execute(frame, input);
@@ -664,6 +662,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
             } else if (endPos > length) {
                 endPos = length;
             }
+
+            reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
 
             if (fallbackProfile.profile(inliningTarget, libCompiledRegex.isNull(compiledRegex))) {
                 Object fallbackRegex = getCallFallbackCompileNode().execute(getGetFallbackCompileNode().executeObject(frame, pattern));
