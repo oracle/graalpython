@@ -543,8 +543,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     abstract static class RECheckInputTypeNode extends PNodeWithRaise {
 
-        private static final PTuple SUPPORTED_BINARY_INPUT_TYPES = PythonObjectFactory.getUncached().createTuple(new Object[]{PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray,
-                        PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
         private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
         private static final TruffleString T_UNEXPECTED_STR = tsLiteral("cannot use a bytes pattern on a string-like object");
@@ -554,12 +552,13 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Specialization
         protected void check(VirtualFrame frame, Object input, boolean expectBytes,
                         @Bind("this") Node inliningTarget,
+                        @Cached("getSupportedBinaryInputTypes()") PTuple supportedBinaryInputTypes,
                         @Cached BuiltinFunctions.IsInstanceNode isStringNode,
                         @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
                         @Cached InlinedConditionProfile unsupportedInputTypeProfile,
                         @Cached InlinedConditionProfile unexpectedInputTypeProfile) {
             boolean isString = (boolean) isStringNode.execute(frame, input, PythonBuiltinClassType.PString);
-            boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, input, SUPPORTED_BINARY_INPUT_TYPES);
+            boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, input, supportedBinaryInputTypes);
             if (unsupportedInputTypeProfile.profile(inliningTarget, !isString && !isBytes)) {
                 throw getRaiseNode().raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
@@ -570,6 +569,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     throw getRaiseNode().raise(TypeError, T_UNEXPECTED_BYTES);
                 }
             }
+        }
+
+        @NeverDefault
+        protected PTuple getSupportedBinaryInputTypes() {
+            return PythonObjectFactory.getUncached().createTuple(new Object[]{PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PMMap,
+                            PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
         }
     }
 
