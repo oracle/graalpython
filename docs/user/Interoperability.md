@@ -96,7 +96,7 @@ Python reads the captured group from the JavaScript result and prints it.
 
 As a more complex example, see how you can read a file using R, process the data in Python, and use R again to display the resulting data image, using both the R and Python libraries in conjunction.
 To run this example, first install the required R library:
-```shell
+```bash
 R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
 ```
 

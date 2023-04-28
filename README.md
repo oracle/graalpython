@@ -57,7 +57,7 @@ To activate the environment in your shell session run:
 source <venv-dir>/bin/activate
 ```
 
-Multiple executables are available in the virtual environment, including `python`, `python3` and `graalpy`.
+Several executables are available in the virtual environment, including `python`, `python3` and `graalpy`.
 
 ### Installing Packages
 

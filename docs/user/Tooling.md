@@ -40,7 +40,7 @@ For example, it does not currently track calls, only line counts and called func
 The `_lsprof` built-in module is implemented using the GraalVM `cpusampler` tool.
 Not all profiling features are currently supported, but basic profiling works. For example:
 
-```shell
+```bash
 graalpy -m cProfile -s calls -m ginstall --help
 ```
 

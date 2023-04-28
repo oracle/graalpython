@@ -8,8 +8,8 @@ redirect_from: /docs/reference-manual/python/
 
 # GraalVM Python Runtime
 
-GraalVM provides a Python 3.8 compliant runtime.
-A primary goal of the GraalVM Python (GraalPy) runtime is to support SciPy and its constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
+GraalPy provides a Python 3.10 compliant runtime.
+A primary goal of the GraalPy runtime is to support SciPy and its constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
 At this point, GraalPy is made available for experimentation and curious end-users.
 See the [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
@@ -54,7 +54,7 @@ To activate the environment in your shell session run:
 source <venv-dir>/bin/activate
 ```
 
-Multiple executables are available in the virtual environment, including `python`, `python3` and `graalpy`. 
+Several executables are available in the virtual environment, including `python`, `python3` and `graalpy`. 
 
 You can run simple Python commands or programs with the `graalpy` launcher:
 
@@ -96,7 +96,7 @@ Hello World!
 
 ## Python Options
 
-GraalPy supports some of the same options as Python 3.8 as well as some additional options to control the underlying Python runtime, GraalVM's tools, and the execution engine.
+GraalPy supports some of the same options as Python 3.10 as well as some additional options to control the underlying Python runtime, GraalVM's tools, and the execution engine.
 These can be viewed using the following command:
 
 ```bash
@@ -107,7 +107,7 @@ graalpy --help --help:tools --help:languages
 
 By default, GraalVM runs GraalPy from a binary, compiled ahead-of-time with [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md), yielding faster startup time and lower footprint.
 Although the ahead-of-time compiled binary includes the Python and LLVM interpreters, to interoperate with
-other languages you must supply the `--jvm` argument.
+other languages you must supply the `--jvm` option.
 This instructs the launcher to run on the JVM instead of in Native Image mode.
 Thus, you will notice a longer startup time.
 
