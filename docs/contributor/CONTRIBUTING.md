@@ -1,6 +1,7 @@
-# Contributing GraalPy
+# Contributing to GraalPy
 
-Thanks for considering to contribute! To get you started, here is a bit of
+Thanks for considering to contribute! 
+To get you started, here is a bit of
 information about the structure of this implementation.
 
 You will need to sign the [Oracle Contributor Agreement](http://www.graalvm.org/community/contributors/) for us to be able to
@@ -8,7 +9,7 @@ merge your work.
 
 Please also take some time to review our [code of conduct](http://www.graalvm.org/community/conduct/) for contributors.
 
-### Getting started
+## Getting started
 
 The first thing you want to do is to set up
 [mx](https://github.com/graalvm/mx.git). This is the build tool we use to
@@ -33,25 +34,25 @@ If you just want to copy and paste some commands, these should get you started:
     $ ../mx/mx python -c "print(42)"
 
 For development, we recommend running `mx ideinit` next. This will generate
-configurations for Eclipse, IntelliJ, and Netbeans so that you can open the
+configurations for Eclipse, IntelliJ, and NetBeans so that you can open the
 projects in these IDEs. If you use another editor with support for the [Eclipse
-language server](https://github.com/eclipse/eclipse.jdt.ls) we also had reports
+language server](https://github.com/eclipse/eclipse.jdt.ls) we have also had reports
 of useable development setups with that, but it's not something we support.
 
-### Development layout
+## Development layout
 
 Besides the source code of the Python interpreter, we have some useful `mx`
-functions defined under the `mx.graalpython` directory. As you make changes, you
+functions defined under the _mx.graalpython_ directory. As you make changes, you
 can always test them with `mx build && mx python`. Additionally, there are
 various "gates" that we use on our CI systems to check any code that goes
 in. You can run all gates with `mx python-gate` or just some by using `mx
 python-gate --tags [TAG]`. Two interesting gates to run that cover most things
 are:
 
-- `python-unittest` - Run the unittests written in Python, including those for the C extension API
+- `python-unittest` - Run the unit tests written in Python, including those for the C extension API
 - `python-license` - Check that all files have the correct copyright headers applied to them
 
-###### Built-In modules and classes
+### Built-In modules and classes
 
 For the most part, built-in modules and classes are implemented in the
 `com.oracle.graal.python.builtins` package. For each module or class, there's
@@ -81,7 +82,7 @@ convert or coerce arguments, to look up methods either starting on the object or
 only on the class, to call a callable object or invoke a method, and more. In
 general, most of these methods should have equivalents in our
 `PythonObjectLibrary`. See the
-[IMPLEMENTATION_DETAILS.md](./IMPLEMENTATION_DETAILS.md) file for details on
+[_IMPLEMENTATION_DETAILS.md_](./IMPLEMENTATION_DETAILS.md) file for details on
 that library. If something is missing that is commonly used, we probably have
 some Node for it, but it may be a good idea to add it to the
 `PythonObjectLibrary` for easier discovery.
@@ -89,39 +90,39 @@ some Node for it, but it may be a good idea to add it to the
 GraalPy has its own variant of the argument clinic preprocessor. It is
 activated by: extending `PythonXXXClinicBuiltinNode` (e.g.,
 `PythonBinaryClinicBuiltinNode`), using `@ArgumentClinic` annotations
-on the builtin node class, and overriding the `getArgumentClinic` method
+on the built-in node class, and overriding the `getArgumentClinic` method
 to return the class that will be generated from the annotations (it will be
 named the same as the node class plus `ClinicProviderGen` suffix).
 
 Sometimes, you will not easily find what exactly happens for a given piece of
 code when that involves more than just a simple built-in call. The `dis` module
 on CPython can often help get an angle on what a particular piece of code is
-doing. You can call `dis.dis` on any Python function and it will print you
+doing. You can call `dis.dis` on any Python function and it will print
 details of the bytecode and associated data, which can be a good starting point
 to browse through the CPython source.
 
-###### Python C API
+### Python C API
 
-The C implementation and headers for our C API are in
-`graalpython/com.oracle.graal.python.cext`. The naming is analogous to C
-Python's source names. This folder also includes a `modules` folder for built-in
+The C implementation and headers for our C API are in the
+_graalpython/com.oracle.graal.python.cext_ directory. The naming is analogous to C
+Python's source names. This directory also includes a _modules_ directory for built-in
 modules that we have adapted from C Python.
 
-### Debug options
+## Debug options
 
-GraalPy provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
-or the java code, using your preferred IDE.
-The following commands should be executed in a virtual environment, which provides a graalpy executable.
+GraalPy provides proper debug options. It is possible to either debug the Python code, using a Chrome debugger, 
+or the Java code, using your preferred IDE.
+The following commands should be executed in a virtual environment, which provides a `graalpy` executable.
 
-For debug Python side code call this:
+For debug Python side code run this:
 
 ```
 graalpy --inspect your_script.py
 ```
 
-This will open a debug server, which can be accessed in Chrome Browser under URL `chrome://inspect`.
+This will open a debug server, which can be accessed in a Chrome Browser via the URL `chrome://inspect`.
 
-For debugging java implemented code execute:
+For debugging Java-implemented code run:
 
 ```
 graalpy --experimental-options -debug-java your_script.py
@@ -130,12 +131,12 @@ graalpy --experimental-options -debug-java your_script.py
 The command will also start a debug server, which can be used in an IDE. If the IDE was initialized properly
 by using the command mentioned above, the existing `GraalDebug` run configuration can be used to debug.
 
-### Advanced commands to develop and debug
+## Advanced commands to develop and debug
 
 Here are some advanced commands to debug test failures and fix issues.
 
-First, we have three sets of unittests in the base repository:
-1. Our own Python-bases unittests
+First, we have three sets of unit tests in the base repository:
+1. Our own Python-bases unit tests
 2. JUnit tests
 3. Python's standard library tests
 
@@ -164,7 +165,7 @@ To run the Python standard library tests, you can use the following:
 
     mx python-gate --tags python-tagged-unittest
 
-Note that we use "tag files", small `.txt` files that select which tests to run,
+Note that we use "tag files", small _*.txt_ files that select which tests to run,
 so we only run tests that we know should pass. To run a subset of those tests,
 use the following command:
 
@@ -204,7 +205,7 @@ If you made changes to the bytecode compiler, you may have to regenerate its gol
     find graalpython -name '*.co' -delete
     mx punittest com.oracle.graal.python.test.compiler
 
-### Benchmarking
+## Benchmarking
 
 We use the `mx` facilities for benchmarking. Use this to list the available
 Python suites and VM configurations:
@@ -230,19 +231,19 @@ another double-dash:
 
     mx benchmark meso:nbody3 -- --python-vm=graalpython -- --python.EmulateJython -Dgraal.Dump= -Dgraal.MethodFilter=*measure*
 
-#### A note on terminology
+### A note on terminology
 
 Note that there may be a little confusion about the configuration names of
 benchmarks.
 
-##### GraalVM Community Edition and Oracle GraalVM configurations
+#### GraalVM Community Edition and Oracle GraalVM configurations
 
 We have benchmarks for GraalVM Community Edition and Oracle GraalVM. For historical reasons,
 these are sometimes referred to in some config files as *CE* and *EE*; *core*
 and *enterprise*; *graalvm_ce* and *graalvm_ee*; or *graalpython_core* and
 *graalpython_enterprise*, respectively.
 
-##### Different GraalVM Python configurations
+### Different GraalVM Python configurations
 
 There are also different options for how the Python interpreter is run, passed
 via the `--python-vm-config` parameter:
@@ -252,10 +253,10 @@ via the `--python-vm-config` parameter:
  * `native` - same as `default`, its name is due to the fact that it runs C
    extensions using a mixture of LLVM bitcode interpreted and compiled via
    GraalVM and real native libraries
- * `sandboxed` - this name is historical - this configuration requires Oracle  GraalVM and runs all C extensions purely as LLVM bitcode on the GraalVM, without any access to the native OS libraries, i.e., using the
+ * `sandboxed` - this name is historical - this configuration requires Oracle GraalVM and runs all C extensions purely as LLVM bitcode on the GraalVM, without any access to the native OS libraries, i.e., using the
    `--llvm.managed` option for GraalVM.
 
-##### Configuration of the underlying GraalVM runtime
+### Configuration of the underlying GraalVM runtime
 
 Finally, there are the `--jvm` and `--jvm-config` configuration options for `mx
 benchmark`. By default, the commands presented above will run on the JVM in
@@ -266,8 +267,8 @@ want to look at the compiler graphs or peak performance numbers. In our CI,
 however, we always build a full GraalVM and benchmark using that, since that is
 what we ship. There, we have two different configurations corresponding to the
 launcher flags available for the GraalVM `graalpy` executable: *jvm* and
-*native*. The first runs on top of Hotspot using the Graal compiler, the second
-runs the AOT compiled GraalVM native image of Python.
+*native*. The first runs on top of HotSpot using the Graal compiler, the second
+runs the AOT compiled GraalVM native executable of Python.
 
 Building a GraalVM Python configuration can be achieved for the CE version like
 so:
@@ -288,7 +289,7 @@ To run the Native Image configuration:
 
     mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm benchmark meso:nbody3 -- --python-vm=graalpython --jvm=graalvm-ce-python --jvm-config=native --python-vm-config=default --
 
-### Finding Memory Leaks
+## Finding Memory Leaks
 
 For best performance we keep references to long-lived user objects (mostly
 functions, classes, and modules) directly in the AST nodes when using the
@@ -300,7 +301,7 @@ store any user objects strongly in the ASTs. We test that we have no
 PythonObjects alive after a Context is closed that are run as part of our JUnit
 tests. These can be run by themselves, for example, like so:
 
-    $ mx python-leak-test --lang python --shared-engine --code 'import site, json' --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject --keep-dump
+    mx python-leak-test --lang python --shared-engine --code 'import site, json' --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject --keep-dump
 
 The `--keep-dump` option will print the heapdump location and leave the file
 there rather than deleting it. It can then be opened for example with VisualVM
