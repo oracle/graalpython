@@ -27,11 +27,13 @@ be able to run `mx python` and get a REPL.
 
 If you just want to copy and paste some commands, these should get you started:
 
-    $ git clone https://github.com/graalvm/mx.git
-    $ git clone https://github.com/graalvm/graalpython.git
-    $ cd graalpython
-    $ ../mx/mx build
-    $ ../mx/mx python -c "print(42)"
+```bash
+git clone https://github.com/graalvm/mx.git
+git clone https://github.com/graalvm/graalpython.git
+cd graalpython
+../mx/mx build
+../mx/mx python -c "print(42)"
+```
 
 For development, we recommend running `mx ideinit` next. This will generate
 configurations for Eclipse, IntelliJ, and NetBeans so that you can open the
@@ -116,7 +118,7 @@ The following commands should be run in a virtual environment, which provides a 
 
 For debug Python side code run this:
 
-```
+```bash
 graalpy --inspect your_script.py
 ```
 
@@ -124,7 +126,7 @@ This will open a debug server, which can be accessed in a Chrome Browser via the
 
 For debugging Java-implemented code run:
 
-```
+```bash
 graalpy --experimental-options -debug-java your_script.py
 ```
 
@@ -142,38 +144,52 @@ First, we have three sets of unit tests in the base repository:
 
 To run the first, you can use this command:
 
-    mx python-gate --tags python-unittest
+```bash
+mx python-gate --tags python-unittest
+```
 
 If some of the tests fail, you can re-run just a single test like this,
 substituting TEST-PATTERN (and possibly the file glob on the third line) with
 the test you want to run. Note that you can insert `-d` to debug on the Java
 level or use `--inspect` to debug in the Chrome debugger.
 
-    mx [-d] graalpytest [--inspect] test_*.py \
+```bash
+mx [-d] graalpytest [--inspect] test_*.py \
         -k TEST-PATTERN
+```
 
 To run the JUnit tests, you can use this command:
 
-    mx python-gate --tags python-junit
+```bash
+mx python-gate --tags python-junit
+```
 
 To run a subset of the tests, you can use the following. Again, you can use `-d`
 to attach with a Java debugger.
 
-    mx [-d] punittest JAVA-TEST-CLASSNAME
+```bash
+mx [-d] punittest JAVA-TEST-CLASSNAME
+```
 
 To run the Python standard library tests, you can use the following:
 
-    mx python-gate --tags python-tagged-unittest
+```bash
+mx python-gate --tags python-tagged-unittest
+```
 
 Note that we use "tag files", small _*.txt_ files that select which tests to run,
 so we only run tests that we know should pass. To run a subset of those tests,
 use the following command:
 
-    mx [-d] python-run-cpython-unittest [--inspect] NAME-OF-CPYTHON-UNITTEST
+```
+mx [-d] python-run-cpython-unittest [--inspect] NAME-OF-CPYTHON-UNITTEST
+```
 
 A tag file can be regenerated with
 
-    mx python-retag-unittests NAME-OF-CPYTHON-UNITTEST
+```
+mx python-retag-unittests NAME-OF-CPYTHON-UNITTEST
+```
 
 There's also multiple other gates that may fail with changes. One of these is
 our *style* gate, which checks formatting rules and copyrights. To auto-fix most
@@ -183,53 +199,76 @@ you have to set the `JDT` environment variable to the path to an Eclipse
 compiler Jar file, and the `ECLIPSE_EXE` environment variable to the path of an
 eclipse executable.
 
-    mx python-style --fix
-    mx python-gate --tags style
+```bash
+mx python-style --fix
+mx python-gate --tags style
+```
 
 Another important gate is the gate that checks if you broke the native image
 building. To test if building a native image still works, you can use the
 following command. This will create a native executable called `graalpy` and
 print its path as the last output, if successful.
 
-    mx python-svm
+```bash
+mx python-svm
+```
 
 If you made changes to the parser, you may have to regenerate the golden files
 like so:
 
-    find graalpython -name '*.scope' -delete
-    find graalpython -name '*.tast' -delete
-    mx punittest com.oracle.graal.python.pegparser
+```bash
+find graalpython -name '*.scope' -delete
+find graalpython -name '*.tast' -delete
+mx punittest com.oracle.graal.python.pegparser
+```
 
 If you made changes to the bytecode compiler, you may have to regenerate its golden files:
 
-    find graalpython -name '*.co' -delete
-    mx punittest com.oracle.graal.python.test.compiler
+```bash
+find graalpython -name '*.co' -delete
+mx punittest com.oracle.graal.python.test.compiler
+```
 
 ## Benchmarking
 
 We use the `mx` facilities for benchmarking. Use this to list the available
 Python suites and VM configurations:
 
-    mx benchmark --list
+```bash
+mx benchmark --list
+```
 
 If you just want to run a single benchmark from, for example, the `meso` suite,
 you can use this:
 
-    mx benchmark meso --list
+```bash
+mx benchmark meso --list
+```
 
 Then if you want to run something, use (for example):
 
-    mx benchmark meso:nbody3
+```bash
+mx benchmark meso:nbody3
+```
 
 To select which Python VM you want to use, you can pass the arguments separated
 by `--`:
 
-    mx benchmark meso:nbody3 -- --python-vm=cpython
+```bash
+mx benchmark meso:nbody3 \
+    -- --python-vm=cpython
+```
 
 For additional arguments to the Python launcher, you can separate them by
 another double-dash:
 
-    mx benchmark meso:nbody3 -- --python-vm=graalpython -- --python.EmulateJython -Dgraal.Dump= -Dgraal.MethodFilter=*measure*
+```bash
+mx benchmark meso:nbody3 \
+    -- --python-vm=graalpython \
+    -- --python.EmulateJython \
+    -Dgraal.Dump= \
+    -Dgraal.MethodFilter=*measure*
+```
 
 ### A note on terminology
 
@@ -273,8 +312,14 @@ runs the AOT compiled GraalVM native executable of Python.
 Building a GraalVM Python configuration can be achieved for the CE version like
 so:
 
-    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm graalvm-show
-    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm build
+```bash
+mx --env ../../graal/vm/mx.vm/ce \
+    --exclude-components=slgm \
+    --dynamicimports /vm graalvm-show
+mx --env ../../graal/vm/mx.vm/ce \
+    --exclude-components=slgm \
+    --dynamicimports /vm build
+```
 
 The first command will print some information about the GraalVM configuration
 that is about to be built, and the second will build it. **IMPORTANT:** The
@@ -283,11 +328,26 @@ the next commands will not work.
 
 To run the JVM configuration:
 
-    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm benchmark meso:nbody3 -- --python-vm=graalpython --jvm=graalvm-ce-python --jvm-config=jvm --python-vm-config=default --
+```bash
+mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm \
+    --dynamicimports /vm benchmark meso:nbody3 \
+    -- --python-vm=graalpython \
+    --jvm=graalvm-ce-python \
+    --jvm-config=jvm \
+    --python-vm-config=default --
+```
 
 To run the Native Image configuration:
 
-    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm benchmark meso:nbody3 -- --python-vm=graalpython --jvm=graalvm-ce-python --jvm-config=native --python-vm-config=default --
+```bash
+mx --env ../../graal/vm/mx.vm/ce \
+    --exclude-components=slgm \
+    --dynamicimports /vm benchmark meso:nbody3 \
+    -- --python-vm=graalpython \
+    --jvm=graalvm-ce-python \
+    --jvm-config=native \
+    --python-vm-config=default --
+```
 
 ## Finding Memory Leaks
 
@@ -301,7 +361,13 @@ store any user objects strongly in the ASTs. We test that we have no
 PythonObjects alive after a Context is closed that are run as part of our JUnit
 tests. These can be run by themselves, for example, like so:
 
-    mx python-leak-test --lang python --shared-engine --code 'import site, json' --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject --keep-dump
+```bash
+mx python-leak-test --lang python \
+    --shared-engine \
+      --code 'import site, json' \
+      --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject \
+      --keep-dump
+```
 
 The `--keep-dump` option will print the heapdump location and leave the file
 there rather than deleting it. It can then be opened for example with VisualVM
