@@ -161,6 +161,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     public static final class TRegexCache {
 
+        private final Object originalPattern;
         private final String pattern;
         private final String flags;
         private final boolean binary;
@@ -193,6 +194,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public TRegexCache(Object pattern, int flags) {
+            this.originalPattern = pattern;
             String patternStr;
             boolean binary = true;
             try {
@@ -379,7 +381,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public Object compile(PythonContext context, Object patternObject, PythonMethod method, boolean mustAdvance, TruffleString locale) {
+        public Object compile(PythonContext context, PythonMethod method, boolean mustAdvance, TruffleString locale) {
             String encoding = isBinary() ? ENCODING_LATIN_1 : ENCODING_UTF_32;
             String options = getTRegexOptions(encoding, method, mustAdvance, locale);
             InteropLibrary lib = InteropLibrary.getUncached();
@@ -393,7 +395,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     regexp = compiledRegex;
                 }
             } catch (RuntimeException e) {
-                throw handleCompilationError(e, patternObject, lib, context);
+                throw handleCompilationError(e, lib, context);
             }
             if (isLocaleSensitive()) {
                 setLocaleSensitiveRegexp(method, mustAdvance, locale, regexp);
@@ -403,7 +405,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return regexp;
         }
 
-        private static RuntimeException handleCompilationError(RuntimeException e, Object patternObject, InteropLibrary lib, PythonContext context) {
+        private RuntimeException handleCompilationError(RuntimeException e, InteropLibrary lib, PythonContext context) {
             try {
                 if (lib.isException(e)) {
                     if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
@@ -418,7 +420,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                             int position = sourceSection.getCharIndex();
                             PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                             Object errorConstructor = PyObjectLookupAttr.getUncached().execute(null, module, T_ERROR);
-                            PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, patternObject, position);
+                            PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, originalPattern, position);
                             return PRaiseNode.getUncached().raiseExceptionObject(exception);
                         }
                     }
@@ -508,7 +510,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(getContext(), pattern, method, mustAdvance, null);
+                return tRegexCache.compile(getContext(), method, mustAdvance, null);
             }
         }
 
@@ -525,7 +527,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(getContext(), pattern, method, mustAdvance, locale);
+                return tRegexCache.compile(getContext(), method, mustAdvance, locale);
             }
         }
 
