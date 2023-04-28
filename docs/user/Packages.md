@@ -10,40 +10,16 @@ permalink: /reference-manual/python/Packages/
 
 The `pip` package installer is available and working when using a GraalPy virtual environment.
 
-Our `pip` ships some patches for packages that we test internally, these will be applied automatically where necessary.
-Support for as many extension modules as possible is a high priority for us.
-We are actively building out our support for the Python C API to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully.
-This means that some might already work, but we're still actively working on compatibility especially with native extensions.
+The GraalPy `pip` module ships some patches for packages that the project test internally, these will be applied automatically where necessary.
+Support for as many extension modules as possible is a high priority for the project.
+The project is actively adding support for the Python C API to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully.
+This means that some might already work, but the project is still working on compatibility especially with native extensions.
 
-### Using `ginstall`
-At the moment, there are not enough standard libraries implemented to run the standard package installers for many packages.
-As a convenience, a simple module to install packages is provided (including potential patches required for those packages).
-Try the following to find out more:
-```shell
-graalpy -m ginstall --help
-```
+## Including packages in a Java application
 
-As a slightly more exciting example, try:
-```shell
-graalpy -m ginstall install numpy
-```
-
-If all goes well (also consider native dependencies of NumPy), you should be able to `import numpy` afterwards.
-
-The support for more extensions is a high priority.
-The GraalVM team is actively working to enable support for the Python C API, as well as to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow, and alike, work.
-Other extensions might currently work, but they are not actively tested.
-Note that to try extensions on GraalPy, you have to download, build, and install them manually for now.
-
-### Using `pip`
-
-The `pip` package installer is available and working when using a `venv`.
-
-### Including packages in a Java application
-
-When using Python from Java via the GraalVM embedder APIs, a bit of preparationis required to make packages available to the runtime.
-After a venv is created and any desired packages are installed, this venv is made available to the Java embedded Python by setting a context option.
-A good idea is to include the entire venv folder as a resource, and use Java's resource API:
+When using Python from Java via the GraalVM embedder APIs, some preparation is required to make packages available to the runtime.
+After you have created a virtual environment and installed your required packages, the virtual environment is made available to the Python embedded in Java by setting a context option.
+A good idea is to include the entire virtual environment directory as a resource, and use Java's resource API:
 
 ```java
 String venvExePath = getClass().
@@ -59,16 +35,17 @@ Context ctx = Context.newBuilder("python").
 ctx.eval("python", "import site");
 ```
 
-The initial `import site` loads the Python standard library module `site`, which sets up the library paths.
-To do so, it uses the path of the currently running Python executable.
-For a language like Python, which is built around the filesystem, this makes sense, but in our Java embedding context, we do not have a Python executable running.
-This is what the `python.Executable` option is for: it reports which executable _would be_ running if we were running Python directly inside our venv.
-That is enough to make the machinery work and any packages inside the venv available to the embedded Python in Java.
+The initial `import site` instruction loads the Python standard library module `site`, which sets up the library paths.
+To do so, it uses the path of the Python executable that is currently running.
+For a language such as Python, which is built around the filesystem, this makes sense, but in a Java embedding context, there is no Python executable running.
+This is what the `python.Executable` option is for: it reports which executable _would be_ running if we were running Python directly inside your virtual environment.
+That is enough to make the machinery work and any packages inside the virtual environment available to the Python embedded in Java.
 
-A simple venv is already quite heavy, because it comes with the machinery to install more packages.
-For a Java distribution, we can strip the venv down somewhat without much trouble.
-Just run these inside the top-level venv directory:
-```shell
+A simple virtual environment is already quite heavy, because it comes with the machinery to install more packages.
+For a Java distribution, you can strip down the virtual environment.
+Just run these inside the top-level virtual environment directory:
+
+```bash
 find . -type d -name "__pycache__" -exec rm -rf "{}" ";"
 rmdir include
 rm bin/*
@@ -78,7 +55,8 @@ rm -rf lib/python3.*/site-packages/pip*
 ```
 
 Some packages may require the following, but most do not, so you can also remove these, but be aware that it _may_ break a few packages:
-```shell
+
+```bash
 rm -rf lib/python3.*/site-packages/setuptools*
 rm -rf lib/python3.*/site-packages/pkg_resources*
 ```
