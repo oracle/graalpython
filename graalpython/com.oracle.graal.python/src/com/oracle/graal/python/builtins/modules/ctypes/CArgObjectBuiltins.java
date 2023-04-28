@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -97,7 +96,8 @@ public class CArgObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString doit(PyCArgObject self,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached PtrNodes.ReadBytesNode readBytesNode) {
             String ret;
             switch (self.tag) {
                 case 'b':
@@ -118,7 +118,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     break;
                 }
                 case 'c':
-                    byte[] bytes = ((ByteArrayStorage) self.value.ptr).value;
+                    byte[] bytes = readBytesNode.execute(self.value, 1);
                     if (isLiteralChar((char) bytes[0])) {
                         ret = PythonUtils.formatJString("<cparam '%c' ('%c')>", self.tag, self.value);
                     } else {
@@ -148,11 +148,12 @@ public class CArgObjectBuiltins extends PythonBuiltins {
     protected static final int StructUnionTypeParamFunc = 16;
 
     protected static PyCArgObject paramFunc(int f, CDataObject self, StgDictObject stgDict, PythonObjectFactory factory,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode, PtrNodes.MemcpyNode memcpyNode) {
         PyCArgObject parg = factory.createCArgObject();
         switch (f) {
             case PyCArrayTypeParamFunc: // Corresponds to PyCArrayType_paramfunc
                 parg.tag = 'P';
+                // parg.pffi_type = ffi_type_pointer;
                 parg.pffi_type = FFIType.ffi_type_uint8_array;
                 parg.value = self.b_ptr;
                 parg.obj = self;
@@ -177,7 +178,8 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 parg.tag = code;
                 parg.pffi_type = fd.pffi_type;
                 parg.obj = self;
-                parg.value = self.b_ptr.copy(); // memcpy(parg.value, self.b_ptr, self.b_size);
+                parg.value = PtrValue.allocate(fd.pffi_type, self.b_size);
+                memcpyNode.execute(parg.value, self.b_ptr, self.b_size);
                 return parg;
             case StructUnionTypeParamFunc: // Corresponds to StructUnionType_paramfunc
                 /*

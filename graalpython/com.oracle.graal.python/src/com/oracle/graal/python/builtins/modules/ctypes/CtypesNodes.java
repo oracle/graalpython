@@ -57,6 +57,8 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.nio.ByteOrder;
+
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
@@ -210,6 +212,7 @@ public class CtypesNodes {
 
     protected static final ByteArraySupport SERIALIZE_LE = ByteArraySupport.littleEndian();
     protected static final ByteArraySupport SERIALIZE_BE = ByteArraySupport.bigEndian();
+    protected static final ByteArraySupport SERIALIZE_SWAP = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? ByteArraySupport.bigEndian() : ByteArraySupport.littleEndian();
 
     protected static Object getValue(FFI_TYPES type, byte[] storage, int offset) {
         switch (type) {

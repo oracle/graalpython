@@ -156,7 +156,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_uint8_array;
                 parg.tag = 'Z';
-                parg.value = PtrValue.bytes(parg.pffi_type, PythonUtils.EMPTY_BYTE_ARRAY);
+                parg.value = PtrValue.bytes(PythonUtils.EMPTY_BYTE_ARRAY);
                 parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.value, value, 0);
                 return parg;
             }
@@ -229,7 +229,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'z';
-            parg.value = PtrValue.bytes(parg.pffi_type, getBytes.execute(value.getSequenceStorage()));
+            parg.value = PtrValue.bytes(getBytes.execute(value.getSequenceStorage()));
             parg.obj = value;
             return parg;
         }
@@ -246,7 +246,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             int len = str.byteLength(TruffleString.Encoding.UTF_8);
             byte[] b = new byte[len];
             copyToByteArrayNode.execute(str, 0, b, 0, len, TruffleString.Encoding.UTF_8);
-            parg.value = PtrValue.bytes(parg.pffi_type, b);
+            parg.value = PtrValue.bytes(b);
             parg.obj = tvalue;
             return parg;
         }
@@ -333,7 +333,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'z';
-            parg.value = PtrValue.bytes(parg.pffi_type, getBytes.execute(value.getSequenceStorage()));
+            parg.value = PtrValue.bytes(getBytes.execute(value.getSequenceStorage()));
             parg.obj = value;
             return parg;
         }

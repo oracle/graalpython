@@ -81,7 +81,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DLHa
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -105,7 +104,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -309,7 +307,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 // memcpy(result.b_ptr, buffer.buf + offset, dict.size);
                 byte[] slice = new byte[dict.size];
                 bufferLib.readIntoByteArray(buffer, offset, slice, 0, dict.size);
-                result.b_ptr = PtrValue.bytes(dict.ffi_type_pointer, slice);
+                result.b_ptr = PtrValue.bytes(slice);
                 return result;
             } finally {
                 bufferLib.release(buffer);
@@ -367,7 +365,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
             CDataObject pd = factory.createCDataObject(type);
             assert pyTypeCheck.isCDataObject(pd);
-            pd.b_ptr = PtrValue.bytes(stgdict.ffi_type_pointer, buf);
+            pd.b_ptr = PtrValue.bytes(buf);
             pd.b_ptr.offset = offset;
             pd.b_length = stgdict.length;
             pd.b_size = stgdict.size;
@@ -407,17 +405,17 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     // corresponds to PyCData_get
     @ImportStatic(FieldGet.class)
     protected abstract static class PyCDataGetNode extends PNodeWithRaise {
-        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr, boolean fromArray);
+        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr);
 
         @Specialization(guards = "getfunc != nil")
         @SuppressWarnings("unused")
-        Object withFunc(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr, boolean fromArray,
+        Object withFunc(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr,
                         @Cached GetFuncNode getFuncNode) {
-            return getFuncNode.execute(getfunc, adr, size, fromArray);
+            return getFuncNode.execute(getfunc, adr, size);
         }
 
         @Specialization(guards = "getfunc == nil")
-        Object WithoutFunc(Object type, @SuppressWarnings("unused") FieldGet getfunc, Object src, int index, int size, PtrValue adr, boolean fromArray,
+        Object WithoutFunc(Object type, @SuppressWarnings("unused") FieldGet getfunc, Object src, int index, int size, PtrValue adr,
                         @Cached PythonObjectFactory factory,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -427,7 +425,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(type);
             if (dict != null && dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, type, getBaseClassNode, isSameTypeNode)) {
-                return getFuncNode.execute(dict.getfunc, adr, size, fromArray);
+                return getFuncNode.execute(dict.getfunc, adr, size);
             }
             return PyCData_FromBaseObj(type, src, index, adr, factory, getRaiseNode(), pyTypeStgDictNode);
         }
@@ -438,10 +436,10 @@ public class CDataTypeBuiltins extends PythonBuiltins {
      */
     protected abstract static class PyCDataSetNode extends PNodeWithRaise {
 
-        abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr, boolean intoArray);
+        abstract void execute(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr);
 
         @Specialization
-        void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr, boolean intoArray,
+        void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, PtrValue ptr,
                         @Cached SetFuncNode setFuncNode,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -450,12 +448,13 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached GetNameNode getName,
                         @Cached KeepRefNode keepRefNode,
+                        @Cached PtrNodes.MemcpyNode memcpyNode,
                         @Cached PythonObjectFactory factory) {
             if (!pyTypeCheck.isCDataObject(dst)) {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
 
-            Object result = PyCDataSetInternal(frame, type, setfunc, value, size, ptr, intoArray,
+            Object result = PyCDataSetInternal(frame, type, setfunc, value, size, ptr,
                             factory,
                             pyTypeCheck,
                             setFuncNode,
@@ -463,6 +462,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                             isInstanceNode,
                             pyTypeStgDictNode,
                             pyObjectStgDictNode,
+                            memcpyNode,
                             getName);
 
             /* KeepRef steals a refcount from it's last argument */
@@ -476,7 +476,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
          * Helper function for PyCData_set below.
          */
         // corresponds to _PyCData_set
-        Object PyCDataSetInternal(VirtualFrame frame, Object type, FieldSet setfunc, Object value, int size, PtrValue ptr, boolean intoArray,
+        Object PyCDataSetInternal(VirtualFrame frame, Object type, FieldSet setfunc, Object value, int size, PtrValue ptr,
                         PythonObjectFactory factory,
                         PyTypeCheck pyTypeCheck,
                         SetFuncNode setFuncNode,
@@ -484,6 +484,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         IsInstanceNode isInstanceNode,
                         PyTypeStgDictNode pyTypeStgDictNode,
                         PyObjectStgDictNode pyObjectStgDictNode,
+                        PtrNodes.MemcpyNode memcpyNode,
                         GetNameNode getName) {
             if (setfunc != FieldSet.nil) {
                 return setFuncNode.execute(frame, setfunc, ptr, value, size);
@@ -492,7 +493,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             if (!pyTypeCheck.isCDataObject(value)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(type);
                 if (dict != null && dict.setfunc != FieldSet.nil) {
-                    return setFuncNode.execute(frame, dict.setfunc, ptr, value, size, intoArray);
+                    return setFuncNode.execute(frame, dict.setfunc, ptr, value, size);
                 }
                 /*
                  * If value is a tuple, we try to call the type with the tuple and use the result!
@@ -502,7 +503,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                     Object ob = callNode.execute(frame, type, value);
                     // throw raise(RuntimeError, "(%s) ", getName.execute(type));
                     // XXX we never return `null` it will throw elsewhere.
-                    return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr, intoArray,
+                    return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr,
                                     factory,
                                     pyTypeCheck,
                                     setFuncNode,
@@ -510,7 +511,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                                     isInstanceNode,
                                     pyTypeStgDictNode,
                                     pyObjectStgDictNode,
-                                    getName);
+                                    memcpyNode, getName);
                 } else if (value instanceof PNone && pyTypeCheck.isPyCPointerTypeObject(type)) {
                     ptr.toNil(); // *(void **)ptr = NULL;
                     return PNone.NONE;
@@ -521,11 +522,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             CDataObject src = (CDataObject) value;
 
             if (isInstanceNode.executeWith(frame, value, type)) {
-                if (ptr.ptr instanceof ByteArrayStorage dstStorage) {
-                    if (src.b_ptr.ptr instanceof ByteArrayStorage srcStorage) {
-                        PythonUtils.arraycopy(srcStorage.value, src.b_ptr.offset, dstStorage.value, ptr.offset, size);
-                    }
-                }
+                memcpyNode.execute(ptr, src.b_ptr, size);
                 return GetKeepedObjects(src, factory);
             }
 

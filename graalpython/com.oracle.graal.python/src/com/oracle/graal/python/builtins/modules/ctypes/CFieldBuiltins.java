@@ -40,12 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.SERIALIZE_LE;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.SERIALIZE_SWAP;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.HAS_NO_STGINFO;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
-import static com.oracle.graal.python.nodes.ErrorMessages.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
@@ -63,28 +62,22 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCDataGetNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCDataSetNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.GetBytesFromNativePointerNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
-import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PrimitiveStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesWithoutFrameNode;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -95,10 +88,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -114,6 +105,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CField)
@@ -369,25 +361,9 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
     }
 
-    /******************************************************************/
     /*
      * Accessor functions
      */
-
-    /*
-     * Derived from Modules/structmodule.c: Helper routine to get a Python integer and raise the
-     * appropriate error if it isn't one
-     */
-
-    static long get_long(VirtualFrame frame, Object v,
-                    PyFloatCheckExactNode floatCheck,
-                    PyLongAsLongNode asLongNode,
-                    PRaiseNode raiseNode) {
-        if (floatCheck.execute(v)) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INT_EXPECTED_INSTEAD_FLOAT);
-        }
-        return asLongNode.execute(frame, v); // PyLong_AsUnsignedLongMask(v);
-    }
 
     /* byte swapping macros */
     static short SWAP_2(short v) {
@@ -420,54 +396,49 @@ public class CFieldBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, int size);
 
         @Specialization(guards = "setfunc == b_set || setfunc == B_set")
-        Object b_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared("fc") @Cached PyFloatCheckExactNode floatCheck,
-                        @Shared("l") @Cached PyLongAsLongNode asLongNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            byte val = (byte) get_long(frame, value, floatCheck, asLongNode, raiseNode);
-            ptr.writePrimitive(setfunc.ffiType, val);
+        Object b_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PtrNodes.WriteByteNode writeByteNode) {
+            byte val = (byte) asLongNode.execute(frame, value);
+            writeByteNode.execute(ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == h_set || setfunc == H_set")
-        Object h_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared("fc") @Cached PyFloatCheckExactNode floatCheck,
-                        @Shared("l") @Cached PyLongAsLongNode asLongNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            short val = (short) get_long(frame, value, floatCheck, asLongNode, raiseNode);
-            ptr.writePrimitive(setfunc.ffiType, val);
+        Object h_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PtrNodes.WriteShortNode writeShortNode) {
+            short val = (short) asLongNode.execute(frame, value);
+            writeShortNode.execute(ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == h_set_sw || setfunc == H_set_sw")
-        Object h_set_sw(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared("fc") @Cached PyFloatCheckExactNode floatCheck,
-                        @Shared("l") @Cached PyLongAsLongNode asLongNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            short val = (short) get_long(frame, value, floatCheck, asLongNode, raiseNode);
+        Object h_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PtrNodes.WriteShortNode writeShortNode) {
+            short val = (short) asLongNode.execute(frame, value);
             val = SWAP_2(val);
-            ptr.writePrimitive(setfunc.ffiType, val);
+            writeShortNode.execute(ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == i_set || setfunc == I_set")
-        Object i_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared("fc") @Cached PyFloatCheckExactNode floatCheck,
-                        @Shared("l") @Cached PyLongAsLongNode asLongNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            int val = (int) get_long(frame, value, floatCheck, asLongNode, raiseNode);
-            ptr.writePrimitive(setfunc.ffiType, val);
+        Object i_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PtrNodes.WriteIntNode writeIntNode) {
+            int val = (int) asLongNode.execute(frame, value);
+            writeIntNode.execute(ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == i_set_sw || setfunc == I_set_sw")
-        Object i_set_sw(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared("fc") @Cached PyFloatCheckExactNode floatCheck,
-                        @Shared("l") @Cached PyLongAsLongNode asLongNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            int val = (int) get_long(frame, value, floatCheck, asLongNode, raiseNode);
+        Object i_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PtrNodes.WriteIntNode writeIntNode) {
+            int val = (int) asLongNode.execute(frame, value);
             val = SWAP_4(val);
-            ptr.writePrimitive(setfunc.ffiType, val);
+            writeIntNode.execute(ptr, val);
             return PNone.NONE;
         }
 
@@ -477,42 +448,44 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         /* short BOOL - VARIANT_BOOL */
         @Specialization(guards = "setfunc == vBOOL_set")
-        static Object vBOOL_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
+        static Object vBOOL_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyObjectIsTrueNode isTrueNode,
+                        @Shared @Cached PtrNodes.WriteShortNode writeShortNode) {
+            short val;
             if (!isTrueNode.execute(frame, value)) {
-                ptr.writePrimitive(setfunc.ffiType, VARIANT_FALSE);
+                val = VARIANT_FALSE;
             } else {
-                ptr.writePrimitive(setfunc.ffiType, VARIANT_TRUE);
+                val = VARIANT_TRUE;
             }
+            writeShortNode.execute(ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == bool_set")
-        static Object bool_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
-            byte f = (byte) (isTrueNode.execute(frame, value) ? 1 : 0);
-            ptr.writePrimitive(setfunc.ffiType, f);
+        static Object bool_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyObjectIsTrueNode isTrueNode,
+                        @Shared @Cached PtrNodes.WriteByteNode writeByteNode) {
+            byte val = (byte) (isTrueNode.execute(frame, value) ? 1 : 0);
+            writeByteNode.execute(ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == l_set || setfunc == L_set")
-        Object l_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared("fc") @Cached PyFloatCheckExactNode floatCheck,
-                        @Shared("l") @Cached PyLongAsLongNode asLongNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            long val = get_long(frame, value, floatCheck, asLongNode, raiseNode);
-            ptr.writePrimitive(setfunc.ffiType, val);
+        Object l_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PtrNodes.WriteLongNode writeLongNode) {
+            long val = asLongNode.execute(frame, value);
+            writeLongNode.execute(ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == l_set_sw || setfunc == L_set_sw")
-        Object l_set_sw(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared("fc") @Cached PyFloatCheckExactNode floatCheck,
-                        @Shared("l") @Cached PyLongAsLongNode asLongNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            long val = get_long(frame, value, floatCheck, asLongNode, raiseNode);
+        Object l_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyLongAsLongNode asLongNode,
+                        @Shared @Cached PtrNodes.WriteLongNode writeLongNode) {
+            long val = asLongNode.execute(frame, value);
             val = SWAP_8(val);
-            ptr.writePrimitive(setfunc.ffiType, val);
+            writeLongNode.execute(ptr, val);
             return PNone.NONE;
         }
 
@@ -521,65 +494,70 @@ public class CFieldBuiltins extends PythonBuiltins {
          */
 
         @Specialization(guards = "setfunc == d_set || setfunc == g_set")
-        static Object d_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+        static Object d_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached PtrNodes.WriteLongNode writeLongNode) {
             double x = asDoubleNode.execute(frame, value);
-            ptr.writePrimitive(setfunc.ffiType, x);
+            writeLongNode.execute(ptr, Double.doubleToRawLongBits(x));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == d_set_sw")
-        static Object d_set_sw(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+        static Object d_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached PtrNodes.WriteLongNode writeLongNode) {
             byte[] bytes = new byte[Double.BYTES];
             CtypesNodes.SERIALIZE_BE.putDouble(bytes, 0, asDoubleNode.execute(frame, value));
             double x = SERIALIZE_LE.getDouble(bytes, 0);
-            ptr.writePrimitive(setfunc.ffiType, x);
+            writeLongNode.execute(ptr, Double.doubleToRawLongBits(x));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == f_set")
-        static Object f_set(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+        static Object f_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached PtrNodes.WriteIntNode writeIntNode) {
             float x = (float) asDoubleNode.execute(frame, value);
-            ptr.writePrimitive(setfunc.ffiType, x);
+            writeIntNode.execute(ptr, Float.floatToRawIntBits(x));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == f_set_sw")
-        static Object f_set_sw(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+        static Object f_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Shared @Cached PtrNodes.WriteIntNode writeIntNode) {
             byte[] bytes = new byte[Float.BYTES];
             CtypesNodes.SERIALIZE_BE.putFloat(bytes, 0, (float) asDoubleNode.execute(frame, value));
             float x = SERIALIZE_LE.getFloat(bytes, 0);
-            ptr.writePrimitive(setfunc.ffiType, x);
+            writeIntNode.execute(ptr, Float.floatToRawIntBits(x));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == O_set")
-        static Object O_set(FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size) {
-            /* Hm, does the memory block need it's own refcount or not? */
-            ptr.writePrimitive(setfunc.ffiType, value);
-            return value;
+        @SuppressWarnings("unused")
+        static Object O_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            // TODO
+            throw raiseNode.raise(NotImplementedError);
         }
 
         @Specialization(guards = "setfunc == c_set")
-        Object c_set(FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+        Object c_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached GetInternalByteArrayNode getBytes,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PtrNodes.WriteByteNode writeByteNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (PGuards.isBytes(value)) {
                 PBytesLike bytes = (PBytesLike) value;
                 if (bytes.getSequenceStorage().length() == 1) {
                     byte[] b = getBytes.execute(bytes.getSequenceStorage());
-                    ptr.writePrimitive(setfunc.ffiType, b[0]);
+                    writeByteNode.execute(ptr, b[0]);
                     return PNone.NONE;
                 }
             }
             if (PGuards.isInteger(value)) {
                 int val = (int) value;
                 if (!(val < 0 || val >= 256)) {
-                    byte b = (byte) val;
-                    ptr.writePrimitive(setfunc.ffiType, b);
+                    writeByteNode.execute(ptr, (byte) val);
                     return PNone.NONE;
                 }
             }
@@ -589,73 +567,63 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         /* u - a single wchar_t character */
         @Specialization(guards = "setfunc == u_set")
-        Object u_set(FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+        Object u_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached CastToTruffleStringNode toString,
-                        @Cached GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.ReadCharUTF16Node readCharNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode,
+                        @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             if (!PGuards.isString(value)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE,
-                                getNameNode.execute(getClassNode.execute(value)));
+                throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
-            TruffleString str = toString.execute(value);
-            str = switchEncodingNode.execute(str, TruffleString.Encoding.UTF_16);
-            if (codePointLengthNode.execute(str, TruffleString.Encoding.UTF_16) != 1) {
+            // TODO wchar_t is 4 bytes on linux
+            int wcharSize = 2;
+            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
+            TruffleString str = switchEncodingNode.execute(toString.execute(value), encoding);
+            InternalByteArray bytes = getInternalByteArrayNode.execute(str, encoding);
+            if (bytes.getLength() != wcharSize) {
                 throw raiseNode.raise(TypeError, ErrorMessages.ONE_CHARACTER_UNICODE_EXPECTED);
             }
-            ptr.writePrimitive(setfunc.ffiType, (short) readCharNode.execute(str, 0));
+            writeBytesNode.execute(ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == U_set")
         Object U_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, int size,
                         @Cached CastToTruffleStringNode toString,
-                        @Cached GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.ReadCharUTF16Node readCharNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached PtrNodes.WriteBytesNode writeBytesNode,
+                        @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             /* It's easier to calculate in characters than in bytes */
-            int wcharSize = FieldDesc.u.pffi_type.size;
-            int length = size / wcharSize;
+            // FIXME wchar_t is 4 bytes on linux
+            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
 
             if (!PGuards.isString(value)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE, getNameNode.execute(getClassNode.execute(value)));
+                throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
 
-            TruffleString str = toString.execute(value);
-            str = switchEncodingNode.execute(str, TruffleString.Encoding.UTF_16);
-            int strLen = codePointLengthNode.execute(str, TruffleString.Encoding.UTF_16);
-            if (strLen > length) {
-                throw raiseNode.raise(ValueError, ErrorMessages.STR_TOO_LONG, strLen, length);
+            TruffleString str = switchEncodingNode.execute(toString.execute(value), encoding);
+            InternalByteArray bytes = getInternalByteArrayNode.execute(str, encoding);
+            if (bytes.getLength() > size) {
+                throw raiseNode.raise(ValueError, ErrorMessages.STR_TOO_LONG, bytes.getLength(), size);
             }
-            for (int i = 0; i < strLen; i++) {
-                ptr.writeArrayElement(FieldDesc.u.pffi_type, i * 2, (short) readCharNode.execute(str, i));
-            }
+            writeBytesNode.execute(ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
             return value;
         }
 
         @Specialization(guards = "setfunc == s_set")
         Object s_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, int length,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode,
                         @Cached ToBytesWithoutFrameNode getBytes,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            byte[] data;
-            int size;
-
+                        @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode,
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (!PGuards.isPBytes(value)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_BYTES_S_FOUND, getNameNode.execute(getClassNode.execute(value)));
+                throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, value);
             }
 
-            // a copy is expected.. no need for memcpy
-            data = getBytes.execute(inliningTarget, value);
-            size = data.length; /* XXX Why not Py_SIZE(value)? */
+            byte[] data = getBytes.execute(inliningTarget, value);
+            int size = data.length;
             if (size < length) {
                 /*
                  * This will copy the terminating NUL character if there is space for it.
@@ -664,81 +632,73 @@ public class CFieldBuiltins extends PythonBuiltins {
             } else if (size > length) {
                 throw raiseNode.raise(ValueError, ErrorMessages.BYTES_TOO_LONG, size, length);
             }
-            /* Also copy the terminating NUL character if there is space */
-            ptr.writeBytesArrayElement(data);
+            writeBytesNode.execute(ptr, data);
 
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == z_set")
         Object z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached ToBytesWithoutFrameNode getBytes,
-                        @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (value == PNone.NONE) {
                 ptr.toNil();
                 return value;
             }
+            if (value instanceof PythonNativeVoidPtr voidPtr && voidPtr.getPointerObject() instanceof PBytes bytes) {
+                value = bytes;
+            }
             if (PGuards.isPBytes(value)) {
-                ptr.writeBytesArrayElement(getBytes.execute(inliningTarget, value));
+                int len = bufferLib.getBufferLength(value);
+                byte[] bytes = new byte[len + 1];
+                bufferLib.readIntoByteArray(value, 0, bytes, 0, len);
+                ptr.toBytes(bytes);
                 return value;
-            } else if (value instanceof PythonNativeVoidPtr) {
-                ptr.writeBytesArrayElement(getBytes.execute(inliningTarget, ((PythonNativeVoidPtr) value).getPointerObject()));
-                return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
                 // *(char **)ptr = (char *)PyLong_AsUnsignedLongMask(value);
                 throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
             }
-            throw raiseNode.raise(TypeError, ErrorMessages.BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_S, getNameNode.execute(getClassNode.execute(value)));
+            throw raiseNode.raise(TypeError, ErrorMessages.BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
         }
 
         @Specialization(guards = "setfunc == Z_set")
         Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object v, @SuppressWarnings("unused") int size,
                         @Cached CastToTruffleStringNode toString,
-                        @Cached GetNameNode getNameNode,
-                        @Cached GetClassNode getClassNode,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.ReadCharUTF16Node readCharNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             Object value = v;
             if (value == PNone.NONE) {
                 ptr.toNil();
                 return value;
             }
-            if (value instanceof PythonNativeVoidPtr) {
-                value = ((PythonNativeVoidPtr) value).getPointerObject();
-                // ptr.writePrimitive(setfunc.ffiType, v);
-                // return PNone.NONE;
+            // TODO wchar_t is 4 bytes on linux
+            int wcharSize = 2;
+            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
+            if (value instanceof PythonNativeVoidPtr voidPtr) {
+                value = voidPtr.getPointerObject();
             } else if (longCheckNode.execute(value)) {
                 // *(wchar_t **)ptr = (wchar_t *)PyLong_AsUnsignedLongMask(value);
                 throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
             }
             if (!PGuards.isString(value)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_S, getNameNode.execute(getClassNode.execute(value)));
+                throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
             }
 
-            /*
-             * We must create a wchar_t* buffer from the unicode object, and keep it alive
-             */
-            TruffleString buffer = toString.execute(value);
-            buffer = switchEncodingNode.execute(buffer, TruffleString.Encoding.UTF_16);
-            int len = codePointLengthNode.execute(buffer, TruffleString.Encoding.UTF_16);
-            ptr.ensureCapacity(len * 2);
-            for (int i = 0; i < len; i++) {
-                ptr.writeArrayElement(FieldDesc.u.pffi_type, i * 2, (short) readCharNode.execute(buffer, i));
-            }
-            return buffer;
+            TruffleString str = switchEncodingNode.execute(toString.execute(value), encoding);
+            int byteLength = str.byteLength(encoding);
+            byte[] bytes = new byte[byteLength + wcharSize];
+            copyToByteArrayNode.execute(str, 0, bytes, 0, byteLength, encoding);
+            ptr.toBytes(bytes);
+            return str;
         }
 
         @Specialization(guards = "setfunc == P_set")
         Object P_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (value == PNone.NONE) {
                 ptr.toNil();
                 return PNone.NONE;
@@ -753,14 +713,13 @@ public class CFieldBuiltins extends PythonBuiltins {
 
             // v = (void *)PyLong_AsUnsignedLongMask(value);
             Object v = ((PythonNativeVoidPtr) value).getPointerObject();
-            ptr.toNativePointer(v, FFI_TYPES.FFI_TYPE_POINTER);
+            ptr.toNativePointer(v);
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object error(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, int size,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+        Object error(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object value, int size) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("Field setter %s is not supported yet."), setfunc.name());
         }
@@ -774,298 +733,205 @@ public class CFieldBuiltins extends PythonBuiltins {
         abstract Object execute(FieldGet getfunc, PtrValue adr, int size);
 
         @Specialization(guards = "getfunc == vBOOL_get")
-        static Object vBOOL_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Short;
+        static Object vBOOL_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return ((short) obj) != 0;
+            return readShortNode.execute(ptr) != 0;
         }
 
         @Specialization(guards = "getfunc == bool_get")
-        static boolean bool_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Byte;
-            return ((byte) obj) != 0;
+        static boolean bool_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadByteNode readByteNode) {
+            return readByteNode.execute(ptr) != 0;
         }
 
         @Specialization(guards = "getfunc == b_get")
-        static int b_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Byte;
-            byte b = (byte) obj;
+        static int b_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadByteNode readByteNode) {
             // GET_BITFIELD(val, size);
-            return b;
+            return readByteNode.execute(ptr);
         }
 
         @Specialization(guards = "getfunc == B_get")
-        static int B_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Byte;
-            byte b = (byte) obj;
+        static int B_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadByteNode readByteNode) {
             // GET_BITFIELD(val, size);
-            return 0xFF & b;
+            return readByteNode.execute(ptr) & 0xFF;
         }
 
         @Specialization(guards = "getfunc == h_get")
-        static int h_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Short;
+        static int h_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return (short) obj;
+            return readShortNode.execute(ptr);
         }
 
         @Specialization(guards = "getfunc == h_get_sw")
-        static int h_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Short;
-            short val = (short) obj;
-            val = SWAP_2(val);
+        static int h_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return val;
+            return SWAP_2(readShortNode.execute(ptr));
         }
 
         @Specialization(guards = "getfunc == H_get")
-        static int H_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Short;
-            short s = (short) obj;
+        static int H_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return 0xFFFF & s;
+            return readShortNode.execute(ptr) & 0xFFFF;
         }
 
         @Specialization(guards = "getfunc == H_get_sw")
-        static int H_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Short;
-            short val = SWAP_2((short) obj);
+        static int H_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return 0xFFFF & val;
+            return SWAP_2(readShortNode.execute(ptr)) & 0xFFFF;
         }
 
         @Specialization(guards = "getfunc == i_get")
-        static int i_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Integer;
+        static int i_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return (int) obj;
+            return readIntNode.execute(ptr);
         }
 
         @Specialization(guards = "getfunc == i_get_sw")
-        static Object i_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Integer;
+        static Object i_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return SWAP_4((int) obj);
+            return SWAP_4(readIntNode.execute(ptr));
         }
 
         @Specialization(guards = "getfunc == I_get")
-        static Object I_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Integer;
-            int val = (int) obj;
+        static Object I_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return val < 0 ? 0xFFFFFFFFL & val : val;
+            return readIntNode.execute(ptr) & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = "getfunc == I_get_sw")
-        static Object I_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Integer;
-            int val = SWAP_4((int) obj);
+        static Object I_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return val < 0 ? 0xFFFFFFFFL & val : val;
+            return SWAP_4(readIntNode.execute(ptr)) & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = "getfunc == l_get")
-        static Object l_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Long;
+        static Object l_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadLongNode readLongNode) {
             // GET_BITFIELD(val, size);
-            return obj;
+            return readLongNode.execute(ptr);
         }
 
         @Specialization(guards = "getfunc == l_get_sw")
-        static Object l_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Long;
-            long val = (long) obj;
+        static Object l_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadLongNode readLongNode) {
             // GET_BITFIELD(val, size);
-            return SWAP_8(val);
+            return SWAP_8(readLongNode.execute(ptr));
         }
 
         @Specialization(guards = "getfunc == L_get")
-        static Object L_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
-                        @Cached PythonObjectFactory factory) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Long;
-            long val = (long) obj;
+        static Object L_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadLongNode readLongNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            long val = readLongNode.execute(ptr);
             // GET_BITFIELD(val, size);
             return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
         }
 
         @Specialization(guards = "getfunc == L_get_sw")
-        static Object L_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
-                        @Cached PythonObjectFactory factory) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Long;
-            long val = (long) obj;
-            val = SWAP_8(val);
+        static Object L_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadLongNode readLongNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            long val = SWAP_8(readLongNode.execute(ptr));
             // GET_BITFIELD(val, size);
             return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
         }
 
         @Specialization(guards = "getfunc == d_get")
-        static Object d_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Double;
-            return obj;
+        static Object d_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadLongNode readLongNode) {
+            return Double.longBitsToDouble(readLongNode.execute(ptr));
         }
 
         @Specialization(guards = "getfunc == d_get_sw")
-        static double d_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Double;
-            byte[] bytes = new byte[Double.BYTES];
-            CtypesNodes.SERIALIZE_BE.putDouble(bytes, 0, (double) obj);
-            return SERIALIZE_LE.getDouble(bytes, 0);
+        static double d_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadBytesNode readBytesNode) {
+            byte[] bytes = readBytesNode.execute(ptr, Double.BYTES);
+            return SERIALIZE_SWAP.getDouble(bytes, 0);
         }
 
         @Specialization(guards = "getfunc == f_get")
-        static double f_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Float;
-            return (float) obj;
+        static double f_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadIntNode readIntNode) {
+            return Float.intBitsToFloat(readIntNode.execute(ptr));
         }
 
         @Specialization(guards = "getfunc == f_get_sw")
-        static double f_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Float;
-            byte[] bytes = new byte[Float.BYTES];
-            CtypesNodes.SERIALIZE_BE.putFloat(bytes, 0, (float) obj);
-            return SERIALIZE_LE.getFloat(bytes, 0);
+        static double f_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadBytesNode readBytesNode) {
+            byte[] bytes = readBytesNode.execute(ptr, Float.BYTES);
+            return SERIALIZE_SWAP.getFloat(bytes, 0);
         }
 
-        /*
-         * py_object refcounts:
-         *
-         * 1. If we have a py_object instance, O_get must Py_INCREF the returned object, of course.
-         * If O_get is called from a function result, no py_object instance is created - so
-         * callproc.c::GetResult has to call Py_DECREF.
-         *
-         * 2. The memory block in py_object owns a refcount. So, py_object must call Py_DECREF on
-         * destruction. Maybe only when b_needsfree is non-zero.
-         */
         @Specialization(guards = "getfunc == O_get")
-        Object O_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+        Object O_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached PRaiseNode raiseNode) {
             if (ptr.isNil()) {
-                /* Set an error if not yet set */
                 throw raiseNode.raise(ValueError, ErrorMessages.PY_OBJ_IS_NULL);
             }
-            return ptr.getPrimitiveValue(getfunc.ffiType);
+            // TODO implement storing arbitrary objects
+            throw raiseNode.raise(NotImplementedError);
         }
 
         @Specialization(guards = "getfunc == c_get")
-        static Object c_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+        static Object c_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadByteNode readByteNode,
                         @Cached PythonObjectFactory factory) {
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Byte;
-            byte b = (byte) obj;
-            return factory.createBytes(new byte[]{b});
+            return factory.createBytes(new byte[]{readByteNode.execute(ptr)});
         }
 
         @Specialization(guards = "getfunc == u_get")
-        static Object u_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+        static Object u_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Shared @Cached PtrNodes.ReadShortNode readShortNode,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
-            Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
-            assert obj instanceof Short;
-            short v = (short) obj;
+            short v = readShortNode.execute(ptr);
             return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(new char[]{(char) v}), TS_ENCODING);
         }
 
         /* U - a unicode string */
         @Specialization(guards = "getfunc == U_get")
-        static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+        static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size,
+                        @Cached PtrNodes.WCsLenNode wCsLenNode,
+                        @Cached PtrNodes.ReadBytesNode read,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
-            assert ptr.ptr instanceof ByteArrayStorage;
-            byte[] p = ((ByteArrayStorage) ptr.ptr).value;
             int wcharSize = FieldDesc.u.pffi_type.size;
-            int s = Math.min(size, p.length) / wcharSize;
-            /*
-             * We need 'result' to be able to count the characters with wcslen, since ptr may not be
-             * NUL terminated. If the length is smaller (if it was actually NUL terminated, we
-             * construct a new one and throw away the result.
-             */
-            /* chop off at the first NUL character, if any. */
-            char[] str = new char[s];
+            int wcslen = wCsLenNode.execute(ptr, wcharSize, size / wcharSize);
+            byte[] p = read.execute(ptr, wcslen * wcharSize);
+            char[] str = new char[p.length / wcharSize];
+            // FIXME wchar_t on linux may be 4 bytes
             for (int i = 0; i < str.length; i++) {
-                char c = (char) SERIALIZE_LE.getShort(p, i * 2);
-                if (c == 0) {
-                    str = PythonUtils.arrayCopyOf(str, i);
-                    break;
-                }
-                str[i] = c;
+                str[i] = (char) SERIALIZE_LE.getShort(p, i * 2);
             }
             return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
         }
 
         @Specialization(guards = "getfunc == s_get")
-        static Object s_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+        static Object s_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size,
+                        @Cached PtrNodes.StrLenNode strLenNode,
+                        @Cached PtrNodes.ReadBytesNode read,
                         @Cached PythonObjectFactory factory) {
-            assert ptr.ptr instanceof ByteArrayStorage;
-            byte[] p = ((ByteArrayStorage) ptr.ptr).value;
-
-            int i;
-            for (i = 0; i < size; ++i) {
-                if (p[i] == '\0') {
-                    break;
-                }
-            }
-
-            byte[] str = i < p.length ? PythonUtils.arrayCopyOf(p, i) : p;
-            return factory.createBytes(str);
+            return factory.createBytes(read.execute(ptr, strLenNode.execute(ptr, size)));
         }
 
         @Specialization(guards = "getfunc == z_get")
         static Object z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "1") InteropLibrary lib, /*- limit=1 should be enough for nfi pointer */
-                        @Cached PRaiseNode raiseNode,
-                        @Cached GetBytesFromNativePointerNode getNativeBytes) {
-            /* XXX What about invalid pointers ??? */
-            byte[] bytes = null;
+                        @Cached PtrNodes.StrLenNode strLenNode,
+                        @Cached PtrNodes.ReadBytesNode read) {
             if (!ptr.isNil()) {
-                if (ptr.ptr instanceof ByteArrayStorage) {
-                    bytes = ((ByteArrayStorage) ptr.ptr).value;
-                    bytes = PythonUtils.arrayCopyOfRange(bytes, ptr.offset, bytes.length - ptr.offset);
-                } else if (ptr.ptr instanceof NativePointerStorage) {
-                    try {
-                        Object adr;
-                        if (ptr.offset > 0) {
-                            adr = lib.asPointer(ptr.getNativePointer()) + ptr.offset;
-                        } else {
-                            adr = ptr.getNativePointer();
-                        }
-                        if (ptr.ptr.type == FFI_TYPES.FFI_TYPE_STRUCT) {
-                            // We need to get the pointer from the struct
-                            byte[] pbytes = getNativeBytes.execute(adr, FFI_TYPES.FFI_TYPE_POINTER.getSize());
-                            Object p = SERIALIZE_LE.getLong(pbytes, 0);
-                            // Now we have the byte buffer pointer, we can get the string of bytes.
-                            bytes = getNativeBytes.execute(p, -1);
-                        } else {
-                            assert ptr.ptr.type == FFI_TYPES.FFI_TYPE_POINTER;
-                            bytes = getNativeBytes.execute(adr, -1);
-                        }
-                    } catch (UnsupportedMessageException e) {
-                        throw raiseNode.raise(SystemError, e);
-                    }
-                }
-                if (bytes == null) {
-                    throw raiseNode.raise(SystemError, NOT_IMPLEMENTED);
-                }
+                byte[] bytes = read.execute(ptr, strLenNode.execute(ptr));
                 return factory.createBytes(bytes);
             } else {
                 return PNone.NONE;
@@ -1074,21 +940,18 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == Z_get")
         static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PtrNodes.WCsLenNode wCsLenNode,
+                        @Cached PtrNodes.ReadBytesNode read,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (!ptr.isNil()) {
-                assert ptr.ptr instanceof ByteArrayStorage;
-                byte[] p = ((ByteArrayStorage) ptr.ptr).value;
                 int wcharSize = FieldDesc.u.pffi_type.size;
+                byte[] p = read.execute(ptr, wCsLenNode.execute(ptr, wcharSize) * wcharSize);
                 int s = p.length / wcharSize;
                 char[] str = new char[s];
+                // FIXME wchar_t on linux may be 4 bytes
                 for (int i = 0; i < s; i++) {
-                    char c = (char) SERIALIZE_LE.getShort(p, i * 2);
-                    if (c == 0) {
-                        str = PythonUtils.arrayCopyOf(str, i);
-                        break;
-                    }
-                    str[i] = c;
+                    str[i] = (char) SERIALIZE_LE.getShort(p, i * 2);
                 }
                 return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
             } else {
@@ -1097,30 +960,17 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == P_get")
-        static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size,
+        static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached PythonObjectFactory factory) {
-            assert size == 8;
             if (ptr.isNil()) {
                 return 0L;
             }
-            Object p;
-            if (ptr.ptr instanceof MemoryViewStorage storage) {
-                PMemoryView mv = storage.value;
-                p = mv.getBufferPointer();
-                // TODO this doesn't work for managed memory views that didn't go native
-                p = p != null ? p : mv.getBuffer();
-            } else if (ptr.ptr instanceof NativePointerStorage storage) {
-                p = storage.getValue();
-                if (p == null) {
-                    return 0L;
-                }
-            } else if (ptr.ptr instanceof ByteArrayStorage storage) {
-                return PythonUtils.arrayAccessor.getLong(storage.value, 0);
-            } else if (ptr.ptr instanceof PrimitiveStorage storage) {
-                return storage.getValue();
-            } else {
-                return 0L;
+            Object p = readPointerNode.execute(ptr);
+            if (p instanceof Long) {
+                long val = (long) p;
+                return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
             }
             if (ilib.isPointer(p)) {
                 try {
@@ -1132,6 +982,5 @@ public class CFieldBuiltins extends PythonBuiltins {
                 return factory.createNativeVoidPtr(p);
             }
         }
-
     }
 }

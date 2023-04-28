@@ -93,6 +93,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -264,9 +265,9 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Pointer_item(CDataObject self, int index,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             if (PtrValue.isNull(self.b_ptr)) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
@@ -288,9 +289,9 @@ public class PyCPointerBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object Pointer_subscriptSlice(VirtualFrame frame, CDataObject self, PSlice slice,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -372,14 +373,13 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                 np[i] = Pointer_item(self, cur, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode);
             }
             return factory().createList(np);
-
         }
 
         @Specialization(guards = "!isPSlice(item)")
         Object Pointer_subscript(VirtualFrame frame, CDataObject self, Object item,
-                        @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Shared @Cached PyCDataGetNode pyCDataGetNode,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyIndexCheckNode indexCheckNode) {
             if (indexCheckNode.execute(item)) {
@@ -387,7 +387,6 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                 return Pointer_item(self, i, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode);
             }
             throw raise(TypeError, POINTER_INDICES_MUST_BE_INTEGER);
-
         }
     }
 }

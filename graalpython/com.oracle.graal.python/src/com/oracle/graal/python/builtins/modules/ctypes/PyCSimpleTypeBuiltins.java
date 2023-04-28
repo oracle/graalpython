@@ -128,10 +128,6 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class PyCSimpleTypeNewNode extends PythonBuiltinNode {
 
-        protected boolean isStruct() {
-            return true;
-        }
-
         @Specialization
         Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Cached TypeNode typeNew,
@@ -327,7 +323,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = code;
             parg.pffi_type = fd.pffi_type;
-            parg.value.createStorage(parg.pffi_type, dict.size, value);
+            parg.value.createStorage(parg.pffi_type, dict.size, null);
             try {
                 parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
                 return parg;

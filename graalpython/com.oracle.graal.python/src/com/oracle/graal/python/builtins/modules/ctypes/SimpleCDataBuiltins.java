@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNod
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -190,19 +189,16 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        static boolean Simple_bool(CDataObject self) {
-            if (self.b_ptr.ptr == null) {
+        static boolean Simple_bool(CDataObject self,
+                        @Cached PtrNodes.ReadBytesNode read) {
+            if (self.b_ptr.isNil()) {
                 return false;
             }
-            // return memcmp(self.b_ptr, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", self.b_size);
-            if (self.b_ptr.ptr instanceof ByteArrayStorage) {
-                byte[] bytes = ((ByteArrayStorage) self.b_ptr.ptr).value;
-                for (int i = 0; i < self.b_size; i++) {
-                    if (bytes[i] != 0) {
-                        return false;
-                    }
+            byte[] bytes = read.execute(self.b_ptr, self.b_size);
+            for (byte b : bytes) {
+                if (b != 0) {
+                    return true;
                 }
-                return true;
             }
             return false;
         }

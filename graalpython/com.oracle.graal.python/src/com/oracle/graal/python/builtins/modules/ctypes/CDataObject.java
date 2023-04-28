@@ -46,14 +46,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -121,11 +118,14 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     byte readByte(int byteIndex,
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        if (b_ptr.ptr != null) {
-            return bufferLib.readByte(b_ptr.ptr, b_ptr.offset + byteIndex);
-        }
-        throw CompilerDirectives.shouldNotReachHere("buffer read from empty CDataObject");
+                    @Cached PtrNodes.ReadByteNode readByteNode) {
+        return readByteNode.execute(b_ptr.ref(byteIndex));
+    }
+
+    @ExportMessage
+    void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
+                    @Cached PtrNodes.ReadBytesNode readBytesNode) {
+        readBytesNode.execute(dest, destOffset, b_ptr.ref(srcOffset), length);
     }
 
     @ExportMessage
@@ -136,71 +136,17 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     void writeByte(int byteIndex, byte value,
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        if (b_ptr.ptr != null) {
-            bufferLib.writeByte(b_ptr.ptr, b_ptr.offset + byteIndex, value);
-            return;
-        }
-        throw CompilerDirectives.shouldNotReachHere("buffer write to empty CDataObject");
+                    @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+        writeBytesNode.execute(b_ptr.ref(byteIndex), new byte[]{value});
     }
 
     @ExportMessage
-    boolean hasInternalByteArray(
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        if (b_ptr.offset != 0) {
-            return false;
-        }
-        if (b_ptr.ptr != null) {
-            return bufferLib.hasInternalByteArray(b_ptr.ptr);
-        }
-        return true;
+    void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
+                    @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+        writeBytesNode.execute(b_ptr.ref(destOffset), src, srcOffset, length);
     }
 
-    @ExportMessage
-    byte[] getInternalByteArray(
-                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        assert hasInternalByteArray(bufferLib);
-        if (b_ptr.ptr != null) {
-            return bufferLib.getInternalByteArray(b_ptr.ptr);
-        }
-        return PythonUtils.EMPTY_BYTE_ARRAY;
-    }
-
-    /*-
-    static int PyCData_NewGetBuffer(Object myself, Py_buffer *view, int flags)
-    {
-        CDataObject self = (CDataObject *)myself;
-        StgDictObject dict = PyObject_stgdict(myself);
-        Py_ssize_t i;
-
-        if (view == null) return 0;
-
-        view.buf = self.b_ptr;
-        view.obj = myself;
-        view.len = self.b_size;
-        view.readonly = 0;
-        /* use default format character if not set * /
-        view.format = dict.format ? dict.format : "B";
-        view.ndim = dict.ndim;
-        view.shape = dict.shape;
-        view.itemsize = self.b_size;
-        if (view.itemsize) {
-            for (i = 0; i < view.ndim; ++i) {
-                view.itemsize /= dict.shape[i];
-            }
-        }
-        view.strides = NULL;
-        view.suboffsets = NULL;
-        view.internal = NULL;
-        return 0;
-    }
-
-    /*-
-    static PyBufferProcs PyCData_as_buffer = {
-            PyCData_NewGetBuffer,
-            NULL,
-    };
-    */
+    // TODO we could expose the internal array if available
 
     @SuppressWarnings("static-method")
     @ExportLibrary(InteropLibrary.class)

@@ -61,7 +61,6 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
@@ -79,7 +78,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -155,6 +153,7 @@ public class CDataBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached PtrNodes.ReadBytesNode readBytesNode,
                         @Cached GetClassNode getClassNode) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
@@ -162,14 +161,7 @@ public class CDataBuiltins extends PythonBuiltins {
             }
             Object dict = getAttributeNode.executeObject(frame, self);
             Object[] t1 = new Object[]{dict, null};
-            if (self.b_ptr.isManagedBytes()) {
-                ByteArrayStorage byteArrayStorage = (ByteArrayStorage) self.b_ptr.ptr;
-                int len = byteArrayStorage.value.length;
-                int offset = self.b_ptr.offset;
-                t1[1] = factory().createBytes(PythonUtils.arrayCopyOfRange(byteArrayStorage.value, offset, len), self.b_size);
-            } else {
-                throw raise(NotImplementedError, toTruffleStringUncached("Storage is not covered yet."));
-            }
+            t1[1] = factory().createBytes(readBytesNode.execute(self.b_ptr, self.b_size));
             Object clazz = getClassNode.execute(self);
             Object[] t2 = new Object[]{clazz, factory().createTuple(t1)};
             PythonModule ctypes = getContext().lookupBuiltinModule(T__CTYPES);

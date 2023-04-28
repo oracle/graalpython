@@ -160,7 +160,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         if (type.type.isArray()) {
                             if (lib.isPointer(pArgs[i])) {
                                 byte[] bytes = getNativeBytes.execute(pArgs[i], -1);
-                                ptr.toBytes(type, bytes);
+                                ptr.toBytes(bytes);
                             }
                         }
                         arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size);
@@ -176,7 +176,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         assert lib.isPointer(pArgs[i]);
                         CDataObject obj = (CDataObject) callNode.execute(converters[i]);
                         // memcpy(obj.b_ptr, pArgs[i], dict.size);
-                        obj.b_ptr.toNativePointer(pArgs[i], thunk.atypes[i].type);
+                        obj.b_ptr.toNativePointer(pArgs[i]);
                         arglist[i] = obj;
                         // arglist[i] = pArgs[i];
                     } else {
