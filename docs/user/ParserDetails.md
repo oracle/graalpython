@@ -35,15 +35,15 @@ GraalPy never deletes a _.pyc_ file.
 GraalPy regenerates a _.pyc_ file when the corresponding source file is changed (timestamp of last modification or hashcode of the content) or the magic number of the Python implementation parser changes.
 Magic number changes will be communicated in the release notes so that embedders or system administrators can delete old _.pyc_ files when upgrading.
 
-The folder structure created for _.pyc_ files is as follows:
+The directory structure created for _.pyc_ files is as follows:
 ```python
-top_folder
+top_directory
     __pycache__
          sourceA.graalpy.pyc
          sourceB.graalpy.pyc
     sourceA.py
     sourceB.py
-    sub_folder
+    sub_directory
         __pycache__
             sourceX.graalpy.pyc
         sourceX.py

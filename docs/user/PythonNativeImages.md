@@ -1,29 +1,29 @@
 ---
 layout: docs-experimental
 toc_group: python
-link_title: Python Native Images
+link_title: Python Native Executables
 permalink: /reference-manual/python/native-image/
 ---
-# Native Images with Python
+# Native Executables with Python
 
 Python is a large language.
 "Batteries included" has long been a core tenet of CPython.
 As a compatible replacement, GraalPy includes most of those "batteries" as well.
 GraalPy binaries are much bigger than all CPython binaries combined, however.
-The data-structures differ, there is extra meta-data and in general more code required to support the just-in-time (JIT) compiler for Python code, and GraalPy also includes many standard Python modules in the main binary that are external C modules for CPython.
+The data-structures differ, there is extra metadata and in general more code required to support the just-in-time (JIT) compiler for Python code, and GraalPy also includes many standard Python modules in the main binary that are external C modules for CPython.
 All this means that the binary sizes for a GraalPy distribution are about 10 times larger than for CPython.
 
 In embedding scenarios, the defaults for GraalPy builds may include much more than needed for any one specific application.
 Java embeddings usually have more limited use cases for the Python interpreter than the full GraalPy distribution, and often can know ahead of time whether certain features are needed or may even be undesired.
-Thus, when embedding GraalPy in Java applications, the binary size can be reduced to some extent.
+Thus, when embedding GraalPy in a Java application, the binary size can be reduced to some extent.
 
 First and foremost, GraalPy accepts system properties on the `native-image` command line that exclude parts of the core runtime from the build.
-The flags we currently provide can, when taken together, reduce image size by around 20%.
+The options currently provided can, when taken together, reduce the size of the executable by around 20%.
 These are:
 
-* `python.WithoutSSL=true` - This flag removes the `ssl` module from the build.
-  If no secure network access or certificate checking is required, this removes the usage Java's SSL classes and the BouncyCastle library.
-* `python.WithoutDigest=true` - This flag removes the `_md5`, `_sha1`, `_sha256`, `_sha512`, `_sha3`, and `_hashlib` modules from the build.
+* `python.WithoutSSL=true` - This option removes the `ssl` module from the build.
+  If no secure network access or certificate checking is required, this removes Java's SSL classes and the BouncyCastle library.
+* `python.WithoutDigest=true` - This option removes the `_md5`, `_sha1`, `_sha256`, `_sha512`, `_sha3`, and `_hashlib` modules from the build.
   This removes the direct usages of `java.security.MessageDigest` and `javax.crypto.Mac` from GraalPy.
 * `python.WithoutPlatformAccess=true` - This removes the `signal` and `subprocess` modules, removes accesses to process properties such as the Unix UID and GID, or setting the Java default time zone.
   This has no significant impact on binary size, but if these are unwanted capabilities that are dynamically disabled with context options anyway, they can also be removed ahead of time.
@@ -33,23 +33,27 @@ These are:
   The native POSIX backend of GraalPy is recommended only for 100% compatibility with CPython's POSIX interfaces, and if not used, can be removed from the build with this option.
 * `python.WithoutJavaInet=true` - The Java implementation of Python's `socket` module is based on Java's networking classes.
   If network access is denied for an embedding scenario anyway, this option can reduce the binary size further.
-* `python.AutomaticAsyncActions=false` - Signal handling, Python weakref callbacks, and cleaning up native resources is usually done automatically by spawning GraalPy daemon threads that submit safepoint actions to the Python main thread.
+* `python.AutomaticAsyncActions=false` - Signal handling, Python weak reference callbacks, and cleaning up native resources is usually achieved automatically by spawning GraalPy daemon threads that submit safepoint actions to the Python main thread.
   This uses an `ExecutorService` with a thread pool.
-  If embedders want to disallow such extra threads or avoid pulling in `ExecutorService` and related classes, they can set this property to `false` and retrieve the `PollPythonAsyncActions` object from the context's polyglot bindings.
-  This object is executable and can be used to trigger Python async actions at locations the embedder desires.
+  If embedders want to disallow such extra threads or avoid pulling in `ExecutorService` and related classes, then set this property to `false` and retrieve the `PollPythonAsyncActions` object from the context's polyglot bindings.
+  This object is executable and can be used to trigger Python asynchronous actions at locations the embedder desires.
 
-Another useful option to reduce the image size is to omit including a pre-initialized Python context in the image.
+Another useful option to reduce the size of the native executable is to omit a pre-initialized Python context from the executable.
 By default, a default Python context is already pre-initialized and ready for immediate execution.
 In embeddings that use a custom polyglot engine to allow context sharing, the pre-initialized context cannot be used, however.
 It can be omitted by explicitly passing
 
-    -Dimage-build-time.PreinitializeContexts=
+```bash
+-Dimage-build-time.PreinitializeContexts=
+```
 
 If binary size is significantly more important than execution speed (which may be the case if all Python scripts are expected to be very short running and scripts are rarely executed more than once), it may make sense to disable JIT compilation entirely.
 Be aware that this will significantly impact your Python performance, so be sure to test the runtime behavior of your actual use cases when choosing to use this option.
-This can be achieved by passing
+This can be achieved by passing the following options
 
-    -Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime -Dpolyglot.engine.WarnInterpreterOnly=false
+```bash
+-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime -Dpolyglot.engine.WarnInterpreterOnly=false
+```
 
-Using all of these combined can cut the GraalPy binary size in half at the time of this writing.
+Using all of these combined can halve the size of the GraalPy binary.
 Every embedding is different and the code pulled in by the rest of the Java code also matters, so combinations of these options should be tried to determine which effect they have in a specific instance.

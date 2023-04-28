@@ -304,7 +304,7 @@ almost the same but not quite the `--jvm` mode you will get when running the
 want to look at the compiler graphs or peak performance numbers. In our CI,
 however, we always build a full GraalVM and benchmark using that, since that is
 what we ship. There, we have two different configurations corresponding to the
-launcher flags available for the GraalVM `graalpy` executable: *jvm* and
+launcher options available for the GraalVM `graalpy` executable: *jvm* and
 *native*. The first runs on top of HotSpot using the Graal compiler, the second
 runs the AOT compiled GraalVM native executable of Python.
 
