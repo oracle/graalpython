@@ -12,7 +12,7 @@ Please also take some time to review our [code of conduct](http://www.graalvm.or
 ## Getting started
 
 The first thing you want to do is to set up
-[mx](https://github.com/graalvm/mx.git). This is the build tool we use to
+[`mx`](https://github.com/graalvm/mx.git). This is the build tool we use to
 develop GraalVM languages. You also need LLVM 6, including the `opt` tool -- the
 latter is not included on macOS by default, here you can install the homebrew
 version of LLVM, which includes this tool. Note that you can use any JDK, and do
@@ -57,7 +57,7 @@ are:
 ### Built-In modules and classes
 
 For the most part, built-in modules and classes are implemented in the
-`com.oracle.graal.python.builtins` package. For each module or class, there's
+`com.oracle.graal.python.builtins` package. For each module or class, there's a
 Java class annotated with `@CoreFunctions`. Each function in a module or a class
 is implemented in a Node annotated with `@Builtin`. Take a look at the existing
 implementations to get a feel for how this is done. For now, when adding new
@@ -65,7 +65,7 @@ classes or modules, they need to be added to the list in
 `com.oracle.graal.python.builtins.Python3Core`.
 
 Some built-in functions, modules, and classes are implemented in pure Python. The
-files for this are in `graalpython/lib-graalpython`. These files are listed in
+files for this are in the _graalpython/lib-graalpython_ directory. These files are listed in
 the Java `com.oracle.graal.python.builtins.Python3Core` class. Take a look at
 these files to see what they do. If a file is called exactly as a built-in
 module is, it is executed in the context of that module during startup, so some
@@ -89,11 +89,11 @@ that library. If something is missing that is commonly used, we probably have
 some Node for it, but it may be a good idea to add it to the
 `PythonObjectLibrary` for easier discovery.
 
-GraalPy has its own variant of the argument clinic preprocessor. It is
-activated by: extending `PythonXXXClinicBuiltinNode` (e.g.,
-`PythonBinaryClinicBuiltinNode`), using `@ArgumentClinic` annotations
-on the built-in node class, and overriding the `getArgumentClinic` method
-to return the class that will be generated from the annotations (it will be
+GraalPy has its own variant of the argument clinic preprocessor.
+It is activated by: 
+* extending `PythonXXXClinicBuiltinNode` (e.g. `PythonBinaryClinicBuiltinNode`)
+* using `@ArgumentClinic` annotations on the built-in node class
+* and overriding the `getArgumentClinic` method to return the class that will be generated from the annotations (it will be
 named the same as the node class plus `ClinicProviderGen` suffix).
 
 Sometimes, you will not easily find what exactly happens for a given piece of
@@ -154,8 +154,7 @@ the test you want to run. Note that you can insert `-d` to debug on the Java
 level or use `--inspect` to debug in the Chrome debugger.
 
 ```bash
-mx [-d] graalpytest [--inspect] test_*.py \
-        -k TEST-PATTERN
+mx [-d] graalpytest [--inspect] test_*.py -k TEST-PATTERN
 ```
 
 To run the JUnit tests, you can use this command:
@@ -205,7 +204,7 @@ mx python-gate --tags style
 ```
 
 Another important gate is the gate that checks if you broke the native image
-building. To test if building a native image still works, you can use the
+building. To test if building a native executable still works, you can use the
 following command. This will create a native executable called `graalpy` and
 print its path as the last output, if successful.
 
@@ -322,8 +321,8 @@ mx --env ../../graal/vm/mx.vm/ce \
 ```
 
 The first command will print some information about the GraalVM configuration
-that is about to be built, and the second will build it. **IMPORTANT:** The
-first command should tell you that the `Config name` is `ce_python`, otherwise
+that is about to be built, and the second will build it. 
+>**IMPORTANT:** The first command should tell you that the `Config name` is `ce_python`, otherwise
 the next commands will not work.
 
 To run the JVM configuration:
