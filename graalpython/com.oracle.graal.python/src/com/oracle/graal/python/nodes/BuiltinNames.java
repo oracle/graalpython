@@ -409,6 +409,9 @@ public abstract class BuiltinNames {
     public static final String J_TYPE_VAR = "TypeVar";
     public static final TruffleString T_TYPE_VAR = tsLiteral(J_TYPE_VAR);
 
+    public static final String J__SRE = "_sre";
+    public static final TruffleString T__SRE = tsLiteral(J__SRE);
+
     // function names
     public static final String J_ADD = "add";
     public static final TruffleString T_ADD = tsLiteral(J_ADD);

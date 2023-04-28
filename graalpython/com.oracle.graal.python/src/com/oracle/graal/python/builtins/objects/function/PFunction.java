@@ -56,6 +56,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PFunction extends PythonObject {
     private TruffleString name;
     private TruffleString qualname;
+    private boolean forceSplitDirectCalls;
     private final Assumption codeStableAssumption;
     private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
@@ -89,6 +90,7 @@ public final class PFunction extends PythonObject {
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
         this.defaultsStableAssumption = defaultsStableAssumption;
+        this.forceSplitDirectCalls = false;
     }
 
     public Assumption getCodeStableAssumption() {
@@ -129,6 +131,14 @@ public final class PFunction extends PythonObject {
 
     public void setBuiltin(boolean builtin) {
         isBuiltin = builtin;
+    }
+
+    public void setForceSplitDirectCalls(boolean forceSplitDirectCalls) {
+        this.forceSplitDirectCalls = forceSplitDirectCalls;
+    }
+
+    public boolean forceSplitDirectCalls() {
+        return forceSplitDirectCalls;
     }
 
     @Override

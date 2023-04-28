@@ -120,7 +120,6 @@ FLAG_NAMES = [
     (FLAG_ASCII, "ASCII"),
 ]
 
-
 class Match():
     def __init__(self, pattern, pos, endpos, result, input_str, indexgroup):
         self.__result = result
@@ -243,53 +242,32 @@ class Match():
 
 class Pattern():
     def __init__(self, pattern, flags):
-        self.__binary = _is_bytes_like(pattern)
         self.pattern = pattern
+        self.flags = flags
+        self.__binary = _is_bytes_like(pattern)
         self.__input_flags = flags
-        self.__locale_sensitive = self.__is_locale_sensitive(pattern, flags)
-        flags_str = []
-        for char, flag in FLAGS.items():
-            if flags & flag:
-                flags_str.append(char)
-        self.__flags_str = "".join(flags_str)
-        self.__compiled_regexes = {}
-        self.__compiled_fallback = None
-        self.__cached_flags = None
-        compiled_regex = self.__tregex_compile()
-        if compiled_regex is not None:
-            self.groups = compiled_regex.groupCount - 1
-            groups = compiled_regex.groups
-            if groups is None:
-                self.groupindex = {}
-                self.__indexgroup = {}
-            else:
-                group_names = dir(groups)
-                self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
-                self.__indexgroup = {getattr(groups, name): name for name in group_names}
-        else:
-            fallback = self.__fallback_compile()
-            self.groups = fallback.groups
-            self.groupindex = fallback.groupindex
-            self.__indexgroup = {index: name for name, index in fallback.groupindex.items()}
 
-    @property
-    def flags(self):
-        # Flags can be specified both in the flag argument or inline in the regex. Extract them back from the regex
-        if self.__cached_flags != None:
-            return self.__cached_flags
-        compiled_regex = self.__tregex_compile()
-        if compiled_regex is None:
-            return self.__fallback_compile().flags
-        flags = self.__input_flags
-        regex_flags = self.__tregex_compile().flags
+        tregex_init_cache(self, pattern, flags)
+
+        compiled_regex = tregex_compile(self, _METHOD_SEARCH, False)
+
+        regex_flags = compiled_regex.flags
         for flag, name in FLAG_NAMES:
             try:
                 if getattr(regex_flags, name):
-                    flags |= flag
+                    self.flags |= flag
             except AttributeError:
                 pass
-        self.__cached_flags = flags
-        return flags
+
+        self.groups = compiled_regex.groupCount - 1
+        groups = compiled_regex.groups
+        if groups is None:
+            self.groupindex = {}
+            self.__indexgroup = {}
+        else:
+            group_names = dir(groups)
+            self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
+            self.__indexgroup = {getattr(groups, name): name for name in group_names}
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
@@ -298,62 +276,6 @@ class Pattern():
             raise TypeError("cannot use a string pattern on a bytes-like object")
         if self.__binary and isinstance(input, str):
             raise TypeError("cannot use a bytes pattern on a string-like object")
-
-    def __tregex_compile(self, method="search", must_advance=False):
-        if self.__locale_sensitive:
-            key = (method, must_advance, _getlocale())
-        else:
-            key = (method, must_advance)
-        if key not in self.__compiled_regexes:
-            try:
-                if self.__locale_sensitive:
-                    locale_option = ",PythonLocale=" + key[2]
-                else:
-                    locale_option = ""
-                extra_options = f"PythonMethod={method},MustAdvance={'true' if must_advance else 'false'}{locale_option}"
-                compiled_regex = tregex_compile_internal(self.pattern, self.__flags_str, extra_options)
-                self.__compiled_regexes[key] = compiled_regex
-            except ValueError as e:
-                if len(e.args) == 2:
-                    msg = e.args[0]
-                    if msg in (
-                            "cannot use UNICODE flag with a bytes pattern",
-                            "cannot use LOCALE flag with a str pattern",
-                            "ASCII and UNICODE flags are incompatible",
-                            "ASCII and LOCALE flags are incompatible",
-                    ):
-                        raise ValueError(msg) from None
-                    raise error(msg, self.pattern, e.args[1]) from None
-                raise
-        return self.__compiled_regexes[key]
-
-    def __is_locale_sensitive(self, pattern, flags):
-        """Tests whether the regex is locale-sensitive. It is not completely precise. In some
-        instances, it will return `True` even though the regex is *not* locale-sensitive. This is
-        the case when sequences resembling inline flags appear in character classes or comments."""
-        if not _is_bytes_like(pattern):
-            return False
-        if flags & FLAG_LOCALE != 0:
-            return True
-        pattern = pattern.decode(encoding='LATIN-1')
-        position = 0
-        while position < len(pattern):
-            position = pattern.find('(?', position)
-            if position == -1:
-                break
-            backslash_position = position - 1
-            while backslash_position >= 0 and pattern[backslash_position] == '\\':
-                backslash_position = backslash_position - 1
-            # jump over '(?'
-            position = position + 2
-            if (position - backslash_position) % 2 == 0:
-                # found odd number of backslashes, the parentheses is a literal
-                continue
-            while position < len(pattern) and pattern[position] in 'aiLmsux':
-                if pattern[position] == 'L':
-                    return True
-                position = position + 1
-        return False
 
     def __fallback_compile(self):
         if self.__compiled_fallback is None:
@@ -402,30 +324,20 @@ class Pattern():
         import types
         return types.GenericAlias(cls, item)
 
-    def _search(self, string, pos, endpos, method="search", must_advance=False):
-        _check_pos(pos)
-        self.__check_input_type(string)
-        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        compiled_regex = self.__tregex_compile(method=method, must_advance=must_advance)
-        if compiled_regex is not None:
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
-            if result.isMatch:
-                return Match(self, pos, endpos, result, string, self.__indexgroup)
-            else:
-                return None
-        else:
-            # We cannot pass must_advance to the SRE fallback implementation.
-            assert not must_advance
-            return getattr(self.__fallback_compile(), method)(string, pos=pos, endpos=endpos)
+    def _search(self, string, pos, endpos, method=_METHOD_SEARCH, must_advance=False):
+        return tregex_search(self, string, pos, endpos, method, must_advance)
 
+    @__graalpython__.force_split_direct_calls
     def search(self, string, pos=0, endpos=maxsize):
-        return self._search(string, pos, endpos, method="search")
+        return self._search(string, pos, endpos, method=_METHOD_SEARCH)
 
+    @__graalpython__.force_split_direct_calls
     def match(self, string, pos=0, endpos=maxsize):
-        return self._search(string, pos, endpos, method="match")
+        return self._search(string, pos, endpos, method=_METHOD_MATCH)
 
+    @__graalpython__.force_split_direct_calls
     def fullmatch(self, string, pos=0, endpos=maxsize):
-        return self._search(string, pos, endpos, method="fullmatch")
+        return self._search(string, pos, endpos, method=_METHOD_FULLMATCH)
 
     def __sanitize_out_type(self, elem):
         """Helper function for findall and split. Ensures that the type of the elements of the
@@ -437,9 +349,10 @@ class Pattern():
         else:
             return str(elem)
 
+    @__graalpython__.force_split_direct_calls
     def finditer(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
-            if self.__tregex_compile(must_advance=must_advance) is None:
+            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
                 return self.__fallback_compile().finditer(string, pos=pos, endpos=endpos)
         _check_pos(pos)
         self.__check_input_type(string)
@@ -449,8 +362,8 @@ class Pattern():
     def __finditer_gen(self, string, substring, pos, endpos):
         must_advance = False
         while pos <= endpos:
-            compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
+            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
+            result = tregex_call_exec(compiled_regex, substring, pos)
             if not result.isMatch:
                 break
             else:
@@ -459,9 +372,10 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return
 
+    @__graalpython__.force_split_direct_calls
     def findall(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
-            if self.__tregex_compile(must_advance=must_advance) is None:
+            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
                 return self.__fallback_compile().findall(string, pos=pos, endpos=endpos)
         _check_pos(pos)
         self.__check_input_type(string)
@@ -469,8 +383,8 @@ class Pattern():
         matchlist = []
         must_advance = False
         while pos <= endpos:
-            compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
+            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
+            result = tregex_call_exec(compiled_regex, substring, pos)
             if not result.isMatch:
                 break
             elif self.groups == 0:
@@ -483,12 +397,14 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return matchlist
 
+    @__graalpython__.force_split_direct_calls
     def sub(self, repl, string, count=0):
         return self.subn(repl, string, count)[0]
 
+    @__graalpython__.force_split_direct_calls
     def subn(self, repl, string, count=0):
         for must_advance in [False, True]:
-            if self.__tregex_compile(must_advance=must_advance) is None:
+            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
                 return self.__fallback_compile().subn(repl, string, count=count)
         self.__check_input_type(string)
         n = 0
@@ -509,8 +425,8 @@ class Pattern():
                     literal = True
 
         while (count == 0 or n < count) and pos <= len(string):
-            compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = tregex_call_exec(compiled_regex.exec, string, pos)
+            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
+            match_result = tregex_call_exec(compiled_regex, string, pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -531,9 +447,10 @@ class Pattern():
         else:
             return "".join(result), n
 
+    @__graalpython__.force_split_direct_calls
     def split(self, string, maxsplit=0):
         for must_advance in [False, True]:
-            if self.__tregex_compile(must_advance=must_advance) is None:
+            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
                 return self.__fallback_compile().split(string, maxsplit=maxsplit)
         n = 0
         result = []
@@ -541,8 +458,8 @@ class Pattern():
         search_pos = 0
         must_advance = False
         while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
-            compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = tregex_call_exec(compiled_regex.exec, string, search_pos)
+            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
+            match_result = tregex_call_exec(compiled_regex, string, search_pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -566,8 +483,8 @@ class Pattern():
         # We cannot pass the must_advance parameter to the internal SRE implementation.
         # If TRegex cannot support must_advance in either the 'match' or the 'search' method,
         # we will need to use the original implementation of the 'scanner' method.
-        for method in ["match", "search"]:
-            if self.__tregex_compile(method=method, must_advance=True) is None:
+        for method in [_METHOD_MATCH, _METHOD_SEARCH]:
+            if tregex_compile(self, method, True) is None:
                 return self.__fallback_compile().scanner(string, pos=pos, endpos=endpos)
         return SREScanner(self, string, pos, endpos)
 
@@ -591,11 +508,13 @@ class SREScanner(object):
             self.__must_advance = match.start() == self.__start
         return match
 
+    @__graalpython__.force_split_direct_calls
     def match(self):
-        return self.__match_search("match")
+        return self.__match_search(_METHOD_MATCH)
 
+    @__graalpython__.force_split_direct_calls
     def search(self):
-        return self.__match_search("search")
+        return self.__match_search(_METHOD_SEARCH)
 
 
 _t_compile = Pattern

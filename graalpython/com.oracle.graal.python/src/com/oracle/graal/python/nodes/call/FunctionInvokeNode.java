@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,10 +72,10 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     private final PCell[] closure;
     protected final boolean isBuiltin;
 
-    protected FunctionInvokeNode(PFunction callee, CallTarget callTarget, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
+    protected FunctionInvokeNode(PFunction callee, CallTarget callTarget, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator, boolean split) {
         this.callee = callee;
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
-        if (isBuiltin && forceSplitBuiltins()) {
+        if (split) {
             callNode.cloneCallTarget();
         }
         if (isGenerator && shouldInlineGenerators()) {
@@ -117,15 +117,15 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     @TruffleBoundary
     public static FunctionInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
-        boolean builtin = isBuiltin(callee);
-        return FunctionInvokeNodeGen.create(callee, callTarget, callee.getGlobals(), callee.getClosure(), builtin, callTarget.getRootNode() instanceof PBytecodeGeneratorFunctionRootNode);
+        return FunctionInvokeNodeGen.create(callee, callTarget, callee.getGlobals(), callee.getClosure(), false, callTarget.getRootNode() instanceof PBytecodeGeneratorFunctionRootNode,
+                        callee.forceSplitDirectCalls());
     }
 
     @TruffleBoundary
     public static FunctionInvokeNode create(PBuiltinFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
-        boolean builtin = isBuiltin(callee);
-        return FunctionInvokeNodeGen.create(null, callTarget, null, null, builtin, false);
+        boolean split = forceSplitBuiltins();
+        return FunctionInvokeNodeGen.create(null, callTarget, null, null, true, false, split);
     }
 
     /**
@@ -135,6 +135,6 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
      */
     @TruffleBoundary
     public static FunctionInvokeNode createBuiltinFunction(RootCallTarget callTarget) {
-        return FunctionInvokeNodeGen.create(null, callTarget, null, null, true, false);
+        return FunctionInvokeNodeGen.create(null, callTarget, null, null, true, false, forceSplitBuiltins());
     }
 }
