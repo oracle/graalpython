@@ -138,10 +138,14 @@ def bundle_python_resources(
             zf,
             __graalpython__.capi_home,
             f"{vfs_prefix}/{home_prefix}/lib-graalpython",
-            data_only=True,
+            path_filter=lambda file=None, dir=None: file and file.endswith(".py"),
         )
         write_folder_to_zipfile(
-            zf, __graalpython__.stdlib_home, f"{vfs_prefix}/{home_prefix}/lib-python/3"
+            zf,
+            __graalpython__.stdlib_home,
+            f"{vfs_prefix}/{home_prefix}/lib-python/3",
+            path_filter=lambda file=None, dir=None: dir
+            and dir in ["idlelib", "ensurepip", "tkinter", "turtledemo"],
         )
 
         if venv:
@@ -157,30 +161,27 @@ def bundle_python_resources(
                 os.unlink(name)
 
 
-def write_folder_to_zipfile(zf, folder, prefix, data_only=False):
+def write_folder_to_zipfile(zf, folder, prefix, path_filter=lambda file=None, dir=None: False):
     """
     Store a folder with Python modules. We do not store source code, instead,
-    we for each py file we create a pyc entry rightaway. .py files are created
-    as empty files, their hashed bitcode set to not check the file hash. This
-    ensures that packages are still imported correctly without storing any
-    source code in directly. Any other resources in the folder are stored
-    as-is. If data_only is given, neither .py nor .pyc files are added to the
-    archive.
+    we for each py file we create a pyc entry rightaway. Any other resources in the
+    folder are stored as-is. If data_only is given, neither .py nor .pyc files are
+    added to the archive.
     """
     folder = folder.rstrip("/\\")
     for root, dirs, files in os.walk(folder):
+        dirs[:] = filter(lambda d: not path_filter(dir=d) and d != "__pycache__", dirs)
         for dir in dirs:
             fullname = os.path.join(root, dir)
             arcname = os.path.join(prefix, fullname[len(folder) + 1 :])
             zf.writestr(zipfile.ZipInfo(f"{arcname}/"), b"")
         for file in files:
+            if path_filter(file=file):
+                continue
             fullname = os.path.join(root, file)
             arcname = os.path.join(prefix, fullname[len(folder) + 1 :])
             if file.endswith(".py"):
-                if data_only:
-                    continue
-                zf.writestr(arcname, b"")
-                pycname = _frozen_importlib_external.cache_from_source(fullname)
+                arcname = os.path.splitext(arcname)[0] + ".pyc"
                 with io.open_code(fullname) as sourcefile:
                     code = sourcefile.read()
                 try:
@@ -191,10 +192,7 @@ def write_folder_to_zipfile(zf, folder, prefix, data_only=False):
                 data = _frozen_importlib_external._code_to_hash_pyc(
                     bytecode, b"0" * 8, checked=False
                 )
-                arcname = os.path.join(prefix, pycname[len(folder) + 1 :])
                 zf.writestr(arcname, data)
-            elif file.endswith(".pyc"):
-                pass
             else:
                 zf.write(fullname, arcname)
 
