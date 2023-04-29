@@ -1,4 +1,4 @@
-# GraalVM Implementation of Python
+# GraalPy, the GraalVM Implementation of Python
 
 This is GraalPy, an implementation of the Python language.
 A primary goal is to support SciPy and its constituent libraries.
@@ -7,7 +7,7 @@ GraalPy currently aims to be compatible with Python 3.10, but it is some way fro
 While your specific workload may function, any Python program that uses external packages could hit something unsupported.
 At this point, the Python implementation is made available for experimentation and curious end-users.
 
-### Trying It
+## Installation
 
 The easiest option to try GraalPy is [Pyenv](https://github.com/pyenv/pyenv/), the Python version manager.
 It allows you to easily install different GraalPy releases.
@@ -18,7 +18,7 @@ To try GraalPy with a full GraalVM, including the support for Java embedding and
 Another option is to use [Conda-Forge](https://conda-forge.org/).
 To get an environment with the latest GraalPy, use `conda create -c conda-forge -n graalpy graalpy`.
 
-### Building from Source
+## Building from Source
 
 #### Requirements
 
@@ -58,7 +58,7 @@ source <dir-to-venv>/bin/activate
 
 In the venv, multiple executables are available, like `python`, `python3` and `graalpy`. 
 
-### Installing Packages
+## Installing Packages
 
 You should be able to use the `pip` command from a GraalPy venv to install packages.
 Our `pip` ships some patches for packages that we test internally, these will be applied automatically where necessary.
@@ -66,37 +66,30 @@ Support for as many extension modules as possible is a high priority for us.
 We are actively building out our support for the Python C API to make extensions such as NumPy, SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully.
 This means that some might already work, but we're still actively working on compatibility especially with native extensions.
 
-### Polyglot Usage
+## Polyglot Usage
 
 We have a [document](docs/user/Interoperability.md) describing how we implement the
 cross-language interop. This will hopefully give you an idea how to use it.
 
-### Jython Support
+## Jython Support
 
 We are working on a mode that is "mostly compatible" with some of Jython's
 features, minus of course that Jython implements Python 2.7 and we implement
 Python 3.10+. We describe the current status of the compatibility mode
 [here](docs/user/Jython.md).
 
-### Contributing
+## Contributing
 
-If you're thinking about contributing something to this repository, you will need
-to sign the [Oracle Contributor
-Agreement](http://www.graalvm.org/community/contributors/) for us to able to
-merge your work. Please also take note of our [code of
-conduct](http://www.graalvm.org/community/conduct/) for contributors.
+If you're thinking about contributing something to this repository, you will need to sign the [Oracle Contributor Agreement](http://www.graalvm.org/community/contributors/) for us to able to merge your work.
+Please also take note of our [code of conduct](http://www.graalvm.org/community/conduct/) for contributors.
 
-To get you started, we have [written a bit](docs/contributor/CONTRIBUTING.md) about the
-structure of this interpreter that should show how to fix things or add
-features.
+This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md).
 
-### Licensing
+## Security
 
-This GraalVM implementation of Python is copyright (c) 2017, 2019 Oracle and/or
-its affiliates and is made available to you under the terms the Universal
-Permissive License v 1.0 as shown at
-[https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/). This
-implementation is in part derived from and contains additional code from 3rd
-parties, the copyrights and licensing of which is detailed in the
-[LICENSE](LICENSE) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.
+Please consult the [security guide](./SECURITY.md) for our responsible security vulnerability disclosure process.
 
+## License
+
+This GraalVM implementation of Python is Copyright (c) 2017, 2023 Oracle and/or its affiliates and is made available to you under the terms the Universal Permissive License v 1.0 as shown at [https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/).
+This implementation is in part derived from and contains additional code from 3rd parties, the copyrights and licensing of which is detailed in the [LICENSE](./LICENSE.txt) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.
