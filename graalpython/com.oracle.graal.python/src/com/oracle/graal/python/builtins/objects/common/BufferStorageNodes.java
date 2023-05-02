@@ -96,27 +96,27 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == INT_16")
         static int unpackSignedShort(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getShort(bytes, offset);
+            return PythonUtils.ARRAY_ACCESSOR.getShort(bytes, offset);
         }
 
         @Specialization(guards = "format == UINT_16")
         static int unpackUnsignedShort(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getShort(bytes, offset) & 0xFFFF;
+            return PythonUtils.ARRAY_ACCESSOR.getShort(bytes, offset) & 0xFFFF;
         }
 
         @Specialization(guards = "format == INT_32")
         static int unpackSignedInt(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getInt(bytes, offset);
+            return PythonUtils.ARRAY_ACCESSOR.getInt(bytes, offset);
         }
 
         @Specialization(guards = "format == UINT_32")
         static long unpackUnsignedInt(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getInt(bytes, offset) & 0xFFFFFFFFL;
+            return PythonUtils.ARRAY_ACCESSOR.getInt(bytes, offset) & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = "format == INT_64")
         static long unpackSignedLong(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getLong(bytes, offset);
+            return PythonUtils.ARRAY_ACCESSOR.getLong(bytes, offset);
         }
 
         @Specialization(guards = "format == UINT_64")
@@ -124,7 +124,7 @@ public abstract class BufferStorageNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile needsPIntProfile,
                         @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            long signedLong = PythonUtils.arrayAccessor.getLong(bytes, offset);
+            long signedLong = PythonUtils.ARRAY_ACCESSOR.getLong(bytes, offset);
             if (needsPIntProfile.profile(inliningTarget, signedLong < 0)) {
                 return factory.createInt(PInt.longToUnsignedBigInteger(signedLong));
             } else {
@@ -134,12 +134,12 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == FLOAT")
         static double unpackFloat(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
-            return Float.intBitsToFloat(PythonUtils.arrayAccessor.getInt(bytes, offset));
+            return Float.intBitsToFloat(PythonUtils.ARRAY_ACCESSOR.getInt(bytes, offset));
         }
 
         @Specialization(guards = "format == DOUBLE")
         static double unpackDouble(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
-            return Double.longBitsToDouble(PythonUtils.arrayAccessor.getLong(bytes, offset));
+            return Double.longBitsToDouble(PythonUtils.ARRAY_ACCESSOR.getLong(bytes, offset));
         }
 
         @Specialization(guards = "format == BOOLEAN")
@@ -158,7 +158,7 @@ public abstract class BufferStorageNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached(inline = false) TruffleString.FromCodePointNode fromCodePointNode) {
-            int codePoint = PythonUtils.arrayAccessor.getInt(bytes, offset);
+            int codePoint = PythonUtils.ARRAY_ACCESSOR.getInt(bytes, offset);
             if (!Character.isValidCodePoint(codePoint)) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNMAPPABLE_CHARACTER);
             }
@@ -207,7 +207,7 @@ public abstract class BufferStorageNodes {
             if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
                 throw raise(OverflowError);
             }
-            PythonUtils.arrayAccessor.putShort(bytes, offset, (short) value);
+            PythonUtils.ARRAY_ACCESSOR.putShort(bytes, offset, (short) value);
         }
 
         @Specialization(guards = "format == UINT_16")
@@ -217,18 +217,18 @@ public abstract class BufferStorageNodes {
             if (value < 0 || value > (Short.MAX_VALUE << 1) + 1) {
                 throw raise(OverflowError);
             }
-            PythonUtils.arrayAccessor.putShort(bytes, offset, (short) value);
+            PythonUtils.ARRAY_ACCESSOR.putShort(bytes, offset, (short) value);
         }
 
         @Specialization(guards = "format == INT_32")
         static void packSignedIntInt(@SuppressWarnings("unused") BufferFormat format, int value, byte[] bytes, int offset) {
-            PythonUtils.arrayAccessor.putInt(bytes, offset, value);
+            PythonUtils.ARRAY_ACCESSOR.putInt(bytes, offset, value);
         }
 
         @Specialization(guards = "format == INT_32", replaces = "packSignedIntInt")
         void packSignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
                         @Shared @Cached PyNumberAsSizeNode asSizeNode) {
-            PythonUtils.arrayAccessor.putInt(bytes, offset, asSizeNode.executeExact(frame, object));
+            PythonUtils.ARRAY_ACCESSOR.putInt(bytes, offset, asSizeNode.executeExact(frame, object));
         }
 
         @Specialization(guards = "format == UINT_32", replaces = "packSignedIntInt")
@@ -239,33 +239,33 @@ public abstract class BufferStorageNodes {
             if (value < 0 || value > ((long) (Integer.MAX_VALUE) << 1L) + 1L) {
                 throw raise(OverflowError);
             }
-            PythonUtils.arrayAccessor.putInt(bytes, offset, (int) value);
+            PythonUtils.ARRAY_ACCESSOR.putInt(bytes, offset, (int) value);
         }
 
         @Specialization(guards = "format == INT_64")
         static void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached CastToJavaLongExactNode castToLong) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, castToLong.execute(indexNode.execute(frame, object)));
+            PythonUtils.ARRAY_ACCESSOR.putLong(bytes, offset, castToLong.execute(indexNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == UINT_64")
         static void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
                         @Shared @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaUnsignedLongNode castToUnsignedLong) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, castToUnsignedLong.execute(indexNode.execute(frame, object)));
+            PythonUtils.ARRAY_ACCESSOR.putLong(bytes, offset, castToUnsignedLong.execute(indexNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == FLOAT")
         static void packFloat(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
-            PythonUtils.arrayAccessor.putInt(bytes, offset, Float.floatToRawIntBits((float) asDoubleNode.execute(frame, object)));
+            PythonUtils.ARRAY_ACCESSOR.putInt(bytes, offset, Float.floatToRawIntBits((float) asDoubleNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == DOUBLE")
         static void packDouble(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, Double.doubleToRawLongBits(asDoubleNode.execute(frame, object)));
+            PythonUtils.ARRAY_ACCESSOR.putLong(bytes, offset, Double.doubleToRawLongBits(asDoubleNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == BOOLEAN")
@@ -297,7 +297,7 @@ public abstract class BufferStorageNodes {
             TruffleString str = cast.cast(object, ErrorMessages.ARRAY_ITEM_MUST_BE_UNICODE);
             if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {
                 int codePoint = codePointAtIndexNode.execute(str, 0, TS_ENCODING);
-                PythonUtils.arrayAccessor.putInt(bytes, offset, codePoint);
+                PythonUtils.ARRAY_ACCESSOR.putInt(bytes, offset, codePoint);
             } else {
                 throw raise(TypeError);
             }

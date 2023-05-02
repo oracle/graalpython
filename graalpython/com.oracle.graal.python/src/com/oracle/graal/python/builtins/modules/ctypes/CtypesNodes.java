@@ -54,10 +54,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
-import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -79,7 +78,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -207,12 +205,7 @@ public class CtypesNodes {
         static byte[] empty(@SuppressWarnings("unused") Object pointer, @SuppressWarnings("unused") int size) {
             return EMPTY_BYTE_ARRAY;
         }
-
     }
-
-    protected static final ByteArraySupport SERIALIZE_LE = ByteArraySupport.littleEndian();
-    protected static final ByteArraySupport SERIALIZE_BE = ByteArraySupport.bigEndian();
-    protected static final ByteArraySupport SERIALIZE_SWAP = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? ByteArraySupport.bigEndian() : ByteArraySupport.littleEndian();
 
     protected static Object getValue(FFI_TYPES type, byte[] storage, int offset) {
         switch (type) {
@@ -225,24 +218,24 @@ public class CtypesNodes {
             case FFI_TYPE_SINT16_ARRAY:
             case FFI_TYPE_UINT16:
             case FFI_TYPE_SINT16:
-                return SERIALIZE_LE.getShort(storage, offset);
+                return ARRAY_ACCESSOR.getShort(storage, offset);
             case FFI_TYPE_UINT32_ARRAY:
             case FFI_TYPE_SINT32_ARRAY:
             case FFI_TYPE_UINT32:
             case FFI_TYPE_SINT32:
-                return SERIALIZE_LE.getInt(storage, offset);
+                return ARRAY_ACCESSOR.getInt(storage, offset);
             case FFI_TYPE_UINT64_ARRAY:
             case FFI_TYPE_SINT64_ARRAY:
             case FFI_TYPE_UINT64:
             case FFI_TYPE_SINT64:
             case FFI_TYPE_POINTER:
-                return SERIALIZE_LE.getLong(storage, offset);
+                return ARRAY_ACCESSOR.getLong(storage, offset);
             case FFI_TYPE_FLOAT_ARRAY:
             case FFI_TYPE_FLOAT:
-                return SERIALIZE_LE.getFloat(storage, offset);
+                return ARRAY_ACCESSOR.getFloat(storage, offset);
             case FFI_TYPE_DOUBLE_ARRAY:
             case FFI_TYPE_DOUBLE:
-                return SERIALIZE_LE.getDouble(storage, offset);
+                return ARRAY_ACCESSOR.getDouble(storage, offset);
             default:
                 throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
         }
@@ -260,27 +253,27 @@ public class CtypesNodes {
             case FFI_TYPE_SINT16_ARRAY:
             case FFI_TYPE_UINT16:
             case FFI_TYPE_SINT16:
-                SERIALIZE_LE.putShort(storage, offset, (Short) value);
+                ARRAY_ACCESSOR.putShort(storage, offset, (Short) value);
                 break;
             case FFI_TYPE_UINT32_ARRAY:
             case FFI_TYPE_SINT32_ARRAY:
             case FFI_TYPE_UINT32:
             case FFI_TYPE_SINT32:
-                SERIALIZE_LE.putInt(storage, offset, (Integer) value);
+                ARRAY_ACCESSOR.putInt(storage, offset, (Integer) value);
                 break;
             case FFI_TYPE_UINT64_ARRAY:
             case FFI_TYPE_SINT64_ARRAY:
             case FFI_TYPE_UINT64:
             case FFI_TYPE_SINT64:
-                SERIALIZE_LE.putLong(storage, offset, (Long) value);
+                ARRAY_ACCESSOR.putLong(storage, offset, (Long) value);
                 break;
             case FFI_TYPE_FLOAT_ARRAY:
             case FFI_TYPE_FLOAT:
-                SERIALIZE_LE.putFloat(storage, offset, (Float) value);
+                ARRAY_ACCESSOR.putFloat(storage, offset, (Float) value);
                 break;
             case FFI_TYPE_DOUBLE_ARRAY:
             case FFI_TYPE_DOUBLE:
-                SERIALIZE_LE.putDouble(storage, offset, (Double) value);
+                ARRAY_ACCESSOR.putDouble(storage, offset, (Double) value);
                 break;
             case FFI_TYPE_STRUCT:
                 setValue(storage, value, offset);
@@ -295,22 +288,22 @@ public class CtypesNodes {
             value[idx] = (byte) v;
             return;
         } else if (v instanceof Short) {
-            SERIALIZE_LE.putShort(value, idx, (short) v);
+            ARRAY_ACCESSOR.putShort(value, idx, (short) v);
             return;
         } else if (v instanceof Integer) {
-            SERIALIZE_LE.putInt(value, idx, (int) v);
+            ARRAY_ACCESSOR.putInt(value, idx, (int) v);
             return;
         } else if (v instanceof Long) {
-            SERIALIZE_LE.putLong(value, idx, (long) v);
+            ARRAY_ACCESSOR.putLong(value, idx, (long) v);
             return;
         } else if (v instanceof Double) {
-            SERIALIZE_LE.putDouble(value, idx, (double) v);
+            ARRAY_ACCESSOR.putDouble(value, idx, (double) v);
             return;
         } else if (v instanceof Boolean) {
             value[idx] = (byte) (((boolean) v) ? 1 : 0);
             return;
         } else if (v instanceof Float) {
-            SERIALIZE_LE.putFloat(value, idx, (float) v);
+            ARRAY_ACCESSOR.putFloat(value, idx, (float) v);
             return;
         } else if (isJavaString(v)) {
             String s = (String) v;

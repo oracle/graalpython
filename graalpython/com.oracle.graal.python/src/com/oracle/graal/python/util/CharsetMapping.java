@@ -114,7 +114,7 @@ public class CharsetMapping {
         if (len < 2) {
             return false;
         }
-        short head = PythonUtils.arrayAccessor.getShort(bytes, 0);
+        short head = PythonUtils.ARRAY_ACCESSOR.getShort(bytes, 0);
         return head == (short) 0xFFFE || head == (short) 0xFEFF;
     }
 
@@ -122,7 +122,7 @@ public class CharsetMapping {
         if (len < 4) {
             return false;
         }
-        int head = PythonUtils.arrayAccessor.getInt(bytes, 0);
+        int head = PythonUtils.ARRAY_ACCESSOR.getInt(bytes, 0);
         return head == 0xFFFE0000 || head == 0x0000FEFF;
     }
 

@@ -248,7 +248,7 @@ public class SocketBuiltins extends PythonBuiltins {
             byte[] tmp = new byte[4];
             int len = posixLib.getsockopt(getPosixSupport(), fd, level, option, tmp, tmp.length);
             assert len == tmp.length;
-            return PythonUtils.arrayAccessor.getInt(tmp, 0);
+            return PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
         }
 
         @Override
@@ -402,7 +402,7 @@ public class SocketBuiltins extends PythonBuiltins {
                                     () -> {
                                         byte[] tmp = new byte[4];
                                         posixLib.getsockopt(posixSupport, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
-                                        int err = PythonUtils.arrayAccessor.getInt(tmp, 0);
+                                        int err = PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
                                         if (err != 0 && err != EISCONN.getNumber()) {
                                             throw new PosixException(err, posixLib.strerror(posixSupport, err));
                                         }
@@ -1031,7 +1031,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 int flag = asIntNode.execute(frame, value);
                 bytes = new byte[4];
                 len = bytes.length;
-                PythonUtils.arrayAccessor.putInt(bytes, 0, flag);
+                PythonUtils.ARRAY_ACCESSOR.putInt(bytes, 0, flag);
             } catch (PException e) {
                 Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
                 try {
@@ -1092,7 +1092,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 if (buflen == 0) {
                     byte[] result = new byte[4];
                     posixLib.getsockopt(getPosixSupport(), socket.getFd(), level, option, result, result.length);
-                    return PythonUtils.arrayAccessor.getInt(result, 0);
+                    return PythonUtils.ARRAY_ACCESSOR.getInt(result, 0);
                 } else if (buflen > 0 && buflen < 1024) {
                     byte[] result = new byte[buflen];
                     int len = posixLib.getsockopt(getPosixSupport(), socket.getFd(), level, option, result, result.length);

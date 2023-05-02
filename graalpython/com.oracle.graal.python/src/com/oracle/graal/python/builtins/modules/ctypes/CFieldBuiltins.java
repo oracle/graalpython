@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.SERIALIZE_LE;
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.SERIALIZE_SWAP;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.HAS_NO_STGINFO;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
@@ -51,6 +49,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_LE;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_SWAPPED;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -90,6 +91,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -506,10 +508,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         static Object d_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PtrNodes.WriteLongNode writeLongNode) {
-            byte[] bytes = new byte[Double.BYTES];
-            CtypesNodes.SERIALIZE_BE.putDouble(bytes, 0, asDoubleNode.execute(frame, value));
-            double x = SERIALIZE_LE.getDouble(bytes, 0);
-            writeLongNode.execute(ptr, Double.doubleToRawLongBits(x));
+            writeLongNode.execute(ptr, SWAP_8(Double.doubleToRawLongBits(asDoubleNode.execute(frame, value))));
             return PNone.NONE;
         }
 
@@ -526,10 +525,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         static Object f_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PtrNodes.WriteIntNode writeIntNode) {
-            byte[] bytes = new byte[Float.BYTES];
-            CtypesNodes.SERIALIZE_BE.putFloat(bytes, 0, (float) asDoubleNode.execute(frame, value));
-            float x = SERIALIZE_LE.getFloat(bytes, 0);
-            writeIntNode.execute(ptr, Float.floatToRawIntBits(x));
+            writeIntNode.execute(ptr, SWAP_4(Float.floatToRawIntBits((float) asDoubleNode.execute(frame, value))));
             return PNone.NONE;
         }
 
@@ -857,7 +853,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         static double d_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Shared @Cached PtrNodes.ReadBytesNode readBytesNode) {
             byte[] bytes = readBytesNode.execute(ptr, Double.BYTES);
-            return SERIALIZE_SWAP.getDouble(bytes, 0);
+            return ARRAY_ACCESSOR_SWAPPED.getDouble(bytes, 0);
         }
 
         @Specialization(guards = "getfunc == f_get")
@@ -870,7 +866,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         static double f_get_sw(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Shared @Cached PtrNodes.ReadBytesNode readBytesNode) {
             byte[] bytes = readBytesNode.execute(ptr, Float.BYTES);
-            return SERIALIZE_SWAP.getFloat(bytes, 0);
+            return ARRAY_ACCESSOR_SWAPPED.getFloat(bytes, 0);
         }
 
         @Specialization(guards = "getfunc == O_get")
@@ -912,7 +908,7 @@ public class CFieldBuiltins extends PythonBuiltins {
             char[] str = new char[p.length / wcharSize];
             // FIXME wchar_t on linux may be 4 bytes
             for (int i = 0; i < str.length; i++) {
-                str[i] = (char) SERIALIZE_LE.getShort(p, i * 2);
+                str[i] = (char) ARRAY_ACCESSOR.getShort(p, i * 2);
             }
             return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
         }
@@ -951,7 +947,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 char[] str = new char[s];
                 // FIXME wchar_t on linux may be 4 bytes
                 for (int i = 0; i < s; i++) {
-                    str[i] = (char) SERIALIZE_LE.getShort(p, i * 2);
+                    str[i] = (char) ARRAY_ACCESSOR.getShort(p, i * 2);
                 }
                 return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
             } else {

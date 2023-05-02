@@ -495,9 +495,9 @@ public abstract class CExtCommonNodes {
                 case 1:
                     return bytes[byteOffset];
                 case 2:
-                    return PythonUtils.arrayAccessor.getShort(bytes, byteOffset);
+                    return PythonUtils.ARRAY_ACCESSOR.getShort(bytes, byteOffset);
                 case 4:
-                    return PythonUtils.arrayAccessor.getInt(bytes, byteOffset);
+                    return PythonUtils.ARRAY_ACCESSOR.getInt(bytes, byteOffset);
             }
             throw CompilerDirectives.shouldNotReachHere();
         }

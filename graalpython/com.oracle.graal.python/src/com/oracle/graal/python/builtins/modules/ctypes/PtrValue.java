@@ -40,10 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
+
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -119,35 +120,35 @@ final class PtrValue implements TruffleObject {
             case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> {
                 byte[] bytes = new byte[Short.BYTES];
                 if (value != null) {
-                    PythonUtils.arrayAccessor.putShort(bytes, 0, (short) value);
+                    ARRAY_ACCESSOR.putShort(bytes, 0, (short) value);
                 }
                 yield new ByteArrayStorage(bytes);
             }
             case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> {
                 byte[] bytes = new byte[Integer.BYTES];
                 if (value != null) {
-                    PythonUtils.arrayAccessor.putInt(bytes, 0, (int) value);
+                    ARRAY_ACCESSOR.putInt(bytes, 0, (int) value);
                 }
                 yield new ByteArrayStorage(bytes);
             }
             case FFI_TYPE_UINT64, FFI_TYPE_SINT64 -> {
                 byte[] bytes = new byte[Long.BYTES];
                 if (value != null) {
-                    PythonUtils.arrayAccessor.putLong(bytes, 0, (long) value);
+                    ARRAY_ACCESSOR.putLong(bytes, 0, (long) value);
                 }
                 yield new ByteArrayStorage(bytes);
             }
             case FFI_TYPE_FLOAT -> {
                 byte[] bytes = new byte[Float.BYTES];
                 if (value != null) {
-                    PythonUtils.arrayAccessor.putLong(bytes, 0, Float.floatToRawIntBits((float) value));
+                    ARRAY_ACCESSOR.putLong(bytes, 0, Float.floatToRawIntBits((float) value));
                 }
                 yield new ByteArrayStorage(bytes);
             }
             case FFI_TYPE_DOUBLE -> {
                 byte[] bytes = new byte[Double.BYTES];
                 if (value != null) {
-                    PythonUtils.arrayAccessor.putLong(bytes, 0, Double.doubleToRawLongBits((double) value));
+                    ARRAY_ACCESSOR.putLong(bytes, 0, Double.doubleToRawLongBits((double) value));
                 }
                 yield new ByteArrayStorage(bytes);
             }

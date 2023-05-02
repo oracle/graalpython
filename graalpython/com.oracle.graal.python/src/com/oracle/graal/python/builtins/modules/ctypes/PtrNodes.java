@@ -1,6 +1,6 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.util.PythonUtils.arrayAccessor;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
@@ -61,7 +61,7 @@ public abstract class PtrNodes {
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Byte.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
-            return arrayAccessor.getByte(tmp, 0);
+            return ARRAY_ACCESSOR.getByte(tmp, 0);
         }
     }
 
@@ -75,7 +75,7 @@ public abstract class PtrNodes {
 
         @Specialization
         short doBytes(ByteArrayStorage storage, int offset) {
-            return arrayAccessor.getShort(storage.value, offset);
+            return ARRAY_ACCESSOR.getShort(storage.value, offset);
         }
 
         @Fallback
@@ -83,7 +83,7 @@ public abstract class PtrNodes {
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Short.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
-            return arrayAccessor.getShort(tmp, 0);
+            return ARRAY_ACCESSOR.getShort(tmp, 0);
         }
     }
 
@@ -97,7 +97,7 @@ public abstract class PtrNodes {
 
         @Specialization
         int doBytes(ByteArrayStorage storage, int offset) {
-            return arrayAccessor.getInt(storage.value, offset);
+            return ARRAY_ACCESSOR.getInt(storage.value, offset);
         }
 
         @Fallback
@@ -105,7 +105,7 @@ public abstract class PtrNodes {
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Integer.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
-            return arrayAccessor.getInt(tmp, 0);
+            return ARRAY_ACCESSOR.getInt(tmp, 0);
         }
     }
 
@@ -119,7 +119,7 @@ public abstract class PtrNodes {
 
         @Specialization
         long doBytes(ByteArrayStorage storage, int offset) {
-            return arrayAccessor.getLong(storage.value, offset);
+            return ARRAY_ACCESSOR.getLong(storage.value, offset);
         }
 
         @Fallback
@@ -127,7 +127,7 @@ public abstract class PtrNodes {
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Long.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
-            return arrayAccessor.getLong(tmp, 0);
+            return ARRAY_ACCESSOR.getLong(tmp, 0);
         }
     }
 
@@ -139,7 +139,7 @@ public abstract class PtrNodes {
 
         public final void execute(PtrValue dst, long value) {
             byte[] tmp = new byte[8];
-            arrayAccessor.putLong(tmp, 0, value);
+            ARRAY_ACCESSOR.putLong(tmp, 0, value);
             execute(dst, tmp);
         }
 
@@ -187,14 +187,14 @@ public abstract class PtrNodes {
 
         @Specialization
         void doBytes(ByteArrayStorage dst, int dstOffset, short value) {
-            arrayAccessor.putShort(dst.value, dstOffset, value);
+            ARRAY_ACCESSOR.putShort(dst.value, dstOffset, value);
         }
 
         @Fallback
         void doOther(Storage dst, int dstOffset, short value,
                         @Cached WriteBytesNode writeBytesNode) {
             byte[] tmp = new byte[Short.BYTES];
-            arrayAccessor.putShort(tmp, 0, value);
+            ARRAY_ACCESSOR.putShort(tmp, 0, value);
             writeBytesNode.execute(dst, dstOffset, tmp, 0, tmp.length);
         }
     }
@@ -209,14 +209,14 @@ public abstract class PtrNodes {
 
         @Specialization
         void doBytes(ByteArrayStorage dst, int dstOffset, int value) {
-            arrayAccessor.putInt(dst.value, dstOffset, value);
+            ARRAY_ACCESSOR.putInt(dst.value, dstOffset, value);
         }
 
         @Fallback
         void doOther(Storage dst, int dstOffset, int value,
                         @Cached WriteBytesNode writeBytesNode) {
             byte[] tmp = new byte[Integer.BYTES];
-            arrayAccessor.putInt(tmp, 0, value);
+            ARRAY_ACCESSOR.putInt(tmp, 0, value);
             writeBytesNode.execute(dst, dstOffset, tmp, 0, tmp.length);
         }
     }
@@ -231,14 +231,14 @@ public abstract class PtrNodes {
 
         @Specialization
         void doBytes(ByteArrayStorage dst, int dstOffset, long value) {
-            arrayAccessor.putLong(dst.value, dstOffset, value);
+            ARRAY_ACCESSOR.putLong(dst.value, dstOffset, value);
         }
 
         @Fallback
         void doOther(Storage dst, int dstOffset, long value,
                         @Cached WriteBytesNode writeBytesNode) {
             byte[] tmp = new byte[Long.BYTES];
-            arrayAccessor.putLong(tmp, 0, value);
+            ARRAY_ACCESSOR.putLong(tmp, 0, value);
             writeBytesNode.execute(dst, dstOffset, tmp, 0, tmp.length);
         }
     }
@@ -339,7 +339,7 @@ public abstract class PtrNodes {
 
         @Specialization
         long doBytes(ByteArrayStorage storage, int offset) {
-            return arrayAccessor.getLong(storage.value, offset);
+            return ARRAY_ACCESSOR.getLong(storage.value, offset);
         }
 
         @Specialization
@@ -367,9 +367,9 @@ public abstract class PtrNodes {
             }
             return switch (ffiType.size) {
                 case 1 -> storage.value[offset];
-                case 2 -> arrayAccessor.getShort(storage.value, offset);
-                case 4 -> arrayAccessor.getInt(storage.value, offset);
-                case 8 -> arrayAccessor.getLong(storage.value, offset);
+                case 2 -> ARRAY_ACCESSOR.getShort(storage.value, offset);
+                case 4 -> ARRAY_ACCESSOR.getInt(storage.value, offset);
+                case 8 -> ARRAY_ACCESSOR.getLong(storage.value, offset);
                 default -> throw CompilerDirectives.shouldNotReachHere("Unexpected type size");
             };
         }
