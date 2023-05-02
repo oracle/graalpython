@@ -119,13 +119,13 @@ public class CDataObject extends PythonBuiltinObject {
     @ExportMessage
     byte readByte(int byteIndex,
                     @Cached PtrNodes.ReadByteNode readByteNode) {
-        return readByteNode.execute(b_ptr.ref(byteIndex));
+        return readByteNode.execute(b_ptr.withOffset(byteIndex));
     }
 
     @ExportMessage
     void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
                     @Cached PtrNodes.ReadBytesNode readBytesNode) {
-        readBytesNode.execute(dest, destOffset, b_ptr.ref(srcOffset), length);
+        readBytesNode.execute(dest, destOffset, b_ptr.withOffset(srcOffset), length);
     }
 
     @ExportMessage
@@ -137,13 +137,13 @@ public class CDataObject extends PythonBuiltinObject {
     @ExportMessage
     void writeByte(int byteIndex, byte value,
                     @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
-        writeBytesNode.execute(b_ptr.ref(byteIndex), new byte[]{value});
+        writeBytesNode.execute(b_ptr.withOffset(byteIndex), new byte[]{value});
     }
 
     @ExportMessage
     void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
                     @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
-        writeBytesNode.execute(b_ptr.ref(destOffset), src, srcOffset, length);
+        writeBytesNode.execute(b_ptr.withOffset(destOffset), src, srcOffset, length);
     }
 
     // TODO we could expose the internal array if available

@@ -4,15 +4,18 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NullStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.Storage;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PtrNodes {
@@ -35,6 +38,12 @@ public abstract class PtrNodes {
             PythonUtils.arraycopy(src.value, srcOffset, dst, dstOffset, size);
         }
 
+        @Specialization(limit = "1")
+        void doMemoryView(byte[] dst, int dstOffset, MemoryViewStorage src, int srcOffset, int size,
+                        @CachedLibrary("src.value") PythonBufferAccessLibrary bufferLib) {
+            bufferLib.readIntoByteArray(src.value, srcOffset, dst, dstOffset, size);
+        }
+
         @Specialization
         @SuppressWarnings("unused")
         void doNull(byte[] dst, int dstOffset, NullStorage src, int srcOffset, int size) {
@@ -55,6 +64,12 @@ public abstract class PtrNodes {
         @Specialization
         byte doBytes(ByteArrayStorage storage, int offset) {
             return storage.value[offset];
+        }
+
+        @Specialization(limit = "1")
+        byte doMemoryView(MemoryViewStorage storage, int offset,
+                        @CachedLibrary("storage.value") PythonBufferAccessLibrary bufferLib) {
+            return bufferLib.readByte(storage, offset);
         }
 
         @Fallback
@@ -155,7 +170,11 @@ public abstract class PtrNodes {
             PythonUtils.arraycopy(src, srcOffset, dst.value, dstOffset, size);
         }
 
-        // TODO other types
+        @Specialization(limit = "1")
+        void doMemoryView(MemoryViewStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
+                        @CachedLibrary("dst.value") PythonBufferAccessLibrary bufferLib) {
+            bufferLib.writeFromByteArray(dst.value, dstOffset, src, srcOffset, size);
+        }
     }
 
     @GenerateUncached
@@ -253,12 +272,18 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage dst, int dstOffset, Storage src, int srcOffset, int size);
 
         @Specialization
-        void doBytes(ByteArrayStorage dst, int dstOffset, Storage src, int srcOffset, int size,
-                        @Cached ReadBytesNode readBytesNode) {
-            readBytesNode.execute(dst.value, dstOffset, src, srcOffset, size);
+        void doBytesBytes(ByteArrayStorage dst, int dstOffset, ByteArrayStorage src, int srcOffset, int size) {
+            PythonUtils.arraycopy(src.value, srcOffset, dst.value, dstOffset, size);
         }
 
-        // TODO other
+        @Fallback
+        void doOther(Storage dst, int dstOffset, Storage src, int srcOffset, int size,
+                        @Cached ReadBytesNode readBytesNode,
+                        @Cached WriteBytesNode writeBytesNode) {
+            byte[] tmp = new byte[size];
+            readBytesNode.execute(tmp, 0, src, srcOffset, size);
+            writeBytesNode.execute(dst, dstOffset, tmp, 0, size);
+        }
     }
 
     @GenerateUncached
@@ -274,13 +299,14 @@ public abstract class PtrNodes {
         protected abstract int execute(Storage storage, int offset, int max);
 
         @Specialization
-        int doBytes(ByteArrayStorage storage, int offset, int max) {
-            int maxlen = storage.value.length;
+        int doOther(Storage storage, int offset, int max,
+                        @Cached ReadByteNode readByteNode) {
+            int maxlen = Integer.MAX_VALUE;
             if (max >= 0) {
                 maxlen = offset + max;
             }
             for (int i = offset; i < maxlen; i++) {
-                if (storage.value[i] == '\0') {
+                if (readByteNode.execute(storage, i) == '\0') {
                     return i - offset;
                 }
             }
@@ -290,8 +316,6 @@ public abstract class PtrNodes {
                 throw CompilerDirectives.shouldNotReachHere("NULL terminator not found");
             }
         }
-
-        // TODO other types
     }
 
     @GenerateUncached
@@ -307,14 +331,15 @@ public abstract class PtrNodes {
         protected abstract int execute(Storage storage, int offset, int max);
 
         @Specialization
-        int doBytes(ByteArrayStorage storage, int offset, int max) {
-            int maxlen = storage.value.length;
+        int doOther(Storage storage, int offset, int max,
+                        @Cached ReadByteNode readByteNode) {
+            int maxlen = Integer.MAX_VALUE;
             if (max >= 0) {
                 maxlen = offset + max * WCHAR_T_SIZE;
             }
             outer: for (int i = offset; i < maxlen; i += WCHAR_T_SIZE) {
                 for (int j = 0; j < WCHAR_T_SIZE; j++) {
-                    if (storage.value[i + j] != '\0') {
+                    if (readByteNode.execute(storage, i + j) != '\0') {
                         continue outer;
                     }
                 }
@@ -326,8 +351,6 @@ public abstract class PtrNodes {
                 throw CompilerDirectives.shouldNotReachHere("NULL terminator not found");
             }
         }
-
-        // TODO other types
     }
 
     @GenerateUncached
@@ -351,7 +374,7 @@ public abstract class PtrNodes {
             return storage.value;
         }
 
-        // TODO more types
+        // TODO memoryview
     }
 
     public abstract static class ConvertToNFIParameter extends Node {
@@ -384,6 +407,6 @@ public abstract class PtrNodes {
             return storage.value;
         }
 
-        // TODO more types
+        // TODO memoryview
     }
 }

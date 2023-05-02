@@ -152,7 +152,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
             }
             CDataObject dst = (CDataObject) inst;
-            cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value, self.index, self.size, dst.b_ptr.ref(self.offset));
+            cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value, self.index, self.size, dst.b_ptr.withOffset(self.offset));
             return PNone.NONE;
         }
 
@@ -179,7 +179,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             CDataObject src = (CDataObject) inst;
-            return pyCDataGetNode.execute(self.proto, self.getfunc, inst, self.index, self.size, src.b_ptr.ref(self.offset));
+            return pyCDataGetNode.execute(self.proto, self.getfunc, inst, self.index, self.size, src.b_ptr.withOffset(self.offset));
         }
     }
 

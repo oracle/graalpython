@@ -254,7 +254,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             int size = itemdict.size;
             int offset = index * itemdict.size;
 
-            pyCDataSetNode.execute(frame, self, proto, stgdict.setfunc, value, index, size, self.b_ptr.ref(offset));
+            pyCDataSetNode.execute(frame, self, proto, stgdict.setfunc, value, index, size, self.b_ptr.withOffset(offset));
             return PNone.NONE;
         }
     }
@@ -283,7 +283,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             int size = itemdict.size;
             int offset = index * itemdict.size;
 
-            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset));
+            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.withOffset(offset));
         }
 
         @Specialization(limit = "1")

@@ -1058,7 +1058,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 obj.b_ptr.ptr = convertedValue.ptr;
                 obj.b_ptr.offset = 0;
             }
-            parg.value = obj.b_ptr.ref(offset);
+            parg.value = obj.b_ptr.withOffset(offset);
 
             return parg;
         }
@@ -1848,7 +1848,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             /* Should we assert that result is a pointer type? */
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
-            result.b_ptr = ptr.b_ptr.ref(0);
+            result.b_ptr = ptr.b_ptr.withOffset(0);
             return result;
         }
 
@@ -1861,7 +1861,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
             /* Should we assert that result is a pointer type? */
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
-            result.b_ptr = ptr.ref(0);
+            result.b_ptr = ptr.withOffset(0);
             return result;
         }
 

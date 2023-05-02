@@ -472,7 +472,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached GetNameNode getNameNode,
                         @Cached LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
                         @Cached CallProcNode callProcNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
@@ -483,7 +484,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object errcheck = self.errcheck /* ? self.errcheck : dict.errcheck */;
 
             int[] props = new int[3];
-            NativeFunction pProc = getFunctionFromLongObject(self.b_ptr.getNativePointer(), getContext(), asVoidPtr);
+            NativeFunction pProc = getFunctionFromLongObject(readPointerNode.execute(self.b_ptr), getContext(), asVoidPtr);
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);
             int inoutmask = props[pinoutmask_idx];

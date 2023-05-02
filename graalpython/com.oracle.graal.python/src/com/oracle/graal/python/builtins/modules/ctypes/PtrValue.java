@@ -43,10 +43,8 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 final class PtrValue implements TruffleObject {
@@ -183,7 +181,7 @@ final class PtrValue implements TruffleObject {
         return new PtrValue(new NativePointerStorage(o), 0);
     }
 
-    protected PtrValue ref(int incOffset) {
+    protected PtrValue withOffset(int incOffset) {
         return new PtrValue(ptr, offset + incOffset);
     }
 
@@ -207,10 +205,10 @@ final class PtrValue implements TruffleObject {
 
     static final class NativePointerStorage extends Storage {
 
-        Object value;
+        final Object value;
 
-        NativePointerStorage(Object o) {
-            this.value = o;
+        NativePointerStorage(Object pointer) {
+            this.value = pointer;
         }
     }
 
@@ -222,14 +220,11 @@ final class PtrValue implements TruffleObject {
         }
     }
 
-    static class MemoryViewStorage extends Storage {
+    static final class MemoryViewStorage extends Storage {
         final PMemoryView value;
-        final int length;
 
-        @TruffleBoundary
         MemoryViewStorage(PMemoryView bytes) {
             this.value = bytes;
-            this.length = PythonBufferAccessLibrary.getUncached().getBufferLength(bytes);
         }
     }
 }
