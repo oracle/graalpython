@@ -90,7 +90,8 @@ public abstract class CallVarargsMethodNode extends AbstractCallMethodNode {
         return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg"}, rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null",
+                    "takesSelfArg"}, rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
@@ -108,7 +109,8 @@ public abstract class CallVarargsMethodNode extends AbstractCallMethodNode {
         return builtinNode.varArgExecute(frame, func.getSelf(), arguments, keywords);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null",
+                    "!takesSelfArg"}, rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethodSingleContextNoSelf(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
