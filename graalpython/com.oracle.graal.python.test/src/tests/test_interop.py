@@ -291,6 +291,14 @@ if sys.implementation.name == "graalpy":
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
+    def test_module_eval_returns_last_expr():
+        assert polyglot.eval(language="python", string="x = 2; x") == 2
+
+    def test_module_eval_returns_module():
+        mod = polyglot.eval(language="python", string="x = 2")
+        assert mod.x == 2
+        assert type(mod) == type(sys)
+
     @skipIf(is_native, "not supported in native mode")
     def test_non_index_array_access():
         import java
