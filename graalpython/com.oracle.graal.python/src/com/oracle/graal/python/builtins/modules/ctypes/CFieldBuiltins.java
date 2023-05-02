@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.HAS_NO_STGINFO;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
@@ -49,8 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
-import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_LE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_SWAPPED;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -91,7 +91,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -572,12 +571,9 @@ public class CFieldBuiltins extends PythonBuiltins {
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
-            // TODO wchar_t is 4 bytes on linux
-            int wcharSize = 2;
-            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
-            TruffleString str = switchEncodingNode.execute(toString.execute(value), encoding);
-            InternalByteArray bytes = getInternalByteArrayNode.execute(str, encoding);
-            if (bytes.getLength() != wcharSize) {
+            TruffleString str = switchEncodingNode.execute(toString.execute(value), WCHAR_T_ENCODING);
+            InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
+            if (bytes.getLength() != WCHAR_T_SIZE) {
                 throw raiseNode.raise(TypeError, ErrorMessages.ONE_CHARACTER_UNICODE_EXPECTED);
             }
             writeBytesNode.execute(ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
@@ -591,16 +587,12 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached PtrNodes.WriteBytesNode writeBytesNode,
                         @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
-            /* It's easier to calculate in characters than in bytes */
-            // FIXME wchar_t is 4 bytes on linux
-            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
-
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
 
-            TruffleString str = switchEncodingNode.execute(toString.execute(value), encoding);
-            InternalByteArray bytes = getInternalByteArrayNode.execute(str, encoding);
+            TruffleString str = switchEncodingNode.execute(toString.execute(value), WCHAR_T_ENCODING);
+            InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
             if (bytes.getLength() > size) {
                 throw raiseNode.raise(ValueError, ErrorMessages.STR_TOO_LONG, bytes.getLength(), size);
             }
@@ -670,9 +662,6 @@ public class CFieldBuiltins extends PythonBuiltins {
                 ptr.toNil();
                 return value;
             }
-            // TODO wchar_t is 4 bytes on linux
-            int wcharSize = 2;
-            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
             if (value instanceof PythonNativeVoidPtr voidPtr) {
                 value = voidPtr.getPointerObject();
             } else if (longCheckNode.execute(value)) {
@@ -683,10 +672,10 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
             }
 
-            TruffleString str = switchEncodingNode.execute(toString.execute(value), encoding);
-            int byteLength = str.byteLength(encoding);
-            byte[] bytes = new byte[byteLength + wcharSize];
-            copyToByteArrayNode.execute(str, 0, bytes, 0, byteLength, encoding);
+            TruffleString str = switchEncodingNode.execute(toString.execute(value), WCHAR_T_ENCODING);
+            int byteLength = str.byteLength(WCHAR_T_ENCODING);
+            byte[] bytes = new byte[byteLength + WCHAR_T_SIZE];
+            copyToByteArrayNode.execute(str, 0, bytes, 0, byteLength, WCHAR_T_ENCODING);
             ptr.toBytes(bytes);
             return str;
         }
@@ -888,46 +877,40 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == u_get")
         static Object u_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
-                        @Shared @Cached PtrNodes.ReadShortNode readShortNode,
-                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
+                        @Cached PtrNodes.ReadBytesNode readBytesNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
-            short v = readShortNode.execute(ptr);
-            return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(new char[]{(char) v}), TS_ENCODING);
+            byte[] bytes = readBytesNode.execute(ptr, WCHAR_T_SIZE);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
         }
 
         /* U - a unicode string */
         @Specialization(guards = "getfunc == U_get")
         static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size,
                         @Cached PtrNodes.WCsLenNode wCsLenNode,
-                        @Cached PtrNodes.ReadBytesNode read,
-                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
+                        @Cached PtrNodes.ReadBytesNode readBytesNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
-            int wcharSize = FieldDesc.u.pffi_type.size;
-            int wcslen = wCsLenNode.execute(ptr, wcharSize, size / wcharSize);
-            byte[] p = read.execute(ptr, wcslen * wcharSize);
-            char[] str = new char[p.length / wcharSize];
-            // FIXME wchar_t on linux may be 4 bytes
-            for (int i = 0; i < str.length; i++) {
-                str[i] = (char) ARRAY_ACCESSOR.getShort(p, i * 2);
-            }
-            return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
+            int wcslen = wCsLenNode.execute(ptr, size / WCHAR_T_SIZE);
+            byte[] bytes = readBytesNode.execute(ptr, wcslen * WCHAR_T_SIZE);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
         }
 
         @Specialization(guards = "getfunc == s_get")
         static Object s_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size,
                         @Cached PtrNodes.StrLenNode strLenNode,
-                        @Cached PtrNodes.ReadBytesNode read,
+                        @Cached PtrNodes.ReadBytesNode readBytesNode,
                         @Cached PythonObjectFactory factory) {
-            return factory.createBytes(read.execute(ptr, strLenNode.execute(ptr, size)));
+            return factory.createBytes(readBytesNode.execute(ptr, strLenNode.execute(ptr, size)));
         }
 
         @Specialization(guards = "getfunc == z_get")
         static Object z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached PythonObjectFactory factory,
                         @Cached PtrNodes.StrLenNode strLenNode,
-                        @Cached PtrNodes.ReadBytesNode read) {
+                        @Cached PtrNodes.ReadBytesNode readBytesNode) {
             if (!ptr.isNil()) {
-                byte[] bytes = read.execute(ptr, strLenNode.execute(ptr));
+                byte[] bytes = readBytesNode.execute(ptr, strLenNode.execute(ptr));
                 return factory.createBytes(bytes);
             } else {
                 return PNone.NONE;
@@ -937,19 +920,12 @@ public class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "getfunc == Z_get")
         static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached PtrNodes.WCsLenNode wCsLenNode,
-                        @Cached PtrNodes.ReadBytesNode read,
-                        @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
+                        @Cached PtrNodes.ReadBytesNode readBytesNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (!ptr.isNil()) {
-                int wcharSize = FieldDesc.u.pffi_type.size;
-                byte[] p = read.execute(ptr, wCsLenNode.execute(ptr, wcharSize) * wcharSize);
-                int s = p.length / wcharSize;
-                char[] str = new char[s];
-                // FIXME wchar_t on linux may be 4 bytes
-                for (int i = 0; i < s; i++) {
-                    str[i] = (char) ARRAY_ACCESSOR.getShort(p, i * 2);
-                }
-                return switchEncodingNode.execute(fromCharArrayUTF16Node.execute(str), TS_ENCODING);
+                byte[] bytes = readBytesNode.execute(ptr, wCsLenNode.execute(ptr, size) * WCHAR_T_SIZE);
+                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
             } else {
                 return PNone.NONE;
             }

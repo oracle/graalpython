@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTES_EXPECTED_INSTEAD_OF_P_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTE_STRING_TOO_LONG;
 import static com.oracle.graal.python.nodes.ErrorMessages.STRING_TOO_LONG;
@@ -203,11 +205,8 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached PtrNodes.ReadBytesNode read,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            // FIXME wchar_t is 4 on linux
-            int wcharSize = 2;
-            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
-            byte[] bytes = read.execute(self.b_ptr, wCsLenNode.execute(self.b_ptr, wcharSize) * wcharSize);
-            TruffleString s = fromByteArrayNode.execute(bytes, encoding);
+            byte[] bytes = read.execute(self.b_ptr, wCsLenNode.execute(self.b_ptr) * WCHAR_T_SIZE);
+            TruffleString s = fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING);
             return switchEncodingNode.execute(s, TS_ENCODING);
         }
 
@@ -217,14 +216,12 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached PtrNodes.WriteBytesNode writeBytesNode) {
-            // FIXME wchar_t is 4 on linux
-            TruffleString.Encoding encoding = TruffleString.Encoding.UTF_16;
-            TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(value), encoding);
-            int len = str.byteLength(encoding);
+            TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(value), WCHAR_T_ENCODING);
+            int len = str.byteLength(WCHAR_T_ENCODING);
             if (len > self.b_size) {
                 throw raise(ValueError, STRING_TOO_LONG);
             }
-            InternalByteArray bytes = getInternalByteArrayNode.execute(str, encoding);
+            InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
             writeBytesNode.execute(self.b_ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
             return PNone.NONE;
         }

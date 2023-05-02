@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
@@ -295,29 +296,29 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WCsLenNode extends Node {
-        public final int execute(PtrValue ptr, int wcharSize) {
-            return execute(ptr, wcharSize, -1);
+        public final int execute(PtrValue ptr) {
+            return execute(ptr, -1);
         }
 
-        public final int execute(PtrValue ptr, int wcharSize, int max) {
-            return execute(ptr.ptr, ptr.offset, wcharSize, max);
+        public final int execute(PtrValue ptr, int max) {
+            return execute(ptr.ptr, ptr.offset, max);
         }
 
-        protected abstract int execute(Storage storage, int offset, int wcharSize, int max);
+        protected abstract int execute(Storage storage, int offset, int max);
 
         @Specialization
-        int doBytes(ByteArrayStorage storage, int offset, int wcharSize, int max) {
+        int doBytes(ByteArrayStorage storage, int offset, int max) {
             int maxlen = storage.value.length;
             if (max >= 0) {
-                maxlen = offset + max * wcharSize;
+                maxlen = offset + max * WCHAR_T_SIZE;
             }
-            outer: for (int i = offset; i < maxlen; i += wcharSize) {
-                for (int j = 0; j < wcharSize; j++) {
+            outer: for (int i = offset; i < maxlen; i += WCHAR_T_SIZE) {
+                for (int j = 0; j < WCHAR_T_SIZE; j++) {
                     if (storage.value[i + j] != '\0') {
                         continue outer;
                     }
                 }
-                return (i / wcharSize) - offset;
+                return (i / WCHAR_T_SIZE) - offset;
             }
             if (max >= 0) {
                 return max;

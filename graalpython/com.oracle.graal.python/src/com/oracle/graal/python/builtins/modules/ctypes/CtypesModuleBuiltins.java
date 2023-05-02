@@ -47,6 +47,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer
 import static com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins.paramFunc;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins.PyCFuncPtrFromDllNode.strchr;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
@@ -87,7 +89,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32;
 
 import java.io.IOException;
@@ -103,7 +104,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
@@ -204,7 +204,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -1597,12 +1596,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
 
             if (unicodeCheckNode.execute(obj)) {
-                // TODO determine this better
-                Encoding wCharTEncoding = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? UTF_16 : UTF_32;
-                TruffleString string = switchEncodingNode.execute(toString.execute(obj), wCharTEncoding);
-                int len = string.byteLength(wCharTEncoding);
-                byte[] bytes = new byte[len + (wCharTEncoding == UTF_16 ? 2 : 4)];
-                copyToByteArrayNode.execute(string, 0, bytes, 0, len, wCharTEncoding);
+                TruffleString string = switchEncodingNode.execute(toString.execute(obj), WCHAR_T_ENCODING);
+                int len = string.byteLength(WCHAR_T_ENCODING);
+                byte[] bytes = new byte[len + WCHAR_T_SIZE];
+                copyToByteArrayNode.execute(string, 0, bytes, 0, len, WCHAR_T_ENCODING);
                 pa.ffi_type = FFIType.ffi_type_sint8_array;
                 pa.value = bytes;
                 return;
@@ -2125,14 +2122,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             auditNode.audit("ctypes.wstring_at", ptr, size);
-            // FIXME wchar_t on linux is 4 bytes
-            int wcharSize = 2;
-            Encoding encoding = UTF_16;
             if (size == -1) {
-                size = wCsLenNode.execute(ptr.b_ptr, wcharSize);
+                size = wCsLenNode.execute(ptr.b_ptr);
             }
-            byte[] bytes = read.execute(ptr.b_ptr, size * wcharSize);
-            TruffleString s = fromByteArrayNode.execute(bytes, encoding);
+            byte[] bytes = read.execute(ptr.b_ptr, size * WCHAR_T_SIZE);
+            TruffleString s = fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING);
             return switchEncodingNode.execute(s, TS_ENCODING);
         }
 

@@ -58,6 +58,7 @@ import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
@@ -82,6 +83,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class CtypesNodes {
+
+    public static final int WCHAR_T_SIZE = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
+    public static final TruffleString.Encoding WCHAR_T_ENCODING = WCHAR_T_SIZE == 2 ? TruffleString.Encoding.UTF_16 : TruffleString.Encoding.UTF_32;
 
     @GenerateUncached
     protected abstract static class PyTypeCheck extends Node {
