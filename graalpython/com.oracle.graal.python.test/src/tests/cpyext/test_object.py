@@ -39,7 +39,7 @@
 
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare, assert_raises
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -109,6 +109,31 @@ class TestObject(object):
         tester = TestInt()
         assert int(tester) == 42
 
+    def test_inherit_slots_with_managed_class(self):
+        TestTpAllocWithManaged = CPyExtType("TestTpAllocWithManaged",
+                             """
+                             static PyObject *test_alloc(PyTypeObject *type, Py_ssize_t nitems) {
+                                 PyErr_SetString(PyExc_RuntimeError, "Should not call this tp_alloc");
+                                 return NULL;
+                             }
+                             """,
+                             tp_alloc="test_alloc"
+        )
+        TestTpAllocCall = CPyExtType("TestTpAllocCall",
+                                '''
+                                static PyObject* testslots_tp_alloc(PyObject* self, PyObject *cls) {
+                                    return ((PyTypeObject *)cls)->tp_alloc((PyTypeObject *) cls, 0);
+                                }
+                                ''',
+                                tp_methods='{"createObj", (PyCFunction)testslots_tp_alloc, METH_O, ""}'
+                                )
+        class managed(TestTpAllocWithManaged):
+            pass
+        t = TestTpAllocCall()
+
+        assert t.createObj(managed) != None
+        
+
     def test_float_binops(self):
         TestFloatBinop = CPyExtType("TestFloatBinop",
                              """
@@ -140,6 +165,39 @@ class TestObject(object):
         assert 10.0 - x == 4242
         assert 10.0 * x == 424242
         assert 10.0 ** x == 42424242
+
+    def test_index(self):
+        TestIndex = CPyExtType("TestIndex",
+                             """
+                             PyObject* test_index(PyObject* self) {
+                                 return PyLong_FromLong(1);
+                             }
+                             """,
+                             nb_index="test_index"
+        )
+        tester = TestIndex()
+        assert [0, 1][tester] == 1
+
+    def test_slots_binops(self):
+        TestSlotsBinop = CPyExtType("TestSlotsBinop",
+                             """
+                             PyObject* test_int_impl(PyObject* self) {
+                                 PyErr_SetString(PyExc_RuntimeError, "Should not call __int__");
+                                 return NULL;
+                             }
+                             PyObject* test_index_impl(PyObject* self) {
+                                 PyErr_SetString(PyExc_RuntimeError, "Should not call __index__");
+                                 return NULL;
+                             }
+                             PyObject* test_mul_impl(PyObject* a, PyObject* b) {
+                                 return PyLong_FromLong(42);
+                             }
+                             """,
+                             nb_int="test_int_impl",
+                             nb_index="test_index_impl",
+                             nb_multiply="test_mul_impl"
+        )
+        assert [4, 2] * TestSlotsBinop() == 42
 
     def test_index(self):
         TestIndex = CPyExtType("TestIndex",
@@ -370,6 +428,9 @@ class TestObject(object):
         obj.__dict__["newAttr"] = 123
         assert obj.newAttr == 123, "invalid attr"
 
+        obj.__dict__ = {'a': 1}
+        assert obj.a == 1
+
     def ignore_test_float_subclass(self):
         TestFloatSubclass = CPyExtType("TestFloatSubclass",
                                        """
@@ -412,11 +473,40 @@ class TestObject(object):
                                        nb_add="fp_add",
                                        tp_new="fp_tpnew",
                                        post_ready_code="testFloatSubclassPtr = &TestFloatSubclassType; Py_INCREF(testFloatSubclassPtr);"
-        )
+                                       )
         tester = TestFloatSubclass(41.0)
         res = tester + 1
         assert res == 42.0, "expected 42.0 but was %s" % res
         assert hash(tester) != 0
+
+    def test_float_subclass2(self):
+        NativeFloatSubclass = CPyExtType(
+            "NativeFloatSubclass",
+            """
+            static PyObject* fp_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+                PyObject *result = PyFloat_Type.tp_new(type, args, kwds);
+                NativeFloatSubclassObject *nfs = (NativeFloatSubclassObject *)result;
+                nfs->myobval = PyFloat_AsDouble(result);
+                return result;
+            }
+
+            static PyObject* fp_tp_repr(PyObject* self) {
+                NativeFloatSubclassObject *nfs = (NativeFloatSubclassObject *)self;
+                return PyUnicode_FromFormat("native %S", PyFloat_FromDouble(nfs->myobval));
+            }
+            """,
+            struct_base="PyFloatObject base",
+            cmembers="double myobval;",
+            tp_base="&PyFloat_Type",
+            tp_new="fp_tp_new",
+            tp_repr="fp_tp_repr"
+        )
+        class MyFloat(NativeFloatSubclass):
+            pass
+        assert MyFloat() == 0.0
+        assert MyFloat(123.0) == 123.0
+        assert repr(MyFloat()) == "native 0.0"
+        assert repr(MyFloat(123.0)) == "native 123.0"
 
     def test_custom_basicsize(self):
         TestCustomBasicsize = CPyExtType("TestCustomBasicsize", 
@@ -740,6 +830,84 @@ class TestObject(object):
             b = 2
         x = X()
         assert x.foo == "foo"
+
+    def test_getset(self):
+        TestGetter = CPyExtType(
+            "TestGetter",
+            """
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                return PyUnicode_FromString("getter");
+            }
+            """,
+            tp_getset='{"foo", foo_getter, (setter)NULL, NULL, NULL}',
+        )
+        obj = TestGetter()
+        assert obj.foo == 'getter'
+
+        def call_set():
+            obj.foo = 'set'
+
+        assert_raises(AttributeError, call_set)
+
+        TestSetter = CPyExtType(
+            "TestSetter",
+            """
+            static int state;
+
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                if (state == 0)
+                    return PyUnicode_FromString("unset");
+                else
+                    return PyUnicode_FromString("set");
+            }
+
+            static int foo_setter(PyObject* self, PyObject* val, void* unused) {
+                state = val != NULL;
+                return 0;
+            }
+            """,
+            tp_getset='{"foo", foo_getter, (setter)foo_setter, NULL, NULL}',
+        )
+        obj = TestSetter()
+        assert obj.foo == 'unset'
+        obj.foo = 'asdf'
+        assert obj.foo == 'set'
+        del obj.foo
+        assert obj.foo == 'unset'
+
+    def test_member_kind_precedence(self):
+        TestWithConflictingMember1 = CPyExtType(
+            "TestWithConflictingMember1",
+            """
+            static PyObject* foo_method(PyObject* self, PyObject* unused) {
+                return PyUnicode_FromString("method");
+            }
+
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                return PyUnicode_FromString("getter");
+            }
+            """,
+            cmembers="PyObject* foo_member;",
+            tp_members='{"foo", T_OBJECT, offsetof(TestWithConflictingMember1Object, foo_member), 0, NULL}',
+            tp_methods='{"foo", foo_method, METH_NOARGS, ""}',
+            tp_getset='{"foo", foo_getter, (setter)NULL, NULL, NULL}',
+        )
+        obj = TestWithConflictingMember1()
+        assert obj.foo() == 'method'
+
+        TestWithConflictingMember2 = CPyExtType(
+            "TestWithConflictingMember2",
+            """
+            static PyObject* foo_getter(PyObject* self, void* unused) {
+                return PyUnicode_FromString("getter");
+            }
+            """,
+            cmembers="PyObject* foo_member;",
+            tp_members='{"foo", T_OBJECT, offsetof(TestWithConflictingMember2Object, foo_member), 0, NULL}',
+            tp_getset='{"foo", foo_getter, (setter)NULL, NULL, NULL}',
+        )
+        obj = TestWithConflictingMember2()
+        assert obj.foo is None  # The member takes precedence
 
     def test_slot_precedence(self):
         MapAndSeq = CPyExtType("MapAndSeq",

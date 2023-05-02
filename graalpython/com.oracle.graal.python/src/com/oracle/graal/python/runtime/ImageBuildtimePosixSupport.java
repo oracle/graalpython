@@ -548,6 +548,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void killpg(long pgid, int signal,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.killpg(nativePosixSupport, pgid, signal);
+    }
+
+    @ExportMessage
     final long[] waitpid(long pid, int options,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
@@ -623,9 +630,35 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getgid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.getgid(nativePosixSupport);
+    }
+
+    @ExportMessage
     final long getppid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
         return nativeLib.getppid(nativePosixSupport);
+    }
+
+    @ExportMessage
+    final long getpgid(long pid,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.getpgid(nativePosixSupport, pid);
+    }
+
+    @ExportMessage
+    final void setpgid(long pid, long pgid,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.setpgid(nativePosixSupport, pid, pgid);
+    }
+
+    @ExportMessage
+    final long getpgrp(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.getpgrp(nativePosixSupport);
     }
 
     @ExportMessage

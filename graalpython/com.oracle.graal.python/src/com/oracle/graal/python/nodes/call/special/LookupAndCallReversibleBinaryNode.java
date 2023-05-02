@@ -216,7 +216,11 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         if (hasLeftCallable.profile(inliningTarget, leftCallable != PNone.NO_VALUE)) {
             if (hasRightCallable.profile(inliningTarget, rightCallable != PNone.NO_VALUE) &&
                             (!isSameTypeNode.execute(inliningTarget, leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass) ||
-                                            isFlagSequenceCompat(inliningTarget, leftClass, rightClass, slot, noLeftBuiltinClassType, noRightBuiltinClassType))) {
+                                            isFlagSequenceCompat(inliningTarget, leftClass, rightClass, slot, noLeftBuiltinClassType, noRightBuiltinClassType) ||
+                                            // this condition is a quick fix for the fact that
+                                            // CPython tries both normal and reverse nb_multiply
+                                            // before trying sq_repeat (happens in numpy):
+                                            (slot == SpecialMethodSlot.Mul && leftClass == PythonBuiltinClassType.PList))) {
                 result = dispatch(frame, inliningTarget, ensureReverseDispatch(), rightCallable, right, left, rightClass, rslot, isSubtype, getEnclosingType);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;

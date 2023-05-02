@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -79,6 +80,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -93,7 +95,15 @@ import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 public abstract class CExtContext {
 
-    private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
+    // Due to the cycle CExtContext -> CApiContext < CExtContext this needs to be done lazily
+    private static TruffleLogger LOGGER;
+
+    private static TruffleLogger getLogger() {
+        if (LOGGER == null) {
+            LOGGER = CApiContext.getLogger(CExtContext.class);
+        }
+        return LOGGER;
+    }
 
     public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null) {
         @Override
@@ -291,6 +301,17 @@ public abstract class CExtContext {
         return false;
     }
 
+    private static String dlopenFlagsToString(int flags) {
+        String str = "RTLD_NOW";
+        if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
+            str = "RTLD_LAZY";
+        }
+        if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
+            str += "|RTLD_GLOBAL";
+        }
+        return str;
+    }
+
     /**
      * This method loads a C extension module (C API or HPy API) and will initialize the
      * corresponding native contexts if necessary.
@@ -325,11 +346,20 @@ public abstract class CExtContext {
             if (loaded) {
                 String name = spec.name.toJavaStringUncached();
                 if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-                    if (cApiContext.supportsNativeBackend) {
-                        GraalHPyContext.loadJNIBackend();
-                        LOGGER.config("loading module " + spec.path + " as native");
-                        boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
-                        library = GraalHPyContext.evalNFI(context, (panama ? "with panama " : "") + "load \"" + spec.path + "\"", "load " + spec.name);
+                    GraalHPyContext.loadJNIBackend();
+                    getLogger().config("loading module " + spec.path + " as native");
+                    String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
+                    if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
+                        loadExpr = "with panama " + loadExpr;
+                    }
+                    try {
+                        library = GraalHPyContext.evalNFI(context, loadExpr, "load " + spec.name);
+                    } catch (AbstractTruffleException e) {
+                        if (e instanceof PException pe) {
+                            throw pe;
+                        } else {
+                            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
+                        }
                     }
                 }
             } else {
@@ -342,12 +372,12 @@ public abstract class CExtContext {
             try {
                 if (InteropLibrary.getUncached(library).getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
                     if (cApiContext.supportsNativeBackend) {
-                        LOGGER.config("loading module " + spec.path + " as native (no bitcode found)");
+                        getLogger().config("loading module " + spec.path + " as native (no bitcode found)");
                     } else {
                         throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.CANNOT_MULTICONTEXT);
                     }
                 } else {
-                    LOGGER.config("loading module " + spec.path + " as llvm bitcode");
+                    getLogger().config("loading module " + spec.path + " as llvm bitcode");
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);

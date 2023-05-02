@@ -158,8 +158,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
             }
             CDataObject dst = (CDataObject) inst;
-            cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value,
-                            self.index, self.size, dst.b_ptr.ref(self.offset), factory());
+            cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value, self.index, self.size, dst.b_ptr.ref(self.offset));
             return PNone.NONE;
         }
 
@@ -186,7 +185,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             CDataObject src = (CDataObject) inst;
-            return pyCDataGetNode.execute(self.proto, self.getfunc, inst, self.index, self.size, src.b_ptr.ref(self.offset), factory());
+            return pyCDataGetNode.execute(self.proto, self.getfunc, inst, self.index, self.size, src.b_ptr.ref(self.offset));
         }
     }
 
@@ -771,10 +770,10 @@ public class CFieldBuiltins extends PythonBuiltins {
     @GenerateUncached
     protected abstract static class GetFuncNode extends Node {
 
-        abstract Object execute(FieldGet getfunc, PtrValue adr, int size, PythonObjectFactory factory);
+        abstract Object execute(FieldGet getfunc, PtrValue adr, int size);
 
         @Specialization(guards = "getfunc == vBOOL_get")
-        static Object vBOOL_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object vBOOL_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Short;
             // GET_BITFIELD(val, size);
@@ -782,14 +781,14 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == bool_get")
-        static boolean bool_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static boolean bool_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Byte;
             return ((byte) obj) != 0;
         }
 
         @Specialization(guards = "getfunc == b_get")
-        static int b_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static int b_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Byte;
             byte b = (byte) obj;
@@ -798,7 +797,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == B_get")
-        static int B_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static int B_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Byte;
             byte b = (byte) obj;
@@ -807,7 +806,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == h_get")
-        static int h_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static int h_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Short;
             // GET_BITFIELD(val, size);
@@ -815,7 +814,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == h_get_sw")
-        static int h_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static int h_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Short;
             short val = (short) obj;
@@ -825,7 +824,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == H_get")
-        static int H_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static int H_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Short;
             short s = (short) obj;
@@ -834,7 +833,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == H_get_sw")
-        static int H_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static int H_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Short;
             short val = SWAP_2((short) obj);
@@ -843,7 +842,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == i_get")
-        static int i_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static int i_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Integer;
             // GET_BITFIELD(val, size);
@@ -851,7 +850,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == i_get_sw")
-        static Object i_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object i_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Integer;
             // GET_BITFIELD(val, size);
@@ -859,7 +858,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == I_get")
-        static Object I_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object I_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Integer;
             int val = (int) obj;
@@ -868,7 +867,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == I_get_sw")
-        static Object I_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object I_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Integer;
             int val = SWAP_4((int) obj);
@@ -877,7 +876,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == l_get")
-        static Object l_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object l_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Long;
             // GET_BITFIELD(val, size);
@@ -885,7 +884,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == l_get_sw")
-        static Object l_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object l_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Long;
             long val = (long) obj;
@@ -894,7 +893,8 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == L_get")
-        static Object L_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object L_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PythonObjectFactory factory) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Long;
             long val = (long) obj;
@@ -903,7 +903,8 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == L_get_sw")
-        static Object L_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, PythonObjectFactory factory) {
+        static Object L_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PythonObjectFactory factory) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Long;
             long val = (long) obj;
@@ -913,14 +914,14 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == d_get")
-        static Object d_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object d_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Double;
             return obj;
         }
 
         @Specialization(guards = "getfunc == d_get_sw")
-        static double d_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static double d_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Double;
             byte[] bytes = new byte[Double.BYTES];
@@ -929,14 +930,14 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == f_get")
-        static double f_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static double f_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Float;
             return (float) obj;
         }
 
         @Specialization(guards = "getfunc == f_get_sw")
-        static double f_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static double f_get_sw(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Float;
             byte[] bytes = new byte[Float.BYTES];
@@ -955,7 +956,7 @@ public class CFieldBuiltins extends PythonBuiltins {
          * destruction. Maybe only when b_needsfree is non-zero.
          */
         @Specialization(guards = "getfunc == O_get")
-        Object O_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+        Object O_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached PRaiseNode raiseNode) {
             if (ptr.isNil()) {
                 /* Set an error if not yet set */
@@ -965,7 +966,8 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == c_get")
-        static Object c_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, PythonObjectFactory factory) {
+        static Object c_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PythonObjectFactory factory) {
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
             assert obj instanceof Byte;
             byte b = (byte) obj;
@@ -973,7 +975,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == u_get")
-        static Object u_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+        static Object u_get(FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
             Object obj = ptr.getPrimitiveValue(getfunc.ffiType);
@@ -984,7 +986,7 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         /* U - a unicode string */
         @Specialization(guards = "getfunc == U_get")
-        static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+        static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
             assert ptr.ptr instanceof ByteArrayStorage;
@@ -1010,7 +1012,8 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == s_get")
-        static Object s_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, PythonObjectFactory factory) {
+        static Object s_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PythonObjectFactory factory) {
             assert ptr.ptr instanceof ByteArrayStorage;
             byte[] p = ((ByteArrayStorage) ptr.ptr).value;
 
@@ -1026,7 +1029,8 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == z_get")
-        static Object z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, PythonObjectFactory factory,
+        static Object z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") InteropLibrary lib, /*- limit=1 should be enough for nfi pointer */
                         @Cached PRaiseNode raiseNode,
                         @Cached GetBytesFromNativePointerNode getNativeBytes) {
@@ -1068,7 +1072,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == Z_get")
-        static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+        static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayUTF16Node,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (!ptr.isNil()) {
@@ -1092,8 +1096,9 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == P_get")
-        static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+        static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @Cached PythonObjectFactory factory) {
             if (ptr.isNil()) {
                 return PNone.NONE;
             }

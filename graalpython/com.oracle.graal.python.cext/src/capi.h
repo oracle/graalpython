@@ -166,6 +166,7 @@ typedef struct {
     BUILTIN(PyImport_ImportModuleNoBlock, PyObject*, const char*) \
     BUILTIN(PyIndex_Check, int, PyObject*) \
     BUILTIN(PyInstanceMethod_New, PyObject*, PyObject*) \
+    BUILTIN(PyIter_Check, int, PyObject*) \
     BUILTIN(PyIter_Next, PyObject*, PyObject*) \
     BUILTIN(PyList_Append, int, PyObject*, PyObject*) \
     BUILTIN(PyList_AsTuple, PyObject*, PyObject*) \
@@ -268,6 +269,7 @@ typedef struct {
     BUILTIN(PyThreadState_GetDict, PyObject*) \
     BUILTIN(PyThread_acquire_lock, int, PyThread_type_lock, int) \
     BUILTIN(PyThread_allocate_lock, PyThread_type_lock) \
+    BUILTIN(PyThread_get_thread_ident, unsigned long) \
     BUILTIN(PyThread_release_lock, void, PyThread_type_lock) \
     BUILTIN(PyTraceBack_Here, int, PyFrameObject*) \
     BUILTIN(PyTraceMalloc_Track, int, unsigned int, uintptr_t, size_t) \
@@ -605,6 +607,7 @@ typedef struct {
     BUILTIN(_PyUnicode_AsLatin1String, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_AsUTF8String, PyObject*, PyObject*, const char*) \
     BUILTIN(_PyUnicode_EqualToASCIIString, int, PyObject*, const char*) \
+    BUILTIN(_Py_GetErrorHandler, _Py_error_handler, const char*) \
     BUILTIN(_Py_HashDouble, Py_hash_t, PyObject*, double) \
 
 #define PyASCIIObject_length(OBJ) ( points_to_py_handle_space(OBJ) ? GraalPy_get_PyASCIIObject_length((PyASCIIObject*) (OBJ)) : ((PyASCIIObject*) (OBJ))->length )

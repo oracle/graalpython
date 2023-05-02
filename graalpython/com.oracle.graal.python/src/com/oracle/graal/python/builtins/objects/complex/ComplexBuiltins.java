@@ -81,6 +81,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
@@ -102,6 +106,7 @@ import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -112,6 +117,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -798,12 +805,43 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static long hash(PComplex self) {
+        static long doPComplex(PComplex self) {
+            return complexHash(self.getReal(), self.getImag());
+        }
+
+        @Specialization
+        static long doNative(PythonAbstractNativeObject self,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PCallCapiFunction callGetRealNode,
+                        @Cached PCallCapiFunction callGetImagNode) {
+            Object ptr = toSulongNode.execute(self);
+            Object realObj = callGetRealNode.call(NativeCAPISymbol.FUN_GET_PY_COMPLEX_CVAL_REAL, ptr);
+            Object imagObj = callGetImagNode.call(NativeCAPISymbol.FUN_GET_PY_COMPLEX_CVAL_IMAG, ptr);
+            return complexHash(expectDouble(realObj), expectDouble(imagObj));
+        }
+
+        private static long complexHash(double real, double imag) {
             // just like CPython
-            long realHash = PyObjectHashNode.hash(self.getReal());
-            long imagHash = PyObjectHashNode.hash(self.getImag());
+            long realHash = PyObjectHashNode.hash(real);
+            long imagHash = PyObjectHashNode.hash(imag);
             return realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
         }
+
+        private static double expectDouble(Object val) {
+            if (val instanceof Double) {
+                return (double) val;
+            }
+            InteropLibrary lib = InteropLibrary.getUncached(val);
+            if (lib.fitsInDouble(val)) {
+                try {
+                    return lib.asDouble(val);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
     }
 
     @GenerateNodeFactory

@@ -40,3 +40,7 @@
  */
 #include "capi.h"
 
+int PySys_Audit(const char *event, const char *argFormat, ...) {
+	// ignore for now
+    return 0;
+}

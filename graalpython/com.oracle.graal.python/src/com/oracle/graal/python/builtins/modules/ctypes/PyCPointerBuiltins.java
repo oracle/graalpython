@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -140,10 +140,10 @@ public class PyCPointerBuiltins extends PythonBuiltins {
          * b_length set to 2 instead of 1, and we set 'value' itself as the second item of the
          * b_objects list, additionally.
          */
-        keepRefNode.execute(frame, self, 1, value, factory);
+        keepRefNode.execute(frame, self, 1, value);
 
         Object keep = GetKeepedObjects(dst, factory);
-        keepRefNode.execute(frame, self, 0, keep, factory);
+        keepRefNode.execute(frame, self, 0, keep);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -253,8 +253,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             int size = itemdict.size;
             int offset = index * itemdict.size;
 
-            pyCDataSetNode.execute(frame, self, proto, stgdict.setfunc, value,
-                            index, size, self.b_ptr.ref(offset), factory());
+            pyCDataSetNode.execute(frame, self, proto, stgdict.setfunc, value, index, size, self.b_ptr.ref(offset));
             return PNone.NONE;
         }
     }
@@ -283,7 +282,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             int size = itemdict.size;
             int offset = index * itemdict.size;
 
-            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset), factory());
+            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset));
         }
 
         @Specialization(limit = "1")

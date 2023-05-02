@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,12 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class PythonNativeWrapper implements TruffleObject {
 
@@ -105,9 +106,12 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         this.nativePointer = nativePointer;
     }
 
-    public final boolean isNative(
-                    @Cached ConditionProfile hasNativePointerProfile) {
+    public final boolean isNative(ConditionProfile hasNativePointerProfile) {
         return hasNativePointerProfile.profile(nativePointer != UNINITIALIZED);
+    }
+
+    public final boolean isNative(Node inliningTarget, InlinedConditionProfile hasNativePointerProfile) {
+        return hasNativePointerProfile.profile(inliningTarget, nativePointer != UNINITIALIZED);
     }
 
     public final boolean isNative() {

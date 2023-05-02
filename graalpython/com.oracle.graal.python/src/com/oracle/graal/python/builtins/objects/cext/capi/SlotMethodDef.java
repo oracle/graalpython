@@ -164,9 +164,9 @@ public enum SlotMethodDef {
 
     public final NativeMember nativeMember;
     public final TruffleString methodName;
-    public final Function<Object, Object> wrapperFactory;
+    public final Function<Object, PyProcsWrapper> wrapperFactory;
 
-    SlotMethodDef(TruffleString methodName, Function<Object, Object> wrapperFactory) {
+    SlotMethodDef(TruffleString methodName, Function<Object, PyProcsWrapper> wrapperFactory) {
         this.methodName = methodName;
         this.wrapperFactory = wrapperFactory;
         this.nativeMember = NativeMember.valueOf(name());

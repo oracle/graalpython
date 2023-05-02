@@ -69,6 +69,9 @@ SERIAL_TESTS = [
     'test_unittest',
     'test_glob',
     'test_logging',
+    # test_int contains a denial-of-service prevention test that requires to finish within a certain time.
+    # We are actually fast enough but the parallel execution overhead can cause transient failures.
+    'test_int',
 ]
 
 

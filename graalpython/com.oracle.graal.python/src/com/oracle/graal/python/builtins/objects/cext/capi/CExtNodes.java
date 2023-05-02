@@ -87,13 +87,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidP
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethodRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
@@ -137,7 +130,9 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -150,7 +145,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -185,6 +179,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -210,6 +205,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -264,8 +260,8 @@ public abstract class CExtNodes {
             return result;
         }
 
-        @Specialization(guards = "isNativeClass(object)")
-        protected Object callNativeConstructor(Object object, Object arg,
+        @Specialization(guards = "needsNativeAllocation(object)")
+        Object callNativeConstructor(Object object, Object arg,
                         @Cached ToSulongNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
@@ -274,8 +270,7 @@ public abstract class CExtNodes {
                 Object result = interopLibrary.execute(importCAPISymbolNode.execute(getFunction()), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("C subtype_new function failed", e);
+                throw CompilerDirectives.shouldNotReachHere("C subtype_new function failed", e);
             }
         }
     }
@@ -1676,10 +1671,6 @@ public abstract class CExtNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        static Object doSlowPath(Object obj, NativeMember memberName) {
-            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(memberName.getGetterFunctionName(), ToSulongNode.getUncached().execute(obj)));
-        }
-
         @NeverDefault
         static CExtAsPythonObjectNode createForMember(NativeMember member) {
             switch (member.getType()) {
@@ -1725,22 +1716,31 @@ public abstract class CExtNodes {
      * Use this node to lookup a native type member like {@code tp_alloc}.<br>
      * <p>
      * This node basically implements the native member inheritance that is done by
-     * {@code inherit_special} or other code in {@code PyType_Ready}.
+     * {@code inherit_special} or other code in {@code PyType_Ready}. In addition, we do a special
+     * case for special slots assignment that happens within {@Code type_new_alloc} for heap types.
      * </p>
      * <p>
      * Since it may be that a managed types needs to emulate such members but there is no
-     * corresponding Python attribute (e.g. {@code tp_alloc}), such members are stored as hidden
-     * keys on the managed type. However, the MRO may contain native types and in this case, we need
-     * to access the native member.
+     * corresponding Python attribute (e.g. {@code tp_vectorcall_offset}), such members are stored
+     * as hidden keys on the managed type. However, the MRO may contain native types and in this
+     * case, we need to access the native member.
      * </p>
      */
     @GenerateUncached
     public abstract static class LookupNativeMemberInMRONode extends Node {
 
-        public abstract Object execute(Object cls, NativeMember nativeMemberName, Object managedMemberName);
+        public abstract Object execute(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName);
 
-        @Specialization
-        static Object doSingleContext(Object cls, NativeMember nativeMemberName, Object managedMemberName,
+        static boolean isSpecialHeapSlot(Object cls, HiddenKey key) {
+            return cls instanceof PythonClass && (key == TypeBuiltins.TYPE_ALLOC || key == TypeBuiltins.TYPE_DEL);
+            // mq: not supported yet
+            // key == TypeBuiltins.TYPE_DEALLOC (subtype_dealloc)
+            // key == TypeBuiltins.TYPE_TRAVERSE (subtype_traverse)
+            // key == TypeBuiltins.TYPE_CLEAR (subtype_clear)
+        }
+
+        @Specialization(guards = "!isSpecialHeapSlot(cls, managedMemberName)")
+        static Object doSingleContext(Object cls, NativeMember nativeMemberName, HiddenKey managedMemberName,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
@@ -1751,6 +1751,7 @@ public abstract class CExtNodes {
 
             for (int i = 0; i < n; i++) {
                 PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
+
                 Object result;
                 if (PGuards.isManagedClass(mroCls)) {
                     result = readAttrNode.execute(mroCls, managedMemberName);
@@ -1763,7 +1764,34 @@ public abstract class CExtNodes {
                 }
             }
 
-            return PNone.NO_VALUE;
+            return readAttrNode.execute(PythonContext.get(readAttrNode).lookupType(PythonBuiltinClassType.PythonObject), managedMemberName);
+        }
+
+        @TruffleBoundary
+        static Object createSpecialHeapSlot(Object cls, HiddenKey managedMemberName, Node node) {
+            Object func;
+            if (managedMemberName == TypeBuiltins.TYPE_ALLOC || managedMemberName == TypeBuiltins.TYPE_DEL) {
+                PythonObject object = PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject);
+                // We need to point to PyType_GenericAlloc or PyObject_GC_Del
+                func = ReadAttributeFromObjectNode.getUncachedForceType().execute(object, managedMemberName);
+                WriteAttributeToObjectNode.getUncached().execute(cls, managedMemberName, func);
+            } else {
+                // managedMemberName == TypeBuiltins.TYPE_DEALLOC
+                // managedMemberName == TypeBuiltins.TYPE_CLEAR
+                // managedMemberName == TypeBuiltins.TYPE_TRAVERSE
+                throw PRaiseNode.raiseUncached(node, SystemError, tsLiteral("not supported yet!"));
+            }
+            return func;
+        }
+
+        @Specialization(guards = "isSpecialHeapSlot(cls, managedMemberName)")
+        static Object doToAllocOrDelManaged(Object cls, @SuppressWarnings("unused") NativeMember nativeMemberName, HiddenKey managedMemberName,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
+            Object func = readAttrNode.execute(cls, managedMemberName);
+            if (func == PNone.NO_VALUE) {
+                func = createSpecialHeapSlot(cls, managedMemberName, readAttrNode);
+            }
+            return func;
         }
     }
 
@@ -2870,9 +2898,11 @@ public abstract class CExtNodes {
 
             // CPy-style methods
             // TODO(fa) support static and class methods
-            PRootNode rootNode = createWrapperRootNode(PythonLanguage.get(callGetNameNode), flags, methodName);
+            PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
+            RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, PythonLanguage.get(callGetNameNode), methodName, true, CExtContext.isMethStatic(flags));
+            mlMethObj = PExternalFunctionWrapper.ensureExecutable(context.getContext(), mlMethObj, sig, InteropLibrary.getUncached());
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
-            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, PythonUtils.getOrCreateCallTarget(rootNode));
+            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
@@ -2893,26 +2923,6 @@ public abstract class CExtNodes {
             return true;
         }
 
-        @TruffleBoundary
-        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, TruffleString name) {
-            boolean isStatic = CExtContext.isMethStatic(flags);
-            if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, isStatic, PExternalFunctionWrapper.NOARGS);
-            } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, isStatic, PExternalFunctionWrapper.O);
-            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.KEYWORDS);
-            } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, isStatic, PExternalFunctionWrapper.VARARGS);
-            } else if (CExtContext.isMethMethod(flags)) {
-                return new MethMethodRoot(language, name, isStatic, PExternalFunctionWrapper.METHOD);
-            } else if (CExtContext.isMethFastcallWithKeywords(flags)) {
-                return new MethFastcallWithKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL_WITH_KEYWORDS);
-            } else if (CExtContext.isMethFastcall(flags)) {
-                return new MethFastcallRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL);
-            }
-            throw new IllegalStateException("illegal method flags");
-        }
     }
 
     @GenerateUncached

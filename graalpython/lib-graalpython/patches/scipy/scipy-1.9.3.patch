@@ -11,11 +11,110 @@ index 5b4a1d52..c29ec297 100644
      'blas=openblas',
      'lapack=openblas'
    ],
+diff --git a/mesonpy_wrapper.py b/mesonpy_wrapper.py
+new file mode 100644
+index 00000000..21cceae0
+--- /dev/null
++++ b/mesonpy_wrapper.py
+@@ -0,0 +1,82 @@
++import mesonpy 
++import os 
++import sys
++from contextlib import contextmanager
++import subprocess
++
++
++def get_flang_new_lib_dir():
++    if sys.implementation.name == "graalpy" and __graalpython__.use_system_toolchain:
++        return None, None
++    try:
++        output = subprocess.check_output(['flang-new', '--version'])
++        flang_dir = output.splitlines()[-1].split()[-1].strip().decode("utf-8")
++        return os.path.join(flang_dir, "flang-new"), os.path.normpath(os.path.join(flang_dir, '..', 'lib'))
++    except Exception as e:
++        print(f"INFO: flang-new not detected, could not find library path. Reason: {e}")
++        return None, None
++        
++
++def append_env_var(env, var, value):
++    env[var] = '{} {}'.format(env.get(var, ''), value)
++
++
++def get_build_env():
++    env = {}
++    flang_new, flang_lib_dir = get_flang_new_lib_dir()
++    if flang_new:
++        # until flang-new can compile propack we disable it (during runtime)
++        env["USE_PROPACK"] = "0"
++        env['CC'] = 'clang'
++        env['CXX'] = 'clang++'
++        # env['FC'] = flang_new
++        env['FC'] = "flang-new"
++        if sys.implementation.name == "graalpy":
++            cflags = "-flto=full"
++        else:
++            ld = 'lld'
++            cflags = "-flto=full -fuse-ld=lld -Wl,--mllvm=-lto-embed-bitcode=optimized,--lto-O0"
++            env['CC_LD'] = ld
++            env['CXX_LD'] = ld
++            env['FC_LD'] = ld
++        env['CFLAGS'] = cflags
++        env['CXXFLAGS'] = cflags
++        env['FFLAGS'] = cflags
++        append_env_var(env, 'LDFLAGS', f'-L{flang_lib_dir}')
++    return env
++
++
++@contextmanager
++def env_vars(env):
++    # save and set 
++    prev = {}
++    for k, v in env.items():    
++        prev[k] = os.environ.get(k, None)
++        os.environ[k] = v
++
++    yield
++
++    # restore 
++    for k, v in prev.items():
++        if v is None:
++            del os.environ[k]
++        else:
++            os.environ[k] = v
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    if config_settings is None:
++        config_settings = {}
++    config_settings['compile-args'] = '-j4'
++    scipy_build_env = get_build_env()
++    with env_vars(scipy_build_env):
++        return mesonpy.build_wheel(wheel_directory, config_settings=config_settings, metadata_directory=metadata_directory)
++
++
++def build_sdist(sdist_directory, config_settings=None):
++    if config_settings is None:
++        config_settings = {}
++    config_settings['compile-args'] = '-j4'
++    scipy_build_env = get_build_env()
++    with env_vars(scipy_build_env):
++        return mesonpy.build_sdist(sdist_directory, config_settings=config_settings)
 diff --git a/pyproject.toml b/pyproject.toml
-index 6dc1d407..2d0189ef 100644
+index 6dc1d407..da3e4e6d 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -17,45 +17,7 @@ requires = [
+@@ -8,7 +8,9 @@
+ #     "pybind11>=2.4.3,<2.5.0",
+ 
+ [build-system]
+-build-backend = 'mesonpy'
++# build-backend = 'mesonpy'
++build-backend = 'mesonpy_wrapper'
++backend-path = ["."]
+ requires = [
+     "meson-python>=0.9.0",  # we need more fixes in meson-python, so no upper bound now
+     "Cython>=0.29.32,<3.0",
+@@ -17,45 +19,8 @@ requires = [
      # `wheel` is needed for non-isolated builds, given that `meson-python`
      # doesn't list it as a runtime requirement (at least in 0.5.0)
      "wheel<0.38.0",
@@ -59,6 +158,7 @@ index 6dc1d407..2d0189ef 100644
 -    "numpy; python_version>='3.12'",
 -    "numpy; python_version>='3.8' and platform_python_implementation=='PyPy'",
 +    "numpy",
++    "ninja",
  ]
  
  [project]

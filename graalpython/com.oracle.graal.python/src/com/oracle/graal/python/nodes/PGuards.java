@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -376,6 +377,18 @@ public abstract class PGuards {
         return PythonNativeClass.isInstance(klass);
     }
 
+    /**
+     * Tests if the given {@code klass} is a Python class that needs a native allocation. This is
+     * the case if {@code klass} either is a native class or it is a managed class that (indirectly)
+     * inherits from a native class.
+     */
+    public static boolean needsNativeAllocation(Object klass) {
+        if (klass instanceof PythonManagedClass managedClass) {
+            return managedClass.needsNativeAllocation();
+        }
+        return PythonNativeClass.isInstance(klass);
+    }
+
     public static boolean isPythonClass(Object klass) {
         return PythonAbstractClass.isInstance(klass) || klass instanceof PythonBuiltinClassType;
     }
@@ -503,6 +516,10 @@ public abstract class PGuards {
 
     public static boolean isPBytes(Object obj) {
         return obj instanceof PBytes;
+    }
+
+    public static boolean isPByteArray(Object obj) {
+        return obj instanceof PByteArray;
     }
 
     public static boolean isArray(Object obj) {

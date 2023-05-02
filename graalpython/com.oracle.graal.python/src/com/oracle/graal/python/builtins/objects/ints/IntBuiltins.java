@@ -120,11 +120,9 @@ import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -2395,17 +2393,14 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     // to_bytes
-    @Builtin(name = "to_bytes", minNumOfPositionalArgs = 3, parameterNames = {"self", "bytecount", "byteorder", "signed"})
+    @Builtin(name = "to_bytes", minNumOfPositionalArgs = 3, parameterNames = {"$self", "length", "byteorder"}, keywordOnlyNames = {"signed"})
+    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index)
+    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.TString)
+    @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ToBytesNode extends PythonBuiltinNode {
-
-        public abstract PBytes execute(VirtualFrame frame, Object self, Object byteCount, Object StringOrder, Object signed);
-
-        // used for obtaining int, which will be the size of created array
-        @Child private ToBytesNode recursiveNode;
-        @Child private PyNumberAsSizeNode asSizeNode;
+    public abstract static class ToBytesNode extends PythonClinicBuiltinNode {
 
         @TruffleBoundary
         private boolean isBigEndian(TruffleString order) {
@@ -2419,19 +2414,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes fromLong(long self, int byteCount, TruffleString byteorder, PNone signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile negativeNumberProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            return fromLong(self, byteCount, byteorder, false, inliningTarget, negativeByteCountProfile, negativeNumberProfile, overflowProfile);
-        }
-
-        @Specialization
         PBytes fromLong(long self, int byteCount, TruffleString byteorder, boolean signed,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile negativeNumberProfile,
+                        @Cached InlinedConditionProfile negativeNumberProfile,
                         @Shared @Cached InlinedConditionProfile overflowProfile) {
             if (negativeByteCountProfile.profile(inliningTarget, byteCount < 0)) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
@@ -2487,52 +2473,6 @@ public final class IntBuiltins extends PythonBuiltins {
                 }
             }
             return bytes;
-        }
-
-        @Specialization
-        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, TruffleString byteorder, PNone signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile negativeNumberProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            return fromLongLong(frame, self, byteCount, byteorder, false, inliningTarget, negativeByteCountProfile, negativeNumberProfile, overflowProfile);
-        }
-
-        @Specialization
-        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, TruffleString byteorder, boolean signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile negativeNumberProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            int count = asSize(frame, byteCount);
-            return fromLong(self, count, byteorder, signed, inliningTarget, negativeByteCountProfile, negativeNumberProfile, overflowProfile);
-        }
-
-        @Specialization
-        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, TruffleString byteorder, PNone signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile negativeNumberProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            return fromLongPInt(frame, self, byteCount, byteorder, false, inliningTarget, negativeByteCountProfile, negativeNumberProfile, overflowProfile);
-        }
-
-        @Specialization
-        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, TruffleString byteorder, boolean signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile negativeNumberProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            int count = asSize(frame, byteCount);
-            return fromLong(self, count, byteorder, signed, inliningTarget, negativeByteCountProfile, negativeNumberProfile, overflowProfile);
-        }
-
-        @Specialization
-        PBytes fromPIntInt(PInt self, int byteCount, TruffleString byteorder, PNone signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            return fromPIntInt(self, byteCount, byteorder, false, inliningTarget, negativeByteCountProfile, overflowProfile);
         }
 
         @TruffleBoundary
@@ -2625,69 +2565,9 @@ public final class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, TruffleString byteorder, PNone signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            return fromPIntLong(frame, self, byteCount, byteorder, false, inliningTarget, negativeByteCountProfile, overflowProfile);
-        }
-
-        @Specialization
-        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, TruffleString byteorder, boolean signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            int count = asSize(frame, byteCount);
-            return fromPIntInt(self, count, byteorder, signed, inliningTarget, negativeByteCountProfile, overflowProfile);
-        }
-
-        @Specialization
-        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, TruffleString byteorder, PNone signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            return fromPIntPInt(frame, self, byteCount, byteorder, false, inliningTarget, negativeByteCountProfile, overflowProfile);
-        }
-
-        @Specialization
-        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, TruffleString byteorder, boolean signed,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile negativeByteCountProfile,
-                        @Shared @Cached InlinedConditionProfile overflowProfile) {
-            int count = asSize(frame, byteCount);
-            return fromPIntInt(self, count, byteorder, signed, inliningTarget, negativeByteCountProfile, overflowProfile);
-        }
-
-        static boolean isNumber(Object value) {
-            return value instanceof Integer || value instanceof Long || value instanceof PInt;
-        }
-
-        @Fallback
-        PBytes general(VirtualFrame frame, Object self, Object byteCount, Object byteorder, Object oSigned) {
-            int count = asSize(frame, byteCount);
-            if (!PGuards.isString(byteorder)) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "to_bytes()", 2, "str", byteorder);
-            }
-            boolean signed = oSigned instanceof Boolean && (boolean) oSigned;
-            if (recursiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveNode = insert(create());
-            }
-            return recursiveNode.execute(frame, self, count, byteorder, signed);
-        }
-
-        private int asSize(VirtualFrame frame, Object object) {
-            if (asSizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asSizeNode = insert(PyNumberAsSizeNode.create());
-            }
-            return asSizeNode.executeExact(frame, object);
-        }
-
-        @NeverDefault
-        public static ToBytesNode create() {
-            return IntBuiltinsFactory.ToBytesNodeFactory.create(null);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IntBuiltinsClinicProviders.ToBytesNodeClinicProviderGen.INSTANCE;
         }
     }
 

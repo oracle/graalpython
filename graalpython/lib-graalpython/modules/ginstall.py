@@ -330,29 +330,6 @@ def known_packages():
         sortedcontainers(**kwargs)
         install_from_pypi("hypothesis==5.41.1", **kwargs)
 
-    # Does not yet work
-    # def h5py(**kwargs):
-    #     try:
-    #         import pkgconfig
-    #     except ImportError:
-    #         print("Installing required dependency: pkgconfig")
-    #         pkgconfig(**kwargs)
-    #     install_from_pypi("h5py==2.9.0", **kwargs)
-    #     try:
-    #         import six
-    #     except ImportError:
-    #         print("Installing required dependency: six")
-    #         pkgconfig(**kwargs)
-    #     install_from_pypi("six==1.12.0", **kwargs)
-    #
-    # def keras_applications(**kwargs):
-    #     try:
-    #         import h5py
-    #     except ImportError:
-    #         print("Installing required dependency: h5py")
-    #         h5py(**kwargs)
-    #     install_from_pypi("Keras-Applications==1.0.6", **kwargs)
-
     @pip_package()
     def setuptools_scm(**kwargs):
         setuptools(**kwargs)
@@ -360,81 +337,8 @@ def known_packages():
 
     @pip_package()
     def numpy(**kwargs):
-        setuptools(**kwargs)
-        Cython(**kwargs)
-
-        blas_env = get_path_env_var("BLAS")
-        blas_lib = os.path.split(blas_env)[0] if blas_env else None
-        blas_include = get_path_env_var("BLAS_INCLUDE")
-        openblas_lib = None
-        openblas_include = None
-        if blas_env and 'openblas' in blas_env:
-            openblas_lib = blas_lib
-            openblas_include = blas_include
-        lapack_env = get_path_env_var('LAPACK')
-        lapack_lib = os.path.split(lapack_env)[0] if lapack_env else None
-        lapack_include = get_path_env_var('LAPACK_INCLUDE')
-
-        def make_site_cfg(root):
-            with open(os.path.join(root, "site.cfg"), "w+") as SITE_CFG:
-                if openblas_lib:
-                    info("detected OPENBLAS / [LAPACK]")
-                    cfg = f"""
-[openblas]
-openblas_libs = openblas
-include_dirs = {openblas_include}
-library_dirs = {openblas_lib}
-runtime_library_dirs = {openblas_lib}"""
-                    if lapack_lib:
-                        cfg += f"""
-[lapack]
-lapack_libs = lapack
-include_dirs = {lapack_include}
-library_dirs = {lapack_lib}"""
-                    else:
-                        cfg += f"""
-[lapack]
-lapack_libs = openblas
-library_dirs = {openblas_lib}"""
-
-                    info(cfg)
-                    SITE_CFG.write(cfg)
-
-                elif blas_lib:
-                    info("detected BLAS / [LAPACK]")
-                    cfg = f"""
-[blas]
-include_dirs = {blas_include}
-library_dirs = {blas_lib}"""
-                    if lapack_lib:
-                        cfg += f"""
-[lapack]
-lapack_libs = lapack
-include_dirs = {lapack_include}
-library_dirs = {lapack_lib}"""
-
-                    info(cfg)
-                    SITE_CFG.write(cfg)
-
-        # honor following selected env variables: BLAS, LAPACK, ATLAS
-        numpy_build_env = {}
-        for key in ("BLAS", "LAPACK", "ATLAS"):
-            if key in os.environ:
-                numpy_build_env[key] = os.environ[key]
-
-        if have_lapack() or have_openblas():
-            append_env_var(numpy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
-            info(f"have lapack or blas ... CLFAGS={numpy_build_env['CFLAGS']}")
-
-        with_flang = have_flang_new()
-        build_cmd = ["build_ext", "--disable-optimization"]
-        if with_flang:
-            numpy_build_env["FC"] = "flang-new"
-            numpy_build_env["CC"] = "clang"
-            numpy_build_env["CXX"] = "clang++"
-            build_cmd += ["config", "--fcompiler=flang-new"]
-        install_from_pypi("numpy==1.23.5", build_cmd=build_cmd, env=numpy_build_env, pre_install_hook=make_site_cfg,
-                          **kwargs)
+        install_with_pip("Cython", **kwargs)
+        install_with_pip("numpy", **kwargs)
 
         # print numpy configuration
         if sys.implementation.name != 'graalpy' or __graalpython__.platform_id != 'managed':
@@ -507,55 +411,7 @@ library_dirs = {lapack_lib}"""
 
     @pip_package()
     def scipy(**kwargs):
-        # honor following selected env variables: BLAS, LAPACK, ATLAS
-        scipy_build_env = {}
-        for key in ("BLAS", "LAPACK", "ATLAS"):
-            if key in os.environ:
-                scipy_build_env[key] = os.environ[key]
-
-        if sys.implementation.name == "graalpy":
-            if not os.environ.get("VIRTUAL_ENV", None):
-                xit("SciPy can only be installed within a venv.")
-            from distutils.sysconfig import get_config_var
-            scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
-
-        if have_lapack() or have_openblas():
-            append_env_var(scipy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
-            info(f"have lapack or blas ... CFLAGS={scipy_build_env['CFLAGS']}")
-
-        # install dependencies
-        numpy(**kwargs)
-        pybind11(**kwargs)
-        pythran(**kwargs)
-
-        # scipy_version = "1.8.1"
-        scipy_version = "1.9.3"
-        with_meson = False
-        if scipy_version >= "1.9.1":
-            meson(**kwargs)
-            ninja(**kwargs)
-            with_flang = have_flang_new()
-            with_meson = True
-            if with_flang:
-                # until flang-new can compile propack we disable it (during runtime)
-                scipy_build_env["USE_PROPACK"] = "0"
-                scipy_build_env['CC'] = 'clang'
-                scipy_build_env['CXX'] = 'clang++'
-                scipy_build_env['FC'] = 'flang-new'
-                if sys.implementation.name == "graalpy":
-                    cflags = "-flto=full"
-                else:
-                    ld = 'lld'
-                    cflags = "-flto=full -fuse-ld=lld -Wl,--mllvm=-lto-embed-bitcode=optimized,--lto-O0"
-                    scipy_build_env['CC_LD'] = ld
-                    scipy_build_env['CXX_LD'] = ld
-                    scipy_build_env['FC_LD'] = ld
-                scipy_build_env['CFLAGS'] = cflags
-                scipy_build_env['CXXFLAGS'] = cflags
-                scipy_build_env['FFLAGS'] = cflags
-                scipy_build_env['FFLAGS'] = cflags
-                append_env_var(scipy_build_env, 'LDFLAGS', f'-L{get_flang_new_lib_dir()}')
-        install_from_pypi(f"scipy=={scipy_version}", env=scipy_build_env, with_meson=with_meson, **kwargs)
+        install_with_pip("scipy", **kwargs)
 
     @pip_package()
     def scikit_learn(**kwargs):

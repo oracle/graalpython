@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDe
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalEncoderObject;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamReaderObject;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamWriterObject;
+import com.oracle.graal.python.builtins.modules.codecs.PEncodingMap;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialect;
 import com.oracle.graal.python.builtins.modules.csv.CSVReader;
 import com.oracle.graal.python.builtins.modules.csv.CSVWriter;
@@ -932,6 +933,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBaseException(cls, getShape(cls), data, args));
     }
 
+    /*
+     * Note: we use this method to convert a Java StackOverflowError into a Python RecursionError.
+     * At the time when this is done, some Java stack frames were already unwinded but there is no
+     * guarantee on how many. Therefore, it is important that this method is simple. In particular,
+     * do not add calls if that can be avoided.
+     */
     public final PBaseException createBaseException(Object cls, TruffleString format, Object[] args) {
         return createBaseException(cls, null, format, args);
     }
@@ -1164,6 +1171,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDirEntry createDirEntry(Object dirEntryData, PosixFileHandle path) {
         return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
+    }
+
+    public final PEncodingMap createEncodingMap(int count2, int count3, byte[] level1, byte[] level23) {
+        return trace(new PEncodingMap(PythonBuiltinClassType.PEncodingMap, PythonBuiltinClassType.PEncodingMap.getInstanceShape(getLanguage()), count2, count3, level1, level23));
     }
 
     public final PMMap createMMap(PythonContext context, Object clazz, Object mmapHandle, int fd, long length, int access) {

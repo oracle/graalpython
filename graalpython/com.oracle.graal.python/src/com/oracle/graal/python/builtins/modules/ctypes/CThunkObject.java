@@ -67,7 +67,6 @@ import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -136,7 +135,6 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached SetFuncNode setFuncNode,
                         @Cached GetFuncNode getFuncNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached CallNode callNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached WarnNode warnNode,
@@ -165,7 +163,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                                 ptr.toBytes(type, bytes);
                             }
                         }
-                        arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size, factory);
+                        arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size);
                         /*
                          * XXX XXX XX We have the problem that c_byte or c_short have dict->size of
                          * 1 resp. 4, but these parameters are pushed as sizeof(int) bytes. BTW, the
@@ -200,7 +198,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                     /*
                      * keep is an object we have to keep alive so that the result stays valid. If
                      * there is no such object, the setfunc will have returned Py_None.
-                     * 
+                     *
                      * If there is such an object, we have no choice than to keep it alive forever -
                      * but a refcount and/or memory leak will be the result. EXCEPT when restype is
                      * py_object - Python itself knows how to manage the refcount of these objects.

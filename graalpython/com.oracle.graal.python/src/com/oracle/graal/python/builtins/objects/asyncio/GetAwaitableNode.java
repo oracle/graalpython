@@ -43,15 +43,17 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -65,8 +67,8 @@ public abstract class GetAwaitableNode extends Node {
     public abstract Object execute(Frame frame, Object arg);
 
     @Specialization
-    public Object doGenerator(PGenerator generator,
-                    @Cached.Shared("notInAwait") @Cached PRaiseNode raise) {
+    static Object doGenerator(PGenerator generator,
+                    @Shared("notInAwait") @Cached PRaiseNode raise) {
         if (generator.isCoroutine()) {
             return generator;
         } else {
@@ -75,25 +77,26 @@ public abstract class GetAwaitableNode extends Node {
     }
 
     @Specialization
-    public Object doGeneric(Frame frame, Object awaitable,
-                    @Cached.Shared("notInAwait") @Cached PRaiseNode raiseNoAwait,
+    static Object doGeneric(Frame frame, Object awaitable,
+                    @Bind("this") Node inliningTarget,
+                    @Shared("notInAwait") @Cached PRaiseNode raiseNoAwait,
                     @Cached.Exclusive @Cached PRaiseNode raiseNotIter,
                     @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
                     @Cached TypeNodes.GetNameNode getName,
-                    @Cached GetClassNode getAwaitableType,
-                    @Cached GetClassNode getIteratorType,
+                    @Cached InlinedGetClassNode getAwaitableType,
+                    @Cached InlinedGetClassNode getIteratorType,
                     @Cached CallUnaryMethodNode callAwait,
-                    @Cached IteratorNodes.IsIteratorObjectNode isIterator) {
-        Object type = getAwaitableType.execute(awaitable);
+                    @Cached PyIterCheckNode iterCheck) {
+        Object type = getAwaitableType.execute(inliningTarget, awaitable);
         Object getter = findAwait.execute(frame, type, awaitable);
         if (getter == PNone.NO_VALUE) {
             throw raiseNoAwait.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(type));
         }
         Object iterator = callAwait.executeObject(getter, awaitable);
-        if (isIterator.execute(iterator)) {
+        if (iterCheck.execute(inliningTarget, iterator)) {
             return iterator;
         }
-        Object itType = getIteratorType.execute(iterator);
+        Object itType = getIteratorType.execute(inliningTarget, iterator);
         if (itType == PythonBuiltinClassType.PCoroutine) {
             throw raiseNotIter.raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
         } else {

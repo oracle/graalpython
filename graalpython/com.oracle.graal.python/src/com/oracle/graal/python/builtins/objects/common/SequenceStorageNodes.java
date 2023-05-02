@@ -2859,7 +2859,7 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isFallbackCase(SequenceStorage s, Object value, IsAssignCompatibleNode isAssignCompatibleNode) {
             // there are explicit specializations for all cases with EmptySequenceStorage
-            if (s instanceof EmptySequenceStorage || s instanceof ObjectSequenceStorage) {
+            if (s instanceof EmptySequenceStorage || s instanceof ObjectSequenceStorage || s instanceof NativeSequenceStorage) {
                 return false;
             }
             if ((s instanceof ByteSequenceStorage || s instanceof IntSequenceStorage || s instanceof LongSequenceStorage) &&

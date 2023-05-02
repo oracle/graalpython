@@ -154,6 +154,11 @@ public abstract class SortNodes {
         }
 
         @Override
+        public boolean isInternal() {
+            return true;
+        }
+
+        @Override
         public String getName() {
             return "sort_comparator";
         }
@@ -371,6 +376,11 @@ public abstract class SortNodes {
         }
 
         private void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, CallContext callContext) {
+            if (len == 0) {
+                return;
+            }
+            // some packages expect "keyfunc" to be called even for one-element lists
+            Object key = callNode.execute(frame, keyfunc, array[0]);
             if (len <= 1) {
                 return;
             }
@@ -386,7 +396,6 @@ public abstract class SortNodes {
              * Look at the first key and determine which comparator we could use to compare if the
              * keys turn all to be the same primitive type
              */
-            Object key = callNode.execute(frame, keyfunc, array[0]);
             pairArray[reverse ? len - 1 : 0] = new SortingPair(key, array[0]);
             Class<?> keyClass = keyClassProfile.profile(key.getClass());
             KeySortComparator keySortComparator = KeySortComparator.forClass(keyClass);

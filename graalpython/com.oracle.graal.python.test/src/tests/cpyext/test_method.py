@@ -38,18 +38,9 @@
 # SOFTWARE.
 import types
 
-from . import CPyExtType, CPyExtTestCase, unhandled_error_compare, CPyExtFunction
+from . import CPyExtType, CPyExtTestCase, unhandled_error_compare, CPyExtFunction, assert_raises
 
 __dir__ = __file__.rpartition("/")[0]
-
-
-def assert_raises(err, fn, *args, **kwargs):
-    raised = False
-    try:
-        fn(*args, **kwargs)
-    except err:
-        raised = True
-    assert raised
 
 
 def _reference_classmethod(args):

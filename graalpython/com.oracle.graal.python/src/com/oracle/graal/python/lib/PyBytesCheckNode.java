@@ -42,15 +42,17 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -58,21 +60,33 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @ImportStatic(PGuards.class)
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
 public abstract class PyBytesCheckNode extends Node {
 
-    public abstract boolean execute(VirtualFrame frame, Object object);
+    public abstract boolean execute(Node inliningTarget, Object object);
+
+    public static boolean executeUncached(Object object) {
+        return PyBytesCheckNodeGen.getUncached().execute(null, object);
+    }
 
     @SuppressWarnings("unused")
     @Specialization
-    public static boolean check(PBytes obj) {
+    static boolean check(PBytes obj) {
         return true;
     }
 
-    @Specialization(guards = "!isPBytes(obj)")
-    public static boolean check(VirtualFrame frame, Object obj,
-                    @Bind("this") Node inliningTarget,
+    @Specialization
+    static boolean check(Node inliningTarget, PythonAbstractNativeObject obj,
                     @Cached InlinedGetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes);
+        // FIXME we should have a subtype check that doesn't call back to python
+        return isSubtypeNode.execute(null, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes);
+    }
+
+    @Fallback
+    @SuppressWarnings("unused")
+    static boolean check(Object obj) {
+        return false;
     }
 }

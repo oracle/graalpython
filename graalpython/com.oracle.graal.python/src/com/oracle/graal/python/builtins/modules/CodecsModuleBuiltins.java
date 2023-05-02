@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.appendXmlCharRefReplacement;
+import static com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.getXmlCharRefReplacementLength;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitValue;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_OBJECT;
@@ -48,14 +50,12 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ASCII;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_ENCODINGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TRUFFLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
 import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_SEARCH_MUST_RETURN_4;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_ERROR_WITH_CODE;
-import static com.oracle.graal.python.nodes.ErrorMessages.HANDLER_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ESCAPE_AT;
 import static com.oracle.graal.python.nodes.ErrorMessages.POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_RETURN_TUPLE;
@@ -63,6 +63,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_DECODE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAMEREPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
@@ -98,19 +99,23 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeBuildEncodingMapNode;
+import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeDecodeCharmapNode;
+import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeEncodeCharmapNode;
+import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
+import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
+import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecRegisterErrorNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -119,7 +124,6 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -130,6 +134,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -139,17 +144,17 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.CharsetMapping.NormalizeEncodingNameNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -163,7 +168,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(defineModule = J__CODECS)
 public class CodecsModuleBuiltins extends PythonBuiltins {
@@ -331,62 +335,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             String p = new String(encoder.getInputChars(encoder.getErrorLength()));
             int size = 0;
             for (int i = 0; i < encoder.getErrorLength(); ++i) {
-                // object is guaranteed to be "ready"
-                int ch = p.codePointAt(i);
-                if (ch < 10) {
-                    size += 2 + 1 + 1;
-                } else if (ch < 100) {
-                    size += 2 + 2 + 1;
-                } else if (ch < 1000) {
-                    size += 2 + 3 + 1;
-                } else if (ch < 10000) {
-                    size += 2 + 4 + 1;
-                } else if (ch < 100000) {
-                    size += 2 + 5 + 1;
-                } else if (ch < 1000000) {
-                    size += 2 + 6 + 1;
-                } else {
-                    size += 2 + 7 + 1;
-                }
+                size += getXmlCharRefReplacementLength(p.codePointAt(i));
             }
 
             byte[] replacement = new byte[size];
             int consumed = 0;
             // generate replacement
             for (int i = 0; i < p.length(); ++i) {
-                int digits;
-                int base;
-                int ch = p.codePointAt(i);
-                replacement[consumed++] = '&';
-                replacement[consumed++] = '#';
-                if (ch < 10) {
-                    digits = 1;
-                    base = 1;
-                } else if (ch < 100) {
-                    digits = 2;
-                    base = 10;
-                } else if (ch < 1000) {
-                    digits = 3;
-                    base = 100;
-                } else if (ch < 10000) {
-                    digits = 4;
-                    base = 1000;
-                } else if (ch < 100000) {
-                    digits = 5;
-                    base = 10000;
-                } else if (ch < 1000000) {
-                    digits = 6;
-                    base = 100000;
-                } else {
-                    digits = 7;
-                    base = 1000000;
-                }
-                while (digits-- > 0) {
-                    replacement[consumed++] = (byte) ('0' + ch / base);
-                    ch %= base;
-                    base /= 10;
-                }
-                replacement[consumed++] = ';';
+                consumed = appendXmlCharRefReplacement(replacement, consumed, p.codePointAt(i));
             }
             encoder.replace(encoder.getErrorLength(), replacement, 0, consumed);
             return true;
@@ -456,18 +412,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
      * This Node is expecting the errorAction truffle string to be interned ahead.
      */
     @ImportStatic(StringLiterals.class)
-    @GenerateUncached
     public abstract static class HandleDecodingErrorNode extends Node {
-        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, PBytesLike inputObject);
+        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
 
         @Specialization(guards = "errorAction == T_STRICT")
-        static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode) {
             raiseDecodingErrorNode.raise(decoder, inputObject);
         }
 
         @Specialization(guards = "errorAction == T_BACKSLASHREPLACE")
-        static void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doBackslashreplace(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -482,7 +437,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "errorAction == T_SURROGATEPASS")
-        static void doSurrogatepass(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doSurrogatepass(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
@@ -498,7 +453,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "errorAction == T_SURROGATEESCAPE")
-        static void doSurrogateescape(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, PBytesLike inputObject,
+        static void doSurrogateescape(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -513,16 +468,19 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        void doCustom(TruffleDecoder decoder, TruffleString errorAction, PBytesLike inputObject,
+        static void doCustom(TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
+                        @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetInternalObjectArrayNode getArray,
+                        @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
+                        @Cached PyCodecLookupErrorNode lookupErrorNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                Object errorHandler = LookupErrorNode.get(PythonContext.get(this), errorAction);
+                Object errorHandler = lookupErrorNode.execute(inliningTarget, errorAction);
                 if (errorHandler == null) {
                     throw raiseNode.raise(LookupError, UNKNOWN_ERROR_HANDLER, errorAction);
                 }
@@ -541,10 +499,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 /*- Copy back the bytes variables, which might have been modified by the callback */
                 assert exceptionObject instanceof PBaseException;
                 Object obj = attrNode.get((PBaseException) exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
-                assert obj instanceof PBytesLike;
-                PBytesLike inputobj = (PBytesLike) obj;
-                byte[] input = getBytes.execute(inputobj.getSequenceStorage());
-                int insize = inputobj.getSequenceStorage().length();
+                SequenceStorage inputStorage = getBytesStorage.execute(inliningTarget, obj);
+                byte[] input = getBytes.execute(inputStorage);
+                int insize = inputStorage.length();
 
                 if (newpos < 0) {
                     newpos = insize + newpos;
@@ -715,7 +672,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateUncached
     public abstract static class InternalCodecsDecodeNode extends PNodeWithContext {
         abstract Object execute(Frame frame, PNodeWithRaiseAndIndirectCall node, Object input, TruffleString encoding, TruffleString errors, boolean finalData);
 
@@ -1061,10 +1017,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     private static void ensureRegistryInitialized(PythonContext context) {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !context.isCodecsInitialized())) {
-            AbstractImportNode.importModule(T_ENCODINGS);
-            context.markCodecsInitialized();
-        }
+        CodecsRegistry.ensureRegistryInitialized(context);
     }
 
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
@@ -1137,41 +1090,19 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.RegisterErrorNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "callableCheckNode.execute(handler)", limit = "1")
-        Object register(TruffleString name, Object handler,
-                        @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
-            put(PythonContext.get(this), name, handler);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!callableCheckNode.execute(handler)", limit = "1")
-        Object registerNoCallable(TruffleString name, Object handler,
-                        @Cached PyCallableCheckNode callableCheckNode) {
-            throw raise(TypeError, HANDLER_MUST_BE_CALLABLE);
-        }
-
-        @TruffleBoundary
-        private static void put(PythonContext ctx, TruffleString name, Object handler) {
-            ctx.getCodecErrorRegistry().put(name, handler);
-        }
-    }
-
-    @Builtin(name = "PyCodec_StrictErrors", minNumOfPositionalArgs = 1, parameterNames = {"exc"})
-    @GenerateNodeFactory
-    abstract static class StrictErrors extends PythonUnaryBuiltinNode {
-
         @Specialization
-        @TruffleBoundary
-        Object register(@SuppressWarnings("unused") Object exception) {
-            throw CompilerDirectives.shouldNotReachHere("'strict' not implemented");
+        Object register(TruffleString name, Object handler,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyCodecRegisterErrorNode registerErrorNode) {
+            registerErrorNode.execute(inliningTarget, name, handler);
+            return PNone.NONE;
         }
     }
 
     @Builtin(name = "lookup_error", minNumOfPositionalArgs = 1, parameterNames = {"name"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
-    public abstract static class LookupErrorNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class LookupErrorNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1180,21 +1111,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lookup(TruffleString name,
-                        @Cached ConditionProfile resultProfile) {
-            Object result = get(PythonContext.get(this), name);
-            if (resultProfile.profile(result == null)) {
-                throw raise(LookupError, UNKNOWN_ERROR_HANDLER, name);
-            }
-            return result;
-        }
-
-        @TruffleBoundary
-        protected static Object get(PythonContext ctx, TruffleString name) {
-            switch (name.toJavaStringUncached()) {
-                case "strict":
-                    return ctx.lookupBuiltinModule(BuiltinNames.T__CODECS).getAttribute(PythonUtils.tsLiteral("PyCodec_StrictErrors"));
-            }
-            return ctx.getCodecErrorRegistry().get(name);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyCodecLookupErrorNode errorNode) {
+            return errorNode.execute(inliningTarget, name);
         }
     }
 
@@ -1551,23 +1470,52 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "charmap_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "mapping"})
+    @Builtin(name = "charmap_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors", "mapping"})
+    @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CharmapEncodeNode extends PythonTernaryBuiltinNode {
-        @SuppressWarnings("unused")
+    abstract static class CharmapEncodeNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CharmapEncodeNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        Object encode(Object obj, Object errors, Object mapping) {
-            throw raise(NotImplementedError, toTruffleStringUncached("charmap_encode"));
+        Object doIt(VirtualFrame frame, TruffleString str, TruffleString errors, Object mapping,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached PyUnicodeEncodeCharmapNode encodeCharmapNode) {
+            int len = codePointLengthNode.execute(str, TS_ENCODING);
+            PBytes result = factory().createBytes(encodeCharmapNode.execute(frame, inliningTarget, str, errors, mapping));
+            return factory().createTuple(new Object[]{result, len});
         }
     }
 
-    @Builtin(name = "charmap_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "mapping"})
+    @Builtin(name = "charmap_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors", "mapping"})
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CharmapDecodeNode extends PythonTernaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object decode(Object obj, Object errors, Object mapping) {
-            throw raise(NotImplementedError, toTruffleStringUncached("charmap_decode"));
+    abstract static class CharmapDecodeNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CharmapDecodeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(limit = "3")
+        Object doIt(VirtualFrame frame, Object data, TruffleString errors, Object mapping,
+                        @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyUnicodeDecodeCharmapNode pyUnicodeDecodeCharmapNode) {
+            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, getContext(), getLanguage(), this);
+            int len;
+            try {
+                len = bufferLib.getBufferLength(dataBuffer);
+            } finally {
+                bufferLib.release(dataBuffer, frame, this);
+            }
+            TruffleString result = len == 0 ? T_EMPTY_STRING : pyUnicodeDecodeCharmapNode.execute(frame, data, errors, mapping);
+            return factory().createTuple(new Object[]{result, len});
         }
     }
 
@@ -1641,27 +1589,31 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1)
+    @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1, parameterNames = {"map"})
+    @ArgumentClinic(name = "map", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
-    abstract static class CharmapBuildNode extends PythonUnaryBuiltinNode {
-        // This is replaced in the core _codecs.py with the full functionality
+    abstract static class CharmapBuildNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CharmapBuildNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        Object lookup(TruffleString chars,
-                        @Cached HashingStorageSetItem setItem,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            HashingStorage store = PDict.createNewStorage(codePointLengthNode.execute(chars, TS_ENCODING));
-            PDict dict = factory().createDict(store);
-            int num = 0;
-            TruffleStringIterator it = createCodePointIteratorNode.execute(chars, TS_ENCODING);
-            while (it.hasNext()) {
-                int charid = nextNode.execute(it);
-                store = setItem.execute(null, store, charid, num);
-                num++;
-            }
-            dict.setDictStorage(store);
-            return dict;
+        Object doIt(VirtualFrame frame, TruffleString map,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyUnicodeBuildEncodingMapNode buildEncodingMapNode) {
+            return buildEncodingMapNode.execute(frame, inliningTarget, map);
+        }
+    }
+
+    @Builtin(name = "EncodingMap", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PEncodingMap, isPublic = false)
+    @GenerateNodeFactory
+    abstract static class EncodingMapNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object encodingMap(Object args, Object kwargs) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "EncodingMap");
         }
     }
 

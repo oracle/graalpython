@@ -80,8 +80,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArra
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -91,7 +89,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -277,9 +275,9 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         static int classMethod(Object methodDefPtr, Object type, Object dict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Cached NewClassMethodNode newClassMethodNode,
-                        @Cached DictBuiltins.SetItemNode setItemNode) {
+                        @Cached PyDictSetDefault setDefault) {
             Object func = newClassMethodNode.execute(methodDefPtr, name, cfunc, flags, wrapper, type, doc);
-            setItemNode.execute(null, dict, name, func);
+            setDefault.execute(null, dict, name, func);
             return 0;
         }
     }
@@ -293,14 +291,12 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         @TruffleBoundary
         static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
-            if (!HashingStorageGetItem.hasKeyUncached(tpDict.getDictStorage(), memberName)) {
-                // create wrapper descriptor
-                Object wrapperDescriptor = CreateFunctionNodeGen.getUncached().execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
-                WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
+            // create wrapper descriptor
+            Object wrapperDescriptor = CreateFunctionNodeGen.getUncached().execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
+            WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
-                // add wrapper descriptor to tp_dict
-                PyDictSetItem.executeUncached(tpDict, memberName, wrapperDescriptor);
-            }
+            // add wrapper descriptor to tp_dict
+            PyDictSetDefault.executeUncached(tpDict, memberName, wrapperDescriptor);
             return 0;
         }
     }
@@ -325,7 +321,7 @@ public final class PythonCextTypeBuiltins {
             WriteAttributeToDynamicObjectNode.getUncached().execute(memberDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add member descriptor to tp_dict
-            PyDictSetItem.executeUncached(tpDict, memberName, memberDescriptor);
+            PyDictSetDefault.executeUncached(tpDict, memberName, memberDescriptor);
             return 0;
         }
     }
@@ -340,10 +336,12 @@ public final class PythonCextTypeBuiltins {
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
             assert !(doc instanceof CArrayWrapper);
+            PythonContext context = PythonContext.get(this);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, PythonLanguage.get(this));
+                getter = PExternalFunctionWrapper.ensureExecutable(context, getter, PExternalFunctionWrapper.GETTER, interopLibrary);
                 get = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
 
@@ -351,6 +349,7 @@ public final class PythonCextTypeBuiltins {
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, PythonLanguage.get(this));
+                setter = PExternalFunctionWrapper.ensureExecutable(context, setter, PExternalFunctionWrapper.SETTER, interopLibrary);
                 set = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }
 
@@ -379,9 +378,9 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
                         @Cached CreateGetSetNode createGetSetNode,
-                        @Cached PyDictSetItem dictSetItem) {
+                        @Cached PyDictSetDefault setDefault) {
             GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure);
-            dictSetItem.execute(null, dict, name, descr);
+            setDefault.execute(null, dict, name, descr);
             return 0;
         }
     }

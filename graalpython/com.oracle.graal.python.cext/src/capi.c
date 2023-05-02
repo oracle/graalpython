@@ -432,6 +432,12 @@ PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
 PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                    \
     return obj->FIELD? obj->FIELD->NAME : NULL;                   \
 }
+
+#define PRIMITIVE_EMBEDDED_FIELD_GETTER(RECEIVER, FIELD, RESULT, NAME) \
+PyAPI_FUNC(RESULT) get_##FIELD##_##NAME(RECEIVER obj) { \
+    return obj->FIELD.NAME; \
+}
+
 TYPE_FIELD_GETTER(PyObject*, ob_type)
 PRIMITIVE_FIELD_GETTER(PyObject*, Py_ssize_t, ob_refcnt)
 PRIMITIVE_FIELD_GETTER(PyVarObject*, Py_ssize_t, ob_size)
@@ -514,6 +520,8 @@ PRIMITIVE_FIELD_GETTER(PyTypeObject*, unsigned long, tp_flags)
 PRIMITIVE_FIELD_GETTER(PyModuleDef_Base*, Py_ssize_t, m_index)
 PRIMITIVE_FIELD_GETTER(PyModuleDef*, Py_ssize_t, m_size)
 PRIMITIVE_FIELD_GETTER(PyModuleDef*, const char*, m_doc)
+PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, real)
+PRIMITIVE_EMBEDDED_FIELD_GETTER(PyComplexObject*, cval, double, imag)
 
 char* get_ob_sval(PyObject* op) {
 	return ((PyBytesObject *)(op))->ob_sval;
@@ -1633,6 +1641,10 @@ PyAPI_FUNC(int) PyIndex_Check(PyObject* a) {
 PyAPI_FUNC(PyObject*) PyInstanceMethod_New(PyObject* a) {
     return GraalPyInstanceMethod_New(a);
 }
+#undef PyIter_Check
+PyAPI_FUNC(int) PyIter_Check(PyObject* a) {
+    return GraalPyIter_Check(a);
+}
 #undef PyIter_Next
 PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
     return GraalPyIter_Next(a);
@@ -2041,6 +2053,10 @@ PyAPI_FUNC(int) PyThread_acquire_lock(PyThread_type_lock a, int b) {
 PyAPI_FUNC(PyThread_type_lock) PyThread_allocate_lock() {
     return GraalPyThread_allocate_lock();
 }
+#undef PyThread_get_thread_ident
+PyAPI_FUNC(unsigned long) PyThread_get_thread_ident() {
+    return GraalPyThread_get_thread_ident();
+}
 #undef PyThread_release_lock
 PyAPI_FUNC(void) PyThread_release_lock(PyThread_type_lock a) {
     GraalPyThread_release_lock(a);
@@ -2276,6 +2292,10 @@ PyAPI_FUNC(PyObject*) _PyUnicode_AsUTF8String(PyObject* a, const char* b) {
 #undef _PyUnicode_EqualToASCIIString
 PyAPI_FUNC(int) _PyUnicode_EqualToASCIIString(PyObject* a, const char* b) {
     return Graal_PyUnicode_EqualToASCIIString(a, truffleString(b));
+}
+#undef _Py_GetErrorHandler
+PyAPI_FUNC(_Py_error_handler) _Py_GetErrorHandler(const char* a) {
+    return Graal_Py_GetErrorHandler(truffleString(a));
 }
 #undef _Py_HashDouble
 PyAPI_FUNC(Py_hash_t) _Py_HashDouble(PyObject* a, double b) {

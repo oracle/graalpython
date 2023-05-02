@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,49 +38,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// skip GIL
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.builtins.modules.codecs;
 
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(InteropLibrary.class)
-public final class PyCFunctionDecorator implements TruffleObject {
+public final class PEncodingMap extends PythonBuiltinObject {
 
-    final Object nativeFunction;
-    final Object resultConverter;
+    final int count2;
+    final int count3;
+    final byte[] level1;
+    final byte[] level23;
 
-    public PyCFunctionDecorator(Object nativeFunction, Object resultConverter) {
-        this.nativeFunction = nativeFunction;
-        this.resultConverter = resultConverter;
+    public PEncodingMap(Object cls, Shape instanceShape, int count2, int count3, byte[] level1, byte[] level23) {
+        super(cls, instanceShape);
+        this.count2 = count2;
+        this.count3 = count3;
+        this.level1 = level1;
+        this.level23 = level23;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isExecutable() {
-        return true;
-    }
-
-    @ExportMessage
-    Object execute(Object[] arguments,
-                    @CachedLibrary("this.nativeFunction") InteropLibrary nativeFunctionLib,
-                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib)
-                    throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
-        Object res = nativeFunctionLib.execute(nativeFunction, arguments);
-        return resultConverterLib.execute(resultConverter, res);
-    }
-
-    public Object getNativeFunction() {
-        return nativeFunction;
-    }
-
-    public Object getResultConverter() {
-        return resultConverter;
-    }
 }

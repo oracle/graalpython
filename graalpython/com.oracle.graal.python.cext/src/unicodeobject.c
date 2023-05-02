@@ -611,3 +611,42 @@ Py_ssize_t _PyUnicode_get_wstr_length(PyObject* op) {
             PyCompactUnicodeObject_wstr_length(op);
 }
 
+// from CPython unicodeobject.c:
+int
+PyUnicode_FSConverter(PyObject* arg, void* addr)
+{
+    PyObject *path = NULL;
+    PyObject *output = NULL;
+    Py_ssize_t size;
+    const char *data;
+    if (arg == NULL) {
+        Py_DECREF(*(PyObject**)addr);
+        *(PyObject**)addr = NULL;
+        return 1;
+    }
+    path = PyOS_FSPath(arg);
+    if (path == NULL) {
+        return 0;
+    }
+    if (PyBytes_Check(path)) {
+        output = path;
+    }
+    else {  // PyOS_FSPath() guarantees its returned value is bytes or str.
+        output = PyUnicode_EncodeFSDefault(path);
+        Py_DECREF(path);
+        if (!output) {
+            return 0;
+        }
+        assert(PyBytes_Check(output));
+    }
+
+    size = PyBytes_GET_SIZE(output);
+    data = PyBytes_AS_STRING(output);
+    if ((size_t)size != strlen(data)) {
+        PyErr_SetString(PyExc_ValueError, "embedded null byte");
+        Py_DECREF(output);
+        return 0;
+    }
+    *(PyObject**)addr = output;
+    return Py_CLEANUP_SUPPORTED;
+}

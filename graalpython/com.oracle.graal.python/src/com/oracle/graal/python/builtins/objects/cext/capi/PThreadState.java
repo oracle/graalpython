@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -77,7 +78,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -500,8 +502,9 @@ public final class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected void toNative(
-                    @Cached ConditionProfile isNativeProfile) {
-        if (!isNative(isNativeProfile)) {
+                    @Bind("$node") Node inliningTarget,
+                    @Cached InlinedConditionProfile isNativeProfile) {
+        if (!isNative(inliningTarget, isNativeProfile)) {
             CApiTransitions.firstToNative(this);
         }
     }

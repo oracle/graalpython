@@ -256,8 +256,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_decode__(input, self.encoding, errors, True)
         codecsTruffleBuiltins.truffleCodecClass = initClass(T_TRUFFLE_CODEC, (PythonClass) codecsModule.getAttribute(T_CODEC),
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(() -> EncodeNodeGen.create(), EncodeNode.class, false),
-                                        new BuiltinDescr(() -> CodecDecodeNodeGen.create(), CodecDecodeNode.class, true)},
+                                        new BuiltinDescr(EncodeNodeGen::create, EncodeNode.class, false),
+                                        new BuiltinDescr(CodecDecodeNodeGen::create, CodecDecodeNode.class, true)},
                         codecsTruffleModule, language, factory);
 
         // class TruffleIncrementalEncoder(codecs.IncrementalEncoder):
@@ -268,8 +268,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_encode__(input, self.encoding, self.errors)[0]
         codecsTruffleBuiltins.truffleIncrementalEncoderClass = initClass(T_TRUFFLE_INCREMENTAL_ENCODER, T_INCREMENTAL_ENCODER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
-                                        new BuiltinDescr(() -> IncrementalEncodeNodeGen.create(), IncrementalEncodeNode.class, true)},
+                                        new BuiltinDescr(CodecInitNodeGen::create, CodecInitNode.class, false),
+                                        new BuiltinDescr(IncrementalEncodeNodeGen::create, IncrementalEncodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // class TruffleIncrementalDecoder(codecs.BufferedIncrementalDecoder):
@@ -280,8 +280,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_decode__(input, self.encoding, errors, final)
         codecsTruffleBuiltins.truffleIncrementalDecoderClass = initClass(T_TRUFFLE_INCREMENTAL_DECODER, T_BUFFERED_INCREMENTAL_DECODER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
-                                        new BuiltinDescr(() -> IncrementalDecodeNodeGen.create(), IncrementalDecodeNode.class, true)},
+                                        new BuiltinDescr(CodecInitNodeGen::create, CodecInitNode.class, false),
+                                        new BuiltinDescr(IncrementalDecodeNodeGen::create, IncrementalDecodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // class TruffleStreamWriter(codecs.StreamWriter):
@@ -292,8 +292,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_encode__(input, self.encoding, errors)
         codecsTruffleBuiltins.truffleStreamWriterClass = initClass(T_TRUFFLE_STREAM_WRITER, T_STREAM_WRITER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
-                                        new BuiltinDescr(() -> EncodeNodeGen.create(), EncodeNode.class, true)},
+                                        new BuiltinDescr(CodecInitNodeGen::create, CodecInitNode.class, false),
+                                        new BuiltinDescr(EncodeNodeGen::create, EncodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // class TruffleStreamReader(codecs.StreamReader):
@@ -304,8 +304,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_decode__(input, self.encoding, errors)
         codecsTruffleBuiltins.truffleStreamReaderClass = initClass(T_TRUFFLE_STREAM_READER, T_STREAM_READER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
-                                        new BuiltinDescr(() -> StreamDecodeNodeGen.create(), StreamDecodeNode.class, true)},
+                                        new BuiltinDescr(CodecInitNodeGen::create, CodecInitNode.class, false),
+                                        new BuiltinDescr(StreamDecodeNodeGen::create, StreamDecodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // serves as factory function for CodecInfo-s incrementalencoder/decode and streamwriter/reader
@@ -313,7 +313,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //     def __call__(self, *args, **kwargs):
         //         return self.fn(self.encoding, *args, **kwargs)
         codecsTruffleBuiltins.applyEncodingClass = initClass(T_APPLY_ENCODING, context.lookupType(PythonBuiltinClassType.PythonObject),
-                        new BuiltinDescr[]{new BuiltinDescr(() -> CallApplyNodeGen.create(), CallApplyNode.class, false)},
+                        new BuiltinDescr[]{new BuiltinDescr(CallApplyNodeGen::create, CallApplyNode.class, false)},
                         codecsTruffleModule, language, factory);
     }
     // @formatter:on
@@ -360,7 +360,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_ENCODE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J_ENCODE, minNumOfPositionalArgs = 2, parameterNames = {"self", "input", "errors"})
     protected abstract static class EncodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, PythonObject self, Object input, Object errors,
@@ -370,7 +370,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, parameterNames = {"self", "input", "errors"})
     protected abstract static class CodecDecodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors,
@@ -380,7 +380,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_ENCODE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J_ENCODE, minNumOfPositionalArgs = 2, parameterNames = {"self", "input", "final"})
     protected abstract static class IncrementalEncodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, PythonObject self, Object input, @SuppressWarnings("unused") Object ffinal,
@@ -392,7 +392,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_BUFFER_DECODE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4)
+    @Builtin(name = J_BUFFER_DECODE, minNumOfPositionalArgs = 1, parameterNames = {"self", "input", "errors", "final"})
     protected abstract static class IncrementalDecodeNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
@@ -402,13 +402,13 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4)
-    protected abstract static class StreamDecodeNode extends PythonQuaternaryBuiltinNode {
+    @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, parameterNames = {"self", "input", "errors"})
+    protected abstract static class StreamDecodeNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
+        Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, input, getAttrNode.execute(frame, self, T_ATTR_ENCODING), errors, ffinal);
+            return decode.execute(frame, input, getAttrNode.execute(frame, self, T_ATTR_ENCODING), errors, false);
         }
     }
 

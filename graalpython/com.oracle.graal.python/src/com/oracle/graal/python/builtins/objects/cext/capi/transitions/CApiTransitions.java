@@ -68,7 +68,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
@@ -111,16 +113,18 @@ public class CApiTransitions {
     // transfer: steal or borrow reference
 
     public static final class HandleContext {
+        private static final int DEFAULT_CAPACITY = 10;
 
         public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final WeakHashMap<Object, WeakReference<PythonAbstractNativeObject>> managedNativeLookup = new WeakHashMap<>();
-        public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>();
+        public final ArrayList<PythonObjectReference> nativeHandles = new ArrayList<>(DEFAULT_CAPACITY);
+        public final HandleStack nativeHandlesFreeStack = new HandleStack(DEFAULT_CAPACITY);
         public final Set<NativeStorageReference> nativeStorageReferences = new HashSet<>();
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
 
-        boolean referenceQueuePollActive = false;
+        volatile boolean referenceQueuePollActive = false;
 
     }
 
@@ -210,67 +214,72 @@ public class CApiTransitions {
 
     @TruffleBoundary
     public static void registerNativeSequenceStorage(NativeSequenceStorage storage) {
+        assert PythonContext.get(null).ownsGil();
         NativeStorageReference ref = new NativeStorageReference(storage);
         storage.setReference(ref);
         getContext().nativeStorageReferences.add(ref);
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public static void pollReferenceQueue() {
         HandleContext context = getContext();
         if (!context.referenceQueuePollActive) {
-            ReferenceQueue<Object> queue = context.referenceQueue;
-            int count = 0;
-            long start = 0;
-            NativeObjectReferenceArrayWrapper referencesToBeFreed = getContext().referencesToBeFreed;
-            while (true) {
-                Object entry = queue.poll();
-                if (entry == null) {
-                    if (count > 0) {
-                        assert context.referenceQueuePollActive;
-                        if (!referencesToBeFreed.isEmpty()) {
-                            LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
-                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_BULK_DEALLOC, referencesToBeFreed, referencesToBeFreed.getArraySize());
-                            referencesToBeFreed.reset();
+            try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+                ReferenceQueue<Object> queue = context.referenceQueue;
+                int count = 0;
+                long start = 0;
+                NativeObjectReferenceArrayWrapper referencesToBeFreed = getContext().referencesToBeFreed;
+                while (true) {
+                    Object entry = queue.poll();
+                    if (entry == null) {
+                        if (count > 0) {
+                            assert context.referenceQueuePollActive;
+                            if (!referencesToBeFreed.isEmpty()) {
+                                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
+                                PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_BULK_DEALLOC, referencesToBeFreed, referencesToBeFreed.getArraySize());
+                                referencesToBeFreed.reset();
+                            }
+                            context.referenceQueuePollActive = false;
+                            LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
                         }
-                        context.referenceQueuePollActive = false;
-                        LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
+                        return;
                     }
-                    return;
-                }
-                if (count == 0) {
-                    assert !context.referenceQueuePollActive;
-                    context.referenceQueuePollActive = true;
-                    start = System.nanoTime();
-                } else {
-                    assert context.referenceQueuePollActive;
-                }
-                count++;
-                if (entry instanceof PythonObjectReference reference) {
-                    LOGGER.finer(() -> PythonUtils.formatJString("releasing PythonObjectReference %s", reference));
+                    if (count == 0) {
+                        assert !context.referenceQueuePollActive;
+                        context.referenceQueuePollActive = true;
+                        start = System.nanoTime();
+                    } else {
+                        assert context.referenceQueuePollActive;
+                    }
+                    count++;
+                    if (entry instanceof PythonObjectReference reference) {
+                        LOGGER.finer(() -> PythonUtils.formatJString("releasing PythonObjectReference %s", reference));
 
-                    if (HandleTester.pointsToPyHandleSpace(reference.pointer)) {
-                        int index = (int) (reference.pointer - HandleFactory.HANDLE_BASE);
-                        assert context.nativeHandles.get(index) != null;
-                        context.nativeHandles.set(index, null);
-                    } else {
-                        assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
+                        if (HandleTester.pointsToPyHandleSpace(reference.pointer)) {
+                            int index = (int) (reference.pointer - HandleFactory.HANDLE_BASE);
+                            assert context.nativeHandles.get(index) != null;
+                            context.nativeHandles.set(index, null);
+                            context.nativeHandlesFreeStack.push(index);
+                        } else {
+                            assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
+                            nativeLookupRemove(context, reference.pointer);
+                        }
+                    } else if (entry instanceof NativeObjectReference reference) {
+                        LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
                         nativeLookupRemove(context, reference.pointer);
-                    }
-                } else if (entry instanceof NativeObjectReference reference) {
-                    LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeObjectReference %s", reference));
-                    nativeLookupRemove(context, reference.pointer);
-                    if (subNativeRefCount(reference.pointer, PythonNativeWrapper.MANAGED_REFCNT) == 0) {
-                        referencesToBeFreed.add(reference.pointer);
-                    }
-                } else if (entry instanceof NativeStorageReference reference) {
-                    LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeStorageReference %s", reference));
-                    context.nativeStorageReferences.remove(entry);
-                    if (reference.type == ListStorageType.Generic) {
-                        PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_FREE, reference.ptr, reference.size);
-                    } else {
-                        assert reference.type != ListStorageType.Uninitialized;
-                        PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_PRIMITIVE_ARRAY_FREE, reference.ptr);
+                        if (subNativeRefCount(reference.pointer, PythonNativeWrapper.MANAGED_REFCNT) == 0) {
+                            referencesToBeFreed.add(reference.pointer);
+                        }
+                    } else if (entry instanceof NativeStorageReference reference) {
+                        LOGGER.finer(() -> PythonUtils.formatJString("releasing NativeStorageReference %s", reference));
+                        context.nativeStorageReferences.remove(entry);
+                        if (reference.type == ListStorageType.Generic) {
+                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_FREE, reference.ptr, reference.size);
+                        } else {
+                            assert reference.type != ListStorageType.Uninitialized;
+                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_PRIMITIVE_ARRAY_FREE, reference.ptr);
+                        }
                     }
                 }
             }
@@ -453,11 +462,21 @@ public class CApiTransitions {
         public static final long HANDLE_BASE = 0x8000_0000_0000_0000L;
 
         public static long create(PythonNativeWrapper wrapper) {
+            CompilerAsserts.neverPartOfCompilation();
             assert !(wrapper instanceof TruffleObjectNativeWrapper);
+            assert PythonContext.get(null).ownsGil();
             pollReferenceQueue();
-            int idx = getContext().nativeHandles.size();
-            long pointer = HANDLE_BASE + idx;
-            getContext().nativeHandles.add(new PythonObjectReference(wrapper, pointer));
+            HandleContext handleContext = getContext();
+            int idx = handleContext.nativeHandlesFreeStack.pop();
+            long pointer;
+            if (idx == -1) {
+                pointer = HANDLE_BASE + handleContext.nativeHandles.size();
+                handleContext.nativeHandles.add(new PythonObjectReference(wrapper, pointer));
+            } else {
+                assert idx >= 0;
+                pointer = HANDLE_BASE + idx;
+                handleContext.nativeHandles.set(idx, new PythonObjectReference(wrapper, pointer));
+            }
             return pointer;
         }
     }
@@ -495,18 +514,35 @@ public class CApiTransitions {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public static void firstToNative(PythonNativeWrapper obj) {
-        log(obj);
-        assert !obj.isNative();
-        obj.setNativePointer(logResult(HandleFactory.create(obj)));
+        /*
+         * This method is called from 'toNative' messages. Therefore, we don't know the exact time
+         * when this will be executed and it may happen after the GIL was released by a C extension.
+         * So, we need to acquire the GIL here to be safe.
+         */
+        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            assert !obj.isNative();
+            log(obj);
+            obj.setNativePointer(logResult(HandleFactory.create(obj)));
+        }
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public static void firstToNative(PythonNativeWrapper obj, long ptr) {
-        logVoid(obj, ptr);
-        obj.setNativePointer(ptr);
-        pollReferenceQueue();
-        nativeLookupPut(getContext(), ptr, new PythonObjectReference(obj, ptr));
+        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            /*
+             * The first test if '!obj.isNative()' in the caller is done on a fast-path but not
+             * synchronized. So, repeat the test after the GIL was acquired.
+             */
+            if (!obj.isNative()) {
+                logVoid(obj, ptr);
+                obj.setNativePointer(ptr);
+                pollReferenceQueue();
+                nativeLookupPut(getContext(), ptr, new PythonObjectReference(obj, ptr));
+            }
+        }
     }
 
     // logging
@@ -626,9 +662,9 @@ public class CApiTransitions {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
                 if (HandleTester.pointsToPyHandleSpace(pointer)) {
-                    Object obj = HandleResolver.resolve(pointer);
-                    if (obj instanceof PythonNativeWrapper) {
-                        return logResult(((PythonNativeWrapper) obj).getDelegate());
+                    PythonNativeWrapper obj = HandleResolver.resolve(pointer);
+                    if (obj != null) {
+                        return logResult(obj.getDelegate());
                     }
                 } else {
                     IdReference<?> lookup = nativeLookupGet(CApiTransitions.getContext(), pointer);
@@ -783,7 +819,6 @@ public class CApiTransitions {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
-            assert !(value instanceof PythonAbstractNativeObject);
 
             // this is just a shortcut
             if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(value))) {
@@ -791,7 +826,8 @@ public class CApiTransitions {
             }
             PythonNativeWrapper wrapper;
 
-            HandleContext nativeContext = PythonContext.get(null).nativeContext;
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            HandleContext nativeContext = pythonContext.nativeContext;
 
             if (!interopLibrary.isPointer(value)) {
                 return getManagedReference(value, nativeContext);
@@ -805,6 +841,7 @@ public class CApiTransitions {
             if (isZeroProfile.profile(inliningTarget, pointer == 0)) {
                 return PNone.NO_VALUE;
             }
+            assert pythonContext.ownsGil();
             if (isHandleSpaceProfile.profile(inliningTarget, HandleTester.pointsToPyHandleSpace(pointer))) {
                 PythonObjectReference reference = nativeContext.nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE));
                 if (reference == null) {
@@ -868,6 +905,7 @@ public class CApiTransitions {
         @TruffleBoundary
         private static Object getManagedReference(Object value, HandleContext nativeContext) {
             assert value.toString().startsWith("ManagedMemoryBlock");
+            assert PythonContext.get(null).ownsGil();
             WeakReference<PythonAbstractNativeObject> ref = nativeContext.managedNativeLookup.computeIfAbsent(value, o -> new WeakReference<>(new PythonAbstractNativeObject(o)));
             PythonAbstractNativeObject result = ref.get();
             if (result == null) {
@@ -899,7 +937,7 @@ public class CApiTransitions {
         }
     }
 
-    private static Unsafe UNSAFE = PythonUtils.initUnsafe();
+    private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
     private static final int TP_REFCNT_OFFSET = 0;
 
     private static long addNativeRefCount(long pointer, long refCntDelta) {
@@ -965,6 +1003,7 @@ public class CApiTransitions {
             if (pointer == 0) {
                 return null;
             }
+            assert PythonContext.get(null).ownsGil();
             PythonNativeWrapper wrapper;
             if (HandleTester.pointsToPyHandleSpace(pointer)) {
                 PythonObjectReference reference = getContext().nativeHandles.get((int) (pointer - HandleFactory.HANDLE_BASE));

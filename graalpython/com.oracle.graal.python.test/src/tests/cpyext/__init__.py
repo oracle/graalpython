@@ -49,6 +49,15 @@ __dir__ = __file__.rpartition("/")[0]
 GRAALPYTHON = sys.implementation.name == "graalpy"
 
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
 def unhandled_error_compare(x, y):
     if (isinstance(x, BaseException) and isinstance(y, BaseException)):
         return type(x) == type(y)
@@ -552,6 +561,11 @@ def CPyExtType(name, code, **kwargs):
         {{NULL, NULL, 0, NULL}}
     }};
 
+    static struct PyGetSetDef {name}_getset[] = {{
+        """ + ("""{tp_getset},""" if "tp_getset" in kwargs else "") + """
+        {{NULL, NULL, NULL, NULL, NULL}}
+    }};
+
     static struct PyMemberDef {name}_members[] = {{
         """ + ("""{tp_members},""" if "tp_members" in kwargs else "") + """
         {{NULL, 0, 0, 0, NULL}}
@@ -561,7 +575,7 @@ def CPyExtType(name, code, **kwargs):
         PyVarObject_HEAD_INIT(NULL, 0)
         "{name}.{name}",
         sizeof({name}Object),       /* tp_basicsize */
-        0,                          /* tp_itemsize */
+        {tp_itemsize},              /* tp_itemsize */
         {tp_dealloc},               /* tp_dealloc */
         {tp_vectorcall_offset},
         {tp_getattr},
@@ -587,7 +601,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_iternext},              /* tp_iternext */
         {name}_methods,             /* tp_methods */
         {name}_members,             /* tp_members */
-        0,                          /* tp_getset */
+        {name}_getset,              /* tp_getset */
         {tp_base},                  /* tp_base */
         {tp_dict},                  /* tp_dict */
         {tp_descr_get},             /* tp_descr_get */
@@ -630,7 +644,7 @@ def CPyExtType(name, code, **kwargs):
     kwargs["code"] = code
     kwargs.setdefault("ready_code", "")
     kwargs.setdefault("post_ready_code", "")
-    kwargs.setdefault("tp_methods", "{NULL, NULL, 0, NULL}")
+    kwargs.setdefault("tp_itemsize", "0")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
     kwargs.setdefault("tp_alloc", "PyType_GenericAlloc")
     kwargs.setdefault("tp_free", "PyObject_Del")

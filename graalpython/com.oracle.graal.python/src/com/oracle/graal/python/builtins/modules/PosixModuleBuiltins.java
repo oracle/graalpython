@@ -559,12 +559,87 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "getgid", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetGidNode extends PythonBuiltinNode {
+        @Specialization
+        long getGid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getgid(getPosixSupport());
+        }
+    }
+
     @Builtin(name = "getppid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPpidNode extends PythonBuiltinNode {
         @Specialization
         long getPpid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.getppid(getPosixSupport());
+        }
+    }
+
+    @Builtin(name = "getpgid", minNumOfPositionalArgs = 1, parameterNames = {"pid"})
+    @ArgumentClinic(name = "pid", conversionClass = PidtConversionNode.class)
+    @GenerateNodeFactory
+    public abstract static class GetPgidNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.GetPgidNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        long getPgid(VirtualFrame frame, long pid,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getpgid(getPosixSupport(), pid);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "setpgid", minNumOfPositionalArgs = 2, parameterNames = {"pid", "pgid"})
+    @ArgumentClinic(name = "pid", conversionClass = PidtConversionNode.class)
+    @ArgumentClinic(name = "pgid", conversionClass = PidtConversionNode.class)
+    @GenerateNodeFactory
+    public abstract static class SetPgidNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SetPgidNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object setPgid(VirtualFrame frame, long pid, long pgid,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.setpgid(getPosixSupport(), pid, pgid);
+                return PNone.NONE;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "setpgrp", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class SetPgrpdNode extends PythonBuiltinNode {
+        @Specialization
+        Object getPpid(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.setpgid(getPosixSupport(), 0, 0);
+                return PNone.NONE;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "getpgrp", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetPgrpNode extends PythonBuiltinNode {
+        @Specialization
+        long getPpid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getpgrp(getPosixSupport());
         }
     }
 
@@ -2380,7 +2455,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
+        }
+    }
 
+    @Builtin(name = "killpg", minNumOfPositionalArgs = 2, parameterNames = {"pgid", "signal"})
+    @ArgumentClinic(name = "pgid", conversionClass = PidtConversionNode.class)
+    @ArgumentClinic(name = "signal", conversion = ClinicConversion.Index)
+    @GenerateNodeFactory
+    abstract static class KillPgNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.KillNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone kill(VirtualFrame frame, long pid, int signal,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            auditNode.audit("killpg", pid, signal);
+            try {
+                posixLib.killpg(getPosixSupport(), pid, signal);
+                return PNone.NONE;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 

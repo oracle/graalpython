@@ -248,6 +248,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void kill(Object receiver, long pid, int signal) throws PosixException;
 
+    public abstract void killpg(Object receiver, long pid, int signal) throws PosixException;
+
     public abstract long[] waitpid(Object receiver, long pid, int options) throws PosixException;
 
     public abstract void abort(Object receiver);
@@ -270,7 +272,15 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long getuid(Object receiver);
 
+    public abstract long getgid(Object receiver);
+
     public abstract long getppid(Object receiver);
+
+    public abstract long getpgid(Object receiver, long pid) throws PosixException;
+
+    public abstract void setpgid(Object receiver, long pid, long pgid) throws PosixException;
+
+    public abstract long getpgrp(Object receiver);
 
     public abstract long getsid(Object receiver, long pid) throws PosixException;
 

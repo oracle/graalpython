@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
@@ -81,13 +80,12 @@ public abstract class PyObjectGetIter extends Node {
     static Object getIter(Frame frame, Object receiver,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedGetClassNode getReceiverClass,
-                    @Cached InlinedGetClassNode getResultClass,
                     @Cached(parameters = "Iter") LookupSpecialMethodSlotNode lookupIter,
-                    @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupIternext,
                     @Cached PySequenceCheckNode sequenceCheckNode,
                     @Shared @Cached PythonObjectFactory factory,
                     @Cached PRaiseNode.Lazy raise,
-                    @Cached CallUnaryMethodNode callIter) {
+                    @Cached CallUnaryMethodNode callIter,
+                    @Cached PyIterCheckNode checkNode) {
         Object type = getReceiverClass.execute(inliningTarget, receiver);
         Object iterMethod = PNone.NO_VALUE;
         try {
@@ -101,17 +99,12 @@ public abstract class PyObjectGetIter extends Node {
             }
         } else {
             Object result = callIter.executeObject(frame, iterMethod, receiver);
-            Object resultType = getResultClass.execute(inliningTarget, result);
-            if (!pyIterCheck(resultType, lookupIternext)) {
+            if (!checkNode.execute(inliningTarget, result)) {
                 throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NONITER, result);
             }
             return result;
         }
         throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
-    }
-
-    private static boolean pyIterCheck(Object type, LookupCallableSlotInMRONode lookupIternext) {
-        return !(lookupIternext.execute(type) instanceof PNone);
     }
 
     @NeverDefault

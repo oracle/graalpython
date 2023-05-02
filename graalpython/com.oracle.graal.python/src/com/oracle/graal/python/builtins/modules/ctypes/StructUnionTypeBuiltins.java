@@ -101,6 +101,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -227,6 +228,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached(parameters = "T__pack_") LookupAttributeInMRONode lookupPack,
                         @Cached(parameters = "T__use_broken_old_ctypes_structure_semantics_") LookupAttributeInMRONode lookupBrokenCtypes,
                         @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             /*
@@ -329,7 +331,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                  */
                 stgdict.format = T_UPPER_B;
             }
-            TruffleString[] fieldsNames = new TruffleString[len];
+            Object[] fieldsNames = new Object[len];
             int[] fieldsOffsets = new int[len];
             FFI_TYPES[] fieldsTypes = new FFI_TYPES[len];
 
@@ -346,7 +348,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
                     fieldsError();
                 }
-                TruffleString name = (TruffleString) tuple[0];
+                Object name = tuple[0];
                 Object desc = tuple[1];
                 int bitsize = tupleLen >= 3 ? (int) tuple[2] : 0;
 
@@ -392,7 +394,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
                 if (isStruct && !isPacked) {
                     TruffleString fieldfmt = dict.format != null ? dict.format : T_UPPER_B;
-                    TruffleString buf = formatNode.format("%s:%s:", fieldfmt, name);
+                    TruffleString buf = formatNode.format("%s:%s:", fieldfmt, castToTruffleStringNode.execute(name));
 
                     if (dict.shape != null) {
                         stgdict.format = _ctypes_alloc_format_string_with_shape(dict.ndim, dict.shape, stgdict.format, buf, appendStringNode, toStringNode, formatNode);

@@ -121,7 +121,7 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
 DEFAULT_PYPY_BENCHMARKS = [
     "ai",
     # "bm_chameleon",
-    "bm_dulwich_log",
+    # "bm_dulwich_log",
     "bm_mako",
     "bm_mdp",
     "chaos",
@@ -650,7 +650,7 @@ class PyPySuite(PySuite):
 
 
 class NumPySuite(PySuite):
-    VERSION = "v1.16.4"
+    VERSION = "v1.23.5"
 
     PREREQUISITES = """
     setuptools==63.1.0
