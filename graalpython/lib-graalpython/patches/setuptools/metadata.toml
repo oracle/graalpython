@@ -1,0 +1,12 @@
+[[rules]]
+version = '>=60,<63'
+patch = 'setuptools-60.patch'
+
+[[rules]]
+version = '>=63,<65'
+patch = 'setuptools-63.patch'
+
+[[rules]]
+install-priority = 10
+version = '>=65'
+patch = 'setuptools-65.patch'

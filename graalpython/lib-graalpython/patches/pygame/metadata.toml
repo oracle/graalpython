@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 2.*'
+patch = 'pygame-2.patch'

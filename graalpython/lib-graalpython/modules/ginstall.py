@@ -166,224 +166,14 @@ def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **k
 
 def known_packages():
     @pip_package()
-    def pytest(**kwargs):
-        setuptools(**kwargs)
-        wcwidth(**kwargs)
-        pluggy(**kwargs)
-        atomicwrites(**kwargs)
-        more_itertools(**kwargs)
-        attrs(**kwargs)
-        packaging(**kwargs)
-        py(**kwargs)
-        install_from_pypi("pytest==5.1.0", **kwargs)
-
-    @pip_package()
-    def pytest_parallel(**kwargs):
-        pytest(**kwargs)
-        install_from_pypi("pytest-parallel==0.0.9", **kwargs)
-
-    @pip_package()
-    def py(**kwargs):
-        install_from_pypi("py==1.8.0", **kwargs)
-
-    @pip_package()
-    def attrs(**kwargs):
-
-        install_from_pypi("attrs==19.2.0", **kwargs)
-
-    @pip_package()
-    def pyparsing(**kwargs):
-        install_from_pypi("pyparsing==2.4.2", **kwargs)
-
-    @pip_package()
-    def packaging(**kwargs):
-        six(**kwargs)
-        pyparsing(**kwargs)
-        install_from_pypi("packaging==19.0", **kwargs)
-
-    @pip_package()
-    def more_itertools(**kwargs):
-        install_from_pypi("more-itertools==7.0.0", **kwargs)
-
-    @pip_package()
-    def atomicwrites(**kwargs):
-        install_from_pypi("atomicwrites==1.3.0", **kwargs)
-
-    @pip_package()
-    def pluggy(**kwargs):
-        zipp(**kwargs)
-        install_from_pypi("pluggy==0.13.1", **kwargs)
-
-    @pip_package()
-    def zipp(**kwargs):
-        setuptools_scm(**kwargs)
-        install_from_pypi("zipp==0.5.0", **kwargs)
-
-    @pip_package()
-    def wcwidth(**kwargs):
-        six(**kwargs)
-        install_from_pypi("wcwidth==0.1.7", **kwargs)
-
-    @pip_package()
-    def PyYAML(**kwargs):
-        install_from_pypi("PyYAML==3.13", **kwargs)
-
-    @pip_package()
-    def six(**kwargs):
-        install_from_pypi("six==1.16.0", **kwargs)
-
-    @pip_package()
-    def threadpoolctl(**kwargs):
-        install_with_pip("threadpoolctl==2.2.0", **kwargs)
-
-    @pip_package()
-    def joblib(**kwargs):
-        install_with_pip("joblib==1.2.0", **kwargs)
-
-    @pip_package()
-    def cppy(**kwargs):
-        setuptools_scm(**kwargs)
-        install_from_pypi("cppy==1.2.1", **kwargs)
-
-    @pip_package()
-    def kiwisolver(**kwargs):
-        cppy(**kwargs)
-        install_with_pip("kiwisolver==1.4.4", **kwargs)
-
-    @pip_package()
-    def python_dateutil(**kwargs):
-        install_with_pip("python_dateutil==2.8.2", **kwargs)
-
-    @pip_package()
-    def Cython(extra_opts=None, **kwargs):
-        if extra_opts is None:
-            extra_opts = []
-        install_from_pypi("Cython==0.29.32", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
-
-    @pip_package()
-    def pybind11(**kwargs):
-        install_from_pypi("pybind11==2.10.0", **kwargs)
-
-    @pip_package()
-    def pythran(**kwargs):
-        install_from_pypi("pythran==0.12.0", **kwargs)
-
-    @pip_package()
-    def setuptools(**kwargs):
-        six(**kwargs)
-        install_from_pypi("setuptools==63.2.0", **kwargs)
-
-    @pip_package()
-    def pkgconfig(**kwargs):
-        install_from_pypi("pkgconfig==1.5.1", **kwargs)
-
-    @pip_package()
-    def wheel(**kwargs):
-        install_from_pypi("wheel==0.38.*", **kwargs)
-
-    @pip_package()
-    def protobuf(**kwargs):
-        install_from_pypi("protobuf==3.8.0", **kwargs)
-
-    @pip_package()
-    def Keras_preprocessing(**kwargs):
-        install_from_pypi("Keras-Preprocessing==1.0.5", **kwargs)
-
-    @pip_package()
-    def gast(**kwargs):
-        install_from_pypi("gast==0.2.2", **kwargs)
-
-    @pip_package()
-    def astor(**kwargs):
-        install_from_pypi("astor==0.8.0", **kwargs)
-
-    @pip_package()
-    def absl_py(**kwargs):
-        install_from_pypi("absl-py==0.7.1", **kwargs)
-
-    @pip_package()
-    def mock(**kwargs):
-        install_from_pypi("mock==3.0.5", **kwargs)
-
-    @pip_package()
-    def Markdown(**kwargs):
-        install_from_pypi("Markdown==3.1.1", **kwargs)
-
-    @pip_package()
-    def Werkzeug(**kwargs):
-        install_from_pypi("Werkzeug==0.15.4", **kwargs)
-
-    @pip_package()
     def h5py(**kwargs):
-        numpy(**kwargs)
-        Cython(**kwargs)
+        install_with_pip('numpy')
         install_from_pypi("h5py==2.10.0", **kwargs)
 
     @pip_package()
-    def sortedcontainers(**kwargs):
-        install_from_pypi("sortedcontainers==2.1.0", **kwargs)
-
-    @pip_package()
-    def hypothesis(**kwargs):
-        setuptools(**kwargs)
-        attrs(**kwargs)
-        sortedcontainers(**kwargs)
-        install_from_pypi("hypothesis==5.41.1", **kwargs)
-
-    @pip_package()
-    def setuptools_scm(**kwargs):
-        setuptools(**kwargs)
-        install_with_pip("setuptools_scm==7.1.0", **kwargs)
-
-    @pip_package()
-    def numpy(**kwargs):
-        install_with_pip("Cython", **kwargs)
-        install_with_pip("numpy", **kwargs)
-
-        # print numpy configuration
-        if sys.implementation.name != 'graalpy' or __graalpython__.platform_id != 'managed':
-            info("----------------------------[ numpy configuration ]----------------------------")
-            run_cmd([sys.executable, "-c", 'import numpy as np; print(np.__version__); print(np.show_config())'])
-            info("-------------------------------------------------------------------------------")
-
-    @pip_package()
-    def dateutil(**kwargs):
-        setuptools_scm(**kwargs)
-        install_from_pypi("python-dateutil==2.7.5", **kwargs)
-
-    @pip_package()
-    def certifi(**kwargs):
-        install_from_pypi("certifi==2020.11.8", **kwargs)
-
-    @pip_package()
-    def idna(**kwargs):
-        install_from_pypi("idna==2.8", **kwargs)
-
-    @pip_package()
-    def chardet(**kwargs):
-        install_from_pypi("chardet==3.0.4", **kwargs)
-
-    @pip_package()
-    def urllib3(**kwargs):
-        install_from_pypi("urllib3==1.25.6", **kwargs)
-
-    @pip_package()
-    def requests(**kwargs):
-        idna(**kwargs)
-        certifi(**kwargs)
-        chardet(**kwargs)
-        urllib3(**kwargs)
-        install_from_pypi("requests==2.22", **kwargs)
-
-    @pip_package()
     def lightfm(**kwargs):
-        # pandas(**kwargs)
-        requests(**kwargs)
+        install_with_pip('requests')
         install_from_pypi("lightfm==1.15", **kwargs)
-
-    @pip_package()
-    def meson(**kwargs):
-        install_from_pypi("meson==1.0.0", **kwargs)
 
     @pip_package()
     def ninja(**kwargs):
@@ -394,63 +184,11 @@ def known_packages():
                 'CC': 'gcc',
                 'CXX': 'g++',
             }
-        install_from_pypi("ninja==1.11.1", env=ninja_build_env, **kwargs)
-
-    @pip_package()
-    def pytz(**kwargs):
-        install_from_pypi("pytz==2022.2.1", **kwargs)
-
-    @pip_package()
-    def pandas(**kwargs):
-        pytz(**kwargs)
-        six(**kwargs)
-        dateutil(**kwargs)
-        numpy(**kwargs)
-
-        install_from_pypi("pandas==1.5.2", **kwargs)
-
-    @pip_package()
-    def scipy(**kwargs):
-        install_with_pip("scipy", **kwargs)
-
-    @pip_package()
-    def scikit_learn(**kwargs):
-        # honor following selected env variables: BLAS, LAPACK, ATLAS
-        scikit_learn_build_env = {}
-        for key in ("BLAS", "LAPACK", "ATLAS"):
-            if key in os.environ:
-                scikit_learn_build_env[key] = os.environ[key]
-
-        if sys.implementation.name == "graalpy":
-            if not os.environ.get("VIRTUAL_ENV", None):
-                xit("scikit-learn can only be installed within a venv.")
-            from distutils.sysconfig import get_config_var
-            scikit_learn_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
-
-        # install dependencies
-        numpy(**kwargs)
-        scipy(**kwargs)
-        joblib(**kwargs)
-        threadpoolctl(**kwargs)
-
-        install_from_pypi("scikit-learn==1.1.3", env=scikit_learn_build_env, **kwargs)
-
-    @pip_package()
-    def cycler(**kwargs):
-        six(**kwargs)
-        install_from_pypi("cycler==0.11.0", **kwargs)
-
-    @pip_package()
-    def tox(**kwargs):
-        install_from_pypi("tox==3.24.5", **kwargs)
-
-    @pip_package()
-    def cassowary(**kwargs):
-        install_from_pypi("cassowary==0.5.2", **kwargs)
+        install_with_pip("ninja==1.11.1", env=ninja_build_env, **kwargs)
 
     @pip_package(name="PIL")
     def Pillow(**kwargs):
-        setuptools(**kwargs)
+        install_with_pip('setuptools')
         build_env = {"MAX_CONCURRENCY": "0"}
         build_cmd = ["build_ext", "--disable-jpeg"]
         zlib_root = os.environ.get("ZLIB_ROOT", None)
@@ -462,15 +200,15 @@ def known_packages():
 
     @pip_package()
     def matplotlib(**kwargs):
-        setuptools(**kwargs)
-        certifi(**kwargs)
-        cycler(**kwargs)
-        cassowary(**kwargs)
-        pyparsing(**kwargs)
-        python_dateutil(**kwargs)
-        numpy(**kwargs)
+        install_with_pip('setuptools')
+        install_with_pip('certifi')
+        install_with_pip('cycler')
+        install_with_pip('cassowary')
+        install_with_pip('pyparsing')
+        install_with_pip('python_dateutil')
+        install_with_pip('numpy')
         Pillow(**kwargs)
-        kiwisolver(**kwargs)
+        install_with_pip('kiwisolver')
 
         def download_freetype(extracted_dir):
             target_dir = os.path.join(extracted_dir, "build")

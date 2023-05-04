@@ -1,0 +1,12 @@
+[[rules]]
+version = '== 2.0.12'
+patch = 'charset_normalizer-2.0.12.patch'
+
+[[rules]]
+version = '== 2.1.1'
+patch = 'charset_normalizer-2.1.1.patch'
+
+[[rules]]
+install-priority = 10
+version = '== 3.1.0'
+patch = 'charset_normalizer-3.1.0.patch'

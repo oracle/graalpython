@@ -1,0 +1,8 @@
+[[rules]]
+version = '==2.4.2'
+patch = 'pyparsing-2.4.2.patch'
+
+[[rules]]
+install-priority = 10
+version = '==3.0.8'
+patch = 'pyparsing-3.0.8.patch'

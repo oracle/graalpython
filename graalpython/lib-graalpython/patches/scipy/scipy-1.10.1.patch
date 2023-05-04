@@ -13,10 +13,10 @@ index ad18b245..b18f3b89 100644
    ],
 diff --git a/mesonpy_wrapper.py b/mesonpy_wrapper.py
 new file mode 100644
-index 00000000..21cceae0
+index 00000000..afa33ecc
 --- /dev/null
 +++ b/mesonpy_wrapper.py
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,86 @@
 +import mesonpy 
 +import os 
 +import sys
@@ -83,19 +83,23 @@ index 00000000..21cceae0
 +            os.environ[k] = v
 +
 +
-+def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++def get_config_settings(config_settings=None):
 +    if config_settings is None:
 +        config_settings = {}
 +    config_settings['compile-args'] = '-j4'
++    config_settings['builddir'] = f'mesonbuild-{sys.implementation.name}'
++    return config_settings
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    config_settings = get_config_settings(config_settings)
 +    scipy_build_env = get_build_env()
 +    with env_vars(scipy_build_env):
 +        return mesonpy.build_wheel(wheel_directory, config_settings=config_settings, metadata_directory=metadata_directory)
 +
 +
 +def build_sdist(sdist_directory, config_settings=None):
-+    if config_settings is None:
-+        config_settings = {}
-+    config_settings['compile-args'] = '-j4'
++    config_settings = get_config_settings(config_settings)
 +    scipy_build_env = get_build_env()
 +    with env_vars(scipy_build_env):
 +        return mesonpy.build_sdist(sdist_directory, config_settings=config_settings)

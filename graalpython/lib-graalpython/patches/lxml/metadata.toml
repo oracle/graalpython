@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 4.9.1'
+patch = 'lxml-4.9.1.patch'
