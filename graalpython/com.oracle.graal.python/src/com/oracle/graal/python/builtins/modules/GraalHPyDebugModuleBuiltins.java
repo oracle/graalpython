@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -126,11 +126,6 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         @Override
         public Object execute(VirtualFrame frame) {
             throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
-        }
-
-        @Override
-        protected ReadArgumentNode[] getArguments() {
-            return EMPTY_ARGS;
         }
     }
 

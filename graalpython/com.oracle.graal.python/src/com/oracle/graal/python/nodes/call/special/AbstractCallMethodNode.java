@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.NodeField;
@@ -93,29 +92,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
     protected abstract boolean isMaxSizeExceeded();
 
     protected abstract void setMaxSizeExceeded(boolean value);
-
-    /**
-     * Returns a new instanceof the builtin if it's a subclass of the given class, and null
-     * otherwise.
-     */
-    private <T extends PythonBuiltinBaseNode> T getBuiltin(VirtualFrame frame, PBuiltinFunction func, Class<T> clazz) {
-        CompilerAsserts.neverPartOfCompilation();
-        NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
-        if (builtinNodeFactory == null) {
-            return null; // see for example MethodDescriptorRoot and subclasses
-        }
-        assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + func + " is expected to have a Builtin annotated node.";
-        if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
-            return null;
-        }
-        if (clazz.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
-            T builtinNode = clazz.cast(func.getBuiltinNodeFactory().createNode());
-            if (!callerExceedsMaxSize(builtinNode)) {
-                return builtinNode;
-            }
-        }
-        return null;
-    }
 
     protected PythonBuiltinBaseNode getBuiltin(VirtualFrame frame, PBuiltinFunction func, int nargs) {
         CompilerAsserts.neverPartOfCompilation();
@@ -220,13 +196,23 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return true;
     }
 
-    protected static boolean frameIsUnused(PythonBuiltinBaseNode builtinNode) {
-        return builtinNode == null || !builtinNode.getClass().getAnnotation(GeneratedBy.class).value().getAnnotationsByType(Builtin.class)[0].needsFrame();
-    }
-
     PythonVarargsBuiltinNode getVarargs(VirtualFrame frame, Object func) {
-        if (func instanceof PBuiltinFunction) {
-            return getBuiltin(frame, (PBuiltinFunction) func, PythonVarargsBuiltinNode.class);
+        CompilerAsserts.neverPartOfCompilation();
+        if (func instanceof PBuiltinFunction builtinFunc) {
+            NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = builtinFunc.getBuiltinNodeFactory();
+            if (builtinNodeFactory == null) {
+                return null; // see for example MethodDescriptorRoot and subclasses
+            }
+            assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + builtinFunc + " is expected to have a Builtin annotated node.";
+            if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
+                return null;
+            }
+            if (PythonVarargsBuiltinNode.class.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
+                PythonVarargsBuiltinNode builtinNode = (PythonVarargsBuiltinNode) builtinFunc.getBuiltinNodeFactory().createNode();
+                if (!callerExceedsMaxSize(builtinNode)) {
+                    return builtinNode;
+                }
+            }
         }
         return null;
     }
