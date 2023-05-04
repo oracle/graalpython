@@ -292,11 +292,12 @@ public final class TopLevelExceptionHandler extends RootNode {
             PArguments.setArgument(arguments, i, frame.getArguments()[i]);
         }
         PythonContext pythonContext = getContext();
+        PythonModule mainModule = null;
         if (getSourceSection().getSource().isInternal()) {
             // internal sources are not run in the main module
             PArguments.setGlobals(arguments, pythonContext.factory().createDict());
         } else {
-            PythonModule mainModule = pythonContext.getMainModule();
+            mainModule = pythonContext.getMainModule();
             PDict mainDict = GetOrCreateDictNode.getUncached().execute(mainModule);
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setSpecialArgument(arguments, mainDict);
@@ -304,7 +305,12 @@ public final class TopLevelExceptionHandler extends RootNode {
         }
         Object state = IndirectCalleeContext.enterIndirect(getPythonLanguage(), pythonContext, arguments);
         try {
-            return innerCallTarget.call(arguments);
+            Object result = innerCallTarget.call(arguments);
+            if (mainModule != null && result == PNone.NONE) {
+                return mainModule;
+            } else {
+                return result;
+            }
         } finally {
             IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, state);
         }
