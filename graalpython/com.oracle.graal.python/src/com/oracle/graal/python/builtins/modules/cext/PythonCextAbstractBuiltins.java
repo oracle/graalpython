@@ -918,7 +918,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization
         static int set(PBuiltinMethod obj, TruffleString value,
                         @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
-            set(obj.getFunction(), value, write);
+            set(obj.getBuiltinFunction(), value, write);
             return 1;
         }
 

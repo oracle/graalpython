@@ -66,8 +66,6 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionDefaultsNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -167,9 +165,8 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaults)")
-        Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults,
-                        @Cached GetFunctionDefaultsNode getFunctionDefaultsNode) {
-            Object[] argDefaults = getFunctionDefaultsNode.execute(self);
+        Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
+            Object[] argDefaults = self.getDefaults();
             assert argDefaults != null;
             return (argDefaults.length == 0) ? PNone.NONE : factory().createTuple(argDefaults);
         }
@@ -205,9 +202,8 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetKeywordDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(arg)")
-        Object get(PFunction self, @SuppressWarnings("unused") PNone arg,
-                        @Cached GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode) {
-            PKeyword[] kwdefaults = getFunctionKeywordDefaultsNode.execute(self);
+        Object get(PFunction self, @SuppressWarnings("unused") PNone arg) {
+            PKeyword[] kwdefaults = self.getKwDefaults();
             return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
         }
 
@@ -275,8 +271,9 @@ public class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"})
         static Object getCodeU(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetFunctionCodeNode getFunctionCodeNode) {
-            return getFunctionCodeNode.execute(self);
+            return getFunctionCodeNode.execute(inliningTarget, self);
         }
 
         @SuppressWarnings("unused")

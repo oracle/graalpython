@@ -276,12 +276,12 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
 
         @Specialization(replaces = "areIdenticalFastPath")
         static boolean doDescrMeth1(BuiltinMethodDescriptor a, PBuiltinMethod b) {
-            return doDescrFun1(a, b.getFunction());
+            return doDescrFun1(a, b.getBuiltinFunction());
         }
 
         @Specialization(replaces = "areIdenticalFastPath")
         static boolean doDescrMeth2(PBuiltinMethod a, BuiltinMethodDescriptor b) {
-            return doDescrFun2(a.getFunction(), b);
+            return doDescrFun2(a.getBuiltinFunction(), b);
         }
 
         @Fallback
@@ -308,7 +308,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
 
         @Specialization
         static Object doBuiltinMethod(PBuiltinMethod a) {
-            return doBuiltinFun(a.getFunction());
+            return doBuiltinFun(a.getBuiltinFunction());
         }
 
         @Fallback

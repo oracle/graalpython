@@ -280,7 +280,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
             } else if (method instanceof PBuiltinMethod) {
-                NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinMethod) method).getFunction().getBuiltinNodeFactory());
+                NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinMethod) method).getBuiltinFunction().getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
             } else if (method instanceof BuiltinMethodDescriptor) {
                 return !((BuiltinMethodDescriptor) method).isSameFactory(builtinNodeFactoryClass);
@@ -896,7 +896,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (reduceProfile.profile(inliningTarget, _reduce != PNone.NO_VALUE)) {
                 // Check if __reduce__ has been overridden:
                 // "type(obj).__reduce__ is not object.__reduce__"
-                if (!(_reduce instanceof PBuiltinMethod) || ((PBuiltinMethod) _reduce).getFunction().getBuiltinNodeFactory() != REDUCE_FACTORY) {
+                if (!(_reduce instanceof PBuiltinMethod) || ((PBuiltinMethod) _reduce).getBuiltinFunction().getBuiltinNodeFactory() != REDUCE_FACTORY) {
                     return callNode.execute(frame, _reduce);
                 }
             }

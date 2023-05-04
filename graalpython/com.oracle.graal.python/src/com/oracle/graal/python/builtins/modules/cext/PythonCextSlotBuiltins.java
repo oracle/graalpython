@@ -646,7 +646,7 @@ public final class PythonCextSlotBuiltins {
             if (object instanceof PBuiltinFunction) {
                 return ((PBuiltinFunction) object).getFlags();
             } else if (object instanceof PBuiltinMethod) {
-                return ((PBuiltinMethod) object).getFunction().getFlags();
+                return ((PBuiltinMethod) object).getBuiltinFunction().getFlags();
             }
             return 0;
         }
@@ -686,7 +686,7 @@ public final class PythonCextSlotBuiltins {
 
         @Specialization
         static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
-            return getMethFromBuiltinFunction(object.getFunction());
+            return getMethFromBuiltinFunction(object.getBuiltinFunction());
         }
 
         @Fallback

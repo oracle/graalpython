@@ -101,16 +101,17 @@ public abstract class CallDispatchNode extends PNodeWithContext {
 
     // We only have a single context and this function changed its code before, but now it's
     // constant
-    protected PCode getCode(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
-        return getFunctionCodeNode.execute(function);
+    protected PCode getCode(Node inliningTarget, GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
+        return getFunctionCodeNode.execute(inliningTarget, function);
     }
 
-    @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, //
+    @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "getCode(inliningTarget, getFunctionCodeNode, callee) == cachedCode"}, //
                     replaces = "callFunctionCached", limit = "getCallSiteInlineCacheMaxDepth()")
     protected Object callFunctionCachedCode(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
+                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @SuppressWarnings("unused") @Cached GetFunctionCodeNode getFunctionCodeNode,
-                    @SuppressWarnings("unused") @Cached("getCode(getFunctionCodeNode, callee)") PCode cachedCode,
+                    @SuppressWarnings("unused") @Cached("getCode(inliningTarget, getFunctionCodeNode, callee)") PCode cachedCode,
                     @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }

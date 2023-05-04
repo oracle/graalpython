@@ -1565,7 +1565,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         private static Object fromMethod(Object method) {
             if (method instanceof PBuiltinFunction || method instanceof PBuiltinMethod || method instanceof PFunction || method instanceof PMethod) {
-                Signature signature = FunctionNodes.GetSignatureNode.getUncached().execute(method);
+                Signature signature = FunctionNodes.GetSignatureNode.executeUncached(method);
                 return AbstractFunctionBuiltins.TextSignatureNode.signatureToText(signature, true);
             }
             return PNone.NONE;

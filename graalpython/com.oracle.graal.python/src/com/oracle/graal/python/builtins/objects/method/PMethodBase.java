@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,58 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.builtins.objects.method;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Idempotent;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NonIdempotent;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class, BuiltinNames.class})
-public abstract class PNodeWithContext extends Node {
+public abstract class PMethodBase extends PythonBuiltinObject {
+    private final Object self;
+    protected final Object function;
 
-    /**
-     * @return {@code true} if this node can be shared statically.
-     */
-    @Idempotent
-    protected final boolean isUncached() {
-        return !isAdoptable();
+    public PMethodBase(Object cls, Shape instanceShape, Object self, Object function) {
+        super(cls, instanceShape);
+        this.self = self;
+        this.function = function;
     }
 
-    @TruffleBoundary
-    public static void printStack() {
-        // a convenience methods for debugging
-        ExceptionUtils.printPythonLikeStackTrace();
+    public final Object getSelf() {
+        return self;
     }
 
-    @Idempotent
-    public final PythonLanguage getLanguage() {
-        return PythonLanguage.get(this);
-    }
-
-    @NonIdempotent
-    public final PythonContext getContext() {
-        return PythonContext.get(this);
-    }
-
-    @Idempotent
-    public final boolean isSingleContext() {
-        return getLanguage().isSingleContext();
-    }
-
-    @Idempotent
-    public static boolean isSingleContext(Node node) {
-        return PythonLanguage.get(node).isSingleContext();
-    }
-
-    public ValueProfile createValueIdentityProfile() {
-        return getLanguage().isSingleContext() ? ValueProfile.createIdentityProfile() : ValueProfile.createClassProfile();
+    public final Object getFunction() {
+        return function;
     }
 }

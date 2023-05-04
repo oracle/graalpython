@@ -1176,9 +1176,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(FUNC_CODE, key)")
         static Object doPFunctionCode(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getFunctionCodeNode.execute(object));
+            return toSulongNode.execute(getFunctionCodeNode.execute(inliningTarget, object));
         }
 
         @Specialization(guards = "eq(FUNC_GLOBALS, key)")

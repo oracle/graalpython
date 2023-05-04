@@ -73,6 +73,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -94,16 +95,17 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
-        @Child private CallDispatchNode dispatch = CallDispatchNode.create();
-        @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-
         @Specialization
-        protected Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords) {
+        protected Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords,
+                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Shared @Cached CallDispatchNode dispatch) {
             return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
         }
 
         @Specialization
-        protected Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords) {
+        protected Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords,
+                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Shared @Cached CallDispatchNode dispatch) {
             return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
         }
     }

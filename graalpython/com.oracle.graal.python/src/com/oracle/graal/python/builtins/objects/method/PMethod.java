@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -36,29 +35,16 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PMethod extends PythonBuiltinObject {
-
-    final Object function;
-    private final Object self;
+public final class PMethod extends PMethodBase {
 
     public PMethod(Object cls, Shape instanceShape, Object self, Object function) {
-        super(cls, instanceShape);
-        this.self = self;
-        this.function = function;
-    }
-
-    public Object getFunction() {
-        return function;
-    }
-
-    public Object getSelf() {
-        return self;
+        super(cls, instanceShape, self, function);
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<method '" + function + "' of " + self + " object at " + function.hashCode() + ">";
+        return "<method '" + getFunction() + "' of " + getSelf() + " object at " + getFunction().hashCode() + ">";
     }
 
     @ExportMessage
