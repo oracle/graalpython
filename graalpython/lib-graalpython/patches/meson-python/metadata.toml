@@ -1,3 +1,11 @@
 [[rules]]
 # We revert a bit of wheel tag compuatation logic to be in sync with pip we ship. We might need to remove this when we update pip
-patch = 'meson-python.patch'
+version = '== 0.12.*'
+patch = 'meson-python-0.12.patch'
+
+[[rules]]
+# We revert a bit of wheel tag compuatation logic to be in sync with pip we ship. We might need to remove this when we update pip
+install-priority = 10
+version = '== 0.13.*'
+patch = 'meson-python-0.13.patch'
+
