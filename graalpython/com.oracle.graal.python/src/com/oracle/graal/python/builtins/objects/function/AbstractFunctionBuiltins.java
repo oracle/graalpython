@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -158,21 +157,24 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         static Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached ReadAttributeFromObjectNode readObject,
+                        @Cached ReadAttributeFromObjectNode readGlobals,
                         @Cached PyObjectGetItem getItem,
                         @Cached.Shared("writeObject") @Cached WriteAttributeToObjectNode writeObject) {
             Object module = readObject.execute(self, T___MODULE__);
             if (module == PNone.NO_VALUE) {
-                CompilerDirectives.transferToInterpreter();
                 PythonObject globals = self.getGlobals();
                 // __module__: If module name is in globals, use it. Otherwise, use None.
-                try {
-                    if (globals instanceof PythonModule) {
-                        module = globals.getAttribute(T___NAME__);
-                    } else {
-                        module = getItem.execute(frame, globals, T___NAME__);
+                if (globals instanceof PythonModule) {
+                    module = readGlobals.execute(globals, T___NAME__);
+                    if (module == PNone.NO_VALUE) {
+                        module = PNone.NONE;
                     }
-                } catch (PException pe) {
-                    module = PNone.NONE;
+                } else {
+                    try {
+                        module = getItem.execute(frame, globals, T___NAME__);
+                    } catch (PException pe) {
+                        module = PNone.NONE;
+                    }
                 }
                 writeObject.execute(self, T___MODULE__, module);
             }
