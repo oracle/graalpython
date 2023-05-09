@@ -1,0 +1,23 @@
+diff --git a/urllib3/__init__.py b/urllib3/__init__.py
+index 43e79fa..28c0272 100644
+--- a/urllib3/__init__.py
++++ b/urllib3/__init__.py
+@@ -29,18 +29,6 @@ try:
+     import ssl
+ except ImportError:
+     pass
+-else:
+-    # fmt: off
+-    if (
+-        not ssl.OPENSSL_VERSION.startswith("OpenSSL ")
+-        or ssl.OPENSSL_VERSION_INFO < (1, 1, 1)
+-    ):  # Defensive:
+-        raise ImportError(
+-            "urllib3 v2.0 only supports OpenSSL 1.1.1+, currently "
+-            f"the 'ssl' module is compiled with {ssl.OPENSSL_VERSION}. "
+-            "See: https://github.com/urllib3/urllib3/issues/2168"
+-        )
+-    # fmt: on
+ 
+ # === NOTE TO REPACKAGERS AND VENDORS ===
+ # Please delete this block, this logic is only
