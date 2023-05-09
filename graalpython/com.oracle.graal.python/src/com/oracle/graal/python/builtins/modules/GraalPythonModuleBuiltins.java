@@ -94,10 +94,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -113,6 +115,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -136,6 +139,7 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -844,6 +848,40 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 return PNone.NONE;
             }
+        }
+    }
+
+    @Builtin(name = "which", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class WhichNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object which(PBuiltinFunction object) {
+            RootCallTarget callTarget = object.getCallTarget();
+            return toTruffleStringUncached(String.format("%s(%s)", object.getClass().getName(), whichCallTarget(callTarget)));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object which(PBuiltinMethod object) {
+            return toTruffleStringUncached(String.format("%s(%s)", object.getClass().getName(), whichCallTarget(object.getBuiltinFunction().getCallTarget())));
+        }
+
+        private static String whichCallTarget(RootCallTarget callTarget) {
+            RootNode rootNode = callTarget.getRootNode();
+            String rootStr;
+            if (rootNode instanceof BuiltinFunctionRootNode builtinFunctionRootNode) {
+                rootStr = String.format("nodeClass=%s", builtinFunctionRootNode.getFactory().getNodeClass().getName());
+            } else {
+                rootStr = String.format("root=%s", rootNode.getClass().getName());
+            }
+            return rootStr;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object which(Object object) {
+            return toTruffleStringUncached(object.getClass().getName());
         }
     }
 
