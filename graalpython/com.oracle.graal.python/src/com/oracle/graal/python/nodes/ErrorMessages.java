@@ -1522,7 +1522,7 @@ public abstract class ErrorMessages {
 
     public static final TruffleString ASYNC_FOR_NO_AITER = tsLiteral("'async for' requires object with __aiter__ method, got %s");
     public static final TruffleString ASYNC_FOR_NO_ANEXT_INITIAL = tsLiteral("'async for' received an object from __aiter__ that does not implement __anext__: %s");
-    public static final TruffleString ASYNC_FOR_NO_ANEXT_ITERATION = tsLiteral("'async for' requires an iterator with __anext__ method, got %s");
+    public static final TruffleString ASYNC_FOR_NO_ANEXT_ITERATION = tsLiteral("'async for' requires an iterator with __anext__ method, got %p");
 
     public static final TruffleString CANNOT_REUSE_ASEND = tsLiteral("cannot reuse already awaited __anext__()/asend()");
     public static final TruffleString OBJECT_NOT_ASYNCGEN = tsLiteral("'%s' object is not an async generator");
@@ -1530,6 +1530,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_REUSE_CORO = tsLiteral("cannot reuse already awaited coroutine");
     public static final TruffleString AGEN_ALREADY_RUNNING = tsLiteral("anext(): asynchronous generator is already running");
     public static final TruffleString CORO_ALREADY_AWAITED = tsLiteral("coroutine is being awaited already");
-    public static  final TruffleString ANEXT_INVALID_OBJECT = tsLiteral("'async for' received an invalid object from __anext__: %s");
+    public static final TruffleString ANEXT_INVALID_OBJECT = tsLiteral("'async for' received an invalid object from __anext__: %p");
     public static final TruffleString ASYNCGEN_RAISED_ASYNCSTOPITER = tsLiteral("async generator raised StopAsyncIteration");
 }
