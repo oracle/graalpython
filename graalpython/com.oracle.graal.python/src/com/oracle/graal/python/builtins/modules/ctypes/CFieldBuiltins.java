@@ -629,9 +629,10 @@ public class CFieldBuiltins extends PythonBuiltins {
         Object z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached PyLongCheckNode longCheckNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (value == PNone.NONE) {
-                ptr.toNil();
+                writePointerNode.execute(ptr, PtrValue.nil());
                 return value;
             }
             if (value instanceof PythonNativeVoidPtr voidPtr && voidPtr.getPointerObject() instanceof PBytes bytes) {
@@ -641,7 +642,9 @@ public class CFieldBuiltins extends PythonBuiltins {
                 int len = bufferLib.getBufferLength(value);
                 byte[] bytes = new byte[len + 1];
                 bufferLib.readIntoByteArray(value, 0, bytes, 0, len);
-                ptr.toBytes(bytes);
+                /* ptr is a char**, we need to add the indirection */
+                PtrValue valuePtr = PtrValue.bytes(bytes);
+                writePointerNode.execute(ptr, valuePtr);
                 return value;
             } else if (longCheckNode.execute(value)) {
                 // *(char **)ptr = (char *)PyLong_AsUnsignedLongMask(value);
@@ -656,6 +659,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             Object value = v;
             if (value == PNone.NONE) {
@@ -676,13 +680,17 @@ public class CFieldBuiltins extends PythonBuiltins {
             int byteLength = str.byteLength(WCHAR_T_ENCODING);
             byte[] bytes = new byte[byteLength + WCHAR_T_SIZE];
             copyToByteArrayNode.execute(str, 0, bytes, 0, byteLength, WCHAR_T_ENCODING);
-            ptr.toBytes(bytes);
+
+            /* ptr is a char**, we need to add the indirection */
+            PtrValue valuePtr = PtrValue.bytes(bytes);
+            writePointerNode.execute(ptr, valuePtr);
             return str;
         }
 
         @Specialization(guards = "setfunc == P_set")
         Object P_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached PyLongCheckNode longCheckNode,
+                        @Cached PtrNodes.SetPointerValue setPointerValue,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (value == PNone.NONE) {
                 ptr.toNil();
@@ -698,7 +706,7 @@ public class CFieldBuiltins extends PythonBuiltins {
 
             // v = (void *)PyLong_AsUnsignedLongMask(value);
             Object v = ((PythonNativeVoidPtr) value).getPointerObject();
-            ptr.toNativePointer(v);
+            setPointerValue.execute(ptr, value);
             return PNone.NONE;
         }
 
@@ -906,11 +914,14 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == z_get")
         static Object z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PtrNodes.StrLenNode strLenNode,
                         @Cached PtrNodes.ReadBytesNode readBytesNode) {
             if (!ptr.isNil()) {
-                byte[] bytes = readBytesNode.execute(ptr, strLenNode.execute(ptr));
+                // ptr is a char**, we need to deref it to get char*
+                PtrValue valuePtr = readPointerNode.execute(ptr);
+                byte[] bytes = readBytesNode.execute(valuePtr, strLenNode.execute(valuePtr));
                 return factory.createBytes(bytes);
             } else {
                 return PNone.NONE;
@@ -919,12 +930,15 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == Z_get")
         static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode,
                         @Cached PtrNodes.WCsLenNode wCsLenNode,
                         @Cached PtrNodes.ReadBytesNode readBytesNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (!ptr.isNil()) {
-                byte[] bytes = readBytesNode.execute(ptr, wCsLenNode.execute(ptr, size) * WCHAR_T_SIZE);
+                // ptr is a char**, we need to deref it to get char*
+                PtrValue valuePtr = readPointerNode.execute(ptr);
+                byte[] bytes = readBytesNode.execute(valuePtr, wCsLenNode.execute(valuePtr, size) * WCHAR_T_SIZE);
                 return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
             } else {
                 return PNone.NONE;
@@ -933,13 +947,13 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == P_get")
         static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
-                        @Cached PtrNodes.ReadPointerNode readPointerNode,
+                        @Cached PtrNodes.GetPointerValue getPointerValue,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached PythonObjectFactory factory) {
             if (ptr.isNil()) {
                 return 0L;
             }
-            Object p = readPointerNode.execute(ptr);
+            Object p = getPointerValue.execute(ptr);
             if (p instanceof Long) {
                 long val = (long) p;
                 return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;

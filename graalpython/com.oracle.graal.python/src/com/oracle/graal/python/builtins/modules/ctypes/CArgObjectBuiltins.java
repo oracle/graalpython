@@ -148,21 +148,21 @@ public class CArgObjectBuiltins extends PythonBuiltins {
     protected static final int StructUnionTypeParamFunc = 16;
 
     protected static PyCArgObject paramFunc(int f, CDataObject self, StgDictObject stgDict, PythonObjectFactory factory,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode, PtrNodes.MemcpyNode memcpyNode) {
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         PyCArgObject parg = factory.createCArgObject();
         switch (f) {
             case PyCArrayTypeParamFunc: // Corresponds to PyCArrayType_paramfunc
                 parg.tag = 'P';
                 // parg.pffi_type = ffi_type_pointer;
                 parg.pffi_type = FFIType.ffi_type_uint8_array;
-                parg.value = self.b_ptr;
+                parg.value = self.b_ptr.createReference(0);
                 parg.obj = self;
                 return parg;
             case PyCFuncPtrTypeParamFunc: // Corresponds to PyCFuncPtrType_paramfunc
             case PyCPointerTypeParamFunc: // Corresponds to PyCPointerType_paramfunc
                 parg.tag = 'P';
                 // parg.pffi_type = ffi_type_pointer;
-                parg.pffi_type = stgDict.ffi_type_pointer;
+                parg.pffi_type = FFIType.ffi_type_uint8_array;
                 parg.obj = self;
                 parg.value = self.b_ptr;
                 return parg;
@@ -178,8 +178,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 parg.tag = code;
                 parg.pffi_type = fd.pffi_type;
                 parg.obj = self;
-                parg.value = PtrValue.allocate(fd.pffi_type, self.b_size);
-                memcpyNode.execute(parg.value, self.b_ptr, self.b_size);
+                parg.value = self.b_ptr;
                 return parg;
             case StructUnionTypeParamFunc: // Corresponds to StructUnionType_paramfunc
                 /*

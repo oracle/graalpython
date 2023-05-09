@@ -502,7 +502,6 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 if (PGuards.isPTuple(value)) {
                     Object ob = callNode.execute(frame, type, value);
                     // throw raise(RuntimeError, "(%s) ", getName.execute(type));
-                    // XXX we never return `null` it will throw elsewhere.
                     return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr,
                                     factory,
                                     pyTypeCheck,

@@ -1039,26 +1039,15 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object doit(CDataObject obj, int offset,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedGetClassNode getClassNode,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PtrNodes.MemcpyNode memcpyNode) {
+                        @Cached PyTypeCheck pyTypeCheck) {
             if (!pyTypeCheck.isCDataObject(obj)) {
                 return error(null, obj, offset, inliningTarget, getClassNode);
             }
-            FFIType ffiType = pyObjectStgDictNode.execute(obj).ffi_type_pointer;
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = 'P';
             parg.pffi_type = FFIType.ffi_type_uint8_array;
             parg.obj = obj;
-            if (!(obj.b_ptr.ptr instanceof PtrValue.ByteArrayStorage)) {
-                PtrValue convertedValue = PtrValue.allocate(parg.pffi_type, ffiType.size);
-                if (!obj.b_ptr.isNil()) {
-                    memcpyNode.execute(convertedValue, obj.b_ptr, ffiType.size);
-                }
-                obj.b_ptr.ptr = convertedValue.ptr;
-                obj.b_ptr.offset = 0;
-            }
-            parg.value = obj.b_ptr.withOffset(offset);
+            parg.value = obj.b_ptr.createReference(offset);
 
             return parg;
         }
@@ -1544,7 +1533,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached PtrNodes.MemcpyNode memcpyNode,
                         @Cached PtrNodes.ConvertToNFIParameter convertToNFIParameter,
                         @Cached ConvParamNode recursive,
                         @Cached PythonObjectFactory factory) {
@@ -1553,7 +1541,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (dict != null) {
                 assert dict.paramfunc != -1;
                 /* If it has an stgdict, it is a CDataObject */
-                PyCArgObject carg = paramFunc(dict.paramfunc, (CDataObject) obj, dict, factory, codePointAtIndexNode, memcpyNode);
+                PyCArgObject carg = paramFunc(dict.paramfunc, (CDataObject) obj, dict, factory, codePointAtIndexNode);
                 pa.ffi_type = carg.pffi_type;
                 pa.value = convertToNFIParameter.execute(carg.value, carg.pffi_type);
                 return;
@@ -1834,7 +1822,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                  */
                 PyCData_GetContainer(src, factory);
 
-                /* But we need a dictionary! */
                 if (src.b_objects == null) {
                     src.b_objects = factory.createDict();
                 }
@@ -1846,7 +1833,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     dict.setDictStorage(setItem.execute(null, dict.getDictStorage(), index, src));
                 }
             }
-            /* Should we assert that result is a pointer type? */
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
             result.b_ptr = ptr.b_ptr.withOffset(0);
             return result;
@@ -1859,7 +1845,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
-            /* Should we assert that result is a pointer type? */
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
             result.b_ptr = ptr.withOffset(0);
             return result;

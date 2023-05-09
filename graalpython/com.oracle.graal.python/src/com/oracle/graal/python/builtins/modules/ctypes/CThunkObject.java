@@ -139,6 +139,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached WarnNode warnNode,
                         @Cached GetBytesFromNativePointerNode getNativeBytes,
+                        @Cached PtrNodes.SetPointerValue setPointerValue,
                         @Cached PRaiseNode raiseNode) throws ArityException {
             Object[] converters = thunk.converters;
             int nArgs = converters.length;
@@ -155,28 +156,18 @@ public final class CThunkObject extends PythonBuiltinObject {
                                     dict.getfunc != FieldGet.nil &&
                                     !pyTypeCheck.ctypesSimpleInstance(inliningTarget, converters[i], getBaseClassNode, isSameTypeNode)) {
                         FFIType type = dict.ffi_type_pointer;
-                        PtrValue ptr = PtrValue.nil();
-                        ptr.createStorage(type, type.size, pArgs[i]);
-                        if (type.type.isArray()) {
-                            if (lib.isPointer(pArgs[i])) {
-                                byte[] bytes = getNativeBytes.execute(pArgs[i], -1);
-                                ptr.toBytes(bytes);
-                            }
+                        PtrValue ptr;
+                        if (type.type.isArray() && lib.isPointer(pArgs[i])) {
+                            byte[] bytes = getNativeBytes.execute(pArgs[i], -1);
+                            ptr = PtrValue.bytes(bytes);
+                        } else {
+                            ptr = PtrValue.create(type, type.size, pArgs[i], 0);
                         }
                         arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size);
-                        /*
-                         * XXX XXX XX We have the problem that c_byte or c_short have dict->size of
-                         * 1 resp. 4, but these parameters are pushed as sizeof(int) bytes. BTW, the
-                         * same problem occurs when they are pushed as parameters
-                         */
                     } else if (dict != null) {
-                        /*
-                         * Hm, shouldn't we use PyCData_AtAddress() or something like that instead?
-                         */
                         assert lib.isPointer(pArgs[i]);
                         CDataObject obj = (CDataObject) callNode.execute(converters[i]);
-                        // memcpy(obj.b_ptr, pArgs[i], dict.size);
-                        obj.b_ptr.toNativePointer(pArgs[i]);
+                        setPointerValue.execute(obj.b_ptr, pArgs[i]);
                         arglist[i] = obj;
                         // arglist[i] = pArgs[i];
                     } else {

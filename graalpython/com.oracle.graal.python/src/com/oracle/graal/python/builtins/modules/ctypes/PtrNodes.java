@@ -3,10 +3,14 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
+import java.lang.reflect.Field;
+
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativeMemoryStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NullStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PointerArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.Storage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.util.PythonUtils;
@@ -17,6 +21,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+
+import sun.misc.Unsafe;
 
 public abstract class PtrNodes {
     @GenerateUncached
@@ -50,6 +56,13 @@ public abstract class PtrNodes {
             if (size != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Reading from NULL pointer");
             }
+        }
+
+        @Specialization
+        void doPointerArray(byte[] dst, int dstOffset, PointerArrayStorage src, int srcOffset, int size,
+                        @Cached PointerArrayToBytesNode toBytesNode) {
+            toBytesNode.execute(src);
+            PythonUtils.arraycopy(src.nativePointerBytes, srcOffset, dst, dstOffset, size);
         }
     }
 
@@ -174,6 +187,13 @@ public abstract class PtrNodes {
         void doMemoryView(MemoryViewStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
                         @CachedLibrary("dst.value") PythonBufferAccessLibrary bufferLib) {
             bufferLib.writeFromByteArray(dst.value, dstOffset, src, srcOffset, size);
+        }
+
+        @Specialization
+        void doPointerArray(PointerArrayStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
+                        @Cached PointerArrayToBytesNode toBytesNode) {
+            toBytesNode.execute(dst);
+            PythonUtils.arraycopy(src, srcOffset, dst.nativePointerBytes, dstOffset, size);
         }
     }
 
@@ -354,7 +374,7 @@ public abstract class PtrNodes {
     }
 
     @GenerateUncached
-    public abstract static class ReadPointerNode extends Node {
+    public abstract static class GetPointerValue extends Node {
         public final Object execute(PtrValue ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
@@ -375,6 +395,68 @@ public abstract class PtrNodes {
         }
 
         // TODO memoryview
+    }
+
+    @GenerateUncached
+    public abstract static class SetPointerValue extends Node {
+        public final void execute(PtrValue ptr, Object value) {
+            execute(ptr.ptr, ptr.offset, value);
+        }
+
+        protected abstract void execute(Storage storage, int offset, Object value);
+
+        @Specialization
+        void doNativePointer(NativePointerStorage storage, int offset, Object value) {
+            if (offset != 0) {
+                throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
+            }
+            storage.value = value;
+        }
+
+        // TODO memoryview
+    }
+
+    @GenerateUncached
+    public abstract static class ReadPointerNode extends Node {
+        public final PtrValue execute(PtrValue ptr) {
+            return execute(ptr.ptr, ptr.offset);
+        }
+
+        protected abstract PtrValue execute(Storage storage, int offset);
+
+        @Specialization
+        PtrValue doPointerArray(PointerArrayStorage storage, int offset,
+                        @Cached PointerArrayToBytesNode toBytesNode) {
+            return storage.readAtOffset(offset, toBytesNode);
+        }
+
+        @Fallback
+        PtrValue doOther(Storage storage, int offset,
+                        @Cached ReadLongNode readLongNode) {
+            return PtrValue.nativeMemory(readLongNode.execute(storage, offset));
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class WritePointerNode extends Node {
+        public final void execute(PtrValue ptr, PtrValue value) {
+            execute(ptr.ptr, ptr.offset, value);
+        }
+
+        protected abstract void execute(Storage storage, int offset, PtrValue value);
+
+        @Specialization
+        void doPointerArray(PointerArrayStorage storage, int offset, PtrValue value) {
+            storage.writeAtOffset(offset, value);
+        }
+
+        @Fallback
+        void doOther(Storage storage, int offset, PtrValue value,
+                        @Cached WriteLongNode writeLongNode,
+                        @Cached StorageToNativeNode toNativeNode) {
+            long nativePointer = toNativeNode.execute(value.ptr, value.offset);
+            writeLongNode.execute(storage, offset, nativePointer);
+        }
     }
 
     public abstract static class ConvertToNFIParameter extends Node {
@@ -402,11 +484,97 @@ public abstract class PtrNodes {
         Object doNativePointer(NativePointerStorage storage, int offset, FFIType ffiType) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
             if (offset != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
+                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
             }
             return storage.value;
         }
 
+        @Specialization
+        Object doPointerArray(PointerArrayStorage storage, int offset, FFIType ffiType) {
+            assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
+            // TODO get rid of the indirection by doing the conversion to a value when creating the
+            // CAarg already
+            if (storage.objects != null && storage.objects.length == 1 && offset == 0) {
+                PtrValue derefed = storage.objects[0];
+                if (derefed.ptr instanceof ByteArrayStorage derefedStorage && derefed.offset == 0) {
+                    /*
+                     * We can pass it as a byte array and NFI will convert it to a pointer to the
+                     * array. Note we change all array/pointer FFI types into [UINT_8] later before
+                     * passing to NFI.
+                     */
+                    return derefedStorage.value;
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere("Not implemented");
+        }
+
         // TODO memoryview
+    }
+
+    @GenerateUncached
+    abstract static class PointerArrayToBytesNode extends Node {
+        abstract void execute(PointerArrayStorage storage);
+
+        @Specialization(guards = "storage.nativePointerBytes != null")
+        void nop(@SuppressWarnings("unused") PointerArrayStorage storage) {
+        }
+
+        @Specialization(guards = "storage.nativePointerBytes == null")
+        void convert(PointerArrayStorage storage,
+                        @Cached StorageToNativeNode toNativeNode) {
+            byte[] bytes = new byte[storage.objects.length * 8];
+            for (int i = 0; i < storage.objects.length; i++) {
+                PtrValue itemPointer = storage.objects[i];
+                long pointer = toNativeNode.execute(itemPointer.ptr, itemPointer.offset);
+                ARRAY_ACCESSOR.putLong(bytes, i * 8, pointer);
+            }
+            storage.nativePointerBytes = bytes;
+            storage.objects = null;
+        }
+    }
+
+    @GenerateUncached
+    abstract static class StorageToNativeNode extends Node {
+
+        abstract long execute(Storage storage, int offset);
+
+        @Specialization
+        @SuppressWarnings("unused")
+        long doNull(NullStorage storage, int offset) {
+            return 0L;
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        long doNative(NativeMemoryStorage storage, int offset) {
+            return storage.pointer + offset;
+        }
+
+        @Specialization
+        long doBytes(ByteArrayStorage storage, int offset) {
+            int len = storage.value.length - offset;
+            // TODO check permissions
+            long pointer = UNSAFE.allocateMemory(len);
+            UNSAFE.copyMemory(storage.value, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset, null, pointer, len);
+            return pointer;
+        }
+
+        // TODO other storages
+    }
+
+    private static Unsafe UNSAFE = getUnsafe();
+
+    private static Unsafe getUnsafe() {
+        try {
+            return Unsafe.getUnsafe();
+        } catch (SecurityException e) {
+        }
+        try {
+            Field theUnsafeInstance = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafeInstance.setAccessible(true);
+            return (Unsafe) theUnsafeInstance.get(Unsafe.class);
+        } catch (Exception e) {
+            throw new RuntimeException("exception while trying to get Unsafe.theUnsafe via reflection:", e);
+        }
     }
 }

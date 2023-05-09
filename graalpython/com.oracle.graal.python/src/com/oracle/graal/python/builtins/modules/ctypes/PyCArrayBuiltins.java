@@ -219,9 +219,6 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for array object instances";
-            /*
-             * Would it be clearer if we got the item size from stgdict.proto's stgdict?
-             */
             int size = stgdict.size / stgdict.length;
             int offset = index * size;
 

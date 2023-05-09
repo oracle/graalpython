@@ -61,11 +61,6 @@ final class PtrValue implements TruffleObject {
         this(NULL_STORAGE, 0);
     }
 
-    protected void toBytes(byte[] bytes) {
-        ptr = new ByteArrayStorage(bytes);
-        offset = 0;
-    }
-
     protected boolean isNil() {
         return ptr instanceof NullStorage;
     }
@@ -82,19 +77,13 @@ final class PtrValue implements TruffleObject {
         return new PtrValue(new ByteArrayStorage(bytes), 0);
     }
 
+    protected static PtrValue nativeMemory(long nativePointer) {
+        return new PtrValue(new NativeMemoryStorage(nativePointer), 0);
+    }
+
     protected void toNil() {
         ptr = NULL_STORAGE;
         offset = 0;
-    }
-
-    protected void toNativePointer(Object o) {
-        if (o instanceof PtrValue) {
-            ptr = ((PtrValue) o).ptr;
-            offset = ((PtrValue) o).offset;
-        } else {
-            ptr = new NativePointerStorage(o);
-            offset = 0;
-        }
     }
 
     protected void createStorage(FFIType type, int size, Object value) {
@@ -152,8 +141,13 @@ final class PtrValue implements TruffleObject {
             }
             case FFI_TYPE_UINT8_ARRAY, FFI_TYPE_SINT8_ARRAY, FFI_TYPE_UINT16_ARRAY, FFI_TYPE_SINT16_ARRAY, FFI_TYPE_UINT32_ARRAY, FFI_TYPE_SINT32_ARRAY, FFI_TYPE_UINT64_ARRAY, FFI_TYPE_SINT64_ARRAY,
                             FFI_TYPE_FLOAT_ARRAY, FFI_TYPE_DOUBLE_ARRAY, FFI_TYPE_STRING -> {
-                if (value != null) {
-                    yield new ByteArrayStorage((byte[]) value);
+                assert value == null;
+                if (size % 8 == 0) {
+                    PtrValue[] pointers = new PtrValue[size / 8];
+                    for (int i = 0; i < pointers.length; i++) {
+                        pointers[i] = PtrValue.nil();
+                    }
+                    yield new PointerArrayStorage(pointers);
                 } else {
                     yield new ByteArrayStorage(new byte[size]);
                 }
@@ -185,9 +179,8 @@ final class PtrValue implements TruffleObject {
         return new PtrValue(ptr, offset + incOffset);
     }
 
-    protected Object getNativePointer() {
-        assert ptr instanceof NativePointerStorage;
-        return ((NativePointerStorage) ptr).value;
+    protected PtrValue createReference(int offset) {
+        return new PtrValue(new PointerArrayStorage(new PtrValue[]{this}), offset);
     }
 
     protected static boolean isNull(PtrValue b_ptr) {
@@ -205,15 +198,42 @@ final class PtrValue implements TruffleObject {
 
     static final class NativePointerStorage extends Storage {
 
-        final Object value;
+        Object value;
 
         NativePointerStorage(Object pointer) {
             this.value = pointer;
         }
     }
 
-    static class ByteArrayStorage extends Storage {
-        byte[] value;
+    static final class PointerArrayStorage extends Storage {
+        PtrValue[] objects;
+        byte[] nativePointerBytes;
+
+        public PointerArrayStorage(PtrValue[] objects) {
+            this.objects = objects;
+        }
+
+        public PtrValue readAtOffset(int offset, PtrNodes.PointerArrayToBytesNode toBytesNode) {
+            if (offset % 8 != 0) {
+                toBytesNode.execute(this);
+            }
+            if (objects != null) {
+                return objects[offset / 8];
+            }
+            long nativePointer = ARRAY_ACCESSOR.getLong(nativePointerBytes, offset);
+            return PtrValue.nativeMemory(nativePointer);
+        }
+
+        public void writeAtOffset(int offset, PtrValue value) {
+            if (offset % 8 != 0) {
+                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
+            }
+            objects[offset / 8] = value;
+        }
+    }
+
+    static final class ByteArrayStorage extends Storage {
+        final byte[] value;
 
         ByteArrayStorage(byte[] bytes) {
             this.value = bytes;
@@ -225,6 +245,14 @@ final class PtrValue implements TruffleObject {
 
         MemoryViewStorage(PMemoryView bytes) {
             this.value = bytes;
+        }
+    }
+
+    static final class NativeMemoryStorage extends Storage {
+        final long pointer;
+
+        public NativeMemoryStorage(long pointer) {
+            this.pointer = pointer;
         }
     }
 }
