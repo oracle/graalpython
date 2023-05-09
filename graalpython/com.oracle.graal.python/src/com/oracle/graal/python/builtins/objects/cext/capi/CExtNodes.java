@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_FLOAT_AS_DOUBLE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
@@ -102,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -745,7 +745,7 @@ public abstract class CExtNodes {
         public abstract Object execute(Object obj);
 
         @Specialization
-        Object doPString(PString str,
+        static Object doPString(PString str,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
@@ -754,30 +754,16 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doString(TruffleString str,
+        static Object doString(TruffleString str,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
             return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, str, codePointLengthNode.execute(str, TS_ENCODING));
         }
 
         @Specialization
-        Object doBytes(PBytes bytes,
-                        @Shared("toBytes") @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
-                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
-            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), callByteArrayToNativeNode);
-        }
-
-        @Specialization
-        Object doBytes(PByteArray bytes,
-                        @Shared("toBytes") @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
-                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
-            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), callByteArrayToNativeNode);
-        }
-
-        @Specialization
-        Object doByteArray(byte[] arr,
-                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
-            return callByteArrayToNativeNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, PythonContext.get(this).getEnv().asGuestValue(arr), arr.length);
+        static Object doBytes(PBytesLike bytes,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode) {
+            return CArrayWrappers.byteArrayToNativeInt8(toBytesNode.execute(bytes.getSequenceStorage()), true);
         }
     }
 

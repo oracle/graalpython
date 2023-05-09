@@ -25,15 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SET_STORAGE_ITEM;
@@ -64,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
@@ -1654,28 +1647,23 @@ public abstract class SequenceStorageNodes {
         public abstract NativeSequenceStorage execute(Object obj, int length);
 
         @Specialization
-        static NativeSequenceStorage doByte(byte[] arr, int length,
-                        @Exclusive @Cached PCallCapiFunction callNode) {
-            return NativeSequenceStorage.create(callNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Byte, true);
+        static NativeSequenceStorage doByte(byte[] arr, int length) {
+            return NativeSequenceStorage.create(CArrayWrappers.byteArrayToNativeInt8(arr, true), length, arr.length, ListStorageType.Byte, true);
         }
 
         @Specialization
-        static NativeSequenceStorage doInt(int[] arr, int length,
-                        @Exclusive @Cached PCallCapiFunction callNode) {
-            return NativeSequenceStorage.create(callNode.call(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Int, true);
+        static NativeSequenceStorage doInt(int[] arr, int length) {
+            return NativeSequenceStorage.create(CArrayWrappers.intArrayToNativeInt32(arr), length, arr.length, ListStorageType.Int, true);
         }
 
         @Specialization
-        static NativeSequenceStorage doLong(long[] arr, int length,
-                        @Exclusive @Cached PCallCapiFunction callNode) {
-            return NativeSequenceStorage.create(callNode.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Long, true);
+        static NativeSequenceStorage doLong(long[] arr, int length) {
+            return NativeSequenceStorage.create(CArrayWrappers.longArrayToNativeInt64(arr), length, arr.length, ListStorageType.Long, true);
         }
 
         @Specialization
-        static NativeSequenceStorage doDouble(double[] arr, int length,
-                        @Exclusive @Cached PCallCapiFunction callNode) {
-            return NativeSequenceStorage.create(callNode.call(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), length, arr.length, ListStorageType.Double,
-                            true);
+        static NativeSequenceStorage doDouble(double[] arr, int length) {
+            return NativeSequenceStorage.create(CArrayWrappers.doubleArrayToNativeInt64(arr), length, arr.length, ListStorageType.Double, true);
         }
 
         @Specialization
@@ -3073,57 +3061,57 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "s.getElementType() == Byte")
         static NativeSequenceStorage doNativeByte(Node node, NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
                         @Bind("this") Node inliningTarget,
-                        @Shared("i") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Shared("r") @Cached PRaiseNode.Lazy raiseNode) {
-            return reallocNativeSequenceStorage(s, cap, inliningTarget, lib, callCapiFunction, raiseNode, FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC);
+            return reallocNativePrimitiveStorage(s, cap, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = "s.getElementType() == Int")
         static NativeSequenceStorage doNativeInt(Node node, NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
                         @Bind("this") Node inliningTarget,
-                        @Shared("i") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Shared("r") @Cached PRaiseNode.Lazy raiseNode) {
-            return reallocNativeSequenceStorage(s, cap, inliningTarget, lib, callCapiFunction, raiseNode, FUN_PY_TRUFFLE_INT_ARRAY_REALLOC);
+            return reallocNativePrimitiveStorage(s, cap, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = "s.getElementType() == Long")
         static NativeSequenceStorage doNativeLong(Node node, NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
                         @Bind("this") Node inliningTarget,
-                        @Shared("i") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Shared("r") @Cached PRaiseNode.Lazy raiseNode) {
-            return reallocNativeSequenceStorage(s, cap, inliningTarget, lib, callCapiFunction, raiseNode, FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC);
+            return reallocNativePrimitiveStorage(s, cap, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = "s.getElementType() == Double")
         static NativeSequenceStorage doNativeDouble(Node node, NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
                         @Bind("this") Node inliningTarget,
-                        @Shared("i") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Shared("r") @Cached PRaiseNode.Lazy raiseNode) {
-            return reallocNativeSequenceStorage(s, cap, inliningTarget, lib, callCapiFunction, raiseNode, FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC);
+            return reallocNativePrimitiveStorage(s, cap, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = "s.getElementType() == Generic")
         static NativeSequenceStorage doNativeObject(Node node, NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
                         @Bind("this") Node inliningTarget,
-                        @Shared("i") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached(inline = false) PCallCapiFunction callCapiFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Shared("r") @Cached PRaiseNode.Lazy raiseNode) {
             return reallocNativeSequenceStorage(s, cap, inliningTarget, lib, callCapiFunction, raiseNode, FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC);
+        }
+
+        private static NativeSequenceStorage reallocNativePrimitiveStorage(NativeSequenceStorage s, int requestedCapacity, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+            if (requestedCapacity > s.getCapacity()) {
+                int newCapacity = determineNewCapacity(requestedCapacity);
+                try {
+                    long ptr = CArrayWrappers.reallocBoundary((long) s.getPtr(), newCapacity);
+                    s.setPtrAndSize(ptr, newCapacity);
+                } catch (OutOfMemoryError e) {
+                    throw raiseNode.get(inliningTarget).raise(MemoryError);
+                }
+            }
+            return s;
         }
 
         private static NativeSequenceStorage reallocNativeSequenceStorage(NativeSequenceStorage s, int requestedCapacity, Node inliningTarget, InteropLibrary lib, PCallCapiFunction callCapiFunction,
                         PRaiseNode.Lazy raiseNode, NativeCAPISymbol function) {
             if (requestedCapacity > s.getCapacity()) {
-                int newCapacity;
-                try {
-                    newCapacity = Math.max(16, PythonUtils.multiplyExact(requestedCapacity, 2));
-                } catch (OverflowException e) {
-                    newCapacity = requestedCapacity;
-                }
+                int newCapacity = determineNewCapacity(requestedCapacity);
                 Object ptr = callCapiFunction.call(function, s.getPtr(), newCapacity);
                 if (lib.isNull(ptr)) {
                     throw raiseNode.get(inliningTarget).raise(MemoryError);
@@ -3131,6 +3119,16 @@ public abstract class SequenceStorageNodes {
                 s.setPtrAndSize(ptr, newCapacity);
             }
             return s;
+        }
+
+        private static int determineNewCapacity(int requestedCapacity) {
+            int newCapacity;
+            try {
+                newCapacity = Math.max(16, PythonUtils.multiplyExact(requestedCapacity, 2));
+            } catch (OverflowException e) {
+                newCapacity = requestedCapacity;
+            }
+            return newCapacity;
         }
     }
 

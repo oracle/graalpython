@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
@@ -278,7 +279,7 @@ public class CApiTransitions {
                             PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_FREE, reference.ptr, reference.size);
                         } else {
                             assert reference.type != ListStorageType.Uninitialized;
-                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_PRIMITIVE_ARRAY_FREE, reference.ptr);
+                            CArrayWrappers.freeBoundary((long) reference.ptr);
                         }
                     }
                 }

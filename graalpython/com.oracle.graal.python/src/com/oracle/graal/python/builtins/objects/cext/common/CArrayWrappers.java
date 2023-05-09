@@ -124,6 +124,24 @@ public abstract class CArrayWrappers {
     }
 
     /**
+     * Copies a Java {@code long[]} to a native {@code int64_t *}. For this, the native memory is
+     * allocated off-heap using {@code Unsafe}.
+     */
+    public static long longArrayToNativeInt64(long[] data) {
+        long size = data.length * SIZEOF_INT64;
+        long ptr = allocateBoundary(size);
+        UNSAFE.copyMemory(data, Unsafe.ARRAY_LONG_BASE_OFFSET, null, ptr, size);
+        return ptr;
+    }
+
+    public static Object doubleArrayToNativeInt64(double[] data) {
+        long size = data.length * SIZEOF_INT64;
+        long ptr = allocateBoundary(size);
+        UNSAFE.copyMemory(data, Unsafe.ARRAY_DOUBLE_BASE_OFFSET, null, ptr, size);
+        return ptr;
+    }
+
+    /**
      * Encodes the provided TruffleString as UTF-8 bytes and copies the bytes (and an additional NUL
      * char) to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}).
      */
@@ -141,8 +159,13 @@ public abstract class CArrayWrappers {
     }
 
     @TruffleBoundary
-    private static void freeBoundary(long address) {
+    public static void freeBoundary(long address) {
         UNSAFE.freeMemory(address);
+    }
+
+    @TruffleBoundary
+    public static long reallocBoundary(long address, long newSize) throws OutOfMemoryError {
+        return UNSAFE.reallocateMemory(address, newSize);
     }
 
     @ExportLibrary(InteropLibrary.class)
