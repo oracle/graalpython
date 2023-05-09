@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -118,17 +119,18 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static void addClassMethod(PythonObjectSlowPathFactory pythonObjectFactory, PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
+    private static void addClassMethod(PythonObjectSlowPathFactory objectFactory, PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, Builtin builtin) {
         TruffleString name = toTruffleStringUncached(builtin.name());
         Object builtinDoc = PNone.NONE;
         RootCallTarget callTarget = language.createCachedCallTarget(
-                        l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
-                        factory.getNodeClass(),
+                        l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true),
+                        nodeFactory.getNodeClass(),
                         builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = pythonObjectFactory.createBuiltinFunction(name, type, 1, flags, callTarget);
+        PBuiltinFunction function = objectFactory.createBuiltinFunction(name, type, 1, flags, callTarget);
+        PDecoratedMethod classMethod = objectFactory.createClassmethodFromCallableObj(function);
         function.setAttribute(T___DOC__, builtinDoc);
-        WriteAttributeToObjectNode.getUncached(true).execute(type, name, function);
+        WriteAttributeToObjectNode.getUncached(true).execute(type, name, classMethod);
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
