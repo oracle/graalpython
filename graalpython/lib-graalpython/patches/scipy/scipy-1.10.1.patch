@@ -104,10 +104,10 @@ index 00000000..afa33ecc
 +    with env_vars(scipy_build_env):
 +        return mesonpy.build_sdist(sdist_directory, config_settings=config_settings)
 diff --git a/pyproject.toml b/pyproject.toml
-index 454a3c2e..370f0e8e 100644
+index 454a3c2e..a4157fea 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -8,7 +8,9 @@
+@@ -8,55 +8,21 @@
  #     "pybind11>=2.4.3,<2.5.0",
  
  [build-system]
@@ -118,7 +118,11 @@ index 454a3c2e..370f0e8e 100644
  requires = [
      "meson-python>=0.11.0,<0.13.0",
      "Cython>=0.29.32,<3.0",
-@@ -19,44 +21,8 @@ requires = [
+     # conservatively avoid issues from
+     # https://github.com/pybind/pybind11/issues/4420
+     "pybind11==2.10.1",
+-    "pythran>=0.12.0,<0.13.0",
++    "pythran>=0.13.0",
      # `wheel` is needed for non-isolated builds, given that `meson-python`
      # doesn't list it as a runtime requirement (at least in 0.5.0)
      "wheel<0.39.0",
