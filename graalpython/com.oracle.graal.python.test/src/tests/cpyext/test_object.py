@@ -199,6 +199,111 @@ class TestObject(object):
         )
         assert [4, 2] * TestSlotsBinop() == 42
 
+    def test_inheret_numbers_slots(self):
+        X = CPyExtType("X_", 
+                            '''
+                            PyObject* test_add_impl(PyObject* a, PyObject* b) {
+                                return PyLong_FromLong(42);
+                            }
+
+                            static PyNumberMethods A_number_methods = {
+                                test_add_impl,
+                            };
+
+                            PyTypeObject A_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "A",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_as_number = &A_number_methods,
+                            };
+
+                            PyTypeObject B_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "B",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_base = &A_Type,
+                            };
+                            
+                            static PyObject* create_B(PyObject* cls) {
+                                return (&B_Type)->tp_alloc(&B_Type, 0);
+                            }
+
+                            static PyObject* B_has_add_slot(PyObject* cls) {
+                                return (&B_Type)->tp_as_number != NULL && (&B_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False;
+                            }
+
+                            ''',
+                            tp_methods='''{"create_B", (PyCFunction)create_B, METH_NOARGS | METH_CLASS, ""},
+                                            {"B_has_add_slot", (PyCFunction)B_has_add_slot, METH_NOARGS  | METH_CLASS, ""}''',
+                            ready_code='''
+                               if (PyType_Ready(&A_Type) < 0)
+                                   return NULL;
+
+                               if (PyType_Ready(&B_Type) < 0)
+                                   return NULL;
+                               ''',
+                            )
+        
+        Y = CPyExtType("Y_", 
+                            '''
+                            PyObject* test_C_add_impl(PyObject* a, PyObject* b) {
+                                return PyLong_FromLong(4242);
+                            }
+
+                            static PyNumberMethods C_number_methods = {
+                                test_C_add_impl,
+                            };
+
+                            PyTypeObject C_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "C",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_as_number = &C_number_methods,
+                            };
+
+                            PyTypeObject D_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "D",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_base = &C_Type,
+                            };
+
+                            PyTypeObject E_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "E",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_base = &D_Type,
+                            };
+
+                            static PyObject* create_E(PyObject* cls) {
+                                return (&E_Type)->tp_alloc(&E_Type, 0);
+                            }
+
+                            static PyObject* E_has_add_slot(PyObject* cls) {
+                                return (&E_Type)->tp_as_number != NULL && (&E_Type)->tp_as_number->nb_add != NULL ? Py_True : Py_False;
+                            }
+                            ''',
+                            tp_methods='''{"create_E", (PyCFunction)create_E, METH_NOARGS | METH_CLASS, ""},
+                                            {"E_has_add_slot", (PyCFunction)E_has_add_slot, METH_NOARGS  | METH_CLASS, ""}''',
+                            ready_code='''
+                               if (PyType_Ready(&C_Type) < 0)
+                                   return NULL;
+
+                               if (PyType_Ready(&D_Type) < 0)
+                                   return NULL;
+                                   
+                               if (PyType_Ready(&E_Type) < 0)
+                                   return NULL;
+                               ''',
+                            )
+        B = X.create_B()
+        E = Y.create_E()
+        assert B + E == 42
+        assert E + B == 4242
+        assert X.B_has_add_slot()
+        assert Y.E_has_add_slot()
+
+
     def test_index(self):
         TestIndex = CPyExtType("TestIndex",
                              """
