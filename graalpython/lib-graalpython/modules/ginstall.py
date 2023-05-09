@@ -84,49 +84,6 @@ def get_module_name(package_name):
     return module_name.replace('-', '_')
 
 
-def have_flang_new():
-    env_path = os.environ.get('PATH', '').split(os.pathsep)
-    for p in env_path:
-        flang_new = os.path.join(p, 'flang-new')
-        if os.path.isfile(flang_new):
-            return True
-    return False
-
-
-def get_flang_new_lib_dir():
-    try:
-        output = subprocess.check_output(['flang-new', '--version'])
-    except (OSError, subprocess.CalledProcessError):
-        pass
-    else:
-        flang_dir = output.splitlines()[-1].split()[-1].strip().decode("utf-8")
-        return os.path.normpath(os.path.join(flang_dir, '..', 'lib'))
-    return None
-
-
-def get_path_env_var(var):
-    env_var = os.environ.get(var, None)
-    if isinstance(env_var, str) and env_var.lower() == 'none':
-        env_var = None
-    if isinstance(env_var, str) and not os.path.exists(env_var):
-        env_var = None
-    return env_var
-
-
-def have_lapack():
-    lapack_env = get_path_env_var('LAPACK')
-    return lapack_env is not None
-
-
-def have_openblas():
-    blas_env = get_path_env_var('BLAS')
-    return blas_env and 'openblas' in blas_env
-
-
-def append_env_var(env, var, value):
-    env[var] = '{} {}'.format(env.get(var, ''), value)
-
-
 def pip_package(name=None, try_import=False):
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -165,59 +122,10 @@ def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **k
 
 
 def known_packages():
-    @pip_package()
-    def h5py(**kwargs):
-        install_with_pip('numpy')
-        install_from_pypi("h5py==2.10.0", **kwargs)
-
-    @pip_package()
-    def lightfm(**kwargs):
-        install_with_pip('requests')
-        install_from_pypi("lightfm==1.15", **kwargs)
-
-    @pip_package()
-    def ninja(**kwargs):
-        install_with_pip("scikit-build==0.16.6")
-        ninja_build_env = {}
-        if sys.platform.startswith('linux'):
-            ninja_build_env = {
-                'CC': 'gcc',
-                'CXX': 'g++',
-            }
-        install_with_pip("ninja==1.11.1", env=ninja_build_env, **kwargs)
-
-    @pip_package(name="PIL")
-    def Pillow(**kwargs):
-        install_with_pip('setuptools')
-        build_env = {"MAX_CONCURRENCY": "0"}
-        build_cmd = ["build_ext", "--disable-jpeg"]
-        zlib_root = os.environ.get("ZLIB_ROOT", None)
-        if zlib_root:
-            build_cmd += ["-I", os.path.join(zlib_root, "include"), "-L", os.path.join(zlib_root, "lib")]
-        else:
-            info("If Pillow installation fails due to missing zlib, try to set environment variable ZLIB_ROOT.")
-        install_from_pypi("Pillow==9.2.0", build_cmd=build_cmd, env=build_env, **kwargs)
-
-    @pip_package()
-    def matplotlib(**kwargs):
-        install_with_pip('setuptools')
-        install_with_pip('certifi')
-        install_with_pip('cycler')
-        install_with_pip('cassowary')
-        install_with_pip('pyparsing')
-        install_with_pip('python_dateutil')
-        install_with_pip('numpy')
-        Pillow(**kwargs)
-        install_with_pip('kiwisolver')
-
-        def download_freetype(extracted_dir):
-            target_dir = os.path.join(extracted_dir, "build")
-            os.makedirs(target_dir, exist_ok=True)
-            package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://sourceforge.net/projects/freetype/files/freetype2/2.6.1/%s.tar.gz")
-            _download_with_curl_and_extract(target_dir, package_pattern % "freetype-2.6.1")
-
-        install_from_pypi("matplotlib==3.3.3", pre_install_hook=download_freetype, **kwargs)
-
+    # @pip_package()
+    # def lightfm(**kwargs):
+    #     install_with_pip('requests')
+    #     install_from_pypi("lightfm==1.15", **kwargs)
     return locals()
 
 
