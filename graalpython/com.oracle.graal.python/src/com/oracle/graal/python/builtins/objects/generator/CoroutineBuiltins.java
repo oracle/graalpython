@@ -64,13 +64,14 @@ public class CoroutineBuiltins extends PythonBuiltins {
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CoroutineBuiltinsFactory.getFactories();
     }
+
     @Builtin(name = "cr_code", isGetter = true, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetCode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object getCode(PGenerator self,
-                              @Bind("this") Node inliningTarget,
-                              @Cached InlinedConditionProfile hasCodeProfile) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile hasCodeProfile) {
             return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory());
         }
     }
@@ -90,7 +91,7 @@ public class CoroutineBuiltins extends PythonBuiltins {
     public abstract static class GetFrame extends PythonUnaryBuiltinNode {
         @Specialization
         public Object getFrame(VirtualFrame frame, PGenerator self,
-                               @Cached GeneratorBuiltins.GetFrameNode getFrame) {
+                        @Cached GeneratorBuiltins.GetFrameNode getFrame) {
             return getFrame.execute(frame, self);
         }
     }

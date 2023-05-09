@@ -202,7 +202,6 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
-import com.oracle.graal.python.nodes.bytecode.GetANextNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -2590,15 +2589,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = "anext", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class ANext extends PythonUnaryBuiltinNode {
+    public abstract static class ANext extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object asyncIter,
-                                @Bind("this") Node inliningTarget,
-                                @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
-                                @Cached InlinedGetClassNode getAsyncIterType,
-                                @Cached PRaiseNode raiseNoANext,
-                                @Cached CallUnaryMethodNode callANext,
-                                @Cached TypeNodes.GetNameNode getName) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached(parameters = "ANext") LookupSpecialMethodSlotNode getANext,
+                        @Cached InlinedGetClassNode getAsyncIterType,
+                        @Cached PRaiseNode raiseNoANext,
+                        @Cached CallUnaryMethodNode callANext,
+                        @Cached TypeNodes.GetNameNode getName) {
             // TODO: two argument anext
             Object type = getAsyncIterType.execute(inliningTarget, asyncIter);
             Object getter = getANext.execute(frame, type, asyncIter);
@@ -2611,10 +2610,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = "aiter", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class AIter extends PythonUnaryBuiltinNode {
+    public abstract static class AIter extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object arg,
-                                @Cached GetAIterNode aiter) {
+                        @Cached(neverDefault = true) GetAIterNode aiter) {
             return aiter.execute(frame, arg);
         }
     }

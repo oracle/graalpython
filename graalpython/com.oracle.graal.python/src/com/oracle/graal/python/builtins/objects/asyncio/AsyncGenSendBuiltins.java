@@ -79,7 +79,7 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___AWAIT__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public static abstract class Await extends PythonUnaryBuiltinNode {
+    public abstract static class Await extends PythonUnaryBuiltinNode {
         @Specialization
         public Object doAwait(PAsyncGenASend self) {
             return self;
@@ -88,7 +88,7 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public static abstract class Next extends PythonUnaryBuiltinNode {
+    public abstract static class Next extends PythonUnaryBuiltinNode {
         @Specialization
         public Object next(VirtualFrame frame, PAsyncGenASend self,
                         @Cached Send send) {
@@ -98,7 +98,7 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
 
     @Builtin(name = "send", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public static abstract class Send extends PythonBinaryBuiltinNode {
+    public abstract static class Send extends PythonBinaryBuiltinNode {
         @Specialization
         public Object send(VirtualFrame frame, PAsyncGenASend self, Object sent,
                         @Bind("this") Node inliningTarget,
@@ -146,9 +146,9 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
      */
 
     static PException handleAGError(PAsyncGen self, PException exception,
-                                    Node inliningTarget,
-                                    BuiltinClassProfiles.IsBuiltinObjectProfile isStopAsyncIteration,
-                                    BuiltinClassProfiles.IsBuiltinObjectProfile isGeneratorExit) {
+                    Node inliningTarget,
+                    BuiltinClassProfiles.IsBuiltinObjectProfile isStopAsyncIteration,
+                    BuiltinClassProfiles.IsBuiltinObjectProfile isGeneratorExit) {
         if (isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration) ||
                         isGeneratorExit.profileException(inliningTarget, exception, PythonBuiltinClassType.GeneratorExit)) {
             self.markClosed();
@@ -171,7 +171,7 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
 
     @Builtin(name = "throw", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public static abstract class Throw extends PythonBuiltinNode {
+    public abstract static class Throw extends PythonBuiltinNode {
         public abstract Object execute(VirtualFrame frame, PAsyncGenASend self, Object arg1, Object arg2, Object arg3);
 
         @Specialization
@@ -206,7 +206,7 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public static abstract class Iter extends PythonUnaryBuiltinNode {
+    public abstract static class Iter extends PythonUnaryBuiltinNode {
         @Specialization
         public Object iter(PAsyncGenASend self) {
             return self;
@@ -215,7 +215,7 @@ public class AsyncGenSendBuiltins extends PythonBuiltins {
 
     @Builtin(name = "close", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public static abstract class Close extends PythonUnaryBuiltinNode {
+    public abstract static class Close extends PythonUnaryBuiltinNode {
         @Specialization
         public Object close(PAsyncGenASend self) {
             self.setState(AwaitableState.CLOSED);

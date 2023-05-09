@@ -42,9 +42,7 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
 
 public class PAsyncGenWrappedValue extends PythonBuiltinObject {
     // TODO: consider whether a freelist makes sense

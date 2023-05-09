@@ -1519,8 +1519,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CALL_COMPREHENSION);
             // a genexpr will create an asyncgen, which we cannot await
             if (type != ComprehensionType.GENEXPR) {
-                for (ComprehensionTy gen: generators) {
-                    // if we have a non-genexpr async comprehension, the call will produce a coroutine which we need to await
+                for (ComprehensionTy gen : generators) {
+                    // if we have a non-genexpr async comprehension, the call will produce a
+                    // coroutine which we need to await
                     if (gen.isAsync) {
                         addOp(GET_AWAITABLE);
                         addOp(LOAD_NONE);
