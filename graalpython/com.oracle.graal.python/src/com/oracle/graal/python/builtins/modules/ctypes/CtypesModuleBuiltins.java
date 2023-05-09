@@ -188,6 +188,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.UnsupportedSpecializationException;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -1325,7 +1326,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object callManagedFunction(NativeFunction pProc, Object[] argarray, InteropLibrary ilib) {
             try {
                 return ilib.execute(pProc.sym, argarray);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | AbstractTruffleException e) {
                 throw raise(RuntimeError, FFI_CALL_FAILED);
             } catch (UnsupportedSpecializationException ee) {
                 throw raise(NotImplementedError, toTruffleStringUncached("require backend support.")); // TODO:
