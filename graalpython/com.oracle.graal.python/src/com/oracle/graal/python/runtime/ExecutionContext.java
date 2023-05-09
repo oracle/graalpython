@@ -377,11 +377,14 @@ public abstract class ExecutionContext {
                 info.setCallNode((Node) callNode);
                 pythonThreadState.setTopFrameInfo(info);
             }
-            PException curExc = null;
+            PException curExc = pythonThreadState.getCaughtException();
+            PException exceptionState = PArguments.getException(frame);
             if (needsExceptionState) {
-                PException exceptionState = PArguments.getException(frame);
-                curExc = pythonThreadState.getCaughtException();
                 pythonThreadState.setCaughtException(exceptionState);
+            } else if (exceptionState != curExc) {
+                // the thread state has exception info inconsistent with the current frame's. we
+                // need to force lower frames to walk the stack
+                pythonThreadState.setCaughtException(null);
             }
 
             if (curExc == null && info == null) {
