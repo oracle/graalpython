@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ArgError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtr;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointerType;
-import static com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins.paramFunc;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
@@ -145,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectHashNodeGen;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -1326,6 +1326,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object callManagedFunction(NativeFunction pProc, Object[] argarray, InteropLibrary ilib) {
             try {
                 return ilib.execute(pProc.sym, argarray);
+            } catch (PException e) {
+                throw e;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | AbstractTruffleException e) {
                 throw raise(RuntimeError, FFI_CALL_FAILED);
             } catch (UnsupportedSpecializationException ee) {
@@ -1533,16 +1535,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asInt,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached CArgObjectBuiltins.ParamFuncNode paramFuncNode,
                         @Cached PtrNodes.ConvertToNFIParameter convertToNFIParameter,
-                        @Cached ConvParamNode recursive,
-                        @Cached PythonObjectFactory factory) {
-            StgDictObject dict = pyObjectStgDictNode.execute(obj);
-            pa.stgDict = dict;
-            if (dict != null) {
-                assert dict.paramfunc != -1;
-                /* If it has an stgdict, it is a CDataObject */
-                PyCArgObject carg = paramFunc(dict.paramfunc, (CDataObject) obj, dict, factory, codePointAtIndexNode);
+                        @Cached ConvParamNode recursive) {
+            if (obj instanceof CDataObject cdata) {
+                pa.stgDict = pyObjectStgDictNode.execute(cdata);
+                PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
                 pa.ffi_type = carg.pffi_type;
                 pa.value = convertToNFIParameter.execute(carg.value, carg.pffi_type);
                 return;
@@ -1781,35 +1779,16 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object src, Object ctype);
 
         @Specialization
-        static Object l(long ptr, @SuppressWarnings("unused") long src, Object ctype,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
-            castCheckPtrTypeNode.execute(ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
-            writePointerNode.execute(result.b_ptr, PtrValue.nativePointer(ptr));
-            return result;
-        }
-
-        @Specialization
-        static Object nativeptr(PythonNativeVoidPtr ptr, @SuppressWarnings("unused") PythonNativeVoidPtr src, Object ctype,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
-            castCheckPtrTypeNode.execute(ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
-            writePointerNode.execute(result.b_ptr, PtrValue.nativePointer(ptr.getPointerObject()));
-            return result;
-        }
-
-        @Specialization
-        static Object cdata(CDataObject ptr, CDataObject src, Object ctype,
+        Object cast(Object srcPtr, Object src, Object ctype,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PythonObjectFactory factory,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
+                        @Cached CallNode callNode,
+                        @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached CArgObjectBuiltins.ParamFuncNode paramFuncNode,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode,
+                        @Cached PtrNodes.WritePointerNode writePointerNode) {
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
@@ -1819,42 +1798,42 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
              * It must certainly contain the source objects one. It must contain the source object
              * itself.
              */
-            if (pyTypeCheck.isCDataObject(src)) {
+            if (src instanceof CDataObject cdata && pyTypeCheck.isCDataObject(cdata)) {
                 /*
                  * PyCData_GetContainer will initialize src.b_objects, we need this so it can be
                  * shared
                  */
-                PyCData_GetContainer(src, factory);
+                PyCData_GetContainer(cdata, factory);
 
-                if (src.b_objects == null) {
-                    src.b_objects = factory.createDict();
+                if (cdata.b_objects == null) {
+                    cdata.b_objects = factory.createDict();
                 }
-                result.b_objects = src.b_objects;
+                result.b_objects = cdata.b_objects;
                 if (PGuards.isDict(result.b_objects)) {
                     // PyLong_FromVoidPtr((void *)src);
                     PDict dict = (PDict) result.b_objects;
-                    Object index = factory.createNativeVoidPtr(src);
-                    dict.setDictStorage(setItem.execute(null, dict.getDictStorage(), index, src));
+                    Object index = factory.createNativeVoidPtr(cdata);
+                    dict.setDictStorage(setItem.execute(null, dict.getDictStorage(), index, cdata));
                 }
             }
-            // memcpy(result.b_ptr, &ptr, sizeof(void *));
-            writePointerNode.execute(result.b_ptr, ptr.b_ptr);
-            return result;
-        }
-
-        @Specialization(guards = "!isCDataObject(src)")
-        static Object ptr(PtrValue ptr, @SuppressWarnings("unused") Object src, Object ctype,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
-            castCheckPtrTypeNode.execute(ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
-
+            PtrValue ptr;
+            if (srcPtr instanceof Long) {
+                ptr = PtrValue.nativePointer(srcPtr);
+            } else if (srcPtr instanceof PythonNativeVoidPtr voidPtr) {
+                ptr = PtrValue.nativePointer(voidPtr.getPointerObject());
+            } else if (srcPtr instanceof CDataObject cdata) {
+                StgDictObject stgdict = pyObjectStgDictNode.execute(cdata);
+                PyCArgObject carg = paramFuncNode.execute(cdata, stgdict);
+                ptr = readPointerNode.execute(carg.value);
+            } else if (srcPtr instanceof PyCArgObject carg) {
+                ptr = carg.value;
+            } else {
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError);
+            }
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
             writePointerNode.execute(result.b_ptr, ptr);
             return result;
         }
-
     }
 
     @ExportLibrary(InteropLibrary.class)

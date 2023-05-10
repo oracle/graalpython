@@ -152,7 +152,15 @@ final class PtrValue implements TruffleObject {
                     yield new ByteArrayStorage(new byte[size]);
                 }
             }
-            case FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
+            case FFI_TYPE_POINTER -> {
+                if (value == null) {
+                    PtrValue[] pointers = new PtrValue[]{PtrValue.nil()};
+                    yield new PointerArrayStorage(pointers);
+                } else {
+                    yield new NativePointerStorage(value);
+                }
+            }
+            case FFI_TYPE_STRUCT -> {
                 if (value == null) {
                     yield new ByteArrayStorage(new byte[size]);
                 } else {

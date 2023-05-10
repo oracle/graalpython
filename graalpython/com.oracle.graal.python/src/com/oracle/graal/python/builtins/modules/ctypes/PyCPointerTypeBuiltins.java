@@ -142,12 +142,10 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             if (proto != null) {
                 PyCPointerType_SetProto(stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
-                stgdict.ffi_type_pointer = itemdict.ffi_type_pointer.getAsArray();
                 /* PyCPointerType_SetProto has verified proto has a stgdict. */
                 /*
                  * If itemdict.format is NULL, then this is a pointer to an incomplete type. We
-                 * create a generic format string 'pointer to bytes' in this case. XXX Better would
-                 * be to fix the format string later...
+                 * create a generic format string 'pointer to bytes' in this case.
                  */
                 TruffleString current_format = itemdict.format != null ? itemdict.format : T_UPPER_B;
                 if (itemdict.shape != null) {
@@ -167,7 +165,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
             addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
-            setDict.execute((PythonObject) result, stgdict);
+            setDict.execute(result, stgdict);
 
             return result;
         }

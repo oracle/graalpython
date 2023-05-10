@@ -261,7 +261,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CVoidPFromParamNode cVoidPFromParamNode,
                         @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode) {
             /* c_void_p instance (or subclass) */
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
@@ -295,16 +296,15 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             StgDictObject stgd = pyObjectStgDictNode.execute(value);
             if (stgd != null && pyTypeCheck.isCDataObject(value) && PGuards.isTruffleString(stgd.proto)) { // PyUnicode_Check
                 int code = codePointAtIndexNode.execute((TruffleString) stgd.proto, 0, TS_ENCODING);
-                switch (code) {
-                    case 'z': /* c_char_p */
-                    case 'Z': /* c_wchar_p */
-                        PyCArgObject parg = factory().createCArgObject();
-                        parg.pffi_type = ffi_type_uint8_array;
-                        parg.tag = 'Z';
-                        parg.obj = value;
-                        /* Remember: b_ptr points to where the pointer is stored! */
-                        parg.value = ((CDataObject) value).b_ptr;
-                        return parg;
+                /* c_char_p, c_wchar_p */
+                if (code == 'z' || code == 'Z') {
+                    PyCArgObject parg = factory().createCArgObject();
+                    parg.pffi_type = ffi_type_uint8_array;
+                    parg.tag = 'Z';
+                    parg.obj = value;
+                    /* Remember: b_ptr points to where the pointer is stored! */
+                    parg.value = readPointerNode.execute(((CDataObject) value).b_ptr);
+                    return parg;
                 }
             }
 
@@ -312,7 +312,6 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (as_parameter != null) {
                 return cVoidPFromParamNode.execute(frame, type, as_parameter);
             }
-            /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
         }
     }

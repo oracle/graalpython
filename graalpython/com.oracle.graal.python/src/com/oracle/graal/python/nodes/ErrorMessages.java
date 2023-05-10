@@ -1263,7 +1263,7 @@ public abstract class ErrorMessages {
     public static final TruffleString RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1 = tsLiteral("_restype_ must be a type, a callable, or None");
     public static final TruffleString ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD = tsLiteral("item %d in _argtypes_ has no from_param method");
     public static final TruffleString POINTER_DOES_NOT_SUPPORT_ITEM_DELETION = tsLiteral("Pointer does not support item deletion");
-    public static final TruffleString EXPECTED_S_INSTEAD_OF_S = tsLiteral("expected %s instead of %s");
+    public static final TruffleString EXPECTED_N_INSTEAD_OF_P = tsLiteral("expected %N instead of %p");
     public static final TruffleString CANNOT_CREATE_INSTANCE_HAS_NO_TYPE = tsLiteral("Cannot create instance: has no _type_");
     public static final TruffleString NULL_POINTER_ACCESS = tsLiteral("NULL pointer access");
     public static final TruffleString SLICE_START_IS_REQUIRED_FOR_STEP_0 = tsLiteral("slice start is required for step < 0");

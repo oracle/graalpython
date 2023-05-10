@@ -59,8 +59,10 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CArgObject)
@@ -147,69 +149,78 @@ public class CArgObjectBuiltins extends PythonBuiltins {
     protected static final int PyCSimpleTypeParamFunc = 8;
     protected static final int StructUnionTypeParamFunc = 16;
 
-    protected static PyCArgObject paramFunc(int f, CDataObject self, StgDictObject stgDict, PythonObjectFactory factory,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        PyCArgObject parg = factory.createCArgObject();
-        switch (f) {
-            case PyCArrayTypeParamFunc: // Corresponds to PyCArrayType_paramfunc
-                parg.tag = 'P';
-                // parg.pffi_type = ffi_type_pointer;
-                parg.pffi_type = FFIType.ffi_type_uint8_array;
-                parg.value = self.b_ptr.createReference(0);
-                parg.obj = self;
-                return parg;
-            case PyCFuncPtrTypeParamFunc: // Corresponds to PyCFuncPtrType_paramfunc
-            case PyCPointerTypeParamFunc: // Corresponds to PyCPointerType_paramfunc
-                parg.tag = 'P';
-                // parg.pffi_type = ffi_type_pointer;
-                parg.pffi_type = FFIType.ffi_type_uint8_array;
-                parg.obj = self;
-                parg.value = self.b_ptr;
-                return parg;
-            case PyCSimpleTypeParamFunc: // Corresponds to PyCSimpleType_paramfunc
-                assert stgDict != null : "Cannot be NULL for CDataObject instances";
-                TruffleString fmt = (TruffleString) stgDict.proto;
-                assert fmt != null;
+    @GenerateUncached
+    abstract static class ParamFuncNode extends Node {
+        abstract PyCArgObject execute(CDataObject self, StgDictObject stgDict);
 
-                char code = (char) codePointAtIndexNode.execute(fmt, 0, TS_ENCODING);
-                FieldDesc fd = FFIType._ctypes_get_fielddesc(code);
-                assert fd != null;
-
-                parg.tag = code;
-                parg.pffi_type = fd.pffi_type;
-                parg.obj = self;
-                parg.value = self.b_ptr;
-                return parg;
-            case StructUnionTypeParamFunc: // Corresponds to StructUnionType_paramfunc
-                /*
-                 * PyCStructType_Type - a meta type/class. Creating a new class using this one as
-                 * __metaclass__ will call the constructor StructUnionType_new. It replaces the
-                 * tp_dict member with a new instance of StgDict, and initializes the C accessible
-                 * fields somehow.
-                 */
-                PtrValue ptr = self.b_ptr;
-                Object obj = self;
-                if (self.b_size > StgDictObject.VOID_PTR_SIZE) {
-                    // ptr = PyMem_Malloc(self.b_size); TODO
-                    // memcpy(ptr, self.b_ptr, self.b_size); TODO
-
-                    /*
-                     * Create a Python object which calls PyMem_Free(ptr) in its deallocator. The
-                     * object will be destroyed at _ctypes_callproc() cleanup.
-                     */
-                    StructParamObject struct_param = factory.createStructParamObject(StructParam);
-                    obj = struct_param;
-                    struct_param.ptr = ptr;
+        @Specialization
+        protected static PyCArgObject paramFunc(CDataObject self, StgDictObject stgDict,
+                        @Cached PythonObjectFactory factory,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            PyCArgObject parg = factory.createCArgObject();
+            switch (stgDict.paramfunc) {
+                // Corresponds to PyCArrayType_paramfunc
+                case PyCArrayTypeParamFunc -> {
+                    parg.tag = 'P';
+                    // parg.pffi_type = ffi_type_pointer;
+                    parg.pffi_type = FFIType.ffi_type_uint8_array;
+                    parg.value = self.b_ptr.createReference(0);
+                    parg.obj = self;
+                    return parg;
                 }
+                // Corresponds to PyCFuncPtrType_paramfunc and PyCPointerType_paramfunc
+                case PyCFuncPtrTypeParamFunc, PyCPointerTypeParamFunc -> {
+                    parg.tag = 'P';
+                    // parg.pffi_type = ffi_type_pointer;
+                    parg.pffi_type = FFIType.ffi_type_uint8_array;
+                    parg.obj = self;
+                    parg.value = self.b_ptr;
+                    return parg;
+                }
+                // Corresponds to PyCSimpleType_paramfunc
+                case PyCSimpleTypeParamFunc -> {
+                    TruffleString fmt = (TruffleString) stgDict.proto;
+                    assert fmt != null;
+                    char code = (char) codePointAtIndexNode.execute(fmt, 0, TS_ENCODING);
+                    FieldDesc fd = FFIType._ctypes_get_fielddesc(code);
+                    assert fd != null;
+                    parg.tag = code;
+                    parg.pffi_type = fd.pffi_type;
+                    parg.obj = self;
+                    parg.value = self.b_ptr;
+                    return parg;
+                }
+                // Corresponds to StructUnionType_paramfunc
+                case StructUnionTypeParamFunc -> {
+                    /*
+                     * PyCStructType_Type - a meta type/class. Creating a new class using this one
+                     * as __metaclass__ will call the constructor StructUnionType_new. It replaces
+                     * the tp_dict member with a new instance of StgDict, and initializes the C
+                     * accessible fields somehow.
+                     */
+                    PtrValue ptr = self.b_ptr;
+                    Object obj = self;
+                    if (self.b_size > StgDictObject.VOID_PTR_SIZE) {
+                        // ptr = PyMem_Malloc(self.b_size); TODO
+                        // memcpy(ptr, self.b_ptr, self.b_size); TODO
 
-                assert stgDict != null : "Cannot be NULL for structure/union instances";
-                parg.pffi_type = stgDict.ffi_type_pointer;
-                parg.tag = 'V';
-                parg.value = ptr;
-                parg.size = self.b_size;
-                parg.obj = obj;
-                return parg;
+                        /*
+                         * Create a Python object which calls PyMem_Free(ptr) in its deallocator.
+                         * The object will be destroyed at _ctypes_callproc() cleanup.
+                         */
+                        StructParamObject struct_param = factory.createStructParamObject(StructParam);
+                        obj = struct_param;
+                        struct_param.ptr = ptr;
+                    }
+                    parg.pffi_type = stgDict.ffi_type_pointer;
+                    parg.tag = 'V';
+                    parg.value = ptr;
+                    parg.size = self.b_size;
+                    parg.obj = obj;
+                    return parg;
+                }
+                default -> throw CompilerDirectives.shouldNotReachHere("Unknown function parameter");
+            }
         }
-        throw CompilerDirectives.shouldNotReachHere("Unknown function parameter");
     }
 }
