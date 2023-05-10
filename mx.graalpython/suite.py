@@ -276,6 +276,7 @@ suite = {
             "dependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+                "sdk:JLINE3",
             ],
             "requires": [
                 "java.management",
@@ -564,6 +565,7 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+                "sdk:JLINE3",
             ],
             "description": "GraalPython launcher",
         },
