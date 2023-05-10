@@ -156,7 +156,7 @@ public enum BinaryArithmetic {
 
                 @CompilerDirectives.TruffleBoundary
                 private TruffleString getErrorMessage(Object arg) {
-                    if (operator.equals(">>") && arg instanceof PBuiltinMethod && ((PBuiltinMethod) arg).getFunction().getName().equalsUncached(T_PRINT, TS_ENCODING)) {
+                    if (operator.equals(">>") && arg instanceof PBuiltinMethod && ((PBuiltinMethod) arg).getBuiltinFunction().getName().equalsUncached(T_PRINT, TS_ENCODING)) {
                         return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT;
                     }
                     return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P;

@@ -42,12 +42,12 @@ package com.oracle.graal.python.builtins.objects.code;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeCallTargetNodeGen;
+import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -63,6 +63,8 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -76,6 +78,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -223,18 +226,26 @@ public abstract class CodeNodes {
     public abstract static class GetCodeSignatureNode extends PNodeWithContext {
         public abstract Signature execute(Node node, PCode code);
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"isSingleContext()", "cachedCode == code"}, limit = "2")
-        protected static Signature doCached(Node node, PCode code,
+        @Specialization(guards = {"cachedCode == code", "isSingleContext(inliningTarget)"}, limit = "2")
+        static Signature doCached(Node inliningTarget, @SuppressWarnings("unused") PCode code,
                         @Cached("code") PCode cachedCode,
-                        @Cached("code.initializeCallTarget()") RootCallTarget ct,
-                        @Cached("code.initializeSignature(ct)") Signature signature) {
-            return signature;
+                        @Cached InlinedBranchProfile firstExecution) {
+            return getInSingleContextMode(inliningTarget, cachedCode, firstExecution);
+        }
+
+        public static Signature getInSingleContextMode(Node inliningTarget, PCode code, InlinedBranchProfile firstExecution) {
+            assert isSingleContext(inliningTarget);
+            CompilerAsserts.partialEvaluationConstant(code);
+            if (!firstExecution.wasEntered(inliningTarget)) {
+                firstExecution.enter(inliningTarget);
+                CompilerDirectives.transferToInterpreter();
+                code.initializeSignature(code.initializeCallTarget());
+            }
+            return code.signature;
         }
 
         @Specialization(replaces = "doCached")
-        protected static Signature doCode(Node node, PCode code,
-                        @Bind("this") Node inliningTarget,
+        static Signature getGeneric(Node inliningTarget, PCode code,
                         @Cached InlinedConditionProfile signatureProfile,
                         @Cached InlinedConditionProfile ctProfile) {
             Signature signature = code.signature;

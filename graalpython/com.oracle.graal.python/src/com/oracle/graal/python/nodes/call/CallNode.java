@@ -233,7 +233,7 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, cachedCallable.getFunction(), createArgs.execute(cachedCallable, arguments, keywords));
+        return dispatch.executeCall(frame, cachedCallable.getBuiltinFunction(), createArgs.execute(cachedCallable, arguments, keywords));
     }
 
     @Specialization(guards = "isPBuiltinFunction(callable.getFunction())", replaces = "builtinMethodCallBuiltinDirectCached")
@@ -241,7 +241,7 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
         // functions must be called directly otherwise the call stack is incorrect
-        return dispatch.executeCall(frame, callable.getFunction(), createArgs.execute(callable, arguments, keywords));
+        return dispatch.executeCall(frame, callable.getBuiltinFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
     @Specialization(guards = "!isFunction(callable.getFunction())")

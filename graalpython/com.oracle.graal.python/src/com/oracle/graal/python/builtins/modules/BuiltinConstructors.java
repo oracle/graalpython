@@ -2469,7 +2469,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object winner = calculateMetaclass(frame, inliningTarget, metaclass, bases, getClassNode, isTypeNode, lookupMroEntriesNode, getObjectArrayNode);
             if (winner != metaclass) {
                 Object newFunc = getNewFuncNode.execute(winner);
-                if (newFunc instanceof PBuiltinMethod && (((PBuiltinMethod) newFunc).getFunction().getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
+                if (newFunc instanceof PBuiltinMethod && (((PBuiltinMethod) newFunc).getBuiltinFunction().getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
                     metaclass = winner;
                     // the new metaclass has the same __new__ function as we are in, continue
                 } else {

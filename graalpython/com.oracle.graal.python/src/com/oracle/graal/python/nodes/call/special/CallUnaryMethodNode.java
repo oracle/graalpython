@@ -147,7 +147,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
+                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
@@ -156,7 +156,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
+                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
@@ -164,7 +164,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
+                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
         return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 
@@ -173,7 +173,7 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
+                    @Cached("getBuiltin(frame, func.getBuiltinFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
         return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 

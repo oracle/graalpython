@@ -197,7 +197,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"eq(J_ML_METH, key)"})
         static Object getMethFromBuiltinMethod(PBuiltinMethod object, String key,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return getMethFromBuiltinFunction(object.getFunction(), key, toSulongNode);
+            return getMethFromBuiltinFunction(object.getBuiltinFunction(), key, toSulongNode);
         }
 
         @Specialization(guards = {"eq(J_ML_METH, key)"})
@@ -246,7 +246,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
             if (object instanceof PBuiltinFunction) {
                 return ((PBuiltinFunction) object).getFlags();
             } else if (object instanceof PBuiltinMethod) {
-                return ((PBuiltinMethod) object).getFunction().getFlags();
+                return ((PBuiltinMethod) object).getBuiltinFunction().getFlags();
             }
             return 0;
         }

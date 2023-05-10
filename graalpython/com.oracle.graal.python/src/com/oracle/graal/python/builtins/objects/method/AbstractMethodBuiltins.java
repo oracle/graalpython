@@ -137,7 +137,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         protected static Object doIt(PBuiltinMethod self) {
-            if (self.getFunction().isStatic()) {
+            if (self.getBuiltinFunction().isStatic()) {
                 return PNone.NONE;
             }
             return self.getSelf();

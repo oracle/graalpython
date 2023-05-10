@@ -138,7 +138,7 @@ public final class WrapTpNew extends SlotWrapper {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     builtinProfile = PythonUtils.createValueIdentityProfile();
                 }
-                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinMethod) builtinProfile.profile(newMethod)).getFunction().getBuiltinNodeFactory();
+                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinMethod) builtinProfile.profile(newMethod)).getBuiltinFunction().getBuiltinNodeFactory();
                 if (factory != null) {
                     if (!getFactoryNodeClass(factory).isInstance(getNode())) {
                         if ((state & IS_UNSAFE_STATE) == 0) {

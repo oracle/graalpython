@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -49,26 +48,18 @@ import com.oracle.truffle.api.object.Shape;
  * </ul>
  */
 @ExportLibrary(InteropLibrary.class)
-public final class PBuiltinMethod extends PythonBuiltinObject {
+public final class PBuiltinMethod extends PMethodBase {
 
-    private final PBuiltinFunction function;
-    private final Object self;
     private final Object classObject;
 
     public PBuiltinMethod(Object clazz, Shape instanceShape, Object self, PBuiltinFunction function, Object classObject) {
-        super(clazz, instanceShape);
-        this.self = self;
-        this.function = function;
+        super(clazz, instanceShape, self, function);
         this.classObject = classObject;
     }
 
     @Idempotent
-    public PBuiltinFunction getFunction() {
-        return function;
-    }
-
-    public Object getSelf() {
-        return self;
+    public PBuiltinFunction getBuiltinFunction() {
+        return (PBuiltinFunction) getFunction();
     }
 
     public Object getClassObject() {
@@ -78,7 +69,7 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<builtin-method '" + function + "' of '" + self + "' objects>";
+        return "<builtin-method '" + getBuiltinFunction() + "' of '" + getSelf() + "' objects>";
     }
 
     @ExportMessage
@@ -89,6 +80,6 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
 
     @ExportMessage
     Object getExecutableName() {
-        return function.getName();
+        return getBuiltinFunction().getName();
     }
 }

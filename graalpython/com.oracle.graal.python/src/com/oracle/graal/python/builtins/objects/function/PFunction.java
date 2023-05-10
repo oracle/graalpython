@@ -37,6 +37,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -62,9 +63,12 @@ public final class PFunction extends PythonObject {
     private final PythonObject globals;
     @CompilationFinal private boolean isBuiltin;
     @CompilationFinal(dimensions = 1) private final PCell[] closure;
-    @CompilationFinal private PCode code;
-    @CompilationFinal(dimensions = 1) private Object[] defaultValues;
-    @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
+    @CompilationFinal private PCode finalCode;
+    private PCode code;
+    @CompilationFinal(dimensions = 1) private Object[] finalDefaultValues;
+    private Object[] defaultValues;
+    @CompilationFinal(dimensions = 1) private PKeyword[] finalKwDefaultValues;
+    private PKeyword[] kwDefaultValues;
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, PCell[] closure) {
         this(lang, name, qualname, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
@@ -83,10 +87,10 @@ public final class PFunction extends PythonObject {
         this.name = name;
         this.qualname = qualname;
         assert code != null;
-        this.code = code;
+        this.code = this.finalCode = code;
         this.globals = globals;
-        this.defaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
-        this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
+        this.defaultValues = this.finalDefaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
+        this.kwDefaultValues = this.finalKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
         this.defaultsStableAssumption = defaultsStableAssumption;
@@ -148,6 +152,11 @@ public final class PFunction extends PythonObject {
     }
 
     public PCode getCode() {
+        if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
+            if (getCodeStableAssumption().isValid()) {
+                return finalCode;
+            }
+        }
         return code;
     }
 
@@ -155,26 +164,39 @@ public final class PFunction extends PythonObject {
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";
+        this.finalCode = null;
         this.code = code;
     }
 
     public Object[] getDefaults() {
+        if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
+            if (defaultsStableAssumption.isValid()) {
+                return finalDefaultValues;
+            }
+        }
         return defaultValues;
     }
 
     @TruffleBoundary
     public void setDefaults(Object[] defaults) {
         this.defaultsStableAssumption.invalidate("defaults changed for function " + getName());
+        this.finalDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
         this.defaultValues = defaults;
     }
 
     public PKeyword[] getKwDefaults() {
+        if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
+            if (defaultsStableAssumption.isValid()) {
+                return finalKwDefaultValues;
+            }
+        }
         return kwDefaultValues;
     }
 
     @TruffleBoundary
     public void setKwDefaults(PKeyword[] defaults) {
         this.defaultsStableAssumption.invalidate("kw defaults changed for function " + getName());
+        this.finalDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
         this.kwDefaultValues = defaults;
     }
 

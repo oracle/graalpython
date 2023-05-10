@@ -174,8 +174,9 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetMethodDefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object defaults(PMethod self,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetDefaultsNode getDefaultsNode) {
-            Object[] argDefaults = getDefaultsNode.execute(self);
+            Object[] argDefaults = getDefaultsNode.execute(inliningTarget, self);
             assert argDefaults != null;
             return (argDefaults.length == 0) ? PNone.NONE : factory().createTuple(argDefaults);
         }

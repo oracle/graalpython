@@ -173,7 +173,7 @@ public final class PythonCextCEvalBuiltins {
             // prepare Python frame arguments
             Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
             Signature signature = getSignatureNode.execute(inliningTarget, code);
-            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
+            Object[] pArguments = createAndCheckArgumentsNode.execute(inliningTarget, code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
 
             // set custom locals
             if (!(locals instanceof PNone)) {
