@@ -655,7 +655,8 @@ public final class CApiContext extends CExtContext {
             Env env = context.getEnv();
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
-            TruffleFile capiFile = homePath.resolve("libpython" + context.getSoAbi().toJavaStringUncached());
+            String soAbi = context.getSoAbi().toJavaStringUncached();
+            TruffleFile capiFile = homePath.resolve("libpython" + soAbi);
             try {
                 SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
@@ -686,7 +687,9 @@ public final class CApiContext extends CExtContext {
                  */
                 throw e;
             } catch (RuntimeException | UnsupportedMessageException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
-                if (!context.isNativeAccessAllowed()) {
+                // we cannot really check if we truly need native access, so
+                // when the abi contains "managed" we assume we do not
+                if (!soAbi.contains("managed") && !context.isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
                 throw new ApiInitException(wrapJavaException(e, node), name, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
