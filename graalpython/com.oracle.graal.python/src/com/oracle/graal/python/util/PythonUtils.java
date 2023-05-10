@@ -698,7 +698,7 @@ public final class PythonUtils {
                 theUnsafe.setAccessible(true);
                 return (Unsafe) theUnsafe.get(Unsafe.class);
             } catch (Exception e) {
-                throw new UnsupportedOperationException("Cannot initialize Unsafe for the native POSIX backend", e);
+                throw new UnsupportedOperationException("Cannot initialize Unsafe for the native backends", e);
             }
         }
     }
