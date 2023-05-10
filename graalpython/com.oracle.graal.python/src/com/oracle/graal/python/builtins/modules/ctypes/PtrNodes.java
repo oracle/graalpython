@@ -15,9 +15,13 @@ import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.Storage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -40,28 +44,29 @@ public abstract class PtrNodes {
         protected abstract void execute(byte[] dst, int dstOffset, Storage src, int srcOffset, int size);
 
         @Specialization
-        void doBytes(byte[] dst, int dstOffset, ByteArrayStorage src, int srcOffset, int size) {
+        static void doBytes(byte[] dst, int dstOffset, ByteArrayStorage src, int srcOffset, int size) {
             PythonUtils.arraycopy(src.value, srcOffset, dst, dstOffset, size);
         }
 
         @Specialization(limit = "1")
-        void doMemoryView(byte[] dst, int dstOffset, MemoryViewStorage src, int srcOffset, int size,
+        static void doMemoryView(byte[] dst, int dstOffset, MemoryViewStorage src, int srcOffset, int size,
                         @CachedLibrary("src.value") PythonBufferAccessLibrary bufferLib) {
             bufferLib.readIntoByteArray(src.value, srcOffset, dst, dstOffset, size);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        void doNull(byte[] dst, int dstOffset, NullStorage src, int srcOffset, int size) {
+        static void doNull(byte[] dst, int dstOffset, NullStorage src, int srcOffset, int size) {
             if (size != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Reading from NULL pointer");
             }
         }
 
         @Specialization
-        void doPointerArray(byte[] dst, int dstOffset, PointerArrayStorage src, int srcOffset, int size,
+        static void doPointerArray(byte[] dst, int dstOffset, PointerArrayStorage src, int srcOffset, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached PointerArrayToBytesNode toBytesNode) {
-            toBytesNode.execute(src);
+            toBytesNode.execute(inliningTarget, src);
             PythonUtils.arraycopy(src.nativePointerBytes, srcOffset, dst, dstOffset, size);
         }
     }
@@ -75,18 +80,18 @@ public abstract class PtrNodes {
         protected abstract byte execute(Storage storage, int offset);
 
         @Specialization
-        byte doBytes(ByteArrayStorage storage, int offset) {
+        static byte doBytes(ByteArrayStorage storage, int offset) {
             return storage.value[offset];
         }
 
         @Specialization(limit = "1")
-        byte doMemoryView(MemoryViewStorage storage, int offset,
+        static byte doMemoryView(MemoryViewStorage storage, int offset,
                         @CachedLibrary("storage.value") PythonBufferAccessLibrary bufferLib) {
             return bufferLib.readByte(storage, offset);
         }
 
         @Fallback
-        byte doOther(Storage storage, int offset,
+        static byte doOther(Storage storage, int offset,
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Byte.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
@@ -103,12 +108,12 @@ public abstract class PtrNodes {
         protected abstract short execute(Storage storage, int offset);
 
         @Specialization
-        short doBytes(ByteArrayStorage storage, int offset) {
+        static short doBytes(ByteArrayStorage storage, int offset) {
             return ARRAY_ACCESSOR.getShort(storage.value, offset);
         }
 
         @Fallback
-        short doOther(Storage storage, int offset,
+        static short doOther(Storage storage, int offset,
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Short.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
@@ -125,12 +130,12 @@ public abstract class PtrNodes {
         protected abstract int execute(Storage storage, int offset);
 
         @Specialization
-        int doBytes(ByteArrayStorage storage, int offset) {
+        static int doBytes(ByteArrayStorage storage, int offset) {
             return ARRAY_ACCESSOR.getInt(storage.value, offset);
         }
 
         @Fallback
-        int doOther(Storage storage, int offset,
+        static int doOther(Storage storage, int offset,
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Integer.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
@@ -147,12 +152,12 @@ public abstract class PtrNodes {
         protected abstract long execute(Storage storage, int offset);
 
         @Specialization
-        long doBytes(ByteArrayStorage storage, int offset) {
+        static long doBytes(ByteArrayStorage storage, int offset) {
             return ARRAY_ACCESSOR.getLong(storage.value, offset);
         }
 
         @Fallback
-        long doOther(Storage storage, int offset,
+        static long doOther(Storage storage, int offset,
                         @Cached ReadBytesNode read) {
             byte[] tmp = new byte[Long.BYTES];
             read.execute(tmp, 0, storage, offset, tmp.length);
@@ -179,20 +184,21 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage dst, int dstOffset, byte[] src, int srcOffset, int size);
 
         @Specialization
-        void doBytes(ByteArrayStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
+        static void doBytes(ByteArrayStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
             PythonUtils.arraycopy(src, srcOffset, dst.value, dstOffset, size);
         }
 
         @Specialization(limit = "1")
-        void doMemoryView(MemoryViewStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
+        static void doMemoryView(MemoryViewStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
                         @CachedLibrary("dst.value") PythonBufferAccessLibrary bufferLib) {
             bufferLib.writeFromByteArray(dst.value, dstOffset, src, srcOffset, size);
         }
 
         @Specialization
-        void doPointerArray(PointerArrayStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
+        static void doPointerArray(PointerArrayStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached PointerArrayToBytesNode toBytesNode) {
-            toBytesNode.execute(dst);
+            toBytesNode.execute(inliningTarget, dst);
             PythonUtils.arraycopy(src, srcOffset, dst.nativePointerBytes, dstOffset, size);
         }
     }
@@ -206,12 +212,12 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage dst, int dstOffset, byte value);
 
         @Specialization
-        void doBytes(ByteArrayStorage dst, int dstOffset, byte value) {
+        static void doBytes(ByteArrayStorage dst, int dstOffset, byte value) {
             dst.value[dstOffset] = value;
         }
 
         @Fallback
-        void doOther(Storage dst, int dstOffset, byte value,
+        static void doOther(Storage dst, int dstOffset, byte value,
                         @Cached WriteBytesNode writeBytesNode) {
             writeBytesNode.execute(dst, dstOffset, new byte[]{value}, 0, Byte.BYTES);
         }
@@ -226,12 +232,12 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage dst, int dstOffset, short value);
 
         @Specialization
-        void doBytes(ByteArrayStorage dst, int dstOffset, short value) {
+        static void doBytes(ByteArrayStorage dst, int dstOffset, short value) {
             ARRAY_ACCESSOR.putShort(dst.value, dstOffset, value);
         }
 
         @Fallback
-        void doOther(Storage dst, int dstOffset, short value,
+        static void doOther(Storage dst, int dstOffset, short value,
                         @Cached WriteBytesNode writeBytesNode) {
             byte[] tmp = new byte[Short.BYTES];
             ARRAY_ACCESSOR.putShort(tmp, 0, value);
@@ -248,12 +254,12 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage dst, int dstOffset, int value);
 
         @Specialization
-        void doBytes(ByteArrayStorage dst, int dstOffset, int value) {
+        static void doBytes(ByteArrayStorage dst, int dstOffset, int value) {
             ARRAY_ACCESSOR.putInt(dst.value, dstOffset, value);
         }
 
         @Fallback
-        void doOther(Storage dst, int dstOffset, int value,
+        static void doOther(Storage dst, int dstOffset, int value,
                         @Cached WriteBytesNode writeBytesNode) {
             byte[] tmp = new byte[Integer.BYTES];
             ARRAY_ACCESSOR.putInt(tmp, 0, value);
@@ -270,12 +276,12 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage dst, int dstOffset, long value);
 
         @Specialization
-        void doBytes(ByteArrayStorage dst, int dstOffset, long value) {
+        static void doBytes(ByteArrayStorage dst, int dstOffset, long value) {
             ARRAY_ACCESSOR.putLong(dst.value, dstOffset, value);
         }
 
         @Fallback
-        void doOther(Storage dst, int dstOffset, long value,
+        static void doOther(Storage dst, int dstOffset, long value,
                         @Cached WriteBytesNode writeBytesNode) {
             byte[] tmp = new byte[Long.BYTES];
             ARRAY_ACCESSOR.putLong(tmp, 0, value);
@@ -284,6 +290,7 @@ public abstract class PtrNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(PtrNodes.class)
     public abstract static class MemcpyNode extends Node {
         public final void execute(PtrValue dst, PtrValue src, int size) {
             execute(dst.ptr, dst.offset, src.ptr, src.offset, size);
@@ -292,12 +299,23 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage dst, int dstOffset, Storage src, int srcOffset, int size);
 
         @Specialization
-        void doBytesBytes(ByteArrayStorage dst, int dstOffset, ByteArrayStorage src, int srcOffset, int size) {
+        static void doBytesBytes(ByteArrayStorage dst, int dstOffset, ByteArrayStorage src, int srcOffset, int size) {
             PythonUtils.arraycopy(src.value, srcOffset, dst.value, dstOffset, size);
         }
 
+        @Specialization(guards = "isMultipleOf8(size)")
+        static void doPointerPointer(PointerArrayStorage dst, int dstOffset, PointerArrayStorage src, int srcOffset, int size,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadPointerFromPointerArrayNode readPointerFromPointerArrayNode,
+                        @Cached WritePointerToPointerArrayNode writePointerToPointerArrayNode) {
+            for (int i = 0; i < size; i += 8) {
+                PtrValue value = readPointerFromPointerArrayNode.execute(inliningTarget, src, srcOffset + i);
+                writePointerToPointerArrayNode.execute(inliningTarget, dst, dstOffset + i, value);
+            }
+        }
+
         @Fallback
-        void doOther(Storage dst, int dstOffset, Storage src, int srcOffset, int size,
+        static void doOther(Storage dst, int dstOffset, Storage src, int srcOffset, int size,
                         @Cached ReadBytesNode readBytesNode,
                         @Cached WriteBytesNode writeBytesNode) {
             byte[] tmp = new byte[size];
@@ -319,7 +337,7 @@ public abstract class PtrNodes {
         protected abstract int execute(Storage storage, int offset, int max);
 
         @Specialization
-        int doOther(Storage storage, int offset, int max,
+        static int doOther(Storage storage, int offset, int max,
                         @Cached ReadByteNode readByteNode) {
             int maxlen = Integer.MAX_VALUE;
             if (max >= 0) {
@@ -338,6 +356,53 @@ public abstract class PtrNodes {
         }
     }
 
+    protected static boolean isMultipleOf8(int num) {
+        return num % 8 == 0;
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PtrNodes.class)
+    abstract static class ReadPointerFromPointerArrayNode extends Node {
+        abstract PtrValue execute(Node inliningTarget, PointerArrayStorage storage, int offset);
+
+        @Specialization(guards = {"storage.objects != null", "isMultipleOf8(offset)"})
+        static PtrValue read(PointerArrayStorage storage, int offset) {
+            return storage.objects[offset / 8];
+        }
+
+        @Fallback
+        static PtrValue read(Node inliningTarget, PointerArrayStorage storage, int offset,
+                        @Cached PointerArrayToBytesNode toBytesNode) {
+            toBytesNode.execute(inliningTarget, storage);
+            long nativePointer = ARRAY_ACCESSOR.getLong(storage.nativePointerBytes, offset);
+            return PtrValue.nativeMemory(nativePointer);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PtrNodes.class)
+    abstract static class WritePointerToPointerArrayNode extends Node {
+        abstract void execute(Node inliningTarget, PointerArrayStorage storage, int offset, PtrValue value);
+
+        @Specialization(guards = {"storage.objects != null", "isMultipleOf8(offset)"})
+        static void write(PointerArrayStorage storage, int offset, PtrValue value) {
+            storage.objects[offset / 8] = value;
+        }
+
+        @Fallback
+        static void write(Node inliningTarget, PointerArrayStorage storage, int offset, PtrValue value,
+                        @Cached StorageToNativeNode toNativeNode,
+                        @Cached PointerArrayToBytesNode toBytesNode) {
+            toBytesNode.execute(inliningTarget, storage);
+            long nativePointer = toNativeNode.execute(value);
+            ARRAY_ACCESSOR.putLong(storage.nativePointerBytes, offset, nativePointer);
+        }
+    }
+
     @GenerateUncached
     public abstract static class WCsLenNode extends Node {
         public final int execute(PtrValue ptr) {
@@ -351,7 +416,7 @@ public abstract class PtrNodes {
         protected abstract int execute(Storage storage, int offset, int max);
 
         @Specialization
-        int doOther(Storage storage, int offset, int max,
+        static int doOther(Storage storage, int offset, int max,
                         @Cached ReadByteNode readByteNode) {
             int maxlen = Integer.MAX_VALUE;
             if (max >= 0) {
@@ -382,12 +447,12 @@ public abstract class PtrNodes {
         protected abstract Object execute(Storage storage, int offset);
 
         @Specialization
-        long doBytes(ByteArrayStorage storage, int offset) {
+        static long doBytes(ByteArrayStorage storage, int offset) {
             return ARRAY_ACCESSOR.getLong(storage.value, offset);
         }
 
         @Specialization
-        Object doNativePointer(NativePointerStorage storage, int offset) {
+        static Object doNativePointer(NativePointerStorage storage, int offset) {
             if (offset != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
             }
@@ -406,7 +471,7 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage storage, int offset, Object value);
 
         @Specialization
-        void doNativePointer(NativePointerStorage storage, int offset, Object value) {
+        static void doNativePointer(NativePointerStorage storage, int offset, Object value) {
             if (offset != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
             }
@@ -425,13 +490,14 @@ public abstract class PtrNodes {
         protected abstract PtrValue execute(Storage storage, int offset);
 
         @Specialization
-        PtrValue doPointerArray(PointerArrayStorage storage, int offset,
-                        @Cached PointerArrayToBytesNode toBytesNode) {
-            return storage.readAtOffset(offset, toBytesNode);
+        static PtrValue doPointerArray(PointerArrayStorage storage, int offset,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadPointerFromPointerArrayNode readPointerFromPointerArrayNode) {
+            return readPointerFromPointerArrayNode.execute(inliningTarget, storage, offset);
         }
 
         @Fallback
-        PtrValue doOther(Storage storage, int offset,
+        static PtrValue doOther(Storage storage, int offset,
                         @Cached ReadLongNode readLongNode) {
             return PtrValue.nativeMemory(readLongNode.execute(storage, offset));
         }
@@ -446,12 +512,14 @@ public abstract class PtrNodes {
         protected abstract void execute(Storage storage, int offset, PtrValue value);
 
         @Specialization
-        void doPointerArray(PointerArrayStorage storage, int offset, PtrValue value) {
-            storage.writeAtOffset(offset, value);
+        static void doPointerArray(PointerArrayStorage storage, int offset, PtrValue value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached WritePointerToPointerArrayNode writePointerToPointerArrayNode) {
+            writePointerToPointerArrayNode.execute(inliningTarget, storage, offset, value);
         }
 
         @Fallback
-        void doOther(Storage storage, int offset, PtrValue value,
+        static void doOther(Storage storage, int offset, PtrValue value,
                         @Cached WriteLongNode writeLongNode,
                         @Cached StorageToNativeNode toNativeNode) {
             long nativePointer = toNativeNode.execute(value.ptr, value.offset);
@@ -467,7 +535,7 @@ public abstract class PtrNodes {
         protected abstract Object execute(Storage storage, int offset, FFIType ffiType);
 
         @Specialization
-        Object doBytes(ByteArrayStorage storage, int offset, FFIType ffiType) {
+        static Object doBytes(ByteArrayStorage storage, int offset, FFIType ffiType) {
             if (ffiType.type.isArray() && ffiType != FFIType.ffi_type_pointer) {
                 return storage.value;
             }
@@ -481,7 +549,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        Object doNativePointer(NativePointerStorage storage, int offset, FFIType ffiType) {
+        static Object doNativePointer(NativePointerStorage storage, int offset, FFIType ffiType) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
             if (offset != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
@@ -490,7 +558,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        Object doPointerArray(PointerArrayStorage storage, int offset, FFIType ffiType) {
+        static Object doPointerArray(PointerArrayStorage storage, int offset, FFIType ffiType) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
             // TODO get rid of the indirection by doing the conversion to a value when creating the
             // CAarg already
@@ -512,15 +580,17 @@ public abstract class PtrNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     abstract static class PointerArrayToBytesNode extends Node {
-        abstract void execute(PointerArrayStorage storage);
+        abstract void execute(Node inliningTarget, PointerArrayStorage storage);
 
         @Specialization(guards = "storage.nativePointerBytes != null")
-        void nop(@SuppressWarnings("unused") PointerArrayStorage storage) {
+        static void nop(@SuppressWarnings("unused") PointerArrayStorage storage) {
         }
 
         @Specialization(guards = "storage.nativePointerBytes == null")
-        void convert(PointerArrayStorage storage,
+        static void convert(PointerArrayStorage storage,
                         @Cached StorageToNativeNode toNativeNode) {
             byte[] bytes = new byte[storage.objects.length * 8];
             for (int i = 0; i < storage.objects.length; i++) {
@@ -536,22 +606,26 @@ public abstract class PtrNodes {
     @GenerateUncached
     abstract static class StorageToNativeNode extends Node {
 
+        final long execute(PtrValue ptr) {
+            return execute(ptr.ptr, ptr.offset);
+        }
+
         abstract long execute(Storage storage, int offset);
 
         @Specialization
         @SuppressWarnings("unused")
-        long doNull(NullStorage storage, int offset) {
+        static long doNull(NullStorage storage, int offset) {
             return 0L;
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        long doNative(NativeMemoryStorage storage, int offset) {
+        static long doNative(NativeMemoryStorage storage, int offset) {
             return storage.pointer + offset;
         }
 
         @Specialization
-        long doBytes(ByteArrayStorage storage, int offset) {
+        static long doBytes(ByteArrayStorage storage, int offset) {
             int len = storage.value.length - offset;
             // TODO check permissions
             long pointer = UNSAFE.allocateMemory(len);

@@ -212,24 +212,6 @@ final class PtrValue implements TruffleObject {
         public PointerArrayStorage(PtrValue[] objects) {
             this.objects = objects;
         }
-
-        public PtrValue readAtOffset(int offset, PtrNodes.PointerArrayToBytesNode toBytesNode) {
-            if (offset % 8 != 0) {
-                toBytesNode.execute(this);
-            }
-            if (objects != null) {
-                return objects[offset / 8];
-            }
-            long nativePointer = ARRAY_ACCESSOR.getLong(nativePointerBytes, offset);
-            return PtrValue.nativeMemory(nativePointer);
-        }
-
-        public void writeAtOffset(int offset, PtrValue value) {
-            if (offset % 8 != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
-            }
-            objects[offset / 8] = value;
-        }
     }
 
     static final class ByteArrayStorage extends Storage {

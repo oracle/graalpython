@@ -1783,20 +1783,22 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object l(long ptr, @SuppressWarnings("unused") long src, Object ctype,
                         @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode) {
+                        @Shared @Cached CallNode callNode,
+                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
-            result.b_ptr = PtrValue.nativePointer(ptr);
+            writePointerNode.execute(result.b_ptr, PtrValue.nativePointer(ptr));
             return result;
         }
 
         @Specialization
         static Object nativeptr(PythonNativeVoidPtr ptr, @SuppressWarnings("unused") PythonNativeVoidPtr src, Object ctype,
                         @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode) {
+                        @Shared @Cached CallNode callNode,
+                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
-            result.b_ptr = PtrValue.nativePointer(ptr.getPointerObject());
+            writePointerNode.execute(result.b_ptr, PtrValue.nativePointer(ptr.getPointerObject()));
             return result;
         }
 
@@ -1806,7 +1808,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PythonObjectFactory factory,
                         @Shared @Cached CallNode callNode,
-                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode) {
+                        @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
+                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
@@ -1835,19 +1838,20 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 }
             }
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
-            result.b_ptr = ptr.b_ptr.withOffset(0);
+            writePointerNode.execute(result.b_ptr, ptr.b_ptr);
             return result;
         }
 
         @Specialization(guards = "!isCDataObject(src)")
         static Object ptr(PtrValue ptr, @SuppressWarnings("unused") Object src, Object ctype,
                         @Shared @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Shared @Cached CallNode callNode) {
+                        @Shared @Cached CallNode callNode,
+                        @Shared @Cached PtrNodes.WritePointerNode writePointerNode) {
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 
             // memcpy(result.b_ptr, &ptr, sizeof(void *));
-            result.b_ptr = ptr.withOffset(0);
+            writePointerNode.execute(result.b_ptr, ptr);
             return result;
         }
 
