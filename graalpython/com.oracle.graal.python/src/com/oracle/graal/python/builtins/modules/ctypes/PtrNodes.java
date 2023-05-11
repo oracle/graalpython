@@ -23,6 +23,8 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -179,6 +181,19 @@ public abstract class PtrNodes {
         @Specialization
         static long doNativeMemory(NativeMemoryStorage storage, int offset) {
             return UNSAFE.getLong(storage.pointer + offset);
+        }
+
+        @Specialization(limit = "1")
+        static long doNativePointer(NativePointerStorage storage, int offset,
+                        @CachedLibrary("storage.value") InteropLibrary ilib) {
+            if (offset != 0) {
+                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
+            }
+            try {
+                return ilib.asPointer(storage.value);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Fallback

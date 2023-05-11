@@ -108,7 +108,6 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.GetBytesFromNativePointerNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
@@ -144,7 +143,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectHashNodeGen;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -193,7 +191,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -1167,17 +1164,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         protected static final int CTYPES_MAX_ARGCOUNT = 1024;
 
         @Specialization(guards = "!pProc.isManaged() || pProc.isLLVM()")
-        Object _ctypes_callproc(VirtualFrame frame,
-                        NativeFunction pProc,
-                        Object[] argarray,
-                        @SuppressWarnings("unused") int flags,
-                        Object[] argtypes, Object[] converters,
-                        Object restype,
+        Object _ctypes_callproc(VirtualFrame frame, NativeFunction pProc, Object[] argarray, @SuppressWarnings("unused") int flags, Object[] argtypes, Object[] converters, Object restype,
                         Object checker,
                         @Cached ConvParamNode convParamNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
-                        @Cached GetBytesFromNativePointerNode getNativeBytes,
                         @Cached GetResultNode getResultNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -1248,67 +1239,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             } else {
                 result = callNativeFunction(pProc, avalues, atypes, rtype, ilib, appendStringNode, toStringNode);
             }
-            if (rtype.type.isArray()) {
-                if (ilib.isNull(result)) {
-                    return PNone.NONE;
-                } else if (ilib.hasArrayElements(result)) {
-                    try {
-                        long resSize = ilib.getArraySize(result);
-                        byte[] bytes = new byte[(int) resSize];
-                        for (int i = 0; i < resSize; i++) {
-                            bytes[i] = (byte) ilib.readArrayElement(result, i);
-                        }
-                        result = bytes;
-                    } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else if (!isLLVM && ilib.isPointer(result)) {
-                    result = getNativeBytes.execute(result, -1);
-                } else if (ilib.isNumber(result)) {
-                    byte[] bytes = new byte[rtype.size];
-                    CtypesNodes.setValue(rtype.type, bytes, 0, result);
-                    result = bytes;
-                } else {
-                    throw raise(NotImplementedError, toTruffleStringUncached("Returned object is not supported."));
-                }
-            } else {
-                try {
-                    switch (rtype.type) {
-                        case FFI_TYPE_UINT8:
-                        case FFI_TYPE_SINT8:
-                            result = ilib.asByte(result);
-                            break;
-                        case FFI_TYPE_UINT16:
-                        case FFI_TYPE_SINT16:
-                            result = ilib.asShort(result);
-                            break;
-                        case FFI_TYPE_UINT32:
-                        case FFI_TYPE_SINT32:
-                            result = ilib.asInt(result);
-                            break;
-                        case FFI_TYPE_SINT64:
-                        case FFI_TYPE_UINT64:
-                            result = ilib.asLong(result);
-                            break;
-                    }
-                } catch (UnsupportedMessageException e) {
-                    // pass through.
-                }
-            }
-
-            if (!PGuards.isPNone(checker)) {
-                if (rtype.type.isArray()) {
-                    throw raise(NotImplementedError, toTruffleStringUncached("Array checker is not implemented."));
-                }
-                return callNode.execute(checker, result);
-            }
 
             // return result;
             /*- TODO (mq) require more support from NFI.
             Object resbuf = alloca(max(rtype.size, sizeof(ffi_arg)));
             _call_function_pointer(flags, pProc, avalues, atypes, rtype, resbuf, argcount, state);
             */
-            return getResultNode.execute(restype, rtype, result, checker, getRaiseNode());
+            return getResultNode.execute(restype, rtype, result, checker);
         }
 
         @Specialization(guards = "pProc.isManaged()")
@@ -1445,9 +1382,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         */
     }
 
+    @ImportStatic(PGuards.class)
     abstract static class GetResultNode extends Node {
 
-        abstract Object execute(Object restype, FFIType rtype, Object result, Object checker, PRaiseNode raiseNode);
+        abstract Object execute(Object restype, FFIType rtype, Object result, Object checker);
 
         /*
          * Convert the C value in result into a Python object, depending on restype.
@@ -1458,46 +1396,65 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          * instance of that. - Otherwise, call restype and return the result.
          */
         @Specialization(guards = "restype == null")
-        static Object asIs(@SuppressWarnings("unused") Object restype, FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
-                        @SuppressWarnings("unused") PRaiseNode raiseNode) {
+        static Object asIs(@SuppressWarnings("unused") Object restype, FFIType rtype, Object result, @SuppressWarnings("unused") Object checker) {
             assert !rtype.type.isArray() : "need array conversion!";
             return result;
         }
 
-        @Specialization(guards = {"restype != null", "dict == null"})
+        @Specialization(guards = "isNone(restype)")
+        @SuppressWarnings("unused")
+        static Object none(Object restype, FFIType rtype, Object result, Object checker) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
         static Object callResType(Object restype, FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
-                        @SuppressWarnings("unused") PRaiseNode raiseNode,
-                        @SuppressWarnings("unused") @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @CachedLibrary("result") InteropLibrary ilib,
+                        @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Cached CallNode callNode) {
             assert !rtype.type.isArray() : "must be an int!";
             // return PyObject_CallFunction(restype, "i", *(int *)result);
-            return callNode.execute(restype, result);
+            try {
+                return callNode.execute(restype, ilib.asInt(result));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
-        @Specialization(guards = {"restype != null", "dict != null"})
-        static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker, PRaiseNode raiseNode,
+        @Specialization(guards = {"restype != null", "!isNone(restype)", "dict != null"}, limit = "1")
+        static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @CachedLibrary("result") InteropLibrary ilib,
+                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached GetFuncNode getFuncNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
-            Object retval;
-            PtrValue r;
-            if (rtype.type.isArray()) {
-                assert result instanceof byte[] : "byte[] should have been extracted after native call";
-                r = PtrValue.bytes((byte[]) result);
-            } else {
-                r = PtrValue.create(rtype, rtype.size, result, 0);
+            PtrValue resultPtr;
+            try {
+                resultPtr = switch (rtype.type) {
+                    case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> PtrValue.create(rtype, rtype.size, ilib.asByte(result), 0);
+                    case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> PtrValue.create(rtype, rtype.size, ilib.asShort(result), 0);
+                    case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> PtrValue.create(rtype, rtype.size, ilib.asInt(result), 0);
+                    case FFI_TYPE_SINT64, FFI_TYPE_UINT64 -> PtrValue.create(rtype, rtype.size, ilib.asLong(result), 0);
+                    case FFI_TYPE_FLOAT -> PtrValue.create(rtype, rtype.size, ilib.asFloat(result), 0);
+                    case FFI_TYPE_DOUBLE -> PtrValue.create(rtype, rtype.size, ilib.asDouble(result), 0);
+                    case FFI_TYPE_VOID -> PtrValue.nil();
+                    default -> PtrValue.nativePointer(result);
+                };
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
+            Object retval;
             if (dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, restype, getBaseClassNode, isSameTypeNode)) {
-                retval = getFuncNode.execute(dict.getfunc, r, dict.size);
+                retval = getFuncNode.execute(dict.getfunc, resultPtr, dict.size);
             } else {
-                retval = PyCData_FromBaseObj(restype, null, 0, r, factory, raiseNode, pyTypeStgDictNode);
+                retval = PyCData_FromBaseObj(restype, null, 0, resultPtr, factory, raiseNode, pyTypeStgDictNode);
             }
             assert retval != null : "Should have raised an error earlier!";
             if (PGuards.isPNone(checker) || checker == null) {
