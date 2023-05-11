@@ -69,6 +69,11 @@ public abstract class PtrNodes {
             toBytesNode.execute(inliningTarget, src);
             PythonUtils.arraycopy(src.nativePointerBytes, srcOffset, dst, dstOffset, size);
         }
+
+        @Specialization
+        static void doNativeMemory(byte[] dst, int dstOffset, NativeMemoryStorage src, int srcOffset, int size) {
+            UNSAFE.copyMemory(null, src.pointer + srcOffset, dst, byteArrayOffset(dstOffset), size);
+        }
     }
 
     @GenerateUncached
@@ -88,6 +93,11 @@ public abstract class PtrNodes {
         static byte doMemoryView(MemoryViewStorage storage, int offset,
                         @CachedLibrary("storage.value") PythonBufferAccessLibrary bufferLib) {
             return bufferLib.readByte(storage, offset);
+        }
+
+        @Specialization
+        static byte doNativeMemory(NativeMemoryStorage storage, int offset) {
+            return UNSAFE.getByte(storage.pointer + offset);
         }
 
         @Fallback
@@ -112,6 +122,11 @@ public abstract class PtrNodes {
             return ARRAY_ACCESSOR.getShort(storage.value, offset);
         }
 
+        @Specialization
+        static short doNativeMemory(NativeMemoryStorage storage, int offset) {
+            return UNSAFE.getShort(storage.pointer + offset);
+        }
+
         @Fallback
         static short doOther(Storage storage, int offset,
                         @Cached ReadBytesNode read) {
@@ -134,6 +149,11 @@ public abstract class PtrNodes {
             return ARRAY_ACCESSOR.getInt(storage.value, offset);
         }
 
+        @Specialization
+        static int doNativeMemory(NativeMemoryStorage storage, int offset) {
+            return UNSAFE.getInt(storage.pointer + offset);
+        }
+
         @Fallback
         static int doOther(Storage storage, int offset,
                         @Cached ReadBytesNode read) {
@@ -154,6 +174,11 @@ public abstract class PtrNodes {
         @Specialization
         static long doBytes(ByteArrayStorage storage, int offset) {
             return ARRAY_ACCESSOR.getLong(storage.value, offset);
+        }
+
+        @Specialization
+        static long doNativeMemory(NativeMemoryStorage storage, int offset) {
+            return UNSAFE.getLong(storage.pointer + offset);
         }
 
         @Fallback
@@ -195,6 +220,11 @@ public abstract class PtrNodes {
         }
 
         @Specialization
+        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
+            UNSAFE.copyMemory(src, byteArrayOffset(srcOffset), null, dst.pointer + dstOffset, size);
+        }
+
+        @Specialization
         static void doPointerArray(PointerArrayStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
                         @Bind("this") Node inliningTarget,
                         @Cached PointerArrayToBytesNode toBytesNode) {
@@ -216,6 +246,11 @@ public abstract class PtrNodes {
             dst.value[dstOffset] = value;
         }
 
+        @Specialization
+        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, byte value) {
+            UNSAFE.putByte(dst.pointer + dstOffset, value);
+        }
+
         @Fallback
         static void doOther(Storage dst, int dstOffset, byte value,
                         @Cached WriteBytesNode writeBytesNode) {
@@ -234,6 +269,11 @@ public abstract class PtrNodes {
         @Specialization
         static void doBytes(ByteArrayStorage dst, int dstOffset, short value) {
             ARRAY_ACCESSOR.putShort(dst.value, dstOffset, value);
+        }
+
+        @Specialization
+        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, short value) {
+            UNSAFE.putShort(dst.pointer + dstOffset, value);
         }
 
         @Fallback
@@ -258,6 +298,11 @@ public abstract class PtrNodes {
             ARRAY_ACCESSOR.putInt(dst.value, dstOffset, value);
         }
 
+        @Specialization
+        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, int value) {
+            UNSAFE.putInt(dst.pointer + dstOffset, value);
+        }
+
         @Fallback
         static void doOther(Storage dst, int dstOffset, int value,
                         @Cached WriteBytesNode writeBytesNode) {
@@ -278,6 +323,11 @@ public abstract class PtrNodes {
         @Specialization
         static void doBytes(ByteArrayStorage dst, int dstOffset, long value) {
             ARRAY_ACCESSOR.putLong(dst.value, dstOffset, value);
+        }
+
+        @Specialization
+        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, long value) {
+            UNSAFE.putLong(dst.pointer + dstOffset, value);
         }
 
         @Fallback
@@ -558,20 +608,22 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static Object doPointerArray(PointerArrayStorage storage, int offset, FFIType ffiType) {
+        static Object doPointerArray(PointerArrayStorage storage, int offset, FFIType ffiType,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadPointerNode readPointerNode,
+                        @Cached PointerArrayToBytesNode toBytesNode) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
-            // TODO get rid of the indirection by doing the conversion to a value when creating the
-            // CAarg already
-            if (storage.objects != null && storage.objects.length == 1 && offset == 0) {
-                PtrValue derefed = storage.objects[0];
-                if (derefed.ptr instanceof ByteArrayStorage derefedStorage && derefed.offset == 0) {
-                    /*
-                     * We can pass it as a byte array and NFI will convert it to a pointer to the
-                     * array. Note we change all array/pointer FFI types into [UINT_8] later before
-                     * passing to NFI.
-                     */
-                    return derefedStorage.value;
-                }
+            PtrValue pointer = readPointerNode.execute(storage, offset);
+            if (pointer.ptr instanceof ByteArrayStorage derefedStorage && pointer.offset == 0) {
+                /*
+                 * We can pass it as a byte array and NFI will convert it to a pointer to the array.
+                 * Note we change all array/pointer FFI types into [UINT_8] later before passing to
+                 * NFI.
+                 */
+                return derefedStorage.value;
+            } else if (pointer.ptr instanceof PointerArrayStorage derefedStorage && pointer.offset == 0) {
+                toBytesNode.execute(inliningTarget, derefedStorage);
+                return derefedStorage.nativePointerBytes;
             }
             throw CompilerDirectives.shouldNotReachHere("Not implemented");
         }
@@ -629,7 +681,7 @@ public abstract class PtrNodes {
             int len = storage.value.length - offset;
             // TODO check permissions
             long pointer = UNSAFE.allocateMemory(len);
-            UNSAFE.copyMemory(storage.value, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset, null, pointer, len);
+            UNSAFE.copyMemory(storage.value, byteArrayOffset(offset), null, pointer, len);
             return pointer;
         }
 
@@ -650,5 +702,9 @@ public abstract class PtrNodes {
         } catch (Exception e) {
             throw new RuntimeException("exception while trying to get Unsafe.theUnsafe via reflection:", e);
         }
+    }
+
+    private static long byteArrayOffset(int offset) {
+        return (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) Unsafe.ARRAY_BYTE_INDEX_SCALE * (long) offset;
     }
 }
