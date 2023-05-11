@@ -1103,7 +1103,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 return error(null, obj);
             }
             auditNode.audit("ctypes.addressof", obj);
-            return obj.b_ptr;
+            return factory().createNativeVoidPtr(obj);
         }
 
         @SuppressWarnings("unused")
@@ -1888,11 +1888,20 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object memset(CDataObject ptr, int value, int num,
-                        @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+                        @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
             byte[] fill = new byte[num];
             Arrays.fill(fill, (byte) value);
             writeBytesNode.execute(ptr.b_ptr, fill);
             return ptr;
+        }
+
+        @Specialization
+        static Object memset(PythonNativeVoidPtr ptr, int value, int num,
+                        @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+            if (ptr.getPointerObject() instanceof CDataObject cDataObject) {
+                return memset(cDataObject, value, num, writeBytesNode);
+            }
+            throw CompilerDirectives.shouldNotReachHere("memset: pointer type not implemented");
         }
     }
 
