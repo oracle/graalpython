@@ -187,6 +187,10 @@ final class PtrValue implements TruffleObject {
         return new PtrValue(ptr, offset + incOffset);
     }
 
+    protected PtrValue createReference() {
+        return createReference(0);
+    }
+
     protected PtrValue createReference(int offset) {
         return new PtrValue(new PointerArrayStorage(new PtrValue[]{this}), offset);
     }

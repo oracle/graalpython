@@ -531,9 +531,10 @@ public class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == O_set")
         @SuppressWarnings("unused")
         static Object O_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            // TODO
-            throw raiseNode.raise(NotImplementedError);
+                        @Cached PtrNodes.WritePointerNode writePointerNode,
+                        @Cached PythonObjectFactory factory) {
+            writePointerNode.execute(ptr, PtrValue.nativePointer(factory.createNativeVoidPtr(value)));
+            return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == c_set")
@@ -688,25 +689,26 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == P_set")
-        Object P_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+        Object P_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object valueObj, @SuppressWarnings("unused") int size,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached PtrNodes.SetPointerValue setPointerValue,
+                        @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) {
-            if (value == PNone.NONE) {
-                ptr.toNil();
-                return PNone.NONE;
-            }
-
-            if (!(value instanceof PythonNativeVoidPtr)) {
-                if (longCheckNode.execute(value)) {
-                    throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
+            PtrValue value;
+            if (valueObj == PNone.NONE) {
+                value = PtrValue.nil();
+            } else if (valueObj instanceof PythonNativeVoidPtr nativeVoidPtr) {
+                if (nativeVoidPtr.getPointerObject() instanceof PtrValue wrapped) {
+                    value = wrapped;
+                } else {
+                    value = PtrValue.nativePointer(nativeVoidPtr.getPointerObject());
                 }
+            } else if (longCheckNode.execute(valueObj)) {
+                throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
+            } else {
                 throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_BE_CONVERTED_TO_POINTER);
             }
 
-            // v = (void *)PyLong_AsUnsignedLongMask(value);
-            Object v = ((PythonNativeVoidPtr) value).getPointerObject();
-            setPointerValue.execute(ptr, value);
+            writePointerNode.execute(ptr, value);
             return PNone.NONE;
         }
 
@@ -868,12 +870,14 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == O_get")
         Object O_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode,
+                        @Cached PtrNodes.GetPointerValue getPointerValue,
                         @Cached PRaiseNode raiseNode) {
             if (ptr.isNil()) {
                 throw raiseNode.raise(ValueError, ErrorMessages.PY_OBJ_IS_NULL);
             }
-            // TODO implement storing arbitrary objects
-            throw raiseNode.raise(NotImplementedError);
+            PythonNativeVoidPtr value = (PythonNativeVoidPtr) getPointerValue.execute(readPointerNode.execute(ptr));
+            return value.getPointerObject();
         }
 
         @Specialization(guards = "getfunc == c_get")

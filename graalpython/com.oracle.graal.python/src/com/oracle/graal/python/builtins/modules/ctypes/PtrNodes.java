@@ -592,7 +592,7 @@ public abstract class PtrNodes {
         }
     }
 
-    public abstract static class ConvertToNFIParameter extends Node {
+    public abstract static class ConvertToParameter extends Node {
         public final Object execute(PtrValue ptr, FFIType ffiType) {
             return execute(ptr.ptr, ptr.offset, ffiType);
         }
@@ -639,6 +639,10 @@ public abstract class PtrNodes {
             } else if (pointer.ptr instanceof PointerArrayStorage derefedStorage && pointer.offset == 0) {
                 toBytesNode.execute(inliningTarget, derefedStorage);
                 return derefedStorage.nativePointerBytes;
+            } else if (pointer.ptr instanceof NativeMemoryStorage derefedStorage) {
+                return derefedStorage.pointer;
+            } else if (pointer.isNil()) {
+                return 0L;
             }
             throw CompilerDirectives.shouldNotReachHere("Not implemented");
         }

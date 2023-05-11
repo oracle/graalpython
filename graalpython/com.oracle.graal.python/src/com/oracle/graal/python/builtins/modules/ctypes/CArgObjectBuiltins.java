@@ -164,7 +164,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     parg.tag = 'P';
                     // parg.pffi_type = ffi_type_pointer;
                     parg.pffi_type = FFIType.ffi_type_uint8_array;
-                    parg.value = self.b_ptr.createReference(0);
+                    parg.value = self.b_ptr.createReference();
                     parg.obj = self;
                     return parg;
                 }
