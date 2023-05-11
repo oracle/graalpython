@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,27 +62,24 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public abstract class MatchKeysNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object map, Object[] keys);
 
-    @Specialization(guards = {"keys.length > 0", "keys.length <= 32"})
-    static Object match(VirtualFrame frame, Object map, @NeverDefault Object[] keysArg,
-                    @Cached(value = "keysArg", dimensions = 1) Object[] keys,
+    @Specialization(guards = {"keys.length == keysLen", "keysLen > 0", "keysLen <= 32"}, limit = "1")
+    static Object matchCached(VirtualFrame frame, Object map, @NeverDefault Object[] keys,
+                    @Cached("keys.length") int keysLen,
                     @Cached PyObjectRichCompareBool.EqNode compareNode,
                     @Cached PyObjectCallMethodObjArgs callMethod,
                     @Cached PythonObjectFactory factory,
                     @Cached PRaiseNode raise) {
-        if (keys.length == 0) {
-            return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
-        }
-        Object[] values = getValues(frame, map, keys, compareNode, callMethod, raise);
+        Object[] values = getValues(frame, map, keys, keysLen, compareNode, callMethod, raise);
         return values != null ? factory.createTuple(values) : PNone.NONE;
     }
 
     @ExplodeLoop
-    private static Object[] getValues(VirtualFrame frame, Object map, Object[] keys, PyObjectRichCompareBool.EqNode compareNode, PyObjectCallMethodObjArgs callMethod, PRaiseNode raise) {
-        CompilerAsserts.partialEvaluationConstant(keys);
-        Object[] values = new Object[keys.length];
+    private static Object[] getValues(VirtualFrame frame, Object map, Object[] keys, int keysLen, PyObjectRichCompareBool.EqNode compareNode, PyObjectCallMethodObjArgs callMethod, PRaiseNode raise) {
+        CompilerAsserts.partialEvaluationConstant(keysLen);
+        Object[] values = new Object[keysLen];
         Object dummy = new Object();
-        Object[] seen = new Object[keys.length];
-        for (int i = 0; i < keys.length; i++) {
+        Object[] seen = new Object[keysLen];
+        for (int i = 0; i < values.length; i++) {
             Object key = keys[i];
             checkSeen(frame, raise, seen, key, compareNode);
             seen[i] = key;
@@ -104,7 +101,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = "keys.length > 32")
+    @Specialization(guards = "keys.length > 0", replaces = "matchCached")
     static Object match(VirtualFrame frame, Object map, Object[] keys,
                     @Cached PyObjectRichCompareBool.EqNode compareNode,
                     @Cached PyObjectCallMethodObjArgs callMethod,
@@ -118,7 +115,6 @@ public abstract class MatchKeysNode extends PNodeWithContext {
     }
 
     private static Object[] getValuesLongArray(VirtualFrame frame, Object map, Object[] keys, PyObjectRichCompareBool.EqNode compareNode, PyObjectCallMethodObjArgs callMethod, PRaiseNode raise) {
-        CompilerAsserts.partialEvaluationConstant(keys);
         Object[] values = new Object[keys.length];
         Object dummy = new Object();
         Object[] seen = new Object[keys.length];

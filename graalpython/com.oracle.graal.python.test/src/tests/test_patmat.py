@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -106,3 +106,20 @@ def test_long_mapping():
 
     assert star_match(d) == {33:33}
 
+def test_mutable_dict_keys():
+    class MyObj:
+        pass
+
+    def forward(**kwargs):
+        return kwargs
+
+    def test(name):
+        to_match = {'attr1': 1, 'attr2': 2, 'attr3': 3}
+        x = MyObj()
+        x.myattr = name
+        match to_match:
+            case {x.myattr: dyn_match, **data}:
+                return forward(dyn_match=dyn_match, **data)
+
+    assert test('attr1') == {'dyn_match': 1, 'attr2': 2, 'attr3': 3}
+    assert test('attr2') == {'dyn_match': 2, 'attr1': 1, 'attr3': 3}
