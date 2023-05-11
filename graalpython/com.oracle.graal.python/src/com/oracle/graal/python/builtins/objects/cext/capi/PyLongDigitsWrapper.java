@@ -45,13 +45,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -128,7 +126,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    final long readArrayElement(long index,
+    final Object readArrayElement(long index,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
@@ -211,20 +209,8 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
         boolean mustRelease = gil.acquire();
         try {
             if (!isNative()) {
-                long size = getArraySize(obSizeNode, gil);
-                assert size <= Integer.MAX_VALUE;
-                int[] ary = new int[(int) size];
-                for (int i = 0; i < size; i++) {
-                    long value;
-                    try {
-                        value = readArrayElement(i, obSizeNode, gil);
-                    } catch (InvalidArrayIndexException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                    assert Integer.toUnsignedLong((int) value) == value;
-                    ary[i] = (int) value;
-                }
-                setNativePointer(CArrayWrappers.intArrayToNativeInt32(ary));
+                Object ptr = callToNativeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(obSizeNode, gil));
+                setNativePointer(coerceToLong(ptr, lib));
             }
         } finally {
             gil.release(mustRelease);

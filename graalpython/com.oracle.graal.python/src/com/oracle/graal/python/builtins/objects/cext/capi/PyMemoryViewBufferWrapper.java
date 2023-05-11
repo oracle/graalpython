@@ -41,10 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PY_BUFFER_TYPEID;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -143,9 +143,14 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         public abstract Object execute(int[] array);
 
         @Specialization
-        static Object getShape(int[] intArray) {
+        static Object getShape(int[] intArray,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+            long[] longArray = new long[intArray.length];
+            for (int i = 0; i < intArray.length; i++) {
+                longArray[i] = intArray[i];
+            }
             // TODO memory leak, see GR-26590
-            return CArrayWrappers.intArrayToNativeInt64(intArray);
+            return callCapiFunction.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, PythonContext.get(callCapiFunction).getEnv().asGuestValue(longArray), longArray.length);
         }
     }
 
