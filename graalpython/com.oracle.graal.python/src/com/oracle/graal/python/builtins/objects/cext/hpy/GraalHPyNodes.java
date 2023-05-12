@@ -90,7 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMTyp
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyJNIContext.GraalHPyJNIFunctionPointer;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIFunctionPointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;

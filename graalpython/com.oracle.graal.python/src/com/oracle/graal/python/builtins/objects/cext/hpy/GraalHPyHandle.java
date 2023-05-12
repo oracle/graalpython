@@ -222,7 +222,7 @@ public final class GraalHPyHandle implements TruffleObject {
         }
     }
 
-    Object getDelegate() {
+    public Object getDelegate() {
         return delegate;
     }
 

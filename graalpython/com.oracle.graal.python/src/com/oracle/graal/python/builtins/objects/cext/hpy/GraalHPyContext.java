@@ -80,7 +80,6 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNITrampolines;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -211,6 +210,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTypeGetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -538,7 +538,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     /**
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
-    enum HPyContextMember {
+    public enum HPyContextMember {
         NAME("name"),
         PRIVATE("_private"),
         CTX_VERSION("ctx_version"),
@@ -1376,7 +1376,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * messages.
      */
     @ExportLibrary(InteropLibrary.class)
-    static final class HPyContextNativePointer implements TruffleObject {
+    public static final class HPyContextNativePointer implements TruffleObject {
 
         private final long pointer;
 
@@ -1471,7 +1471,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 loadJNIBackend();
-//                GraalHPyUniversalContextJNI.
                 if (initJNI(this, nativePointer) != 0) {
                     throw new RuntimeException("Could not initialize HPy JNI backend.");
                 }
