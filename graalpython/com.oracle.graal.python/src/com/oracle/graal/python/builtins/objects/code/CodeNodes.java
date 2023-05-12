@@ -48,6 +48,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeCallTargetNodeGen;
 import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -231,6 +232,21 @@ public abstract class CodeNodes {
                         @Cached("code") PCode cachedCode,
                         @Cached InlinedBranchProfile firstExecution) {
             return getInSingleContextMode(inliningTarget, cachedCode, firstExecution);
+        }
+
+        public static Signature getInSingleContextMode(Node inliningTarget, PFunction fun, InlinedBranchProfile firstExecution) {
+            assert isSingleContext(inliningTarget);
+            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(fun) && fun.getCodeStableAssumption().isValid()) {
+                getInSingleContextMode(inliningTarget, fun.getCode(), firstExecution);
+            }
+            PCode code = fun.getCode();
+            Signature signature = code.signature;
+            if (signature == null) {
+                firstExecution.enter(inliningTarget);
+                RootCallTarget ct = code.initializeCallTarget();
+                signature = code.initializeSignature(ct);
+            }
+            return signature;
         }
 
         public static Signature getInSingleContextMode(Node inliningTarget, PCode code, InlinedBranchProfile firstExecution) {

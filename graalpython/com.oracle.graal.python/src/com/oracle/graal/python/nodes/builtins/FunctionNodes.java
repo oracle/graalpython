@@ -237,7 +237,7 @@ public abstract class FunctionNodes {
         public static Signature getFunctionSignatureSingleContext(Node inliningTarget, InlinedBranchProfile wasFirst, Object fun) {
             CompilerAsserts.partialEvaluationConstant(fun);
             if (fun instanceof PFunction f) {
-                return CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, f.getCode(), wasFirst);
+                return CodeNodes.GetCodeSignatureNode.getInSingleContextMode(inliningTarget, f, wasFirst);
             } else if (fun instanceof PBuiltinFunction f) {
                 return f.getSignature();
             }
