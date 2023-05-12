@@ -56,35 +56,10 @@ import com.oracle.truffle.api.library.ExportMessage;
  * original values (which are NFI closures for functions in {@code hpy.c}, subsequently calling into
  * {@link GraalHPyContextFunctions}.
  */
-@ExportLibrary(InteropLibrary.class)
-public final class GraalHPyJNIContext implements TruffleObject {
+public final class GraalHPyJNIContext {
 
     public GraalHPyJNIContext(@SuppressWarnings("unused") GraalHPyContext context) {
     }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasMembers() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return HPyContextMember.KEYS;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    @TruffleBoundary
-    boolean isMemberReadable(String key) {
-        return HPyContextMember.getIndex(key) != -1;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    @TruffleBoundary
-    Object readMember(@SuppressWarnings("unused") String key) {
-        return new HPyContextNativePointer(0L);
-    }
+    // {{start autogen}}
+    // {{end autogen}}
 }
