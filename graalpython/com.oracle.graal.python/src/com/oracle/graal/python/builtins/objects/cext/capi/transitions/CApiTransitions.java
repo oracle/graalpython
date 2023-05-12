@@ -486,7 +486,8 @@ public class CApiTransitions {
             assert PythonContext.get(null).ownsGil();
             pollReferenceQueue();
             HandleContext handleContext = getContext();
-            int idx = handleContext.nativeHandlesFreeStack.pop();
+            // don't reuse handles in GCALot mode to make debugging easier
+            int idx = GCALot != 0 ? -1 : handleContext.nativeHandlesFreeStack.pop();
             long pointer;
             if (idx == -1) {
                 pointer = HandlePointerConverter.handleIndexToPointer(handleContext.nativeHandles.size());
