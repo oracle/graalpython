@@ -265,7 +265,9 @@ public final class PBaseException extends PythonObject {
         if (messageArgs != null && messageArgs.length > 0) {
             sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append("\", args = (");
             for (Object arg : messageArgs) {
-                if (arg instanceof PythonObject) {
+                if (arg instanceof TruffleString) {
+                    sb.append('"').append(arg).append('"');
+                } else if (arg instanceof PythonObject) {
                     sb.append(arg);
                 } else {
                     String fqn = arg.getClass().getName();
