@@ -52,11 +52,13 @@
 //*************************
 // JNI upcalls
 
-#include "com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext.h"
+#include "com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNIContext.h"
 #include "hpynative.h"
 
 /* definitions for HPyTracker */
 #include "hpy/runtime/ctx_funcs.h"
+
+#define JNI_HELPER(NAME) Java_com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNIContext_ ## NAME
 
 _HPy_HIDDEN JNIEnv* jniEnv;
 
@@ -453,18 +455,11 @@ void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
     context->_private = nativeSpace;
 }
 
-typedef void (*destroyfunc)(void *);
-
-JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_hpyCallDestroyFunc(JNIEnv *env, jclass clazz, jlong obj, jlong func) {
-    destroyfunc f = (destroyfunc) func;
-    f((void*) obj);
-}
-
 /* Initialize the jmethodID pointers for all the context functions implemented via JNI. */
-JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNI(JNIEnv *env, jclass clazz, jobject ctx, jlong ctxPointer) {
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject ctx) {
     LOG("%s", "hpy_jni.c:initJNI\n");
     jniEnv = env;
-    HPyContext *context = (HPyContext *) ctxPointer;
+    HPyContext *context = (HPyContext *) malloc(sizeof(HPyContext));
 
     context->ctx_Float_FromDouble = ctx_FloatFromDouble_jni;
     context->ctx_Float_AsDouble = ctx_FloatAsDouble_jni;
@@ -544,7 +539,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     jniField_ ## name = (*env)->GetFieldID(env, clazz, #name, jniSig); \
     if (jniField_ ## name == NULL) { \
         LOGS("ERROR: jni field " #name " not found found !\n"); \
-        return 1; \
+        return PTR_UP(NULL); \
     }
 
 ALL_FIELDS
@@ -554,7 +549,7 @@ ALL_FIELDS
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \
     if (jniMethod_ ## name == NULL) { \
         LOGS("ERROR: jni method ctx" #name " not found found !\n"); \
-        return 1; \
+        return PTR_UP(NULL); \
     }
 
 ALL_UPCALLS
@@ -563,14 +558,20 @@ ALL_UPCALLS
     jniMethod_hpy_debug_get_context = (*env)->GetMethodID(env, clazz, "getHPyDebugContext", "()" SIG_LONG);
     if (jniMethod_hpy_debug_get_context == NULL) {
         LOGS("ERROR: jni method getHPyDebugContext not found found !\n");
-        return 1;
+        return PTR_UP(NULL);
     }
 
-    /* success */
+    return PTR_UP(context);
+}
+
+JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIContext)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+    LOG("%s", "hpy_jni.c:finalizeJNIContext\n");
+    HPyContext *uctx = (HPyContext *) uctxPointer;
+    free(uctx);
     return 0;
 }
 
-JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNIDebugContext(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNIDebugContext)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
     LOG("%s", "hpy_jni.c:initJNIDebugContext\n");
     HPyContext *uctx = (HPyContext *) uctxPointer;
 
@@ -583,7 +584,7 @@ JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_G
     return PTR_UP(dctx);
 }
 
-JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_finalizeJNIDebugContext(JNIEnv *env, jclass clazz, jlong dctxPointer) {
+JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIDebugContext)(JNIEnv *env, jclass clazz, jlong dctxPointer) {
     LOG("%s", "hpy_jni.c:finalizeJNIDebugContext\n");
     HPyContext *dctx = (HPyContext *) dctxPointer;
     hpy_debug_ctx_free(dctx);
@@ -591,9 +592,13 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     return 0;
 }
 
-JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNIDebugModule(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNIDebugModule)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
     LOG("%s", "hpy_jni.c:initJNIDebugModule\n");
     return HPY_UP(HPyInit__debug((HPyContext *) uctxPointer));
+}
+
+JNIEXPORT jint JNICALL JNI_HELPER(strcmp)(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {
+    return (jint) strcmp((const char *)s1, (const char *)s2);
 }
 
 HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
@@ -603,10 +608,4 @@ HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
         HPy_FatalError(uctx, "hpy_debug_get_ctx: expected an universal ctx, got a debug ctx");
     }
     return dctx;
-}
-
-// helper functions
-
-JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_strcmp(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {
-    return (jint) strcmp((const char *)s1, (const char *)s2);
 }

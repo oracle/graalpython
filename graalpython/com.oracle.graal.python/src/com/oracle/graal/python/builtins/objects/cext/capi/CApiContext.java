@@ -57,6 +57,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 
@@ -995,9 +996,9 @@ public final class CApiContext extends CExtContext {
                 return false;
             }
 
-            SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyContext.getJNILibrary() + "\"", "<libpython-native>");
+            SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + GraalHPyJNIContext.getJNILibrary() + "\"", "<libpython-native>");
             try {
-                LOGGER.config("loading native C API support library " + GraalHPyContext.getJNILibrary());
+                LOGGER.config("loading native C API support library " + GraalHPyJNIContext.getJNILibrary());
                 nativeLibrary = env.parseInternal(nfiSrcBuilder.build()).call();
                 /*-
                  * PyAPI_FUNC(int) initNativeForward(void* (*getAPI)(const char*), void* (*getType)(const char*), void (*setTypeStore)(const char*, void*))

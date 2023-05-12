@@ -247,13 +247,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 @SuppressWarnings("static-method")
 public abstract class GraalHPyContextFunctions {
 
-    enum FunctionMode {
+    public enum FunctionMode {
         OBJECT,
         CHAR_PTR,
         INT32
     }
 
-    enum ReturnType {
+    public enum ReturnType {
         OBJECT {
             @Override
             public CExtToNativeNode createToNativeNode() {
@@ -1328,7 +1328,7 @@ public abstract class GraalHPyContextFunctions {
             // use 'wcslen' to determine the C array's length.
             Object dataArray = callFromWcharArrayNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_FROM_WCHAR_ARRAY, arguments[1], len);
             try {
-                return resultAsHandleNode.execute(unicodeFromWcharNode.execute(dataArray, PInt.intValueExact(sizeofWCharNode.execute(context))));
+                return resultAsHandleNode.execute(unicodeFromWcharNode.execute(dataArray, PInt.intValueExact(context.getWcharSize())));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return GraalHPyHandle.NULL_HANDLE;
@@ -1622,11 +1622,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class GraalHPyGetAttr extends GraalHPyContextFunction {
+    public static final class GraalHPyGetAttr extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        GraalHPyGetAttr(FunctionMode mode) {
+        public GraalHPyGetAttr(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR);
             this.mode = mode;
         }
@@ -1664,7 +1664,7 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class GraalHPyMaybeGetAttrS extends GraalHPyContextFunction {
+    public static final class GraalHPyMaybeGetAttrS extends GraalHPyContextFunction {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
@@ -1707,11 +1707,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class GraalHPyHasAttr extends GraalHPyContextFunction {
+    public static final class GraalHPyHasAttr extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        GraalHPyHasAttr(FunctionMode mode) {
+        public GraalHPyHasAttr(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR);
             this.mode = mode;
         }
@@ -1745,11 +1745,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class GraalHPySetAttr extends GraalHPyContextFunction {
+    public static final class GraalHPySetAttr extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        GraalHPySetAttr(FunctionMode mode) {
+        public GraalHPySetAttr(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR);
             this.mode = mode;
         }
@@ -1804,11 +1804,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class GraalHPyGetItem extends GraalHPyContextFunction {
+    public static final class GraalHPyGetItem extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        GraalHPyGetItem(FunctionMode mode) {
+        public GraalHPyGetItem(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR, INT32);
             this.mode = mode;
         }
@@ -1850,11 +1850,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class GraalHPySetItem extends GraalHPyContextFunction {
+    public static final class GraalHPySetItem extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        GraalHPySetItem(FunctionMode mode) {
+        public GraalHPySetItem(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR, INT32);
             this.mode = mode;
         }
@@ -2022,17 +2022,17 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static final class GraalHPyCallBuiltinFunction extends GraalHPyContextFunction {
+    public static final class GraalHPyCallBuiltinFunction extends GraalHPyContextFunction {
 
         private final TruffleString key;
         private final int nPythonArguments;
         private final ReturnType returnType;
 
-        GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments) {
+        public GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments) {
             this(key, nPythonArguments, ReturnType.OBJECT);
         }
 
-        GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments, ReturnType returnType) {
+        public GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments, ReturnType returnType) {
             this.key = key;
             assert nPythonArguments >= 0 : "number of arguments cannot be negative";
             this.nPythonArguments = nPythonArguments;
@@ -2862,7 +2862,7 @@ public abstract class GraalHPyContextFunctions {
             return 0;
         }
 
-        static int assign(PythonObject owner, Object referent, int location) {
+        public static int assign(PythonObject owner, Object referent, int location) {
             Object[] hpyFields = owner.getHPyData();
             if (location != 0) {
                 assert hpyFields != null;
@@ -3155,16 +3155,16 @@ public abstract class GraalHPyContextFunctions {
     }
 
     // see _HPyCapsule_key in the HPy API
-    static final class CapsuleKey {
-        static final byte Pointer = 0;
-        static final byte Name = 1;
-        static final byte Context = 2;
-        static final byte Destructor = 3;
+    public static final class CapsuleKey {
+        public static final byte Pointer = 0;
+        public static final byte Name = 1;
+        public static final byte Context = 2;
+        public static final byte Destructor = 3;
     }
 
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyCapsuleNew extends GraalHPyContextFunction {
-        static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
+        public static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
 
         @ExportMessage
         Object execute(Object[] arguments,
@@ -3186,7 +3186,7 @@ public abstract class GraalHPyContextFunctions {
 
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyCapsuleGet extends GraalHPyContextFunction {
-        static final TruffleString INCORRECT_NAME = tsLiteral("HPyCapsule_GetPointer called with incorrect name");
+        public static final TruffleString INCORRECT_NAME = tsLiteral("HPyCapsule_GetPointer called with incorrect name");
 
         @ExportMessage
         Object execute(Object[] arguments,
@@ -3251,14 +3251,14 @@ public abstract class GraalHPyContextFunctions {
             return equalNode.execute(capsuleName, name, TS_ENCODING);
         }
 
-        static void isLegalCapsule(Object object, int key, PRaiseNode raiseNode) {
+        public static void isLegalCapsule(Object object, int key, PRaiseNode raiseNode) {
             if (!(object instanceof PyCapsule) || ((PyCapsule) object).getPointer() == null) {
                 throw raiseNode.raise(ValueError, getErrorMessage(key));
             }
         }
 
         @TruffleBoundary
-        static TruffleString getErrorMessage(int key) {
+        public static TruffleString getErrorMessage(int key) {
             switch (key) {
                 case CapsuleKey.Pointer:
                     return ErrorMessages.CAPSULE_GETPOINTER_WITH_INVALID_CAPSULE;
@@ -3409,7 +3409,7 @@ public abstract class GraalHPyContextFunctions {
             }
         }
 
-        static Object getObject(PythonThreadState threadState, PContextVar var, Object def) {
+        public static Object getObject(PythonThreadState threadState, PContextVar var, Object def) {
             Object result = var.getValue(threadState);
             if (result == null) {
                 if (def == NULL_HANDLE_DELEGATE) {

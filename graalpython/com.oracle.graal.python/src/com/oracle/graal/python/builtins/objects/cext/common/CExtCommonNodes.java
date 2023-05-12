@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -1391,17 +1390,12 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class SizeofWCharNode extends Node {
 
-        public abstract long execute(CExtContext context);
+        public abstract long execute(CApiContext context);
 
         @Specialization
         static long doCached(@SuppressWarnings("unused") CApiContext capiContext,
                         @Exclusive @Cached(value = "getWcharSize()", allowUncached = true) long wcharSize) {
             return wcharSize;
-        }
-
-        @Specialization
-        static long doCached(GraalHPyContext hpyContext) {
-            return hpyContext.getWcharSize();
         }
 
         static long getWcharSize() {

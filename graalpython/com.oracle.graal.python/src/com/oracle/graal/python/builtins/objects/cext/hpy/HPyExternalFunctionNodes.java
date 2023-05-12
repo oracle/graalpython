@@ -83,11 +83,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckVoidResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -1359,9 +1359,10 @@ public abstract class HPyExternalFunctionNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createFunction(GraalHPyContext hpyContext, Object enclosingType, TruffleString propertyName, Object target, Object closure) {
-            PythonLanguage lang = hpyContext.getContext().getLanguage();
+            PythonContext pythonContext = hpyContext.getContext();
+            PythonLanguage lang = pythonContext.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorGetterRootNode(l, propertyName), HPyGetSetDescriptorGetterRootNode.class, propertyName);
-            PythonObjectFactory factory = hpyContext.getSlowPathFactory();
+            PythonObjectFactory factory = pythonContext.getCore().factory();
             return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
     }
@@ -1401,13 +1402,14 @@ public abstract class HPyExternalFunctionNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
-            PythonObjectFactory factory = context.getSlowPathFactory();
+            PythonContext pythonContext = context.getContext();
+            PythonObjectFactory factory = pythonContext.factory();
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorGetterRoot(l, propertyName, PExternalFunctionWrapper.GETTER),
                             HPyLegacyGetSetDescriptorGetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            target = PExternalFunctionWrapper.ensureExecutable(context.getContext(), target, PExternalFunctionWrapper.GETTER, InteropLibrary.getUncached());
+            target = PExternalFunctionWrapper.ensureExecutable(pythonContext, target, PExternalFunctionWrapper.GETTER, InteropLibrary.getUncached());
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
@@ -1445,9 +1447,10 @@ public abstract class HPyExternalFunctionNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createFunction(GraalHPyContext hpyContext, Object enclosingType, TruffleString propertyName, Object target, Object closure) {
-            PythonLanguage lang = hpyContext.getContext().getLanguage();
+            PythonContext pythonContext = hpyContext.getContext();
+            PythonLanguage lang = pythonContext.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorSetterRootNode(l, propertyName), HPyGetSetDescriptorSetterRootNode.class, propertyName);
-            PythonObjectFactory factory = hpyContext.getSlowPathFactory();
+            PythonObjectFactory factory = pythonContext.factory();
             return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
 
@@ -1484,13 +1487,14 @@ public abstract class HPyExternalFunctionNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
-            PythonObjectFactory factory = context.getSlowPathFactory();
+            PythonContext pythonContext = context.getContext();
+            PythonObjectFactory factory = pythonContext.factory();
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorSetterRoot(l, propertyName, PExternalFunctionWrapper.SETTER),
                             HPyLegacyGetSetDescriptorSetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            target = PExternalFunctionWrapper.ensureExecutable(context.getContext(), target, PExternalFunctionWrapper.SETTER, InteropLibrary.getUncached());
+            target = PExternalFunctionWrapper.ensureExecutable(pythonContext, target, PExternalFunctionWrapper.SETTER, InteropLibrary.getUncached());
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }

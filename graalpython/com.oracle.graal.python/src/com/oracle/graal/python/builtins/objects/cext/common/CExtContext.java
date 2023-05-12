@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -104,13 +105,6 @@ public abstract class CExtContext {
         }
         return LOGGER;
     }
-
-    public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null) {
-        @Override
-        protected Store initializeSymbolCache() {
-            return null;
-        }
-    };
 
     protected static final TruffleString T_HPY_INIT = tsLiteral("HPyInit_");
     private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
@@ -346,7 +340,7 @@ public abstract class CExtContext {
             if (loaded) {
                 String name = spec.name.toJavaStringUncached();
                 if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
-                    GraalHPyContext.loadJNIBackend();
+                    GraalHPyJNIContext.loadJNIBackend();
                     getLogger().config("loading module " + spec.path + " as native");
                     String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), spec.path);
                     if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {

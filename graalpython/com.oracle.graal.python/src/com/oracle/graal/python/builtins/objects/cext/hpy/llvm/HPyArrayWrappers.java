@@ -38,10 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy;
+package com.oracle.graal.python.builtins.objects.cext.hpy.llvm;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -61,7 +63,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
-public class HPyArrayWrappers {
+public abstract class HPyArrayWrappers {
 
     /**
      * Wraps a sequence object (like a list) such that it behaves like a {@code HPy} array (C type
@@ -69,7 +71,7 @@ public class HPyArrayWrappers {
      */
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-    static final class HPyArrayWrapper implements TruffleObject {
+    public static final class HPyArrayWrapper implements TruffleObject {
 
         private static final int UNINITIALIZED = 0;
         private static final int INVALIDATED = -1;
@@ -79,7 +81,7 @@ public class HPyArrayWrappers {
         final Object[] delegate;
         private long nativePointer = UNINITIALIZED;
 
-        HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
+        public HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
             this.hpyContext = hpyContext;
             this.delegate = delegate;
         }
@@ -188,16 +190,19 @@ public class HPyArrayWrappers {
         @ExportMessage
         @SuppressWarnings("static-method")
         boolean hasNativeType() {
-            return true;
+            return hpyContext.getBackend() instanceof GraalHPyLLVMContext;
         }
 
         @ExportMessage
         Object getNativeType() {
-            return hpyContext.getHPyArrayNativeType();
+            if (hpyContext.getBackend() instanceof GraalHPyLLVMContext llvmContext) {
+                return llvmContext.getHPyArrayNativeType();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
-    abstract static class HPyCloseArrayWrapperNode extends Node {
+    public abstract static class HPyCloseArrayWrapperNode extends Node {
 
         public abstract void execute(HPyArrayWrapper wrapper);
 

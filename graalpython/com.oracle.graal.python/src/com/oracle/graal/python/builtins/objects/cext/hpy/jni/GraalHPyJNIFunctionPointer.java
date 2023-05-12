@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy.jni;
 
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -352,9 +351,9 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
 
         private static long convertHPyDebugContext(Object[] arguments) {
             GraalHPyContext hPyContext = GraalHPyJNIConvertArgNode.getHPyContext(arguments);
-            try {
-                return hPyContext.getHPyDebugContext();
-            } catch (ApiInitException e) {
+            if (hPyContext.getBackend() instanceof GraalHPyJNIContext jniBackend) {
+                return jniBackend.getHPyDebugContext();
+            } else {
                 /*
                  * That's clearly an internal error because that should already be handled when
                  * loading a module in debug mode.
