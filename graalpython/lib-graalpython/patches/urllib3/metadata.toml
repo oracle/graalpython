@@ -1,0 +1,7 @@
+[[rules]]
+# urllib3 has a check that requires that the ssl implementation's name starts with "OpenSSL", we need to patch it out
+patch = 'urllib3-2.patch'
+subdir = 'src'
+# Older versions worked fine before the check was added
+version = '>= 2'
+install-priority = 0
