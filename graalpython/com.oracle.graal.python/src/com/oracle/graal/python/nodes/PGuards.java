@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
@@ -97,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -111,12 +111,9 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -237,14 +234,8 @@ public abstract class PGuards {
         return BuiltinMethodDescriptor.isInstance(value);
     }
 
-    public static boolean isClass(Object obj, InteropLibrary lib) {
-        try {
-            return lib.isMetaObject(obj) && lib.hasLanguage(obj) && lib.getLanguage(obj) == PythonLanguage.class;
-        } catch (UnsupportedMessageException e) {
-            // cannot happen due to check
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException(e);
-        }
+    public static boolean isClass(Object obj, TypeNodes.IsTypeNode isTypeNode) {
+        return isTypeNode.execute(obj);
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {

@@ -949,11 +949,11 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached InlinedExactClassProfile resultTypeProfile,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached IsTypeNode isTypeNode) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBaseNode.execute(obj, NativeMember.TP_BASE));
             if (PGuards.isPNone(result)) {
                 return null;
-            } else if (PGuards.isClass(result, lib)) {
+            } else if (PGuards.isClass(result, isTypeNode)) {
                 return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();

@@ -2142,7 +2142,7 @@ public class GraalHPyNodes {
                     case GraalHPyDef.HPyType_SPEC_PARAM_BASE:
                         // In this case, the 'specParamObject' is a single handle. We add it to
                         // the list of bases.
-                        assert PGuards.isClass(specParamObject, InteropLibrary.getUncached()) : "base object is not a Python class";
+                        assert PGuards.isClass(specParamObject, IsTypeNode.getUncached()) : "base object is not a Python class";
                         basesList.add(specParamObject);
                         break;
                     case GraalHPyDef.HPyType_SPEC_PARAM_BASES_TUPLE:

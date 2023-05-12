@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -66,8 +67,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -180,10 +179,10 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
         return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
     }
 
-    @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
+    @Specialization(guards = {"!isClass(object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "1")
     static PythonNativeWrapper runAbstractObject(PythonAbstractObject object,
                     @Exclusive @Cached ConditionProfile noWrapperProfile,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                    @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
         assert object != PNone.NO_VALUE;
         return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
     }

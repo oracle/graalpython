@@ -1696,7 +1696,7 @@ public abstract class GraalHPyContextFunctions {
 
             try {
                 Object newType = createTypeFromSpecNode.execute(context, typeSpec, typeSpecParamArray);
-                assert PGuards.isClass(newType, InteropLibrary.getUncached()) : "Object created from type spec is not a type";
+                assert PGuards.isClass(newType, IsTypeNode.getUncached()) : "Object created from type spec is not a type";
                 return asHandleNode.execute(newType);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
