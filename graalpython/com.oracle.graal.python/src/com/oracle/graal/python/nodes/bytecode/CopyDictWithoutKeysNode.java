@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,31 +47,33 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
+@GenerateInline(false) // used in BCI root node
 public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     public abstract PDict execute(Frame frame, Object subject, Object[] keys);
 
-    @Specialization(guards = "keysArg.length <= 32")
-    static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keysArg,
-                    @Cached(value = "keysArg", dimensions = 1) Object[] keys,
+    @Specialization(guards = {"keys.length == keysLength", "keysLength <= 32"}, limit = "1")
+    static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keys,
+                    @Cached("keys.length") int keysLength,
                     @Cached PythonObjectFactory factory,
                     @Cached DictNodes.UpdateNode updateNode,
                     @Cached DictBuiltins.DelItemNode delItemNode) {
         PDict rest = factory.createDict();
         updateNode.execute(frame, rest, subject);
-        deleteKeys(frame, keys, delItemNode, rest);
+        deleteKeys(frame, keys, keysLength, delItemNode, rest);
         return rest;
     }
 
     @ExplodeLoop
-    private static void deleteKeys(VirtualFrame frame, Object[] keys, DictBuiltins.DelItemNode delItemNode, PDict rest) {
-        CompilerAsserts.partialEvaluationConstant(keys);
-        for (int i = 0; i < keys.length; i++) {
+    private static void deleteKeys(VirtualFrame frame, Object[] keys, int keysLen, DictBuiltins.DelItemNode delItemNode, PDict rest) {
+        CompilerAsserts.partialEvaluationConstant(keysLen);
+        for (int i = 0; i < keysLen; i++) {
             delItemNode.execute(frame, rest, keys[i]);
         }
     }
