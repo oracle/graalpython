@@ -45,8 +45,12 @@ import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 final class PtrValue implements TruffleObject {
     private static final NullStorage NULL_STORAGE = new NullStorage();
     Storage ptr;
@@ -61,6 +65,7 @@ final class PtrValue implements TruffleObject {
         this(NULL_STORAGE, 0);
     }
 
+    @ExportMessage(name = "isNull")
     protected boolean isNil() {
         return ptr instanceof NullStorage;
     }
@@ -195,6 +200,7 @@ final class PtrValue implements TruffleObject {
         return new PtrValue(new PointerArrayStorage(new PtrValue[]{this}), offset);
     }
 
+    @ExportMessage.Ignore
     protected static boolean isNull(PtrValue b_ptr) {
         return b_ptr == null || b_ptr.ptr == NULL_STORAGE;
     }
