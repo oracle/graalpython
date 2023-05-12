@@ -59,11 +59,11 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.GraalPyObjectSizeNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -86,6 +87,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -107,25 +109,22 @@ public abstract class IteratorNodes {
      * returned. If either has no viable or defaultvalue implementation then this node returns -1.
      */
     @ImportStatic({PGuards.class, SpecialMethodNames.class, SpecialMethodSlot.class})
-    public abstract static class GetLength extends PNodeWithContext {
+    public abstract static class GetLength extends GraalPyObjectSizeNode {
 
         public abstract int execute(VirtualFrame frame, Object iterable);
 
-        @Specialization(guards = {"isString(iterable)"})
-        int length(VirtualFrame frame, Object iterable,
-                        @Cached PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(frame, iterable);
-        }
+        // Fast-path specializations for builtins are inherited
 
-        @Specialization(guards = {"isNoValue(iterable)"})
-        static int length(@SuppressWarnings({"unused"}) VirtualFrame frame, @SuppressWarnings({"unused"}) Object iterable) {
+        @Specialization(guards = "isNoValue(iterable)")
+        static int length(@SuppressWarnings({"unused"}) VirtualFrame frame, @SuppressWarnings("unused") PNone iterable) {
             return -1;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "4")
+        @Fallback
         int length(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary("iterable") InteropLibrary iLib,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached GetLengthForeign getLengthForeign,
                         @Cached InlinedGetClassNode getClassNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -135,18 +134,11 @@ public abstract class IteratorNodes {
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached InlinedConditionProfile hasLenProfile,
                         @Cached InlinedConditionProfile hasLengthHintProfile,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached GilNode gil) {
-            if (iLib.isString(iterable)) {
-                gil.release(true);
-                try {
-                    return codePointLengthNode.execute(switchEncodingNode.execute(iLib.asTruffleString(iterable), TS_ENCODING), TS_ENCODING);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                } finally {
-                    gil.acquire();
+                        @Cached PRaiseNode raiseNode) {
+            if (isForeignObjectNode.execute(iterable)) {
+                int foreignLen = getLengthForeign.execute(iterable);
+                if (foreignLen != -1) {
+                    return foreignLen;
                 }
             }
             Object clazz = getClassNode.execute(inliningTarget, iterable);
@@ -188,6 +180,35 @@ public abstract class IteratorNodes {
                     } else {
                         throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LENGTH_HINT__, len);
                     }
+                }
+            }
+            return -1;
+        }
+    }
+
+    /**
+     * Handles the special case of foreign Strings. If the input is not a string, returns -1.
+     */
+    @GenerateInline(false) // Intentionally lazy initialized
+    public abstract static class GetLengthForeign extends PNodeWithContext {
+        public abstract int execute(Object foreign);
+
+        @Specialization
+        static int doIt(Object foreign,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile isString,
+                        @CachedLibrary(limit = "3") InteropLibrary iLib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached GilNode gil) {
+            if (isString.profile(inliningTarget, iLib.isString(foreign))) {
+                gil.release(true);
+                try {
+                    return codePointLengthNode.execute(switchEncodingNode.execute(iLib.asTruffleString(foreign), TS_ENCODING), TS_ENCODING);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                } finally {
+                    gil.acquire();
                 }
             }
             return -1;

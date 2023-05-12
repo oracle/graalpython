@@ -40,43 +40,19 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
-import com.oracle.graal.python.nodes.object.InlinedGetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyObject_Size} and {@code PyObject_Length} (alias of the former).
@@ -84,116 +60,19 @@ import com.oracle.truffle.api.strings.TruffleString;
  * have any. Coerces the result to size integer using {@link PyNumberAsSizeNode}.
  */
 @GenerateUncached
-public abstract class PyObjectSizeNode extends PNodeWithContext {
+public abstract class PyObjectSizeNode extends GraalPyObjectSizeNode {
     public abstract int execute(Frame frame, Object object);
 
     public abstract int execute(Frame frame, PTuple object);
 
     protected abstract Object executeObject(Frame frame, Object object);
 
-    @Specialization
-    static int doTruffleString(TruffleString str,
-                    @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-        return codePointLengthNode.execute(str, TS_ENCODING);
-    }
-
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static int doList(PList object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
-        return object.getSequenceStorage().length();
-    }
-
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static int doTuple(PTuple object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
-        return object.getSequenceStorage().length();
-    }
-
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static int doDict(PDict object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
-        return lenNode.execute(object.getDictStorage());
-    }
-
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static int doSet(PSet object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
-        return lenNode.execute(object.getDictStorage());
-    }
-
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static int doPString(PString object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
-                    @Cached StringNodes.StringLenNode lenNode) {
-        return lenNode.execute(object);
-    }
-
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
-    static int doPBytes(PBytesLike object,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
-        return object.getSequenceStorage().length();
-    }
+    // Fast-path specializations for builtins are inherited
 
     @Fallback
     static int doOthers(VirtualFrame frame, Object object,
                     @Cached PyObjectSizeGenericNode genericNode) {
         return genericNode.execute(frame, object);
-    }
-
-    @GenerateUncached
-    @ImportStatic(SpecialMethodSlot.class)
-    abstract static class PyObjectSizeGenericNode extends Node {
-        abstract int execute(Frame frame, Object object);
-
-        protected abstract Object executeObject(Frame frame, Object object);
-
-        @Specialization(rewriteOn = UnexpectedResultException.class)
-        static int doInt(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                        @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                        @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                        @Shared("index") @Cached PyNumberIndexNode indexNode,
-                        @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
-                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
-            Object lenDescr = lookupLen.execute(frame, getClassNode.execute(inliningTarget, object), object);
-            if (lenDescr == PNone.NO_VALUE) {
-                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
-            }
-            try {
-                return checkLen(raiseNode, PGuards.expectInteger(callLen.executeObject(frame, lenDescr, object)));
-            } catch (UnexpectedResultException e) {
-                int len = convertAndCheckLen(frame, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
-                throw new UnexpectedResultException(len);
-            }
-        }
-
-        @Specialization(replaces = "doInt")
-        static int doObject(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("getClass") @Cached InlinedGetClassNode getClassNode,
-                        @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                        @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                        @Shared("index") @Cached PyNumberIndexNode indexNode,
-                        @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
-                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            Object lenDescr = lookupLen.execute(frame, getClassNode.execute(inliningTarget, object), object);
-            if (lenDescr == PNone.NO_VALUE) {
-                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
-            }
-            Object result = callLen.executeObject(frame, lenDescr, object);
-            return convertAndCheckLen(frame, result, indexNode, castLossy, asSizeNode, raiseNode);
-        }
     }
 
     static int checkLen(PRaiseNode raiseNode, int len) {
