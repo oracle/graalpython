@@ -13,6 +13,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NullStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PointerArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.Storage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -635,10 +636,13 @@ public abstract class PtrNodes {
         static Object doPointerArray(PointerArrayStorage storage, int offset, FFIType ffiType,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadPointerNode readPointerNode,
-                        @Cached PointerArrayToBytesNode toBytesNode) {
+                        @Cached PointerArrayToBytesNode toBytesNode,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
             PtrValue pointer = readPointerNode.execute(storage, offset);
-            if (pointer.ptr instanceof ByteArrayStorage derefedStorage && pointer.offset == 0) {
+            if (pointer.isNil()) {
+                return 0L;
+            } else if (pointer.ptr instanceof ByteArrayStorage derefedStorage && pointer.offset == 0) {
                 /*
                  * We can pass it as a byte array and NFI will convert it to a pointer to the array.
                  * Note we change all array/pointer FFI types into [UINT_8] later before passing to
@@ -650,8 +654,13 @@ public abstract class PtrNodes {
                 return derefedStorage.nativePointerBytes;
             } else if (pointer.ptr instanceof NativeMemoryStorage derefedStorage) {
                 return derefedStorage.pointer;
-            } else if (pointer.isNil()) {
-                return 0L;
+            } else if (pointer.ptr instanceof MemoryViewStorage derefedStorage) {
+                PMemoryView mv = derefedStorage.value;
+                if (bufferLib.hasInternalByteArray(mv)) {
+                    return bufferLib.getInternalByteArray(mv);
+                } else if (mv.getBufferPointer() != null && mv.getOffset() == 0) {
+                    return mv.getBufferPointer();
+                }
             }
             throw CompilerDirectives.shouldNotReachHere("Not implemented");
         }
