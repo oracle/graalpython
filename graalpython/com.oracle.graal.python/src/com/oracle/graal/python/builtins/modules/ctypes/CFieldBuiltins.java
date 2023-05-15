@@ -534,7 +534,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         static Object O_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Cached PythonObjectFactory factory) {
-            writePointerNode.execute(ptr, PtrValue.nativePointer(factory.createNativeVoidPtr(value)));
+            writePointerNode.execute(ptr, PtrValue.pythonObject(value));
             return PNone.NONE;
         }
 
@@ -880,13 +880,13 @@ public class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "getfunc == O_get")
         Object O_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
                         @Cached PtrNodes.ReadPointerNode readPointerNode,
-                        @Cached PtrNodes.GetPointerValue getPointerValue,
+                        @Cached PtrNodes.ReadPythonObject readPythonObject,
                         @Cached PRaiseNode raiseNode) {
             if (ptr.isNil()) {
                 throw raiseNode.raise(ValueError, ErrorMessages.PY_OBJ_IS_NULL);
             }
-            PythonNativeVoidPtr value = (PythonNativeVoidPtr) getPointerValue.execute(readPointerNode.execute(ptr));
-            return value.getPointerObject();
+            PtrValue value = readPointerNode.execute(ptr);
+            return readPythonObject.execute(value);
         }
 
         @Specialization(guards = "getfunc == c_get")

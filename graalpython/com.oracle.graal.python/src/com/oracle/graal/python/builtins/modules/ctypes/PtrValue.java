@@ -86,6 +86,10 @@ final class PtrValue implements TruffleObject {
         return new PtrValue(new NativeMemoryStorage(nativePointer), 0);
     }
 
+    protected static PtrValue pythonObject(Object object) {
+        return new PtrValue(new PythonObjectStorage(object), 0);
+    }
+
     protected void toNil() {
         ptr = NULL_STORAGE;
         offset = 0;
@@ -246,6 +250,14 @@ final class PtrValue implements TruffleObject {
 
         public NativeMemoryStorage(long pointer) {
             this.pointer = pointer;
+        }
+    }
+
+    static final class PythonObjectStorage extends Storage {
+        final Object pythonObject;
+
+        public PythonObjectStorage(Object pythonObject) {
+            this.pythonObject = pythonObject;
         }
     }
 }

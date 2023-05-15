@@ -115,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -1756,12 +1755,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // See O_get getfunc
-    private static Object derefPyObject(PtrValue ptr, PtrNodes.GetPointerValue getPointerValue) {
-        PythonNativeVoidPtr value = (PythonNativeVoidPtr) getPointerValue.execute(ptr);
-        return value.getPointerObject();
-    }
-
     @ImportStatic(PGuards.class)
     @GenerateUncached
     protected abstract static class CastFunctionNode extends Node {
@@ -1775,10 +1768,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached CallNode callNode,
                         @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Cached PtrNodes.GetPointerValue getPointerValue,
+                        @Cached PtrNodes.ReadPythonObject readPythonObject,
                         @Cached PtrNodes.WritePointerNode writePointerNode) {
-            Object src = derefPyObject(srcObj, getPointerValue);
-            Object ctype = derefPyObject(ctypeObj, getPointerValue);
+            Object src = readPythonObject.execute(srcObj);
+            Object ctype = readPythonObject.execute(ctypeObj);
             castCheckPtrTypeNode.execute(ctype);
             CDataObject result = (CDataObject) callNode.execute(ctype);
 

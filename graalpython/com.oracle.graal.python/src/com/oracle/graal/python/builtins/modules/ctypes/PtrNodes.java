@@ -11,6 +11,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativeMemoryStor
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NullStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PointerArrayStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PythonObjectStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.Storage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -575,6 +576,20 @@ public abstract class PtrNodes {
         static PtrValue doOther(Storage storage, int offset,
                         @Cached ReadLongNode readLongNode) {
             return PtrValue.nativeMemory(readLongNode.execute(storage, offset));
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ReadPythonObject extends Node {
+        public final Object execute(PtrValue ptr) {
+            return execute(ptr.ptr, ptr.offset);
+        }
+
+        protected abstract Object execute(Storage storage, int offset);
+
+        @Specialization(guards = "offset == 0")
+        static Object doPythonObject(PythonObjectStorage storage, @SuppressWarnings("unused") int offset) {
+            return storage.pythonObject;
         }
     }
 
