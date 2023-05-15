@@ -111,7 +111,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -208,32 +207,6 @@ public abstract class CExtCommonNodes {
                 throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getTsName());
             } catch (UnsupportedMessageException e) {
                 throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
-            }
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class PCallCExtFunction extends PNodeWithContext {
-
-        public final Object call(CExtContext nativeContext, NativeCExtSymbol symbol, Object... args) {
-            return execute(nativeContext, symbol, args);
-        }
-
-        protected abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol, Object[] args);
-
-        @Specialization
-        static Object doIt(CExtContext nativeContext, NativeCExtSymbol symbol, Object[] args,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @Cached EnsureTruffleStringNode ensureTruffleStringNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                // TODO review EnsureTruffleString with GR-37896
-                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(nativeContext, symbol), args));
-            } catch (UnsupportedTypeException | ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
-            } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, symbol.getTsName());
             }
         }
     }
