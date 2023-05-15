@@ -91,13 +91,6 @@ final class PtrValue implements TruffleObject {
         offset = 0;
     }
 
-    protected void createStorage(FFIType type, int size, Object value) {
-        if (isNil()) {
-            ptr = createStorageInternal(type, size, value);
-            offset = 0;
-        }
-    }
-
     private static Storage createStorageInternal(FFIType type, int size, Object value) {
         FFI_TYPES t = type.type;
         return switch (t) {

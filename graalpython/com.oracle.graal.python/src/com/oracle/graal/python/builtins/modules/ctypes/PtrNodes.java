@@ -524,6 +524,15 @@ public abstract class PtrNodes {
             return storage.value;
         }
 
+        // FIXME this doesn't make sense, one of the specializations is wrong
+        @Specialization
+        static Object doNativePointer(NativeMemoryStorage storage, int offset) {
+            if (offset != 0) {
+                throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
+            }
+            return storage.pointer;
+        }
+
         // TODO memoryview
     }
 

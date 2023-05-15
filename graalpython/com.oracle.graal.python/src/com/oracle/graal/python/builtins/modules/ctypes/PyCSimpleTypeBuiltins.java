@@ -323,7 +323,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = code;
             parg.pffi_type = fd.pffi_type;
-            parg.value.createStorage(parg.pffi_type, dict.size, null);
+            parg.value = PtrValue.allocate(parg.pffi_type, dict.size);
             try {
                 parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
                 return parg;

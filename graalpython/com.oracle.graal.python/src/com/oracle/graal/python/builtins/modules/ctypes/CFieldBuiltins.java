@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -629,6 +630,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == z_set")
         Object z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached PyLongCheckNode longCheckNode,
+                        @Cached CastToJavaUnsignedLongNode cast,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -649,7 +651,8 @@ public class CFieldBuiltins extends PythonBuiltins {
                 return value;
             } else if (longCheckNode.execute(value)) {
                 // *(char **)ptr = (char *)PyLong_AsUnsignedLongMask(value);
-                throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
+                long nativePointer = cast.execute(value);
+                writePointerNode.execute(ptr, PtrValue.nativeMemory(nativePointer));
             }
             throw raiseNode.raise(TypeError, ErrorMessages.BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
         }
@@ -658,6 +661,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object v, @SuppressWarnings("unused") int size,
                         @Cached CastToTruffleStringNode toString,
                         @Cached PyLongCheckNode longCheckNode,
+                        @Cached CastToJavaUnsignedLongNode cast,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached PtrNodes.WritePointerNode writePointerNode,
@@ -671,7 +675,8 @@ public class CFieldBuiltins extends PythonBuiltins {
                 value = voidPtr.getPointerObject();
             } else if (longCheckNode.execute(value)) {
                 // *(wchar_t **)ptr = (wchar_t *)PyLong_AsUnsignedLongMask(value);
-                throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
+                long nativePointer = cast.execute(value);
+                writePointerNode.execute(ptr, PtrValue.nativeMemory(nativePointer));
             }
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
@@ -691,7 +696,9 @@ public class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == P_set")
         Object P_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object valueObj, @SuppressWarnings("unused") int size,
                         @Cached PyLongCheckNode longCheckNode,
+                        @Cached CastToJavaUnsignedLongNode cast,
                         @Cached PtrNodes.WritePointerNode writePointerNode,
+                        @Cached PtrNodes.SetPointerValue setPointerValue,
                         @Shared @Cached PRaiseNode raiseNode) {
             PtrValue value;
             if (valueObj == PNone.NONE) {
@@ -700,10 +707,12 @@ public class CFieldBuiltins extends PythonBuiltins {
                 if (nativeVoidPtr.getPointerObject() instanceof PtrValue wrapped) {
                     value = wrapped;
                 } else {
-                    value = PtrValue.nativePointer(nativeVoidPtr.getPointerObject());
+                    setPointerValue.execute(ptr, nativeVoidPtr.getNativePointer());
+                    return PNone.NONE;
                 }
             } else if (longCheckNode.execute(valueObj)) {
-                throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
+                long nativePointer = cast.execute(valueObj);
+                value = PtrValue.nativeMemory(nativePointer);
             } else {
                 throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_BE_CONVERTED_TO_POINTER);
             }
@@ -951,13 +960,14 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == P_get")
         static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode,
                         @Cached PtrNodes.GetPointerValue getPointerValue,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached PythonObjectFactory factory) {
             if (ptr.isNil()) {
                 return 0L;
             }
-            Object p = getPointerValue.execute(ptr);
+            Object p = getPointerValue.execute(readPointerNode.execute(ptr));
             if (p instanceof Long) {
                 long val = (long) p;
                 return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
