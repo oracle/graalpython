@@ -47,10 +47,11 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -58,51 +59,31 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateUncached
 public abstract class WriteGlobalNode extends PNodeWithContext {
-    private static final WriteGlobalNode UNCACHED = new WriteGlobalNode(null) {
-        @Override
-        public void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value) {
-            throw CompilerDirectives.shouldNotReachHere("uncached WriteGlobalNode must be used with #write");
-        }
-
-        @Override
-        public void write(Frame frame, Object globals, TruffleString name, Object value) {
-            if (globals instanceof PythonModule) {
-                WriteAttributeToObjectNode.getUncached().execute(globals, name, value);
-            } else {
-                PyObjectSetItem.getUncached().execute(frame, globals, name, value);
-            }
-        }
-    };
-
-    protected final TruffleString attributeId;
-
-    WriteGlobalNode(TruffleString attributeId) {
-        this.attributeId = attributeId;
+    public static WriteGlobalNode getUncached() {
+        return WriteGlobalNodeGen.getUncached();
     }
 
     @NeverDefault
-    public static WriteGlobalNode create(TruffleString attributeId) {
-        return WriteGlobalNodeGen.create(attributeId);
+    public static WriteGlobalNode create() {
+        return WriteGlobalNodeGen.create();
     }
 
-    public static WriteGlobalNode getUncached() {
-        return UNCACHED;
+    public final void executeObject(VirtualFrame frame, TruffleString name, Object value) {
+        CompilerAsserts.partialEvaluationConstant(name);
+        executeObjectWithGlobals(frame, PArguments.getGlobals(frame), name, value);
     }
 
-    public final void executeObject(VirtualFrame frame, Object value) {
-        executeObjectWithGlobals(frame, PArguments.getGlobals(frame), value);
+    public final void write(Frame frame, Object globals, TruffleString name, Object value) {
+        CompilerAsserts.partialEvaluationConstant(name);
+        executeObjectWithGlobals((VirtualFrame) frame, globals, name, value);
     }
 
-    public void write(Frame frame, Object globals, TruffleString name, Object value) {
-        assert name == attributeId : "cached WriteGlobalNode can only be used with cached attributeId";
-        executeObjectWithGlobals((VirtualFrame) frame, globals, value);
-    }
-
-    public abstract void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value);
+    public abstract void executeObjectWithGlobals(VirtualFrame frame, Object globals, TruffleString name, Object value);
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1")
-    void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, Object value,
+    void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, TruffleString attributeId, Object value,
                     @Bind("this") Node inliningTarget,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
@@ -110,27 +91,27 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "writeDictObjectCached", guards = "isBuiltinDict(globals)")
-    void writeDictObject(VirtualFrame frame, PDict globals, Object value,
+    void writeDictObject(VirtualFrame frame, PDict globals, TruffleString attributeId, Object value,
                     @Bind("this") Node inliningTarget,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
         storeNode.execute(frame, inliningTarget, globals, attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"})
-    void writeGenericDict(VirtualFrame frame, PDict globals, Object value,
+    void writeGenericDict(VirtualFrame frame, PDict globals, TruffleString attributeId, Object value,
                     @Cached PyObjectSetItem storeNode) {
         storeNode.execute(frame, globals, attributeId, value);
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    void writeModuleCached(@SuppressWarnings("unused") PythonModule globals, Object value,
+    void writeModuleCached(@SuppressWarnings("unused") PythonModule globals, TruffleString attributeId, Object value,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Shared("write") @Cached WriteAttributeToObjectNode write) {
         write.execute(cachedGlobals, attributeId, value);
     }
 
     @Specialization(replaces = "writeModuleCached")
-    void writeModule(PythonModule globals, Object value,
+    void writeModule(PythonModule globals, TruffleString attributeId, Object value,
                     @Shared("write") @Cached WriteAttributeToObjectNode write) {
         write.execute(globals, attributeId, value);
     }

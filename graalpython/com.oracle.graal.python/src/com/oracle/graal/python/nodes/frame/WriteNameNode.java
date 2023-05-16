@@ -45,34 +45,34 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateUncached
 public abstract class WriteNameNode extends PNodeWithContext implements AccessNameNode {
-    protected final TruffleString attributeId;
 
-    protected WriteNameNode(TruffleString attributeId) {
-        this.attributeId = attributeId;
+    public final void execute(VirtualFrame frame, TruffleString attributeId, Object value) {
+        CompilerAsserts.partialEvaluationConstant(attributeId);
+        executeImpl(frame, attributeId, value);
     }
 
-    public static WriteNameNode create(TruffleString attributeId) {
-        return WriteNameNodeGen.create(attributeId);
-    }
-
-    public abstract void execute(VirtualFrame frame, Object value);
+    abstract void executeImpl(VirtualFrame frame, TruffleString attributeId, Object value);
 
     @Specialization(guards = "!hasLocals(frame)")
-    protected static void writeGlobal(VirtualFrame frame, Object value,
-                    @Cached("create(attributeId)") WriteGlobalNode writeGlobal) {
-        writeGlobal.executeObject(frame, value);
+    protected static void writeGlobal(VirtualFrame frame, TruffleString attributeId, Object value,
+                    @Cached WriteGlobalNode writeGlobal) {
+        writeGlobal.executeObject(frame, attributeId, value);
     }
 
     @Specialization(guards = "hasLocalsDict(frame)")
-    protected void writeLocalsDict(VirtualFrame frame, Object value,
+    protected static void writeLocalsDict(VirtualFrame frame, TruffleString attributeId, Object value,
                     @Bind("this") Node inliningTarget,
                     @Cached HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
@@ -80,9 +80,14 @@ public abstract class WriteNameNode extends PNodeWithContext implements AccessNa
     }
 
     @Specialization(guards = "hasLocals(frame)")
-    protected void writeLocal(VirtualFrame frame, Object value,
+    protected static void writeLocal(VirtualFrame frame, TruffleString attributeId, Object value,
                     @Cached PyObjectSetItem setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.execute(frame, frameLocals, attributeId, value);
+    }
+
+    @NeverDefault
+    public static WriteNameNode create() {
+        return WriteNameNodeGen.create();
     }
 }
