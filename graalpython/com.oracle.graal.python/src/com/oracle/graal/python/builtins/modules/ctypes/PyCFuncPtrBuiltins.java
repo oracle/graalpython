@@ -182,13 +182,12 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == 1", "isLong(args, longCheckNode)"})
         Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
-                        @Cached PyLong_AsVoidPtr asVoidPtr,
+                        @Cached PtrNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-            Object ptr = asVoidPtr.execute(args[0]);
             CDataObject ob = factory().createPyCFuncPtrObject(type);
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             GenericPyCDataNew(dict, ob);
-            ob.b_ptr = PtrValue.create(dict.ffi_type_pointer, dict.size, ptr, 0);
+            ob.b_ptr = pointerFromLongNode.execute(args[0]).createReference();
             return ob;
         }
 
@@ -226,7 +225,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             GenericPyCDataNew(dict, self);
             self.callable = callable;
             self.thunk = thunk;
-            self.b_ptr = PtrValue.nativeMemory(thunk.pcl_exec);
+            self.b_ptr = PtrValue.nativeMemory(thunk.pcl_exec).createReference();
 
             keepRefNode.execute(frame, self, 0, thunk);
             return self;
@@ -316,8 +315,11 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object bool(PyCFuncPtrObject self) {
-            return !self.b_ptr.isNil();
+        static Object bool(PyCFuncPtrObject self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerNodes.ReadPointerNode readPointerNode) {
+            Pointer value = readPointerNode.execute(inliningTarget, self.b_ptr);
+            return !value.isNull();
         }
     }
 
@@ -473,6 +475,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
                         @Cached CallProcNode callProcNode,
                         @Cached TruffleString.EqualNode equalNode,
+                        @Cached PtrNodes.ReadPointerNode readPointerNode,
                         @Cached PtrNodes.GetPointerValueNode getPointerValueNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
@@ -484,7 +487,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object errcheck = self.errcheck /* ? self.errcheck : dict.errcheck */;
 
             int[] props = new int[3];
-            NativeFunction pProc = getFunctionFromLongObject(getPointerValueNode.execute(self.b_ptr), getContext(), asVoidPtr);
+            Object functionPointer = getPointerValueNode.execute(readPointerNode.execute(self.b_ptr));
+            NativeFunction pProc = getFunctionFromLongObject(functionPointer, getContext(), asVoidPtr);
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);
             int inoutmask = props[pinoutmask_idx];
@@ -800,7 +804,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             self.paramflags = paramflags;
 
             Object addressObj = address instanceof PythonNativeVoidPtr ptr ? ptr.getPointerObject() : address;
-            self.b_ptr = PtrValue.nativeMemory(addressObj);
+            self.b_ptr = PtrValue.nativeMemory(addressObj).createReference();
             keepRefNode.execute(frame, self, 0, dll);
 
             self.callable = self;
