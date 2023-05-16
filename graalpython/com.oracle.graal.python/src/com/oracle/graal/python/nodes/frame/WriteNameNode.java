@@ -83,6 +83,7 @@ public abstract class WriteNameNode extends PNodeWithContext implements AccessNa
                     @Cached(inline = false) PyObjectSetItem setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.executeCached(frame, frameLocals, attributeId, value);
+
     }
 
     @NeverDefault
