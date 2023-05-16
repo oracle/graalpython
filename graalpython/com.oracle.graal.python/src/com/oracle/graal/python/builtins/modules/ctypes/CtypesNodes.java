@@ -165,52 +165,6 @@ public class CtypesNodes {
         }
     }
 
-    @GenerateUncached
-    protected abstract static class GetBytesFromNativePointerNode extends PNodeWithContext {
-
-        abstract byte[] execute(Object pointer, int size);
-
-        protected CtypesModuleBuiltins getCtypesMod(PythonContext context) {
-            return (CtypesModuleBuiltins) context.lookupBuiltinModule(T__CTYPES).getBuiltins();
-        }
-
-        @Specialization(guards = "size > 0")
-        byte[] getBytes(Object pointer, int size,
-                        @Shared("c") @Cached(value = "getContext()", allowUncached = true, neverDefault = false) PythonContext context,
-                        @Cached(value = "getCtypesMod(context)", allowUncached = true, neverDefault = false) CtypesModuleBuiltins mod,
-                        @Shared("r") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
-            try {
-                byte[] bytes = new byte[size];
-                lib.execute(mod.getMemcpyFunction(), context.getEnv().asGuestValue(bytes), pointer, size);
-                return bytes;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw raiseNode.raise(SystemError, e);
-            }
-        }
-
-        @Specialization(guards = "ignored < 0")
-        byte[] getStringBytes(Object pointer, @SuppressWarnings("unused") int ignored,
-                        @Shared("c") @Cached(value = "getContext()", allowUncached = true, neverDefault = false) PythonContext context,
-                        @Cached(value = "getCtypesMod(context)", allowUncached = true, neverDefault = false) CtypesModuleBuiltins mod,
-                        @Shared("r") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
-            try {
-                long size = (Long) lib.execute(mod.getStrlenFunction(), pointer);
-                byte[] bytes = new byte[(int) size];
-                lib.execute(mod.getMemcpyFunction(), context.getEnv().asGuestValue(bytes), pointer, size);
-                return bytes;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw raiseNode.raise(SystemError, e);
-            }
-        }
-
-        @Specialization(guards = "size == 0")
-        static byte[] empty(@SuppressWarnings("unused") Object pointer, @SuppressWarnings("unused") int size) {
-            return EMPTY_BYTE_ARRAY;
-        }
-    }
-
     protected static Object getValue(FFI_TYPES type, byte[] storage, int offset) {
         switch (type) {
             case FFI_TYPE_UINT8_ARRAY:
