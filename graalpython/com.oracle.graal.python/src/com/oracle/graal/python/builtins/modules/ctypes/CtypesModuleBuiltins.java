@@ -1433,10 +1433,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     case FFI_TYPE_SINT64, FFI_TYPE_UINT64 -> PtrValue.create(rtype, rtype.size, ilib.asLong(result), 0);
                     case FFI_TYPE_FLOAT -> PtrValue.create(rtype, rtype.size, ilib.asFloat(result), 0);
                     case FFI_TYPE_DOUBLE -> PtrValue.create(rtype, rtype.size, ilib.asDouble(result), 0);
-                    case FFI_TYPE_VOID -> PtrValue.nil();
+                    case FFI_TYPE_VOID -> PtrValue.NULL;
                     default -> {
                         if (ilib.isNull(result)) {
-                            yield PtrValue.nil();
+                            yield PtrValue.NULL;
                         }
                         if (ilib.hasArrayElements(result)) {
                             byte[] bytes = new byte[(int) ilib.getArraySize(result)];
@@ -1522,7 +1522,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (!managed) {
                     pa.value = getContext().getEnv().asGuestValue(null); // TODO check
                 } else {
-                    pa.value = PtrValue.nil();
+                    pa.value = PtrValue.NULL;
                 }
                 return;
             }

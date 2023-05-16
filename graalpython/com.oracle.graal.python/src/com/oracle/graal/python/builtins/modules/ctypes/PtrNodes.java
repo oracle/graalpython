@@ -644,7 +644,7 @@ public abstract class PtrNodes {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
             PtrValue pointer = readPointerNode.execute(storage, offset);
-            if (pointer.isNil()) {
+            if (pointer.isNull()) {
                 return 0L;
             } else if (pointer.ptr instanceof ByteArrayStorage derefedStorage && pointer.offset == 0) {
                 /*

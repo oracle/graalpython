@@ -632,7 +632,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (value == PNone.NONE) {
-                writePointerNode.execute(ptr, PtrValue.nil());
+                writePointerNode.execute(ptr, PtrValue.NULL);
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
                 writePointerNode.execute(ptr, pointerFromLongNode.execute(value));
@@ -660,7 +660,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             if (value == PNone.NONE) {
-                writePointerNode.execute(ptr, PtrValue.nil());
+                writePointerNode.execute(ptr, PtrValue.NULL);
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
                 writePointerNode.execute(ptr, pointerFromLongNode.execute(value));
@@ -689,7 +689,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode raiseNode) {
             PtrValue valuePtr;
             if (value == PNone.NONE) {
-                valuePtr = PtrValue.nil();
+                valuePtr = PtrValue.NULL;
             } else if (longCheckNode.execute(value)) {
                 valuePtr = pointerFromLongNode.execute(value);
             } else {
@@ -861,7 +861,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PtrNodes.ReadPointerNode readPointerNode,
                         @Cached PtrNodes.ReadPythonObject readPythonObject,
                         @Cached PRaiseNode raiseNode) {
-            if (ptr.isNil()) {
+            if (ptr.isNull()) {
                 throw raiseNode.raise(ValueError, ErrorMessages.PY_OBJ_IS_NULL);
             }
             PtrValue value = readPointerNode.execute(ptr);
@@ -910,7 +910,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached PtrNodes.StrLenNode strLenNode,
                         @Cached PtrNodes.ReadBytesNode readBytesNode) {
-            if (!ptr.isNil()) {
+            if (!ptr.isNull()) {
                 // ptr is a char**, we need to deref it to get char*
                 PtrValue valuePtr = readPointerNode.execute(ptr);
                 byte[] bytes = readBytesNode.execute(valuePtr, strLenNode.execute(valuePtr));
@@ -927,7 +927,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PtrNodes.ReadBytesNode readBytesNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            if (!ptr.isNil()) {
+            if (!ptr.isNull()) {
                 // ptr is a char**, we need to deref it to get char*
                 PtrValue valuePtr = readPointerNode.execute(ptr);
                 byte[] bytes = readBytesNode.execute(valuePtr, wCsLenNode.execute(valuePtr, size) * WCHAR_T_SIZE);
@@ -943,7 +943,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PtrNodes.GetPointerValueNode getPointerValueNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached PythonObjectFactory factory) {
-            if (ptr.isNil()) {
+            if (ptr.isNull()) {
                 return 0L;
             }
             Object p = getPointerValueNode.execute(readPointerNode.execute(ptr));

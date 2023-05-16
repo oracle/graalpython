@@ -191,7 +191,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PtrNodes.ReadPointerNode readPointerNode) {
-            if (PtrValue.isNull(self.b_ptr)) {
+            if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
@@ -217,7 +217,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         boolean Pointer_bool(CDataObject self) {
-            return !PtrValue.isNull(self.b_ptr);
+            return !self.b_ptr.isNull();
         }
     }
 
@@ -235,7 +235,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                 throw raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
 
-            if (PtrValue.isNull(self.b_ptr)) {
+            if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
@@ -266,7 +266,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Shared @Cached PtrNodes.ReadPointerNode readPointerNode) {
-            if (PtrValue.isNull(self.b_ptr)) {
+            if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 

@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -52,26 +54,19 @@ import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
 final class PtrValue implements TruffleObject {
-    private static final NullStorage NULL_STORAGE = new NullStorage();
-    Storage ptr;
-    int offset;
+    public static final PtrValue NULL = new PtrValue(new NullStorage(), 0);
+
+    final Storage ptr;
+    final int offset;
 
     protected PtrValue(Storage ptr, int offset) {
         this.ptr = ptr;
         this.offset = offset;
     }
 
-    protected PtrValue() {
-        this(NULL_STORAGE, 0);
-    }
-
-    @ExportMessage(name = "isNull")
-    protected boolean isNil() {
-        return ptr instanceof NullStorage;
-    }
-
-    protected static PtrValue nil() {
-        return new PtrValue(NULL_STORAGE, 0);
+    @ExportMessage
+    protected boolean isNull() {
+        return this == NULL;
     }
 
     protected static PtrValue allocate(FFIType type, int size) {
@@ -79,7 +74,11 @@ final class PtrValue implements TruffleObject {
     }
 
     protected static PtrValue bytes(byte[] bytes) {
-        return new PtrValue(new ByteArrayStorage(bytes), 0);
+        return bytes(bytes, 0);
+    }
+
+    protected static PtrValue bytes(byte[] bytes, int offset) {
+        return new PtrValue(new ByteArrayStorage(bytes), offset);
     }
 
     protected static PtrValue nativeMemory(long nativePointer) {
@@ -97,15 +96,9 @@ final class PtrValue implements TruffleObject {
         return new PtrValue(new PythonObjectStorage(object), 0);
     }
 
-    protected void toNil() {
-        ptr = NULL_STORAGE;
-        offset = 0;
-    }
-
     private static Storage createStorageInternal(FFIType type, int size, Object value) {
         FFI_TYPES t = type.type;
         return switch (t) {
-            case FFI_TYPE_VOID -> NULL_STORAGE;
             case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> {
                 byte[] bytes = new byte[Byte.BYTES];
                 if (value != null) {
@@ -185,11 +178,6 @@ final class PtrValue implements TruffleObject {
 
     protected PtrValue createReference(int offset) {
         return new PtrValue(new PointerArrayStorage(new PtrValue[]{this}), offset);
-    }
-
-    @ExportMessage.Ignore
-    protected static boolean isNull(PtrValue b_ptr) {
-        return b_ptr == null || b_ptr.ptr == NULL_STORAGE;
     }
 
     abstract static class Storage {

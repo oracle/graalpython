@@ -44,10 +44,10 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuilti
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getHandleFromLongObject;
 import static com.oracle.graal.python.nodes.ErrorMessages.BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.CTYPES_OBJECT_STRUCTURE_TOO_DEEP;
-import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_GOT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_INSTEAD_OF_POINTER_TO_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_INSTEAD_OF_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.INCOMPATIBLE_TYPES_S_INSTANCE_INSTEAD_OF_S_INSTANCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_EXPECTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OFFSET_CANNOT_BE_NEGATIVE;
@@ -365,8 +365,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
             CDataObject pd = factory.createCDataObject(type);
             assert pyTypeCheck.isCDataObject(pd);
-            pd.b_ptr = PtrValue.bytes(buf);
-            pd.b_ptr.offset = offset;
+            pd.b_ptr = PtrValue.bytes(buf, offset);
             pd.b_length = stgdict.length;
             pd.b_size = stgdict.size;
             return pd;
@@ -446,9 +445,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached IsInstanceNode isInstanceNode,
-                        @Cached GetNameNode getName,
                         @Cached KeepRefNode keepRefNode,
                         @Cached PtrNodes.MemcpyNode memcpyNode,
+                        @Cached PtrNodes.WritePointerNode writePointerNode,
                         @Cached PythonObjectFactory factory) {
             if (!pyTypeCheck.isCDataObject(dst)) {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
@@ -463,7 +462,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                             pyTypeStgDictNode,
                             pyObjectStgDictNode,
                             memcpyNode,
-                            getName);
+                            writePointerNode);
 
             /* KeepRef steals a refcount from it's last argument */
             /*
@@ -485,7 +484,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         PyTypeStgDictNode pyTypeStgDictNode,
                         PyObjectStgDictNode pyObjectStgDictNode,
                         PtrNodes.MemcpyNode memcpyNode,
-                        GetNameNode getName) {
+                        PtrNodes.WritePointerNode writePointerNode) {
             if (setfunc != FieldSet.nil) {
                 return setFuncNode.execute(frame, setfunc, ptr, value, size);
             }
@@ -498,10 +497,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 /*
                  * If value is a tuple, we try to call the type with the tuple and use the result!
                  */
-                // assert(PyType_Check(type));
                 if (PGuards.isPTuple(value)) {
                     Object ob = callNode.execute(frame, type, value);
-                    // throw raise(RuntimeError, "(%s) ", getName.execute(type));
                     return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr,
                                     factory,
                                     pyTypeCheck,
@@ -510,12 +507,13 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                                     isInstanceNode,
                                     pyTypeStgDictNode,
                                     pyObjectStgDictNode,
-                                    memcpyNode, getName);
+                                    memcpyNode,
+                                    writePointerNode);
                 } else if (value instanceof PNone && pyTypeCheck.isPyCPointerTypeObject(type)) {
-                    ptr.toNil(); // *(void **)ptr = NULL;
+                    writePointerNode.execute(ptr, PtrValue.NULL);
                     return PNone.NONE;
                 } else {
-                    throw raise(TypeError, EXPECTED_S_INSTANCE_GOT_S, getName.execute(type), getName.execute(value));
+                    throw raise(TypeError, EXPECTED_P_INSTANCE_GOT_P, type, value);
                 }
             }
             CDataObject src = (CDataObject) value;
@@ -532,9 +530,10 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 assert p2 != null : "Cannot be NULL for pointer types";
 
                 if (p1.proto != p2.proto) {
-                    throw raise(TypeError, INCOMPATIBLE_TYPES_S_INSTANCE_INSTEAD_OF_S_INSTANCE, getName.execute(value), getName.execute(type));
+                    throw raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
                 }
-                // *(void **)ptr = src.b_ptr; TODO
+
+                writePointerNode.execute(ptr, src.b_ptr);
 
                 Object keep = GetKeepedObjects(src, factory);
 
@@ -547,7 +546,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                  */
                 return factory.createTuple(new Object[]{keep, value});
             }
-            throw raise(TypeError, INCOMPATIBLE_TYPES_S_INSTANCE_INSTEAD_OF_S_INSTANCE, getName.execute(value), getName.execute(type));
+            throw raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
         }
 
     }
@@ -650,7 +649,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
     static void PyCData_MallocBuffer(CDataObject obj, StgDictObject dict) {
         if (dict.size == 0) {
-            obj.b_ptr = PtrValue.nil();
+            obj.b_ptr = PtrValue.NULL;
         } else {
             obj.b_ptr = PtrValue.allocate(dict.ffi_type_pointer, dict.size);
         }

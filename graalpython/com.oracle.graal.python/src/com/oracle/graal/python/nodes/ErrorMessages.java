@@ -1201,8 +1201,8 @@ public abstract class ErrorMessages {
     public static final TruffleString OFFSET_CANNOT_BE_NEGATIVE = tsLiteral("offset cannot be negative");
     public static final TruffleString BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES = tsLiteral("Buffer size too small (%d instead of at least %d bytes)");
     public static final TruffleString THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER = tsLiteral("the _handle attribute of the second argument must be an integer");
-    public static final TruffleString EXPECTED_S_INSTANCE_GOT_S = tsLiteral("expected %s instance, got %s");
-    public static final TruffleString INCOMPATIBLE_TYPES_S_INSTANCE_INSTEAD_OF_S_INSTANCE = tsLiteral("incompatible types, %s instance instead of %s instance");
+    public static final TruffleString EXPECTED_P_INSTANCE_GOT_P = tsLiteral("expected %p instance, got %p");
+    public static final TruffleString INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE = tsLiteral("incompatible types, %p instance instead of %p instance");
     public static final TruffleString CTYPES_OBJECT_STRUCTURE_TOO_DEEP = tsLiteral("ctypes object structure too deep");
     public static final TruffleString NOT_A_CTYPE_INSTANCE = tsLiteral("not a ctype instance");
     public static final TruffleString EXPECTED_S_INSTANCE_INSTEAD_OF_S = tsLiteral("expected %s instance instead of %s");

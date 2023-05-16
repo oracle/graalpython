@@ -56,7 +56,7 @@ public final class PyCArgObject extends PythonBuiltinObject {
         pffi_type = null;
         tag = '\0';
         obj = null;
-        value = PtrValue.nil();
+        value = PtrValue.NULL;
     }
 
 }

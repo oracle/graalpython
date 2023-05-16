@@ -87,7 +87,7 @@ public class CDataObject extends PythonBuiltinObject {
 
     public CDataObject(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        this.b_ptr = new PtrValue();
+        this.b_ptr = PtrValue.NULL;
     }
 
     protected static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {

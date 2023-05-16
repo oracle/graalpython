@@ -191,7 +191,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         @Specialization
         static boolean Simple_bool(CDataObject self,
                         @Cached PtrNodes.ReadBytesNode read) {
-            if (self.b_ptr.isNil()) {
+            if (self.b_ptr.isNull()) {
                 return false;
             }
             byte[] bytes = read.execute(self.b_ptr, self.b_size);
