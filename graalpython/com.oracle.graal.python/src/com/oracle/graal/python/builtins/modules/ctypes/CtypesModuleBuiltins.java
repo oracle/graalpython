@@ -111,6 +111,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
@@ -1424,31 +1426,31 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached GetFuncNode getFuncNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
-            PtrValue resultPtr;
+            Pointer resultPtr;
             try {
                 resultPtr = switch (rtype.type) {
-                    case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> PtrValue.create(rtype, rtype.size, ilib.asByte(result), 0);
-                    case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> PtrValue.create(rtype, rtype.size, ilib.asShort(result), 0);
-                    case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> PtrValue.create(rtype, rtype.size, ilib.asInt(result), 0);
-                    case FFI_TYPE_SINT64, FFI_TYPE_UINT64 -> PtrValue.create(rtype, rtype.size, ilib.asLong(result), 0);
-                    case FFI_TYPE_FLOAT -> PtrValue.create(rtype, rtype.size, ilib.asFloat(result), 0);
-                    case FFI_TYPE_DOUBLE -> PtrValue.create(rtype, rtype.size, ilib.asDouble(result), 0);
-                    case FFI_TYPE_VOID -> PtrValue.NULL;
+                    case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> Pointer.create(rtype, rtype.size, ilib.asByte(result), 0);
+                    case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> Pointer.create(rtype, rtype.size, ilib.asShort(result), 0);
+                    case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> Pointer.create(rtype, rtype.size, ilib.asInt(result), 0);
+                    case FFI_TYPE_SINT64, FFI_TYPE_UINT64 -> Pointer.create(rtype, rtype.size, ilib.asLong(result), 0);
+                    case FFI_TYPE_FLOAT -> Pointer.create(rtype, rtype.size, ilib.asFloat(result), 0);
+                    case FFI_TYPE_DOUBLE -> Pointer.create(rtype, rtype.size, ilib.asDouble(result), 0);
+                    case FFI_TYPE_VOID -> Pointer.NULL;
                     default -> {
                         if (ilib.isNull(result)) {
-                            yield PtrValue.NULL;
+                            yield Pointer.NULL;
                         }
                         if (ilib.hasArrayElements(result)) {
                             byte[] bytes = new byte[(int) ilib.getArraySize(result)];
                             for (int i = 0; i < bytes.length; i++) {
                                 bytes[i] = (byte) ilib.readArrayElement(result, i);
                             }
-                            yield PtrValue.bytes(bytes).createReference();
+                            yield Pointer.bytes(bytes).createReference();
                         }
                         if (ilib.isPointer(result)) {
-                            yield PtrValue.nativeMemory(ilib.asPointer(result)).createReference();
+                            yield Pointer.nativeMemory(ilib.asPointer(result)).createReference();
                         }
-                        yield PtrValue.nativeMemory(result).createReference();
+                        yield Pointer.nativeMemory(result).createReference();
                     }
                 };
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
@@ -1497,8 +1499,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CArgObjectBuiltins.ParamFuncNode paramFuncNode,
-                        @Cached PtrNodes.ConvertToParameter convertToParameter,
-                        @Cached PtrNodes.ReadPointerNode readPointerNode,
+                        @Cached PointerNodes.ConvertToParameter convertToParameter,
+                        @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached ConvParamNode recursive) {
             if (obj instanceof CDataObject cdata) {
                 pa.stgDict = pyObjectStgDictNode.execute(cdata);
@@ -1522,7 +1524,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (!managed) {
                     pa.value = getContext().getEnv().asGuestValue(null); // TODO check
                 } else {
-                    pa.value = PtrValue.NULL;
+                    pa.value = Pointer.NULL;
                 }
                 return;
             }
@@ -1547,7 +1549,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (!managed) {
                     pa.value = bytes;
                 } else {
-                    pa.value = PtrValue.bytes(bytes).createReference();
+                    pa.value = Pointer.bytes(bytes).createReference();
                 }
                 return;
             }
@@ -1561,7 +1563,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (!managed) {
                     pa.value = bytes;
                 } else {
-                    pa.value = PtrValue.bytes(bytes).createReference();
+                    pa.value = Pointer.bytes(bytes).createReference();
                 }
                 return;
             }
@@ -1579,7 +1581,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
         }
 
-        private static void setCargValue(argument pa, PyCArgObject carg, boolean managed, PtrNodes.ConvertToParameter convertToParameter, PtrNodes.ReadPointerNode readPointerNode) {
+        private static void setCargValue(argument pa, PyCArgObject carg, boolean managed, PointerNodes.ConvertToParameter convertToParameter, PointerNodes.ReadPointerNode readPointerNode) {
             /*
              * Pointers get converted to byte arrays or native pointers for NFI. For managed
              * function calls, they get dereferenced for implementation convenience.
@@ -1765,14 +1767,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object src, Object ctype);
 
         @Specialization
-        Object cast(PtrValue ptr, PtrValue srcObj, PtrValue ctypeObj,
+        Object cast(Pointer ptr, Pointer srcObj, Pointer ctypeObj,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PythonObjectFactory factory,
                         @Cached CallNode callNode,
                         @Cached CastCheckPtrTypeNode castCheckPtrTypeNode,
-                        @Cached PtrNodes.ReadPythonObject readPythonObject,
-                        @Cached PtrNodes.WritePointerNode writePointerNode) {
+                        @Cached PointerNodes.ReadPythonObject readPythonObject,
+                        @Cached PointerNodes.WritePointerNode writePointerNode) {
             Object src = readPythonObject.execute(srcObj);
             Object ctype = readPythonObject.execute(ctypeObj);
             castCheckPtrTypeNode.execute(ctype);
@@ -1835,8 +1837,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object dest, Object src, Object size);
 
         @Specialization
-        static Object memmove(PtrValue destPtr, PtrValue srcPtr, long size,
-                        @Cached PtrNodes.MemcpyNode memcpyNode,
+        static Object memmove(Pointer destPtr, Pointer srcPtr, long size,
+                        @Cached PointerNodes.MemcpyNode memcpyNode,
                         @Cached PythonObjectFactory factory) {
             memcpyNode.execute(destPtr, srcPtr, (int) size);
             return factory.createNativeVoidPtr(destPtr);
@@ -1894,8 +1896,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object dest, Object src, Object size);
 
         @Specialization
-        static Object memset(PtrValue ptr, int value, long num,
-                        @Cached PtrNodes.WriteBytesNode writeBytesNode,
+        static Object memset(Pointer ptr, int value, long num,
+                        @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached PythonObjectFactory factory) {
             byte[] fill = new byte[(int) num];
             Arrays.fill(fill, (byte) value);
@@ -1954,10 +1956,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object size);
 
         @Specialization
-        static Object string_at(PtrValue ptr, int size,
+        static Object string_at(Pointer ptr, int size,
                         @Cached PythonObjectFactory factory,
-                        @Cached PtrNodes.ReadBytesNode read,
-                        @Cached PtrNodes.StrLenNode strLenNode,
+                        @Cached PointerNodes.ReadBytesNode read,
+                        @Cached PointerNodes.StrLenNode strLenNode,
                         @Cached AuditNode auditNode) {
             auditNode.audit("ctypes.string_at", factory.createNativeVoidPtr(ptr), size);
             if (size == -1) {
@@ -1995,11 +1997,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object size);
 
         @Specialization
-        static TruffleString wstring_at(PtrValue ptr, int size,
+        static TruffleString wstring_at(Pointer ptr, int size,
                         @Cached PythonObjectFactory factory,
                         @Cached AuditNode auditNode,
-                        @Cached PtrNodes.ReadBytesNode read,
-                        @Cached PtrNodes.WCsLenNode wCsLenNode,
+                        @Cached PointerNodes.ReadBytesNode read,
+                        @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             auditNode.audit("ctypes.wstring_at", factory.createNativeVoidPtr(ptr), size);

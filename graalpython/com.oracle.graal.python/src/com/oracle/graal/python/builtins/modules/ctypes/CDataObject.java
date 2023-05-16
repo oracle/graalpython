@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -68,7 +70,7 @@ public class CDataObject extends PythonBuiltinObject {
      * is unneeded as well.
      */
 
-    PtrValue b_ptr; /* pointer to memory block */
+    Pointer b_ptr; /* pointer to memory block */
     int b_needsfree; /* need _we_ free the memory? */
     CDataObject b_base; /* pointer to base object or NULL */
     int b_size; /* size of memory block in bytes */
@@ -87,7 +89,7 @@ public class CDataObject extends PythonBuiltinObject {
 
     public CDataObject(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        this.b_ptr = PtrValue.NULL;
+        this.b_ptr = Pointer.NULL;
     }
 
     protected static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
@@ -118,13 +120,13 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     byte readByte(int byteIndex,
-                    @Cached PtrNodes.ReadByteNode readByteNode) {
+                    @Cached PointerNodes.ReadByteNode readByteNode) {
         return readByteNode.execute(b_ptr.withOffset(byteIndex));
     }
 
     @ExportMessage
     void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
-                    @Cached PtrNodes.ReadBytesNode readBytesNode) {
+                    @Cached PointerNodes.ReadBytesNode readBytesNode) {
         readBytesNode.execute(dest, destOffset, b_ptr.withOffset(srcOffset), length);
     }
 
@@ -136,13 +138,13 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     void writeByte(int byteIndex, byte value,
-                    @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+                    @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
         writeBytesNode.execute(b_ptr.withOffset(byteIndex), new byte[]{value});
     }
 
     @ExportMessage
     void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
-                    @Shared @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+                    @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
         writeBytesNode.execute(b_ptr.withOffset(destOffset), src, srcOffset, length);
     }
 

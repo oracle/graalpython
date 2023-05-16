@@ -1,18 +1,19 @@
-package com.oracle.graal.python.builtins.modules.ctypes;
+package com.oracle.graal.python.builtins.modules.ctypes.memory;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
 import java.lang.reflect.Field;
 
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.LongPointerStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NFIPointerStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NullStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PointerArrayStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PythonObjectStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.Storage;
+import com.oracle.graal.python.builtins.modules.ctypes.FFIType;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ByteArrayStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.LongPointerStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.MemoryViewStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.NFIPointerStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.NullStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PointerArrayStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PythonObjectStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.Storage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -32,14 +33,14 @@ import com.oracle.truffle.api.nodes.Node;
 
 import sun.misc.Unsafe;
 
-public abstract class PtrNodes {
+public abstract class PointerNodes {
     @GenerateUncached
     public abstract static class ReadBytesNode extends Node {
-        public final void execute(byte[] dst, int dstOffset, PtrValue src, int size) {
+        public final void execute(byte[] dst, int dstOffset, Pointer src, int size) {
             execute(dst, dstOffset, src.ptr, src.offset, size);
         }
 
-        public final byte[] execute(PtrValue src, int size) {
+        public final byte[] execute(Pointer src, int size) {
             byte[] result = new byte[size];
             execute(result, 0, src, size);
             return result;
@@ -82,7 +83,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class ReadByteNode extends Node {
-        public final byte execute(PtrValue ptr) {
+        public final byte execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 
@@ -115,7 +116,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class ReadShortNode extends Node {
-        public final short execute(PtrValue ptr) {
+        public final short execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 
@@ -142,7 +143,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class ReadIntNode extends Node {
-        public final int execute(PtrValue ptr) {
+        public final int execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 
@@ -169,7 +170,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class ReadLongNode extends Node {
-        public final long execute(PtrValue ptr) {
+        public final long execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 
@@ -196,17 +197,17 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WriteBytesNode extends Node {
-        public final void execute(PtrValue dst, byte[] src) {
+        public final void execute(Pointer dst, byte[] src) {
             execute(dst, src, 0, src.length);
         }
 
-        public final void execute(PtrValue dst, long value) {
+        public final void execute(Pointer dst, long value) {
             byte[] tmp = new byte[8];
             ARRAY_ACCESSOR.putLong(tmp, 0, value);
             execute(dst, tmp);
         }
 
-        public final void execute(PtrValue dst, byte[] src, int srcOffset, int size) {
+        public final void execute(Pointer dst, byte[] src, int srcOffset, int size) {
             execute(dst.ptr, dst.offset, src, srcOffset, size);
         }
 
@@ -239,7 +240,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WriteByteNode extends Node {
-        public final void execute(PtrValue dst, byte value) {
+        public final void execute(Pointer dst, byte value) {
             execute(dst.ptr, dst.offset, value);
         }
 
@@ -264,7 +265,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WriteShortNode extends Node {
-        public final void execute(PtrValue dst, short value) {
+        public final void execute(Pointer dst, short value) {
             execute(dst.ptr, dst.offset, value);
         }
 
@@ -291,7 +292,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WriteIntNode extends Node {
-        public final void execute(PtrValue dst, int value) {
+        public final void execute(Pointer dst, int value) {
             execute(dst.ptr, dst.offset, value);
         }
 
@@ -318,7 +319,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WriteLongNode extends Node {
-        public final void execute(PtrValue dst, long value) {
+        public final void execute(Pointer dst, long value) {
             execute(dst.ptr, dst.offset, value);
         }
 
@@ -344,9 +345,9 @@ public abstract class PtrNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(PtrNodes.class)
+    @ImportStatic(PointerNodes.class)
     public abstract static class MemcpyNode extends Node {
-        public final void execute(PtrValue dst, PtrValue src, int size) {
+        public final void execute(Pointer dst, Pointer src, int size) {
             execute(dst.ptr, dst.offset, src.ptr, src.offset, size);
         }
 
@@ -363,7 +364,7 @@ public abstract class PtrNodes {
                         @Cached ReadPointerFromPointerArrayNode readPointerFromPointerArrayNode,
                         @Cached WritePointerToPointerArrayNode writePointerToPointerArrayNode) {
             for (int i = 0; i < size; i += 8) {
-                PtrValue value = readPointerFromPointerArrayNode.execute(inliningTarget, src, srcOffset + i);
+                Pointer value = readPointerFromPointerArrayNode.execute(inliningTarget, src, srcOffset + i);
                 writePointerToPointerArrayNode.execute(inliningTarget, dst, dstOffset + i, value);
             }
         }
@@ -380,11 +381,11 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class StrLenNode extends Node {
-        public final int execute(PtrValue ptr) {
+        public final int execute(Pointer ptr) {
             return execute(ptr, -1);
         }
 
-        public final int execute(PtrValue ptr, int max) {
+        public final int execute(Pointer ptr, int max) {
             return execute(ptr.ptr, ptr.offset, max);
         }
 
@@ -417,38 +418,38 @@ public abstract class PtrNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(PtrNodes.class)
+    @ImportStatic(PointerNodes.class)
     abstract static class ReadPointerFromPointerArrayNode extends Node {
-        abstract PtrValue execute(Node inliningTarget, PointerArrayStorage storage, int offset);
+        abstract Pointer execute(Node inliningTarget, PointerArrayStorage storage, int offset);
 
         @Specialization(guards = {"storage.objects != null", "isMultipleOf8(offset)"})
-        static PtrValue read(PointerArrayStorage storage, int offset) {
+        static Pointer read(PointerArrayStorage storage, int offset) {
             return storage.objects[offset / 8];
         }
 
         @Fallback
-        static PtrValue read(Node inliningTarget, PointerArrayStorage storage, int offset,
+        static Pointer read(Node inliningTarget, PointerArrayStorage storage, int offset,
                         @Cached PointerArrayToBytesNode toBytesNode) {
             toBytesNode.execute(inliningTarget, storage);
             long nativePointer = ARRAY_ACCESSOR.getLong(storage.nativePointerBytes, offset);
-            return PtrValue.nativeMemory(nativePointer);
+            return Pointer.nativeMemory(nativePointer);
         }
     }
 
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(PtrNodes.class)
+    @ImportStatic(PointerNodes.class)
     abstract static class WritePointerToPointerArrayNode extends Node {
-        abstract void execute(Node inliningTarget, PointerArrayStorage storage, int offset, PtrValue value);
+        abstract void execute(Node inliningTarget, PointerArrayStorage storage, int offset, Pointer value);
 
         @Specialization(guards = {"storage.objects != null", "isMultipleOf8(offset)"})
-        static void write(PointerArrayStorage storage, int offset, PtrValue value) {
+        static void write(PointerArrayStorage storage, int offset, Pointer value) {
             storage.objects[offset / 8] = value;
         }
 
         @Fallback
-        static void write(Node inliningTarget, PointerArrayStorage storage, int offset, PtrValue value,
+        static void write(Node inliningTarget, PointerArrayStorage storage, int offset, Pointer value,
                         @Cached StorageToNativeNode toNativeNode,
                         @Cached PointerArrayToBytesNode toBytesNode) {
             toBytesNode.execute(inliningTarget, storage);
@@ -459,11 +460,11 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WCsLenNode extends Node {
-        public final int execute(PtrValue ptr) {
+        public final int execute(Pointer ptr) {
             return execute(ptr, -1);
         }
 
-        public final int execute(PtrValue ptr, int max) {
+        public final int execute(Pointer ptr, int max) {
             return execute(ptr.ptr, ptr.offset, max);
         }
 
@@ -494,7 +495,7 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class GetPointerValueNode extends Node {
-        public final Object execute(PtrValue ptr) {
+        public final Object execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 
@@ -521,50 +522,50 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class PointerFromLongNode extends Node {
-        public abstract PtrValue execute(Object value);
+        public abstract Pointer execute(Object value);
 
         @Specialization
-        PtrValue doNativeVoidPtr(PythonNativeVoidPtr value) {
+        Pointer doNativeVoidPtr(PythonNativeVoidPtr value) {
             Object pointerObject = value.getPointerObject();
-            if (pointerObject instanceof PtrValue pointer) {
+            if (pointerObject instanceof Pointer pointer) {
                 return pointer;
             }
-            return PtrValue.nativeMemory(pointerObject);
+            return Pointer.nativeMemory(pointerObject);
         }
 
         @Fallback
-        PtrValue doLong(Object value,
+        Pointer doLong(Object value,
                         @Cached CastToJavaUnsignedLongNode cast) {
             long pointer = cast.execute(value);
-            return PtrValue.nativeMemory(pointer);
+            return Pointer.nativeMemory(pointer);
         }
     }
 
     @GenerateUncached
     public abstract static class ReadPointerNode extends Node {
-        public final PtrValue execute(PtrValue ptr) {
+        public final Pointer execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 
-        protected abstract PtrValue execute(Storage storage, int offset);
+        protected abstract Pointer execute(Storage storage, int offset);
 
         @Specialization
-        static PtrValue doPointerArray(PointerArrayStorage storage, int offset,
+        static Pointer doPointerArray(PointerArrayStorage storage, int offset,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadPointerFromPointerArrayNode readPointerFromPointerArrayNode) {
             return readPointerFromPointerArrayNode.execute(inliningTarget, storage, offset);
         }
 
         @Fallback
-        static PtrValue doOther(Storage storage, int offset,
+        static Pointer doOther(Storage storage, int offset,
                         @Cached ReadLongNode readLongNode) {
-            return PtrValue.nativeMemory(readLongNode.execute(storage, offset));
+            return Pointer.nativeMemory(readLongNode.execute(storage, offset));
         }
     }
 
     @GenerateUncached
     public abstract static class ReadPythonObject extends Node {
-        public final Object execute(PtrValue ptr) {
+        public final Object execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 
@@ -578,21 +579,21 @@ public abstract class PtrNodes {
 
     @GenerateUncached
     public abstract static class WritePointerNode extends Node {
-        public final void execute(PtrValue ptr, PtrValue value) {
+        public final void execute(Pointer ptr, Pointer value) {
             execute(ptr.ptr, ptr.offset, value);
         }
 
-        protected abstract void execute(Storage storage, int offset, PtrValue value);
+        protected abstract void execute(Storage storage, int offset, Pointer value);
 
         @Specialization
-        static void doPointerArray(PointerArrayStorage storage, int offset, PtrValue value,
+        static void doPointerArray(PointerArrayStorage storage, int offset, Pointer value,
                         @Bind("this") Node inliningTarget,
                         @Cached WritePointerToPointerArrayNode writePointerToPointerArrayNode) {
             writePointerToPointerArrayNode.execute(inliningTarget, storage, offset, value);
         }
 
         @Fallback
-        static void doOther(Storage storage, int offset, PtrValue value,
+        static void doOther(Storage storage, int offset, Pointer value,
                         @Cached WriteLongNode writeLongNode,
                         @Cached StorageToNativeNode toNativeNode) {
             long nativePointer = toNativeNode.execute(value.ptr, value.offset);
@@ -601,7 +602,7 @@ public abstract class PtrNodes {
     }
 
     public abstract static class ConvertToParameter extends Node {
-        public final Object execute(PtrValue ptr, FFIType ffiType) {
+        public final Object execute(Pointer ptr, FFIType ffiType) {
             return execute(ptr.ptr, ptr.offset, ffiType);
         }
 
@@ -643,7 +644,7 @@ public abstract class PtrNodes {
                         @Cached PointerArrayToBytesNode toBytesNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
-            PtrValue pointer = readPointerNode.execute(storage, offset);
+            Pointer pointer = readPointerNode.execute(storage, offset);
             if (pointer.isNull()) {
                 return 0L;
             } else if (pointer.ptr instanceof ByteArrayStorage derefedStorage && pointer.offset == 0) {
@@ -687,7 +688,7 @@ public abstract class PtrNodes {
                         @Cached StorageToNativeNode toNativeNode) {
             byte[] bytes = new byte[storage.objects.length * 8];
             for (int i = 0; i < storage.objects.length; i++) {
-                PtrValue itemPointer = storage.objects[i];
+                Pointer itemPointer = storage.objects[i];
                 long pointer = toNativeNode.execute(itemPointer.ptr, itemPointer.offset);
                 ARRAY_ACCESSOR.putLong(bytes, i * 8, pointer);
             }
@@ -699,7 +700,7 @@ public abstract class PtrNodes {
     @GenerateUncached
     abstract static class StorageToNativeNode extends Node {
 
-        final long execute(PtrValue ptr) {
+        final long execute(Pointer ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
 

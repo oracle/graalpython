@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayRawNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayValueNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.WCharArrayValueNodeFactory;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -140,7 +141,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PtrNodes.ReadBytesNode read) {
+                        @Cached PointerNodes.ReadBytesNode read) {
             return factory().createBytes(read.execute(self.b_ptr, self.b_size));
         }
 
@@ -148,7 +149,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         Object doSet(VirtualFrame frame, CDataObject self, Object value,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+                        @Cached PointerNodes.WriteBytesNode writeBytesNode) {
             Object buffer = acquireLib.acquire(value, BufferFlags.PyBUF_SIMPLE, frame, this);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -170,15 +171,15 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PtrNodes.StrLenNode strLenNode,
-                        @Cached PtrNodes.ReadBytesNode read) {
+                        @Cached PointerNodes.StrLenNode strLenNode,
+                        @Cached PointerNodes.ReadBytesNode read) {
             return factory().createBytes(read.execute(self.b_ptr, strLenNode.execute(self.b_ptr)));
         }
 
         @Specialization
         Object doSet(CDataObject self, PBytes value,
                         @Cached GetInternalByteArrayNode getBytes,
-                        @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+                        @Cached PointerNodes.WriteBytesNode writeBytesNode) {
             SequenceStorage storage = value.getSequenceStorage();
             int len = storage.length();
             if (len > self.b_size) {
@@ -201,8 +202,8 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         TruffleString doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PtrNodes.WCsLenNode wCsLenNode,
-                        @Cached PtrNodes.ReadBytesNode read,
+                        @Cached PointerNodes.WCsLenNode wCsLenNode,
+                        @Cached PointerNodes.ReadBytesNode read,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             byte[] bytes = read.execute(self.b_ptr, wCsLenNode.execute(self.b_ptr) * WCHAR_T_SIZE);
@@ -215,7 +216,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Cached PtrNodes.WriteBytesNode writeBytesNode) {
+                        @Cached PointerNodes.WriteBytesNode writeBytesNode) {
             TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(value), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
             if (len > self.b_size) {

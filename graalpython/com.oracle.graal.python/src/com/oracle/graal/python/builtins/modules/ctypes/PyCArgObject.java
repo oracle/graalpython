@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
@@ -47,7 +48,7 @@ public final class PyCArgObject extends PythonBuiltinObject {
 
     FFIType pffi_type;
     char tag;
-    PtrValue value;
+    Pointer value;
     Object obj;
     int size;
 
@@ -56,7 +57,7 @@ public final class PyCArgObject extends PythonBuiltinObject {
         pffi_type = null;
         tag = '\0';
         obj = null;
-        value = PtrValue.NULL;
+        value = Pointer.NULL;
     }
 
 }

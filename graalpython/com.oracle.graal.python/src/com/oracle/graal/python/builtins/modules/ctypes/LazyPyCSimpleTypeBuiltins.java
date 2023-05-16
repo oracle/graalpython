@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltins
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltinsFactory.CWCharPFromParamNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -156,7 +157,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_uint8_array;
                 parg.tag = 'Z';
-                parg.value = PtrValue.allocate(parg.pffi_type, parg.pffi_type.size);
+                parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
                 parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.value, value, 0);
                 return parg;
             }
@@ -215,7 +216,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'P';
-            parg.value = PtrValue.allocate(parg.pffi_type, parg.pffi_type.size);
+            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
             setFuncNode.execute(null, FFIType.FieldSet.P_set, parg.value, value, 0);
             parg.obj = PNone.NONE;
             return parg;
@@ -228,7 +229,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'z';
-            parg.value = PtrValue.allocate(parg.pffi_type, parg.pffi_type.size);
+            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
             setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.value, value, 0);
             parg.obj = value;
             return parg;
@@ -241,7 +242,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'Z';
-            parg.value = PtrValue.allocate(parg.pffi_type, parg.pffi_type.size);
+            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
             setFuncNode.execute(null, FFIType.FieldSet.Z_set, parg.value, value, 0);
             parg.obj = value;
             return parg;
@@ -327,7 +328,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'z';
-            parg.value = PtrValue.allocate(parg.pffi_type, parg.pffi_type.size);
+            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
             setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.value, value, 0);
             parg.obj = value;
             return parg;

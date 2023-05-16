@@ -98,6 +98,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
@@ -182,7 +184,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == 1", "isLong(args, longCheckNode)"})
         Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
-                        @Cached PtrNodes.PointerFromLongNode pointerFromLongNode,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             CDataObject ob = factory().createPyCFuncPtrObject(type);
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
@@ -225,7 +227,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             GenericPyCDataNew(dict, self);
             self.callable = callable;
             self.thunk = thunk;
-            self.b_ptr = PtrValue.nativeMemory(thunk.pcl_exec).createReference();
+            self.b_ptr = Pointer.nativeMemory(thunk.pcl_exec).createReference();
 
             keepRefNode.execute(frame, self, 0, thunk);
             return self;
@@ -475,8 +477,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
                         @Cached CallProcNode callProcNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PtrNodes.ReadPointerNode readPointerNode,
-                        @Cached PtrNodes.GetPointerValueNode getPointerValueNode) {
+                        @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Cached PointerNodes.GetPointerValueNode getPointerValueNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
@@ -804,7 +806,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             self.paramflags = paramflags;
 
             Object addressObj = address instanceof PythonNativeVoidPtr ptr ? ptr.getPointerObject() : address;
-            self.b_ptr = PtrValue.nativeMemory(addressObj).createReference();
+            self.b_ptr = Pointer.nativeMemory(addressObj).createReference();
             keepRefNode.execute(frame, self, 0, dll);
 
             self.callable = self;

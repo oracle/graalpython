@@ -38,12 +38,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.ctypes;
+package com.oracle.graal.python.builtins.modules.ctypes.memory;
 
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.modules.ctypes.FFIType;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -53,47 +54,47 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
-final class PtrValue implements TruffleObject {
-    public static final PtrValue NULL = new PtrValue(new NullStorage(), 0);
+public final class Pointer implements TruffleObject {
+    public static final Pointer NULL = new Pointer(new NullStorage(), 0);
 
     final Storage ptr;
     final int offset;
 
-    protected PtrValue(Storage ptr, int offset) {
+    protected Pointer(Storage ptr, int offset) {
         this.ptr = ptr;
         this.offset = offset;
     }
 
     @ExportMessage
-    protected boolean isNull() {
+    public boolean isNull() {
         return this == NULL;
     }
 
-    protected static PtrValue allocate(FFIType type, int size) {
-        return new PtrValue(createStorageInternal(type, size, null), 0);
+    public static Pointer allocate(FFIType type, int size) {
+        return new Pointer(createStorageInternal(type, size, null), 0);
     }
 
-    protected static PtrValue bytes(byte[] bytes) {
+    public static Pointer bytes(byte[] bytes) {
         return bytes(bytes, 0);
     }
 
-    protected static PtrValue bytes(byte[] bytes, int offset) {
-        return new PtrValue(new ByteArrayStorage(bytes), offset);
+    public static Pointer bytes(byte[] bytes, int offset) {
+        return new Pointer(new ByteArrayStorage(bytes), offset);
     }
 
-    protected static PtrValue nativeMemory(long nativePointer) {
-        return new PtrValue(new LongPointerStorage(nativePointer), 0);
+    public static Pointer nativeMemory(long nativePointer) {
+        return new Pointer(new LongPointerStorage(nativePointer), 0);
     }
 
-    protected static PtrValue nativeMemory(Object nativePointer) {
+    public static Pointer nativeMemory(Object nativePointer) {
         if (nativePointer instanceof Long value) {
             return nativeMemory((long) value);
         }
-        return new PtrValue(new NFIPointerStorage(nativePointer), 0);
+        return new Pointer(new NFIPointerStorage(nativePointer), 0);
     }
 
-    protected static PtrValue pythonObject(Object object) {
-        return new PtrValue(new PythonObjectStorage(object), 0);
+    public static Pointer pythonObject(Object object) {
+        return new Pointer(new PythonObjectStorage(object), 0);
     }
 
     private static Storage createStorageInternal(FFIType type, int size, Object value) {
@@ -145,39 +146,39 @@ final class PtrValue implements TruffleObject {
                             FFI_TYPE_FLOAT_ARRAY, FFI_TYPE_DOUBLE_ARRAY, FFI_TYPE_STRING, FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
                 if (value == null) {
                     if (size % 8 == 0) {
-                        PtrValue[] pointers = new PtrValue[size / 8];
+                        Pointer[] pointers = new Pointer[size / 8];
                         Arrays.fill(pointers, NULL);
                         yield new PointerArrayStorage(pointers);
                     } else {
                         yield new ByteArrayStorage(new byte[size]);
                     }
                 } else {
-                    PtrValue valuePtr = nativeMemory(value);
-                    yield new PointerArrayStorage(new PtrValue[]{valuePtr});
+                    Pointer valuePtr = nativeMemory(value);
+                    yield new PointerArrayStorage(new Pointer[]{valuePtr});
                 }
             }
             default -> throw CompilerDirectives.shouldNotReachHere("Not supported type!");
         };
     }
 
-    protected static PtrValue create(FFIType type, int size, Object value, int offset) {
-        return new PtrValue(createStorageInternal(type, size, value), offset);
+    public static Pointer create(FFIType type, int size, Object value, int offset) {
+        return new Pointer(createStorageInternal(type, size, value), offset);
     }
 
-    protected static PtrValue memoryView(PMemoryView mv) {
-        return new PtrValue(new MemoryViewStorage(mv), 0);
+    public static Pointer memoryView(PMemoryView mv) {
+        return new Pointer(new MemoryViewStorage(mv), 0);
     }
 
-    protected PtrValue withOffset(int incOffset) {
-        return new PtrValue(ptr, offset + incOffset);
+    public Pointer withOffset(int incOffset) {
+        return new Pointer(ptr, offset + incOffset);
     }
 
-    protected PtrValue createReference() {
+    public Pointer createReference() {
         return createReference(0);
     }
 
-    protected PtrValue createReference(int offset) {
-        return new PtrValue(new PointerArrayStorage(new PtrValue[]{this}), offset);
+    public Pointer createReference(int offset) {
+        return new Pointer(new PointerArrayStorage(new Pointer[]{this}), offset);
     }
 
     abstract static class Storage {
@@ -190,10 +191,10 @@ final class PtrValue implements TruffleObject {
     }
 
     static final class PointerArrayStorage extends Storage {
-        PtrValue[] objects;
+        Pointer[] objects;
         byte[] nativePointerBytes;
 
-        public PointerArrayStorage(PtrValue[] objects) {
+        public PointerArrayStorage(Pointer[] objects) {
             this.objects = objects;
         }
     }

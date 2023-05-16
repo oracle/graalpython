@@ -51,6 +51,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -99,7 +101,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString doit(PyCArgObject self,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached PtrNodes.ReadBytesNode readBytesNode) {
+                        @Cached PointerNodes.ReadBytesNode readBytesNode) {
             String ret;
             switch (self.tag) {
                 case 'b':
@@ -198,7 +200,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                      * the tp_dict member with a new instance of StgDict, and initializes the C
                      * accessible fields somehow.
                      */
-                    PtrValue ptr = self.b_ptr;
+                    Pointer ptr = self.b_ptr;
                     Object obj = self;
                     if (self.b_size > StgDictObject.VOID_PTR_SIZE) {
                         // ptr = PyMem_Malloc(self.b_size); TODO

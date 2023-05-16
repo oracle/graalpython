@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -190,7 +191,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static boolean Simple_bool(CDataObject self,
-                        @Cached PtrNodes.ReadBytesNode read) {
+                        @Cached PointerNodes.ReadBytesNode read) {
             if (self.b_ptr.isNull()) {
                 return false;
             }

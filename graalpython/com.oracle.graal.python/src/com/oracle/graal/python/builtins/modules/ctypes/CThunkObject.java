@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -162,11 +163,11 @@ public final class CThunkObject extends PythonBuiltinObject {
                                     dict.getfunc != FieldGet.nil &&
                                     !pyTypeCheck.ctypesSimpleInstance(inliningTarget, converters[i], getBaseClassNode, isSameTypeNode)) {
                         FFIType type = dict.ffi_type_pointer;
-                        PtrValue ptr = PtrValue.create(type, type.size, arg, 0);
+                        Pointer ptr = Pointer.create(type, type.size, arg, 0);
                         arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size);
                     } else if (dict != null) {
                         CDataObject obj = (CDataObject) callNode.execute(converters[i]);
-                        obj.b_ptr = PtrValue.nativeMemory(arg).createReference();
+                        obj.b_ptr = Pointer.nativeMemory(arg).createReference();
                         arglist[i] = obj;
                     } else {
                         throw raiseNode.raise(TypeError, CANNOT_BUILD_PARAMETER);
@@ -194,7 +195,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                      */
                     Object keep = PNone.NONE;
                     try {
-                        PtrValue mem = PtrValue.allocate(restype, restype.size);
+                        Pointer mem = Pointer.allocate(restype, restype.size);
                         keep = setFuncNode.execute(null, setfunc, mem, result, 0);
                     } catch (PException e) {
                         /* Could not convert callback result. */

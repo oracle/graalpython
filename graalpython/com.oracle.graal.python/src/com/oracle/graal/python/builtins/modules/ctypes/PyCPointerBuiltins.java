@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -123,7 +124,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PtrNodes.WritePointerNode writePointerNode,
+                        @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached PythonObjectFactory factory) {
             if (value == null) {
                 throw raiseNode.raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
@@ -190,7 +191,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
         Object get_contents(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PtrNodes.ReadPointerNode readPointerNode) {
+                        @Cached PointerNodes.ReadPointerNode readPointerNode) {
             if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
@@ -230,7 +231,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Cached PyCDataSetNode pyCDataSetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PtrNodes.ReadPointerNode readPointerNode) {
+                        @Cached PointerNodes.ReadPointerNode readPointerNode) {
             if (value == PNone.NO_VALUE) {
                 throw raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
@@ -265,7 +266,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyCDataGetNode pyCDataGetNode,
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PtrNodes.ReadPointerNode readPointerNode) {
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode) {
             if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
             }
@@ -290,7 +291,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyCDataGetNode pyCDataGetNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Shared @Cached PtrNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -379,7 +380,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Shared @Cached PyCDataGetNode pyCDataGetNode,
                         @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Shared @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PtrNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyIndexCheckNode indexCheckNode) {
             if (indexCheckNode.execute(item)) {

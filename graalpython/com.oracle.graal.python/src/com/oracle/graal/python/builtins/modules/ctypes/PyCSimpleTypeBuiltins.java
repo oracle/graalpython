@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -323,7 +324,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = code;
             parg.pffi_type = fd.pffi_type;
-            parg.value = PtrValue.allocate(parg.pffi_type, dict.size);
+            parg.value = Pointer.allocate(parg.pffi_type, dict.size);
             try {
                 parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
                 return parg;
