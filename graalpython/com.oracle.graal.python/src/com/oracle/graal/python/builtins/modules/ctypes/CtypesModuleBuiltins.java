@@ -1995,7 +1995,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object size);
 
         @Specialization
-        static TruffleString wstring_at(PtrValue ptr, long size,
+        static TruffleString wstring_at(PtrValue ptr, int size,
                         @Cached PythonObjectFactory factory,
                         @Cached AuditNode auditNode,
                         @Cached PtrNodes.ReadBytesNode read,
@@ -2006,7 +2006,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (size == -1) {
                 size = wCsLenNode.execute(ptr);
             }
-            byte[] bytes = read.execute(ptr, (int) (size * WCHAR_T_SIZE));
+            byte[] bytes = read.execute(ptr, size * WCHAR_T_SIZE);
             TruffleString s = fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING);
             return switchEncodingNode.execute(s, TS_ENCODING);
         }
