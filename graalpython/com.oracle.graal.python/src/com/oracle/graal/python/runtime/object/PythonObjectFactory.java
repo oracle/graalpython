@@ -221,6 +221,7 @@ import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.operations.POperationRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -930,6 +931,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PGenerator createGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
+    }
+
+    public final PGenerator createGenerator(TruffleString name, TruffleString qualname, POperationRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PGenerator.createOperation(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
     public final PGenerator createIterableCoroutine(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {

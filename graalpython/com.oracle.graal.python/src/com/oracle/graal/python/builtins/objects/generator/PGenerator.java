@@ -35,11 +35,13 @@ import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.operations.POperationRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.operation.ContinuationResult;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -66,6 +68,9 @@ public class PGenerator extends PythonBuiltinObject {
     private final boolean isCoroutine;
     private final boolean isAsyncGen;
 
+    private final POperationRootNode operationRootNode;
+    private ContinuationResult currentContinuationResult;
+
     // An explicit isIterableCoroutine argument is needed for iterable coroutines (generally created
     // via types.coroutine)
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
@@ -80,6 +85,13 @@ public class PGenerator extends PythonBuiltinObject {
         return create(lang, name, qualname, rootNode, callTargets, arguments, cls, false);
     }
 
+    public static PGenerator createOperation(PythonLanguage lang, TruffleString name, TruffleString qualname, POperationRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments,
+                    PythonBuiltinClassType cls) {
+        // TODO: should this frame be used somewhere?
+        rootNode.createGeneratorFrame(arguments);
+        return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments, cls, false);
+    }
+
     protected PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls,
                     boolean isIterableCoroutine) {
         super(cls, cls.getInstanceShape(lang));
@@ -90,6 +102,23 @@ public class PGenerator extends PythonBuiltinObject {
         this.arguments = arguments;
         this.finished = false;
         this.bytecodeRootNode = rootNode;
+        this.operationRootNode = null;
+        this.frameInfo = (FrameInfo) rootNode.getFrameDescriptor().getInfo();
+        this.isCoroutine = isIterableCoroutine || cls == PythonBuiltinClassType.PCoroutine;
+        this.isAsyncGen = cls == PythonBuiltinClassType.PAsyncGenerator;
+    }
+
+    protected PGenerator(PythonLanguage lang, TruffleString name, TruffleString qualname, POperationRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments, PythonBuiltinClassType cls,
+                    boolean isIterableCoroutine) {
+        super(cls, cls.getInstanceShape(lang));
+        this.name = name;
+        this.qualname = qualname;
+        this.callTargets = callTargets;
+        this.currentCallTarget = 0;
+        this.arguments = arguments;
+        this.finished = false;
+        this.bytecodeRootNode = null;
+        this.operationRootNode = rootNode;
         this.frameInfo = (FrameInfo) rootNode.getFrameDescriptor().getInfo();
         this.isCoroutine = isIterableCoroutine || cls == PythonBuiltinClassType.PCoroutine;
         this.isAsyncGen = cls == PythonBuiltinClassType.PAsyncGenerator;
@@ -111,6 +140,19 @@ public class PGenerator extends PythonBuiltinObject {
      */
     public final RootCallTarget getCurrentCallTarget() {
         return callTargets[currentCallTarget];
+    }
+
+    public boolean isOperationGenerator() {
+        return operationRootNode != null;
+    }
+
+    public ContinuationResult getContinuationResult() {
+        assert isOperationGenerator();
+        return currentContinuationResult;
+    }
+
+    public POperationRootNode getOperationRootNode() {
+        return operationRootNode;
     }
 
     public final Object getYieldFrom() {
