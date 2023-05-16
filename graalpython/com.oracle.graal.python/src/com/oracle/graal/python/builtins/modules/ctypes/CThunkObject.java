@@ -50,7 +50,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.GetBytesFromNativePointerNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
@@ -73,6 +72,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -138,7 +138,6 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached CallNode callNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached WarnNode warnNode,
-                        @Cached GetBytesFromNativePointerNode getNativeBytes,
                         @Cached PRaiseNode raiseNode) throws ArityException {
             Object[] converters = thunk.converters;
             int nArgs = converters.length;
@@ -151,24 +150,24 @@ public final class CThunkObject extends PythonBuiltinObject {
                 Object[] arglist = new Object[nArgs];
                 for (int i = 0; i < nArgs; ++i) {
                     StgDictObject dict = pyTypeStgDictNode.execute(converters[i]);
+                    Object arg = pArgs[i];
+                    if (lib.isPointer(arg)) {
+                        try {
+                            arg = lib.asPointer(arg);
+                        } catch (UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    }
                     if (dict != null &&
                                     dict.getfunc != FieldGet.nil &&
                                     !pyTypeCheck.ctypesSimpleInstance(inliningTarget, converters[i], getBaseClassNode, isSameTypeNode)) {
                         FFIType type = dict.ffi_type_pointer;
-                        PtrValue ptr;
-                        if (type.type.isArray() && lib.isPointer(pArgs[i])) {
-                            byte[] bytes = getNativeBytes.execute(pArgs[i], -1);
-                            ptr = PtrValue.bytes(bytes);
-                        } else {
-                            ptr = PtrValue.create(type, type.size, pArgs[i], 0);
-                        }
+                        PtrValue ptr = PtrValue.create(type, type.size, arg, 0);
                         arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size);
                     } else if (dict != null) {
-                        assert lib.isPointer(pArgs[i]);
                         CDataObject obj = (CDataObject) callNode.execute(converters[i]);
-                        obj.b_ptr = PtrValue.nativeMemory(pArgs[i]);
+                        obj.b_ptr = PtrValue.nativeMemory(arg).createReference();
                         arglist[i] = obj;
-                        // arglist[i] = pArgs[i];
                     } else {
                         throw raiseNode.raise(TypeError, CANNOT_BUILD_PARAMETER);
                         // PrintError("Parsing argument %zd\n", i);
