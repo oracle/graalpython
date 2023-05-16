@@ -126,6 +126,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -133,6 +134,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtr)
@@ -183,13 +185,14 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1", "isLong(args, longCheckNode)"})
         Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             CDataObject ob = factory().createPyCFuncPtrObject(type);
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             GenericPyCDataNew(dict, ob);
-            ob.b_ptr = pointerFromLongNode.execute(args[0]).createReference();
+            ob.b_ptr = pointerFromLongNode.execute(inliningTarget, args[0]).createReference();
             return ob;
         }
 
@@ -465,6 +468,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCFuncPtr_call(VirtualFrame frame, PyCFuncPtrObject self, Object[] inargs, PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached CallNode callNode,
@@ -489,7 +493,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object errcheck = self.errcheck /* ? self.errcheck : dict.errcheck */;
 
             int[] props = new int[3];
-            Object functionPointer = getPointerValueNode.execute(readPointerNode.execute(self.b_ptr));
+            Object functionPointer = getPointerValueNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
             NativeFunction pProc = getFunctionFromLongObject(functionPointer, getContext(), asVoidPtr);
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);

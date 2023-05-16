@@ -191,11 +191,12 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static boolean Simple_bool(CDataObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PointerNodes.ReadBytesNode read) {
             if (self.b_ptr.isNull()) {
                 return false;
             }
-            byte[] bytes = read.execute(self.b_ptr, self.b_size);
+            byte[] bytes = read.execute(inliningTarget, self.b_ptr, self.b_size);
             for (byte b : bytes) {
                 if (b != 0) {
                     return true;

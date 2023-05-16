@@ -120,14 +120,16 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     byte readByte(int byteIndex,
+                    @Bind("$node") Node inliningTarget,
                     @Cached PointerNodes.ReadByteNode readByteNode) {
-        return readByteNode.execute(b_ptr.withOffset(byteIndex));
+        return readByteNode.execute(inliningTarget, b_ptr.withOffset(byteIndex));
     }
 
     @ExportMessage
     void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
+                    @Bind("$node") Node inliningTarget,
                     @Cached PointerNodes.ReadBytesNode readBytesNode) {
-        readBytesNode.execute(dest, destOffset, b_ptr.withOffset(srcOffset), length);
+        readBytesNode.execute(inliningTarget, dest, destOffset, b_ptr.withOffset(srcOffset), length);
     }
 
     @ExportMessage
@@ -138,14 +140,16 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     void writeByte(int byteIndex, byte value,
+                    @Bind("$node") Node inliningTarget,
                     @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
-        writeBytesNode.execute(b_ptr.withOffset(byteIndex), new byte[]{value});
+        writeBytesNode.execute(inliningTarget, b_ptr.withOffset(byteIndex), new byte[]{value});
     }
 
     @ExportMessage
     void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
+                    @Bind("$node") Node inliningTarget,
                     @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode) {
-        writeBytesNode.execute(b_ptr.withOffset(destOffset), src, srcOffset, length);
+        writeBytesNode.execute(inliningTarget, b_ptr.withOffset(destOffset), src, srcOffset, length);
     }
 
     // TODO we could expose the internal array if available

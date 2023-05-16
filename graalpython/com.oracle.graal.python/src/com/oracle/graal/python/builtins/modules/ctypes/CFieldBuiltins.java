@@ -398,48 +398,53 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "setfunc == b_set || setfunc == B_set")
         Object b_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode) {
             byte val = (byte) asLongNode.execute(frame, value);
-            writeByteNode.execute(ptr, val);
+            writeByteNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == h_set || setfunc == H_set")
         Object h_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
             short val = (short) asLongNode.execute(frame, value);
-            writeShortNode.execute(ptr, val);
+            writeShortNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == h_set_sw || setfunc == H_set_sw")
         Object h_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
             short val = (short) asLongNode.execute(frame, value);
             val = SWAP_2(val);
-            writeShortNode.execute(ptr, val);
+            writeShortNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == i_set || setfunc == I_set")
         Object i_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
             int val = (int) asLongNode.execute(frame, value);
-            writeIntNode.execute(ptr, val);
+            writeIntNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == i_set_sw || setfunc == I_set_sw")
         Object i_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
             int val = (int) asLongNode.execute(frame, value);
             val = SWAP_4(val);
-            writeIntNode.execute(ptr, val);
+            writeIntNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
@@ -450,6 +455,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         /* short BOOL - VARIANT_BOOL */
         @Specialization(guards = "setfunc == vBOOL_set")
         static Object vBOOL_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
             short val;
@@ -458,35 +464,38 @@ public class CFieldBuiltins extends PythonBuiltins {
             } else {
                 val = VARIANT_TRUE;
             }
-            writeShortNode.execute(ptr, val);
+            writeShortNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == bool_set")
         static Object bool_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode) {
             byte val = (byte) (isTrueNode.execute(frame, value) ? 1 : 0);
-            writeByteNode.execute(ptr, val);
+            writeByteNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == l_set || setfunc == L_set")
         Object l_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
             long val = asLongNode.execute(frame, value);
-            writeLongNode.execute(ptr, val);
+            writeLongNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == l_set_sw || setfunc == L_set_sw")
         Object l_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
             long val = asLongNode.execute(frame, value);
             val = SWAP_8(val);
-            writeLongNode.execute(ptr, val);
+            writeLongNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }
 
@@ -496,49 +505,55 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "setfunc == d_set || setfunc == g_set")
         static Object d_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
             double x = asDoubleNode.execute(frame, value);
-            writeLongNode.execute(ptr, Double.doubleToRawLongBits(x));
+            writeLongNode.execute(inliningTarget, ptr, Double.doubleToRawLongBits(x));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == d_set_sw")
         static Object d_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
-            writeLongNode.execute(ptr, SWAP_8(Double.doubleToRawLongBits(asDoubleNode.execute(frame, value))));
+            writeLongNode.execute(inliningTarget, ptr, SWAP_8(Double.doubleToRawLongBits(asDoubleNode.execute(frame, value))));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == f_set")
         static Object f_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
             float x = (float) asDoubleNode.execute(frame, value);
-            writeIntNode.execute(ptr, Float.floatToRawIntBits(x));
+            writeIntNode.execute(inliningTarget, ptr, Float.floatToRawIntBits(x));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == f_set_sw")
         static Object f_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
-            writeIntNode.execute(ptr, SWAP_4(Float.floatToRawIntBits((float) asDoubleNode.execute(frame, value))));
+            writeIntNode.execute(inliningTarget, ptr, SWAP_4(Float.floatToRawIntBits((float) asDoubleNode.execute(frame, value))));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == O_set")
         @SuppressWarnings("unused")
         static Object O_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PointerNodes.WritePointerNode writePointerNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached PythonObjectFactory factory) {
-            writePointerNode.execute(ptr, Pointer.pythonObject(value));
+            writePointerNode.execute(inliningTarget, ptr, Pointer.pythonObject(value));
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == c_set")
         Object c_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -546,14 +561,14 @@ public class CFieldBuiltins extends PythonBuiltins {
                 PBytesLike bytes = (PBytesLike) value;
                 if (bytes.getSequenceStorage().length() == 1) {
                     byte[] b = getBytes.execute(bytes.getSequenceStorage());
-                    writeByteNode.execute(ptr, b[0]);
+                    writeByteNode.execute(inliningTarget, ptr, b[0]);
                     return PNone.NONE;
                 }
             }
             if (PGuards.isInteger(value)) {
                 int val = (int) value;
                 if (!(val < 0 || val >= 256)) {
-                    writeByteNode.execute(ptr, (byte) val);
+                    writeByteNode.execute(inliningTarget, ptr, (byte) val);
                     return PNone.NONE;
                 }
             }
@@ -564,6 +579,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         /* u - a single wchar_t character */
         @Specialization(guards = "setfunc == u_set")
         Object u_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
@@ -577,16 +593,17 @@ public class CFieldBuiltins extends PythonBuiltins {
             if (bytes.getLength() != WCHAR_T_SIZE) {
                 throw raiseNode.raise(TypeError, ErrorMessages.ONE_CHARACTER_UNICODE_EXPECTED);
             }
-            writeBytesNode.execute(ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
+            writeBytesNode.execute(inliningTarget, ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == U_set")
         Object U_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Cached PointerNodes.WriteBytesNode writeBytesNode,
+                        @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
@@ -597,7 +614,7 @@ public class CFieldBuiltins extends PythonBuiltins {
             if (bytes.getLength() > size) {
                 throw raiseNode.raise(ValueError, ErrorMessages.STR_TOO_LONG, bytes.getLength(), size);
             }
-            writeBytesNode.execute(ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
+            writeBytesNode.execute(inliningTarget, ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
             return value;
         }
 
@@ -621,23 +638,24 @@ public class CFieldBuiltins extends PythonBuiltins {
             } else if (size > length) {
                 throw raiseNode.raise(ValueError, ErrorMessages.BYTES_TOO_LONG, size, length);
             }
-            writeBytesNode.execute(ptr, data);
+            writeBytesNode.execute(inliningTarget, ptr, data);
 
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc == z_set")
         Object z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyLongCheckNode longCheckNode,
-                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyLongCheckNode longCheckNode,
+                        @Shared @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PointerNodes.WritePointerNode writePointerNode,
+                        @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (value == PNone.NONE) {
-                writePointerNode.execute(ptr, Pointer.NULL);
+                writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
-                writePointerNode.execute(ptr, pointerFromLongNode.execute(value));
+                writePointerNode.execute(inliningTarget, ptr, pointerFromLongNode.execute(inliningTarget, value));
                 return value;
             }
             if (PGuards.isPBytes(value)) {
@@ -646,7 +664,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 bufferLib.readIntoByteArray(value, 0, bytes, 0, len);
                 /* ptr is a char**, we need to add the indirection */
                 Pointer valuePtr = Pointer.bytes(bytes);
-                writePointerNode.execute(ptr, valuePtr);
+                writePointerNode.execute(inliningTarget, ptr, valuePtr);
                 return value;
             }
             throw raiseNode.raise(TypeError, ErrorMessages.BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
@@ -654,18 +672,19 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "setfunc == Z_set")
         Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
-                        @Cached PyLongCheckNode longCheckNode,
-                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
+                        @Shared @Cached PyLongCheckNode longCheckNode,
+                        @Shared @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Cached PointerNodes.WritePointerNode writePointerNode,
+                        @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             if (value == PNone.NONE) {
-                writePointerNode.execute(ptr, Pointer.NULL);
+                writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
-                writePointerNode.execute(ptr, pointerFromLongNode.execute(value));
+                writePointerNode.execute(inliningTarget, ptr, pointerFromLongNode.execute(inliningTarget, value));
                 return value;
             }
             if (!PGuards.isString(value)) {
@@ -679,26 +698,27 @@ public class CFieldBuiltins extends PythonBuiltins {
 
             /* ptr is a char**, we need to add the indirection */
             Pointer valuePtr = Pointer.bytes(bytes);
-            writePointerNode.execute(ptr, valuePtr);
+            writePointerNode.execute(inliningTarget, ptr, valuePtr);
             return str;
         }
 
         @Specialization(guards = "setfunc == P_set")
         Object P_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached PyLongCheckNode longCheckNode,
-                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
-                        @Cached PointerNodes.WritePointerNode writePointerNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyLongCheckNode longCheckNode,
+                        @Shared @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
+                        @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             Pointer valuePtr;
             if (value == PNone.NONE) {
                 valuePtr = Pointer.NULL;
             } else if (longCheckNode.execute(value)) {
-                valuePtr = pointerFromLongNode.execute(value);
+                valuePtr = pointerFromLongNode.execute(inliningTarget, value);
             } else {
                 throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_BE_CONVERTED_TO_POINTER);
             }
 
-            writePointerNode.execute(ptr, valuePtr);
+            writePointerNode.execute(inliningTarget, ptr, valuePtr);
             return PNone.NONE;
         }
 
@@ -719,203 +739,229 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == vBOOL_get")
         static Object vBOOL_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return readShortNode.execute(ptr) != 0;
+            return readShortNode.execute(inliningTarget, ptr) != 0;
         }
 
         @Specialization(guards = "getfunc == bool_get")
         static boolean bool_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadByteNode readByteNode) {
-            return readByteNode.execute(ptr) != 0;
+            return readByteNode.execute(inliningTarget, ptr) != 0;
         }
 
         @Specialization(guards = "getfunc == b_get")
         static int b_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadByteNode readByteNode) {
             // GET_BITFIELD(val, size);
-            return readByteNode.execute(ptr);
+            return readByteNode.execute(inliningTarget, ptr);
         }
 
         @Specialization(guards = "getfunc == B_get")
         static int B_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadByteNode readByteNode) {
             // GET_BITFIELD(val, size);
-            return readByteNode.execute(ptr) & 0xFF;
+            return readByteNode.execute(inliningTarget, ptr) & 0xFF;
         }
 
         @Specialization(guards = "getfunc == h_get")
         static int h_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return readShortNode.execute(ptr);
+            return readShortNode.execute(inliningTarget, ptr);
         }
 
         @Specialization(guards = "getfunc == h_get_sw")
         static int h_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return SWAP_2(readShortNode.execute(ptr));
+            return SWAP_2(readShortNode.execute(inliningTarget, ptr));
         }
 
         @Specialization(guards = "getfunc == H_get")
         static int H_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return readShortNode.execute(ptr) & 0xFFFF;
+            return readShortNode.execute(inliningTarget, ptr) & 0xFFFF;
         }
 
         @Specialization(guards = "getfunc == H_get_sw")
         static int H_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadShortNode readShortNode) {
             // GET_BITFIELD(val, size);
-            return SWAP_2(readShortNode.execute(ptr)) & 0xFFFF;
+            return SWAP_2(readShortNode.execute(inliningTarget, ptr)) & 0xFFFF;
         }
 
         @Specialization(guards = "getfunc == i_get")
         static int i_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return readIntNode.execute(ptr);
+            return readIntNode.execute(inliningTarget, ptr);
         }
 
         @Specialization(guards = "getfunc == i_get_sw")
         static Object i_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return SWAP_4(readIntNode.execute(ptr));
+            return SWAP_4(readIntNode.execute(inliningTarget, ptr));
         }
 
         @Specialization(guards = "getfunc == I_get")
         static Object I_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return readIntNode.execute(ptr) & 0xFFFFFFFFL;
+            return readIntNode.execute(inliningTarget, ptr) & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = "getfunc == I_get_sw")
         static Object I_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
             // GET_BITFIELD(val, size);
-            return SWAP_4(readIntNode.execute(ptr)) & 0xFFFFFFFFL;
+            return SWAP_4(readIntNode.execute(inliningTarget, ptr)) & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = "getfunc == l_get")
         static Object l_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
             // GET_BITFIELD(val, size);
-            return readLongNode.execute(ptr);
+            return readLongNode.execute(inliningTarget, ptr);
         }
 
         @Specialization(guards = "getfunc == l_get_sw")
         static Object l_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
             // GET_BITFIELD(val, size);
-            return SWAP_8(readLongNode.execute(ptr));
+            return SWAP_8(readLongNode.execute(inliningTarget, ptr));
         }
 
         @Specialization(guards = "getfunc == L_get")
         static Object L_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadLongNode readLongNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            long val = readLongNode.execute(ptr);
+            long val = readLongNode.execute(inliningTarget, ptr);
             // GET_BITFIELD(val, size);
             return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
         }
 
         @Specialization(guards = "getfunc == L_get_sw")
         static Object L_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadLongNode readLongNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            long val = SWAP_8(readLongNode.execute(ptr));
+            long val = SWAP_8(readLongNode.execute(inliningTarget, ptr));
             // GET_BITFIELD(val, size);
             return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
         }
 
         @Specialization(guards = "getfunc == d_get")
         static Object d_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
-            return Double.longBitsToDouble(readLongNode.execute(ptr));
+            return Double.longBitsToDouble(readLongNode.execute(inliningTarget, ptr));
         }
 
         @Specialization(guards = "getfunc == d_get_sw")
         static double d_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode) {
-            byte[] bytes = readBytesNode.execute(ptr, Double.BYTES);
+            byte[] bytes = readBytesNode.execute(inliningTarget, ptr, Double.BYTES);
             return ARRAY_ACCESSOR_SWAPPED.getDouble(bytes, 0);
         }
 
         @Specialization(guards = "getfunc == f_get")
         static double f_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
-            return Float.intBitsToFloat(readIntNode.execute(ptr));
+            return Float.intBitsToFloat(readIntNode.execute(inliningTarget, ptr));
         }
 
         @Specialization(guards = "getfunc == f_get_sw")
         static double f_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode) {
-            byte[] bytes = readBytesNode.execute(ptr, Float.BYTES);
+            byte[] bytes = readBytesNode.execute(inliningTarget, ptr, Float.BYTES);
             return ARRAY_ACCESSOR_SWAPPED.getFloat(bytes, 0);
         }
 
         @Specialization(guards = "getfunc == O_get")
         Object O_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
-                        @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PointerNodes.ReadPythonObject readPythonObject,
                         @Cached PRaiseNode raiseNode) {
             if (ptr.isNull()) {
                 throw raiseNode.raise(ValueError, ErrorMessages.PY_OBJ_IS_NULL);
             }
-            Pointer value = readPointerNode.execute(ptr);
-            return readPythonObject.execute(value);
+            Pointer value = readPointerNode.execute(inliningTarget, ptr);
+            return readPythonObject.execute(inliningTarget, value);
         }
 
         @Specialization(guards = "getfunc == c_get")
         static Object c_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadByteNode readByteNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(new byte[]{readByteNode.execute(ptr)});
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createBytes(new byte[]{readByteNode.execute(inliningTarget, ptr)});
         }
 
         @Specialization(guards = "getfunc == u_get")
         static Object u_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
-                        @Cached PointerNodes.ReadBytesNode readBytesNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
-            byte[] bytes = readBytesNode.execute(ptr, WCHAR_T_SIZE);
+            byte[] bytes = readBytesNode.execute(inliningTarget, ptr, WCHAR_T_SIZE);
             return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
         }
 
         /* U - a unicode string */
         @Specialization(guards = "getfunc == U_get")
         static Object U_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, int size,
-                        @Cached PointerNodes.WCsLenNode wCsLenNode,
-                        @Cached PointerNodes.ReadBytesNode readBytesNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.WCsLenNode wCsLenNode,
+                        @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) { // CTYPES_UNICODE
-            int wcslen = wCsLenNode.execute(ptr, size / WCHAR_T_SIZE);
-            byte[] bytes = readBytesNode.execute(ptr, wcslen * WCHAR_T_SIZE);
+            int wcslen = wCsLenNode.execute(inliningTarget, ptr, size / WCHAR_T_SIZE);
+            byte[] bytes = readBytesNode.execute(inliningTarget, ptr, wcslen * WCHAR_T_SIZE);
             return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
         }
 
         @Specialization(guards = "getfunc == s_get")
         static Object s_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, int size,
-                        @Cached PointerNodes.StrLenNode strLenNode,
-                        @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(readBytesNode.execute(ptr, strLenNode.execute(ptr, size)));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.StrLenNode strLenNode,
+                        @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            return factory.createBytes(readBytesNode.execute(inliningTarget, ptr, strLenNode.execute(inliningTarget, ptr, size)));
         }
 
         @Specialization(guards = "getfunc == z_get")
         static Object z_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
-                        @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PointerNodes.StrLenNode strLenNode,
-                        @Cached PointerNodes.ReadBytesNode readBytesNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Shared @Cached PointerNodes.StrLenNode strLenNode,
+                        @Shared @Cached PointerNodes.ReadBytesNode readBytesNode) {
             if (!ptr.isNull()) {
                 // ptr is a char**, we need to deref it to get char*
-                Pointer valuePtr = readPointerNode.execute(ptr);
-                byte[] bytes = readBytesNode.execute(valuePtr, strLenNode.execute(valuePtr));
+                Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
+                byte[] bytes = readBytesNode.execute(inliningTarget, valuePtr, strLenNode.execute(inliningTarget, valuePtr));
                 return factory.createBytes(bytes);
             } else {
                 return PNone.NONE;
@@ -924,15 +970,16 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == Z_get")
         static Object Z_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
-                        @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PointerNodes.WCsLenNode wCsLenNode,
-                        @Cached PointerNodes.ReadBytesNode readBytesNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PointerNodes.WCsLenNode wCsLenNode,
+                        @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (!ptr.isNull()) {
                 // ptr is a char**, we need to deref it to get char*
-                Pointer valuePtr = readPointerNode.execute(ptr);
-                byte[] bytes = readBytesNode.execute(valuePtr, wCsLenNode.execute(valuePtr, size) * WCHAR_T_SIZE);
+                Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
+                byte[] bytes = readBytesNode.execute(inliningTarget, valuePtr, wCsLenNode.execute(inliningTarget, valuePtr, size) * WCHAR_T_SIZE);
                 return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
             } else {
                 return PNone.NONE;
@@ -941,14 +988,15 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getfunc == P_get")
         static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
-                        @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PointerNodes.GetPointerValueNode getPointerValueNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PythonObjectFactory factory) {
             if (ptr.isNull()) {
                 return 0L;
             }
-            Object p = getPointerValueNode.execute(readPointerNode.execute(ptr));
+            Object p = getPointerValueNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, ptr));
             if (p instanceof Long) {
                 long val = (long) p;
                 return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;

@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -100,8 +101,9 @@ public class CArgObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString doit(PyCArgObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached PointerNodes.ReadBytesNode readBytesNode) {
+                        @Cached PointerNodes.ReadByteNode readByteNode) {
             String ret;
             switch (self.tag) {
                 case 'b':
@@ -122,8 +124,8 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     break;
                 }
                 case 'c':
-                    byte[] bytes = readBytesNode.execute(self.value, 1);
-                    if (isLiteralChar((char) bytes[0])) {
+                    byte val = readByteNode.execute(inliningTarget, self.value);
+                    if (isLiteralChar((char) val)) {
                         ret = PythonUtils.formatJString("<cparam '%c' ('%c')>", self.tag, self.value);
                     } else {
                         ret = PythonUtils.formatJString("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.value));

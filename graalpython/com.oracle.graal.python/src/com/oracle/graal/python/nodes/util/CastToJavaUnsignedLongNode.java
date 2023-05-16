@@ -79,10 +79,6 @@ public abstract class CastToJavaUnsignedLongNode extends PNodeWithContext {
         return CastToJavaUnsignedLongNodeGen.create();
     }
 
-    public abstract long execute(int x);
-
-    public abstract long execute(long x);
-
     public abstract long execute(Object x);
 
     @Specialization

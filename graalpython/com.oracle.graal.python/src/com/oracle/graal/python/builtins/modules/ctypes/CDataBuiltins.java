@@ -79,6 +79,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -86,6 +88,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @CoreFunctions(extendClasses = PyCData)
@@ -151,19 +154,20 @@ public class CDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object reduce(VirtualFrame frame, CDataObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Cached GetClassNode getClassNode) {
+                        @Cached InlinedGetClassNode getClassNode) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
                 throw raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }
             Object dict = getAttributeNode.executeObject(frame, self);
             Object[] t1 = new Object[]{dict, null};
-            t1[1] = factory().createBytes(readBytesNode.execute(self.b_ptr, self.b_size));
-            Object clazz = getClassNode.execute(self);
+            t1[1] = factory().createBytes(readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
+            Object clazz = getClassNode.execute(inliningTarget, self);
             Object[] t2 = new Object[]{clazz, factory().createTuple(t1)};
             PythonModule ctypes = getContext().lookupBuiltinModule(T__CTYPES);
             Object unpickle = dylib.getOrDefault(ctypes.getStorage(), T_UNPICKLE, null);

@@ -80,6 +80,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -87,6 +88,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -141,12 +143,14 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PointerNodes.ReadBytesNode read) {
-            return factory().createBytes(read.execute(self.b_ptr, self.b_size));
+            return factory().createBytes(read.execute(inliningTarget, self.b_ptr, self.b_size));
         }
 
         @Specialization(limit = "3")
         Object doSet(VirtualFrame frame, CDataObject self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode) {
@@ -157,7 +161,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 if (len > self.b_size) {
                     throw raise(ValueError, BYTE_STRING_TOO_LONG);
                 }
-                writeBytesNode.execute(self.b_ptr, bytes, 0, len);
+                writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
                 return PNone.NONE;
             } finally {
                 bufferLib.release(buffer);
@@ -171,13 +175,15 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PointerNodes.StrLenNode strLenNode,
                         @Cached PointerNodes.ReadBytesNode read) {
-            return factory().createBytes(read.execute(self.b_ptr, strLenNode.execute(self.b_ptr)));
+            return factory().createBytes(read.execute(inliningTarget, self.b_ptr, strLenNode.execute(inliningTarget, self.b_ptr)));
         }
 
         @Specialization
         Object doSet(CDataObject self, PBytes value,
+                        @Bind("this") Node inliningTarget,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode) {
             SequenceStorage storage = value.getSequenceStorage();
@@ -186,7 +192,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 throw raise(ValueError, BYTE_STRING_TOO_LONG);
             }
             byte[] bytes = getBytes.execute(storage);
-            writeBytesNode.execute(self.b_ptr, bytes, 0, len);
+            writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
             return PNone.NONE;
         }
 
@@ -202,17 +208,19 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         TruffleString doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
                         @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Cached PointerNodes.ReadBytesNode read,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            byte[] bytes = read.execute(self.b_ptr, wCsLenNode.execute(self.b_ptr) * WCHAR_T_SIZE);
+            byte[] bytes = read.execute(inliningTarget, self.b_ptr, wCsLenNode.execute(inliningTarget, self.b_ptr) * WCHAR_T_SIZE);
             TruffleString s = fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING);
             return switchEncodingNode.execute(s, TS_ENCODING);
         }
 
         @Specialization(guards = "isString(value)")
         Object doSet(CDataObject self, Object value,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
@@ -223,7 +231,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 throw raise(ValueError, STRING_TOO_LONG);
             }
             InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
-            writeBytesNode.execute(self.b_ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
+            writeBytesNode.execute(inliningTarget, self.b_ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
             return PNone.NONE;
         }
 

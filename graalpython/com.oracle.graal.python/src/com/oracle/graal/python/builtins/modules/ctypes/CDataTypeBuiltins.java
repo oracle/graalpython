@@ -441,6 +441,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, Pointer ptr,
+                        @Bind("this") Node inliningTarget,
                         @Cached SetFuncNode setFuncNode,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -455,7 +456,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
 
-            Object result = PyCDataSetInternal(frame, type, setfunc, value, size, ptr,
+            Object result = PyCDataSetInternal(frame, inliningTarget, type, setfunc, value, size, ptr,
                             factory,
                             pyTypeCheck,
                             setFuncNode,
@@ -477,7 +478,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
          * Helper function for PyCData_set below.
          */
         // corresponds to _PyCData_set
-        Object PyCDataSetInternal(VirtualFrame frame, Object type, FieldSet setfunc, Object value, int size, Pointer ptr,
+        Object PyCDataSetInternal(VirtualFrame frame, Node inliningTarget, Object type, FieldSet setfunc, Object value, int size, Pointer ptr,
                         PythonObjectFactory factory,
                         PyTypeCheck pyTypeCheck,
                         SetFuncNode setFuncNode,
@@ -501,7 +502,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                  */
                 if (PGuards.isPTuple(value)) {
                     Object ob = callNode.execute(frame, type, value);
-                    return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr,
+                    return PyCDataSetInternal(frame, inliningTarget, type, setfunc, ob, size, ptr,
                                     factory,
                                     pyTypeCheck,
                                     setFuncNode,
@@ -512,7 +513,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                                     memcpyNode,
                                     writePointerNode);
                 } else if (value instanceof PNone && pyTypeCheck.isPyCPointerTypeObject(type)) {
-                    writePointerNode.execute(ptr, Pointer.NULL);
+                    writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                     return PNone.NONE;
                 } else {
                     throw raise(TypeError, EXPECTED_P_INSTANCE_GOT_P, type, value);
@@ -521,7 +522,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             CDataObject src = (CDataObject) value;
 
             if (isInstanceNode.executeWith(frame, value, type)) {
-                memcpyNode.execute(ptr, src.b_ptr, size);
+                memcpyNode.execute(inliningTarget, ptr, src.b_ptr, size);
                 return GetKeepedObjects(src, factory);
             }
 
@@ -535,7 +536,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                     throw raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
                 }
 
-                writePointerNode.execute(ptr, src.b_ptr);
+                writePointerNode.execute(inliningTarget, ptr, src.b_ptr);
 
                 Object keep = GetKeepedObjects(src, factory);
 
