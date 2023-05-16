@@ -6,15 +6,17 @@ import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import java.lang.reflect.Field;
 
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.LongPointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativeMemoryStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NFIPointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NullStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PointerArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.PythonObjectStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.Storage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -25,8 +27,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -75,7 +75,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static void doNativeMemory(byte[] dst, int dstOffset, NativeMemoryStorage src, int srcOffset, int size) {
+        static void doNativeMemory(byte[] dst, int dstOffset, LongPointerStorage src, int srcOffset, int size) {
             UNSAFE.copyMemory(null, src.pointer + srcOffset, dst, byteArrayOffset(dstOffset), size);
         }
     }
@@ -100,7 +100,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static byte doNativeMemory(NativeMemoryStorage storage, int offset) {
+        static byte doNativeMemory(LongPointerStorage storage, int offset) {
             return UNSAFE.getByte(storage.pointer + offset);
         }
 
@@ -127,7 +127,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static short doNativeMemory(NativeMemoryStorage storage, int offset) {
+        static short doNativeMemory(LongPointerStorage storage, int offset) {
             return UNSAFE.getShort(storage.pointer + offset);
         }
 
@@ -154,7 +154,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static int doNativeMemory(NativeMemoryStorage storage, int offset) {
+        static int doNativeMemory(LongPointerStorage storage, int offset) {
             return UNSAFE.getInt(storage.pointer + offset);
         }
 
@@ -181,21 +181,8 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static long doNativeMemory(NativeMemoryStorage storage, int offset) {
+        static long doNativeMemory(LongPointerStorage storage, int offset) {
             return UNSAFE.getLong(storage.pointer + offset);
-        }
-
-        @Specialization(limit = "1")
-        static long doNativePointer(NativePointerStorage storage, int offset,
-                        @CachedLibrary("storage.value") InteropLibrary ilib) {
-            if (offset != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
-            }
-            try {
-                return ilib.asPointer(storage.value);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
         }
 
         @Fallback
@@ -237,7 +224,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
+        static void doNativeMemory(LongPointerStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
             UNSAFE.copyMemory(src, byteArrayOffset(srcOffset), null, dst.pointer + dstOffset, size);
         }
 
@@ -264,7 +251,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, byte value) {
+        static void doNativeMemory(LongPointerStorage dst, int dstOffset, byte value) {
             UNSAFE.putByte(dst.pointer + dstOffset, value);
         }
 
@@ -289,7 +276,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, short value) {
+        static void doNativeMemory(LongPointerStorage dst, int dstOffset, short value) {
             UNSAFE.putShort(dst.pointer + dstOffset, value);
         }
 
@@ -316,7 +303,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, int value) {
+        static void doNativeMemory(LongPointerStorage dst, int dstOffset, int value) {
             UNSAFE.putInt(dst.pointer + dstOffset, value);
         }
 
@@ -343,7 +330,7 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static void doNativeMemory(NativeMemoryStorage dst, int dstOffset, long value) {
+        static void doNativeMemory(LongPointerStorage dst, int dstOffset, long value) {
             UNSAFE.putLong(dst.pointer + dstOffset, value);
         }
 
@@ -506,7 +493,7 @@ public abstract class PtrNodes {
     }
 
     @GenerateUncached
-    public abstract static class GetPointerValue extends Node {
+    public abstract static class GetPointerValueNode extends Node {
         public final Object execute(PtrValue ptr) {
             return execute(ptr.ptr, ptr.offset);
         }
@@ -519,42 +506,38 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static Object doNativePointer(NativePointerStorage storage, int offset) {
-            if (offset != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
-            }
-            return storage.value;
+        static Object doNativePointer(LongPointerStorage storage, int offset) {
+            return storage.pointer + offset;
         }
 
-        // FIXME this doesn't make sense, one of the specializations is wrong
         @Specialization
-        static Object doNativePointer(NativeMemoryStorage storage, int offset) {
+        static Object doNFIPointer(NFIPointerStorage storage, int offset) {
             if (offset != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
+                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
             }
             return storage.pointer;
         }
-
-        // TODO memoryview
     }
 
     @GenerateUncached
-    public abstract static class SetPointerValue extends Node {
-        public final void execute(PtrValue ptr, Object value) {
-            execute(ptr.ptr, ptr.offset, value);
-        }
-
-        protected abstract void execute(Storage storage, int offset, Object value);
+    public abstract static class PointerFromLongNode extends Node {
+        public abstract PtrValue execute(Object value);
 
         @Specialization
-        static void doNativePointer(NativePointerStorage storage, int offset, Object value) {
-            if (offset != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for NativePointerStorage");
+        PtrValue doNativeVoidPtr(PythonNativeVoidPtr value) {
+            Object pointerObject = value.getPointerObject();
+            if (pointerObject instanceof PtrValue pointer) {
+                return pointer;
             }
-            storage.value = value;
+            return PtrValue.nativeMemory(pointerObject);
         }
 
-        // TODO memoryview
+        @Fallback
+        PtrValue doLong(Object value,
+                        @Cached CastToJavaUnsignedLongNode cast) {
+            long pointer = cast.execute(value);
+            return PtrValue.nativeMemory(pointer);
+        }
     }
 
     @GenerateUncached
@@ -639,12 +622,18 @@ public abstract class PtrNodes {
         }
 
         @Specialization
-        static Object doNativePointer(NativePointerStorage storage, int offset, FFIType ffiType) {
+        static Object doLongPointer(LongPointerStorage storage, int offset, FFIType ffiType) {
+            assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
+            return storage.pointer + offset;
+        }
+
+        @Specialization
+        static Object doNFIPointer(NFIPointerStorage storage, int offset, FFIType ffiType) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
             if (offset != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
             }
-            return storage.value;
+            return storage.pointer;
         }
 
         @Specialization
@@ -667,9 +656,11 @@ public abstract class PtrNodes {
             } else if (pointer.ptr instanceof PointerArrayStorage derefedStorage && pointer.offset == 0) {
                 toBytesNode.execute(inliningTarget, derefedStorage);
                 return derefedStorage.nativePointerBytes;
-            } else if (pointer.ptr instanceof NativeMemoryStorage derefedStorage) {
+            } else if (pointer.ptr instanceof LongPointerStorage derefedStorage) {
+                return derefedStorage.pointer + pointer.offset;
+            } else if (pointer.ptr instanceof NFIPointerStorage derefedStorage && pointer.offset == 0) {
                 return derefedStorage.pointer;
-            } else if (pointer.ptr instanceof MemoryViewStorage derefedStorage) {
+            } else if (pointer.ptr instanceof MemoryViewStorage derefedStorage && pointer.offset == 0) {
                 PMemoryView mv = derefedStorage.value;
                 if (bufferLib.hasInternalByteArray(mv)) {
                     return bufferLib.getInternalByteArray(mv);
@@ -679,8 +670,6 @@ public abstract class PtrNodes {
             }
             throw CompilerDirectives.shouldNotReachHere("Not implemented");
         }
-
-        // TODO memoryview
     }
 
     @GenerateUncached
@@ -724,7 +713,7 @@ public abstract class PtrNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        static long doNative(NativeMemoryStorage storage, int offset) {
+        static long doNative(LongPointerStorage storage, int offset) {
             return storage.pointer + offset;
         }
 

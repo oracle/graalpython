@@ -226,7 +226,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             GenericPyCDataNew(dict, self);
             self.callable = callable;
             self.thunk = thunk;
-            self.b_ptr = PtrValue.nativePointer(thunk.pcl_exec);
+            self.b_ptr = PtrValue.nativeMemory(thunk.pcl_exec);
 
             keepRefNode.execute(frame, self, 0, thunk);
             return self;
@@ -473,7 +473,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
                         @Cached CallProcNode callProcNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PtrNodes.GetPointerValue getPointerValue) {
+                        @Cached PtrNodes.GetPointerValueNode getPointerValueNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
@@ -484,7 +484,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object errcheck = self.errcheck /* ? self.errcheck : dict.errcheck */;
 
             int[] props = new int[3];
-            NativeFunction pProc = getFunctionFromLongObject(getPointerValue.execute(self.b_ptr), getContext(), asVoidPtr);
+            NativeFunction pProc = getFunctionFromLongObject(getPointerValueNode.execute(self.b_ptr), getContext(), asVoidPtr);
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);
             int inoutmask = props[pinoutmask_idx];
@@ -800,7 +800,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             self.paramflags = paramflags;
 
             Object addressObj = address instanceof PythonNativeVoidPtr ptr ? ptr.getPointerObject() : address;
-            self.b_ptr = PtrValue.nativePointer(addressObj); // TODO
+            self.b_ptr = PtrValue.nativeMemory(addressObj);
             keepRefNode.execute(frame, self, 0, dll);
 
             self.callable = self;

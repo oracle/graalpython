@@ -83,7 +83,14 @@ final class PtrValue implements TruffleObject {
     }
 
     protected static PtrValue nativeMemory(long nativePointer) {
-        return new PtrValue(new NativeMemoryStorage(nativePointer), 0);
+        return new PtrValue(new LongPointerStorage(nativePointer), 0);
+    }
+
+    protected static PtrValue nativeMemory(Object nativePointer) {
+        if (nativePointer instanceof Long value) {
+            return nativeMemory((long) value);
+        }
+        return new PtrValue(new NFIPointerStorage(nativePointer), 0);
     }
 
     protected static PtrValue pythonObject(Object object) {
@@ -142,31 +149,18 @@ final class PtrValue implements TruffleObject {
                 yield new ByteArrayStorage(bytes);
             }
             case FFI_TYPE_UINT8_ARRAY, FFI_TYPE_SINT8_ARRAY, FFI_TYPE_UINT16_ARRAY, FFI_TYPE_SINT16_ARRAY, FFI_TYPE_UINT32_ARRAY, FFI_TYPE_SINT32_ARRAY, FFI_TYPE_UINT64_ARRAY, FFI_TYPE_SINT64_ARRAY,
-                            FFI_TYPE_FLOAT_ARRAY, FFI_TYPE_DOUBLE_ARRAY, FFI_TYPE_STRING -> {
-                assert value == null;
-                if (size % 8 == 0) {
-                    PtrValue[] pointers = new PtrValue[size / 8];
-                    for (int i = 0; i < pointers.length; i++) {
-                        pointers[i] = PtrValue.nil();
+                            FFI_TYPE_FLOAT_ARRAY, FFI_TYPE_DOUBLE_ARRAY, FFI_TYPE_STRING, FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
+                if (value == null) {
+                    if (size % 8 == 0) {
+                        PtrValue[] pointers = new PtrValue[size / 8];
+                        Arrays.fill(pointers, NULL);
+                        yield new PointerArrayStorage(pointers);
+                    } else {
+                        yield new ByteArrayStorage(new byte[size]);
                     }
-                    yield new PointerArrayStorage(pointers);
                 } else {
-                    yield new ByteArrayStorage(new byte[size]);
-                }
-            }
-            case FFI_TYPE_POINTER -> {
-                if (value == null) {
-                    PtrValue[] pointers = new PtrValue[]{PtrValue.nil()};
-                    yield new PointerArrayStorage(pointers);
-                } else {
-                    yield new NativePointerStorage(value);
-                }
-            }
-            case FFI_TYPE_STRUCT -> {
-                if (value == null) {
-                    yield new ByteArrayStorage(new byte[size]);
-                } else {
-                    yield new NativePointerStorage(value);
+                    PtrValue valuePtr = nativeMemory(value);
+                    yield new PointerArrayStorage(new PtrValue[]{valuePtr});
                 }
             }
             default -> throw CompilerDirectives.shouldNotReachHere("Not supported type!");
@@ -179,10 +173,6 @@ final class PtrValue implements TruffleObject {
 
     protected static PtrValue memoryView(PMemoryView mv) {
         return new PtrValue(new MemoryViewStorage(mv), 0);
-    }
-
-    protected static PtrValue nativePointer(Object o) {
-        return new PtrValue(new NativePointerStorage(o), 0);
     }
 
     protected PtrValue withOffset(int incOffset) {
@@ -211,15 +201,6 @@ final class PtrValue implements TruffleObject {
         }
     }
 
-    static final class NativePointerStorage extends Storage {
-
-        Object value;
-
-        NativePointerStorage(Object pointer) {
-            this.value = pointer;
-        }
-    }
-
     static final class PointerArrayStorage extends Storage {
         PtrValue[] objects;
         byte[] nativePointerBytes;
@@ -245,10 +226,18 @@ final class PtrValue implements TruffleObject {
         }
     }
 
-    static final class NativeMemoryStorage extends Storage {
+    static final class LongPointerStorage extends Storage {
         final long pointer;
 
-        public NativeMemoryStorage(long pointer) {
+        public LongPointerStorage(long pointer) {
+            this.pointer = pointer;
+        }
+    }
+
+    static final class NFIPointerStorage extends Storage {
+        final Object pointer;
+
+        public NFIPointerStorage(Object pointer) {
             this.pointer = pointer;
         }
     }

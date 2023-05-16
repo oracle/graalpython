@@ -1445,7 +1445,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                             }
                             yield PtrValue.bytes(bytes).createReference();
                         }
-                        yield PtrValue.nativePointer(result);
+                        if (ilib.isPointer(result)) {
+                            yield PtrValue.nativeMemory(ilib.asPointer(result)).createReference();
+                        }
+                        yield PtrValue.nativeMemory(result).createReference();
                     }
                 };
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {

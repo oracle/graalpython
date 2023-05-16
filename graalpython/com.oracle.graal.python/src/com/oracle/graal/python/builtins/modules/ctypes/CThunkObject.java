@@ -139,7 +139,6 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached WarnNode warnNode,
                         @Cached GetBytesFromNativePointerNode getNativeBytes,
-                        @Cached PtrNodes.SetPointerValue setPointerValue,
                         @Cached PRaiseNode raiseNode) throws ArityException {
             Object[] converters = thunk.converters;
             int nArgs = converters.length;
@@ -167,7 +166,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                     } else if (dict != null) {
                         assert lib.isPointer(pArgs[i]);
                         CDataObject obj = (CDataObject) callNode.execute(converters[i]);
-                        setPointerValue.execute(obj.b_ptr, pArgs[i]);
+                        obj.b_ptr = PtrValue.nativeMemory(pArgs[i]);
                         arglist[i] = obj;
                         // arglist[i] = pArgs[i];
                     } else {
