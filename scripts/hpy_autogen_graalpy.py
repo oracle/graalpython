@@ -62,6 +62,8 @@ NO_WRAPPER = {
 # will still generate the function declaration and such. The common use case
 # for that is if you provide a custom upcall stub implementation.
 NO_DEFAULT_UPCALL_STUB = NO_WRAPPER.union({
+    #'HPyListBuilder_New', 'HPyListBuilder_Set','HPyListBuilder_Build','HPyListBuilder_Cancel',
+    'HPyTupleBuilder_New', 'HPyTupleBuilder_Set','HPyTupleBuilder_Build','HPyTupleBuilder_Cancel',
 })
 
 HPY_CONTEXT_PKG = 'com.oracle.graal.python.builtins.objects.cext.hpy.'
@@ -75,11 +77,12 @@ JNI_HPY_CONTEXT_PKG = HPY_CONTEXT_PKG + 'jni.'
 
 # The qualified name of the Java class that represents the HPy context. This
 # class will contain the appropriate up- and downcall methods.
-JNI_HPY_CONTEXT_CLASS = JNI_HPY_CONTEXT_PKG + 'GraalHPyNativeContextJNI'
+JNI_HPY_CONTEXT_CLASS = JNI_HPY_CONTEXT_PKG + 'GraalHPyJNIContext'
 
 # This class will contain the appropriate downcall methods (the HPy function
 # trampolines)
 JNI_HPY_TRAMPOLINES_CLASS = 'GraalHPyJNITrampolines'
+JNI_HPY_BACKEND_CLASS = 'GraalHPyJNIContext'
 
 # The name of the native HPy context (will be used for HPyContext.name)
 JNI_HPY_CONTEXT_NAME = 'HPy Universal ABI (GraalVM backend, JNI)'
@@ -97,6 +100,7 @@ JNI_UPCALL_TYPE_CASTS = {
     'double': 'DOUBLE_UP',
     'size_t': 'SIZE_T_UP',
     'HPyTracker': 'TRACKER_UP',
+    '_HPyCapsule_key': 'INT_UP'
 }
 
 JNI_UPCALLS = {
@@ -123,10 +127,36 @@ JNI_UPCALL_ARG_CASTS = {
     'double': 'DOUBLE_UP',
     'HPy_ssize_t': 'SIZE_T_UP',
     'HPyTracker': 'TRACKER_UP',
+    '_HPyCapsule_key': 'INT_UP'
 }
 
+def get_cast_fun(type_name):
+    if type_name == 'HPy':
+        return 'HPY_UP'
+    elif type_name == 'HPyGlobal':
+        return 'HPY_GLOBAL_UP'
+    elif type_name == 'HPyField':
+        return 'HPY_FIELD_UP'
+    elif type_is_pointer(type_name):
+        return 'PTR_UP'
+    elif type_name in ('int', '_HPyCapsule_key'):
+        return 'INT_UP'
+    elif type_name == 'long':
+        return 'LONG_UP'
+    elif type_name == 'double':
+        return 'DOUBLE_UP'
+    elif type_name == 'HPy_ssize_t':
+        return 'SIZE_T_UP'
+    elif type_name == 'HPyTracker':
+        return 'HPY_TRACKER_UP'
+    elif type_name == 'HPyListBuilder':
+        return 'HPY_LIST_BUILDER_UP'
+    elif type_name == 'HPyThreadState':
+        return 'HPY_THREAD_STATE_UP'
+    return 'LONG_UP'
+
 def get_jni_signature_type(type_name):
-    if type_name == 'int':
+    if type_name in ('int', '_HPyCapsule_key'):
         return 'I'
     elif type_name == 'long':
         return 'L'
@@ -137,7 +167,7 @@ def get_jni_signature_type(type_name):
     return 'J'
 
 def get_jni_c_type(type_name):
-    if type_name == 'int':
+    if type_name in ('int', '_HPyCapsule_key'):
         return 'jint'
     elif type_name == 'double':
         return 'jdouble'
@@ -146,8 +176,11 @@ def get_jni_c_type(type_name):
     # also covers type_name == 'long'
     return 'jlong'
 
-def get_java_signature_type(type_name):
-    if type_name == 'int' or type_name == 'double' or type_name == 'void':
+def get_java_signature_type(type):
+    type_name = toC(type)
+    if type_name in ('int', '_HPyCapsule_key'):
+        return 'int'
+    if type_name == 'double' or type_name == 'void':
         return type_name
     # also covers type_name == 'long'
     return 'long'
@@ -168,6 +201,212 @@ def get_trace_wrapper_node(func):
 
 def java_qname_to_path(java_class_qname):
     return java_class_qname.replace('.', '/') + '.java'
+
+def get_jni_function_prefix(java_class_qname):
+    return 'Java_' + java_class_qname.replace('.', '_') + '_'
+
+AUTOGEN_CTX_INIT_JNI_H_FILE = 'autogen_ctx_init_jni.h'
+
+class autogen_ctx_init_jni_h(GraalPyAutoGenFile):
+    PATH = 'graalpython/com.oracle.graal.python.jni/src/' + AUTOGEN_CTX_INIT_JNI_H_FILE
+
+    def generate(self):
+        lines = []
+        w = lines.append
+        w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG});')
+        # emit the declarations for all the ctx_*_jni functions
+        for func in self.api.functions:
+            if func.name not in NO_WRAPPER:
+                w(toC(get_trace_wrapper_node(func)) + ';')
+        w('')
+        return '\n'.join(lines)
+
+
+class autogen_wrappers_jni(GraalPyAutoGenFile):
+    PATH = 'graalpython/com.oracle.graal.python.jni/src/autogen_wrappers_jni.c'
+
+    def generate(self):
+        lines = []
+        w = lines.append
+        w('#include "hpy_jni.h"')
+        w('#include "hpynative.h"')
+        w('#include "hpy_log.h"')
+        w(f'#include "{AUTOGEN_CTX_INIT_JNI_H_FILE}"')
+        w('')
+        w(f'#define TRAMPOLINE(FUN_NAME) {get_jni_function_prefix(JNI_HPY_BACKEND_CLASS)} ## FUN_NAME')
+        w('')
+        for func in self.api.functions:
+            w(f'static jmethodID jniMethod_{func.ctx_name()};')
+        w('')
+        w(f'_HPy_HIDDEN int init_autogen_jni_ctx(JNIEnv *env, jclass clazz, HPyContext *{UCTX_ARG})')
+        w('{')
+        # TODO: initialize context handles
+        # for var in self.api.variables:
+        #     name = var.name
+        #     w(f'    {UCTX_ARG}->{name} = ...;')
+        for func in self.api.functions:
+            self.gen_jni_method_init(w, func)
+        w(f'    return 0;')
+        w('}')
+        w('')
+        for func in self.api.functions:
+            debug_wrapper = self.gen_trace_wrapper(func)
+            if debug_wrapper:
+                w(debug_wrapper)
+                w('')
+        return '\n'.join(lines)
+
+    def gen_jni_method_init(self, w, func):
+        if func.name in NO_WRAPPER:
+            return
+        node = get_trace_wrapper_node(func)
+        name = func.ctx_name()
+
+        # compute JNI signature
+        jni_params = []
+        assert node.type.args.params[0].name == "ctx"
+        # skip the context parameter
+        for p in node.type.args.params[1:]:
+            param_type = toC(p.type)
+            jni_params.append(get_jni_signature_type(param_type))
+        jni_sig = "".join(jni_params)
+        rettype = get_context_return_type(node, False)
+        jni_ret_type = get_jni_signature_type(rettype)
+
+        jname = name.replace('_', '')
+        w(f'    {JNI_METHOD_PREFIX}{name} = (*env)->GetMethodID(env, clazz, "{jname}", "({jni_sig}){jni_ret_type}");')
+        w(f'    if ({JNI_METHOD_PREFIX}{name} == NULL) {{')
+        w(f'        LOGS("ERROR: Java method {jname} not found found !\\n");')
+        w('        return 1;')
+        w('    }')
+        w(f'    {UCTX_ARG}->{name} = &{name}_jni;')
+
+    def gen_trace_wrapper(self, func):
+        if func.name in NO_DEFAULT_UPCALL_STUB:
+            return
+
+        assert not func.is_varargs()
+        node = get_trace_wrapper_node(func)
+        #typedecl = find_typedecl(func)
+        #typedecl.declname = name
+        const_return = get_return_constant(func)
+        if const_return:
+            make_void(node)
+        signature = toC(node)
+        rettype = get_context_return_type(node, const_return)
+
+        param_names = []
+        assert node.type.args.params[0].name == "ctx"
+        # skip the context parameter
+        for p in node.type.args.params[1:]:
+            param_type = toC(p.type)
+            cast_fun = get_cast_fun(param_type)
+            param_names.append(f'{cast_fun}({p.name})')
+
+        lines = []
+        w = lines.append
+        w(signature)
+        w('{')
+
+        #return_stmt = "return " if rettype != 'void' else ""
+        #w(f'    {return_stmt}DO_UPCALL_{rettype.upper()}(CONTEXT_INSTANCE({UCTX_ARG}, {func.ctx_name()}, {params});')
+
+        #print(f"######## rettype = {rettype}")
+
+        suffix = '' if param_names else '0'
+        all_params = [f'CONTEXT_INSTANCE({UCTX_ARG})', func.ctx_name()] + param_names
+        params = ", ".join(all_params)
+        if rettype == 'void':
+            w(f'    DO_UPCALL_VOID{suffix}({params});')
+        elif rettype == 'HPy':
+            w(f'    return DO_UPCALL_HPY{suffix}({params});')
+        elif type_is_pointer(rettype):
+            w(f'    return ({rettype})DO_UPCALL_PTR{suffix}({params});')
+        else:
+            w(f'    return DO_UPCALL_{rettype.replace(" ", "_").upper()}{suffix}({params});')
+        w('}')
+        return '\n'.join(lines)
+
+JNI_NO_UPCALL = tuple()
+
+class autogen_ctx_jni_upcall_enum(AutoGenFilePart):
+    """
+    """
+    INDENT = '        '
+    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(JNI_HPY_CONTEXT_PKG + JNI_HPY_BACKEND_CLASS)
+    BEGIN_MARKER = INDENT + '// {{start jni upcalls}}\n'
+    END_MARKER = INDENT + '// {{end jni upcalls}}\n'
+
+    def generate(self, old):
+        lines = []
+        w = lines.append
+        for func in self.api.functions:
+            fname = func.name.replace('_', '')
+            jname = fname[0].upper() + fname[1:]
+            w(f'{self.INDENT}{jname}')
+        return ',\n'.join(lines) + ';\n'
+
+
+class autogen_svm_jni_upcall_config(AutoGenFilePart):
+    """
+    """
+    INDENT = '        '
+    PATH = 'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/resources/jni-config.json'
+    BEGIN_MARKER = '  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext",\n  "methods":[\n'
+    END_MARKER = ',\n    {"name":"getHPyDebugContext","parameterTypes":[] }\n  ],'
+
+    def generate(self, old):
+        lines = []
+        w = lines.append
+        for func in self.api.functions:
+            node = func.node
+            jname = func.ctx_name().replace('_', '')
+            jni_params = []
+            for p in node.type.args.params[1:]:
+                jtype = get_java_signature_type(p.type)
+                jni_params.append(f'"{jtype}"')
+            w(f'    {{"name":"{jname}","parameterTypes":[{",".join(jni_params)}]}}')
+        return ',\n'.join(lines)
+
+
+class autogen_jni_upcall_method_stub(AutoGenFilePart):
+    """
+    Generates empty JNI upcall methods like
+    'public long ctxLongFromLongLong(long v) { /* ... */ }'. This generator will
+    not generate methods if they already exist.
+    """
+    INDENT = '    '
+    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(JNI_HPY_CONTEXT_PKG + JNI_HPY_BACKEND_CLASS)
+    BEGIN_MARKER = INDENT + '// {{start ctx funcs}}\n'
+    END_MARKER = INDENT + '// {{end ctx funcs}}\n'
+
+    def generate(self, old):
+        lines = [old]
+        w = lines.append
+        for func in self.api.functions:
+            func_type = func.node.type
+
+            # context function name w/o underscores, e.g., 'ctxGetItemi'
+            jname = func.ctx_name().replace('_', '')
+
+            # HPy API function name w/o underscores, e.g., 'HPyGetItemi'
+            fname = func.name.replace('_', '')
+
+            rettype = get_java_signature_type(func_type.type)
+            if f' {jname}(' not in old:
+                java_params = []
+                for i, p in enumerate(func_type.args.params[1:]):
+                    jtype = get_java_signature_type(p.type)
+                    p_name = p.name if p.name else f'arg{i}'
+                    java_params.append(f'{jtype} {p_name}')
+
+                w(f'{self.INDENT}public {rettype} {jname}({", ".join(java_params)}) {{')
+                w(f'{self.INDENT * 2}increment(HPyJNIUpcall.{fname});')
+                w(f'{self.INDENT * 2}// TODO implement')
+                w(f'{self.INDENT * 2}throw CompilerDirectives.shouldNotReachHere();')
+                w(self.INDENT + '}')
+                w('')
+        return '\n'.join(lines)
 
 
 NO_CALL = ('DESTROYFUNC', 'TRAVERSEPROC')
@@ -194,13 +433,13 @@ class autogen_ctx_jni(AutoGenFilePart):
             if name.upper() in NO_CALL:
                 continue
             #
-            rettype = get_java_signature_type(toC(hpyfunc.return_type()))
+            rettype = get_java_signature_type(hpyfunc.return_type())
             args = ['long target', 'long ctx']
             for i, param in enumerate(hpyfunc.params()[1:]):
                 pname = param.name
                 if pname is None:
                     pname = 'arg%d' % i
-                jtype = get_java_signature_type(toC(param.type))
+                jtype = get_java_signature_type(param.type)
                 args.append(f'{jtype} {pname}')
             args = ', '.join(args)
             u(f'    // {toC(hpyfunc.node)}')
@@ -354,3 +593,11 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
                 w(f'    return {retvar};')
             w('}')
             w('')
+
+generators = (autogen_ctx_init_jni_h,
+              autogen_wrappers_jni,
+              autogen_ctx_jni,
+              autogen_ctx_call_jni,
+              autogen_ctx_jni_upcall_enum,
+              autogen_svm_jni_upcall_config,
+              autogen_jni_upcall_method_stub)

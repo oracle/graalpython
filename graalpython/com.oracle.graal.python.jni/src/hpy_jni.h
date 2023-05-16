@@ -56,12 +56,14 @@
 #define DO_UPCALL_HPY_NOARGS(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
 #define DO_UPCALL_HPY(jni_ctx, name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_HPY0(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
-#define DO_UPCALL_TRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
+#define DO_UPCALL_HPYTRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_HPYTHREADSTATE0(jni_ctx, name) ((HPyThreadState){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
+#define DO_UPCALL_HPYLISTBUILDER(jni_ctx, name, ...) ((HPyListBuilder){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_PTR(jni_ctx, name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_PTR_NOARGS(jni_ctx, name) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
 #define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_INT(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_INT0(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
 #define DO_UPCALL_DOUBLE(jni_ctx, name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_LONG(jni_ctx, name, ...) (long) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_VOID(jni_ctx, name, ...) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
@@ -79,7 +81,11 @@
 #define LONG_UP(_h) ((jlong)_h)
 #define DOUBLE_UP(_h) ((jdouble)_h)
 #define SIZE_T_UP(_h) ((jlong)_h)
-#define TRACKER_UP(_h) ((jlong)((_h)._i))
+#define HPY_TRACKER_UP(_h) ((jlong)((_h)._i))
+#define HPY_LIST_BUILDER_UP(_h) ((jlong)((_h)._lst))
+#define HPY_THREAD_STATE_UP(_h) ((jlong)((_h)._i))
+#define HPY_GLOBAL_UP(_h) ((jlong)((_h)._i))
+#define HPY_FIELD_UP(_h) ((jlong)((_h)._i))
 
 static inline HPy _jlong2h(jlong obj) {
     return (HPy){(HPy_ssize_t)obj};

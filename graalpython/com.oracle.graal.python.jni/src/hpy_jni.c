@@ -190,79 +190,6 @@ static jobject get_object_for_hpy_global(jobject hpyContext, uint64_t bits) {
     return element;
 }
 
-
-static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h) {
-    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), AsStruct, HPY_UP(h));
-}
-
-static HPy ctx_FloatFromDouble_jni(HPyContext *ctx, double v) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), FloatFromDouble, DOUBLE_UP(v));
-}
-
-static double ctx_FloatAsDouble_jni(HPyContext *ctx, HPy h) {
-    return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), FloatAsDouble, HPY_UP(h));
-}
-
-static long ctx_LongAsLong_jni(HPyContext *ctx, HPy h) {
-    return DO_UPCALL_LONG(CONTEXT_INSTANCE(ctx), LongAsLong, HPY_UP(h));
-}
-
-static double ctx_LongAsDouble_jni(HPyContext *ctx, HPy h) {
-    return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), LongAsDouble, HPY_UP(h));
-}
-
-static HPy ctx_LongFromLong_jni(HPyContext *ctx, long l) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), LongFromLong, l);
-}
-
-static HPy ctx_New_jni(HPyContext *ctx, HPy type, void** data) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), New, HPY_UP(type), SIZE_T_UP(data));
-}
-
-static HPy ctx_GetItemi_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItemi, HPY_UP(obj), SIZE_T_UP(idx));
-}
-
-static int ctx_SetItemi_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItemi, HPY_UP(obj), SIZE_T_UP(idx), HPY_UP(value));
-}
-
-static int ctx_SetItem_jni(HPyContext *ctx, HPy obj, HPy key, HPy value) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItem, HPY_UP(obj), HPY_UP(key), HPY_UP(value));
-}
-
-static void ctx_Close_jni(HPyContext *ctx, HPy h) {
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), Close, HPY_UP(h));
-}
-
-static HPy ctx_Dup_jni(HPyContext *ctx, HPy h) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Dup, HPY_UP(h));
-}
-
-static int ctx_NumberCheck_jni(HPyContext *ctx, HPy obj) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), NumberCheck, HPY_UP(obj));
-}
-
-static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), TypeCheck, HPY_UP(obj), HPY_UP(type));
-}
-
-static int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), TypeCheckG, HPY_UP(obj), HPY_UP(type));
-}
-
-static int ctx_ListCheck_jni(HPyContext *ctx, HPy obj) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ListCheck, HPY_UP(obj));
-}
-
-static HPy_ssize_t ctx_Length_jni(HPyContext *ctx, HPy obj) {
-    return DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), Length, HPY_UP(obj));
-}
-
-static HPy ctx_TypeGenericNew_jni(HPyContext *ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TypeGenericNew, HPY_UP(type));
-}
-
 #define MAX_UNICODE 0x10ffff
 
 static HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *u, HPy_ssize_t size) {
@@ -312,15 +239,6 @@ static HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *u, HPy_s
     }
 }
 
-
-static HPy ctx_DictNew_jni(HPyContext *ctx) {
-    return DO_UPCALL_HPY_NOARGS(CONTEXT_INSTANCE(ctx), DictNew);
-}
-
-static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ListNew, SIZE_T_UP(len));
-}
-
 static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
     long bits = toBits(global);
     if (bits && isBoxedHandle(bits)) {
@@ -342,6 +260,7 @@ static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
     }
 }
 
+/*
 static void ctx_Global_Store_jni(HPyContext *ctx, HPyGlobal *h, HPy v) {
     h->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), GlobalStore, h->_i, HPY_UP(v));
 }
@@ -353,6 +272,7 @@ static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy owner, HPyField field) {
 static void ctx_Field_Store_jni(HPyContext *ctx, HPy owner, HPyField *field, HPy value) {
     field->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), FieldStore, HPY_UP(owner), field->_i, HPY_UP(value));
 }
+*/
 
 static const char* getBoxedPrimitiveName(uint64_t bits) {
     assert(!isBoxedHandle(bits));
@@ -395,14 +315,6 @@ static HPy ctx_GetAttr_s_jni(HPyContext *ctx, HPy target, const char *name) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetAttrs, target, jname);
 }
 
-static HPy ctx_Type_jni(HPyContext *ctx, HPy obj) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Type, HPY_UP(obj));
-}
-
-static const char *ctx_TypeGetName_jni(HPyContext *ctx, HPy obj) {
-    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), TypeGetName, HPY_UP(obj));
-}
-
 static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result) {
     /* This uses 'h_Ellipsis' as an error marker assuming that it is rather uncertain that this will be a valid return
        value. If 'h_Ellipsis' is returned, this indicates an error and we explicitly check for an error then. */
@@ -413,22 +325,6 @@ static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result
     }
     *result = r;
     return 0;
-}
-
-static int ctx_Is_jni(HPyContext *ctx, HPy a, HPy b) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), Is, HPY_UP(a), HPY_UP(b));
-}
-
-static int ctx_Is_g_jni(HPyContext *ctx, HPy a, HPyGlobal b) {
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), IsG, HPY_UP(a), HPY_UP(b));
-}
-
-static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), CapsuleNew, PTR_UP(pointer), PTR_UP(name), PTR_UP(destructor));
-}
-
-static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name) {
-    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), CapsuleGet, HPY_UP(capsule), INT_UP(key), PTR_UP(name));
 }
 
 _HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, bool steal) {
@@ -456,41 +352,19 @@ void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
 }
 
 /* Initialize the jmethodID pointers for all the context functions implemented via JNI. */
-JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject ctx) {
+JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject jctx) {
     LOG("%s", "hpy_jni.c:initJNI\n");
+    GraalHPyContext *graal_hpy_jni_context = (GraalHPyContext *) calloc(1, sizeof(GraalHPyContext));
+    HPyContext *ctx = graal_native_context_get_hpy_context(graal_hpy_jni_context);
+    ctx->name = "HPy Universal ABI (GraalVM backend, JNI)";
+    graal_hpy_jni_context->jni_context = (*env)->NewGlobalRef(env, jctx);
     jniEnv = env;
-    HPyContext *context = (HPyContext *) malloc(sizeof(HPyContext));
 
-    context->ctx_Float_FromDouble = ctx_FloatFromDouble_jni;
-    context->ctx_Float_AsDouble = ctx_FloatAsDouble_jni;
-    context->ctx_Long_AsLong = ctx_LongAsLong_jni;
-    context->ctx_Long_AsDouble = ctx_LongAsDouble_jni;
-    context->ctx_AsStruct = ctx_AsStruct_jni;
-    context->ctx_Close = ctx_Close_jni;
-
-    context->ctx_Dup = ctx_Dup_jni;
-    context->ctx_Number_Check = ctx_NumberCheck_jni;
-    context->ctx_TypeCheck = ctx_TypeCheck_jni;
-    context->ctx_TypeCheck_g = ctx_TypeCheck_g_jni;
-    context->ctx_List_Check = ctx_ListCheck_jni;
-
-    context->ctx_Length = ctx_Length_jni;
-    context->ctx_New = ctx_New_jni;
-    context->ctx_Type_GenericNew = ctx_TypeGenericNew_jni;
-
-    context->ctx_GetItem_i = ctx_GetItemi_jni;
-    context->ctx_SetItem_i = ctx_SetItemi_jni;
-    context->ctx_SetItem = ctx_SetItem_jni;
+    if (init_autogen_jni_ctx()) {
+        return PTR_UP(NULL);
+    }
 
     context->ctx_Unicode_FromWideChar = ctx_Unicode_FromWideChar_jni;
-
-    context->ctx_Dict_New = ctx_DictNew_jni;
-    context->ctx_List_New = ctx_ListNew_jni;
-
-    context->ctx_Tracker_New = augment_Tracker_New;
-    context->ctx_Tracker_Add = augment_Tracker_Add;
-    context->ctx_Tracker_ForgetAll = augment_Tracker_ForgetAll;
-    context->ctx_Tracker_Close = augment_Tracker_Close;
 
     context->ctx_TupleBuilder_New = ctx_TupleBuilder_New;
     context->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set;
@@ -498,23 +372,16 @@ JNIEXPORT jlong JNICALL JNI_HELPER(initJNI)(JNIEnv *env, jclass clazz, jobject c
     context->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
 
     context->ctx_Global_Load = ctx_Global_Load_jni;
-    context->ctx_Global_Store = ctx_Global_Store_jni;
-    context->ctx_Field_Load = ctx_Field_Load_jni;
-    context->ctx_Field_Store = ctx_Field_Store_jni;
+    // context->ctx_Global_Store = ctx_Global_Store_jni;
+    // context->ctx_Field_Load = ctx_Field_Load_jni;
+    // context->ctx_Field_Store = ctx_Field_Store_jni;
 
     context->ctx_SetItem_s = ctx_SetItem_s_jni;
     context->ctx_GetItem_s = ctx_GetItem_s_jni;
-    context->ctx_Type = ctx_Type_jni;
-    context->ctx_Type_GetName = ctx_TypeGetName_jni;
 
     context->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
-    context->ctx_Is = ctx_Is_jni;
-    context->ctx_Is_g = ctx_Is_g_jni;
-    context->ctx_Capsule_New = ctx_Capsule_New_jni;
-    context->ctx_Capsule_Get = ctx_Capsule_Get_jni;
     context->ctx_GetAttr_s = ctx_GetAttr_s_jni;
 
-    graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
 
 #define CLASS_HPYCONTEXT clazz
@@ -564,10 +431,12 @@ ALL_UPCALLS
     return PTR_UP(context);
 }
 
-JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIContext)(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+JNIEXPORT jint JNICALL JNI_HELPER(finalizeJNIContext)(JNIEnv *env, jclass clazz, jlong ctx) {
     LOG("%s", "hpy_jni.c:finalizeJNIContext\n");
-    HPyContext *uctx = (HPyContext *) uctxPointer;
-    free(uctx);
+    // assert(info->magic_number == HPY_TRACE_MAGIC);
+    GraalHPyContext *native_ctx = graal_hpy_context_get_native_context((HPyContext *) ctx);
+    (*env)->DeleteGlobalRef(env, (jobject) native_ctx->jni_context);
+    free((void *)native_ctx);
     return 0;
 }
 

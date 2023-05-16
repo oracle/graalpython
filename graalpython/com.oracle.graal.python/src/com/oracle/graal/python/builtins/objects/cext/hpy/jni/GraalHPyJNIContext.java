@@ -166,7 +166,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public GraalHPyJNIContext(GraalHPyContext context, boolean useNativeFastPaths, boolean traceUpcalls) {
         super(context, useNativeFastPaths, traceUpcalls);
         this.slowPathFactory = context.getContext().factory();
-        this.counts = traceUpcalls ? new int[Counter.VALUES.length] : null;
+        this.counts = traceUpcalls ? new int[HPyJNIUpcall.VALUES.length] : null;
     }
 
     @Override
@@ -175,7 +175,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     protected HPyUpcall[] getUpcalls() {
-        return Counter.VALUES;
+        return HPyJNIUpcall.VALUES;
     }
 
     protected int[] getUpcallCounts() {
@@ -424,47 +424,188 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     @TruffleBoundary
     private static native long initJNIDebugModule(long uctxPointer);
 
-    public enum Counter implements HPyUpcall {
+    enum HPyJNIUpcall implements HPyUpcall {
+        HPyUnicodeFromJCharArray,
+        HPyBulkClose,
+
         // {{start jni upcalls}}
-        UpcallCast,
-        UpcallNew,
-        UpcallTypeGenericNew,
-        UpcallTrackerClose,
-        UpcallTrackerAdd,
-        UpcallClose,
-        UpcallBulkClose,
-        UpcallTrackerNew,
-        UpcallGetItemI,
-        UpcallSetItem,
-        UpcallSetItemI,
-        UpcallDup,
-        UpcallNumberCheck,
-        UpcallTypeCheck,
-        UpcallLength,
-        UpcallListCheck,
-        UpcallLongAsLong,
-        UpcallLongAsDouble,
-        UpcallLongFromLong,
-        UpcallFloatAsDouble,
-        UpcallFloatFromDouble,
-        UpcallUnicodeFromWideChar,
-        UpcallUnicodeFromJCharArray,
-        UpcallDictNew,
-        UpcallListNew,
-        UpcallTupleFromArray,
-        UpcallGetItemS,
-        UpcallSetItemS,
-        UpcallFieldLoad,
-        UpcallFieldStore,
-        UpcallGlobalLoad,
-        UpcallGlobalStore,
-        UpcallType,
-        UpcallTypeGetName,
-        UpcallContextVarGet,
-        UpcallGetAttrS;
+        HPyModuleCreate,
+        HPyDup,
+        HPyClose,
+        HPyLongFromLong,
+        HPyLongFromUnsignedLong,
+        HPyLongFromLongLong,
+        HPyLongFromUnsignedLongLong,
+        HPyLongFromSizet,
+        HPyLongFromSsizet,
+        HPyLongAsLong,
+        HPyLongAsUnsignedLong,
+        HPyLongAsUnsignedLongMask,
+        HPyLongAsLongLong,
+        HPyLongAsUnsignedLongLong,
+        HPyLongAsUnsignedLongLongMask,
+        HPyLongAsSizet,
+        HPyLongAsSsizet,
+        HPyLongAsVoidPtr,
+        HPyLongAsDouble,
+        HPyFloatFromDouble,
+        HPyFloatAsDouble,
+        HPyBoolFromLong,
+        HPyLength,
+        HPySequenceCheck,
+        HPyNumberCheck,
+        HPyAdd,
+        HPySubtract,
+        HPyMultiply,
+        HPyMatrixMultiply,
+        HPyFloorDivide,
+        HPyTrueDivide,
+        HPyRemainder,
+        HPyDivmod,
+        HPyPower,
+        HPyNegative,
+        HPyPositive,
+        HPyAbsolute,
+        HPyInvert,
+        HPyLshift,
+        HPyRshift,
+        HPyAnd,
+        HPyXor,
+        HPyOr,
+        HPyIndex,
+        HPyLong,
+        HPyFloat,
+        HPyInPlaceAdd,
+        HPyInPlaceSubtract,
+        HPyInPlaceMultiply,
+        HPyInPlaceMatrixMultiply,
+        HPyInPlaceFloorDivide,
+        HPyInPlaceTrueDivide,
+        HPyInPlaceRemainder,
+        HPyInPlacePower,
+        HPyInPlaceLshift,
+        HPyInPlaceRshift,
+        HPyInPlaceAnd,
+        HPyInPlaceXor,
+        HPyInPlaceOr,
+        HPyCallableCheck,
+        HPyCallTupleDict,
+        HPyFatalError,
+        HPyErrSetString,
+        HPyErrSetObject,
+        HPyErrSetFromErrnoWithFilename,
+        HPyErrSetFromErrnoWithFilenameObjects,
+        HPyErrOccurred,
+        HPyErrExceptionMatches,
+        HPyErrNoMemory,
+        HPyErrClear,
+        HPyErrNewException,
+        HPyErrNewExceptionWithDoc,
+        HPyErrWarnEx,
+        HPyErrWriteUnraisable,
+        HPyIsTrue,
+        HPyTypeFromSpec,
+        HPyTypeGenericNew,
+        HPyGetAttr,
+        HPyGetAttrs,
+        HPyMaybeGetAttrs,
+        HPyHasAttr,
+        HPyHasAttrs,
+        HPySetAttr,
+        HPySetAttrs,
+        HPyGetItem,
+        HPyGetItemi,
+        HPyGetItems,
+        HPyContains,
+        HPySetItem,
+        HPySetItemi,
+        HPySetItems,
+        HPyType,
+        HPyTypeCheck,
+        HPyTypeCheckg,
+        HPySetType,
+        HPyTypeIsSubtype,
+        HPyTypeGetName,
+        HPyIs,
+        HPyIsg,
+        HPyAsStruct,
+        HPyAsStructLegacy,
+        HPyNew,
+        HPyRepr,
+        HPyStr,
+        HPyASCII,
+        HPyBytes,
+        HPyRichCompare,
+        HPyRichCompareBool,
+        HPyHash,
+        HPySeqIterNew,
+        HPyBytesCheck,
+        HPyBytesSize,
+        HPyBytesGETSIZE,
+        HPyBytesAsString,
+        HPyBytesASSTRING,
+        HPyBytesFromString,
+        HPyBytesFromStringAndSize,
+        HPyUnicodeFromString,
+        HPyUnicodeCheck,
+        HPyUnicodeAsASCIIString,
+        HPyUnicodeAsLatin1String,
+        HPyUnicodeAsUTF8String,
+        HPyUnicodeAsUTF8AndSize,
+        HPyUnicodeFromWideChar,
+        HPyUnicodeDecodeFSDefault,
+        HPyUnicodeDecodeFSDefaultAndSize,
+        HPyUnicodeEncodeFSDefault,
+        HPyUnicodeReadChar,
+        HPyUnicodeDecodeASCII,
+        HPyUnicodeDecodeLatin1,
+        HPyUnicodeFromEncodedObject,
+        HPyUnicodeInternFromString,
+        HPyUnicodeSubstring,
+        HPyListCheck,
+        HPyListNew,
+        HPyListAppend,
+        HPyDictCheck,
+        HPyDictNew,
+        HPyDictKeys,
+        HPyDictGetItem,
+        HPyTupleCheck,
+        HPyTupleFromArray,
+        HPySliceUnpack,
+        HPyContextVarNew,
+        HPyContextVarGet,
+        HPyContextVarSet,
+        HPyImportImportModule,
+        HPyCapsuleNew,
+        HPyCapsuleGet,
+        HPyCapsuleIsValid,
+        HPyCapsuleSet,
+        HPyFromPyObject,
+        HPyAsPyObject,
+        HPyCallRealFunctionFromTrampoline,
+        HPyListBuilderNew,
+        HPyListBuilderSet,
+        HPyListBuilderBuild,
+        HPyListBuilderCancel,
+        HPyTupleBuilderNew,
+        HPyTupleBuilderSet,
+        HPyTupleBuilderBuild,
+        HPyTupleBuilderCancel,
+        HPyTrackerNew,
+        HPyTrackerAdd,
+        HPyTrackerForgetAll,
+        HPyTrackerClose,
+        HPyFieldStore,
+        HPyFieldLoad,
+        HPyReenterPythonExecution,
+        HPyLeavePythonExecution,
+        HPyGlobalStore,
+        HPyGlobalLoad,
+        HPyDump,
+        HPyTypeCheckSlot;
         // {{end jni upcalls}}
 
-        @CompilationFinal(dimensions = 1) private static final Counter[] VALUES = values();
+        @CompilationFinal(dimensions = 1) private static final HPyJNIUpcall[] VALUES = values();
 
         @Override
         public String getName() {
@@ -472,7 +613,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
     }
 
-    private void increment(Counter upcall) {
+    private void increment(HPyJNIUpcall upcall) {
         if (counts != null) {
             counts[upcall.ordinal()]++;
         }
@@ -587,19 +728,19 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     // {{start ctx funcs}}
     public int ctxTypeCheck(long bits, long typeBits) {
-        increment(Counter.UpcallTypeCheck);
+        increment(HPyJNIUpcall.HPyTypeCheck);
         Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeBits));
         return typeCheck(bits, type);
     }
 
     public int ctxTypeCheckG(long bits, long typeGlobalBits) {
-        increment(Counter.UpcallTypeCheck);
+        increment(HPyJNIUpcall.HPyTypeCheck);
         Object type = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(typeGlobalBits));
         return typeCheck(bits, type);
     }
 
     public long ctxLength(long handle) {
-        increment(Counter.UpcallLength);
+        increment(HPyJNIUpcall.HPyLength);
         assert GraalHPyBoxing.isBoxedHandle(handle);
 
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
@@ -619,7 +760,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public int ctxListCheck(long handle) {
-        increment(Counter.UpcallListCheck);
+        increment(HPyJNIUpcall.HPyListCheck);
         if (GraalHPyBoxing.isBoxedHandle(handle)) {
             Object obj = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
             Object clazz = GetClassNode.getUncached().execute(obj);
@@ -630,7 +771,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxUnicodeFromWideChar(long wcharArrayPtr, long size) {
-        increment(Counter.UpcallUnicodeFromWideChar);
+        increment(HPyJNIUpcall.HPyUnicodeFromWideChar);
 
         if (!PInt.isIntRange(size)) {
             // NULL handle
@@ -653,20 +794,20 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxUnicodeFromJCharArray(char[] arr) {
-        increment(Counter.UpcallUnicodeFromJCharArray);
+        increment(HPyJNIUpcall.HPyUnicodeFromJCharArray);
         TruffleString string = TruffleString.fromCharArrayUTF16Uncached(arr).switchEncodingUncached(TS_ENCODING);
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(string));
     }
 
     public long ctxDictNew() {
-        increment(Counter.UpcallDictNew);
+        increment(HPyJNIUpcall.HPyDictNew);
         PDict dict = slowPathFactory.createDict();
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(dict));
     }
 
     public long ctxListNew(long llen) {
         try {
-            increment(Counter.UpcallListNew);
+            increment(HPyJNIUpcall.HPyListNew);
             int len = CastToJavaIntExactNode.getUncached().execute(llen);
             Object[] data = new Object[len];
             Arrays.fill(data, PNone.NONE);
@@ -685,7 +826,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * is useful to implement, e.g., tuple builder.
      */
     public long ctxTupleFromArray(long[] hItems, boolean steal) {
-        increment(Counter.UpcallTupleFromArray);
+        increment(HPyJNIUpcall.HPyTupleFromArray);
 
         Object[] objects = new Object[hItems.length];
         for (int i = 0; i < hItems.length; i++) {
@@ -700,7 +841,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxFieldLoad(long bits, long idx) {
-        increment(Counter.UpcallFieldLoad);
+        increment(HPyJNIUpcall.HPyFieldLoad);
         Object owner = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         // HPyField index is always non-zero because zero means: uninitialized
         assert idx > 0;
@@ -709,26 +850,26 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxFieldStore(long bits, long idx, long value) {
-        increment(Counter.UpcallFieldStore);
+        increment(HPyJNIUpcall.HPyFieldStore);
         PythonObject owner = (PythonObject) context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         Object referent = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value));
         return GraalHPyFieldStore.assign(owner, referent, (int) idx);
     }
 
     public long ctxGlobalLoad(long bits) {
-        increment(Counter.UpcallGlobalLoad);
+        increment(HPyJNIUpcall.HPyGlobalLoad);
         assert GraalHPyBoxing.isBoxedHandle(bits);
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits))));
     }
 
     public long ctxGlobalStore(long bits, long v) {
-        increment(Counter.UpcallGlobalStore);
+        increment(HPyJNIUpcall.HPyGlobalStore);
         assert GraalHPyBoxing.isBoxedHandle(bits);
         return context.createGlobal(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v)), GraalHPyBoxing.unboxHandle(bits));
     }
 
     public long ctxType(long bits) {
-        increment(Counter.UpcallType);
+        increment(HPyJNIUpcall.HPyType);
         Object clazz;
         if (GraalHPyBoxing.isBoxedHandle(bits)) {
             clazz = GetClassNode.getUncached().execute(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
@@ -744,7 +885,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxTypeGetName(long bits) {
-        increment(Counter.UpcallTypeGetName);
+        increment(HPyJNIUpcall.HPyTypeGetName);
         assert GraalHPyBoxing.isBoxedHandle(bits);
         Object clazz = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         Object tpName = HPyTypeGetNameNodeGen.getUncached().execute(clazz);
@@ -756,7 +897,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxContextVarGet(long varBits, long defBits, long errBits) {
-        increment(Counter.UpcallContextVarGet);
+        increment(HPyJNIUpcall.HPyContextVarGet);
         assert GraalHPyBoxing.isBoxedHandle(varBits);
         Object var = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(varBits));
         if (!(var instanceof PContextVar)) {
@@ -857,7 +998,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxGetAttrs(long receiverHandle, String name) {
-        increment(Counter.UpcallGetAttrS);
+        increment(HPyJNIUpcall.HPyGetAttrs);
         Object receiver = bitsAsPythonObject(receiverHandle);
         TruffleString tsName = toTruffleStringUncached(name);
         Object result;
@@ -872,12 +1013,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     @SuppressWarnings("static-method")
     public long ctxFloatFromDouble(double value) {
-        increment(Counter.UpcallFloatFromDouble);
+        increment(HPyJNIUpcall.HPyFloatFromDouble);
         return GraalHPyBoxing.boxDouble(value);
     }
 
     public double ctxFloatAsDouble(long handle) {
-        increment(Counter.UpcallFloatAsDouble);
+        increment(HPyJNIUpcall.HPyFloatAsDouble);
 
         if (GraalHPyBoxing.isBoxedDouble(handle)) {
             return GraalHPyBoxing.unboxDouble(handle);
@@ -895,7 +1036,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxLongAsLong(long handle) {
-        increment(Counter.UpcallLongAsLong);
+        increment(HPyJNIUpcall.HPyLongAsLong);
 
         if (GraalHPyBoxing.isBoxedInt(handle)) {
             return GraalHPyBoxing.unboxInt(handle);
@@ -911,7 +1052,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public double ctxLongAsDouble(long handle) {
-        increment(Counter.UpcallLongAsDouble);
+        increment(HPyJNIUpcall.HPyLongAsDouble);
 
         if (GraalHPyBoxing.isBoxedInt(handle)) {
             return GraalHPyBoxing.unboxInt(handle);
@@ -927,7 +1068,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxLongFromLong(long l) {
-        increment(Counter.UpcallLongFromLong);
+        increment(HPyJNIUpcall.HPyLongFromLong);
 
         if (com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(l)) {
             return GraalHPyBoxing.boxInt((int) l);
@@ -936,7 +1077,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxAsStruct(long handle) {
-        increment(Counter.UpcallCast);
+        increment(HPyJNIUpcall.HPyAsStruct);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
         try {
             return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
@@ -948,7 +1089,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     // Note: assumes that receiverHandle is not a boxed primitive value
     @SuppressWarnings("try")
     public int ctxSetItems(long receiverHandle, String name, long valueHandle) {
-        increment(Counter.UpcallSetItemS);
+        increment(HPyJNIUpcall.HPySetItems);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
         Object value = bitsAsPythonObject(valueHandle);
         if (value == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
@@ -968,7 +1109,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     // Note: assumes that receiverHandle is not a boxed primitive value
     @SuppressWarnings("try")
     public final long ctxGetItems(long receiverHandle, String name) {
-        increment(Counter.UpcallGetItemS);
+        increment(HPyJNIUpcall.HPyGetItems);
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
         TruffleString tsName = toTruffleStringUncached(name);
         Object result;
@@ -982,7 +1123,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxNew(long typeHandle, long dataOutVar) {
-        increment(Counter.UpcallNew);
+        increment(HPyJNIUpcall.HPyNew);
 
         Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
         PythonObject pythonObject;
@@ -1024,7 +1165,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxTypeGenericNew(long typeHandle) {
-        increment(Counter.UpcallTypeGenericNew);
+        increment(HPyJNIUpcall.HPyTypeGenericNew);
 
         Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
 
@@ -1056,12 +1197,12 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public void ctxClose(long handle) {
-        increment(Counter.UpcallClose);
+        increment(HPyJNIUpcall.HPyClose);
         closeNativeHandle(handle);
     }
 
     public void ctxBulkClose(long unclosedHandlePtr, int size) {
-        increment(Counter.UpcallBulkClose);
+        increment(HPyJNIUpcall.HPyBulkClose);
         for (int i = 0; i < size; i++) {
             long handle = UNSAFE.getLong(unclosedHandlePtr);
             unclosedHandlePtr += 8;
@@ -1072,7 +1213,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxDup(long handle) {
-        increment(Counter.UpcallDup);
+        increment(HPyJNIUpcall.HPyDup);
         if (GraalHPyBoxing.isBoxedHandle(handle)) {
             Object delegate = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
             return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(delegate));
@@ -1082,7 +1223,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public long ctxGetItemi(long hCollection, long lidx) {
-        increment(Counter.UpcallGetItemI);
+        increment(HPyJNIUpcall.HPyGetItemi);
         try {
             // If handle 'hCollection' is a boxed int or double, the object is not subscriptable.
             if (!GraalHPyBoxing.isBoxedHandle(hCollection)) {
@@ -1136,7 +1277,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
      * @return {@code 0} on success; {@code -1} on error
      */
     public int ctxSetItem(long hSequence, long hKey, long hValue) {
-        increment(Counter.UpcallSetItem);
+        increment(HPyJNIUpcall.HPySetItem);
         try {
             // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
             if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
@@ -1179,7 +1320,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public int ctxSetItemi(long hSequence, long lidx, long hValue) {
-        increment(Counter.UpcallSetItemI);
+        increment(HPyJNIUpcall.HPySetItemi);
         try {
             // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
             if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
@@ -1236,7 +1377,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     public int ctxNumberCheck(long handle) {
-        increment(Counter.UpcallNumberCheck);
+        increment(HPyJNIUpcall.HPyNumberCheck);
         if (GraalHPyBoxing.isBoxedDouble(handle) || GraalHPyBoxing.isBoxedInt(handle)) {
             return 1;
         }
@@ -1253,8 +1394,845 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             return 0;
         }
     }
-    // {{end ctx funcs}}
 
-    // {{start autogen}}
-    // {{end autogen}}
+    public long ctxModuleCreate(long def) {
+        increment(HPyJNIUpcall.HPyModuleCreate);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongFromUnsignedLong(long value) {
+        increment(HPyJNIUpcall.HPyLongFromUnsignedLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongFromLongLong(long v) {
+        increment(HPyJNIUpcall.HPyLongFromLongLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongFromUnsignedLongLong(long v) {
+        increment(HPyJNIUpcall.HPyLongFromUnsignedLongLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongFromSizet(long value) {
+        increment(HPyJNIUpcall.HPyLongFromSizet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongFromSsizet(long value) {
+        increment(HPyJNIUpcall.HPyLongFromSsizet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsUnsignedLong(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUnsignedLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsUnsignedLongMask(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUnsignedLongMask);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsLongLong(long h) {
+        increment(HPyJNIUpcall.HPyLongAsLongLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsUnsignedLongLong(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUnsignedLongLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsUnsignedLongLongMask(long h) {
+        increment(HPyJNIUpcall.HPyLongAsUnsignedLongLongMask);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsSizet(long h) {
+        increment(HPyJNIUpcall.HPyLongAsSizet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsSsizet(long h) {
+        increment(HPyJNIUpcall.HPyLongAsSsizet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLongAsVoidPtr(long h) {
+        increment(HPyJNIUpcall.HPyLongAsVoidPtr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBoolFromLong(long v) {
+        increment(HPyJNIUpcall.HPyBoolFromLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxSequenceCheck(long h) {
+        increment(HPyJNIUpcall.HPySequenceCheck);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxAdd(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyAdd);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxSubtract(long h1, long h2) {
+        increment(HPyJNIUpcall.HPySubtract);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxMultiply(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyMultiply);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxMatrixMultiply(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyMatrixMultiply);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxFloorDivide(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyFloorDivide);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxTrueDivide(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyTrueDivide);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxRemainder(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyRemainder);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxDivmod(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyDivmod);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxPower(long h1, long h2, long h3) {
+        increment(HPyJNIUpcall.HPyPower);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxNegative(long h1) {
+        increment(HPyJNIUpcall.HPyNegative);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxPositive(long h1) {
+        increment(HPyJNIUpcall.HPyPositive);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxAbsolute(long h1) {
+        increment(HPyJNIUpcall.HPyAbsolute);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInvert(long h1) {
+        increment(HPyJNIUpcall.HPyInvert);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLshift(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyLshift);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxRshift(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyRshift);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxAnd(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyAnd);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxXor(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyXor);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxOr(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyOr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxIndex(long h1) {
+        increment(HPyJNIUpcall.HPyIndex);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLong(long h1) {
+        increment(HPyJNIUpcall.HPyLong);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxFloat(long h1) {
+        increment(HPyJNIUpcall.HPyFloat);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceAdd(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceAdd);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceSubtract(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceSubtract);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceMultiply(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceMultiply);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceMatrixMultiply(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceMatrixMultiply);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceFloorDivide(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceFloorDivide);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceTrueDivide(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceTrueDivide);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceRemainder(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceRemainder);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlacePower(long h1, long h2, long h3) {
+        increment(HPyJNIUpcall.HPyInPlacePower);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceLshift(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceLshift);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceRshift(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceRshift);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceAnd(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceAnd);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceXor(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceXor);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxInPlaceOr(long h1, long h2) {
+        increment(HPyJNIUpcall.HPyInPlaceOr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxCallableCheck(long h) {
+        increment(HPyJNIUpcall.HPyCallableCheck);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxCallTupleDict(long callable, long args, long kw) {
+        increment(HPyJNIUpcall.HPyCallTupleDict);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxFatalError(long message) {
+        increment(HPyJNIUpcall.HPyFatalError);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxErrSetString(long h_type, long message) {
+        increment(HPyJNIUpcall.HPyErrSetString);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxErrSetObject(long h_type, long h_value) {
+        increment(HPyJNIUpcall.HPyErrSetObject);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxErrSetFromErrnoWithFilename(long h_type, long filename_fsencoded) {
+        increment(HPyJNIUpcall.HPyErrSetFromErrnoWithFilename);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxErrSetFromErrnoWithFilenameObjects(long h_type, long filename1, long filename2) {
+        increment(HPyJNIUpcall.HPyErrSetFromErrnoWithFilenameObjects);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxErrOccurred() {
+        increment(HPyJNIUpcall.HPyErrOccurred);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxErrExceptionMatches(long exc) {
+        increment(HPyJNIUpcall.HPyErrExceptionMatches);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxErrNoMemory() {
+        increment(HPyJNIUpcall.HPyErrNoMemory);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxErrClear() {
+        increment(HPyJNIUpcall.HPyErrClear);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxErrNewException(long name, long base, long dict) {
+        increment(HPyJNIUpcall.HPyErrNewException);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxErrNewExceptionWithDoc(long name, long doc, long base, long dict) {
+        increment(HPyJNIUpcall.HPyErrNewExceptionWithDoc);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxErrWarnEx(long category, long message, long stack_level) {
+        increment(HPyJNIUpcall.HPyErrWarnEx);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxErrWriteUnraisable(long obj) {
+        increment(HPyJNIUpcall.HPyErrWriteUnraisable);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxIsTrue(long h) {
+        increment(HPyJNIUpcall.HPyIsTrue);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxTypeFromSpec(long spec, long params) {
+        increment(HPyJNIUpcall.HPyTypeFromSpec);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxGetAttr(long obj, long name) {
+        increment(HPyJNIUpcall.HPyGetAttr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxMaybeGetAttrs(long obj, long name) {
+        increment(HPyJNIUpcall.HPyMaybeGetAttrs);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxHasAttr(long obj, long name) {
+        increment(HPyJNIUpcall.HPyHasAttr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxHasAttrs(long obj, long name) {
+        increment(HPyJNIUpcall.HPyHasAttrs);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxSetAttr(long obj, long name, long value) {
+        increment(HPyJNIUpcall.HPySetAttr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxSetAttrs(long obj, long name, long value) {
+        increment(HPyJNIUpcall.HPySetAttrs);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxGetItem(long obj, long key) {
+        increment(HPyJNIUpcall.HPyGetItem);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxContains(long container, long key) {
+        increment(HPyJNIUpcall.HPyContains);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxTypeCheckg(long obj, long type) {
+        increment(HPyJNIUpcall.HPyTypeCheckg);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxSetType(long obj, long type) {
+        increment(HPyJNIUpcall.HPySetType);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxTypeIsSubtype(long sub, long type) {
+        increment(HPyJNIUpcall.HPyTypeIsSubtype);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxIsg(long obj, long other) {
+        increment(HPyJNIUpcall.HPyIsg);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxAsStructLegacy(long h) {
+        increment(HPyJNIUpcall.HPyAsStructLegacy);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxRepr(long obj) {
+        increment(HPyJNIUpcall.HPyRepr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxStr(long obj) {
+        increment(HPyJNIUpcall.HPyStr);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxASCII(long obj) {
+        increment(HPyJNIUpcall.HPyASCII);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBytes(long obj) {
+        increment(HPyJNIUpcall.HPyBytes);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxRichCompare(long v, long w, int op) {
+        increment(HPyJNIUpcall.HPyRichCompare);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxRichCompareBool(long v, long w, int op) {
+        increment(HPyJNIUpcall.HPyRichCompareBool);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxHash(long obj) {
+        increment(HPyJNIUpcall.HPyHash);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxSeqIterNew(long seq) {
+        increment(HPyJNIUpcall.HPySeqIterNew);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxBytesCheck(long h) {
+        increment(HPyJNIUpcall.HPyBytesCheck);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBytesSize(long h) {
+        increment(HPyJNIUpcall.HPyBytesSize);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBytesGETSIZE(long h) {
+        increment(HPyJNIUpcall.HPyBytesGETSIZE);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBytesAsString(long h) {
+        increment(HPyJNIUpcall.HPyBytesAsString);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBytesASSTRING(long h) {
+        increment(HPyJNIUpcall.HPyBytesASSTRING);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBytesFromString(long v) {
+        increment(HPyJNIUpcall.HPyBytesFromString);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxBytesFromStringAndSize(long v, long len) {
+        increment(HPyJNIUpcall.HPyBytesFromStringAndSize);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeFromString(long utf8) {
+        increment(HPyJNIUpcall.HPyUnicodeFromString);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxUnicodeCheck(long h) {
+        increment(HPyJNIUpcall.HPyUnicodeCheck);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeAsASCIIString(long h) {
+        increment(HPyJNIUpcall.HPyUnicodeAsASCIIString);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeAsLatin1String(long h) {
+        increment(HPyJNIUpcall.HPyUnicodeAsLatin1String);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeAsUTF8String(long h) {
+        increment(HPyJNIUpcall.HPyUnicodeAsUTF8String);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeAsUTF8AndSize(long h, long size) {
+        increment(HPyJNIUpcall.HPyUnicodeAsUTF8AndSize);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeDecodeFSDefault(long v) {
+        increment(HPyJNIUpcall.HPyUnicodeDecodeFSDefault);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeDecodeFSDefaultAndSize(long v, long size) {
+        increment(HPyJNIUpcall.HPyUnicodeDecodeFSDefaultAndSize);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeEncodeFSDefault(long h) {
+        increment(HPyJNIUpcall.HPyUnicodeEncodeFSDefault);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeReadChar(long h, long index) {
+        increment(HPyJNIUpcall.HPyUnicodeReadChar);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeDecodeASCII(long s, long size, long errors) {
+        increment(HPyJNIUpcall.HPyUnicodeDecodeASCII);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeDecodeLatin1(long s, long size, long errors) {
+        increment(HPyJNIUpcall.HPyUnicodeDecodeLatin1);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeFromEncodedObject(long obj, long encoding, long errors) {
+        increment(HPyJNIUpcall.HPyUnicodeFromEncodedObject);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeInternFromString(long str) {
+        increment(HPyJNIUpcall.HPyUnicodeInternFromString);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxUnicodeSubstring(long obj, long start, long end) {
+        increment(HPyJNIUpcall.HPyUnicodeSubstring);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxListAppend(long h_list, long h_item) {
+        increment(HPyJNIUpcall.HPyListAppend);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxDictCheck(long h) {
+        increment(HPyJNIUpcall.HPyDictCheck);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxDictKeys(long h) {
+        increment(HPyJNIUpcall.HPyDictKeys);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxDictGetItem(long op, long key) {
+        increment(HPyJNIUpcall.HPyDictGetItem);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxTupleCheck(long h) {
+        increment(HPyJNIUpcall.HPyTupleCheck);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxSliceUnpack(long slice, long start, long stop, long step) {
+        increment(HPyJNIUpcall.HPySliceUnpack);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxContextVarNew(long name, long default_value) {
+        increment(HPyJNIUpcall.HPyContextVarNew);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxContextVarSet(long context_var, long value) {
+        increment(HPyJNIUpcall.HPyContextVarSet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxImportImportModule(long name) {
+        increment(HPyJNIUpcall.HPyImportImportModule);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxCapsuleIsValid(long capsule, long name) {
+        increment(HPyJNIUpcall.HPyCapsuleIsValid);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxCapsuleSet(long capsule, int key, long value) {
+        increment(HPyJNIUpcall.HPyCapsuleSet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxFromPyObject(long obj) {
+        increment(HPyJNIUpcall.HPyFromPyObject);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxAsPyObject(long h) {
+        increment(HPyJNIUpcall.HPyAsPyObject);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxCallRealFunctionFromTrampoline(long sig, long func, long args) {
+        increment(HPyJNIUpcall.HPyCallRealFunctionFromTrampoline);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxListBuilderNew(long initial_size) {
+        increment(HPyJNIUpcall.HPyListBuilderNew);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxListBuilderSet(long builder, long index, long h_item) {
+        increment(HPyJNIUpcall.HPyListBuilderSet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxListBuilderBuild(long builder) {
+        increment(HPyJNIUpcall.HPyListBuilderBuild);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxListBuilderCancel(long builder) {
+        increment(HPyJNIUpcall.HPyListBuilderCancel);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxTupleBuilderNew(long initial_size) {
+        increment(HPyJNIUpcall.HPyTupleBuilderNew);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxTupleBuilderSet(long builder, long index, long h_item) {
+        increment(HPyJNIUpcall.HPyTupleBuilderSet);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxTupleBuilderBuild(long builder) {
+        increment(HPyJNIUpcall.HPyTupleBuilderBuild);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxTupleBuilderCancel(long builder) {
+        increment(HPyJNIUpcall.HPyTupleBuilderCancel);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxTrackerNew(long size) {
+        increment(HPyJNIUpcall.HPyTrackerNew);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxTrackerAdd(long ht, long h) {
+        increment(HPyJNIUpcall.HPyTrackerAdd);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxTrackerForgetAll(long ht) {
+        increment(HPyJNIUpcall.HPyTrackerForgetAll);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxTrackerClose(long ht) {
+        increment(HPyJNIUpcall.HPyTrackerClose);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxReenterPythonExecution(long state) {
+        increment(HPyJNIUpcall.HPyReenterPythonExecution);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public long ctxLeavePythonExecution() {
+        increment(HPyJNIUpcall.HPyLeavePythonExecution);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public void ctxDump(long h) {
+        increment(HPyJNIUpcall.HPyDump);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    public int ctxTypeCheckSlot(long type, long value) {
+        increment(HPyJNIUpcall.HPyTypeCheckSlot);
+        // TODO implement
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+    // {{end ctx funcs}}
 }
