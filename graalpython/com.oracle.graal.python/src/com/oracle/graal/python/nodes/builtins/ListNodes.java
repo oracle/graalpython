@@ -332,7 +332,7 @@ public abstract class ListNodes {
         }
 
         @Specialization
-        void appendObjectGeneric(PList list, Object value,
+        static void appendObjectGeneric(PList list, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached(value = "getUpdateStoreProfile()", uncached = "getUpdateStoreProfileUncached()", dimensions = 1) BranchProfile[] updateStoreProfile) {

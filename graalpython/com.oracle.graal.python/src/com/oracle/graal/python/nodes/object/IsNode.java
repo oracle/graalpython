@@ -110,8 +110,8 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     @Specialization
-    boolean doBP(boolean left, PInt right) {
-        Python3Core core = PythonContext.get(this);
+    static boolean doBP(boolean left, PInt right, @Bind("this") Node inliningTarget) {
+        Python3Core core = PythonContext.get(inliningTarget);
         if (left) {
             return right == core.getTrue();
         } else {
@@ -177,8 +177,8 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     @Specialization
-    boolean doPB(PInt left, boolean right) {
-        return doBP(right, left);
+    static boolean doPB(PInt left, boolean right, @Bind("this") Node inliningTarget) {
+        return doBP(right, left, inliningTarget);
     }
 
     @Specialization
