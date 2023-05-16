@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
@@ -66,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertSingleArgNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -619,7 +619,7 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = "c == FORMAT_LOWER_Y")
         void doBufferR(@SuppressWarnings("unused") int c, int la, Object arg, Object varargs,
                         @Cached GetNextVaArgNode getVaArgNode,
-                        @Cached PCallCExtFunction callGetBufferRwNode,
+                        @Cached PCallCapiFunction callGetBufferRwNode,
                         @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
                         @Cached ToSulongNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
@@ -712,7 +712,7 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = "c == FORMAT_LOWER_W")
         void doBufferRW(@SuppressWarnings("unused") int c, int la, Object arg, Object varargs,
                         @Cached GetNextVaArgNode getVaArgNode,
-                        @Cached PCallCExtFunction callGetBufferRwNode,
+                        @Cached PCallCapiFunction callGetBufferRwNode,
                         @Cached ToSulongNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la != '*') {
@@ -723,7 +723,7 @@ public abstract class CExtParseArgumentsNode {
             getbuffer(callGetBufferRwNode, raiseNode, arg, toNativeNode, pybufferPtr, false);
         }
 
-        private void getbuffer(PCallCExtFunction callGetBufferRwNode, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulongNode, Object pybufferPtr, boolean readOnly)
+        private void getbuffer(PCallCapiFunction callGetBufferRwNode, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulongNode, Object pybufferPtr, boolean readOnly)
                         throws ParseArgumentsException {
             NativeCAPISymbol funSymbol = readOnly ? FUN_GET_BUFFER_R : FUN_GET_BUFFER_RW;
             Object rc = callGetBufferRwNode.call(PythonContext.get(this).getCApiContext(), funSymbol, toSulongNode.execute(arg), pybufferPtr);
@@ -745,7 +745,7 @@ public abstract class CExtParseArgumentsNode {
             throw raise(raiseNode, TypeError, ErrorMessages.MUST_BE_S_NOT_P, msg, arg);
         }
 
-        private int convertbuffer(PCallCExtFunction callConvertbuffer, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulong, Object voidPtr) {
+        private int convertbuffer(PCallCapiFunction callConvertbuffer, PRaiseNativeNode raiseNode, Object arg, CExtToNativeNode toSulong, Object voidPtr) {
             Object rc = callConvertbuffer.call(PythonContext.get(this).getCApiContext(), FUN_CONVERTBUFFER, toSulong.execute(arg), voidPtr);
             if (!(rc instanceof Number)) {
                 throw CompilerDirectives.shouldNotReachHere("wrong result of internal function");
@@ -912,7 +912,7 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getItemNode") @Cached PyTuple_GetItem getItemNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
                         @Cached PyDict_GetItem getDictItemNode,
-                        @Cached PCallCExtFunction callCStringToString,
+                        @Cached PCallCapiFunction callCStringToString,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
 
             Object out = null;
