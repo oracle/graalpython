@@ -719,7 +719,7 @@ public abstract class PointerNodes {
             return Double.longBitsToDouble(doLong(inliningTarget, memory, storage, offset, ffiType, readLongNode));
         }
 
-        @Specialization(guards = "ffiType.type == FFI_TYPE_POINTER || ffiType.type.isArray()")
+        @Specialization(guards = "ffiType.type == FFI_TYPE_POINTER")
         static Object doPointer(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
                         @Cached ReadPointerNode readPointerNode,
                         @Cached ConvertPointerToParameterNode convertPointerToParameterNode) {

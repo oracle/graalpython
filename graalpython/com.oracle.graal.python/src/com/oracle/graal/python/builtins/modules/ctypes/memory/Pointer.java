@@ -144,8 +144,7 @@ public final class Pointer implements TruffleObject {
                 }
                 yield new ByteArrayStorage(bytes);
             }
-            case FFI_TYPE_UINT8_ARRAY, FFI_TYPE_SINT8_ARRAY, FFI_TYPE_UINT16_ARRAY, FFI_TYPE_SINT16_ARRAY, FFI_TYPE_UINT32_ARRAY, FFI_TYPE_SINT32_ARRAY, FFI_TYPE_UINT64_ARRAY, FFI_TYPE_SINT64_ARRAY,
-                            FFI_TYPE_FLOAT_ARRAY, FFI_TYPE_DOUBLE_ARRAY, FFI_TYPE_STRING, FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
+            case FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
                 if (value == null) {
                     yield new ZeroStorage(size);
                 } else {

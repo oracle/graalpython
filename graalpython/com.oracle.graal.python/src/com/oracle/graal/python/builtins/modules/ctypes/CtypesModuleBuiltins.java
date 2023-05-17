@@ -1210,7 +1210,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     atypes[i] = new FFIType(atypes[i], ((PyCFuncPtrObject) arg).thunk);
                 }
                 Object value = args[i].value;
-                if (!isIntrinsic && ffiType.type.isArray()) {
+                if (!isIntrinsic && ffiType == FFIType.ffi_type_pointer) {
                     if (!isLLVM) {
                         value = getContext().getEnv().asGuestValue(value);
                     } else {
@@ -1385,10 +1385,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          * result to checker and return the result. - If restype is another ctypes type, return an
          * instance of that. - Otherwise, call restype and return the result.
          */
-        @Specialization(guards = "restype == null")
-        static Object asIs(@SuppressWarnings("unused") Object restype, FFIType rtype, Object result, @SuppressWarnings("unused") Object checker) {
-            assert !rtype.type.isArray() : "need array conversion!";
-            return result;
+        @Specialization(guards = "restype == null", limit = "1")
+        static Object asInt(@SuppressWarnings("unused") Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
+                        @CachedLibrary("result") InteropLibrary ilib) {
+            try {
+                return ilib.asInt(result);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Specialization(guards = "isNone(restype)")
@@ -1398,13 +1402,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
-        static Object callResType(Object restype, FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
+        static Object callResType(Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Cached CallNode callNode) {
-            assert !rtype.type.isArray() : "must be an int!";
-            // return PyObject_CallFunction(restype, "i", *(int *)result);
             try {
                 return callNode.execute(restype, ilib.asInt(result));
             } catch (UnsupportedMessageException e) {
@@ -1478,14 +1480,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
      */
     protected abstract static class ConvParamNode extends PNodeWithRaise {
 
-        final void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean managed) {
-            execute(frame, obj, index, pa, managed, true);
+        final void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean intrinsic) {
+            execute(frame, obj, index, pa, intrinsic, true);
         }
 
-        protected abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean managed, boolean allowRecursion);
+        protected abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean intrinsic, boolean allowRecursion);
 
         @Specialization
-        void convParam(VirtualFrame frame, Object obj, int index, argument pa, boolean managed, boolean allowRecursion,
+        void convParam(VirtualFrame frame, Object obj, int index, argument pa, boolean intrinsic, boolean allowRecursion,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyLongCheckNode longCheckNode,
@@ -1505,7 +1507,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 pa.stgDict = pyObjectStgDictNode.execute(cdata);
                 PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
                 pa.ffi_type = carg.pffi_type;
-                setCargValue(inliningTarget, pa, carg, managed, convertToParameterNode, readPointerNode);
+                setCargValue(inliningTarget, pa, carg, intrinsic, convertToParameterNode, readPointerNode);
                 return;
             }
 
@@ -1513,14 +1515,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 PyCArgObject carg = (PyCArgObject) obj;
                 pa.ffi_type = carg.pffi_type;
                 pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
-                setCargValue(inliningTarget, pa, carg, managed, convertToParameterNode, readPointerNode);
+                setCargValue(inliningTarget, pa, carg, intrinsic, convertToParameterNode, readPointerNode);
                 return;
             }
 
             /* check for None, integer, string or unicode and use directly if successful */
             if (obj == PNone.NONE) {
                 pa.ffi_type = FFIType.ffi_type_pointer;
-                if (!managed) {
+                if (!intrinsic) {
                     pa.value = getContext().getEnv().asGuestValue(null); // TODO check
                 } else {
                     pa.value = Pointer.NULL;
@@ -1540,12 +1542,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
 
             if (obj instanceof PBytes) {
-                // pa.ffi_type = FFIType.ffi_type_pointer;
-                pa.ffi_type = FFIType.ffi_type_sint8_array;
+                pa.ffi_type = FFIType.ffi_type_pointer;
                 int len = bufferLib.getBufferLength(obj);
                 byte[] bytes = new byte[len + 1];
                 bufferLib.readIntoByteArray(obj, 0, bytes, 0, len);
-                if (!managed) {
+                if (!intrinsic) {
                     pa.value = bytes;
                 } else {
                     pa.value = Pointer.bytes(bytes).createReference();
@@ -1558,8 +1559,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 int len = string.byteLength(WCHAR_T_ENCODING);
                 byte[] bytes = new byte[len + WCHAR_T_SIZE];
                 copyToByteArrayNode.execute(string, 0, bytes, 0, len, WCHAR_T_ENCODING);
-                pa.ffi_type = FFIType.ffi_type_sint8_array;
-                if (!managed) {
+                pa.ffi_type = FFIType.ffi_type_pointer;
+                if (!intrinsic) {
                     pa.value = bytes;
                 } else {
                     pa.value = Pointer.bytes(bytes).createReference();
@@ -1574,19 +1575,19 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
              * classes as parameters (they have to expose the '_as_parameter_' attribute)
              */
             if (arg != null && allowRecursion) {
-                recursive.execute(frame, arg, index, pa, managed, false);
+                recursive.execute(frame, arg, index, pa, intrinsic, false);
                 return;
             }
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
         }
 
-        private static void setCargValue(Node inliningTarget, argument pa, PyCArgObject carg, boolean managed, PointerNodes.ConvertToParameterNode convertToParameterNode,
+        private static void setCargValue(Node inliningTarget, argument pa, PyCArgObject carg, boolean intrinsic, PointerNodes.ConvertToParameterNode convertToParameterNode,
                         PointerNodes.ReadPointerNode readPointerNode) {
             /*
-             * Pointers get converted to byte arrays or native pointers for NFI. For managed
+             * Pointers get converted to byte arrays or native pointers for NFI. For intrinsic
              * function calls, they get dereferenced for implementation convenience.
              */
-            if (managed && pa.ffi_type.type.isArray()) {
+            if (intrinsic && pa.ffi_type == FFIType.ffi_type_pointer) {
                 pa.value = readPointerNode.execute(inliningTarget, carg.value);
             } else {
                 pa.value = convertToParameterNode.execute(inliningTarget, carg.value, carg.pffi_type);

@@ -181,7 +181,7 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
             stgdict.paramfunc = CArgObjectBuiltins.PyCArrayTypeParamFunc;
 
             /* Arrays are passed as pointers to function calls. */
-            stgdict.ffi_type_pointer = FFIType.ffi_type_uint8_array;
+            stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
 
             /* replace the class dict by our updated spam dict */
             PDict resDict = getDict.execute(result);

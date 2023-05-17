@@ -144,7 +144,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
             addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
-            setDict.execute((PythonObject) result, stgdict);
+            setDict.execute(result, stgdict);
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
             stgdict.size = FFIType.ffi_type_pointer.size;
@@ -177,9 +177,6 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                 }
                 stgdict.restype = ob;
                 stgdict.checker = lookupAttr.execute(ob, T__check_retval_);
-                if (dict != null) {
-                    stgdict.ffi_type_pointer = dict.ffi_type_pointer.getAsArray();
-                }
             }
 
             return result;

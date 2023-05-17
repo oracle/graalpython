@@ -154,78 +154,27 @@ public class CtypesNodes {
     }
 
     protected static Object getValue(FFI_TYPES type, byte[] storage, int offset) {
-        switch (type) {
-            case FFI_TYPE_UINT8_ARRAY:
-            case FFI_TYPE_SINT8_ARRAY:
-            case FFI_TYPE_UINT8:
-            case FFI_TYPE_SINT8:
-                return storage[offset];
-            case FFI_TYPE_UINT16_ARRAY:
-            case FFI_TYPE_SINT16_ARRAY:
-            case FFI_TYPE_UINT16:
-            case FFI_TYPE_SINT16:
-                return ARRAY_ACCESSOR.getShort(storage, offset);
-            case FFI_TYPE_UINT32_ARRAY:
-            case FFI_TYPE_SINT32_ARRAY:
-            case FFI_TYPE_UINT32:
-            case FFI_TYPE_SINT32:
-                return ARRAY_ACCESSOR.getInt(storage, offset);
-            case FFI_TYPE_UINT64_ARRAY:
-            case FFI_TYPE_SINT64_ARRAY:
-            case FFI_TYPE_UINT64:
-            case FFI_TYPE_SINT64:
-            case FFI_TYPE_POINTER:
-                return ARRAY_ACCESSOR.getLong(storage, offset);
-            case FFI_TYPE_FLOAT_ARRAY:
-            case FFI_TYPE_FLOAT:
-                return ARRAY_ACCESSOR.getFloat(storage, offset);
-            case FFI_TYPE_DOUBLE_ARRAY:
-            case FFI_TYPE_DOUBLE:
-                return ARRAY_ACCESSOR.getDouble(storage, offset);
-            default:
-                throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
-        }
+        return switch (type) {
+            case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> storage[offset];
+            case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> ARRAY_ACCESSOR.getShort(storage, offset);
+            case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> ARRAY_ACCESSOR.getInt(storage, offset);
+            case FFI_TYPE_UINT64, FFI_TYPE_SINT64, FFI_TYPE_POINTER -> ARRAY_ACCESSOR.getLong(storage, offset);
+            case FFI_TYPE_FLOAT -> ARRAY_ACCESSOR.getFloat(storage, offset);
+            case FFI_TYPE_DOUBLE -> ARRAY_ACCESSOR.getDouble(storage, offset);
+            default -> throw CompilerDirectives.shouldNotReachHere("Unexpected value type for getValue");
+        };
     }
 
     protected static void setValue(FFI_TYPES type, byte[] storage, int offset, Object value) {
         switch (type) {
-            case FFI_TYPE_UINT8_ARRAY:
-            case FFI_TYPE_SINT8_ARRAY:
-            case FFI_TYPE_UINT8:
-            case FFI_TYPE_SINT8:
-                storage[offset] = (byte) value;
-                break;
-            case FFI_TYPE_UINT16_ARRAY:
-            case FFI_TYPE_SINT16_ARRAY:
-            case FFI_TYPE_UINT16:
-            case FFI_TYPE_SINT16:
-                ARRAY_ACCESSOR.putShort(storage, offset, (Short) value);
-                break;
-            case FFI_TYPE_UINT32_ARRAY:
-            case FFI_TYPE_SINT32_ARRAY:
-            case FFI_TYPE_UINT32:
-            case FFI_TYPE_SINT32:
-                ARRAY_ACCESSOR.putInt(storage, offset, (Integer) value);
-                break;
-            case FFI_TYPE_UINT64_ARRAY:
-            case FFI_TYPE_SINT64_ARRAY:
-            case FFI_TYPE_UINT64:
-            case FFI_TYPE_SINT64:
-                ARRAY_ACCESSOR.putLong(storage, offset, (Long) value);
-                break;
-            case FFI_TYPE_FLOAT_ARRAY:
-            case FFI_TYPE_FLOAT:
-                ARRAY_ACCESSOR.putFloat(storage, offset, (Float) value);
-                break;
-            case FFI_TYPE_DOUBLE_ARRAY:
-            case FFI_TYPE_DOUBLE:
-                ARRAY_ACCESSOR.putDouble(storage, offset, (Double) value);
-                break;
-            case FFI_TYPE_STRUCT:
-                setValue(storage, value, offset);
-                break;
-            default:
-                throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
+            case FFI_TYPE_UINT8, FFI_TYPE_SINT8 -> storage[offset] = (byte) value;
+            case FFI_TYPE_UINT16, FFI_TYPE_SINT16 -> ARRAY_ACCESSOR.putShort(storage, offset, (Short) value);
+            case FFI_TYPE_UINT32, FFI_TYPE_SINT32 -> ARRAY_ACCESSOR.putInt(storage, offset, (Integer) value);
+            case FFI_TYPE_UINT64, FFI_TYPE_SINT64 -> ARRAY_ACCESSOR.putLong(storage, offset, (Long) value);
+            case FFI_TYPE_FLOAT -> ARRAY_ACCESSOR.putFloat(storage, offset, (Float) value);
+            case FFI_TYPE_DOUBLE -> ARRAY_ACCESSOR.putDouble(storage, offset, (Double) value);
+            case FFI_TYPE_STRUCT -> setValue(storage, value, offset);
+            default -> throw CompilerDirectives.shouldNotReachHere("Unexpected value type for setValue");
         }
     }
 
