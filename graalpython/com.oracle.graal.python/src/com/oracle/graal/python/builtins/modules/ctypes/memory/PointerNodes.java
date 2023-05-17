@@ -645,12 +645,14 @@ public abstract class PointerNodes {
             if (ffiType.type.isArray() && ffiType != FFIType.ffi_type_pointer) {
                 return storage.value;
             }
-            return switch (ffiType.size) {
-                case 1 -> storage.value[offset];
-                case 2 -> ARRAY_ACCESSOR.getShort(storage.value, offset);
-                case 4 -> ARRAY_ACCESSOR.getInt(storage.value, offset);
-                case 8 -> ARRAY_ACCESSOR.getLong(storage.value, offset);
-                default -> throw CompilerDirectives.shouldNotReachHere("Unexpected type size");
+            return switch (ffiType.type) {
+                case FFI_TYPE_SINT8, FFI_TYPE_UINT8 -> storage.value[offset];
+                case FFI_TYPE_SINT16, FFI_TYPE_UINT16 -> ARRAY_ACCESSOR.getShort(storage.value, offset);
+                case FFI_TYPE_SINT32, FFI_TYPE_UINT32 -> ARRAY_ACCESSOR.getInt(storage.value, offset);
+                case FFI_TYPE_SINT64, FFI_TYPE_UINT64, FFI_TYPE_POINTER -> ARRAY_ACCESSOR.getLong(storage.value, offset);
+                case FFI_TYPE_FLOAT -> ARRAY_ACCESSOR.getFloat(storage.value, offset);
+                case FFI_TYPE_DOUBLE -> ARRAY_ACCESSOR.getDouble(storage.value, offset);
+                default -> throw CompilerDirectives.shouldNotReachHere("Unexpected FFI type");
             };
         }
 
