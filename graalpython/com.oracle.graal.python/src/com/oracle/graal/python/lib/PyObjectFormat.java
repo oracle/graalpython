@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -133,10 +134,11 @@ public abstract class PyObjectFormat extends PNodeWithContext {
         }
 
         @Specialization(guards = "isString(formatSpec)", replaces = "doGeneric")
-        static Object doGenericUncahed(VirtualFrame frame, Object obj, Object formatSpec) {
+        @TruffleBoundary
+        static Object doGenericUncached(Object obj, Object formatSpec) {
             Object klass = GetClassNode.getUncached().execute(obj);
             Object slot = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Format).execute(klass);
-            return CallBinaryMethodNode.getUncached().executeObject(frame, slot, obj, formatSpec);
+            return CallBinaryMethodNode.getUncached().executeObject(null, slot, obj, formatSpec);
         }
 
         // Note: PRaiseNode is @Exclusive to workaround a bug in DSL
