@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.modules.ctypes.memory;
 
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -149,13 +147,7 @@ public final class Pointer implements TruffleObject {
             case FFI_TYPE_UINT8_ARRAY, FFI_TYPE_SINT8_ARRAY, FFI_TYPE_UINT16_ARRAY, FFI_TYPE_SINT16_ARRAY, FFI_TYPE_UINT32_ARRAY, FFI_TYPE_SINT32_ARRAY, FFI_TYPE_UINT64_ARRAY, FFI_TYPE_SINT64_ARRAY,
                             FFI_TYPE_FLOAT_ARRAY, FFI_TYPE_DOUBLE_ARRAY, FFI_TYPE_STRING, FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
                 if (value == null) {
-                    if (size % 8 == 0) {
-                        Pointer[] pointers = new Pointer[size / 8];
-                        Arrays.fill(pointers, NULL);
-                        yield new PointerArrayStorage(pointers);
-                    } else {
-                        yield new ByteArrayStorage(new byte[size]);
-                    }
+                    yield new ZeroStorage(size);
                 } else {
                     Pointer valuePtr = nativeMemory(value);
                     yield new PointerArrayStorage(new Pointer[]{valuePtr});
@@ -199,6 +191,36 @@ public final class Pointer implements TruffleObject {
     static final class NullStorage extends Storage {
 
         NullStorage() {
+        }
+    }
+
+    /**
+     * Newly allocated storage that will be rewritten to a more appropriate one upon the first
+     * write. Reads return zeros.
+     */
+    static final class ZeroStorage extends Storage {
+        int size;
+
+        public ZeroStorage(int size) {
+            this.size = size;
+        }
+
+        void boundsCheck(int offset, int size) {
+            if (offset + size > this.size) {
+                throw CompilerDirectives.shouldNotReachHere("Out of bounds-read");
+            }
+        }
+
+        ByteArrayStorage allocateBytes(MemoryBlock memory) {
+            ByteArrayStorage newStorage = new ByteArrayStorage(new byte[size]);
+            memory.storage = newStorage;
+            return newStorage;
+        }
+
+        PointerArrayStorage allocatePointers(MemoryBlock memory) {
+            PointerArrayStorage newStorage = new PointerArrayStorage(new Pointer[(size + 7) / 8]);
+            memory.storage = newStorage;
+            return newStorage;
         }
     }
 

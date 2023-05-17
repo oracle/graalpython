@@ -90,7 +90,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -1499,14 +1498,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CArgObjectBuiltins.ParamFuncNode paramFuncNode,
-                        @Cached PointerNodes.ConvertToParameter convertToParameter,
+                        @Cached PointerNodes.ConvertToParameterNode convertToParameterNode,
                         @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached ConvParamNode recursive) {
             if (obj instanceof CDataObject cdata) {
                 pa.stgDict = pyObjectStgDictNode.execute(cdata);
                 PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
                 pa.ffi_type = carg.pffi_type;
-                setCargValue(inliningTarget, pa, carg, managed, convertToParameter, readPointerNode);
+                setCargValue(inliningTarget, pa, carg, managed, convertToParameterNode, readPointerNode);
                 return;
             }
 
@@ -1514,7 +1513,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 PyCArgObject carg = (PyCArgObject) obj;
                 pa.ffi_type = carg.pffi_type;
                 pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
-                setCargValue(inliningTarget, pa, carg, managed, convertToParameter, readPointerNode);
+                setCargValue(inliningTarget, pa, carg, managed, convertToParameterNode, readPointerNode);
                 return;
             }
 
@@ -1581,7 +1580,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
         }
 
-        private static void setCargValue(Node inliningTarget, argument pa, PyCArgObject carg, boolean managed, PointerNodes.ConvertToParameter convertToParameter,
+        private static void setCargValue(Node inliningTarget, argument pa, PyCArgObject carg, boolean managed, PointerNodes.ConvertToParameterNode convertToParameterNode,
                         PointerNodes.ReadPointerNode readPointerNode) {
             /*
              * Pointers get converted to byte arrays or native pointers for NFI. For managed
@@ -1590,7 +1589,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (managed && pa.ffi_type.type.isArray()) {
                 pa.value = readPointerNode.execute(inliningTarget, carg.value);
             } else {
-                pa.value = convertToParameter.execute(inliningTarget, carg.value, carg.pffi_type);
+                pa.value = convertToParameterNode.execute(inliningTarget, carg.value, carg.pffi_type);
             }
         }
     }
@@ -1899,13 +1898,28 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object dest, Object src, Object size);
 
         @Specialization
-        static Object memset(Pointer ptr, int value, long num,
+        static Object memset(Pointer ptr, int value, long size,
                         @Bind("this") Node inliningTarget,
-                        @Cached PointerNodes.WriteBytesNode writeBytesNode,
+                        @Cached PointerNodes.WriteLongNode writeLongNode,
+                        @Cached PointerNodes.WriteByteNode writeByteNode,
                         @Cached PythonObjectFactory factory) {
-            byte[] fill = new byte[(int) num];
-            Arrays.fill(fill, (byte) value);
-            writeBytesNode.execute(inliningTarget, ptr, fill);
+            byte b = (byte) value;
+            long fill = 0;
+            for (int i = 0; i < Long.BYTES * 8; i += 8) {
+                fill |= (long) b << i;
+            }
+            int i;
+            /*
+             * Try to write in chunks of 8 bytes, it's faster and it helps avoiding converting
+             * pointer storages when writing zeros.
+             */
+            for (i = 0; i < size / 8 * 8; i += 8) {
+                writeLongNode.execute(inliningTarget, ptr.withOffset(i), fill);
+            }
+            /* Write the remainder if any */
+            for (; i < size; i++) {
+                writeByteNode.execute(inliningTarget, ptr.withOffset(i), b);
+            }
             return factory.createNativeVoidPtr(ptr);
         }
     }

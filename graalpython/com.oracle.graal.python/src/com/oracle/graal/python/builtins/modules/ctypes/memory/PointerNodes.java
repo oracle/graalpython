@@ -15,6 +15,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.NullStorag
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PointerArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PythonObjectStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.Storage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ZeroStorage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -51,13 +52,19 @@ public abstract class PointerNodes {
         protected abstract void execute(Node inliningTarget, byte[] dst, int dstOffset, MemoryBlock srcMemory, Storage src, int srcOffset, int size);
 
         @Specialization
+        static void doZero(byte[] dst, int dstOffset, @SuppressWarnings("unused") MemoryBlock srcMemory, ZeroStorage src, int srcOffset, int size) {
+            src.boundsCheck(srcOffset, size);
+            PythonUtils.fill(dst, dstOffset, dstOffset + size, (byte) 0);
+        }
+
+        @Specialization
         static void doBytes(byte[] dst, int dstOffset, @SuppressWarnings("unused") MemoryBlock srcMemory, ByteArrayStorage src, int srcOffset, int size) {
             PythonUtils.arraycopy(src.bytes, srcOffset, dst, dstOffset, size);
         }
 
         @Specialization(limit = "1")
         static void doMemoryView(byte[] dst, int dstOffset, @SuppressWarnings("unused") MemoryBlock srcMemory, MemoryViewStorage src, int srcOffset, int size,
-                        @CachedLibrary("src.value") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("src.memoryView") PythonBufferAccessLibrary bufferLib) {
             bufferLib.readIntoByteArray(src.memoryView, srcOffset, dst, dstOffset, size);
         }
 
@@ -98,10 +105,16 @@ public abstract class PointerNodes {
             return storage.bytes[offset];
         }
 
+        @Specialization
+        static byte doZero(@SuppressWarnings("unused") MemoryBlock memory, ZeroStorage storage, int offset) {
+            storage.boundsCheck(offset, Byte.BYTES);
+            return 0;
+        }
+
         @Specialization(limit = "1")
         static byte doMemoryView(@SuppressWarnings("unused") MemoryBlock memory, MemoryViewStorage storage, int offset,
-                        @CachedLibrary("storage.value") PythonBufferAccessLibrary bufferLib) {
-            return bufferLib.readByte(storage, offset);
+                        @CachedLibrary("storage.memoryView") PythonBufferAccessLibrary bufferLib) {
+            return bufferLib.readByte(storage.memoryView, offset);
         }
 
         @Specialization
@@ -134,6 +147,12 @@ public abstract class PointerNodes {
         }
 
         @Specialization
+        static short doZero(@SuppressWarnings("unused") MemoryBlock memory, ZeroStorage storage, int offset) {
+            storage.boundsCheck(offset, Short.BYTES);
+            return 0;
+        }
+
+        @Specialization
         static short doNativeMemory(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
             return UNSAFE.getShort(storage.pointer + offset);
         }
@@ -163,6 +182,12 @@ public abstract class PointerNodes {
         }
 
         @Specialization
+        static int doZero(@SuppressWarnings("unused") MemoryBlock memory, ZeroStorage storage, int offset) {
+            storage.boundsCheck(offset, Integer.BYTES);
+            return 0;
+        }
+
+        @Specialization
         static int doNativeMemory(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
             return UNSAFE.getInt(storage.pointer + offset);
         }
@@ -189,6 +214,12 @@ public abstract class PointerNodes {
         @Specialization
         static long doBytes(@SuppressWarnings("unused") MemoryBlock memory, ByteArrayStorage storage, int offset) {
             return ARRAY_ACCESSOR.getLong(storage.bytes, offset);
+        }
+
+        @Specialization
+        static long doZero(@SuppressWarnings("unused") MemoryBlock memory, ZeroStorage storage, int offset) {
+            storage.boundsCheck(offset, Long.BYTES);
+            return 0;
         }
 
         @Specialization
@@ -230,9 +261,14 @@ public abstract class PointerNodes {
             PythonUtils.arraycopy(src, srcOffset, dst.bytes, dstOffset, size);
         }
 
+        @Specialization
+        static void doZero(MemoryBlock dstMemory, ZeroStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
+            doBytes(dstMemory, dst.allocateBytes(dstMemory), dstOffset, src, srcOffset, size);
+        }
+
         @Specialization(limit = "1")
         static void doMemoryView(@SuppressWarnings("unused") MemoryBlock dstMemory, MemoryViewStorage dst, int dstOffset, byte[] src, int srcOffset, int size,
-                        @CachedLibrary("dst.value") PythonBufferAccessLibrary bufferLib) {
+                        @CachedLibrary("dst.memoryView") PythonBufferAccessLibrary bufferLib) {
             bufferLib.writeFromByteArray(dst.memoryView, dstOffset, src, srcOffset, size);
         }
 
@@ -265,6 +301,13 @@ public abstract class PointerNodes {
         }
 
         @Specialization
+        static void doZero(MemoryBlock dstMemory, ZeroStorage dst, int dstOffset, byte value) {
+            if (value != 0) {
+                doBytes(dstMemory, dst.allocateBytes(dstMemory), dstOffset, value);
+            }
+        }
+
+        @Specialization
         static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, byte value) {
             UNSAFE.putByte(dst.pointer + dstOffset, value);
         }
@@ -289,6 +332,13 @@ public abstract class PointerNodes {
         @Specialization
         static void doBytes(@SuppressWarnings("unused") MemoryBlock dstMemory, ByteArrayStorage dst, int dstOffset, short value) {
             ARRAY_ACCESSOR.putShort(dst.bytes, dstOffset, value);
+        }
+
+        @Specialization
+        static void doZero(MemoryBlock dstMemory, ZeroStorage dst, int dstOffset, short value) {
+            if (value != 0) {
+                doBytes(dstMemory, dst.allocateBytes(dstMemory), dstOffset, value);
+            }
         }
 
         @Specialization
@@ -321,6 +371,13 @@ public abstract class PointerNodes {
         }
 
         @Specialization
+        static void doZero(MemoryBlock dstMemory, ZeroStorage dst, int dstOffset, int value) {
+            if (value != 0) {
+                doBytes(dstMemory, dst.allocateBytes(dstMemory), dstOffset, value);
+            }
+        }
+
+        @Specialization
         static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, int value) {
             UNSAFE.putInt(dst.pointer + dstOffset, value);
         }
@@ -337,6 +394,7 @@ public abstract class PointerNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(PointerNodes.class)
     public abstract static class WriteLongNode extends Node {
         public final void execute(Node inliningTarget, Pointer dst, long value) {
             execute(inliningTarget, dst.memory, dst.memory.storage, dst.offset, value);
@@ -347,6 +405,19 @@ public abstract class PointerNodes {
         @Specialization
         static void doBytes(@SuppressWarnings("unused") MemoryBlock dstMemory, ByteArrayStorage dst, int dstOffset, long value) {
             ARRAY_ACCESSOR.putLong(dst.bytes, dstOffset, value);
+        }
+
+        @Specialization
+        static void doZero(MemoryBlock dstMemory, ZeroStorage dst, int dstOffset, long value) {
+            if (value != 0) {
+                doBytes(dstMemory, dst.allocateBytes(dstMemory), dstOffset, value);
+            }
+        }
+
+        // Avoid converting pointer array to bytes if writing a NULL
+        @Specialization(guards = {"value == 0", "isMultipleOf8(dstOffset)"})
+        static void doPointerArray(@SuppressWarnings("unused") MemoryBlock dstMemory, PointerArrayStorage dst, int dstOffset, @SuppressWarnings("unused") long value) {
+            dst.pointers[dstOffset / 8] = Pointer.NULL;
         }
 
         @Specialization
@@ -386,6 +457,12 @@ public abstract class PointerNodes {
             for (int i = 0; i < size; i += 8) {
                 dst.pointers[(dstOffset + i) / 8] = src.pointers[(srcOffset + i) / 8];
             }
+        }
+
+        @Specialization(guards = {"isMultipleOf8(size)", "isMultipleOf8(dstOffset)", "isMultipleOf8(srcOffset)"})
+        static void doZeroPointer(MemoryBlock dstMemory, ZeroStorage dst, int dstOffset, @SuppressWarnings("unused") MemoryBlock srcMemory,
+                        PointerArrayStorage src, int srcOffset, int size) {
+            doPointerPointer(dstMemory, dst.allocatePointers(dstMemory), dstOffset, srcMemory, src, srcOffset, size);
         }
 
         @Fallback
@@ -578,6 +655,12 @@ public abstract class PointerNodes {
         @Specialization(guards = "isMultipleOf8(offset)")
         static void doPointerArray(@SuppressWarnings("unused") MemoryBlock memory, PointerArrayStorage storage, int offset, Pointer value) {
             storage.pointers[offset / 8] = value;
+
+        }
+
+        @Specialization
+        static void doZero(MemoryBlock memory, ZeroStorage storage, int offset, Pointer value) {
+            doPointerArray(memory, storage.allocatePointers(memory), offset, value);
         }
 
         @Fallback
@@ -591,12 +674,12 @@ public abstract class PointerNodes {
 
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class ConvertToParameter extends Node {
+    public abstract static class ConvertToParameterNode extends Node {
         public final Object execute(Node inliningTarget, Pointer ptr, FFIType ffiType) {
             return execute(inliningTarget, ptr.memory, ptr.memory.storage, ptr.offset, ffiType);
         }
 
-        protected abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, FFIType ffiType);
+        abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, FFIType ffiType);
 
         @Specialization
         static Object doBytes(@SuppressWarnings("unused") MemoryBlock memory, ByteArrayStorage storage, int offset, FFIType ffiType) {
@@ -612,6 +695,12 @@ public abstract class PointerNodes {
                 case FFI_TYPE_DOUBLE -> ARRAY_ACCESSOR.getDouble(storage.bytes, offset);
                 default -> throw CompilerDirectives.shouldNotReachHere("Unexpected FFI type");
             };
+        }
+
+        @Specialization
+        static Object doZero(MemoryBlock memory, ZeroStorage storage, int offset, FFIType ffiType) {
+            ByteArrayStorage newStorage = storage.allocateBytes(memory);
+            return doBytes(memory, newStorage, offset, ffiType);
         }
 
         @Specialization
@@ -632,35 +721,67 @@ public abstract class PointerNodes {
         @Specialization
         static Object doPointerArray(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage, int offset, FFIType ffiType,
                         @Cached ReadPointerNode readPointerNode,
-                        @Cached PointerArrayToBytesNode toBytesNode,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                        @Cached ConvertPointerToParameterNode convertPointerToParameterNode) {
             assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
             Pointer pointer = readPointerNode.execute(inliningTarget, memory, storage, offset);
-            if (pointer.isNull()) {
+            return convertPointerToParameterNode.execute(inliningTarget, pointer.memory, pointer.memory.storage, pointer.offset);
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class ConvertPointerToParameterNode extends Node {
+            abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
+
+            @Specialization(guards = "offset == 0")
+            @SuppressWarnings("unused")
+            static Object doNull(MemoryBlock memory, NullStorage storage, int offset) {
                 return 0L;
-            } else if (pointer.memory.storage instanceof ByteArrayStorage derefedStorage && pointer.offset == 0) {
+            }
+
+            @Specialization(guards = "offset == 0")
+            static Object doBytes(@SuppressWarnings("unused") MemoryBlock memory, ByteArrayStorage storage, @SuppressWarnings("unused") int offset) {
                 /*
                  * We can pass it as a byte array and NFI will convert it to a pointer to the array.
                  * Note we change all array/pointer FFI types into [UINT_8] later before passing to
                  * NFI.
                  */
-                return derefedStorage.bytes;
-            } else if (pointer.memory.storage instanceof PointerArrayStorage derefedStorage && pointer.offset == 0) {
-                ByteArrayStorage newStorage = toBytesNode.execute(inliningTarget, pointer.memory, derefedStorage);
-                return newStorage.bytes;
-            } else if (pointer.memory.storage instanceof LongPointerStorage derefedStorage) {
-                return derefedStorage.pointer + pointer.offset;
-            } else if (pointer.memory.storage instanceof NFIPointerStorage derefedStorage && pointer.offset == 0) {
-                return derefedStorage.pointer;
-            } else if (pointer.memory.storage instanceof MemoryViewStorage derefedStorage && pointer.offset == 0) {
-                PMemoryView mv = derefedStorage.memoryView;
+                return storage.bytes;
+            }
+
+            @Specialization(guards = "offset == 0")
+            static Object doZero(MemoryBlock memory, ZeroStorage storage, @SuppressWarnings("unused") int offset) {
+                ByteArrayStorage newStorage = storage.allocateBytes(memory);
+                return doBytes(memory, newStorage, offset);
+            }
+
+            @Specialization(guards = "offset == 0")
+            static Object doPointerArray(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage, @SuppressWarnings("unused") int offset,
+                            @Cached PointerArrayToBytesNode toBytesNode) {
+                ByteArrayStorage newStorage = toBytesNode.execute(inliningTarget, memory, storage);
+                return doBytes(memory, newStorage, offset);
+            }
+
+            @Specialization
+            static Object doLongPointer(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
+                return storage.pointer + offset;
+            }
+
+            @Specialization(guards = "offset == 0")
+            static Object doNFIPointer(@SuppressWarnings("unused") MemoryBlock memory, NFIPointerStorage storage, @SuppressWarnings("unused") int offset) {
+                return storage.pointer;
+            }
+
+            @Specialization(guards = "offset == 0", limit = "1")
+            static Object doMemoryView(@SuppressWarnings("unused") MemoryBlock memory, MemoryViewStorage storage, @SuppressWarnings("unused") int offset,
+                            @CachedLibrary("storage.memoryView") PythonBufferAccessLibrary bufferLib) {
+                PMemoryView mv = storage.memoryView;
                 if (bufferLib.hasInternalByteArray(mv)) {
                     return bufferLib.getInternalByteArray(mv);
                 } else if (mv.getBufferPointer() != null && mv.getOffset() == 0) {
                     return mv.getBufferPointer();
                 }
+                throw CompilerDirectives.shouldNotReachHere("Not implemented: converting memoryview pointer to native");
             }
-            throw CompilerDirectives.shouldNotReachHere("Not implemented");
         }
     }
 
