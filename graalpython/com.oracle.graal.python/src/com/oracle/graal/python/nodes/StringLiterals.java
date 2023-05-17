@@ -143,6 +143,8 @@ public abstract class StringLiterals {
 
     public static final TruffleString T_ASCII_UPPERCASE = tsLiteral("ASCII");
 
+    public static final TruffleString T_ISO_8859_1 = tsLiteral("ISO-8859-1");
+
     public static final TruffleString T_TRUE = tsLiteral("True");
 
     public static final TruffleString T_FALSE = tsLiteral("False");

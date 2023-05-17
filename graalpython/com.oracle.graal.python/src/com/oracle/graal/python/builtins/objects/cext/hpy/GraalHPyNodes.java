@@ -234,8 +234,16 @@ public class GraalHPyNodes {
             execute(null, nativeContext, e);
         }
 
+        public final void execute(PException e) {
+            execute(null, PythonContext.get(this).getHPyContext(), e);
+        }
+
         public static void executeUncached(GraalHPyContext nativeContext, PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(nativeContext, e);
+        }
+
+        public static void executeUncached(PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(PythonContext.get(null).getHPyContext(), e);
         }
 
         @Specialization

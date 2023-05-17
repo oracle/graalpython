@@ -45,9 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWar
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_METH;
@@ -63,7 +60,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_APPEND;
-import static com.oracle.graal.python.nodes.StringLiterals.T_ASCII_UPPERCASE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -81,7 +77,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -137,7 +132,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGe
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -188,17 +182,12 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -217,27 +206,22 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -300,54 +284,55 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    abstract static class GraalHPyContextFunction implements TruffleObject {
-
-        @ExportMessage
-        boolean isExecutable() {
-            return true;
-        }
-
-        @ExportMessage(name = "execute")
-        Object executeShouldNotReach(@SuppressWarnings("unused") Object[] arguments) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        static void checkMode(FunctionMode actualMode, FunctionMode... allowedModes) {
-            CompilerAsserts.neverPartOfCompilation();
-            for (int i = 0; i < allowedModes.length; i++) {
-                if (actualMode == allowedModes[i]) {
-                    return;
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere("invalid function mode used: " + actualMode);
-        }
-
-        protected static void checkArity(Object[] arguments, int expectedArity) throws ArityException {
-            if (arguments.length != expectedArity) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(expectedArity, expectedArity, arguments.length);
-            }
+    protected static void checkArity(Object[] arguments, int expectedArity) throws ArityException {
+        if (arguments.length != expectedArity) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw ArityException.create(expectedArity, expectedArity, arguments.length);
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyDup extends GraalHPyContextFunction {
+    public abstract static class GraalHPyContextFunction extends Node {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        public abstract Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
+
+    }
+
+    public abstract static class HPyContextFunctionWithFlag extends Node {
+
+        public abstract Object execute(Object[] arguments, boolean flag) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
+    }
+
+    public abstract static class HPyContextFunctionWithMode extends Node {
+
+        public abstract Object execute(Object[] arguments, FunctionMode mode) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
+    }
+
+    public abstract static class HPyContextFunctionWithBuiltinType extends Node {
+
+        public abstract Object execute(Object[] arguments, PythonBuiltinClassType type) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
+    }
+
+    public abstract static class HPyContextFunctionWithObject extends Node {
+
+        public abstract Object execute(Object[] arguments, Object obj) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
+    }
+
+    @GenerateUncached
+    public abstract static class GraalHPyDup extends GraalHPyContextFunction {
+
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
-
             return asHandleNode.execute(asPythonObjectNode.execute(arguments[1]));
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyClose extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyClose extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyCloseHandleNode closeHandleNode) throws ArityException {
             checkArity(arguments, 2);
             closeHandleNode.execute(arguments[1]);
@@ -368,11 +353,11 @@ public abstract class GraalHPyContextFunctions {
      * } HPyModuleDef;
      * </pre>
      */
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyModuleCreate extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyModuleCreate extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callFromHPyModuleDefNode,
@@ -510,11 +495,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBoolFromLong extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyBoolFromLong extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode) throws ArityException {
@@ -526,21 +511,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyLongFromLong extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyLongFromLong extends HPyContextFunctionWithFlag {
 
-        private final boolean signed;
-
-        public GraalHPyLongFromLong() {
-            this.signed = true;
-        }
-
-        public GraalHPyLongFromLong(boolean signed) {
-            this.signed = signed;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean signed,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached HPyLongFromLong fromLongNode) throws ArityException {
             checkArity(arguments, 2);
@@ -549,30 +524,17 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyLongAsPrimitive extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyLongAsPrimitive extends Node {
 
-        private final int targetSize;
-        private final int signed;
-        private final boolean exact;
-        private final boolean requiresPInt;
+        public abstract Object execute(Object[] arguments, int signed, int targetSize, boolean exact, boolean requiresPInt) throws ArityException;
 
-        public GraalHPyLongAsPrimitive(int signed, int targetSize, boolean exact) {
-            this(signed, targetSize, exact, false);
-        }
-
-        public GraalHPyLongAsPrimitive(int signed, int targetSize, boolean exact, boolean requiresPInt) {
-            this.targetSize = targetSize;
-            this.signed = signed;
-            this.exact = exact;
-            this.requiresPInt = requiresPInt;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, int signed, int targetSize, boolean exact, boolean requiresPInt,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -581,7 +543,7 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(arguments[1]);
             try {
-                if (requiresPInt && !isSubtypeNode.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
+                if (requiresPInt && !isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
                     throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 return asNativePrimitiveNode.execute(object, signed, targetSize, exact);
@@ -592,11 +554,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyLongAsDouble extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyLongAsDouble extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyLongAsDoubleNode asDoubleNode) throws ArityException {
             checkArity(arguments, 2);
@@ -604,140 +566,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    abstract static class GraalHPyArithmetic extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyDictNew extends GraalHPyContextFunction {
 
-        @CompilationFinal private RootCallTarget callTarget;
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached HPyAsHandleNode asHandleNode,
-                        @Cached GenericInvokeNode invokeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
-            /*
-             * We need to do argument checking at this position because our helper root node won't
-             * do it.
-             */
-            checkArguments(arguments);
-
-            Object[] pythonArguments = PArguments.create(arguments.length - 1);
-            // TODO(fa): cache len and explode loop
-            for (int i = 0; i < PArguments.getUserArgumentLength(pythonArguments); i++) {
-                PArguments.setArgument(pythonArguments, i, asPythonObjectNode.execute(arguments[i + 1]));
-            }
-
-            try {
-                Object result = invokeNode.execute(ensureCallTarget(), pythonArguments);
-                return asHandleNode.execute(result);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return GraalHPyHandle.NULL_HANDLE;
-            }
-        }
-
-        private RootCallTarget ensureCallTarget() {
-            if (callTarget == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callTarget = createCallTarget(PythonLanguage.get(null));
-            }
-            return callTarget;
-        }
-
-        protected abstract void checkArguments(Object[] arguments) throws ArityException;
-
-        protected abstract RootCallTarget createCallTarget(PythonLanguage language);
-
-    }
-
-    public static final class GraalHPyUnaryArithmetic extends GraalHPyArithmetic {
-        private final UnaryArithmetic unaryOperator;
-
-        public GraalHPyUnaryArithmetic(UnaryArithmetic unaryOperator) {
-            this.unaryOperator = unaryOperator;
-        }
-
-        @Override
-        protected void checkArguments(Object[] arguments) throws ArityException {
-            // we also need to account for the HPy context
-            checkArity(arguments, 2);
-        }
-
-        @Override
-        protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.createCachedCallTarget(unaryOperator::createRootNode, unaryOperator);
-        }
-    }
-
-    public static final class GraalHPyBinaryArithmetic extends GraalHPyArithmetic {
-        private final BinaryArithmetic binaryOperator;
-
-        public GraalHPyBinaryArithmetic(BinaryArithmetic unaryOperator) {
-            this.binaryOperator = unaryOperator;
-        }
-
-        @Override
-        protected void checkArguments(Object[] arguments) throws ArityException {
-            // we also need to account for the HPy context
-            checkArity(arguments, 3);
-        }
-
-        @Override
-        protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.createCachedCallTarget(binaryOperator::createRootNode, binaryOperator);
-        }
-    }
-
-    public static final class GraalHPyTernaryArithmetic extends GraalHPyArithmetic {
-        private final TernaryArithmetic ternaryOperator;
-
-        public GraalHPyTernaryArithmetic(TernaryArithmetic unaryOperator) {
-            this.ternaryOperator = unaryOperator;
-        }
-
-        @Override
-        protected void checkArguments(Object[] arguments) throws ArityException {
-            // we also need to account for the HPy context
-            checkArity(arguments, 4);
-        }
-
-        @Override
-        protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.createCachedCallTarget(ternaryOperator::createRootNode, ternaryOperator);
-        }
-    }
-
-    public static final class GraalHPyInplaceArithmetic extends GraalHPyArithmetic {
-        private final InplaceArithmetic inplaceOperator;
-
-        public GraalHPyInplaceArithmetic(InplaceArithmetic unaryOperator) {
-            this.inplaceOperator = unaryOperator;
-        }
-
-        @Override
-        protected void checkArguments(Object[] arguments) throws ArityException {
-            // we also need to account for the HPy context
-            if (inplaceOperator.isTernary() && arguments.length != 4) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(4, 4, arguments.length);
-            }
-            if (!inplaceOperator.isTernary() && arguments.length != 3) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, 3, arguments.length);
-            }
-        }
-
-        @Override
-        protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.createCachedCallTarget(inplaceOperator::createRootNode, inplaceOperator);
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyDictNew extends GraalHPyContextFunction {
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached PythonObjectFactory factory,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 1);
@@ -745,11 +578,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyDictSetItem extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyDictSetItem extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
@@ -782,11 +615,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyDictGetItem extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyDictGetItem extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
@@ -818,11 +651,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyListNew extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyListNew extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached PythonObjectFactory factory,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
@@ -837,11 +670,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyListAppend extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyListAppend extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode listAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
@@ -871,11 +704,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyFloatFromDouble extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyFloatFromDouble extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
@@ -885,11 +718,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyFloatAsDouble extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyFloatAsDouble extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
@@ -905,49 +738,28 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCheckBuiltinType extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyCheckBuiltinType extends HPyContextFunctionWithBuiltinType {
 
-        private final PythonBuiltinClassType expectedType;
-
-        public GraalHPyCheckBuiltinType(PythonBuiltinClassType expectedType) {
-            this.expectedType = expectedType;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, PythonBuiltinClassType expectedType,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) throws ArityException {
             checkArity(arguments, 2);
             Object object = asPythonObjectNode.execute(arguments[1]);
-            return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
+            return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), expectedType));
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrRaisePredefined extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrRaisePredefined extends Node {
 
-        private final PythonBuiltinClassType errType;
-        private final TruffleString errorMessage;
-        private final boolean primitiveErrorValue;
+        public abstract Object execute(Object[] arguments, PythonBuiltinClassType errType, TruffleString errorMessage, boolean primitiveErrorValue) throws ArityException;
 
-        public GraalHPyErrRaisePredefined(PythonBuiltinClassType errType) {
-            this(errType, null, false);
-        }
-
-        public GraalHPyErrRaisePredefined(PythonBuiltinClassType errType, TruffleString errorMessage) {
-            this(errType, errorMessage, false);
-        }
-
-        public GraalHPyErrRaisePredefined(PythonBuiltinClassType errType, TruffleString errorMessage, boolean primitiveErrorValue) {
-            this.errType = errType;
-            this.errorMessage = errorMessage;
-            this.primitiveErrorValue = primitiveErrorValue;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, PythonBuiltinClassType errType, TruffleString errorMessage, boolean primitiveErrorValue,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
@@ -969,22 +781,17 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrSetString extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrSetString extends HPyContextFunctionWithFlag {
 
-        private final boolean stringMode;
-
-        public GraalHPyErrSetString(boolean stringMode) {
-            this.stringMode = stringMode;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean stringMode,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached PCallHPyFunction callFromStringNode,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PRaiseNode raiseNode,
@@ -1007,7 +814,7 @@ public abstract class GraalHPyContextFunctions {
                 } else {
                     Object valueObj = asPythonObjectNode.execute(arguments[2]);
                     // If the exception value is already an exception object, just take it.
-                    if (isExcValueSubtypeNode.execute(getClassNode.execute(valueObj), PythonBuiltinClassType.PBaseException)) {
+                    if (isExcValueSubtypeNode.execute(getClassNode.execute(inliningTarget, valueObj), PythonBuiltinClassType.PBaseException)) {
                         exception = valueObj;
                     } else {
                         exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
@@ -1027,17 +834,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrSetFromErrnoWithFilenameObjects extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrSetFromErrnoWithFilenameObjects extends HPyContextFunctionWithFlag {
 
-        private final boolean withObjects;
-
-        public GraalHPyErrSetFromErrnoWithFilenameObjects(boolean withObjects) {
-            this.withObjects = withObjects;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean withObjects,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsSubtypeNode isSubtypeNode,
@@ -1090,10 +891,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyFatalError extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyFatalError extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib) throws ArityException {
@@ -1108,11 +909,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrOccurred extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrOccurred extends GraalHPyContextFunction {
 
-        @ExportMessage
-        int execute(Object[] arguments,
+        @Specialization
+        static int doGeneric(Object[] arguments,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached HPyAsContextNode asContextNode) throws ArityException {
             checkArity(arguments, 1);
@@ -1121,11 +922,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrExceptionMatches extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrExceptionMatches extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
@@ -1144,11 +945,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrClear extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrClear extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached HPyAsContextNode asContextNode) throws ArityException {
             checkArity(arguments, 1);
@@ -1158,11 +959,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrWarnEx extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrWarnEx extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
@@ -1185,11 +986,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyErrWriteUnraisable extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyErrWriteUnraisable extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
@@ -1204,17 +1005,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeAsCharsetString extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeAsCharsetString extends HPyContextFunctionWithObject {
 
-        private final Charset charset;
-
-        private GraalHPyUnicodeAsCharsetString(Charset charset) {
-            this.charset = charset;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, Charset charset,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode resultAsHandleNode,
@@ -1232,31 +1027,13 @@ public abstract class GraalHPyContextFunctions {
                 return GraalHPyHandle.NULL_HANDLE;
             }
         }
-
-        public static GraalHPyUnicodeAsCharsetString asUTF8() {
-            return new GraalHPyUnicodeAsCharsetString(StandardCharsets.UTF_8);
-        }
-
-        public static GraalHPyUnicodeAsCharsetString asASCII() {
-            return new GraalHPyUnicodeAsCharsetString(StandardCharsets.US_ASCII);
-        }
-
-        public static GraalHPyUnicodeAsCharsetString asLatin1() {
-            return new GraalHPyUnicodeAsCharsetString(StandardCharsets.ISO_8859_1);
-        }
-
-        @TruffleBoundary
-        public static GraalHPyUnicodeAsCharsetString asFSDefault() {
-            TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(GetFileSystemEncodingNode.getFileSystemEncoding());
-            return new GraalHPyUnicodeAsCharsetString(CharsetMapping.getCharsetNormalized(normalizedEncoding));
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeAsUTF8AndSize extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeAsUTF8AndSize extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PCallHPyFunction callFromTyped,
@@ -1286,11 +1063,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeFromString extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeFromString extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode toString,
@@ -1309,11 +1086,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeFromWchar extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeFromWchar extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode resultAsHandleNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
@@ -1338,17 +1115,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeDecodeCharset extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeDecodeCharset extends HPyContextFunctionWithObject {
 
-        private final TruffleString charset;
-
-        public GraalHPyUnicodeDecodeCharset(TruffleString charset) {
-            this.charset = charset;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, TruffleString charset,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PCallHPyFunction callHPyFunction,
                         @Cached HPyAsHandleNode asHandleNode,
@@ -1359,23 +1130,13 @@ public abstract class GraalHPyContextFunctions {
             Object result = callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], toJavaStringNode.execute(charset));
             return asHandleNode.execute(result);
         }
-
-        public static GraalHPyUnicodeDecodeCharset decodeFSDefault() {
-            return new GraalHPyUnicodeDecodeCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeDecodeCharsetAndSize extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeDecodeCharsetAndSize extends HPyContextFunctionWithObject {
 
-        private final TruffleString charset;
-
-        public GraalHPyUnicodeDecodeCharsetAndSize(TruffleString charset) {
-            this.charset = charset;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, TruffleString charset,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PCallHPyFunction callHPyFunction,
                         @CachedLibrary(limit = "2") InteropLibrary interopLib,
@@ -1396,16 +1157,12 @@ public abstract class GraalHPyContextFunctions {
             } catch (OverflowException | InteropException ex) {
                 throw CompilerDirectives.shouldNotReachHere(ex);
             }
-            TruffleString result = fromJavaStringNode.execute(decode(CodingErrorAction.IGNORE, bytes), TS_ENCODING);
+            TruffleString result = fromJavaStringNode.execute(decode(charset, CodingErrorAction.IGNORE, bytes), TS_ENCODING);
             return asHandleNode.execute(result);
         }
 
-        public static GraalHPyUnicodeDecodeCharsetAndSize decodeFSDefault() {
-            return new GraalHPyUnicodeDecodeCharsetAndSize(GetFileSystemEncodingNode.getFileSystemEncoding());
-        }
-
         @TruffleBoundary
-        private String decode(CodingErrorAction errorAction, byte[] bytes) {
+        static String decode(TruffleString charset, CodingErrorAction errorAction, byte[] bytes) {
             try {
                 TruffleString normalizedCharset = CharsetMapping.normalizeUncached(charset);
                 return CharsetMapping.getCharsetNormalized(normalizedCharset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
@@ -1415,19 +1172,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeDecodeCharsetAndSizeAndErrors extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeDecodeCharsetAndSizeAndErrors extends HPyContextFunctionWithObject {
 
-        private static final TruffleString T_ISO_8859_1 = tsLiteral("ISO-8859-1");
-
-        private final TruffleString charset;
-
-        public GraalHPyUnicodeDecodeCharsetAndSizeAndErrors(TruffleString charset) {
-            this.charset = charset;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, TruffleString charset,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PCallHPyFunction callHPyFunction,
                         @CachedLibrary(limit = "2") InteropLibrary interopLib,
@@ -1455,7 +1204,7 @@ public abstract class GraalHPyContextFunctions {
             // short-circuit the error reading etc
             TruffleString errors = castToJavaStringNode.execute(callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[3], "ascii"));
             CodingErrorAction errorAction = CodecsModuleBuiltins.convertCodingErrorAction(errors, equalNode);
-            TruffleString result = fromJavaStringNode.execute(decode(errorAction, bytes), TS_ENCODING);
+            TruffleString result = fromJavaStringNode.execute(GraalHPyUnicodeDecodeCharsetAndSize.decode(charset, errorAction, bytes), TS_ENCODING);
             if (result == null) {
                 // TODO: refactor helper nodes for CodecsModuleBuiltins to use them here
                 return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, PythonBuiltinClassType.UnicodeDecodeError, ErrorMessages.MALFORMED_INPUT);
@@ -1463,31 +1212,13 @@ public abstract class GraalHPyContextFunctions {
                 return asHandleNode.execute(result);
             }
         }
-
-        public static GraalHPyUnicodeDecodeCharsetAndSizeAndErrors decodeASCII() {
-            return new GraalHPyUnicodeDecodeCharsetAndSizeAndErrors(T_ASCII_UPPERCASE);
-        }
-
-        public static GraalHPyUnicodeDecodeCharsetAndSizeAndErrors decodeLatin1() {
-            return new GraalHPyUnicodeDecodeCharsetAndSizeAndErrors(T_ISO_8859_1);
-        }
-
-        @TruffleBoundary
-        private String decode(CodingErrorAction errorAction, byte[] bytes) {
-            try {
-                TruffleString normalizedCharset = CharsetMapping.normalizeUncached(charset);
-                return CharsetMapping.getCharsetNormalized(normalizedCharset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
-            } catch (CharacterCodingException ex) {
-                return null;
-            }
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeReadChar extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeReadChar extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached PyUnicodeReadCharNode unicodeReadChar) throws ArityException {
@@ -1497,11 +1228,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyAsPyObject extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyAsPyObject extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode handleAsPythonObjectNode,
                         @Cached PythonToNativeNewRefNode toPyObjectPointerNode) throws ArityException {
             checkArity(arguments, 2);
@@ -1510,11 +1241,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBytesAsString extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyBytesAsString extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyRaiseNode raiseNode) throws ArityException {
@@ -1528,11 +1259,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBytesGetSize extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyBytesGetSize extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
@@ -1548,17 +1279,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBytesFromStringAndSize extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyBytesFromStringAndSize extends HPyContextFunctionWithFlag {
 
-        private final boolean withSize;
-
-        public GraalHPyBytesFromStringAndSize(boolean withSize) {
-            this.withSize = withSize;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean withSize,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached PCallHPyFunction callHelperNode,
@@ -1608,11 +1333,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyIsTrue extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyIsTrue extends GraalHPyContextFunction {
 
-        @ExportMessage
-        int execute(Object[] arguments,
+        @Specialization
+        static int doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyObjectIsTrueNode isTrueNode) throws ArityException {
             checkArity(arguments, 2);
@@ -1621,18 +1346,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyGetAttr extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyGetAttr extends HPyContextFunctionWithMode {
 
-        private final FunctionMode mode;
-
-        public GraalHPyGetAttr(FunctionMode mode) {
-            checkMode(mode, OBJECT, CHAR_PTR);
-            this.mode = mode;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, FunctionMode mode,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
@@ -1663,10 +1381,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyMaybeGetAttrS extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyMaybeGetAttrS extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -1678,11 +1396,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTypeFromSpec extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyTypeFromSpec extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached HPyCreateTypeFromSpecNode createTypeFromSpecNode,
@@ -1706,18 +1424,11 @@ public abstract class GraalHPyContextFunctions {
 
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyHasAttr extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyHasAttr extends HPyContextFunctionWithMode {
 
-        private final FunctionMode mode;
-
-        public GraalHPyHasAttr(FunctionMode mode) {
-            checkMode(mode, OBJECT, CHAR_PTR);
-            this.mode = mode;
-        }
-
-        @ExportMessage
-        int execute(Object[] arguments,
+        @Specialization
+        static int doGeneric(Object[] arguments, FunctionMode mode,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -1744,18 +1455,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPySetAttr extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPySetAttr extends HPyContextFunctionWithMode {
 
-        private final FunctionMode mode;
-
-        public GraalHPySetAttr(FunctionMode mode) {
-            checkMode(mode, OBJECT, CHAR_PTR);
-            this.mode = mode;
-        }
-
-        @ExportMessage
-        int execute(Object[] arguments,
+        @Specialization
+        static int doGeneric(Object[] arguments, FunctionMode mode,
                         @Bind("$node") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
@@ -1803,18 +1507,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyGetItem extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyGetItem extends HPyContextFunctionWithMode {
 
-        private final FunctionMode mode;
-
-        public GraalHPyGetItem(FunctionMode mode) {
-            checkMode(mode, OBJECT, CHAR_PTR, INT32);
-            this.mode = mode;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, FunctionMode mode,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
@@ -1849,18 +1546,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPySetItem extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPySetItem extends HPyContextFunctionWithMode {
 
-        private final FunctionMode mode;
-
-        public GraalHPySetItem(FunctionMode mode) {
-            checkMode(mode, OBJECT, CHAR_PTR, INT32);
-            this.mode = mode;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, FunctionMode mode,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
@@ -1897,11 +1587,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyFromPyObject extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyFromPyObject extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
@@ -1912,12 +1602,12 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyNew extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyNew extends GraalHPyContextFunction {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyNew.class);
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsTypeNode isTypeNode,
@@ -1939,8 +1629,7 @@ public abstract class GraalHPyContextFunctions {
             // create the managed Python object
             PythonObject pythonObject = null;
 
-            if (type instanceof PythonClass) {
-                PythonClass clazz = (PythonClass) type;
+            if (type instanceof PythonClass clazz) {
                 // allocate native space
                 long basicSize = clazz.basicSize;
                 if (basicSize != -1) {
@@ -1965,11 +1654,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCast extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyCast extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyGetNativeSpacePointerNode getNativeSpacePointerNode) throws ArityException {
             checkArity(arguments, 2);
@@ -1980,13 +1669,13 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTypeGenericNew extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyTypeGenericNew extends GraalHPyContextFunction {
 
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyTypeGenericNew.class);
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PythonObjectFactory factory,
@@ -2021,84 +1710,59 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCallBuiltinFunction extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyCallBuiltinFunction extends Node {
 
-        private final TruffleString key;
-        private final int nPythonArguments;
-        private final ReturnType returnType;
+        public abstract Object execute(Object[] arguments, TruffleString key, int nPythonArguments, ReturnType returnType) throws ArityException;
 
-        public GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments) {
-            this(key, nPythonArguments, ReturnType.OBJECT);
+        @Specialization
+        static Object doGeneric(Object[] arguments, TruffleString key, int nPythonArguments, ReturnType returnType,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached CallNode callNode,
+                        @Cached(value = "createToNativeNode(returnType)", uncached = "getUncachedToNativeNode(returnType)") CExtToNativeNode toNativeNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+            if (arguments.length != nPythonArguments + 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(nPythonArguments + 1, nPythonArguments + 1, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object[] pythonArguments = new Object[nPythonArguments];
+            for (int i = 0; i < pythonArguments.length; i++) {
+                pythonArguments[i] = asPythonObjectNode.execute(arguments[i + 1]);
+            }
+            try {
+                Object builtinFunction = readAttributeFromObjectNode.execute(nativeContext.getContext().getBuiltins(), key);
+                return toNativeNode.execute(callNode.execute(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(nativeContext, e);
+                return switch (returnType) {
+                    case OBJECT -> GraalHPyHandle.NULL_HANDLE;
+                    case INT -> -1;
+                };
+            }
         }
 
-        public GraalHPyCallBuiltinFunction(TruffleString key, int nPythonArguments, ReturnType returnType) {
-            this.key = key;
-            assert nPythonArguments >= 0 : "number of arguments cannot be negative";
-            this.nPythonArguments = nPythonArguments;
-            this.returnType = returnType;
+        static CExtToNativeNode createToNativeNode(ReturnType type) {
+            return type.createToNativeNode();
         }
 
-        @ExportMessage
-        static class Execute {
-
-            @Specialization
-            static Object doGeneric(GraalHPyCallBuiltinFunction receiver, Object[] arguments,
-                            @Cached HPyAsContextNode asContextNode,
-                            @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                            @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                            @Cached CallNode callNode,
-                            @Cached(value = "createToNativeNode(receiver)", uncached = "getUncachedToNativeNode(receiver)") CExtToNativeNode toNativeNode,
-                            @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
-                if (arguments.length != receiver.nPythonArguments + 1) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(receiver.nPythonArguments + 1, receiver.nPythonArguments + 1, arguments.length);
-                }
-                GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
-                Object[] pythonArguments = new Object[receiver.nPythonArguments];
-                for (int i = 0; i < pythonArguments.length; i++) {
-                    pythonArguments[i] = asPythonObjectNode.execute(arguments[i + 1]);
-                }
-                try {
-                    Object builtinFunction = readAttributeFromObjectNode.execute(nativeContext.getContext().getBuiltins(), receiver.key);
-                    return toNativeNode.execute(callNode.execute(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS));
-                } catch (PException e) {
-                    transformExceptionToNativeNode.execute(nativeContext, e);
-                    switch (receiver.returnType) {
-                        case OBJECT:
-                            return GraalHPyHandle.NULL_HANDLE;
-                        case INT:
-                            return -1;
-                    }
-                }
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-
-            static CExtToNativeNode createToNativeNode(GraalHPyCallBuiltinFunction receiver) {
-                return receiver.returnType.createToNativeNode();
-            }
-
-            static CExtToNativeNode getUncachedToNativeNode(GraalHPyCallBuiltinFunction receiver) {
-                return receiver.returnType.getUncachedToNativeNode();
-            }
+        static CExtToNativeNode getUncachedToNativeNode(ReturnType type) {
+            return type.getUncachedToNativeNode();
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyRichcompare extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyRichcompare extends HPyContextFunctionWithFlag {
 
-        private final boolean returnPrimitive;
-
-        public GraalHPyRichcompare(boolean returnPrimitive) {
-            this.returnPrimitive = returnPrimitive;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean returnPrimitive,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
                         @Cached CallTernaryMethodNode callRichcmp,
                         @Cached PyObjectIsTrueNode isTrueNode,
@@ -2115,7 +1779,7 @@ public abstract class GraalHPyContextFunctions {
                 throw UnsupportedTypeException.create(arguments, "4th argument must fit into Java int");
             }
             try {
-                Object richcmp = lookupRichcmp.execute(null, getClassNode.execute(receiver), SpecialMethodNames.T_RICHCMP, receiver);
+                Object richcmp = lookupRichcmp.execute(null, getClassNode.execute(inliningTarget, receiver), SpecialMethodNames.T_RICHCMP, receiver);
                 Object result = callRichcmp.execute(null, richcmp, receiver, arg1, arg2);
                 return returnPrimitive ? PInt.intValue(isTrueNode.execute(null, result)) : asHandleNode.execute(result);
             } catch (PException e) {
@@ -2126,11 +1790,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyAsIndex extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyAsIndex extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyNumberIndexNode indexNode,
@@ -2148,17 +1812,18 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
+    @GenerateUncached
     @ImportStatic(SpecialMethodSlot.class)
-    public static final class GraalHPyIsNumber extends GraalHPyContextFunction {
+    public abstract static class GraalHPyIsNumber extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached CanBeDoubleNode canBeDoubleNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached(parameters = "Int") LookupCallableSlotInMRONode lookup,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
@@ -2167,7 +1832,7 @@ public abstract class GraalHPyContextFunctions {
                 if (indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver)) {
                     return 1;
                 }
-                Object receiverType = getClassNode.execute(receiver);
+                Object receiverType = getClassNode.execute(inliningTarget, receiver);
                 return PInt.intValue(lookup.execute(receiverType) != PNone.NO_VALUE);
             } catch (PException e) {
                 GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
@@ -2177,11 +1842,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTupleFromArray extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyTupleFromArray extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -2242,8 +1907,8 @@ public abstract class GraalHPyContextFunctions {
         protected abstract Object createObject(int capacity);
 
         protected final Object doExecute(Object[] arguments,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+                        CastToJavaIntExactNode castToJavaIntExactNode,
+                        HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             try {
                 int capacity = castToJavaIntExactNode.execute(arguments[1]);
@@ -2257,10 +1922,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBuilderNew extends GraalHPyBuilderNewBase {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyBuilderNew extends GraalHPyBuilderNewBase {
+
+        @Specialization
+        Object doGeneric(Object[] arguments,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             return doExecute(arguments, castToJavaIntExactNode, asHandleNode);
@@ -2276,56 +1942,43 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBuilderSet extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyBuilderSet extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 4);
             Object builder = asPythonObjectNode.execute(arguments[1]);
-            if (!isValid(builder)) {
-                // that's really unexpected since the C signature should enforce a valid builder
-                // but
-                // someone could have messed it up
+            if (builder instanceof ObjectSequenceStorage storage) {
+                try {
+                    int idx = castToJavaIntExactNode.execute(arguments[2]);
+                    Object value = asPythonObjectNode.execute(arguments[3]);
+                    setItemNode.execute(null, NoGeneralizationNode.DEFAULT, storage, idx, value);
+                } catch (CannotCastException e) {
+                    // fall through
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(e);
+                }
+                return 0;
+            }
+                /*
+                 * that's really unexpected since the C signature should enforce a valid builder but
+                 * someone could have messed it up
+                 */
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnsupportedTypeException.create(arguments, "invalid builder object");
-            }
-            ObjectSequenceStorage storage = (ObjectSequenceStorage) builder;
-
-            try {
-                int idx = castToJavaIntExactNode.execute(arguments[2]);
-                Object value = asPythonObjectNode.execute(arguments[3]);
-                setItemNode.execute(null, NoGeneralizationNode.DEFAULT, storage, idx, value);
-            } catch (CannotCastException e) {
-                // fall through
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-            }
-            return 0;
         }
-
-        private boolean isValid(Object object) {
-            return object instanceof ObjectSequenceStorage;
-        }
-
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBuilderBuild extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyBuilderBuild extends HPyContextFunctionWithBuiltinType {
 
-        private final PythonBuiltinClassType type;
-
-        public GraalHPyBuilderBuild(PythonBuiltinClassType type) {
-            assert type == PythonBuiltinClassType.PTuple || type == PythonBuiltinClassType.PList;
-            this.type = type;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, PythonBuiltinClassType type,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached PythonObjectFactory factory,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException, UnsupportedTypeException {
@@ -2362,20 +2015,21 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBuilderCancel extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyBuilderCancel extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 2);
 
             // be pedantic and also check what we are cancelling
             ObjectSequenceStorage builder = cast(closeAndGetHandleNode.execute(arguments[1]));
             if (builder == null) {
-                // that's really unexpected since the C signature should enforce a valid builder
-                // but
-                // someone could have messed it up
+                /*
+                 * that's really unexpected since the C signature should enforce a valid builder but
+                 * someone could have messed it up
+                 */
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnsupportedTypeException.create(arguments, "invalid builder object");
             }
@@ -2391,10 +2045,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTrackerNew extends GraalHPyBuilderNewBase {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyTrackerNew extends GraalHPyBuilderNewBase {
+        @Specialization
+        Object doGeneric(Object[] arguments,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             return doExecute(arguments, castToJavaIntExactNode, asHandleNode);
@@ -2406,10 +2060,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTrackerAdd extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyTrackerAdd extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyEnsureHandleNode ensureHandleNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 3);
@@ -2439,11 +2093,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTrackerCleanup extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyTrackerCleanup extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached HPyCloseHandleNode closeHandleNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 2);
@@ -2466,11 +2120,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTrackerForgetAll extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyTrackerForgetAll extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 2);
             GraalHPyTracker builder = GraalHPyTrackerCleanup.cast(asPythonObjectNode.execute(arguments[1]));
@@ -2485,11 +2139,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyIsCallable extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyIsCallable extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyCallableCheckNode callableCheck) throws ArityException {
             checkArity(arguments, 2);
@@ -2498,11 +2152,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyIsSequence extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyIsSequence extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PySequenceCheckNode sequenceCheck) throws ArityException {
             checkArity(arguments, 2);
@@ -2511,11 +2165,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCallTupleDict extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyCallTupleDict extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached ExecutePositionalStarargsNode expandArgsNode,
@@ -2577,17 +2231,17 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyDump extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyDump extends GraalHPyContextFunction {
 
-        @ExportMessage
+        @Specialization
         @TruffleBoundary
-        Object execute(Object[] arguments) throws ArityException {
+        Object doGeneric(Object[] arguments) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = HPyAsContextNodeGen.getUncached().execute(arguments[0]);
             PythonContext context = nativeContext.getContext();
             Object pythonObject = HPyAsPythonObjectNodeGen.getUncached().execute(arguments[1]);
-            Object type = GetClassNode.getUncached().execute(pythonObject);
+            Object type = InlinedGetClassNode.executeUncached(pythonObject);
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
             stderr.println("object type     : " + type);
             stderr.println("object type name: " + GetNameNode.getUncached().execute(type));
@@ -2605,37 +2259,29 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyType extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyType extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached GetClassNode getClassNode) throws ArityException {
+                        @Cached InlinedGetClassNode getClassNode) throws ArityException {
             checkArity(arguments, 2);
             Object object = asPythonObjectNode.execute(arguments[1]);
-            return asHandleNode.execute(getClassNode.execute(object));
+            return asHandleNode.execute(getClassNode.execute(inliningTarget, object));
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTypeCheck extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyTypeCheck extends HPyContextFunctionWithFlag {
 
-        private final boolean withGlobal;
-
-        public GraalHPyTypeCheck() {
-            this.withGlobal = false;
-        }
-
-        public GraalHPyTypeCheck(boolean withGlobal) {
-            this.withGlobal = withGlobal;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean withGlobal,
+                        @Bind("this") Node inliningTarget,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedGetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode) throws ArityException {
             checkArity(arguments, 3);
             Object object = asPythonObjectNode.execute(arguments[1]);
@@ -2645,21 +2291,15 @@ public abstract class GraalHPyContextFunctions {
             } else {
                 expectedType = asPythonObjectNode.execute(arguments[2]);
             }
-            return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
+            return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), expectedType));
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyNewException extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyNewException extends HPyContextFunctionWithFlag {
 
-        private final boolean withDoc;
-
-        public GraalHPyNewException(boolean withDoc) {
-            this.withDoc = withDoc;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean withDoc,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PCallHPyFunction callFromStringNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -2745,21 +2385,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyIs extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyIs extends HPyContextFunctionWithFlag {
 
-        private final boolean withGlobal;
-
-        public GraalHPyIs() {
-            this.withGlobal = false;
-        }
-
-        public GraalHPyIs(boolean withGlobal) {
-            this.withGlobal = withGlobal;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments, boolean withGlobal,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsNode isNode,
@@ -2782,11 +2412,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyImportModule extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyImportModule extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached HPyAsHandleNode asHandleNode,
@@ -2805,11 +2435,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyFieldStore extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyFieldStore extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
@@ -2884,11 +2514,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyFieldLoad extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyFieldLoad extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -2933,11 +2563,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyGlobalStore extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyGlobalStore extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
@@ -2984,11 +2614,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyGlobalLoad extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyGlobalLoad extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
@@ -3029,11 +2659,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyLeavePythonExecution extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyLeavePythonExecution extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 1);
@@ -3044,11 +2674,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyReenterPythonExecution extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyReenterPythonExecution extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 2);
@@ -3060,11 +2690,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ImportStatic(SpecialMethodSlot.class)
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyContains extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyContains extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PySequenceContainsNode containsNode,
@@ -3082,10 +2712,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTypeIsSubtype extends GraalHPyContextFunction {
-        @ExportMessage
-        int execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyTypeIsSubtype extends GraalHPyContextFunction {
+        @Specialization
+        static int doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asSubtype,
                         @Cached HPyAsPythonObjectNode asBasetype,
@@ -3103,10 +2733,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTypeGetName extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyTypeGetName extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asType,
                         @Cached HPyTypeGetNameNode getName) throws ArityException {
             checkArity(arguments, 2);
@@ -3115,10 +2745,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyDictKeys extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyDictKeys extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asDict,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached PyDictKeys keysNode) throws ArityException {
@@ -3128,10 +2758,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeInternFromString extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeInternFromString extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached InternStringNode internStringNode,
@@ -3162,12 +2792,12 @@ public abstract class GraalHPyContextFunctions {
         public static final byte Destructor = 3;
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCapsuleNew extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyCapsuleNew extends GraalHPyContextFunction {
         public static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached PythonObjectFactory factory,
@@ -3184,12 +2814,12 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCapsuleGet extends GraalHPyContextFunction {
+    @GenerateUncached
+    public abstract static class GraalHPyCapsuleGet extends GraalHPyContextFunction {
         public static final TruffleString INCORRECT_NAME = tsLiteral("HPyCapsule_GetPointer called with incorrect name");
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asCapsule,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
@@ -3274,10 +2904,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCapsuleSet extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyCapsuleSet extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asCapsule,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -3322,10 +2952,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCapsuleIsValid extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyCapsuleIsValid extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asCapsule,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -3343,10 +2973,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPySetType extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPySetType extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asObject,
                         @Cached HPyAsPythonObjectNode asType,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) throws ArityException {
@@ -3364,10 +2994,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyContextVarNew extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyContextVarNew extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached HPyAsPythonObjectNode asObject,
                         @Cached CallNode callContextvar,
@@ -3379,10 +3009,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyContextVarGet extends GraalHPyContextFunction {
-        @ExportMessage
-        int execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyContextVarGet extends GraalHPyContextFunction {
+        @Specialization
+        static int doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asVar,
                         @Cached HPyAsPythonObjectNode asDef,
@@ -3424,10 +3054,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyContextVarSet extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyContextVarSet extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asVar,
                         @Cached HPyAsPythonObjectNode asVal,
@@ -3452,10 +3082,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeFromEncodedObject extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeFromEncodedObject extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode objNode,
                         @Cached FromCharPointerNode fromNativeCharPointerNode,
@@ -3477,10 +3107,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeSubstring extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyUnicodeSubstring extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode objNode,
                         @Cached CastToTruffleStringNode castStr,
@@ -3504,10 +3134,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPySliceUnpack extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPySliceUnpack extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode objNode,
                         @Cached PCallHPyFunction callWriteDataNode,
@@ -3527,10 +3157,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyTypeCheckSlot extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPyTypeCheckSlot extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode objNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
@@ -3577,10 +3207,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPySeqIterNew extends GraalHPyContextFunction {
-        @ExportMessage
-        Object execute(Object[] arguments,
+    @GenerateUncached
+    public abstract static class GraalHPySeqIterNew extends GraalHPyContextFunction {
+        @Specialization
+        static Object doGeneric(Object[] arguments,
                         @Cached HPyAsPythonObjectNode asSeqNode,
                         @Cached HPyAsHandleNode asHandle,
                         @Cached PythonObjectFactory factory) throws ArityException {

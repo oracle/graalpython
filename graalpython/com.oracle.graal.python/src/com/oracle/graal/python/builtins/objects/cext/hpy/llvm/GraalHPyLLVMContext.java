@@ -44,143 +44,135 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_ELIPSIS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NONE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.SINGLETON_HANDLE_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtr;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtrPtr;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Double;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPy;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyField;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyGlobal;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyThreadState;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyTracker;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPy_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Int;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Long;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Void;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType._HPyFieldPtr;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType._HPyGlobalPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ASCII_UPPERCASE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ISO_8859_1;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyBoxing;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyUpcall;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBinaryArithmetic;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBoolFromLong;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderBuild;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderCancel;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderSet;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesAsString;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesFromStringAndSize;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCallBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCallTupleDict;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleGet;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleIsValid;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleSet;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCast;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCheckBuiltinType;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContains;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarGet;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarSet;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictGetItem;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictKeys;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDump;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrClear;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrExceptionMatches;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrOccurred;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrRaisePredefined;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrSetFromErrnoWithFilenameObjects;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrSetString;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrWarnEx;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrWriteUnraisable;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFatalError;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldLoad;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldStore;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatAsDouble;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatFromDouble;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFromPyObject;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetAttr;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetItem;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGlobalLoad;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGlobalStore;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyHasAttr;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyImportModule;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyInplaceArithmetic;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIs;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsCallable;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsNumber;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsSequence;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsTrue;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLeavePythonExecution;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongAsDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongAsPrimitive;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyMaybeGetAttrS;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNewException;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyReenterPythonExecution;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyRichcompare;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySeqIterNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetType;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySliceUnpack;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTernaryArithmetic;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerAdd;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerCleanup;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerForgetAll;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTupleFromArray;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyType;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeCheck;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeCheckSlot;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGenericNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGetName;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeIsSubtype;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnaryArithmetic;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsCharsetString;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8AndSize;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeDecodeCharset;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeDecodeCharsetAndSize;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeDecodeCharsetAndSizeAndErrors;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromEncodedObject;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeInternFromString;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeReadChar;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeSubstring;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyContextFunctionWithBuiltinType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyContextFunctionWithFlag;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyContextFunctionWithMode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.HPyContextFunctionWithObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAsIndexNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAsPyObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBoolFromLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBuilderBuildNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBuilderCancelNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBuilderNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBuilderSetNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBytesAsStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBytesFromStringAndSizeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyBytesGetSizeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCallTupleDictNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCapsuleGetNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCapsuleIsValidNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCapsuleNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCapsuleSetNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCastNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCheckBuiltinTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContainsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarGetNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyContextVarSetNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictKeysNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictSetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDumpNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDupNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrClearNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrExceptionMatchesNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrOccurredNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrSetStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrWarnExNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrWriteUnraisableNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFatalErrorNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFieldLoadNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFieldStoreNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFloatAsDoubleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFloatFromDoubleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyFromPyObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyGetAttrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyGlobalLoadNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyGlobalStoreNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyHasAttrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyImportModuleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsCallableNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsNumberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsSequenceNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyIsTrueNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLeavePythonExecutionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyListAppendNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyListNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongAsDoubleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyLongFromLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyMaybeGetAttrSNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyModuleCreateNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyNewExceptionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyReenterPythonExecutionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyRichcompareNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySeqIterNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetAttrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySetTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPySliceUnpackNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTrackerAddNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTrackerCleanupNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTrackerForgetAllNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTrackerNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTupleFromArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeCheckNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeCheckSlotNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeFromSpecNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeGenericNewNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeGetNameNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeIsSubtypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeAsCharsetStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeAsUTF8AndSizeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeFromEncodedObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeFromStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeFromWcharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeInternFromStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeReadCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyUnicodeSubstringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
@@ -195,7 +187,9 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
+import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -207,6 +201,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -264,8 +259,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
              */
             for (int i = 0; i < ctxMembers.length; i++) {
                 Object m = ctxMembers[i];
-                if (m != null && !(m instanceof Number || m instanceof GraalHPyHandle)) {
-                    ctxMembers[i] = new HPyExecuteWrapper(this.counts, i, m);
+                if (m instanceof HPyExecuteWrapperGeneric<?> executeWrapper) {
+                    ctxMembers[i] = new HPyExecuteWrapperTraceUpcall(this.counts, i, executeWrapper);
                 }
             }
         } else {
@@ -554,10 +549,10 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         H_SLICETYPE("h_SliceType"),
 
         CTX_MODULE_CREATE("ctx_Module_Create"),
-        CTX_DUP("ctx_Dup", signature(HPy, HPy)),
-        CTX_AS_STRUCT("ctx_AsStruct", signature(DataPtr, HPy)),
+        CTX_DUP("ctx_Dup"),
+        CTX_AS_STRUCT("ctx_AsStruct"),
         CTX_AS_STRUCT_LEGACY("ctx_AsStructLegacy"),
-        CTX_CLOSE("ctx_Close", signature(Void, HPy)),
+        CTX_CLOSE("ctx_Close"),
         CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
         CTX_LONG_FROMLONG("ctx_Long_FromLong"),
         CTX_LONG_FROMUNSIGNEDLONG("ctx_Long_FromUnsignedLong"),
@@ -565,7 +560,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_LONG_FROM_UNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
         CTX_LONG_FROMSSIZE_T("ctx_Long_FromSsize_t"),
         CTX_LONG_FROMSIZE_T("ctx_Long_FromSize_t"),
-        CTX_LONG_ASLONG("ctx_Long_AsLong", signature(Long, HPy)),
+        CTX_LONG_ASLONG("ctx_Long_AsLong"),
         CTX_LONG_ASLONGLONG("ctx_Long_AsLongLong"),
         CTX_LONG_ASUNSIGNEDLONG("ctx_Long_AsUnsignedLong"),
         CTX_LONG_ASUNSIGNEDLONGMASK("ctx_Long_AsUnsignedLongMask"),
@@ -574,20 +569,20 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_LONG_ASSIZE_T("ctx_Long_AsSize_t"),
         CTX_LONG_ASSSIZE_T("ctx_Long_AsSsize_t"),
         CTX_LONG_ASVOIDPTR("ctx_Long_AsVoidPtr"),
-        CTX_LONG_ASDOUBLE("ctx_Long_AsDouble", signature(Double, HPy)),
-        CTX_NEW("ctx_New", signature(HPy, HPy, DataPtrPtr)),
+        CTX_LONG_ASDOUBLE("ctx_Long_AsDouble"),
+        CTX_NEW("ctx_New"),
         CTX_TYPE("ctx_Type"),
-        CTX_TYPECHECK("ctx_TypeCheck", signature(Long, HPy, HPy)),
-        CTX_TYPECHECK_G("ctx_TypeCheck_g", signature(Long, HPy, HPyGlobal)),
+        CTX_TYPECHECK("ctx_TypeCheck"),
+        CTX_TYPECHECK_G("ctx_TypeCheck_g"),
         CTX_SETTYPE("ctx_SetType"),
         CTX_TYPE_ISSUBTYPE("ctx_Type_IsSubtype"),
         CTX_TYPE_GETNAME("ctx_Type_GetName"),
         CTX_TYPE_CHECKSLOT("ctx_Type_CheckSlot"),
         CTX_IS("ctx_Is"),
-        CTX_IS_G("ctx_Is_g", signature(Long, HPy, HPyGlobal)),
-        CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew", signature(HPy, HPy)),
-        CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble", signature(HPy, Double)),
-        CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble", signature(Double, HPy)),
+        CTX_IS_G("ctx_Is_g"),
+        CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew"),
+        CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
+        CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble"),
 
         // unary
         CTX_NEGATIVE("ctx_Negative"),
@@ -656,7 +651,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_SETATTR("ctx_SetAttr"),
         CTX_SETATTR_S("ctx_SetAttr_s"),
         CTX_GETITEM("ctx_GetItem"),
-        CTX_GETITEM_I("ctx_GetItem_i", signature(HPy, HPy, HPy_ssize_t)),
+        CTX_GETITEM_I("ctx_GetItem_i"),
         CTX_GETITEM_S("ctx_GetItem_s"),
         CTX_SETITEM("ctx_SetItem"),
         CTX_SETITEM_I("ctx_SetItem_i"),
@@ -702,8 +697,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_RICHCOMPARE("ctx_RichCompare"),
         CTX_RICHCOMPAREBOOL("ctx_RichCompareBool"),
         CTX_HASH("ctx_Hash"),
-        CTX_NUMBER_CHECK("ctx_Number_Check", signature(Int, HPy)),
-        CTX_LENGTH("ctx_Length", signature(HPy_ssize_t, HPy)),
+        CTX_NUMBER_CHECK("ctx_Number_Check"),
+        CTX_LENGTH("ctx_Length"),
         CTX_IMPORT_IMPORTMODULE("ctx_Import_ImportModule"),
         CTX_TUPLE_CHECK("ctx_Tuple_Check"),
         CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray"),
@@ -711,21 +706,21 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
         CTX_TUPLE_BUILDER_BUILD("ctx_TupleBuilder_Build"),
         CTX_TUPLE_BUILDER_CANCEL("ctx_TupleBuilder_Cancel"),
-        CTX_LIST_CHECK("ctx_List_Check", signature(Int, HPy)),
+        CTX_LIST_CHECK("ctx_List_Check"),
         CTX_LIST_BUILDER_NEW("ctx_ListBuilder_New"),
         CTX_LIST_BUILDER_SET("ctx_ListBuilder_Set"),
         CTX_LIST_BUILDER_BUILD("ctx_ListBuilder_Build"),
         CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel"),
-        CTX_TRACKER_NEW("ctx_Tracker_New", signature(HPyTracker, HPy_ssize_t)),
-        CTX_TRACKER_ADD("ctx_Tracker_Add", signature(Int, HPyTracker, HPy)),
+        CTX_TRACKER_NEW("ctx_Tracker_New"),
+        CTX_TRACKER_ADD("ctx_Tracker_Add"),
         CTX_TRACKER_FORGET_ALL("ctx_Tracker_ForgetAll"),
-        CTX_TRACKER_CLOSE("ctx_Tracker_Close", signature(Void, HPyTracker)),
-        CTX_FIELD_STORE("ctx_Field_Store", signature(Void, HPy, _HPyFieldPtr, HPy)),
-        CTX_FIELD_LOAD("ctx_Field_Load", signature(HPy, HPyField)),
-        CTX_LEAVEPYTHONEXECUTION("ctx_LeavePythonExecution", signature(HPyThreadState)),
-        CTX_REENTERPYTHONEXECUTION("ctx_ReenterPythonExecution", signature(Void, HPyThreadState)),
-        CTX_GLOBAL_STORE("ctx_Global_Store", signature(Void, _HPyGlobalPtr, HPy)),
-        CTX_GLOBAL_LOAD("ctx_Global_Load", signature(Void, HPyGlobal, HPy)),
+        CTX_TRACKER_CLOSE("ctx_Tracker_Close"),
+        CTX_FIELD_STORE("ctx_Field_Store"),
+        CTX_FIELD_LOAD("ctx_Field_Load"),
+        CTX_LEAVEPYTHONEXECUTION("ctx_LeavePythonExecution"),
+        CTX_REENTERPYTHONEXECUTION("ctx_ReenterPythonExecution"),
+        CTX_GLOBAL_STORE("ctx_Global_Store"),
+        CTX_GLOBAL_LOAD("ctx_Global_Load"),
         CTX_CONTEXTVAR_NEW("ctx_ContextVar_New"),
         CTX_CONTEXTVAR_GET("ctx_ContextVar_Get"),
         CTX_CONTEXTVAR_SET("ctx_ContextVar_Set"),
@@ -741,20 +736,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
         final String name;
 
-        /**
-         * If this signature is present (non-null), then a corresponding function in
-         * {@link GraalHPyContext} needs to exist. E.g., for {@code ctx_Number_Check}, the function
-         * {@link GraalHPyContext#ctxNumberCheck(long)} is used.
-         */
-        final HPyContextSignature signature;
-
         HPyContextMember(String name) {
-            this(name, null);
-        }
-
-        HPyContextMember(String name, HPyContextSignature signature) {
             this.name = name;
-            this.signature = signature;
         }
 
         @CompilationFinal(dimensions = 1) public static final HPyContextMember[] VALUES = values();
@@ -800,6 +783,10 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     private static void createTypeConstant(Object[] members, HPyContextMember member, Python3Core core, PythonBuiltinClassType value) {
         members[member.ordinal()] = GraalHPyHandle.create(core.lookupType(value));
+    }
+
+    private static HPyExecuteWrapper createContextFunction(GraalHPyContextFunction node) {
+        return null;
     }
 
     private Object[] createMembers(PythonContext context, TruffleString name) {
@@ -894,208 +881,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         createTypeConstant(members, HPyContextMember.H_CAPSULETYPE, context, PythonBuiltinClassType.Capsule);
         createTypeConstant(members, HPyContextMember.H_SLICETYPE, context, PythonBuiltinClassType.PSlice);
 
-        members[HPyContextMember.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
-        members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();
-        members[HPyContextMember.CTX_CLOSE.ordinal()] = new GraalHPyClose();
-        members[HPyContextMember.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
-        members[HPyContextMember.CTX_BOOL_FROMLONG.ordinal()] = new GraalHPyBoolFromLong();
-        GraalHPyLongFromLong fromSignedLong = new GraalHPyLongFromLong();
-        GraalHPyLongFromLong fromUnsignedLong = new GraalHPyLongFromLong(false);
-        members[HPyContextMember.CTX_LONG_FROMLONG.ordinal()] = fromSignedLong;
-        members[HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG.ordinal()] = fromUnsignedLong;
-        members[HPyContextMember.CTX_LONG_FROMLONGLONG.ordinal()] = fromSignedLong;
-        members[HPyContextMember.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = fromUnsignedLong;
-        members[HPyContextMember.CTX_LONG_FROMSSIZE_T.ordinal()] = fromSignedLong;
-        members[HPyContextMember.CTX_LONG_FROMSIZE_T.ordinal()] = fromUnsignedLong;
-        GraalHPyLongAsPrimitive asSignedLong = new GraalHPyLongAsPrimitive(1, java.lang.Long.BYTES, true);
-        GraalHPyLongAsPrimitive asUnsignedLong = new GraalHPyLongAsPrimitive(0, java.lang.Long.BYTES, true, true);
-        GraalHPyLongAsPrimitive asUnsignedLongMask = new GraalHPyLongAsPrimitive(0, java.lang.Long.BYTES, false);
-        members[HPyContextMember.CTX_LONG_ASLONG.ordinal()] = asSignedLong;
-        members[HPyContextMember.CTX_LONG_ASLONGLONG.ordinal()] = asSignedLong;
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONG.ordinal()] = asUnsignedLong;
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG.ordinal()] = asUnsignedLong;
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK.ordinal()] = asUnsignedLongMask;
-        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK.ordinal()] = asUnsignedLongMask;
-        members[HPyContextMember.CTX_LONG_ASSIZE_T.ordinal()] = asUnsignedLong;
-        members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = new GraalHPyLongAsPrimitive(1, java.lang.Long.BYTES, true, true);
-        members[HPyContextMember.CTX_LONG_ASVOIDPTR.ordinal()] = asUnsignedLong;
-        members[HPyContextMember.CTX_LONG_ASDOUBLE.ordinal()] = new GraalHPyLongAsDouble();
-        members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
-        members[HPyContextMember.CTX_TYPE.ordinal()] = new GraalHPyType();
-        members[HPyContextMember.CTX_TYPECHECK.ordinal()] = new GraalHPyTypeCheck();
-        members[HPyContextMember.CTX_TYPECHECK_G.ordinal()] = new GraalHPyTypeCheck(true);
-        members[HPyContextMember.CTX_IS.ordinal()] = new GraalHPyIs();
-        members[HPyContextMember.CTX_IS_G.ordinal()] = new GraalHPyIs(true);
-        members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
-        GraalHPyCast graalHPyCast = new GraalHPyCast();
-        members[HPyContextMember.CTX_AS_STRUCT.ordinal()] = graalHPyCast;
-        members[HPyContextMember.CTX_AS_STRUCT_LEGACY.ordinal()] = graalHPyCast;
-
-        // unary
-        members[HPyContextMember.CTX_NEGATIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Neg);
-        members[HPyContextMember.CTX_POSITIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Pos);
-        members[HPyContextMember.CTX_ABSOLUTE.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_ABS, 1);
-        members[HPyContextMember.CTX_INVERT.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Invert);
-        members[HPyContextMember.CTX_INDEX.ordinal()] = new GraalHPyAsIndex();
-        members[HPyContextMember.CTX_LONG.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_INT, 1);
-        members[HPyContextMember.CTX_FLOAT.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_FLOAT, 1);
-
-        // binary
-        members[HPyContextMember.CTX_ADD.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Add);
-        members[HPyContextMember.CTX_SUB.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Sub);
-        members[HPyContextMember.CTX_MULTIPLY.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Mul);
-        members[HPyContextMember.CTX_MATRIXMULTIPLY.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.MatMul);
-        members[HPyContextMember.CTX_FLOORDIVIDE.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.FloorDiv);
-        members[HPyContextMember.CTX_TRUEDIVIDE.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.TrueDiv);
-        members[HPyContextMember.CTX_REMAINDER.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Mod);
-        members[HPyContextMember.CTX_DIVMOD.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.DivMod);
-        members[HPyContextMember.CTX_LSHIFT.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.LShift);
-        members[HPyContextMember.CTX_RSHIFT.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.RShift);
-        members[HPyContextMember.CTX_AND.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.And);
-        members[HPyContextMember.CTX_XOR.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Xor);
-        members[HPyContextMember.CTX_OR.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Or);
-        members[HPyContextMember.CTX_INPLACEADD.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IAdd);
-        members[HPyContextMember.CTX_INPLACESUBTRACT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ISub);
-        members[HPyContextMember.CTX_INPLACEMULTIPLY.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMul);
-        members[HPyContextMember.CTX_INPLACEMATRIXMULTIPLY.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMatMul);
-        members[HPyContextMember.CTX_INPLACEFLOORDIVIDE.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IFloorDiv);
-        members[HPyContextMember.CTX_INPLACETRUEDIVIDE.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ITrueDiv);
-        members[HPyContextMember.CTX_INPLACEREMAINDER.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMod);
-        members[HPyContextMember.CTX_INPLACELSHIFT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ILShift);
-        members[HPyContextMember.CTX_INPLACERSHIFT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IRShift);
-        members[HPyContextMember.CTX_INPLACEAND.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IAnd);
-        members[HPyContextMember.CTX_INPLACEXOR.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IXor);
-        members[HPyContextMember.CTX_INPLACEOR.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IOr);
-
-        // ternary
-        members[HPyContextMember.CTX_POWER.ordinal()] = new GraalHPyTernaryArithmetic(TernaryArithmetic.Pow);
-        members[HPyContextMember.CTX_INPLACEPOWER.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IPow);
-
-        members[HPyContextMember.CTX_CALLABLE_CHECK.ordinal()] = new GraalHPyIsCallable();
-        members[HPyContextMember.CTX_CALLTUPLEDICT.ordinal()] = new GraalHPyCallTupleDict();
-
-        members[HPyContextMember.CTX_DICT_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PythonBuiltinClassType.PDict);
-        members[HPyContextMember.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
-        members[HPyContextMember.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
-        members[HPyContextMember.CTX_DICT_GETITEM.ordinal()] = new GraalHPyDictGetItem();
-        members[HPyContextMember.CTX_LIST_NEW.ordinal()] = new GraalHPyListNew();
-        members[HPyContextMember.CTX_LIST_APPEND.ordinal()] = new GraalHPyListAppend();
-        members[HPyContextMember.CTX_FLOAT_FROMDOUBLE.ordinal()] = new GraalHPyFloatFromDouble();
-        members[HPyContextMember.CTX_FLOAT_ASDOUBLE.ordinal()] = new GraalHPyFloatAsDouble();
-        members[HPyContextMember.CTX_BYTES_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PythonBuiltinClassType.PBytes);
-        members[HPyContextMember.CTX_BYTES_GET_SIZE.ordinal()] = new GraalHPyBytesGetSize();
-        members[HPyContextMember.CTX_BYTES_SIZE.ordinal()] = new GraalHPyBytesGetSize();
-        members[HPyContextMember.CTX_BYTES_AS_STRING.ordinal()] = new GraalHPyBytesAsString();
-        members[HPyContextMember.CTX_BYTES_ASSTRING.ordinal()] = new GraalHPyBytesAsString();
-        members[HPyContextMember.CTX_BYTES_FROMSTRING.ordinal()] = new GraalHPyBytesFromStringAndSize(false);
-        members[HPyContextMember.CTX_BYTES_FROMSTRINGANDSIZE.ordinal()] = new GraalHPyBytesFromStringAndSize(true);
-
-        members[HPyContextMember.CTX_ERR_NOMEMORY.ordinal()] = new GraalHPyErrRaisePredefined(PythonBuiltinClassType.MemoryError);
-        members[HPyContextMember.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString(true);
-        members[HPyContextMember.CTX_ERR_SETOBJECT.ordinal()] = new GraalHPyErrSetString(false);
-        members[HPyContextMember.CTX_ERR_SETFROMERRNOWITHFILENAME.ordinal()] = new GraalHPyErrSetFromErrnoWithFilenameObjects(false);
-        members[HPyContextMember.CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS.ordinal()] = new GraalHPyErrSetFromErrnoWithFilenameObjects(true);
-        members[HPyContextMember.CTX_ERR_OCCURRED.ordinal()] = new GraalHPyErrOccurred();
-        members[HPyContextMember.CTX_ERR_EXCEPTIONMATCHES.ordinal()] = new GraalHPyErrExceptionMatches();
-        members[HPyContextMember.CTX_ERR_CLEAR.ordinal()] = new GraalHPyErrClear();
-        members[HPyContextMember.CTX_ERR_NEWEXCEPTION.ordinal()] = new GraalHPyNewException(false);
-        members[HPyContextMember.CTX_ERR_NEWEXCEPTIONWITHDOC.ordinal()] = new GraalHPyNewException(true);
-        members[HPyContextMember.CTX_ERR_WARNEX.ordinal()] = new GraalHPyErrWarnEx();
-        members[HPyContextMember.CTX_ERR_WRITEUNRAISABLE.ordinal()] = new GraalHPyErrWriteUnraisable();
-        members[HPyContextMember.CTX_FATALERROR.ordinal()] = new GraalHPyFatalError();
-        members[HPyContextMember.CTX_FROMPYOBJECT.ordinal()] = new GraalHPyFromPyObject();
-        members[HPyContextMember.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PythonBuiltinClassType.PString);
-        members[HPyContextMember.CTX_ISTRUE.ordinal()] = new GraalHPyIsTrue();
-        members[HPyContextMember.CTX_UNICODE_ASUTF8STRING.ordinal()] = GraalHPyUnicodeAsCharsetString.asUTF8();
-        members[HPyContextMember.CTX_UNICODE_ASASCIISTRING.ordinal()] = GraalHPyUnicodeAsCharsetString.asASCII();
-        members[HPyContextMember.CTX_UNICODE_ASLATIN1STRING.ordinal()] = GraalHPyUnicodeAsCharsetString.asLatin1();
-        members[HPyContextMember.CTX_UNICODE_ASUTF8ANDSIZE.ordinal()] = new GraalHPyUnicodeAsUTF8AndSize();
-        members[HPyContextMember.CTX_UNICODE_FROMSTRING.ordinal()] = new GraalHPyUnicodeFromString();
-        members[HPyContextMember.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
-        members[HPyContextMember.CTX_UNICODE_DECODEASCII.ordinal()] = GraalHPyUnicodeDecodeCharsetAndSizeAndErrors.decodeASCII();
-        members[HPyContextMember.CTX_UNICODE_DECODELATIN1.ordinal()] = GraalHPyUnicodeDecodeCharsetAndSizeAndErrors.decodeLatin1();
-        members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULT.ordinal()] = GraalHPyUnicodeDecodeCharset.decodeFSDefault();
-        members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULTANDSIZE.ordinal()] = GraalHPyUnicodeDecodeCharsetAndSize.decodeFSDefault();
-        members[HPyContextMember.CTX_UNICODE_ENCODEFSDEFAULT.ordinal()] = GraalHPyUnicodeAsCharsetString.asFSDefault();
-        members[HPyContextMember.CTX_UNICODE_READCHAR.ordinal()] = new GraalHPyUnicodeReadChar();
-        members[HPyContextMember.CTX_TYPE_FROM_SPEC.ordinal()] = new GraalHPyTypeFromSpec();
-        members[HPyContextMember.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(OBJECT);
-        members[HPyContextMember.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(CHAR_PTR);
-        members[HPyContextMember.CTX_MAYBEGETATTR_S.ordinal()] = new GraalHPyMaybeGetAttrS();
-        members[HPyContextMember.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(OBJECT);
-        members[HPyContextMember.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(CHAR_PTR);
-        members[HPyContextMember.CTX_SETATTR.ordinal()] = new GraalHPySetAttr(OBJECT);
-        members[HPyContextMember.CTX_SETATTR_S.ordinal()] = new GraalHPySetAttr(CHAR_PTR);
-        members[HPyContextMember.CTX_GETITEM.ordinal()] = new GraalHPyGetItem(OBJECT);
-        members[HPyContextMember.CTX_GETITEM_S.ordinal()] = new GraalHPyGetItem(CHAR_PTR);
-        members[HPyContextMember.CTX_GETITEM_I.ordinal()] = new GraalHPyGetItem(INT32);
-        members[HPyContextMember.CTX_SETITEM.ordinal()] = new GraalHPySetItem(OBJECT);
-        members[HPyContextMember.CTX_SETITEM_S.ordinal()] = new GraalHPySetItem(CHAR_PTR);
-        members[HPyContextMember.CTX_SETITEM_I.ordinal()] = new GraalHPySetItem(INT32);
-        members[HPyContextMember.CTX_CONTAINS.ordinal()] = new GraalHPyContains();
-        members[HPyContextMember.CTX_REPR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_REPR, 1);
-        members[HPyContextMember.CTX_STR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_STR, 1);
-        members[HPyContextMember.CTX_ASCII.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_ASCII, 1);
-        members[HPyContextMember.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_BYTES, 1);
-        members[HPyContextMember.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
-        members[HPyContextMember.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
-        members[HPyContextMember.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_HASH, 1, ReturnType.INT);
-        members[HPyContextMember.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
-        members[HPyContextMember.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.T_LEN, 1, ReturnType.INT);
-        members[HPyContextMember.CTX_IMPORT_IMPORTMODULE.ordinal()] = new GraalHPyImportModule();
-        members[HPyContextMember.CTX_TUPLE_FROMARRAY.ordinal()] = new GraalHPyTupleFromArray();
-        members[HPyContextMember.CTX_TUPLE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PythonBuiltinClassType.PTuple);
-
-        GraalHPyBuilderNew graalHPyBuilderNew = new GraalHPyBuilderNew();
-        GraalHPyBuilderSet graalHPyBuilderSet = new GraalHPyBuilderSet();
-        GraalHPyBuilderCancel graalHPyBuilderCancel = new GraalHPyBuilderCancel();
-        members[HPyContextMember.CTX_TUPLE_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
-        members[HPyContextMember.CTX_TUPLE_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
-        members[HPyContextMember.CTX_TUPLE_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PythonBuiltinClassType.PTuple);
-        members[HPyContextMember.CTX_TUPLE_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
-
-        members[HPyContextMember.CTX_LIST_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PythonBuiltinClassType.PList);
-        members[HPyContextMember.CTX_LIST_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
-        members[HPyContextMember.CTX_LIST_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
-        members[HPyContextMember.CTX_LIST_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PythonBuiltinClassType.PList);
-        members[HPyContextMember.CTX_LIST_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
-
-        members[HPyContextMember.CTX_TRACKER_NEW.ordinal()] = new GraalHPyTrackerNew();
-        members[HPyContextMember.CTX_TRACKER_ADD.ordinal()] = new GraalHPyTrackerAdd();
-        members[HPyContextMember.CTX_TRACKER_FORGET_ALL.ordinal()] = new GraalHPyTrackerForgetAll();
-        members[HPyContextMember.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup();
-
-        members[HPyContextMember.CTX_FIELD_STORE.ordinal()] = new GraalHPyFieldStore();
-        members[HPyContextMember.CTX_FIELD_LOAD.ordinal()] = new GraalHPyFieldLoad();
-        members[HPyContextMember.CTX_LEAVEPYTHONEXECUTION.ordinal()] = new GraalHPyLeavePythonExecution();
-        members[HPyContextMember.CTX_REENTERPYTHONEXECUTION.ordinal()] = new GraalHPyReenterPythonExecution();
-        members[HPyContextMember.CTX_GLOBAL_STORE.ordinal()] = new GraalHPyGlobalStore();
-        members[HPyContextMember.CTX_GLOBAL_LOAD.ordinal()] = new GraalHPyGlobalLoad();
-        members[HPyContextMember.CTX_DUMP.ordinal()] = new GraalHPyDump();
-
-        members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = new GraalHPyTypeIsSubtype();
-        members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = new GraalHPyTypeGetName();
-        members[HPyContextMember.CTX_SETTYPE.ordinal()] = new GraalHPySetType();
-        members[HPyContextMember.CTX_TYPE_CHECKSLOT.ordinal()] = new GraalHPyTypeCheckSlot();
-
-        members[HPyContextMember.CTX_DICT_KEYS.ordinal()] = new GraalHPyDictKeys();
-
-        members[HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT.ordinal()] = new GraalHPyUnicodeFromEncodedObject();
-        members[HPyContextMember.CTX_UNICODE_INTERNFROMSTRING.ordinal()] = new GraalHPyUnicodeInternFromString();
-        members[HPyContextMember.CTX_UNICODE_SUBSTRING.ordinal()] = new GraalHPyUnicodeSubstring();
-
-        members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = new GraalHPyContextVarNew();
-        members[HPyContextMember.CTX_CONTEXTVAR_GET.ordinal()] = new GraalHPyContextVarGet();
-        members[HPyContextMember.CTX_CONTEXTVAR_SET.ordinal()] = new GraalHPyContextVarSet();
-        members[HPyContextMember.CTX_CAPSULE_NEW.ordinal()] = new GraalHPyCapsuleNew();
-        members[HPyContextMember.CTX_CAPSULE_GET.ordinal()] = new GraalHPyCapsuleGet();
-        members[HPyContextMember.CTX_CAPSULE_ISVALID.ordinal()] = new GraalHPyCapsuleIsValid();
-        members[HPyContextMember.CTX_CAPSULE_SET.ordinal()] = new GraalHPyCapsuleSet();
-
-        members[HPyContextMember.CTX_SEQUENCE_CHECK.ordinal()] = new GraalHPyIsSequence();
-        members[HPyContextMember.CTX_SLICE_UNPACK.ordinal()] = new GraalHPySliceUnpack();
-
-        members[HPyContextMember.CTX_SEQITER_NEW.ordinal()] = new GraalHPySeqIterNew();
+        // TODO
 
         return members;
     }
@@ -1195,28 +981,522 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         return memberInvokeLib.execute(member, args);
     }
 
-    @ExportLibrary(value = InteropLibrary.class, delegateTo = "delegate")
-    public static final class HPyExecuteWrapper implements TruffleObject {
+    static Object createContextFunction(HPyContextMember member) {
+        return switch (member) {
+            case CTX_ASPYOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyAsPyObjectNodeGen::create, GraalHPyAsPyObjectNodeGen.getUncached());
+            case CTX_DUP -> new HPyExecuteDefaultWrapper(GraalHPyDupNodeGen::create, GraalHPyDupNodeGen.getUncached());
+            case CTX_CLOSE -> new HPyExecuteDefaultWrapper(GraalHPyCloseNodeGen::create, GraalHPyCloseNodeGen.getUncached());
+            case CTX_MODULE_CREATE -> new HPyExecuteDefaultWrapper(GraalHPyModuleCreateNodeGen::create, GraalHPyModuleCreateNodeGen.getUncached());
+            case CTX_BOOL_FROMLONG -> new HPyExecuteDefaultWrapper(GraalHPyBoolFromLongNodeGen::create, GraalHPyBoolFromLongNodeGen.getUncached());
+            case CTX_LONG_FROMLONG, CTX_LONG_FROMLONGLONG, CTX_LONG_FROMSSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create, GraalHPyLongFromLongNodeGen.getUncached(), true);
+
+            case CTX_LONG_FROMUNSIGNEDLONG, CTX_LONG_FROM_UNSIGNEDLONGLONG, CTX_LONG_FROMSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create,
+                            GraalHPyLongFromLongNodeGen.getUncached(), false);
+            case CTX_LONG_ASLONG, CTX_LONG_ASLONGLONG -> new HPyLongAsPrimitiveExecuteWrapper(1, java.lang.Long.BYTES, true, false);
+            case CTX_LONG_ASUNSIGNEDLONG, CTX_LONG_ASUNSIGNEDLONGLONG, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> new HPyLongAsPrimitiveExecuteWrapper(0, java.lang.Long.BYTES, true, true);
+            case CTX_LONG_ASUNSIGNEDLONGMASK, CTX_LONG_ASUNSIGNEDLONGLONGMASK -> new HPyLongAsPrimitiveExecuteWrapper(0, java.lang.Long.BYTES, false, false);
+            case CTX_LONG_ASSSIZE_T -> new HPyLongAsPrimitiveExecuteWrapper(1, java.lang.Long.BYTES, true, true);
+            case CTX_LONG_ASDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyLongAsDoubleNodeGen::create, GraalHPyLongAsDoubleNodeGen.getUncached());
+            case CTX_NEW -> new HPyExecuteDefaultWrapper(GraalHPyNewNodeGen::create, GraalHPyNewNodeGen.getUncached());
+            case CTX_TYPE -> new HPyExecuteDefaultWrapper(GraalHPyTypeNodeGen::create, GraalHPyTypeNodeGen.getUncached());
+            case CTX_TYPECHECK -> new HPyExecuteWrapperWithFlag(GraalHPyTypeCheckNodeGen::create, GraalHPyTypeCheckNodeGen.getUncached(), false);
+            case CTX_TYPECHECK_G -> new HPyExecuteWrapperWithFlag(GraalHPyTypeCheckNodeGen::create, GraalHPyTypeCheckNodeGen.getUncached(), true);
+            case CTX_IS -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), false);
+            case CTX_IS_G -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), true);
+            case CTX_TYPE_GENERIC_NEW -> new HPyExecuteDefaultWrapper(GraalHPyTypeGenericNewNodeGen::create, GraalHPyTypeGenericNewNodeGen.getUncached());
+            case CTX_AS_STRUCT, CTX_AS_STRUCT_LEGACY -> new HPyExecuteDefaultWrapper(GraalHPyCastNodeGen::create, GraalHPyCastNodeGen.getUncached());
+
+            // unary
+            case CTX_NEGATIVE -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Neg);
+            case CTX_POSITIVE -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Pos);
+            case CTX_ABSOLUTE -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_ABS, 1);
+            case CTX_INVERT -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Invert);
+            case CTX_INDEX -> new HPyExecuteDefaultWrapper(GraalHPyAsIndexNodeGen::create, GraalHPyAsIndexNodeGen.getUncached());
+            case CTX_LONG -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_INT, 1);
+            case CTX_FLOAT -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_FLOAT, 1);
+
+            // binary
+            case CTX_ADD -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Add);
+            case CTX_SUB -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Sub);
+            case CTX_MULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Mul);
+            case CTX_MATRIXMULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.MatMul);
+            case CTX_FLOORDIVIDE -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.FloorDiv);
+            case CTX_TRUEDIVIDE -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.TrueDiv);
+            case CTX_REMAINDER -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Mod);
+            case CTX_DIVMOD -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.DivMod);
+            case CTX_LSHIFT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.LShift);
+            case CTX_RSHIFT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.RShift);
+            case CTX_AND -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.And);
+            case CTX_XOR -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Xor);
+            case CTX_OR -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Or);
+            case CTX_INPLACEADD -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IAdd);
+            case CTX_INPLACESUBTRACT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ISub);
+            case CTX_INPLACEMULTIPLY -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMul);
+            case CTX_INPLACEMATRIXMULTIPLY -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMatMul);
+            case CTX_INPLACEFLOORDIVIDE -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IFloorDiv);
+            case CTX_INPLACETRUEDIVIDE -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ITrueDiv);
+            case CTX_INPLACEREMAINDER -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMod);
+            case CTX_INPLACELSHIFT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ILShift);
+            case CTX_INPLACERSHIFT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IRShift);
+            case CTX_INPLACEAND -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IAnd);
+            case CTX_INPLACEXOR -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IXor);
+            case CTX_INPLACEOR -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IOr);
+
+            // ternary
+            case CTX_POWER -> new HPyExecuteWrapperTernaryArithmetic(TernaryArithmetic.Pow);
+            case CTX_INPLACEPOWER -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IPow);
+
+            case CTX_CALLABLE_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsCallableNodeGen::create, GraalHPyIsCallableNodeGen.getUncached());
+            case CTX_CALLTUPLEDICT -> new HPyExecuteDefaultWrapper(GraalHPyCallTupleDictNodeGen::create, GraalHPyCallTupleDictNodeGen.getUncached());
+
+            case CTX_DICT_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PDict);
+            case CTX_DICT_NEW -> new HPyExecuteDefaultWrapper(GraalHPyDictNewNodeGen::create, GraalHPyDictNewNodeGen.getUncached());
+            case CTX_DICT_SETITEM -> new HPyExecuteDefaultWrapper(GraalHPyDictSetItemNodeGen::create, GraalHPyDictSetItemNodeGen.getUncached());
+            case CTX_DICT_GETITEM -> new HPyExecuteDefaultWrapper(GraalHPyDictGetItemNodeGen::create, GraalHPyDictGetItemNodeGen.getUncached());
+            case CTX_LIST_NEW -> new HPyExecuteDefaultWrapper(GraalHPyListNewNodeGen::create, GraalHPyListNewNodeGen.getUncached());
+            case CTX_LIST_APPEND -> new HPyExecuteDefaultWrapper(GraalHPyListAppendNodeGen::create, GraalHPyListAppendNodeGen.getUncached());
+            case CTX_FLOAT_FROMDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyFloatFromDoubleNodeGen::create, GraalHPyFloatFromDoubleNodeGen.getUncached());
+            case CTX_FLOAT_ASDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyFloatAsDoubleNodeGen::create, GraalHPyFloatAsDoubleNodeGen.getUncached());
+            case CTX_BYTES_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PBytes);
+            case CTX_BYTES_GET_SIZE -> new HPyExecuteDefaultWrapper(GraalHPyBytesGetSizeNodeGen::create, GraalHPyBytesGetSizeNodeGen.getUncached());
+            case CTX_BYTES_SIZE -> new HPyExecuteDefaultWrapper(GraalHPyBytesGetSizeNodeGen::create, GraalHPyBytesGetSizeNodeGen.getUncached());
+            case CTX_BYTES_AS_STRING -> new HPyExecuteDefaultWrapper(GraalHPyBytesAsStringNodeGen::create, GraalHPyBytesAsStringNodeGen.getUncached());
+            case CTX_BYTES_ASSTRING -> new HPyExecuteDefaultWrapper(GraalHPyBytesAsStringNodeGen::create, GraalHPyBytesAsStringNodeGen.getUncached());
+            case CTX_BYTES_FROMSTRING -> new HPyExecuteWrapperWithFlag(GraalHPyBytesFromStringAndSizeNodeGen::create, GraalHPyBytesFromStringAndSizeNodeGen.getUncached(), false);
+            case CTX_BYTES_FROMSTRINGANDSIZE -> new HPyExecuteWrapperWithFlag(GraalHPyBytesFromStringAndSizeNodeGen::create, GraalHPyBytesFromStringAndSizeNodeGen.getUncached(), true);
+            case CTX_ERR_NOMEMORY -> new HPyErrRaisePredefinedExecuteWrapper(PythonBuiltinClassType.MemoryError);
+            case CTX_ERR_SETSTRING -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetStringNodeGen::create, GraalHPyErrSetStringNodeGen.getUncached(), true);
+            case CTX_ERR_SETOBJECT -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetStringNodeGen::create, GraalHPyErrSetStringNodeGen.getUncached(), false);
+            case CTX_ERR_SETFROMERRNOWITHFILENAME -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen::create,
+                            GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen.getUncached(), false);
+            case CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen::create,
+                            GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen.getUncached(), true);
+            case CTX_ERR_OCCURRED -> new HPyExecuteDefaultWrapper(GraalHPyErrOccurredNodeGen::create, GraalHPyErrOccurredNodeGen.getUncached());
+            case CTX_ERR_EXCEPTIONMATCHES -> new HPyExecuteDefaultWrapper(GraalHPyErrExceptionMatchesNodeGen::create, GraalHPyErrExceptionMatchesNodeGen.getUncached());
+            case CTX_ERR_CLEAR -> new HPyExecuteDefaultWrapper(GraalHPyErrClearNodeGen::create, GraalHPyErrClearNodeGen.getUncached());
+            case CTX_ERR_NEWEXCEPTION -> new HPyExecuteWrapperWithFlag(GraalHPyNewExceptionNodeGen::create, GraalHPyNewExceptionNodeGen.getUncached(), false);
+            case CTX_ERR_NEWEXCEPTIONWITHDOC -> new HPyExecuteWrapperWithFlag(GraalHPyNewExceptionNodeGen::create, GraalHPyNewExceptionNodeGen.getUncached(), true);
+            case CTX_ERR_WARNEX -> new HPyExecuteDefaultWrapper(GraalHPyErrWarnExNodeGen::create, GraalHPyErrWarnExNodeGen.getUncached());
+            case CTX_ERR_WRITEUNRAISABLE -> new HPyExecuteDefaultWrapper(GraalHPyErrWriteUnraisableNodeGen::create, GraalHPyErrWriteUnraisableNodeGen.getUncached());
+            case CTX_FATALERROR -> new HPyExecuteDefaultWrapper(GraalHPyFatalErrorNodeGen::create, GraalHPyFatalErrorNodeGen.getUncached());
+            case CTX_FROMPYOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyFromPyObjectNodeGen::create, GraalHPyFromPyObjectNodeGen.getUncached());
+            case CTX_UNICODE_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PString);
+            case CTX_ISTRUE -> new HPyExecuteDefaultWrapper(GraalHPyIsTrueNodeGen::create, GraalHPyIsTrueNodeGen.getUncached());
+            case CTX_UNICODE_ASUTF8STRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                            StandardCharsets.UTF_8);
+            case CTX_UNICODE_ASASCIISTRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                            StandardCharsets.US_ASCII);
+            case CTX_UNICODE_ASLATIN1STRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                            StandardCharsets.ISO_8859_1);
+            case CTX_UNICODE_ASUTF8ANDSIZE -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeAsUTF8AndSizeNodeGen::create, GraalHPyUnicodeAsUTF8AndSizeNodeGen.getUncached());
+            case CTX_UNICODE_FROMSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromStringNodeGen::create, GraalHPyUnicodeFromStringNodeGen.getUncached());
+            case CTX_UNICODE_FROMWIDECHAR -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromWcharNodeGen::create, GraalHPyUnicodeFromWcharNodeGen.getUncached());
+            case CTX_UNICODE_DECODEASCII -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen::create,
+                            GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen.getUncached(), T_ASCII_UPPERCASE);
+            case CTX_UNICODE_DECODELATIN1 -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen::create,
+                            GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen.getUncached(), T_ISO_8859_1);
+// members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULT.ordinal()] =
+// GraalHPyUnicodeDecodeCharset.decodeFSDefault();
+// members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULTANDSIZE.ordinal()] =
+// GraalHPyUnicodeDecodeCharsetAndSize.decodeFSDefault();
+            case CTX_UNICODE_ENCODEFSDEFAULT -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                            getFSDefaultCharset());
+            case CTX_UNICODE_READCHAR -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeReadCharNodeGen::create, GraalHPyUnicodeReadCharNodeGen.getUncached());
+            case CTX_TYPE_FROM_SPEC -> new HPyExecuteDefaultWrapper(GraalHPyTypeFromSpecNodeGen::create, GraalHPyTypeFromSpecNodeGen.getUncached());
+            case CTX_GETATTR -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), OBJECT);
+            case CTX_GETATTR_S -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), CHAR_PTR);
+            case CTX_MAYBEGETATTR_S -> new HPyExecuteDefaultWrapper(GraalHPyMaybeGetAttrSNodeGen::create, GraalHPyMaybeGetAttrSNodeGen.getUncached());
+            case CTX_HASATTR -> new HPyExecuteWrapperWithMode(GraalHPyHasAttrNodeGen::create, GraalHPyHasAttrNodeGen.getUncached(), OBJECT);
+            case CTX_HASATTR_S -> new HPyExecuteWrapperWithMode(GraalHPyHasAttrNodeGen::create, GraalHPyHasAttrNodeGen.getUncached(), CHAR_PTR);
+            case CTX_SETATTR -> new HPyExecuteWrapperWithMode(GraalHPySetAttrNodeGen::create, GraalHPySetAttrNodeGen.getUncached(), OBJECT);
+            case CTX_SETATTR_S -> new HPyExecuteWrapperWithMode(GraalHPySetAttrNodeGen::create, GraalHPySetAttrNodeGen.getUncached(), CHAR_PTR);
+            case CTX_GETITEM -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), OBJECT);
+            case CTX_GETITEM_S -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), CHAR_PTR);
+            case CTX_GETITEM_I -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), INT32);
+            case CTX_SETITEM -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), OBJECT);
+            case CTX_SETITEM_S -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), CHAR_PTR);
+            case CTX_SETITEM_I -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), INT32);
+            case CTX_CONTAINS -> new HPyExecuteDefaultWrapper(GraalHPyContainsNodeGen::create, GraalHPyContainsNodeGen.getUncached());
+            case CTX_REPR -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_REPR, 1);
+            case CTX_STR -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_STR, 1);
+            case CTX_ASCII -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_ASCII, 1);
+            case CTX_BYTES -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_BYTES, 1);
+            case CTX_RICHCOMPARE -> new HPyExecuteWrapperWithFlag(GraalHPyRichcompareNodeGen::create, GraalHPyRichcompareNodeGen.getUncached(), false);
+            case CTX_RICHCOMPAREBOOL -> new HPyExecuteWrapperWithFlag(GraalHPyRichcompareNodeGen::create, GraalHPyRichcompareNodeGen.getUncached(), true);
+            case CTX_HASH -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_HASH, 1, ReturnType.INT);
+            case CTX_NUMBER_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsNumberNodeGen::create, GraalHPyIsNumberNodeGen.getUncached());
+            case CTX_LENGTH -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_LEN, 1, ReturnType.INT);
+            case CTX_IMPORT_IMPORTMODULE -> new HPyExecuteDefaultWrapper(GraalHPyImportModuleNodeGen::create, GraalHPyImportModuleNodeGen.getUncached());
+            case CTX_TUPLE_FROMARRAY -> new HPyExecuteDefaultWrapper(GraalHPyTupleFromArrayNodeGen::create, GraalHPyTupleFromArrayNodeGen.getUncached());
+            case CTX_TUPLE_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
+            case CTX_TUPLE_BUILDER_NEW, CTX_LIST_BUILDER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyBuilderNewNodeGen::create, GraalHPyBuilderNewNodeGen.getUncached());
+            case CTX_TUPLE_BUILDER_SET, CTX_LIST_BUILDER_SET -> new HPyExecuteDefaultWrapper(GraalHPyBuilderSetNodeGen::create, GraalHPyBuilderSetNodeGen.getUncached());
+            case CTX_TUPLE_BUILDER_CANCEL, CTX_LIST_BUILDER_CANCEL -> new HPyExecuteDefaultWrapper(GraalHPyBuilderCancelNodeGen::create, GraalHPyBuilderCancelNodeGen.getUncached());
+            case CTX_TUPLE_BUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
+            case CTX_LIST_BUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PList);
+            case CTX_LIST_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PList);
+
+            case CTX_TRACKER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyTrackerNewNodeGen::create, GraalHPyTrackerNewNodeGen.getUncached());
+            case CTX_TRACKER_ADD -> new HPyExecuteDefaultWrapper(GraalHPyTrackerAddNodeGen::create, GraalHPyTrackerAddNodeGen.getUncached());
+            case CTX_TRACKER_FORGET_ALL -> new HPyExecuteDefaultWrapper(GraalHPyTrackerForgetAllNodeGen::create, GraalHPyTrackerForgetAllNodeGen.getUncached());
+            case CTX_TRACKER_CLOSE -> new HPyExecuteDefaultWrapper(GraalHPyTrackerCleanupNodeGen::create, GraalHPyTrackerCleanupNodeGen.getUncached());
+
+            case CTX_FIELD_STORE -> new HPyExecuteDefaultWrapper(GraalHPyFieldStoreNodeGen::create, GraalHPyFieldStoreNodeGen.getUncached());
+            case CTX_FIELD_LOAD -> new HPyExecuteDefaultWrapper(GraalHPyFieldLoadNodeGen::create, GraalHPyFieldLoadNodeGen.getUncached());
+            case CTX_LEAVEPYTHONEXECUTION -> new HPyExecuteDefaultWrapper(GraalHPyLeavePythonExecutionNodeGen::create, GraalHPyLeavePythonExecutionNodeGen.getUncached());
+            case CTX_REENTERPYTHONEXECUTION -> new HPyExecuteDefaultWrapper(GraalHPyReenterPythonExecutionNodeGen::create, GraalHPyReenterPythonExecutionNodeGen.getUncached());
+            case CTX_GLOBAL_STORE -> new HPyExecuteDefaultWrapper(GraalHPyGlobalStoreNodeGen::create, GraalHPyGlobalStoreNodeGen.getUncached());
+            case CTX_GLOBAL_LOAD -> new HPyExecuteDefaultWrapper(GraalHPyGlobalLoadNodeGen::create, GraalHPyGlobalLoadNodeGen.getUncached());
+            case CTX_DUMP -> new HPyExecuteDefaultWrapper(GraalHPyDumpNodeGen::create, GraalHPyDumpNodeGen.getUncached());
+
+            case CTX_TYPE_ISSUBTYPE -> new HPyExecuteDefaultWrapper(GraalHPyTypeIsSubtypeNodeGen::create, GraalHPyTypeIsSubtypeNodeGen.getUncached());
+            case CTX_TYPE_GETNAME -> new HPyExecuteDefaultWrapper(GraalHPyTypeGetNameNodeGen::create, GraalHPyTypeGetNameNodeGen.getUncached());
+            case CTX_SETTYPE -> new HPyExecuteDefaultWrapper(GraalHPySetTypeNodeGen::create, GraalHPySetTypeNodeGen.getUncached());
+            case CTX_TYPE_CHECKSLOT -> new HPyExecuteDefaultWrapper(GraalHPyTypeCheckSlotNodeGen::create, GraalHPyTypeCheckSlotNodeGen.getUncached());
+
+            case CTX_DICT_KEYS -> new HPyExecuteDefaultWrapper(GraalHPyDictKeysNodeGen::create, GraalHPyDictKeysNodeGen.getUncached());
+
+            case CTX_UNICODE_FROMENCODEDOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromEncodedObjectNodeGen::create, GraalHPyUnicodeFromEncodedObjectNodeGen.getUncached());
+            case CTX_UNICODE_INTERNFROMSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeInternFromStringNodeGen::create, GraalHPyUnicodeInternFromStringNodeGen.getUncached());
+            case CTX_UNICODE_SUBSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeSubstringNodeGen::create, GraalHPyUnicodeSubstringNodeGen.getUncached());
+
+            case CTX_CONTEXTVAR_NEW -> new HPyExecuteDefaultWrapper(GraalHPyContextVarNewNodeGen::create, GraalHPyContextVarNewNodeGen.getUncached());
+            case CTX_CONTEXTVAR_GET -> new HPyExecuteDefaultWrapper(GraalHPyContextVarGetNodeGen::create, GraalHPyContextVarGetNodeGen.getUncached());
+            case CTX_CONTEXTVAR_SET -> new HPyExecuteDefaultWrapper(GraalHPyContextVarSetNodeGen::create, GraalHPyContextVarSetNodeGen.getUncached());
+            case CTX_CAPSULE_NEW -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleNewNodeGen::create, GraalHPyCapsuleNewNodeGen.getUncached());
+            case CTX_CAPSULE_GET -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleGetNodeGen::create, GraalHPyCapsuleGetNodeGen.getUncached());
+            case CTX_CAPSULE_ISVALID -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleIsValidNodeGen::create, GraalHPyCapsuleIsValidNodeGen.getUncached());
+            case CTX_CAPSULE_SET -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleSetNodeGen::create, GraalHPyCapsuleSetNodeGen.getUncached());
+
+            case CTX_SEQUENCE_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsSequenceNodeGen::create, GraalHPyIsSequenceNodeGen.getUncached());
+            case CTX_SLICE_UNPACK -> new HPyExecuteDefaultWrapper(GraalHPySliceUnpackNodeGen::create, GraalHPySliceUnpackNodeGen.getUncached());
+
+            case CTX_SEQITER_NEW -> new HPyExecuteDefaultWrapper(GraalHPySeqIterNewNodeGen::create, GraalHPySeqIterNewNodeGen.getUncached());
+            default -> null;
+        };
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    abstract static class HPyExecuteWrapper implements TruffleObject {
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    abstract static class HPyExecuteWrapperGeneric<T> extends HPyExecuteWrapper {
+        protected final Supplier<T> cachedSupplier;
+        protected final T uncached;
+
+        public HPyExecuteWrapperGeneric(Supplier<T> cachedSupplier, T uncached) {
+            this.cachedSupplier = cachedSupplier;
+            this.uncached = uncached;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteDefaultWrapper extends HPyExecuteWrapperGeneric<GraalHPyContextFunction> {
+
+        public HPyExecuteDefaultWrapper(Supplier<GraalHPyContextFunction> cachedSupplier, GraalHPyContextFunction uncached) {
+            super(cachedSupplier, uncached);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(value = "this.createNode()", uncached = "this.getUncached()") GraalHPyContextFunction node)
+                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            return node.execute(arguments);
+        }
+
+        @NeverDefault
+        GraalHPyContextFunction createNode() {
+            return cachedSupplier.get();
+        }
+
+        GraalHPyContextFunction getUncached() {
+            return uncached;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperUnaryArithmetic extends HPyExecuteWrapper {
+        final UnaryArithmetic unaryOperator;
+
+        public HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic unaryOperator) {
+            this.unaryOperator = unaryOperator;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(parameters = "this.unaryOperator") GraalHPyArithmeticNode node) throws ArityException {
+            return node.execute(arguments);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperBinaryArithmetic extends HPyExecuteWrapper {
+        final BinaryArithmetic binaryOperator;
+
+        public HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic binaryOperator) {
+            this.binaryOperator = binaryOperator;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(parameters = "this.binaryOperator") GraalHPyArithmeticNode node) throws ArityException {
+            return node.execute(arguments);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperTernaryArithmetic extends HPyExecuteWrapper {
+        final TernaryArithmetic ternaryOperator;
+
+        public HPyExecuteWrapperTernaryArithmetic(TernaryArithmetic ternaryOperator) {
+            this.ternaryOperator = ternaryOperator;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(parameters = "this.ternaryOperator") GraalHPyArithmeticNode node) throws ArityException {
+            return node.execute(arguments);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperInplaceArithmetic extends HPyExecuteWrapper {
+        final InplaceArithmetic inplaceOperator;
+
+        public HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic inplaceOperator) {
+            this.inplaceOperator = inplaceOperator;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(parameters = "this.inplaceOperator") GraalHPyArithmeticNode node) throws ArityException {
+            return node.execute(arguments);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperWithFlag extends HPyExecuteWrapperGeneric<HPyContextFunctionWithFlag> {
+
+        private final boolean flag;
+
+        public HPyExecuteWrapperWithFlag(Supplier<HPyContextFunctionWithFlag> cachedSupplier, HPyContextFunctionWithFlag uncached, boolean flag) {
+            super(cachedSupplier, uncached);
+            this.flag = flag;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(value = "this.createNode()", uncached = "this.getUncached()") HPyContextFunctionWithFlag node)
+                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            return node.execute(arguments, flag);
+        }
+
+        @NeverDefault
+        HPyContextFunctionWithFlag createNode() {
+            return cachedSupplier.get();
+        }
+
+        HPyContextFunctionWithFlag getUncached() {
+            return uncached;
+        }
+    }
+
+    /**
+     * For {@code ctx_GetItem(_i|_s)},{@code ctx_SetItem(_i|_s)}, {@code ctx_SetAttr(_i|_s)},
+     * {@code ctx_GetAttr(_i|_s)}, {@code ctx_HasAttr(_i|_s)}
+     */
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperWithMode extends HPyExecuteWrapperGeneric<HPyContextFunctionWithMode> {
+
+        private final FunctionMode mode;
+
+        public HPyExecuteWrapperWithMode(Supplier<HPyContextFunctionWithMode> cachedSupplier, HPyContextFunctionWithMode uncached, FunctionMode mode) {
+            super(cachedSupplier, uncached);
+            this.mode = mode;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(value = "this.createNode()", uncached = "this.getUncached()") HPyContextFunctionWithMode node)
+                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            return node.execute(arguments, mode);
+        }
+
+        @NeverDefault
+        HPyContextFunctionWithMode createNode() {
+            return cachedSupplier.get();
+        }
+
+        HPyContextFunctionWithMode getUncached() {
+            return uncached;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperWithBuiltinType extends HPyExecuteWrapperGeneric<HPyContextFunctionWithBuiltinType> {
+
+        private final PythonBuiltinClassType type;
+
+        public HPyExecuteWrapperWithBuiltinType(Supplier<HPyContextFunctionWithBuiltinType> cachedSupplier, HPyContextFunctionWithBuiltinType uncached, PythonBuiltinClassType type) {
+            super(cachedSupplier, uncached);
+            this.type = type;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(value = "this.createNode()", uncached = "this.getUncached()") HPyContextFunctionWithBuiltinType node)
+                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            return node.execute(arguments, type);
+        }
+
+        @NeverDefault
+        HPyContextFunctionWithBuiltinType createNode() {
+            return cachedSupplier.get();
+        }
+
+        HPyContextFunctionWithBuiltinType getUncached() {
+            return uncached;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperWithObject extends HPyExecuteWrapperGeneric<HPyContextFunctionWithObject> {
+
+        private final Object obj;
+
+        public HPyExecuteWrapperWithObject(Supplier<HPyContextFunctionWithObject> cachedSupplier, HPyContextFunctionWithObject uncached, Object obj) {
+            super(cachedSupplier, uncached);
+            this.obj = obj;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached(value = "this.createNode()", uncached = "this.getUncached()") HPyContextFunctionWithObject node)
+                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            return node.execute(arguments, obj);
+        }
+
+        @NeverDefault
+        HPyContextFunctionWithObject createNode() {
+            return cachedSupplier.get();
+        }
+
+        HPyContextFunctionWithObject getUncached() {
+            return uncached;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyErrRaisePredefinedExecuteWrapper extends HPyExecuteWrapper {
+
+        private final PythonBuiltinClassType errType;
+        private final TruffleString errorMessage;
+        private final boolean primitiveErrorValue;
+
+        public HPyErrRaisePredefinedExecuteWrapper(PythonBuiltinClassType errType) {
+            this(errType, null, false);
+        }
+
+        public HPyErrRaisePredefinedExecuteWrapper(PythonBuiltinClassType errType, TruffleString errorMessage) {
+            this(errType, errorMessage, false);
+        }
+
+        public HPyErrRaisePredefinedExecuteWrapper(PythonBuiltinClassType errType, TruffleString errorMessage, boolean primitiveErrorValue) {
+            this.errType = errType;
+            this.errorMessage = errorMessage;
+            this.primitiveErrorValue = primitiveErrorValue;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached GraalHPyErrRaisePredefined node) throws ArityException {
+            return node.execute(arguments, errType, errorMessage, primitiveErrorValue);
+        }
+    }
+
+    @TruffleBoundary
+    public static Charset getFSDefaultCharset() {
+        TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(GetFileSystemEncodingNode.getFileSystemEncoding());
+        return CharsetMapping.getCharsetNormalized(normalizedEncoding);
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyCallBuiltinFunctionExecuteWrapper extends HPyExecuteWrapper {
+
+        private final TruffleString key;
+        private final int nPythonArguments;
+        private final ReturnType returnType;
+
+        public HPyCallBuiltinFunctionExecuteWrapper(TruffleString key, int nPythonArguments) {
+            this(key, nPythonArguments, ReturnType.OBJECT);
+        }
+
+        public HPyCallBuiltinFunctionExecuteWrapper(TruffleString key, int nPythonArguments, ReturnType returnType) {
+            this.key = key;
+            this.nPythonArguments = nPythonArguments;
+            this.returnType = returnType;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached GraalHPyCallBuiltinFunction node) throws ArityException {
+            return node.execute(arguments, key, nPythonArguments, returnType);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyLongAsPrimitiveExecuteWrapper extends HPyExecuteWrapper {
+
+        private final int signed;
+        private final int targetSize;
+        private final boolean exact;
+        private final boolean requiresPInt;
+
+        public HPyLongAsPrimitiveExecuteWrapper(int signed, int targetSize, boolean exact, boolean requiresPInt) {
+            this.signed = signed;
+            this.targetSize = targetSize;
+            this.exact = exact;
+            this.requiresPInt = requiresPInt;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached GraalHPyLongAsPrimitive node) throws ArityException {
+            return node.execute(arguments, signed, targetSize, exact, requiresPInt);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyExecuteWrapperTraceUpcall implements TruffleObject {
 
         private final int[] counts;
         private final int index;
-        final Object delegate;
 
-        public HPyExecuteWrapper(int[] counts, int index, Object delegate) {
+        final HPyExecuteWrapper delegate;
+
+        public HPyExecuteWrapperTraceUpcall(int[] counts, int index, HPyExecuteWrapper delegate) {
             this.counts = counts;
             this.index = index;
             this.delegate = delegate;
         }
 
         @ExportMessage
-        boolean isExecutable(
-                        @CachedLibrary("this.delegate") InteropLibrary lib) {
-            return lib.isExecutable(delegate);
+        boolean isExecutable() {
+            return true;
         }
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @CachedLibrary("this.delegate") InteropLibrary lib) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+                        @CachedLibrary("this.delegate") InteropLibrary lib) throws UnsupportedMessageException, UnsupportedTypeException, ArityException {
             counts[index]++;
             return lib.execute(delegate, arguments);
         }
