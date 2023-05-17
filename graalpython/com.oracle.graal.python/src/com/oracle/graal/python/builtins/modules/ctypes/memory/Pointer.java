@@ -57,11 +57,15 @@ import com.oracle.truffle.api.library.ExportMessage;
 public final class Pointer implements TruffleObject {
     public static final Pointer NULL = new Pointer(new NullStorage(), 0);
 
-    final Storage ptr;
+    final MemoryBlock memory;
     final int offset;
 
-    protected Pointer(Storage ptr, int offset) {
-        this.ptr = ptr;
+    private Pointer(Storage storage, int offset) {
+        this(new MemoryBlock(storage), offset);
+    }
+
+    private Pointer(MemoryBlock memory, int offset) {
+        this.memory = memory;
         this.offset = offset;
     }
 
@@ -170,7 +174,7 @@ public final class Pointer implements TruffleObject {
     }
 
     public Pointer withOffset(int incOffset) {
-        return new Pointer(ptr, offset + incOffset);
+        return new Pointer(memory, offset + incOffset);
     }
 
     public Pointer createReference() {
@@ -179,6 +183,14 @@ public final class Pointer implements TruffleObject {
 
     public Pointer createReference(int offset) {
         return new Pointer(new PointerArrayStorage(new Pointer[]{this}), offset);
+    }
+
+    static final class MemoryBlock {
+        Storage storage;
+
+        public MemoryBlock(Storage storage) {
+            this.storage = storage;
+        }
     }
 
     abstract static class Storage {
@@ -191,27 +203,26 @@ public final class Pointer implements TruffleObject {
     }
 
     static final class PointerArrayStorage extends Storage {
-        Pointer[] objects;
-        byte[] nativePointerBytes;
+        Pointer[] pointers;
 
-        public PointerArrayStorage(Pointer[] objects) {
-            this.objects = objects;
+        public PointerArrayStorage(Pointer[] pointers) {
+            this.pointers = pointers;
         }
     }
 
     static final class ByteArrayStorage extends Storage {
-        final byte[] value;
+        final byte[] bytes;
 
         ByteArrayStorage(byte[] bytes) {
-            this.value = bytes;
+            this.bytes = bytes;
         }
     }
 
     static final class MemoryViewStorage extends Storage {
-        final PMemoryView value;
+        final PMemoryView memoryView;
 
-        MemoryViewStorage(PMemoryView bytes) {
-            this.value = bytes;
+        MemoryViewStorage(PMemoryView memoryView) {
+            this.memoryView = memoryView;
         }
     }
 
