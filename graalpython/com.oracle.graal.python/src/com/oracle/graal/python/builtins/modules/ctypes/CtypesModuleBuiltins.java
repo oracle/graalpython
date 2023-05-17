@@ -1042,7 +1042,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = 'P';
-            parg.pffi_type = FFIType.ffi_type_uint8_array;
+            parg.pffi_type = FFIType.ffi_type_pointer;
             parg.obj = obj;
             parg.value = obj.b_ptr.createReference(offset);
 

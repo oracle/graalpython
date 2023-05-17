@@ -23,6 +23,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -674,6 +675,7 @@ public abstract class PointerNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(FFIType.FFI_TYPES.class)
     public abstract static class ConvertToParameterNode extends Node {
         public final Object execute(Node inliningTarget, Pointer ptr, FFIType ffiType) {
             return execute(inliningTarget, ptr.memory, ptr.memory.storage, ptr.offset, ffiType);
@@ -681,50 +683,48 @@ public abstract class PointerNodes {
 
         abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, FFIType ffiType);
 
-        @Specialization
-        static Object doBytes(@SuppressWarnings("unused") MemoryBlock memory, ByteArrayStorage storage, int offset, FFIType ffiType) {
-            if (ffiType.type.isArray() && ffiType != FFIType.ffi_type_pointer) {
-                return storage.bytes;
-            }
-            return switch (ffiType.type) {
-                case FFI_TYPE_SINT8, FFI_TYPE_UINT8 -> storage.bytes[offset];
-                case FFI_TYPE_SINT16, FFI_TYPE_UINT16 -> ARRAY_ACCESSOR.getShort(storage.bytes, offset);
-                case FFI_TYPE_SINT32, FFI_TYPE_UINT32 -> ARRAY_ACCESSOR.getInt(storage.bytes, offset);
-                case FFI_TYPE_SINT64, FFI_TYPE_UINT64, FFI_TYPE_POINTER -> ARRAY_ACCESSOR.getLong(storage.bytes, offset);
-                case FFI_TYPE_FLOAT -> ARRAY_ACCESSOR.getFloat(storage.bytes, offset);
-                case FFI_TYPE_DOUBLE -> ARRAY_ACCESSOR.getDouble(storage.bytes, offset);
-                default -> throw CompilerDirectives.shouldNotReachHere("Unexpected FFI type");
-            };
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT8 || ffiType.type == FFI_TYPE_UINT8")
+        static byte doByte(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
+                        @Cached ReadByteNode readByteNode) {
+            return readByteNode.execute(inliningTarget, memory, storage, offset);
         }
 
-        @Specialization
-        static Object doZero(MemoryBlock memory, ZeroStorage storage, int offset, FFIType ffiType) {
-            ByteArrayStorage newStorage = storage.allocateBytes(memory);
-            return doBytes(memory, newStorage, offset, ffiType);
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT16 || ffiType.type == FFI_TYPE_UINT16")
+        static short doShort(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
+                        @Cached ReadShortNode readShortNode) {
+            return readShortNode.execute(inliningTarget, memory, storage, offset);
         }
 
-        @Specialization
-        static Object doLongPointer(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset, FFIType ffiType) {
-            assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
-            return storage.pointer + offset;
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT32 || ffiType.type == FFI_TYPE_UINT32")
+        static int doInt(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
+                        @Shared @Cached ReadIntNode readIntNode) {
+            return readIntNode.execute(inliningTarget, memory, storage, offset);
         }
 
-        @Specialization
-        static Object doNFIPointer(@SuppressWarnings("unused") MemoryBlock memory, NFIPointerStorage storage, int offset, FFIType ffiType) {
-            assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
-            if (offset != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
-            }
-            return storage.pointer;
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT64 || ffiType.type == FFI_TYPE_UINT64")
+        static long doLong(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
+                        @Shared @Cached ReadLongNode readLongNode) {
+            return readLongNode.execute(inliningTarget, memory, storage, offset);
         }
 
-        @Specialization
-        static Object doPointerArray(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage, int offset, FFIType ffiType,
+        @Specialization(guards = "ffiType.type == FFI_TYPE_FLOAT")
+        static float doFloat(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
+                        @Shared @Cached ReadIntNode readIntNode) {
+            return Float.intBitsToFloat(doInt(inliningTarget, memory, storage, offset, ffiType, readIntNode));
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_DOUBLE")
+        static double doDouble(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
+                        @Shared @Cached ReadLongNode readLongNode) {
+            return Double.longBitsToDouble(doLong(inliningTarget, memory, storage, offset, ffiType, readLongNode));
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_POINTER || ffiType.type.isArray()")
+        static Object doPointer(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
                         @Cached ReadPointerNode readPointerNode,
                         @Cached ConvertPointerToParameterNode convertPointerToParameterNode) {
-            assert ffiType.type.isArray() || ffiType == FFIType.ffi_type_pointer;
-            Pointer pointer = readPointerNode.execute(inliningTarget, memory, storage, offset);
-            return convertPointerToParameterNode.execute(inliningTarget, pointer.memory, pointer.memory.storage, pointer.offset);
+            Pointer value = readPointerNode.execute(inliningTarget, memory, storage, offset);
+            return convertPointerToParameterNode.execute(inliningTarget, value.memory, value.memory.storage, value.offset);
         }
 
         @GenerateInline

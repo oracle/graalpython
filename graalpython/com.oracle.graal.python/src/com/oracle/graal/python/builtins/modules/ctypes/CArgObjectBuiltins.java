@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StructParam;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -166,8 +165,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 // Corresponds to PyCArrayType_paramfunc
                 case PyCArrayTypeParamFunc -> {
                     parg.tag = 'P';
-                    // parg.pffi_type = ffi_type_pointer;
-                    parg.pffi_type = FFIType.ffi_type_uint8_array;
+                    parg.pffi_type = FFIType.ffi_type_pointer;
                     parg.value = self.b_ptr.createReference();
                     parg.obj = self;
                     return parg;
@@ -175,8 +173,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 // Corresponds to PyCFuncPtrType_paramfunc and PyCPointerType_paramfunc
                 case PyCFuncPtrTypeParamFunc, PyCPointerTypeParamFunc -> {
                     parg.tag = 'P';
-                    // parg.pffi_type = ffi_type_pointer;
-                    parg.pffi_type = FFIType.ffi_type_uint8_array;
+                    parg.pffi_type = FFIType.ffi_type_pointer;
                     parg.obj = self;
                     parg.value = self.b_ptr;
                     return parg;
@@ -196,31 +193,12 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 }
                 // Corresponds to StructUnionType_paramfunc
                 case StructUnionTypeParamFunc -> {
-                    /*
-                     * PyCStructType_Type - a meta type/class. Creating a new class using this one
-                     * as __metaclass__ will call the constructor StructUnionType_new. It replaces
-                     * the tp_dict member with a new instance of StgDict, and initializes the C
-                     * accessible fields somehow.
-                     */
                     Pointer ptr = self.b_ptr;
-                    Object obj = self;
-                    if (self.b_size > StgDictObject.VOID_PTR_SIZE) {
-                        // ptr = PyMem_Malloc(self.b_size); TODO
-                        // memcpy(ptr, self.b_ptr, self.b_size); TODO
-
-                        /*
-                         * Create a Python object which calls PyMem_Free(ptr) in its deallocator.
-                         * The object will be destroyed at _ctypes_callproc() cleanup.
-                         */
-                        StructParamObject struct_param = factory.createStructParamObject(StructParam);
-                        obj = struct_param;
-                        struct_param.ptr = ptr;
-                    }
                     parg.pffi_type = stgDict.ffi_type_pointer;
                     parg.tag = 'V';
                     parg.value = ptr;
                     parg.size = self.b_size;
-                    parg.obj = obj;
+                    parg.obj = self;
                     return parg;
                 }
                 default -> throw CompilerDirectives.shouldNotReachHere("Unknown function parameter");
