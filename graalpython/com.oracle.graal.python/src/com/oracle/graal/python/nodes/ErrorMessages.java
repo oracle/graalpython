@@ -104,6 +104,12 @@ public abstract class ErrorMessages {
     public static final TruffleString ATTR_S_OF_S_IS_NOT_READABLE = tsLiteral("attribute %s of %s objects is not readable");
     public static final TruffleString ATTR_S_OF_S_IS_NOT_WRITABLE = tsLiteral("attribute %s of %s is not writable");
     public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE = tsLiteral("attribute %s of %s object is not writable");
+    public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_INSERTABLE = tsLiteral("attribute %s of %s object is not insertable");
+    public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE = tsLiteral("attribute %s of %s object is not removable");
+    public static final TruffleString ITEM_S_OF_S_OBJ_IS_NOT_READABLE = tsLiteral("item %s of %s object is not readable");
+    public static final TruffleString ITEM_S_OF_S_OBJ_IS_NOT_WRITABLE = tsLiteral("item %s of %s object is not writable");
+    public static final TruffleString ITEM_S_OF_S_OBJ_IS_NOT_REMOVABLE = tsLiteral("item %s of %s object is not removable");
+
     public static final TruffleString ATTR_S_READONLY = tsLiteral("attribute %s is read-only");
     public static final TruffleString ATTR_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");
     public static final TruffleString B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P = tsLiteral("%%b requires a bytes-like object, or an object that implements __bytes__, not '%p'");
