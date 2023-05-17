@@ -1437,21 +1437,28 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     case FFI_TYPE_FLOAT -> Pointer.create(rtype, rtype.size, ilib.asFloat(result), 0);
                     case FFI_TYPE_DOUBLE -> Pointer.create(rtype, rtype.size, ilib.asDouble(result), 0);
                     case FFI_TYPE_VOID -> Pointer.NULL;
-                    default -> {
+                    case FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
+                        Pointer pointer;
                         if (ilib.isNull(result)) {
-                            yield Pointer.NULL;
-                        }
-                        if (ilib.hasArrayElements(result)) {
-                            byte[] bytes = new byte[(int) ilib.getArraySize(result)];
-                            for (int i = 0; i < bytes.length; i++) {
+                            pointer = Pointer.NULL;
+                        } else if (ilib.isPointer(result)) {
+                            pointer = Pointer.nativeMemory(ilib.asPointer(result));
+                        } else if (ilib.fitsInLong(result)) {
+                            pointer = Pointer.nativeMemory(ilib.asLong(result));
+                        } else if (ilib.hasArrayElements(result)) {
+                            int size = (int) ilib.getArraySize(result);
+                            byte[] bytes = new byte[size + 1];
+                            for (int i = 0; i < size; i++) {
                                 bytes[i] = (byte) ilib.readArrayElement(result, i);
                             }
-                            yield Pointer.bytes(bytes).createReference();
+                            pointer = Pointer.bytes(bytes);
+                        } else {
+                            pointer = Pointer.nativeMemory(result);
                         }
-                        if (ilib.isPointer(result)) {
-                            yield Pointer.nativeMemory(ilib.asPointer(result)).createReference();
+                        if (pointer.isNull()) {
+                            yield Pointer.NULL;
                         }
-                        yield Pointer.nativeMemory(result).createReference();
+                        yield pointer.createReference();
                     }
                 };
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {

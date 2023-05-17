@@ -85,6 +85,9 @@ public final class Pointer implements TruffleObject {
     }
 
     public static Pointer nativeMemory(long nativePointer) {
+        if (nativePointer == 0) {
+            return NULL;
+        }
         return new Pointer(new LongPointerStorage(nativePointer), 0);
     }
 
