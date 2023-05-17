@@ -1195,7 +1195,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (converters != null && argtype_count > i) {
                     Object v;
                     try {
-                        v = callNode.execute(frame, converters[i], argtypes[i], arg);
+                        v = callNode.execute(frame, converters[i], arg);
                     } catch (PException e) {
                         throw raise(ArgError, ARGUMENT_D, i + 1);
                     }
