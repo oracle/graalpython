@@ -59,7 +59,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class WriteNameNode extends PNodeWithContext implements AccessNameNode {
 
     public final void execute(VirtualFrame frame, TruffleString attributeId, Object value) {
-        CompilerAsserts.partialEvaluationConstant(attributeId);
+        CompilerAsserts.compilationConstant(attributeId);
         executeImpl(frame, attributeId, value);
     }
 
@@ -83,7 +83,6 @@ public abstract class WriteNameNode extends PNodeWithContext implements AccessNa
                     @Cached(inline = false) PyObjectSetItem setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.executeCached(frame, frameLocals, attributeId, value);
-
     }
 
     @NeverDefault

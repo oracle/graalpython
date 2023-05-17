@@ -50,11 +50,15 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -86,7 +90,12 @@ public final class PException extends AbstractTruffleException {
     private String message = null;
     final transient Object pythonException;
     private transient PFrame.Reference frameInfo;
-    private transient PBytecodeRootNode catchRootNode;
+
+    // This node is a manual bytecode or Bytecode DSL root node.
+    private transient PRootNode rootNode;
+    // This node is present when using the Bytecode DSL.
+    private transient BytecodeNode bytecodeNode;
+
     private int catchBci;
     private boolean reified = false;
     private boolean skipFirstTracebackFrame;
@@ -176,15 +185,29 @@ public final class PException extends AbstractTruffleException {
     }
 
     public boolean catchingFrameWantedForTraceback() {
-        return tracebackFrameCount >= 0 && catchRootNode != null && catchRootNode.frameIsVisibleToPython();
-    }
-
-    public PBytecodeRootNode getCatchRootNode() {
-        return catchRootNode;
+        if (tracebackFrameCount < 0 || rootNode == null) {
+            return false;
+        }
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return !((PBytecodeDSLRootNode) rootNode).isInternal();
+        } else {
+            return ((PBytecodeRootNode) rootNode).frameIsVisibleToPython();
+        }
     }
 
     public int getCatchBci() {
         return catchBci;
+    }
+
+    public int getCatchLine() {
+        if (rootNode == null) {
+            return -1;
+        }
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return ((PBytecodeDSLRootNode) rootNode).bciToLine(catchBci, bytecodeNode);
+        } else {
+            return ((PBytecodeRootNode) rootNode).bciToLine(catchBci);
+        }
     }
 
     /**
@@ -240,10 +263,48 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
+    /**
+     * Set the catching frame reference for a manual bytecode node.
+     */
     public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
         this.frameInfo = PArguments.getCurrentFrameInfo(frame);
-        this.catchRootNode = catchLocation;
+        this.rootNode = catchLocation;
         this.catchBci = catchBci;
+    }
+
+    /**
+     * Sets the catching frame information for a Bytecode DSL node.
+     *
+     * NB: The manual bytecode interpreter sets all of the catching frame info in one step after it
+     * finds a handler for the bci. This is possible because it has control over the handler
+     * dispatch logic.
+     *
+     * The Bytecode DSL interpreter's generated code automatically dispatches to a handler. We can
+     * set the frame info inside the handler code, but the bci of the raising instruction is lost at
+     * that point.
+     *
+     * We thus set the catch information in two steps:
+     * <ol>
+     * <li>First, we use a hook in the DSL to set the catch location immediately when an exception
+     * is thrown from the bytecode loop ({@link #setCatchLocation}).</li>
+     * <li>Then, we set the actual catching frame reference inside the handler code
+     * ({@link #setCatchingFrameReference(Frame, PBytecodeDSLRootNode)}.</li>
+     * </ol>
+     *
+     * Since the catch location is set unconditionally, it could refer to a location that had no
+     * handler (i.e., the location is invalid). Code should not use the location unless the other
+     * frame info (e.g., the {@link #rootNode}) has been set, which indicates that a handler was
+     * found and that the catch location actually refers to a guarded instruction.
+     */
+    public void setCatchLocation(int catchBci, BytecodeNode bytecodeNode) {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        this.catchBci = catchBci;
+        this.bytecodeNode = bytecodeNode;
+    }
+
+    public void setCatchingFrameReference(Frame frame, PBytecodeDSLRootNode catchLocation) {
+        this.frameInfo = PArguments.getCurrentFrameInfo(frame);
+        this.rootNode = catchLocation;
     }
 
     public void markEscaped() {

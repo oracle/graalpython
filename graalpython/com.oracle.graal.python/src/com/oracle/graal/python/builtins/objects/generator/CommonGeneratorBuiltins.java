@@ -81,6 +81,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -105,7 +106,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
      * is invoked using {@code next(g)} outside of any {@code except} handler but the generator
      * requests the exception state, then the exception state will be written into the arguments. If
      * we now use the same arguments array every time, the next invocation would think that there is
-     * not excepion but in fact, the a subsequent call ot {@code next} may have a different
+     * not an exception but in fact, a subsequent call to {@code next} may have a different
      * exception state.
      *
      * <pre>
@@ -156,7 +157,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
     abstract static class ResumeGeneratorNode extends Node {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue);
 
-        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cached(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Cached(value = "createDirectCall(self.getCurrentCallTarget())", inline = false) CallTargetInvokeNode call,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
@@ -174,14 +175,49 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter(inliningTarget);
-                throw handleReturn(self, e, raiseNode.get(inliningTarget));
+                throw handleReturn(self, e.value, raiseNode.get(inliningTarget));
             } finally {
                 self.setRunning(false);
             }
             return handleResult(inliningTarget, self, result);
         }
 
-        @Specialization(replaces = "cached")
+        @Specialization(guards = {"isBytecodeDSLInterpreter()", "sameCallTarget(currentCallTarget, call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object cachedBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
+                        @Bind("self.getCurrentCallTarget()") @SuppressWarnings("unused") RootCallTarget currentCallTarget,
+                        @Cached(value = "createDirectCall(currentCallTarget)", inline = false) CallTargetInvokeNode call,
+                        @Cached("self.getContinuation() == null") boolean firstCall,
+                        @Exclusive @Cached InlinedBranchProfile returnProfile,
+                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.setRunning(true);
+            Object generatorResult;
+            try {
+                ContinuationResult continuation = self.getContinuation();
+                Object[] arguments;
+                if (firstCall) {
+                    // First invocation: call the regular root node.
+                    arguments = prepareArguments(self);
+                } else {
+                    // Subsequent invocations: call a continuation root node.
+                    arguments = new Object[]{continuation.getFrame(), sendValue};
+                }
+                generatorResult = call.execute(frame, null, null, null, arguments);
+            } catch (PException e) {
+                throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
+            } finally {
+                self.setRunning(false);
+            }
+            if (generatorResult instanceof ContinuationResult continuation) {
+                return handleResult(inliningTarget, self, continuation);
+            } else {
+                returnProfile.enter(inliningTarget);
+                throw handleReturn(self, generatorResult, raiseNode.get(inliningTarget));
+            }
+
+        }
+
+        @Specialization(replaces = "cached", guards = "!isBytecodeDSLInterpreter()")
         @Megamorphic
         static Object generic(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Cached InlinedConditionProfile hasFrameProfile,
@@ -205,11 +241,52 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter(inliningTarget);
-                throw handleReturn(self, e, raiseNode.get(inliningTarget));
+                throw handleReturn(self, e.value, raiseNode.get(inliningTarget));
             } finally {
                 self.setRunning(false);
             }
             return handleResult(inliningTarget, self, result);
+        }
+
+        @Specialization(replaces = "cachedBytecodeDSL", guards = "isBytecodeDSLInterpreter()")
+        @Megamorphic
+        static Object genericBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
+                        @Cached InlinedConditionProfile hasFrameProfile,
+                        @Cached(inline = false) GenericInvokeNode call,
+                        @Cached InlinedConditionProfile firstInvocationProfile,
+                        @Cached InlinedBranchProfile returnProfile,
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.setRunning(true);
+            Object generatorResult;
+            try {
+                ContinuationResult continuation = self.getContinuation();
+                Object[] arguments;
+                if (firstInvocationProfile.profile(inliningTarget, continuation == null)) {
+                    // First invocation: call the regular root node.
+                    arguments = prepareArguments(self);
+                } else {
+                    // Subsequent invocations: call a continuation root node.
+                    // TODO: forward arguments into the continuation frame (e.g., exception state).
+                    arguments = new Object[]{continuation.getFrame(), sendValue};
+                }
+
+                if (hasFrameProfile.profile(inliningTarget, frame != null)) {
+                    generatorResult = call.execute(frame, self.getCurrentCallTarget(), arguments);
+                } else {
+                    generatorResult = call.execute(self.getCurrentCallTarget(), arguments);
+                }
+            } catch (PException e) {
+                throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
+            } finally {
+                self.setRunning(false);
+            }
+            if (generatorResult instanceof ContinuationResult continuation) {
+                return handleResult(inliningTarget, self, continuation);
+            } else {
+                returnProfile.enter(inliningTarget);
+                throw handleReturn(self, generatorResult, raiseNode.get(inliningTarget));
+            }
         }
 
         private static PException handleException(PGenerator self, Node inliningTarget, IsBuiltinObjectProfile profile, PRaiseNode.Lazy raiseNode, PException e) {
@@ -226,18 +303,17 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             throw raiseNode.get(inliningTarget).raiseWithCause(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
         }
 
-        private static Object handleResult(Node node, PGenerator self, GeneratorYieldResult result) {
-            self.handleResult(PythonLanguage.get(node), result);
-            return result.yieldValue;
+        private static Object handleResult(Node node, PGenerator self, Object result) {
+            return self.handleResult(PythonLanguage.get(node), result);
         }
 
-        private static PException handleReturn(PGenerator self, GeneratorReturnException e, PRaiseNode raiseNode) {
+        private static PException handleReturn(PGenerator self, Object returnValue, PRaiseNode raiseNode) {
             self.markAsFinished();
             if (self.isAsyncGen()) {
                 throw raiseNode.raise(StopAsyncIteration);
             }
-            if (e.value != PNone.NONE) {
-                throw raiseNode.raise(StopIteration, new Object[]{e.value});
+            if (returnValue != PNone.NONE) {
+                throw raiseNode.raise(StopIteration, new Object[]{returnValue});
             } else {
                 throw raiseNode.raise(StopIteration);
             }
@@ -323,7 +399,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory.get(inliningTarget));
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                pFrame.setLine(info.getRootNode().getFirstLineno());
+                pFrame.setLine(info.getFirstLineNumber());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);
                 PTraceback newTraceback = factory.get(inliningTarget).createTraceback(pFrame, pFrame.getLine(),
                                 (existingTracebackObj instanceof PTraceback existingTraceback) ? existingTraceback : null);

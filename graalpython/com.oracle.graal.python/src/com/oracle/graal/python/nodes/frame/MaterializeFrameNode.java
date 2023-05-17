@@ -42,10 +42,15 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -111,7 +116,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         MaterializedFrame locals = createLocalsFrame(cachedFD);
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
-        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, syncValuesNode);
+        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, location, syncValuesNode);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!hasGeneratorFrame(frameToMaterialize)", "!hasCustomLocals(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
@@ -120,7 +125,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         MaterializedFrame locals = createLocalsFrame(frameToMaterialize.getFrameDescriptor());
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
-        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, syncValuesNode);
+        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, location, syncValuesNode);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!hasGeneratorFrame(frameToMaterialize)", "hasCustomLocals(frameToMaterialize)"})
@@ -129,7 +134,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, null);
         escapedFrame.setLocalsDict(PArguments.getSpecialArgument(frameToMaterialize));
-        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, null);
+        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "hasGeneratorFrame(frameToMaterialize)"})
@@ -139,7 +144,7 @@ public abstract class MaterializeFrameNode extends Node {
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, frameRef, factory);
         frameRef.setPyFrame(escapedFrame);
-        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, null);
+        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
 
     @Specialization(guards = "getPFrame(frameToMaterialize) != null")
@@ -154,7 +159,7 @@ public abstract class MaterializeFrameNode extends Node {
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
         }
-        processBytecodeFrame(frameToMaterialize, pyFrame);
+        processBytecodeFrame(frameToMaterialize, pyFrame, location);
         return pyFrame;
     }
 
@@ -168,16 +173,26 @@ public abstract class MaterializeFrameNode extends Node {
         return escapedFrame;
     }
 
-    private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame) {
-        FrameInfo info = (FrameInfo) frameToMaterialize.getFrameDescriptor().getInfo();
-        if (info != null) {
-            pyFrame.setBci(info.getBci(frameToMaterialize));
-            pyFrame.setLocation(info.getRootNode());
+    private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame, Node location) {
+        Object info = frameToMaterialize.getFrameDescriptor().getInfo();
+        if (info == null) {
+            return;
+        }
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
+            PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
+            BytecodeNode bytecodeNode = BytecodeNode.get(location);
+            pyFrame.setBci(rootNode.readBciFromFrame(frameToMaterialize));
+            pyFrame.setLocation(bytecodeNode);
+        } else {
+            BytecodeFrameInfo bytecodeFrameInfo = (BytecodeFrameInfo) info;
+            pyFrame.setBci(bytecodeFrameInfo.getBci(frameToMaterialize));
+            pyFrame.setLocation(bytecodeFrameInfo.getRootNode());
         }
     }
 
     private static PFrame doEscapeFrame(Frame frameToMaterialize, PFrame escapedFrame, boolean markAsEscaped, boolean forceSync,
-                    SyncFrameValuesNode syncValuesNode) {
+                    Node location, SyncFrameValuesNode syncValuesNode) {
         PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         topFrameRef.setPyFrame(escapedFrame);
 
@@ -189,7 +204,7 @@ public abstract class MaterializeFrameNode extends Node {
         if (markAsEscaped) {
             topFrameRef.markAsEscaped();
         }
-        processBytecodeFrame(frameToMaterialize, escapedFrame);
+        processBytecodeFrame(frameToMaterialize, escapedFrame, location);
         return escapedFrame;
     }
 
@@ -223,19 +238,13 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached(value = "frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
             MaterializedFrame target = pyFrame.getLocals();
             assert cachedFd == target.getFrameDescriptor();
-            int slotCount = variableSlotCount(cachedFd);
-            for (int slot = 0; slot < slotCount; slot++) {
-                PythonUtils.copyFrameSlot(frameToSync, target, slot);
-            }
+            doCopy(cachedFd, frameToSync, target);
         }
 
         @Specialization(guards = "!pyFrame.hasCustomLocals()", replaces = "doSyncExploded")
-        static void doSyncLoop(PFrame pyFrame, Frame frameToSync) {
+        static void doSync(PFrame pyFrame, Frame frameToSync) {
             MaterializedFrame target = pyFrame.getLocals();
-            int slotCount = variableSlotCount(frameToSync.getFrameDescriptor());
-            for (int slot = 0; slot < slotCount; slot++) {
-                PythonUtils.copyFrameSlot(frameToSync, target, slot);
-            }
+            doCopy(frameToSync.getFrameDescriptor(), frameToSync, target);
         }
 
         @Specialization(guards = "pyFrame.hasCustomLocals()")
@@ -251,6 +260,22 @@ public abstract class MaterializeFrameNode extends Node {
                 return 0;
             }
             return info.getVariableCount();
+        }
+
+        private static void doCopy(FrameDescriptor fd, Frame source, MaterializedFrame destination) {
+            FrameInfo info = (FrameInfo) fd.getInfo();
+            if (info == null) {
+                return;
+            }
+            int count = info.getVariableCount();
+
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                ((BytecodeDSLFrameInfo) info).getRootNode().copyLocals(source, destination, count);
+            } else {
+                for (int i = 0; i < count; i++) {
+                    PythonUtils.copyFrameSlot(source, destination, i);
+                }
+            }
         }
     }
 }

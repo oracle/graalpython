@@ -63,7 +63,7 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
     }
 
     public final void executeWithGlobals(VirtualFrame frame, Object globals, TruffleString attributeId) {
-        CompilerAsserts.partialEvaluationConstant(attributeId);
+        CompilerAsserts.compilationConstant(attributeId);
         executeWithGlobalsImpl(frame, globals, attributeId);
     }
 
