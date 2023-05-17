@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -141,6 +142,7 @@ public abstract class SetNodes {
     }
 
     @GenerateUncached
+    @OperationProxy.Proxyable
     @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 73
     public abstract static class AddNode extends PNodeWithContext {
         public abstract void execute(Frame frame, PSet self, Object o);

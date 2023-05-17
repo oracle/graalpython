@@ -59,15 +59,20 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -79,6 +84,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -169,10 +175,16 @@ public final class PCode extends PythonBuiltinObject {
         this.filename = filename;
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit) {
         this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, null,
                         null, null, null, null,
                         codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
+    }
+
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, BytecodeDSLCodeUnit codeUnit) {
+        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, null,
+                        null, null, null, null,
+                        codeUnit.name, codeUnit.qualname, -1, null);
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals,
@@ -266,13 +278,14 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PBytecodeRootNode) {
-            CodeUnit co = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+        CodeUnit co = getCodeUnit(funcRootNode);
+        if (co != null) {
             if ((co.flags & CO_GRAALPYHON_MODULE) != 0) {
                 return 1;
             }
             return co.startLine;
         }
+
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getStartLine();
@@ -288,10 +301,15 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractStackSize(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+        if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+            BytecodeCodeUnit code = bytecodeRootNode.getCodeUnit();
             return code.stacksize + code.varnames.length + code.cellvars.length + code.freevars.length;
         }
+        /**
+         * NB: This fallback case includes PBytecodeDSLRootNode. The Bytecode DSL stack does not
+         * mirror a CPython stack (it's an operand stack for its own instruction set), so the frame
+         * size is our best guess.
+         */
         return funcRootNode.getFrameDescriptor().getNumberOfSlots();
     }
 
@@ -307,8 +325,16 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static Object[] extractConstants(RootNode node) {
         RootNode rootNode = rootNodeForExtraction(node);
-        if (rootNode instanceof PBytecodeRootNode) {
-            CodeUnit co = ((PBytecodeRootNode) rootNode).getCodeUnit();
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+            BytecodeDSLCodeUnit co = bytecodeDSLRootNode.getCodeUnit();
+            List<Object> constants = new ArrayList<>();
+            for (int i = 0; i < co.constants.length; i++) {
+                Object constant = convertConstantToPythonSpace(rootNode, co.constants[i]);
+                constants.add(constant);
+            }
+            return constants.toArray(new Object[0]);
+        } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+            BytecodeCodeUnit co = bytecodeRootNode.getCodeUnit();
             Set<Object> bytecodeConstants = new HashSet<>();
             for (int bci = 0; bci < co.code.length;) {
                 OpCodes op = OpCodes.fromOpCode(co.code[bci]);
@@ -355,11 +381,20 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static RootNode rootNodeForExtraction(RootNode rootNode) {
-        if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
-            return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
-        }
-        if (rootNode instanceof PBytecodeGeneratorRootNode) {
-            return ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            if (rootNode instanceof PBytecodeDSLGeneratorFunctionRootNode generatorFunctionRootNode) {
+                return generatorFunctionRootNode.getBytecodeRootNode();
+            }
+            if (rootNode instanceof ContinuationRootNode generatorRootNode) {
+                return (RootNode) generatorRootNode.getSourceRootNode();
+            }
+        } else {
+            if (rootNode instanceof PBytecodeGeneratorFunctionRootNode generatorFunctionRootNode) {
+                return generatorFunctionRootNode.getBytecodeRootNode();
+            }
+            if (rootNode instanceof PBytecodeGeneratorRootNode generatorRootNode) {
+                return generatorRootNode.getBytecodeRootNode();
+            }
         }
         return rootNode;
     }
@@ -376,8 +411,10 @@ public final class PCode extends PythonBuiltinObject {
 
     private static CodeUnit getCodeUnit(RootNode node) {
         RootNode rootNode = rootNodeForExtraction(node);
-        if (rootNode instanceof PBytecodeRootNode) {
-            return ((PBytecodeRootNode) rootNode).getCodeUnit();
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+            return bytecodeDSLRootNode.getCodeUnit();
+        } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+            return bytecodeRootNode.getCodeUnit();
         }
         return null;
     }
@@ -435,7 +472,9 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public int bciToLine(int bci) {
         RootNode funcRootNode = rootNodeForExtraction(getRootNode());
-        if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && funcRootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+            throw new UnsupportedOperationException("not implemented");
+        } else if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
             return bytecodeRootNode.bciToLine(bci);
         }
         return -1;
@@ -529,9 +568,15 @@ public final class PCode extends PythonBuiltinObject {
     private static Object convertConstantToPythonSpace(RootNode rootNode, Object o) {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         if (o instanceof CodeUnit) {
-            CodeUnit code = ((CodeUnit) o);
-            PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource());
-            return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code);
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) o;
+                PBytecodeDSLRootNode root = code.createRootNode(PythonContext.get(rootNode), getSourceSection(rootNode).getSource());
+                return factory.createCode(root.getCallTarget(), root.getSignature(), code);
+            } else {
+                BytecodeCodeUnit code = (BytecodeCodeUnit) o;
+                PBytecodeRootNode root = PBytecodeRootNode.create(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource());
+                return factory.createCode(root.getCallTarget(), root.getSignature(), code);
+            }
         } else if (o instanceof BigInteger) {
             return factory.createInt((BigInteger) o);
         } else if (o instanceof int[]) {
@@ -694,15 +739,20 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public String toDisassembledString(boolean quickened) {
         RootNode rootNode = getRootCallTarget().getRootNode();
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return "dis not implemented for the Bytecode DSL interpreter";
+        }
+
         if (rootNode instanceof PBytecodeGeneratorRootNode r) {
             rootNode = r.getBytecodeRootNode();
         } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
             rootNode = r.getBytecodeRootNode();
         }
-        if (rootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+
+        if (rootNode instanceof PBytecodeRootNode r) {
+            BytecodeCodeUnit code = r.getCodeUnit();
             if (quickened) {
-                return code.toString(((PBytecodeRootNode) rootNode).getBytecode());
+                return code.toString(r.getBytecode());
             }
             return code.toString();
         }

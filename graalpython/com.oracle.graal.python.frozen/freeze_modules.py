@@ -156,7 +156,7 @@ else:
 #######################################
 # specs
 
-def parse_frozen_specs():
+def parse_frozen_specs(suffix):
     seen = {}
     for section, specs in FROZEN:
         parsed = _parse_specs(specs, section, seen)
@@ -165,7 +165,7 @@ def parse_frozen_specs():
             try:
                 source = seen[frozenid]
             except KeyError:
-                source = FrozenSource.from_id(frozenid, pyfile)
+                source = FrozenSource.from_id(frozenid, suffix, pyfile)
                 seen[frozenid] = source
             else:
                 assert not pyfile or pyfile == source.pyfile, item
@@ -273,11 +273,11 @@ def _parse_spec(spec, knownids=None, section=None):
 class FrozenSource(namedtuple('FrozenSource', 'id pyfile frozenfile deepfreezefile')):
 
     @classmethod
-    def from_id(cls, frozenid, pyfile=None):
+    def from_id(cls, frozenid, suffix, pyfile=None):
         if not pyfile:
             pyfile = os.path.join(STDLIB_DIR, *frozenid.split('.')) + '.py'
             #assert os.path.exists(pyfile), (frozenid, pyfile)
-        frozenfile = resolve_frozen_file(frozenid, FROZEN_MODULES_DIR)
+        frozenfile = resolve_frozen_file(frozenid, FROZEN_MODULES_DIR, suffix)
         return cls(frozenid, pyfile, frozenfile, STDLIB_DIR)
 
     @classmethod
@@ -313,7 +313,7 @@ class FrozenSource(namedtuple('FrozenSource', 'id pyfile frozenfile deepfreezefi
         return self.id in BOOTSTRAP
 
 
-def resolve_frozen_file(frozenid, destdir):
+def resolve_frozen_file(frozenid, destdir, suffix):
     """Return the filename corresponding to the given frozen ID.
 
     For stdlib modules the ID will always be the full name
@@ -326,7 +326,7 @@ def resolve_frozen_file(frozenid, destdir):
             raise ValueError(f'unsupported frozenid {frozenid!r}')
     # We use a consistent naming convention for all frozen modules.
     frozen_symbol = FrozenSource.resolve_symbol(frozenid)
-    frozenfile = f"Frozen{frozen_symbol}.bin"
+    frozenfile = f"Frozen{frozen_symbol}.{suffix}"
 
     if not destdir:
         return frozenfile
@@ -636,11 +636,17 @@ def main():
     STDLIB_DIR = os.path.abspath(parsed_args.python_lib)
     FROZEN_MODULES_DIR = os.path.abspath(parsed_args.binary_dir)
 
-    # create module specs
-    modules = list(parse_frozen_specs())
+    if __graalpython__.is_bytecode_dsl_interpreter:
+        suffix = "bin_dsl"
+        assert os.path.isdir(parsed_args.binary_dir), "Frozen modules for the DSL should be built after the manual bytecode interpreter."
+    else:
+        suffix = "bin"
+        shutil.rmtree(parsed_args.binary_dir, ignore_errors=True)
+        os.makedirs(parsed_args.binary_dir)
 
-    shutil.rmtree(parsed_args.binary_dir, ignore_errors=True)
-    os.makedirs(parsed_args.binary_dir)
+    # create module specs
+    modules = list(parse_frozen_specs(suffix))
+
     # write frozen module binary files containing the byte code and class files
     # used for importing the binary files
     for src in _iter_sources(modules):

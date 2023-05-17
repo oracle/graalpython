@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -153,6 +154,7 @@ public enum UnaryArithmetic {
 
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
+    @OperationProxy.Proxyable
     public abstract static class PosNode extends UnaryArithmeticNode {
 
         public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("+");
@@ -186,6 +188,7 @@ public enum UnaryArithmetic {
 
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
+    @OperationProxy.Proxyable
     public abstract static class NegNode extends UnaryArithmeticNode {
 
         public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("-");
@@ -224,6 +227,7 @@ public enum UnaryArithmetic {
 
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
+    @OperationProxy.Proxyable
     public abstract static class InvertNode extends UnaryArithmeticNode {
 
         public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("~");

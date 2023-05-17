@@ -52,7 +52,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -100,7 +99,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
@@ -501,7 +500,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     final int selfIndex;
     final int classcellIndex;
 
-    private final CodeUnit co;
+    private final BytecodeCodeUnit co;
     private final Source source;
     private SourceSection sourceSection;
     // For deferred deprecation warnings
@@ -573,7 +572,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Child private InstrumentationRoot instrumentationRoot = InstrumentationRoot.create();
 
-    private static FrameDescriptor makeFrameDescriptor(CodeUnit co, FrameInfo info) {
+    private static FrameDescriptor makeFrameDescriptor(BytecodeCodeUnit co, FrameInfo info) {
         int capacity = co.varnames.length + co.cellvars.length + co.freevars.length + co.stacksize + 1;
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(capacity);
         newBuilder.info(info);
@@ -611,40 +610,27 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return newBuilder.build();
     }
 
-    private static Signature makeSignature(CodeUnit co) {
-        int posArgCount = co.argCount + co.positionalOnlyArgCount;
-        TruffleString[] parameterNames = Arrays.copyOf(co.varnames, posArgCount);
-        TruffleString[] kwOnlyNames = Arrays.copyOfRange(co.varnames, posArgCount, posArgCount + co.kwOnlyArgCount);
-        int varArgsIndex = co.takesVarArgs() ? posArgCount : -1;
-        return new Signature(co.positionalOnlyArgCount,
-                        co.takesVarKeywordArgs(),
-                        varArgsIndex,
-                        co.positionalOnlyArgCount > 0,
-                        parameterNames,
-                        kwOnlyNames);
-    }
-
     @TruffleBoundary
-    public static PBytecodeRootNode create(PythonLanguage language, CodeUnit co, Source source) {
+    public static PBytecodeRootNode create(PythonLanguage language, BytecodeCodeUnit co, Source source) {
         return create(language, co, source, null);
     }
 
     @TruffleBoundary
-    public static PBytecodeRootNode create(PythonLanguage language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
-        FrameInfo frameInfo = new FrameInfo();
+    public static PBytecodeRootNode create(PythonLanguage language, BytecodeCodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+        BytecodeFrameInfo frameInfo = new BytecodeFrameInfo();
         FrameDescriptor fd = makeFrameDescriptor(co, frameInfo);
-        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, makeSignature(co), co, source, parserErrorCallback);
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, co.computeSignature(), co, source, parserErrorCallback);
         PythonContext context = PythonContext.get(rootNode);
         if (context != null && context.getOption(PythonOptions.EagerlyMaterializeInstrumentationNodes)) {
             rootNode.adoptChildren();
             rootNode.instrumentationRoot.materializeInstrumentableNodes(Collections.singleton(StandardTags.StatementTag.class));
         }
-        frameInfo.rootNode = rootNode;
+        frameInfo.setRootNode(rootNode);
         return rootNode;
     }
 
     @TruffleBoundary
-    private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+    private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, BytecodeCodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         super(language, fd);
         assert source != null;
         this.celloffset = co.varnames.length;
@@ -677,27 +663,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         for (int i = 0; i < cellvars.length; i++) {
             cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
         }
-        int classcellIndexValue = -1;
-        for (int i = 0; i < this.freevars.length; i++) {
-            if (T___CLASS__.equalsUncached(this.freevars[i], TS_ENCODING)) {
-                classcellIndexValue = this.freeoffset + i;
-                break;
-            }
-        }
-        this.classcellIndex = classcellIndexValue;
-        int selfIndexValue = -1;
-        if (!signature.takesNoArguments()) {
-            selfIndexValue = 0;
-            if (co.cell2arg != null) {
-                for (int i = 0; i < co.cell2arg.length; i++) {
-                    if (co.cell2arg[i] == 0) {
-                        selfIndexValue = celloffset + i;
-                        break;
-                    }
-                }
-            }
-        }
-        this.selfIndex = selfIndexValue;
+        this.classcellIndex = co.getClassCellIndex();
+        this.selfIndex = co.getSelfIndex();
         if (language.getEngineOption(PythonOptions.ForceInitializeSourceSections)) {
             getSourceSection();
         }
@@ -732,7 +699,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.pythonInternal = pythonInternal;
     }
 
-    public CodeUnit getCodeUnit() {
+    public BytecodeCodeUnit getCodeUnit() {
         return co;
     }
 
@@ -1071,7 +1038,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (!co.isGeneratorOrCoroutine()) {
                 copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             }
-
             return executeFromBci(virtualFrame, virtualFrame, this, 0, getInitialStackTop());
         } finally {
             calleeContext.exit(virtualFrame, this);
@@ -2585,7 +2551,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private int bytecodeMakeFunction(VirtualFrame virtualFrame, Object globals, int stackTop, Node[] localNodes, int beginBci, int flags, Object localConsts) {
-        CodeUnit codeUnit = (CodeUnit) localConsts;
+        BytecodeCodeUnit codeUnit = (BytecodeCodeUnit) localConsts;
         MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(localNodes, beginBci, codeUnit);
         return makeFunctionNode.execute(virtualFrame, globals, stackTop, flags);
     }
@@ -2754,15 +2720,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return null;
     }
 
-    private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, CodeUnit codeUnit) {
+    private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, BytecodeCodeUnit codeUnit) {
         return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(getLanguage(PythonLanguage.class), codeUnit, source));
     }
 
     public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
         usingCachedNodes = true;
-        CodeUnit.iterateBytecode(bytecode, (bci, op, oparg, followingArgs) -> {
+        BytecodeCodeUnit.iterateBytecode(bytecode, (bci, op, oparg, followingArgs) -> {
             if (op == OpCodes.MAKE_FUNCTION) {
-                CodeUnit codeUnit = (CodeUnit) consts[oparg];
+                BytecodeCodeUnit codeUnit = (BytecodeCodeUnit) consts[oparg];
                 MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(getChildNodes(), bci, codeUnit);
                 RootNode rootNode = makeFunctionNode.getCallTarget().getRootNode();
                 if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {

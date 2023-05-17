@@ -263,6 +263,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1206,7 +1207,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
                 Source source = PythonUtils.createFakeSource(filename);
-                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, flags);
+                RootCallTarget rootCallTarget = getLanguage().compileModule(getContext(), mod, source, false, optimize, null, null, flags);
                 return wrapRootCallTarget(rootCallTarget, factory);
             }
             TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode, factory,
@@ -2004,6 +2005,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // format(object, [format_spec])
     @Builtin(name = J_FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
     @GenerateNodeFactory
+    @OperationProxy.Proxyable
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
 

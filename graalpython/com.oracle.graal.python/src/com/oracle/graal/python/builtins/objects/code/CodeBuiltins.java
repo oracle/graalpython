@@ -51,12 +51,15 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.SourceMap;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -65,9 +68,12 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.introspection.BytecodeIntrospection;
+import com.oracle.truffle.api.bytecode.introspection.SourceInformation;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -301,21 +307,31 @@ public final class CodeBuiltins extends PythonBuiltins {
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
-                SourceMap map = co.getSourceMap();
-                List<PTuple> lines = new ArrayList<>();
-                if (map != null && map.startLineMap.length > 0) {
-                    IteratorData data = new IteratorData();
-                    data.line = map.startLineMap[0];
-                    co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
-                        int nextStart = bci + op.length();
-                        if (map.startLineMap[bci] != data.line || nextStart == co.code.length) {
-                            lines.add(factory.createTuple(new int[]{data.start, nextStart, data.line}));
-                            data.line = map.startLineMap[bci];
-                            data.start = nextStart;
-                        }
-                    });
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    BytecodeIntrospection introspectionData = ((PBytecodeDSLRootNode) self.getRootNode()).getIntrospectionData();
+                    List<PTuple> lines = new ArrayList<>();
+                    for (SourceInformation sourceInfo : introspectionData.getSourceInformation()) {
+                        lines.add(factory.createTuple(new int[]{sourceInfo.getStartBci(), sourceInfo.getEndBci(), sourceInfo.getSourceSection().getStartLine()}));
+                    }
+                    tuple = factory.createTuple(lines.toArray());
+                } else {
+                    BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
+                    SourceMap map = bytecodeCo.getSourceMap();
+                    List<PTuple> lines = new ArrayList<>();
+                    if (map != null && map.startLineMap.length > 0) {
+                        IteratorData data = new IteratorData();
+                        data.line = map.startLineMap[0];
+                        bytecodeCo.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
+                            int nextStart = bci + op.length();
+                            if (map.startLineMap[bci] != data.line || nextStart == bytecodeCo.code.length) {
+                                lines.add(factory.createTuple(new int[]{data.start, nextStart, data.line}));
+                                data.line = map.startLineMap[bci];
+                                data.start = nextStart;
+                            }
+                        });
+                    }
+                    tuple = factory.createTuple(lines.toArray());
                 }
-                tuple = factory.createTuple(lines.toArray());
             } else {
                 tuple = factory.createEmptyTuple();
             }
@@ -334,16 +350,22 @@ public final class CodeBuiltins extends PythonBuiltins {
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
-                SourceMap map = co.getSourceMap();
-                List<PTuple> lines = new ArrayList<>();
-                if (map != null && map.startLineMap.length > 0) {
-                    byte[] bytecode = co.code;
-                    for (int i = 0; i < bytecode.length;) {
-                        lines.add(factory.createTuple(new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
-                        i += OpCodes.fromOpCode(bytecode[i]).length();
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    // TODO implement
+                    throw new UnsupportedOperationException("not implemented");
+                } else {
+                    BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
+                    SourceMap map = bytecodeCo.getSourceMap();
+                    List<PTuple> lines = new ArrayList<>();
+                    if (map != null && map.startLineMap.length > 0) {
+                        byte[] bytecode = bytecodeCo.code;
+                        for (int i = 0; i < bytecode.length;) {
+                            lines.add(factory.createTuple(new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
+                            i += OpCodes.fromOpCode(bytecode[i]).length();
+                        }
                     }
+                    tuple = factory.createTuple(lines.toArray());
                 }
-                tuple = factory.createTuple(lines.toArray());
             } else {
                 tuple = factory.createEmptyTuple();
             }

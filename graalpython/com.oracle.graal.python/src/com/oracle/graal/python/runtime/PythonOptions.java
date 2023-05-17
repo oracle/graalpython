@@ -123,6 +123,12 @@ public final class PythonOptions {
      */
     public static final boolean AUTOMATIC_ASYNC_ACTIONS = !"false".equalsIgnoreCase(System.getProperty("python.AutomaticAsyncActions"));
 
+    /**
+     * Whether to use the experimental Bytecode DSL interpreter instead of the manually-written
+     * bytecode interpreter.
+     */
+    public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER = Boolean.getBoolean("python.EnableBytecodeDSLInterpreter");
+
     public enum HPyBackendMode {
         NFI,
         JNI,

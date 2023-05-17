@@ -218,10 +218,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.operations.POperationRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -933,16 +935,24 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
-    public final PGenerator createGenerator(TruffleString name, TruffleString qualname, POperationRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return trace(PGenerator.createOperation(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
+    public final PGenerator createGenerator(TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, arguments, PythonBuiltinClassType.PGenerator));
     }
 
     public final PGenerator createIterableCoroutine(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true));
     }
 
+    public final PGenerator createIterableCoroutine(TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, arguments, PythonBuiltinClassType.PGenerator, true));
+    }
+
     public final PGenerator createCoroutine(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
+    }
+
+    public final PGenerator createCoroutine(TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, arguments, PythonBuiltinClassType.PCoroutine));
     }
 
     public final PCoroutineWrapper createCoroutineWrapper(PGenerator generator) {
@@ -1184,7 +1194,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, linetable, filename));
     }
 
-    public final PCode createCode(RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
+    public final PCode createCode(RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, codeUnit));
+    }
+
+    public final PCode createCode(RootCallTarget callTarget, Signature signature, BytecodeDSLCodeUnit codeUnit) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, codeUnit));
     }
 

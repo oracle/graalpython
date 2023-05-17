@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
@@ -68,7 +68,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class MakeFunctionNode extends PNodeWithContext {
     private final RootCallTarget callTarget;
-    private final CodeUnit code;
+    private final BytecodeCodeUnit code;
     private final Signature signature;
     private final TruffleString doc;
     @CompilationFinal private PCode cachedCode;
@@ -78,7 +78,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
     public abstract int execute(VirtualFrame frame, Object globals, int initialStackTop, int flags);
 
-    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, TruffleString doc) {
+    public MakeFunctionNode(RootCallTarget callTarget, BytecodeCodeUnit code, Signature signature, TruffleString doc) {
         this.callTarget = callTarget;
         this.code = code;
         this.signature = signature;
@@ -150,7 +150,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         return stackTop;
     }
 
-    public static MakeFunctionNode create(PythonLanguage language, CodeUnit code, Source source) {
+    public static MakeFunctionNode create(PythonLanguage language, BytecodeCodeUnit code, Source source) {
         RootCallTarget callTarget;
         PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, code, source);
         if (code.isGeneratorOrCoroutine()) {
