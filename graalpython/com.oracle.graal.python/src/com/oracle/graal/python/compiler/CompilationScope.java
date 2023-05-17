@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.compiler;
 
-enum CompilationScope {
+public enum CompilationScope {
     Module,
     Class,
     Function,

@@ -53,6 +53,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -310,14 +311,13 @@ public final class ReadCallerFrameNode extends Node {
              * </pre>
              */
             public Frame visitFrame(FrameInstance frameInstance) {
-                RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
-                RootNode rootNode = target.getRootNode();
+                RootNode rootNode = getRootNode(frameInstance);
                 Node callNode = frameInstance.getCallNode();
                 boolean didMark = IndirectCallData.setEncapsulatingNeedsToPassCallerFrame(callNode != null ? callNode : requestingNode);
                 if (outputFrame[0] == null && rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext()) {
                     pRootNode.setNeedsCallerFrame();
                     if (i < 0 && startFrame != null) {
-                        Frame roFrame = frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
+                        Frame roFrame = getFrame(frameInstance, FrameInstance.FrameAccess.READ_ONLY);
                         if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
                             i = 0;
                         }
@@ -326,7 +326,7 @@ public final class ReadCallerFrameNode extends Node {
                         // a Python frame in CPython.
                         if (!selector.skip(pRootNode)) {
                             if (i == level || startFrame == null) {
-                                Frame frame = frameInstance.getFrame(frameAccess);
+                                Frame frame = getFrame(frameInstance, frameAccess);
                                 assert PArguments.isPythonFrame(frame);
                                 PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
                                 // avoid overriding the location if we don't know it
@@ -355,6 +355,25 @@ public final class ReadCallerFrameNode extends Node {
             }
         });
         return outputFrame[0];
+    }
+
+    private static RootNode getRootNode(FrameInstance frameInstance) {
+        RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+        RootNode rootNode = target.getRootNode();
+        if (rootNode instanceof ContinuationRootNode continuationRoot) {
+            return (RootNode) continuationRoot.getSourceRootNode();
+        }
+        return rootNode;
+    }
+
+    private static Frame getFrame(FrameInstance frameInstance, FrameInstance.FrameAccess frameAccess) {
+        Frame frame = frameInstance.getFrame(frameAccess);
+
+        RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+        if (target.getRootNode() instanceof ContinuationRootNode) {
+            return (Frame) frame.getArguments()[0];
+        }
+        return frame;
     }
 
     private MaterializeFrameNode ensureMaterializeNode() {

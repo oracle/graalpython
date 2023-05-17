@@ -41,8 +41,7 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.OpCodesConstants;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -53,38 +52,30 @@ import com.oracle.truffle.api.strings.TruffleString;
  * returned by {@link FrameDescriptor#getInfo()} if and only if the frame is coming from the
  * bytecode interpreter.
  */
-public final class FrameInfo {
-    @CompilationFinal PBytecodeRootNode rootNode;
+public interface FrameInfo {
 
-    public PBytecodeRootNode getRootNode() {
-        return rootNode;
-    }
+    public PRootNode getRootNode();
 
-    public int getBci(Frame frame) {
-        if (frame.isInt(rootNode.bcioffset)) {
-            return frame.getInt(rootNode.bcioffset);
-        } else {
-            return -1;
-        }
-    }
+    public int getFirstLineNumber();
 
-    public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop) {
-        /* Match the `yield from` bytecode pattern and get the object from stack */
-        if (bci > 3 && bci < rootNode.bytecode.length && rootNode.bytecode[bci - 3] == OpCodesConstants.SEND && rootNode.bytecode[bci - 1] == OpCodesConstants.YIELD_VALUE &&
-                        rootNode.bytecode[bci] == OpCodesConstants.RESUME_YIELD) {
-            return generatorFrame.getObject(stackTop);
-        }
-        return null;
-    }
+    public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop);
+
+    public boolean includeInTraceback();
+
+    public CodeUnit getCodeUnit();
 
     @Idempotent
-    public int getVariableCount() {
-        CodeUnit code = rootNode.getCodeUnit();
+    public default int getVariableCount() {
+        CodeUnit code = getCodeUnit();
         return code.varnames.length + code.cellvars.length + code.freevars.length;
     }
 
-    public TruffleString getVariableName(int slot) {
-        CodeUnit code = rootNode.getCodeUnit();
+    public default int getRegularVariableCount() {
+        return getCodeUnit().varnames.length;
+    }
+
+    public default TruffleString getVariableName(int slot) {
+        CodeUnit code = getCodeUnit();
         if (slot < code.varnames.length) {
             return code.varnames[slot];
         } else if (slot < code.varnames.length + code.cellvars.length) {

@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.bytecode.instrumentation;
 
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -62,7 +62,7 @@ import com.oracle.truffle.api.nodes.Node;
  * @see InstrumentationRoot
  */
 public final class InstrumentationSupport extends Node {
-    final CodeUnit code;
+    final BytecodeCodeUnit code;
     @Children InstrumentedBytecodeStatement[] statements;
     /*
      * When instrumentation is active, this array is used instead of PBytecodeRootNode#adoptedNodes

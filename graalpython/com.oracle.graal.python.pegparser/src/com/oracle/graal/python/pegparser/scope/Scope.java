@@ -229,11 +229,15 @@ public class Scope {
     }
 
     public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> expectedFlags, int start) {
+        return getSymbolsByType(expectedFlags, EnumSet.noneOf(DefUse.class), start);
+    }
+
+    public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> expectedFlags, EnumSet<DefUse> unexpectedFlags, int start) {
         int i = start;
         HashMap<String, Integer> mapping = new HashMap<>();
         for (String key : getSortedSymbols()) {
             EnumSet<DefUse> keyFlags = getUseOfName(key);
-            if (!Collections.disjoint(expectedFlags, keyFlags)) {
+            if (!Collections.disjoint(expectedFlags, keyFlags) && Collections.disjoint(unexpectedFlags, keyFlags)) {
                 mapping.put(key, i++);
             }
         }

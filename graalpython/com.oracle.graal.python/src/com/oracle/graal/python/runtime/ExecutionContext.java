@@ -59,12 +59,15 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -94,17 +97,29 @@ public abstract class ExecutionContext {
          * Prepare an indirect call from a Python frame to a Python function.
          */
         public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments, Node callNode) {
-            prepareCall(frame, callArguments, callNode, true, true);
+            prepareCall(frame, getActualCallArguments(callArguments), callNode, true, true);
         }
 
         /**
          * Prepare a call from a Python frame to a Python function.
          */
         public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
-            // n.b.: The class cast should always be correct, since this context
-            // must only be used when calling from Python to Python
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            prepareCall(frame, callArguments, callNode, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
+            RootNode rootNode = callTarget.getRootNode();
+
+            PRootNode calleeRootNode;
+            Object[] actualCallArguments;
+            if (rootNode instanceof ContinuationRootNode continuationRoot) {
+                calleeRootNode = (PRootNode) continuationRoot.getSourceRootNode();
+                assert callArguments.length == 2;
+                actualCallArguments = ((MaterializedFrame) callArguments[0]).getArguments();
+            } else {
+                // n.b.: The class cast should always be correct, since this context
+                // must only be used when calling from Python to Python
+                calleeRootNode = (PRootNode) rootNode;
+                actualCallArguments = callArguments;
+            }
+            prepareCall(frame, actualCallArguments, callNode, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
+
         }
 
         private void prepareCall(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame, boolean needsExceptionState) {
@@ -159,6 +174,19 @@ public abstract class ExecutionContext {
                 }
                 PArguments.setException(callArguments, curExc);
             }
+        }
+
+        private static Object[] getActualCallArguments(Object[] callArguments) {
+            /**
+             * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
+             * ContinuationRoot with a different calling convention from regular PRootNodes. The
+             * first argument is a materialized frame containing the arguments used for argument
+             * reads.
+             */
+            if (callArguments.length == 2 && callArguments[0] instanceof MaterializedFrame materialized) {
+                return materialized.getArguments();
+            }
+            return callArguments;
         }
 
         private PFrame materialize(VirtualFrame frame, Node callNode, boolean markAsEscaped, boolean forceSync) {
