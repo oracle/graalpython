@@ -347,7 +347,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CField("CField", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     DictRemover("DictRemover", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     StructParam("StructParam_Type", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    ArgError("ArgumentError", "ctypes", Flags.EXCEPTION),
+    ArgError("ArgumentError", J__CTYPES, Flags.EXCEPTION),
 
     // _multibytecodec
     MultibyteCodec("MultibyteCodec", "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
@@ -837,6 +837,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SimpleCData.base = PyCData;
         PyCFuncPtr.type = PyCFuncPtrType;
         PyCFuncPtr.base = PyCData;
+        ArgError.base = PBaseException;
 
         Empty.base = Exception;
 
