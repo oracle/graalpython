@@ -229,15 +229,14 @@ public abstract class CodeNodes {
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext(inliningTarget)"}, limit = "2")
         static Signature doCached(Node inliningTarget, @SuppressWarnings("unused") PCode code,
-                        @Cached("code") PCode cachedCode,
-                        @Cached InlinedBranchProfile firstExecution) {
-            return getInSingleContextMode(inliningTarget, cachedCode, firstExecution);
+                        @Cached("code") PCode cachedCode) {
+            return getInSingleContextMode(inliningTarget, cachedCode);
         }
 
         public static Signature getInSingleContextMode(Node inliningTarget, PFunction fun, InlinedBranchProfile firstExecution) {
             assert isSingleContext(inliningTarget);
-            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(fun) && fun.getCodeStableAssumption().isValid()) {
-                getInSingleContextMode(inliningTarget, fun.getCode(), firstExecution);
+            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(fun.getCode())) {
+                getInSingleContextMode(inliningTarget, fun.getCode());
             }
             PCode code = fun.getCode();
             Signature signature = code.signature;
@@ -249,12 +248,11 @@ public abstract class CodeNodes {
             return signature;
         }
 
-        public static Signature getInSingleContextMode(Node inliningTarget, PCode code, InlinedBranchProfile firstExecution) {
+        public static Signature getInSingleContextMode(Node inliningTarget, PCode code) {
             assert isSingleContext(inliningTarget);
             CompilerAsserts.partialEvaluationConstant(code);
-            if (!firstExecution.wasEntered(inliningTarget)) {
-                firstExecution.enter(inliningTarget);
-                CompilerDirectives.transferToInterpreter();
+            if (code.signature == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 code.initializeSignature(code.initializeCallTarget());
             }
             return code.signature;
