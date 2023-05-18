@@ -44,8 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T__HANDLE;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.FUNCFLAG_CDECL;
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getFunctionFromLongObject;
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getHandleFromLongObject;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_sint;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FIN;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FLCID;
@@ -89,11 +87,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.KeepRefNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CallProcNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesDlSymNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DLHandler;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.NativeFunction;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
@@ -114,6 +110,7 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -126,6 +123,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -473,7 +471,6 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         Object PyCFuncPtr_call(VirtualFrame frame, PyCFuncPtrObject self, Object[] inargs, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached CallNode callNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetInternalObjectArrayNode getArray,
@@ -485,7 +482,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached CallProcNode callProcNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode) {
+                        @Cached CtypesNodes.HandleFromPointerNode handleFromPointerNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
@@ -496,8 +493,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object errcheck = self.errcheck /* ? self.errcheck : dict.errcheck */;
 
             int[] props = new int[3];
-            Object functionPointer = getPointerValueAsObjectNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
-            NativeFunction pProc = getFunctionFromLongObject(functionPointer, getContext(), asVoidPtr);
+            NativeFunction pProc = handleFromPointerNode.getNativeFunction(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);
             int inoutmask = props[pinoutmask_idx];
@@ -774,9 +770,10 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCFuncPtr_FromDll(VirtualFrame frame, Object type, Object[] args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CtypesDlSymNode dlSymNode,
-                        @Cached PyLong_AsVoidPtr asVoidPtr,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached CastToTruffleStringNode toString,
@@ -800,11 +797,16 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             auditNode.audit("ctypes.dlsym", dll, name);
 
             Object obj = getAttributeNode.executeObject(frame, dll, T__HANDLE);
-            if (!(obj instanceof PythonNativeVoidPtr) && !longCheckNode.execute(obj)) { // PyLong_Check
+            if (!longCheckNode.execute(obj)) { // PyLong_Check
                 throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
-            DLHandler handle = getHandleFromLongObject(obj, getContext(), asVoidPtr, getRaiseNode());
-            Object address = dlSymNode.execute(frame, handle, name, AttributeError);
+            Pointer handlePtr;
+            try {
+                handlePtr = pointerFromLongNode.execute(inliningTarget, obj);
+            } catch (PException e) {
+                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
+            }
+            Object address = dlSymNode.execute(frame, handlePtr, name, AttributeError);
             _validate_paramflags(type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode, codePointAtIndexNode);
 
             PyCFuncPtrObject self = factory.createPyCFuncPtrObject(type);

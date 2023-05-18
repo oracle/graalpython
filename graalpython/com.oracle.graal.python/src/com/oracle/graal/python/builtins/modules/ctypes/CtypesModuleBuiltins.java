@@ -56,7 +56,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXCEPTED_CTYPES_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FFI_CALL_FAILED;
@@ -103,7 +102,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
@@ -157,7 +155,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -778,86 +775,36 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    static DLHandler getHandler(Object ptr, PythonContext context) {
-        Object adr = ptr;
-        if (PGuards.isInteger(adr)) {
-            adr = getObjectAtAddress(context, (Long) adr);
-        }
-        if (adr instanceof DLHandler) {
-            return (DLHandler) adr;
-        }
-        return null;
-    }
-
-    static NativeFunction getNativeFunction(Object ptr, PythonContext context) {
-        Object adr = ptr;
-        if (PGuards.isInteger(adr)) {
-            adr = getObjectAtAddress(context, (Long) adr);
-        }
-        if (adr instanceof NativeFunction) {
-            return (NativeFunction) adr;
-        }
-        return null;
-    }
-
     @Builtin(name = "dlclose", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class DlCloseNode extends PythonUnaryBuiltinNode {
 
-        private static boolean dlclose(Object ptr, PythonContext context) {
-            DLHandler handle = getHandler(ptr, context);
+        @Specialization
+        Object py_dl_close(Object pointerObj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode) {
+            DLHandler handle = handleFromLongNode.getDLHandler(inliningTarget, pointerObj);
             if (handle != null) {
                 handle.isClosed = true;
-                return true;
+                return PNone.NONE;
             }
-            return false;
+            throw raise(OSError, T_DL_ERROR);
         }
-
-        @Specialization
-        Object py_dl_close(Object h,
-                        @Cached PyLong_AsVoidPtr asVoidPtr) {
-            Object handle = asVoidPtr.execute(h);
-
-            if (!dlclose(handle, getContext())) {
-                throw raise(OSError, T_DL_ERROR);
-            }
-            return PNone.NONE;
-        }
-    }
-
-    protected static DLHandler getHandleFromLongObject(Object obj, PythonContext context, PyLong_AsVoidPtr asVoidPtr, PRaiseNode raiseNode) {
-        Object h = null;
-        try {
-            h = asVoidPtr.execute(obj);
-        } catch (PException e) {
-            // throw later.
-        }
-        DLHandler handle = h != null ? getHandler(h, context) : null;
-        if (handle == null) {
-            throw raiseNode.raise(ValueError, COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
-        }
-        return handle;
-    }
-
-    protected static NativeFunction getFunctionFromLongObject(Object obj, PythonContext context,
-                    PyLong_AsVoidPtr asVoidPtr) {
-        if (obj instanceof NativeFunction) {
-            return (NativeFunction) obj;
-        }
-        Object f = asVoidPtr.execute(obj);
-        return f != null ? getNativeFunction(f, context) : null;
     }
 
     protected abstract static class CtypesDlSymNode extends PNodeWithRaise {
 
-        protected abstract Object execute(VirtualFrame frame, DLHandler handle, Object n, PythonBuiltinClassType error);
+        protected abstract Object execute(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error);
 
         @Specialization
-        protected Object ctypes_dlsym(VirtualFrame frame, DLHandler handle, Object n, PythonBuiltinClassType error,
+        protected Object ctypes_dlsym(VirtualFrame frame, Pointer handlePtr, Object n, PythonBuiltinClassType error,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CtypesNodes.HandleFromPointerNode handleFromPointerNode,
                         @Cached PyObjectHashNode hashNode,
                         @Cached CastToJavaStringNode asString,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached PythonObjectFactory factory) {
+            DLHandler handle = handleFromPointerNode.getDLHandler(inliningTarget, handlePtr);
             String name = asString.execute(n);
             if (handle == null || handle.isClosed) {
                 throw raise(error, T_DL_ERROR);
@@ -886,13 +833,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class DlSymNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object py_dl_sym(VirtualFrame frame, Object obj, Object name,
-                        @Cached PyLong_AsVoidPtr asVoidPtr,
+        static Object py_dl_sym(VirtualFrame frame, Object obj, Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached AuditNode auditNode,
                         @Cached CtypesDlSymNode dlSymNode) {
             auditNode.audit("ctypes.dlsym/handle", obj, name);
-            DLHandler handle = getHandleFromLongObject(obj, getContext(), asVoidPtr, getRaiseNode());
-            return dlSymNode.execute(frame, handle, name, OSError);
+            return dlSymNode.execute(frame, pointerFromLongNode.execute(inliningTarget, obj), name, OSError);
         }
     }
 
@@ -1071,18 +1018,18 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         return ptr;
     }
 
-    @Builtin(name = "call_function", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "call_function", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    protected abstract static class CallFunctionNode extends PythonTernaryBuiltinNode {
+    protected abstract static class CallFunctionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object call_function(VirtualFrame frame, PythonModule ctypesModule, Object f, PTuple arguments,
+        Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached CallProcNode callProcNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached PyLong_AsVoidPtr asVoidPtr) {
-            // Object func = _parse_voidp(tuple[0]);
-            NativeFunction func = (NativeFunction) getObjectAt(getContext(), asVoidPtr.execute(f));
+                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode) {
+            NativeFunction func = handleFromLongNode.getNativeFunction(inliningTarget, pointerObj);
             auditNode.audit("ctypes.call_function", func, arguments);
             return callProcNode.execute(frame, func,
                             getArray.execute(arguments.getSequenceStorage()),
@@ -1116,18 +1063,18 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    protected abstract static class CallCdeclfunctionNode extends PythonTernaryBuiltinNode {
+    protected abstract static class CallCdeclfunctionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object doit(VirtualFrame frame, PythonModule ctypesModule, Object f, PTuple arguments,
+        Object call_function(VirtualFrame frame, Object pointerObj, PTuple arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached AuditNode auditNode,
-                        @Cached GetInternalObjectArrayNode getArray,
                         @Cached CallProcNode callProcNode,
-                        @Cached PyLong_AsVoidPtr asVoidPtr) {
-            // Object func = _parse_voidp(tuple[0]);
-            NativeFunction func = (NativeFunction) getObjectAt(getContext(), asVoidPtr.execute(f));
+                        @Cached GetInternalObjectArrayNode getArray,
+                        @Cached CtypesNodes.HandleFromLongNode handleFromLongNode) {
+            NativeFunction func = handleFromLongNode.getNativeFunction(inliningTarget, pointerObj);
             auditNode.audit("ctypes.call_function", func, arguments);
             return callProcNode.execute(frame, func,
                             getArray.execute(arguments.getSequenceStorage()),

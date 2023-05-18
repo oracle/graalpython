@@ -57,14 +57,19 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -225,5 +230,67 @@ public class CtypesNodes {
     @TruffleBoundary(allowInlining = true)
     public static char charAt(String s, int i) {
         return s.charAt(i);
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class HandleFromPointerNode extends Node {
+        abstract Object execute(Node inliningTarget, Pointer pointer);
+
+        final CtypesModuleBuiltins.DLHandler getDLHandler(Node inliningTarget, Pointer pointer) {
+            Object handle = execute(inliningTarget, pointer);
+            if (handle instanceof CtypesModuleBuiltins.DLHandler dlHandler) {
+                return dlHandler;
+            }
+            return null;
+        }
+
+        final CtypesModuleBuiltins.NativeFunction getNativeFunction(Node inliningTarget, Pointer pointer) {
+            Object handle = execute(inliningTarget, pointer);
+            if (handle instanceof CtypesModuleBuiltins.NativeFunction nativeFunction) {
+                return nativeFunction;
+            }
+            return null;
+        }
+
+        @Specialization
+        static Object convert(Node inliningTarget, Pointer pointer,
+                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode) {
+            Object handle = getPointerValueAsObjectNode.execute(inliningTarget, pointer);
+            if (handle instanceof Long address) {
+                return CtypesModuleBuiltins.getObjectAtAddress(PythonContext.get(inliningTarget), address);
+            }
+            return handle;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class HandleFromLongNode extends Node {
+        abstract Object execute(Node inliningTarget, Object pointerObj);
+
+        final CtypesModuleBuiltins.DLHandler getDLHandler(Node inliningTarget, Object pointerObj) {
+            Object handle = execute(inliningTarget, pointerObj);
+            if (handle instanceof CtypesModuleBuiltins.DLHandler dlHandler) {
+                return dlHandler;
+            }
+            return null;
+        }
+
+        final CtypesModuleBuiltins.NativeFunction getNativeFunction(Node inliningTarget, Object pointerObj) {
+            Object handle = execute(inliningTarget, pointerObj);
+            if (handle instanceof CtypesModuleBuiltins.NativeFunction nativeFunction) {
+                return nativeFunction;
+            }
+            return null;
+        }
+
+        @Specialization
+        static Object convert(Node inliningTarget, Object pointerObj,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
+                        @Cached HandleFromPointerNode handleFromPointerNode) {
+            Pointer pointer = pointerFromLongNode.execute(inliningTarget, pointerObj);
+            return handleFromPointerNode.execute(inliningTarget, pointer);
+        }
     }
 }

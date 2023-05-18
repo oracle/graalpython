@@ -41,25 +41,21 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DICTFLAG_FINAL;
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getHandleFromLongObject;
 import static com.oracle.graal.python.nodes.ErrorMessages.BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.CTYPES_OBJECT_STRUCTURE_TOO_DEEP;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_INSTEAD_OF_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE;
-import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_EXPECTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OFFSET_CANNOT_BE_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_WRITABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -73,11 +69,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesDlSymNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DLHandler;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
@@ -87,6 +81,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -94,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -103,11 +99,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -201,17 +197,11 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     public abstract static class FromAddressNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object CDataType_from_address(Object type, int value,
-                        @Cached PyLong_AsVoidPtr asVoidPtr,
+        static Object CDataType_from_address(Object type, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached PyCDataAtAddress atAddress) {
-            Object buf = asVoidPtr.execute(value);
-            return atAddress.execute(type, buf, 0);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object error(Object type, Object arg) {
-            throw raise(TypeError, INTEGER_EXPECTED);
+            return atAddress.execute(type, pointerFromLongNode.execute(inliningTarget, value));
         }
     }
 
@@ -235,13 +225,13 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
 
-            PMemoryView buffer = memoryViewNode.execute(frame, obj);
+            PMemoryView mv = memoryViewNode.execute(frame, obj);
 
-            if (buffer.isReadOnly()) {
+            if (mv.isReadOnly()) {
                 throw raise(TypeError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
             }
 
-            if (!buffer.isCContiguous()) {
+            if (!mv.isCContiguous()) {
                 throw raise(TypeError, UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS);
             }
 
@@ -249,15 +239,15 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 throw raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
             }
 
-            if (dict.size > buffer.getLength() - offset) {
-                throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, buffer.getLength(), dict.size + offset);
+            if (dict.size > mv.getLength() - offset) {
+                throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, mv.getLength(), dict.size + offset);
             }
 
-            auditNode.audit("ctypes.cdata/buffer", buffer, buffer.getLength(), offset);
+            auditNode.audit("ctypes.cdata/buffer", mv, mv.getLength(), offset);
 
-            CDataObject result = atAddress.execute(type, buffer, offset);
+            CDataObject result = atAddress.execute(type, Pointer.memoryView(mv).withOffset(offset));
 
-            keepRefNode.execute(frame, result, -1, buffer);
+            keepRefNode.execute(frame, result, -1, mv);
 
             return result;
         }
@@ -323,32 +313,41 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object CDataType_in_dll(VirtualFrame frame, Object type, Object dll, TruffleString name,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached("create(T__HANDLE)") GetAttributeNode getAttributeNode,
                         @Cached PyCDataAtAddress atAddress,
                         @Cached AuditNode auditNode,
-                        @Cached PyLong_AsVoidPtr asVoidPtr,
+                        @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached CtypesDlSymNode dlSymNode) {
             auditNode.audit("ctypes.dlsym", dll, name);
             Object obj = getAttributeNode.executeObject(frame, dll);
             if (!longCheckNode.execute(obj)) {
                 throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
-            DLHandler handle = getHandleFromLongObject(obj, getContext(), asVoidPtr, getRaiseNode());
-            Object address = dlSymNode.execute(frame, handle, name, ValueError);
-            return atAddress.execute(type, address, 0);
+            Pointer handlePtr;
+            try {
+                handlePtr = pointerFromLongNode.execute(inliningTarget, obj);
+            } catch (PException e) {
+                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
+            }
+            Object address = dlSymNode.execute(frame, handlePtr, name, ValueError);
+            if (address instanceof PythonNativeVoidPtr ptr) {
+                address = ptr.getPointerObject();
+            }
+            return atAddress.execute(type, Pointer.nativeMemory(address));
         }
     }
 
     protected abstract static class PyCDataAtAddress extends PNodeWithRaise {
 
-        abstract CDataObject execute(Object type, Object obj, int offset);
+        abstract CDataObject execute(Object type, Pointer pointer);
 
         /*
          * Box a memory block into a CData instance.
          */
         @Specialization
-        CDataObject PyCData_AtAddress_bytes(Object type, byte[] buf, int offset,
+        CDataObject PyCData_AtAddress(Object type, Pointer pointer,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PythonObjectFactory factory) {
@@ -359,40 +358,11 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
             CDataObject pd = factory.createCDataObject(type);
             assert pyTypeCheck.isCDataObject(pd);
-            pd.b_ptr = Pointer.bytes(buf, offset);
+            pd.b_ptr = pointer;
             pd.b_length = stgdict.length;
             pd.b_size = stgdict.size;
             return pd;
         }
-
-        protected static boolean isBytes(Object obj) {
-            return obj instanceof byte[];
-        }
-
-        @Specialization(guards = "!isBytes(obj)")
-        CDataObject PyCData_AtAddress(Object type, Object obj, @SuppressWarnings("unused") int offset,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached AuditNode auditNode,
-                        @Cached PythonObjectFactory factory) {
-            auditNode.audit("ctypes.cdata", obj);
-            // assert(PyType_Check(type));
-            StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
-            stgdict.flags |= DICTFLAG_FINAL;
-
-            CDataObject pd = factory.createCDataObject(type);
-            assert (pyTypeCheck.isCDataObject(pd));
-            if (obj instanceof PMemoryView) {
-                pd.b_ptr = Pointer.memoryView((PMemoryView) obj);
-            } else {
-                // TODO get Objects from numeric pointers.
-                throw raise(NotImplementedError, toTruffleStringUncached("Storage is not implemented."));
-            }
-            pd.b_length = stgdict.length;
-            pd.b_size = stgdict.size;
-            return pd;
-        }
-
     }
 
     // corresponds to PyCData_get
