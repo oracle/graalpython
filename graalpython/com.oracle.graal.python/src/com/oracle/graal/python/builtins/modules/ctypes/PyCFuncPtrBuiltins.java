@@ -406,8 +406,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(value)", "self.argtypes == null"})
         Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-            StgDictObject dict = pyTypeStgDictNode.execute(self);
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+            StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             if (dict.argtypes != null) {
                 return factory().createTuple(dict.argtypes);
