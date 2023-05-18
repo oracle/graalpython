@@ -347,6 +347,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object function;
         TruffleString signature;
         FFIType[] atypes;
+        FFIType rtype;
 
         final boolean isManaged;
 
@@ -1287,10 +1288,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
                 }
                 pProc.atypes = atypes;
+                pProc.rtype = restype;
                 pProc.function = function;
                 pProc.signature = signature;
             } else {
-                if (equals(atypes, pProc.atypes)) {
+                if (equals(atypes, pProc.atypes) && restype == pProc.rtype) {
                     function = pProc.function;
                 } else {
                     TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);

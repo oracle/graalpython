@@ -383,7 +383,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 self.restype = null;
                 return PNone.NONE;
             }
-            if (pyTypeStgDictNode.execute(value) != null && !callableCheck.execute(value)) {
+            if (pyTypeStgDictNode.execute(value) == null && !callableCheck.execute(value)) {
                 throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
             }
             if (!PGuards.isPFunction(value)) {
