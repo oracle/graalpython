@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.truffle.api.interop.InteropLibrary;
 
 /**
@@ -416,6 +417,13 @@ public final class CApiCodeGen {
                 }
             }
         }
+
+        /**
+         * Adding constants for methods flags checks in
+         * {@link NativeCAPISymbol.FUN_GET_METHODS_FLAGS}
+         */
+        lines.add("");
+        lines.addAll(MethodsFlags.CAPI_METHODS_FLAGS_DEFINES);
 
         return writeGenerated(Path.of("com.oracle.graal.python.cext", "src", "capi.h"), lines);
     }

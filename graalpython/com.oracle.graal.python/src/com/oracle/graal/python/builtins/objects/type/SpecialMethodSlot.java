@@ -40,6 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_BOOL;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_DIVMOD;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOOR_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_LSHIFT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_MATRIX_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_OR;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_POWER;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_REMAINDER;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_RSHIFT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_SUBTRACT;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T__AENTER__;
@@ -214,11 +233,11 @@ public enum SpecialMethodSlot {
     Len(T___LEN__),
     LengthHint(T___LENGTH_HINT__),
     Contains(T___CONTAINS__),
-    Bool(T___BOOL__),
+    Bool(T___BOOL__, NB_BOOL),
     Hash(T___HASH__),
     Index(T___INDEX__),
-    Float(T___FLOAT__),
-    Int(T___INT__),
+    Float(T___FLOAT__, NB_FLOAT),
+    Int(T___INT__, NB_INT),
     Str(T___STR__),
     Repr(T___REPR__),
     // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
@@ -232,38 +251,38 @@ public enum SpecialMethodSlot {
     Gt(T___GT__),
     Ge(T___GE__),
 
-    And(T___AND__),
-    RAnd(T___RAND__),
-    Or(T___OR__),
-    ROr(T___ROR__),
-    Xor(T___XOR__),
-    RXor(T___RXOR__),
-    Add(T___ADD__),
-    RAdd(T___RADD__),
-    Sub(T___SUB__),
-    RSub(T___RSUB__),
-    Mul(T___MUL__),
-    RMul(T___RMUL__),
-    MatMul(T___MATMUL__),
-    RMatMul(T___RMATMUL__),
-    Mod(T___MOD__),
-    RMod(T___RMOD__),
-    DivMod(T___DIVMOD__),
-    RDivMod(T___RDIVMOD__),
-    Pow(T___POW__),
-    RPow(T___RPOW__),
-    TrueDiv(T___TRUEDIV__),
-    RTrueDiv(T___RTRUEDIV__),
-    FloorDiv(T___FLOORDIV__),
-    RFloorDiv(T___RFLOORDIV__),
-    LShift(T___LSHIFT__),
-    RLShift(T___RLSHIFT__),
-    RShift(T___RSHIFT__),
-    RRShift(T___RRSHIFT__),
+    And(T___AND__, NB_AND),
+    RAnd(T___RAND__, NB_AND),
+    Or(T___OR__, NB_OR),
+    ROr(T___ROR__, NB_OR),
+    Xor(T___XOR__, NB_XOR),
+    RXor(T___RXOR__, NB_XOR),
+    Add(T___ADD__, NB_ADD),
+    RAdd(T___RADD__, NB_ADD),
+    Sub(T___SUB__, NB_SUBTRACT),
+    RSub(T___RSUB__, NB_SUBTRACT),
+    Mul(T___MUL__, NB_MULTIPLY),
+    RMul(T___RMUL__, NB_MULTIPLY),
+    MatMul(T___MATMUL__, NB_MATRIX_MULTIPLY),
+    RMatMul(T___RMATMUL__, NB_MATRIX_MULTIPLY),
+    Mod(T___MOD__, NB_REMAINDER),
+    RMod(T___RMOD__, NB_REMAINDER),
+    DivMod(T___DIVMOD__, NB_DIVMOD),
+    RDivMod(T___RDIVMOD__, NB_DIVMOD),
+    Pow(T___POW__, NB_POWER),
+    RPow(T___RPOW__, NB_POWER),
+    TrueDiv(T___TRUEDIV__, NB_TRUE_DIVIDE),
+    RTrueDiv(T___RTRUEDIV__, NB_TRUE_DIVIDE),
+    FloorDiv(T___FLOORDIV__, NB_FLOOR_DIVIDE),
+    RFloorDiv(T___RFLOORDIV__, NB_FLOOR_DIVIDE),
+    LShift(T___LSHIFT__, NB_LSHIFT),
+    RLShift(T___RLSHIFT__, NB_LSHIFT),
+    RShift(T___RSHIFT__, NB_RSHIFT),
+    RRShift(T___RRSHIFT__, NB_RSHIFT),
     Round(T___ROUND__),
 
-    IAdd(T___IADD__),
-    IMul(T___IMUL__),
+    IAdd(T___IADD__, NB_INPLACE_ADD),
+    IMul(T___IMUL__, NB_INPLACE_MULTIPLY),
 
     Reversed(T___REVERSED__),
     Bytes(T___BYTES__);
@@ -292,15 +311,24 @@ public enum SpecialMethodSlot {
      * (GR-32148).
      */
     private final boolean allowsBuiltinDescriptors;
+    private final long methodsFlag;
 
-    SpecialMethodSlot(TruffleString name) {
+    SpecialMethodSlot(TruffleString name, long methodsFlag, boolean allowsBuiltinDescriptors) {
         this.name = name;
-        this.allowsBuiltinDescriptors = true;
+        this.allowsBuiltinDescriptors = allowsBuiltinDescriptors;
+        this.methodsFlag = methodsFlag;
     }
 
     SpecialMethodSlot(TruffleString name, boolean allowsBuiltinDescriptors) {
-        this.name = name;
-        this.allowsBuiltinDescriptors = allowsBuiltinDescriptors;
+        this(name, 0, allowsBuiltinDescriptors);
+    }
+
+    SpecialMethodSlot(TruffleString name, long methodsFlag) {
+        this(name, methodsFlag, true);
+    }
+
+    SpecialMethodSlot(TruffleString name) {
+        this(name, 0, true);
     }
 
     static {
@@ -328,6 +356,10 @@ public enum SpecialMethodSlot {
 
     public SpecialMethodSlot getReverse() {
         return reverse;
+    }
+
+    public long getMethodsFlag() {
+        return methodsFlag;
     }
 
     public Object getValue(PythonManagedClass klass) {
@@ -496,6 +528,7 @@ public enum SpecialMethodSlot {
                     if (isMroSubtype(mro, managedBase)) {
                         Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
                         setSlotsFromManaged(result, klass, language);
+                        setMethodsFlags(result, klass);
                         return result;
                     }
                 }
@@ -536,6 +569,7 @@ public enum SpecialMethodSlot {
                 setSlotsFromGeneric(slots, base, language);
             }
         }
+        setMethodsFlags(slots, klass);
         return slots;
     }
 
@@ -555,6 +589,24 @@ public enum SpecialMethodSlot {
             }
         }
         return isMroSubtype;
+    }
+
+    private static void setMethodsFlags(Object[] slots, PythonManagedClass klass) {
+        long methodsFlags = 0;
+        for (SpecialMethodSlot slot : VALUES) {
+            if (slot.getMethodsFlag() > 0 && slots[slot.ordinal()] != PNone.NO_VALUE) {
+                methodsFlags |= slot.getMethodsFlag();
+            }
+        }
+
+        if (klass.getInitialPythonClass() instanceof PythonBuiltinClassType builtinClass) {
+            methodsFlags |= builtinClass.getMethodsFlags();
+        }
+
+        if (methodsFlags != 0) {
+            long isHeaptype = PythonContext.get(null).isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
+            klass.setMethodsFlags(methodsFlags | isHeaptype);
+        }
     }
 
     private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source, PythonLanguage language) {
@@ -610,7 +662,8 @@ public enum SpecialMethodSlot {
             return;
         }
 
-        if (value == slot.getValue(klass)) {
+        Object oldValue = slot.getValue(klass);
+        if (value == oldValue) {
             return;
         }
 
@@ -623,6 +676,10 @@ public enum SpecialMethodSlot {
 
         PythonContext context = PythonContext.get(null);
         slot.setValue(klass, newValue, context);
+        if (oldValue == PNone.NO_VALUE && slot.getMethodsFlag() != 0) {
+            long isHeaptype = context.isCoreInitialized() ? MethodsFlags.SLOT1BINFULL : 0L;
+            klass.setMethodsFlags(isHeaptype | slot.getMethodsFlag());
+        }
         fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, value, context);
     }
 
@@ -661,6 +718,7 @@ public enum SpecialMethodSlot {
     private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object newValue, PythonContext context) {
         for (PythonAbstractClass subClass : subClasses) {
             fixupSpecialMethodSlot(subClass, slot, newValue, context);
+            // mq: TODO: we might need to update methods flags for subclasses
         }
     }
 

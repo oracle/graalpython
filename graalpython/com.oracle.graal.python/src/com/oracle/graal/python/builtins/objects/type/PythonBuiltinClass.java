@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -66,6 +66,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
         super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
         this.type = builtinClass;
+        this.methodsFlags = type.getMethodsFlags();
     }
 
     @Override

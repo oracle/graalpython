@@ -25,6 +25,41 @@
  */
 package com.oracle.graal.python.builtins;
 
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.ARRAY_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.BOOLEAN_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.BYTES_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.BYTE_ARRAY_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.COMPLEX_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DEFAULT_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DEQUE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICTITEMSVIEW_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICTKEYSVIEW_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICTVALUESVIEW_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICT_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FLOAT_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FOREIGNOBJECT_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FROZENSET_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.INT_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.LIST_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MAPPINGPROXY_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MEMORYVIEW_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MMAP_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NONE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCARRAYTYPE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCARRAY_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCFUNCPTRTYPE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCFUNCPTR_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCPOINTERTYPE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCPOINTER_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCSIMPLETYPE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCSTRUCTTYPE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.RANGE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SET_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SIMPLECDATA_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.STRING_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.STRUCTTIME_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.TUPLE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.UNIONTYPE_M_FLAGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DEFAULTDICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE;
@@ -79,9 +114,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
 
-    ForeignObject(J_FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
-    Boolean("bool", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
-    PArray("array", "array"),
+    ForeignObject(J_FOREIGN, Flags.PRIVATE_DERIVED_WODICT, FOREIGNOBJECT_M_FLAGS),
+    Boolean("bool", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, BOOLEAN_M_FLAGS),
+    PArray("array", "array", ARRAY_M_FLAGS),
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
     PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
@@ -97,60 +132,60 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBuiltinClassMethod("classmethod_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     GetSetDescriptor("getset_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     MemberDescriptor(J_MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
-    PByteArray("bytearray", J_BUILTINS),
-    PBytes("bytes", J_BUILTINS),
+    PByteArray("bytearray", J_BUILTINS, BYTE_ARRAY_M_FLAGS),
+    PBytes("bytes", J_BUILTINS, BYTES_M_FLAGS),
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
     PSimpleNamespace("SimpleNamespace", null, "types", Flags.PUBLIC_BASE_WDICT),
     PKeyWrapper("KeyWrapper", "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT),
     PPartial(J_PARTIAL, "_functools", "functools", Flags.PUBLIC_BASE_WDICT),
     PDefaultDict(J_DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
-    PDeque(J_DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
+    PDeque(J_DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT, DEQUE_M_FLAGS),
     PTupleGetter(J_TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
     PDequeIter(J_DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
     PDequeRevIter(J_DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
-    PComplex("complex", J_BUILTINS),
-    PDict("dict", J_BUILTINS),
+    PComplex("complex", J_BUILTINS, COMPLEX_M_FLAGS),
+    PDict("dict", J_BUILTINS, DICT_M_FLAGS),
     PDictItemIterator(J_DICT_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictItemsView(J_DICT_ITEMS, Flags.PRIVATE_DERIVED_WODICT),
+    PDictItemsView(J_DICT_ITEMS, Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS),
     PDictKeyIterator(J_DICT_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictKeysView(J_DICT_KEYS, Flags.PRIVATE_DERIVED_WODICT),
+    PDictKeysView(J_DICT_KEYS, Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS),
     PDictValueIterator(J_DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
     PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictValuesView(J_DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT),
+    PDictValuesView(J_DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS),
     PEllipsis("ellipsis", J_BUILTINS, Flags.PRIVATE_DERIVED_WODICT),
     PEnumerate("enumerate", J_BUILTINS),
     PMap("map", J_BUILTINS),
-    PFloat("float", J_BUILTINS),
+    PFloat("float", J_BUILTINS, FLOAT_M_FLAGS),
     PFrame("frame", Flags.PRIVATE_DERIVED_WODICT),
-    PFrozenSet("frozenset", J_BUILTINS),
+    PFrozenSet("frozenset", J_BUILTINS, FROZENSET_M_FLAGS),
     PFunction("function", Flags.PRIVATE_DERIVED_WDICT),
     PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT),
     PCoroutine("coroutine", Flags.PRIVATE_DERIVED_WODICT),
     PCoroutineWrapper("coroutine_wrapper", Flags.PRIVATE_DERIVED_WODICT),
     PAsyncGenerator("async_generator", Flags.PRIVATE_DERIVED_WODICT),
-    PInt("int", J_BUILTINS),
-    PList("list", J_BUILTINS),
-    PMappingproxy("mappingproxy", Flags.PRIVATE_DERIVED_WODICT),
-    PMemoryView("memoryview", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
+    PInt("int", J_BUILTINS, INT_M_FLAGS),
+    PList("list", J_BUILTINS, LIST_M_FLAGS),
+    PMappingproxy("mappingproxy", Flags.PRIVATE_DERIVED_WODICT, MAPPINGPROXY_M_FLAGS),
+    PMemoryView("memoryview", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, MEMORYVIEW_M_FLAGS),
     PMethod("method", Flags.PRIVATE_DERIVED_WODICT),
-    PMMap("mmap", "mmap"),
-    PNone("NoneType", Flags.PRIVATE_DERIVED_WODICT),
+    PMMap("mmap", "mmap", MMAP_M_FLAGS),
+    PNone("NoneType", Flags.PRIVATE_DERIVED_WODICT, NONE_M_FLAGS),
     PNotImplemented("NotImplementedType", Flags.PRIVATE_DERIVED_WODICT),
     PProperty(J_PROPERTY, J_BUILTINS, Flags.PUBLIC_BASE_WODICT),
     PSimpleQueue(J_SIMPLE_QUEUE, "_queue", Flags.PUBLIC_BASE_WODICT),
     PRandom("Random", "_random"),
-    PRange("range", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
+    PRange("range", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, RANGE_M_FLAGS),
     PReferenceType("ReferenceType", "_weakref"),
     PSentinelIterator("callable_iterator", Flags.PRIVATE_DERIVED_WODICT),
     PForeignArrayIterator("foreign_iterator"),
     PReverseIterator("reversed", J_BUILTINS),
-    PSet("set", J_BUILTINS),
+    PSet("set", J_BUILTINS, SET_M_FLAGS),
     PSlice("slice", J_BUILTINS),
-    PString("str", J_BUILTINS),
+    PString("str", J_BUILTINS, STRING_M_FLAGS),
     PTraceback("traceback"),
-    PTuple("tuple", J_BUILTINS),
+    PTuple("tuple", J_BUILTINS, TUPLE_M_FLAGS),
     PythonClass("type", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
     PythonModule("module", Flags.PRIVATE_BASE_WDICT),
     PythonModuleDef("moduledef", Flags.PRIVATE_DERIVED_WODICT),
@@ -212,7 +247,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStatvfsResult("statvfs_result", "os", Flags.PUBLIC_DERIVED_WODICT),
     PTerminalSize("terminal_size", "os", Flags.PUBLIC_DERIVED_WODICT),
     PUnameResult("uname_result", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
-    PStructTime("struct_time", "time", Flags.PUBLIC_DERIVED_WODICT),
+    PStructTime("struct_time", "time", Flags.PUBLIC_DERIVED_WODICT, STRUCTTIME_M_FLAGS),
     PProfilerEntry("profiler_entry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT),
     PProfilerSubentry("profiler_subentry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT),
     PStructPasswd("struct_passwd", "pwd", Flags.PUBLIC_DERIVED_WODICT),
@@ -291,19 +326,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CArgObject("CArgObject", Flags.PUBLIC_BASE_WDICT),
     CThunkObject("CThunkObject", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     StgDict("StgDict", Flags.PRIVATE_DERIVED_WODICT),
-    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    PyCFuncPtrType("PyCFuncPtrType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
-    Structure("Structure", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
-    Union("Union", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = UnionType
-    PyCPointer("_Pointer", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCPointerType
-    PyCArray("Array", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCArrayType
-    PyCData("_CData", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
-    SimpleCData("_SimpleCData", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
-    PyCFuncPtr("PyCFuncPtr", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCFuncPtrType
+    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCSTRUCTTYPE_M_FLAGS),
+    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, UNIONTYPE_M_FLAGS),
+    PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCPOINTERTYPE_M_FLAGS),
+    PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCARRAYTYPE_M_FLAGS),
+    PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCSIMPLETYPE_M_FLAGS),
+    PyCFuncPtrType("PyCFuncPtrType", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCFUNCPTRTYPE_M_FLAGS),
+    Structure("Structure", J__CTYPES, Flags.PUBLIC_BASE_WDICT), /*- type = PyCStructType */
+    Union("Union", J__CTYPES, Flags.PUBLIC_BASE_WDICT), /*- type = UnionType */
+    PyCPointer("_Pointer", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCPOINTER_M_FLAGS), /*- type = PyCPointerType */
+    PyCArray("Array", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCARRAY_M_FLAGS), /*- type = PyCArrayType */
+    PyCData("_CData", J__CTYPES, Flags.PUBLIC_BASE_WDICT), /*- type = PyCStructType */
+    SimpleCData("_SimpleCData", J__CTYPES, Flags.PUBLIC_BASE_WDICT, SIMPLECDATA_M_FLAGS), /*- type = PyCStructType */
+    PyCFuncPtr("PyCFuncPtr", J__CTYPES, Flags.PUBLIC_BASE_WDICT, PYCFUNCPTR_M_FLAGS), /*- type = PyCFuncPtrType */
     CField("CField", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     DictRemover("DictRemover", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     StructParam("StructParam_Type", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
@@ -473,12 +508,21 @@ public enum PythonBuiltinClassType implements TruffleObject {
      * .
      */
     private Object[] specialMethodSlots;
+    private final long methodsFlags;
 
     PythonBuiltinClassType(String name, String module, Flags flags) {
         this(name, module, module, flags);
     }
 
+    PythonBuiltinClassType(String name, String module, Flags flags, long methodsFlags) {
+        this(name, module, module, flags, methodsFlags);
+    }
+
     PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags) {
+        this(name, publishInModule, moduleName, flags, DEFAULT_M_FLAGS);
+    }
+
+    PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags, long methodsFlags) {
         this.name = toTruffleStringUncached(name);
         this.publishInModule = toTruffleStringUncached(publishInModule);
         this.moduleName = flags.isPublic && moduleName != null ? toTruffleStringUncached(moduleName) : null;
@@ -490,14 +534,23 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.basetype = flags.isBaseType;
         this.isBuiltinWithDict = flags.isBuiltinWithDict;
         this.isException = flags == Flags.EXCEPTION;
+        this.methodsFlags = methodsFlags;
     }
 
     PythonBuiltinClassType(String name, String module) {
         this(name, module, Flags.PUBLIC_BASE_WODICT);
     }
 
+    PythonBuiltinClassType(String name, String module, long methodsFlags) {
+        this(name, module, Flags.PUBLIC_BASE_WODICT, methodsFlags);
+    }
+
     PythonBuiltinClassType(String name, Flags flags) {
         this(name, null, flags);
+    }
+
+    PythonBuiltinClassType(String name, Flags flags, long methodsFlags) {
+        this(name, null, flags, methodsFlags);
     }
 
     PythonBuiltinClassType(String name) {
@@ -546,6 +599,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     public void setSpecialMethodSlots(Object[] slots) {
         assert specialMethodSlots == null; // should be assigned only once per VM
         specialMethodSlots = slots;
+    }
+
+    public long getMethodsFlags() {
+        return methodsFlags;
     }
 
     /**

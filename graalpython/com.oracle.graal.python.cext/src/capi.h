@@ -791,6 +791,53 @@ typedef struct {
 #define set_PyTypeObject_tp_vectorcall_offset(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) GraalPy_set_PyTypeObject_tp_vectorcall_offset((PyTypeObject*) (OBJ), (VALUE)); else  ((PyTypeObject*) (OBJ))->tp_vectorcall_offset = (VALUE); }
 #define set_PyTypeObject_tp_weaklistoffset(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) GraalPy_set_PyTypeObject_tp_weaklistoffset((PyTypeObject*) (OBJ), (VALUE)); else  ((PyTypeObject*) (OBJ))->tp_weaklistoffset = (VALUE); }
 #define set_PyVarObject_ob_size(OBJ, VALUE) { if (points_to_py_handle_space(OBJ)) GraalPy_set_PyVarObject_ob_size((PyVarObject*) (OBJ), (VALUE)); else  ((PyVarObject*) (OBJ))->ob_size = (VALUE); }
+
+#define NB_ADD 1
+#define NB_SUBTRACT 2
+#define NB_MULTIPLY 4
+#define NB_REMAINDER 8
+#define NB_DIVMOD 16
+#define NB_POWER 32
+#define NB_NEGATIVE 64
+#define NB_POSITIVE 128
+#define NB_ABSOLUTE 256
+#define NB_BOOL 512
+#define NB_INVERT 1024
+#define NB_LSHIFT 2048
+#define NB_RSHIFT 4096
+#define NB_AND 8192
+#define NB_XOR 16384
+#define NB_OR 32768
+#define NB_INT 65536
+#define NB_FLOAT 262144
+#define NB_INPLACE_ADD 524288
+#define NB_INPLACE_SUBTRACT 1048576
+#define NB_INPLACE_MULTIPLY 2097152
+#define NB_INPLACE_REMAINDER 4194304
+#define NB_INPLACE_POWER 8388608
+#define NB_INPLACE_LSHIFT 16777216
+#define NB_INPLACE_RSHIFT 33554432
+#define NB_INPLACE_AND 67108864
+#define NB_INPLACE_XOR 134217728
+#define NB_INPLACE_OR 268435456
+#define NB_FLOOR_DIVIDE 536870912
+#define NB_TRUE_DIVIDE 1073741824
+#define NB_INPLACE_FLOOR_DIVIDE 2147483648
+#define NB_INPLACE_TRUE_DIVIDE 4294967296
+#define NB_INDEX 8589934592
+#define NB_MATRIX_MULTIPLY 17179869184
+#define NB_INPLACE_MATRIX_MULTIPLY 34359738368
+#define SQ_LENGTH 1099511627776
+#define SQ_CONCAT 2199023255552
+#define SQ_REPEAT 4398046511104
+#define SQ_ITEM 8796093022208
+#define SQ_ASS_ITEM 35184372088832
+#define SQ_CONTAINS 140737488355328
+#define SQ_INPLACE_CONCAT 281474976710656
+#define SQ_INPLACE_REPEAT 562949953421312
+#define MP_LENGTH 1125899906842624
+#define MP_SUBSCRIPT 2251799813685248
+#define MP_ASS_SUBSCRIPT 4503599627370496
 // {{end CAPI_BUILTINS}}
 
 
