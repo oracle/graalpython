@@ -136,7 +136,7 @@ public final class Pointer implements TruffleObject {
             case FFI_TYPE_FLOAT -> {
                 byte[] bytes = new byte[Float.BYTES];
                 if (value != null) {
-                    ARRAY_ACCESSOR.putLong(bytes, 0, Float.floatToRawIntBits((float) value));
+                    ARRAY_ACCESSOR.putInt(bytes, 0, Float.floatToRawIntBits((float) value));
                 }
                 yield new ByteArrayStorage(bytes);
             }
