@@ -167,6 +167,7 @@ import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -748,7 +749,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             DLHandler handle;
             Exception exception = null;
-            boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING));
+            boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || //
+                            (!getContext().getOption(PythonOptions.UseSystemToolchain) &&
+                                            endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
             try {
                 if (loadWithLLVM) {
                     Object handler = loadLLVMLibrary(context, name);
