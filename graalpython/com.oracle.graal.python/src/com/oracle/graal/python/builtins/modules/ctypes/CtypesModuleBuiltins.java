@@ -1516,16 +1516,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (obj instanceof CDataObject cdata) {
                 pa.stgDict = pyObjectStgDictNode.execute(cdata);
                 PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
-                pa.ffi_type = carg.pffi_type;
-                setCargValue(inliningTarget, pa, carg, intrinsic, convertToParameterNode, readPointerNode);
+                setArgValue(inliningTarget, pa, carg.value, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
                 return;
             }
 
             if (PGuards.isPyCArg(obj)) {
                 PyCArgObject carg = (PyCArgObject) obj;
-                pa.ffi_type = carg.pffi_type;
                 pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
-                setCargValue(inliningTarget, pa, carg, intrinsic, convertToParameterNode, readPointerNode);
+                setArgValue(inliningTarget, pa, carg.value, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
                 return;
             }
 
@@ -1533,7 +1531,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (obj == PNone.NONE) {
                 pa.ffi_type = FFIType.ffi_type_pointer;
                 if (!intrinsic) {
-                    pa.value = getContext().getEnv().asGuestValue(null); // TODO check
+                    pa.value = 0L;
                 } else {
                     pa.value = Pointer.NULL;
                 }
@@ -1552,15 +1550,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
 
             if (obj instanceof PBytes) {
-                pa.ffi_type = FFIType.ffi_type_pointer;
                 int len = bufferLib.getBufferLength(obj);
                 byte[] bytes = new byte[len + 1];
                 bufferLib.readIntoByteArray(obj, 0, bytes, 0, len);
-                if (!intrinsic) {
-                    pa.value = bytes;
-                } else {
-                    pa.value = Pointer.bytes(bytes).createReference();
-                }
+                setArgValue(inliningTarget, pa, Pointer.bytes(bytes).createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
                 return;
             }
 
@@ -1569,12 +1562,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 int len = string.byteLength(WCHAR_T_ENCODING);
                 byte[] bytes = new byte[len + WCHAR_T_SIZE];
                 copyToByteArrayNode.execute(string, 0, bytes, 0, len, WCHAR_T_ENCODING);
-                pa.ffi_type = FFIType.ffi_type_pointer;
-                if (!intrinsic) {
-                    pa.value = bytes;
-                } else {
-                    pa.value = Pointer.bytes(bytes).createReference();
-                }
+                setArgValue(inliningTarget, pa, Pointer.bytes(bytes).createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
                 return;
             }
 
@@ -1591,16 +1579,17 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
         }
 
-        private static void setCargValue(Node inliningTarget, argument pa, PyCArgObject carg, boolean intrinsic, PointerNodes.ConvertToParameterNode convertToParameterNode,
+        private static void setArgValue(Node inliningTarget, argument pa, Pointer value, FFIType ffiType, boolean intrinsic, PointerNodes.ConvertToParameterNode convertToParameterNode,
                         PointerNodes.ReadPointerNode readPointerNode) {
+            pa.ffi_type = ffiType;
             /*
-             * Pointers get converted to byte arrays or native pointers for NFI. For intrinsic
-             * function calls, they get dereferenced for implementation convenience.
+             * Pointers get converted native pointers for NFI. For intrinsic function calls, they
+             * get dereferenced for implementation convenience.
              */
-            if (intrinsic && pa.ffi_type == FFIType.ffi_type_pointer) {
-                pa.value = readPointerNode.execute(inliningTarget, carg.value);
+            if (intrinsic && ffiType == FFIType.ffi_type_pointer) {
+                pa.value = readPointerNode.execute(inliningTarget, value);
             } else {
-                pa.value = convertToParameterNode.execute(inliningTarget, carg.value, carg.pffi_type);
+                pa.value = convertToParameterNode.execute(inliningTarget, value, ffiType);
             }
         }
     }

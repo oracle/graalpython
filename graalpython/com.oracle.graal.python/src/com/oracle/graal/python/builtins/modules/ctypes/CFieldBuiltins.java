@@ -102,8 +102,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.InternalByteArray;
@@ -990,26 +988,17 @@ public class CFieldBuiltins extends PythonBuiltins {
         static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PointerNodes.GetPointerValueNode getPointerValueNode,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode,
                         @Shared @Cached PythonObjectFactory factory) {
             if (ptr.isNull()) {
                 return 0L;
             }
-            Object p = getPointerValueNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, ptr));
+            Object p = getPointerValueAsObjectNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, ptr));
             if (p instanceof Long) {
                 long val = (long) p;
                 return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
             }
-            if (ilib.isPointer(p)) {
-                try {
-                    return ilib.asPointer(p);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
-                return factory.createNativeVoidPtr(p);
-            }
+            return factory.createNativeVoidPtr(p);
         }
     }
 }

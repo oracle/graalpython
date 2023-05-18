@@ -482,7 +482,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached CallProcNode callProcNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PointerNodes.GetPointerValueNode getPointerValueNode) {
+                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
@@ -493,7 +493,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object errcheck = self.errcheck /* ? self.errcheck : dict.errcheck */;
 
             int[] props = new int[3];
-            Object functionPointer = getPointerValueNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
+            Object functionPointer = getPointerValueAsObjectNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
             NativeFunction pProc = getFunctionFromLongObject(functionPointer, getContext(), asVoidPtr);
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);

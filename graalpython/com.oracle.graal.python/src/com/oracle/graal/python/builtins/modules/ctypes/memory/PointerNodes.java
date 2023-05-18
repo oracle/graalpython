@@ -18,7 +18,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.Storage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ZeroStorage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -551,10 +550,65 @@ public abstract class PointerNodes {
         }
     }
 
+    @GenerateCached(false)
+    public abstract static class AbstractGetPointerValueNode extends Node {
+        @Specialization
+        @SuppressWarnings("unused")
+        static long doNull(MemoryBlock memory, NullStorage storage, int offset) {
+            return offset;
+        }
+
+        @Specialization
+        static long doNativePointer(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
+            return storage.pointer + offset;
+        }
+
+        @Specialization
+        static long doBytes(MemoryBlock memory, ByteArrayStorage storage, int offset) {
+            int len = storage.bytes.length;
+            // TODO check permissions
+            // We need to copy the whole memory block to keep the pointer offsets consistent
+            long pointer = UNSAFE.allocateMemory(len);
+            UNSAFE.copyMemory(storage.bytes, byteArrayOffset(0), null, pointer, len);
+            memory.storage = new LongPointerStorage(pointer);
+            return pointer + offset;
+        }
+
+        @Specialization
+        static long doZero(MemoryBlock memory, ZeroStorage storage, int offset) {
+            int len = storage.size;
+            // TODO check permissions
+            long pointer = UNSAFE.allocateMemory(len);
+            UNSAFE.setMemory(pointer, len, (byte) 0);
+            memory.storage = new LongPointerStorage(pointer);
+            return pointer + offset;
+        }
+
+        @Specialization
+        static long doPointerArray(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage, int offset,
+                        @Cached(inline = false) GetPointerValueAsLongNode toNativeNode) {
+            // TODO check permissions
+            long pointer = UNSAFE.allocateMemory(storage.pointers.length * 8L);
+            for (int i = 0; i < storage.pointers.length; i++) {
+                Pointer itemPointer = storage.pointers[i];
+                long subpointer = toNativeNode.execute(inliningTarget, itemPointer.memory, itemPointer.memory.storage, itemPointer.offset);
+                UNSAFE.putLong(pointer + i * 8L, subpointer);
+            }
+            memory.storage = new LongPointerStorage(pointer);
+            return pointer + offset;
+        }
+
+        @Specialization
+        static long doMemoryView(MemoryBlock memory, MemoryViewStorage storage, int offset) {
+            // TODO
+            throw CompilerDirectives.shouldNotReachHere("Memoryview not implemented");
+        }
+    }
+
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class GetPointerValueNode extends Node {
+    public abstract static class GetPointerValueAsObjectNode extends AbstractGetPointerValueNode {
         public final Object execute(Node inliningTarget, Pointer ptr) {
             return execute(inliningTarget, ptr.memory, ptr.memory.storage, ptr.offset);
         }
@@ -562,21 +616,27 @@ public abstract class PointerNodes {
         protected abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
 
         @Specialization
-        static long doBytes(@SuppressWarnings("unused") MemoryBlock memory, ByteArrayStorage storage, int offset) {
-            return ARRAY_ACCESSOR.getLong(storage.bytes, offset);
-        }
-
-        @Specialization
-        static Object doNativePointer(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
-            return storage.pointer + offset;
-        }
-
-        @Specialization
         static Object doNFIPointer(@SuppressWarnings("unused") MemoryBlock memory, NFIPointerStorage storage, int offset) {
             if (offset != 0) {
                 throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
             }
             return storage.pointer;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    public abstract static class GetPointerValueAsLongNode extends AbstractGetPointerValueNode {
+        public final long execute(Node inliningTarget, Pointer ptr) {
+            return execute(inliningTarget, ptr.memory, ptr.memory.storage, ptr.offset);
+        }
+
+        protected abstract long execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static long doNFIPointer(MemoryBlock memory, NFIPointerStorage storage, int offset) {
+            throw CompilerDirectives.shouldNotReachHere("Cannot convert Object pointer to native");
         }
     }
 
@@ -667,7 +727,7 @@ public abstract class PointerNodes {
         @Fallback
         static void doOther(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, Pointer value,
                         @Cached WriteLongNode writeLongNode,
-                        @Cached StorageToNativeNode toNativeNode) {
+                        @Cached GetPointerValueAsLongNode toNativeNode) {
             long nativePointer = toNativeNode.execute(inliningTarget, value.memory, value.memory.storage, value.offset);
             writeLongNode.execute(inliningTarget, memory, storage, offset, nativePointer);
         }
@@ -722,66 +782,9 @@ public abstract class PointerNodes {
         @Specialization(guards = "ffiType.type == FFI_TYPE_POINTER")
         static Object doPointer(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
                         @Cached ReadPointerNode readPointerNode,
-                        @Cached ConvertPointerToParameterNode convertPointerToParameterNode) {
+                        @Cached GetPointerValueAsObjectNode toNativeNode) {
             Pointer value = readPointerNode.execute(inliningTarget, memory, storage, offset);
-            return convertPointerToParameterNode.execute(inliningTarget, value.memory, value.memory.storage, value.offset);
-        }
-
-        @GenerateInline
-        @GenerateCached(false)
-        abstract static class ConvertPointerToParameterNode extends Node {
-            abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
-
-            @Specialization(guards = "offset == 0")
-            @SuppressWarnings("unused")
-            static Object doNull(MemoryBlock memory, NullStorage storage, int offset) {
-                return 0L;
-            }
-
-            @Specialization(guards = "offset == 0")
-            static Object doBytes(@SuppressWarnings("unused") MemoryBlock memory, ByteArrayStorage storage, @SuppressWarnings("unused") int offset) {
-                /*
-                 * We can pass it as a byte array and NFI will convert it to a pointer to the array.
-                 * Note we change all array/pointer FFI types into [UINT_8] later before passing to
-                 * NFI.
-                 */
-                return storage.bytes;
-            }
-
-            @Specialization(guards = "offset == 0")
-            static Object doZero(MemoryBlock memory, ZeroStorage storage, @SuppressWarnings("unused") int offset) {
-                ByteArrayStorage newStorage = storage.allocateBytes(memory);
-                return doBytes(memory, newStorage, offset);
-            }
-
-            @Specialization(guards = "offset == 0")
-            static Object doPointerArray(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage, @SuppressWarnings("unused") int offset,
-                            @Cached PointerArrayToBytesNode toBytesNode) {
-                ByteArrayStorage newStorage = toBytesNode.execute(inliningTarget, memory, storage);
-                return doBytes(memory, newStorage, offset);
-            }
-
-            @Specialization
-            static Object doLongPointer(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
-                return storage.pointer + offset;
-            }
-
-            @Specialization(guards = "offset == 0")
-            static Object doNFIPointer(@SuppressWarnings("unused") MemoryBlock memory, NFIPointerStorage storage, @SuppressWarnings("unused") int offset) {
-                return storage.pointer;
-            }
-
-            @Specialization(guards = "offset == 0", limit = "1")
-            static Object doMemoryView(@SuppressWarnings("unused") MemoryBlock memory, MemoryViewStorage storage, @SuppressWarnings("unused") int offset,
-                            @CachedLibrary("storage.memoryView") PythonBufferAccessLibrary bufferLib) {
-                PMemoryView mv = storage.memoryView;
-                if (bufferLib.hasInternalByteArray(mv)) {
-                    return bufferLib.getInternalByteArray(mv);
-                } else if (mv.getBufferPointer() != null && mv.getOffset() == 0) {
-                    return mv.getBufferPointer();
-                }
-                throw CompilerDirectives.shouldNotReachHere("Not implemented: converting memoryview pointer to native");
-            }
+            return toNativeNode.execute(inliningTarget, value);
         }
     }
 
@@ -793,7 +796,7 @@ public abstract class PointerNodes {
 
         @Specialization
         static ByteArrayStorage convert(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage,
-                        @Cached StorageToNativeNode toNativeNode) {
+                        @Cached GetPointerValueAsLongNode toNativeNode) {
             byte[] bytes = new byte[storage.pointers.length * 8];
             for (int i = 0; i < storage.pointers.length; i++) {
                 Pointer itemPointer = storage.pointers[i];
@@ -804,39 +807,6 @@ public abstract class PointerNodes {
             memory.storage = newStorage;
             return newStorage;
         }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class StorageToNativeNode extends Node {
-
-        abstract long execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static long doNull(MemoryBlock memory, NullStorage storage, int offset) {
-            return 0L;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static long doNative(MemoryBlock memory, LongPointerStorage storage, int offset) {
-            return storage.pointer + offset;
-        }
-
-        @Specialization
-        static long doBytes(MemoryBlock memory, ByteArrayStorage storage, int offset) {
-            int len = storage.bytes.length;
-            // TODO check permissions
-            // We need to copy the whole memory block to keep the pointer offsets consistent
-            long pointer = UNSAFE.allocateMemory(len);
-            UNSAFE.copyMemory(storage.bytes, byteArrayOffset(0), null, pointer, len);
-            memory.storage = new LongPointerStorage(pointer);
-            return pointer + offset;
-        }
-
-        // TODO other storages
     }
 
     private static Unsafe UNSAFE = getUnsafe();
