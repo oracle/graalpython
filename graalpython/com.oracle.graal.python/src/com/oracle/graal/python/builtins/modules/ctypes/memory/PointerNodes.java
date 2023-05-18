@@ -18,10 +18,15 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PythonObje
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.Storage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ZeroStorage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -32,6 +37,8 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -602,9 +609,33 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static long doMemoryView(MemoryBlock memory, MemoryViewStorage storage, int offset) {
-            // TODO
-            throw CompilerDirectives.shouldNotReachHere("Memoryview not implemented");
+        static long doMemoryView(Node inliningTarget, MemoryBlock memory, MemoryViewStorage storage, int offset,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @Cached(inline = false) SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+            PMemoryView mv = storage.memoryView;
+            Object ptr = null;
+            if (mv.getBufferPointer() != null) {
+                ptr = mv.getBufferPointer();
+            } else if (mv.getBuffer() instanceof PBytesLike bytes) {
+                if (bytes.getSequenceStorage() instanceof NativeSequenceStorage nativeSequenceStorage) {
+                    ptr = nativeSequenceStorage.getPtr();
+                }
+                if (bytes.getSequenceStorage() instanceof ByteSequenceStorage byteSequenceStorage) {
+                    NativeSequenceStorage nativeStorage = storageToNativeNode.execute(byteSequenceStorage.getInternalByteArray(), byteSequenceStorage.length());
+                    bytes.setSequenceStorage(nativeStorage);
+                    ptr = nativeStorage.getPtr();
+                }
+            }
+            if (ptr != null && ilib.isPointer(ptr)) {
+                try {
+                    long nativePointer = ilib.asPointer(ptr);
+                    memory.storage = new LongPointerStorage(nativePointer);
+                    return nativePointer + offset;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY);
         }
     }
 
@@ -619,9 +650,9 @@ public abstract class PointerNodes {
         protected abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
 
         @Specialization
-        static Object doNFIPointer(@SuppressWarnings("unused") MemoryBlock memory, NFIPointerStorage storage, int offset) {
+        static Object doNFIPointer(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, NFIPointerStorage storage, int offset) {
             if (offset != 0) {
-                throw CompilerDirectives.shouldNotReachHere("Invalid offset for a pointer");
+                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_APPLY_OFFSET_TO_AN_OBJECT_POINTER);
             }
             return storage.pointer;
         }
@@ -638,8 +669,8 @@ public abstract class PointerNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        static long doNFIPointer(MemoryBlock memory, NFIPointerStorage storage, int offset) {
-            throw CompilerDirectives.shouldNotReachHere("Cannot convert Object pointer to native");
+        static long doNFIPointer(Node inliningTarget, MemoryBlock memory, NFIPointerStorage storage, int offset) {
+            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE);
         }
     }
 

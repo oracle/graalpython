@@ -1188,6 +1188,9 @@ public abstract class ErrorMessages {
 
     // ctypes
     public static final TruffleString PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED = tsLiteral("Passing structs by value is not supported on NFI backend");
+    public static final TruffleString MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY = tsLiteral("Memoryview cannot be converted to native memory");
+    public static final TruffleString CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE = tsLiteral("Cannot convert Object pointer to native");
+    public static final TruffleString CANNOT_APPLY_OFFSET_TO_AN_OBJECT_POINTER = tsLiteral("Cannot apply offset to an object pointer");
     public static final TruffleString S_SYMBOL_IS_MISSING = tsLiteral("%s symbol is missing");
     public static final TruffleString PACK_MUST_BE_A_NON_NEGATIVE_INTEGER = tsLiteral("_pack_ must be a non-negative integer");
     public static final TruffleString FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS = tsLiteral("'_fields_' must be a sequence of pairs");
@@ -1197,7 +1200,6 @@ public abstract class ErrorMessages {
     public static final TruffleString NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD = tsLiteral("number of bits invalid for bit field");
     public static final TruffleString STRUCTURE_OR_UNION_CANNOT_CONTAIN_ITSELF = tsLiteral("Structure or union cannot contain itself");
     public static final TruffleString FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS = tsLiteral("'_fields_' must be a sequence of (name, C type) pairs");
-    public static final TruffleString INTEGER_EXPECTED = tsLiteral("integer expected");
     public static final TruffleString UNDERLYING_BUFFER_IS_NOT_WRITABLE = tsLiteral("underlying buffer is not writable");
     public static final TruffleString UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS = tsLiteral("underlying buffer is not C contiguous");
     public static final TruffleString OFFSET_CANNOT_BE_NEGATIVE = tsLiteral("offset cannot be negative");
