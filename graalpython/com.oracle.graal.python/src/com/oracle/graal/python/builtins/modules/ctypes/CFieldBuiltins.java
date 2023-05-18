@@ -170,7 +170,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         protected Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeCheck pyTypeCheck) {
-            if (inst == PNone.NO_VALUE) {
+            if (inst instanceof PNone) {
                 return self;
             }
             if (!pyTypeCheck.isCDataObject(inst)) {
