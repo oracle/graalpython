@@ -902,11 +902,11 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PointerNodes.ReadPythonObject readPythonObject,
                         @Cached PRaiseNode raiseNode) {
-            if (ptr.isNull()) {
+            Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
+            if (valuePtr.isNull()) {
                 throw raiseNode.raise(ValueError, ErrorMessages.PY_OBJ_IS_NULL);
             }
-            Pointer value = readPointerNode.execute(inliningTarget, ptr);
-            return readPythonObject.execute(inliningTarget, value);
+            return readPythonObject.execute(inliningTarget, valuePtr);
         }
 
         @Specialization(guards = "getfunc == c_get")
@@ -956,14 +956,13 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PointerNodes.StrLenNode strLenNode,
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode) {
-            if (!ptr.isNull()) {
-                // ptr is a char**, we need to deref it to get char*
-                Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
-                byte[] bytes = readBytesNode.execute(inliningTarget, valuePtr, strLenNode.execute(inliningTarget, valuePtr));
-                return factory.createBytes(bytes);
-            } else {
+            // ptr is a char**, we need to deref it to get char*
+            Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
+            if (valuePtr.isNull()) {
                 return PNone.NONE;
             }
+            byte[] bytes = readBytesNode.execute(inliningTarget, valuePtr, strLenNode.execute(inliningTarget, valuePtr));
+            return factory.createBytes(bytes);
         }
 
         @Specialization(guards = "getfunc == Z_get")
@@ -974,14 +973,13 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            if (!ptr.isNull()) {
-                // ptr is a char**, we need to deref it to get char*
-                Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
-                byte[] bytes = readBytesNode.execute(inliningTarget, valuePtr, wCsLenNode.execute(inliningTarget, valuePtr, size) * WCHAR_T_SIZE);
-                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
-            } else {
+            // ptr is a char**, we need to deref it to get char*
+            Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
+            if (valuePtr.isNull()) {
                 return PNone.NONE;
             }
+            byte[] bytes = readBytesNode.execute(inliningTarget, valuePtr, wCsLenNode.execute(inliningTarget, valuePtr, size) * WCHAR_T_SIZE);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, WCHAR_T_ENCODING, false), TS_ENCODING);
         }
 
         @Specialization(guards = "getfunc == P_get")
@@ -990,10 +988,11 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            if (ptr.isNull()) {
+            Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
+            if (valuePtr.isNull()) {
                 return 0L;
             }
-            Object p = getPointerValueAsObjectNode.execute(inliningTarget, readPointerNode.execute(inliningTarget, ptr));
+            Object p = getPointerValueAsObjectNode.execute(inliningTarget, valuePtr);
             if (p instanceof Long) {
                 long val = (long) p;
                 return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;

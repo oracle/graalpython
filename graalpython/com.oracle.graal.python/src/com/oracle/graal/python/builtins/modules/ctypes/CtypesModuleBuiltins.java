@@ -1460,9 +1460,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         } else {
                             pointer = Pointer.nativeMemory(result);
                         }
-                        if (pointer.isNull()) {
-                            yield Pointer.NULL;
-                        }
                         yield pointer.createReference();
                     }
                 };
