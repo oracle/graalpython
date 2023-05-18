@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -684,7 +685,6 @@ public abstract class CExtParseArgumentsNode {
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached NativeToPythonNode typeToJavaNode,
                         @Cached ToSulongNode toNativeNode,
                         @Shared("writeOutVarNode") @Cached WriteNextVaArgNode writeOutVarNode,
@@ -693,7 +693,7 @@ public abstract class CExtParseArgumentsNode {
                 /* formatIdx++; */
                 Object argValue = getVaArgNode.getPyObjectPtr(varargs);
                 Object typeObject = typeToJavaNode.execute(argValue);
-                assert PGuards.isClass(typeObject, lib);
+                assert PGuards.isClass(typeObject, IsTypeNode.getUncached());
                 if (!isSubtypeNode.execute(getClassNode.execute(arg), typeObject)) {
                     raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_P_GOT_P, typeObject, arg);
                     throw ParseArgumentsException.raise();

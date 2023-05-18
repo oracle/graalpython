@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,9 @@
  */
 package com.oracle.graal.python.nodes.exception;
 
-import com.oracle.truffle.api.dsl.NeverDefault;
-
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -57,6 +56,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
@@ -81,9 +81,9 @@ public abstract class ExceptMatchNode extends Node {
         throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
     }
 
-    @Specialization(guards = "isClass(clause, lib)", limit = "3")
+    @Specialization(guards = "isClass(clause, isTypeNode)", limit = "1")
     static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
-                    @SuppressWarnings("unused") @CachedLibrary("clause") InteropLibrary lib,
+                    @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                     @Cached ValidExceptionNode isValidException,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtype,

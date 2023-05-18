@@ -136,6 +136,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -517,10 +518,10 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
+        @Specialization(guards = {"!isClass(object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObject(PythonAbstractObject object,
                         @Cached ConditionProfile noWrapperProfile,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }

@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -186,8 +187,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -1379,11 +1378,11 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___FLAGS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class FlagsNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object doGeneric(Object self,
-                        @CachedLibrary("self") InteropLibrary lib,
+                        @Cached IsTypeNode isTypeNode,
                         @Cached GetTypeFlagsNode getTypeFlagsNode) {
-            if (PGuards.isClass(self, lib)) {
+            if (PGuards.isClass(self, isTypeNode)) {
                 return getTypeFlagsNode.execute(self);
             }
             throw raise(PythonErrorType.TypeError, ErrorMessages.DESC_FLAG_FOR_TYPE_DOESNT_APPLY_TO_OBJ, self);
