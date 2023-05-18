@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.modules.ctypes.memory;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
@@ -18,6 +19,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.Storage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ZeroStorage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -785,6 +788,13 @@ public abstract class PointerNodes {
                         @Cached GetPointerValueAsObjectNode toNativeNode) {
             Pointer value = readPointerNode.execute(inliningTarget, memory, storage, offset);
             return toNativeNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_STRUCT")
+        @SuppressWarnings("unused")
+        static Object doStruct(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, ErrorMessages.PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED);
         }
     }
 

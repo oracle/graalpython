@@ -1186,6 +1186,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ISSUBCLASS_ARG_1_MUST_BE_A_CLASS = tsLiteral("issubclass() arg 1 must be a class");
 
     // ctypes
+    public static final TruffleString PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED = tsLiteral("Passing structs by value is not supported on NFI backend");
     public static final TruffleString S_SYMBOL_IS_MISSING = tsLiteral("%s symbol is missing");
     public static final TruffleString PACK_MUST_BE_A_NON_NEGATIVE_INTEGER = tsLiteral("_pack_ must be a non-negative integer");
     public static final TruffleString FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS = tsLiteral("'_fields_' must be a sequence of pairs");
