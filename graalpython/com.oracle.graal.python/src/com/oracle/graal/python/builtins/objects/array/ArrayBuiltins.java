@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.array;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
@@ -73,7 +74,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -757,9 +757,16 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class BufferInfoNode extends PythonUnaryBuiltinNode {
 
         @Specialization
+        @SuppressWarnings("unused")
         Object bufferinfo(PArray self) {
-            // TODO return the C pointer
-            return factory().createTuple(new Object[]{PythonAbstractObject.systemHashCode(self.getBuffer()), self.getLength()});
+            /*
+             * TODO return the C pointer.
+             *
+             * Don't expose buffer_info unless we give out a valid pointer, otherwise people use the
+             * pointer and segfault.
+             */
+            throw raise(NotImplementedError, ErrorMessages.ARRAY_CONVERSION_TO_NATIVE_MEMORY_NOT_IMPLEMENTED);
+            // return factory().createTuple(new Object[]{POINTER, self.getLength()})
         }
     }
 
