@@ -333,7 +333,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             }
 
             Object as_parameter = lookupAsParam.execute(frame, value, T__AS_PARAMETER_);
-            if (as_parameter != null) {
+            if (as_parameter != PNone.NO_VALUE) {
                 // Py_EnterRecursiveCall("while processing _as_parameter_"); TODO
                 Object r = PyCSimpleType_from_param(frame, type, as_parameter, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam, codePointAtIndexNode);
                 // Py_LeaveRecursiveCall();

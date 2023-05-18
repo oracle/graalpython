@@ -45,8 +45,8 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuilti
 import static com.oracle.graal.python.nodes.ErrorMessages.BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.CTYPES_OBJECT_STRUCTURE_TOO_DEEP;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_GOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_INSTEAD_OF_POINTER_TO_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_INSTEAD_OF_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_INSTEAD_OF_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_EXPECTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
@@ -91,20 +91,18 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -155,10 +153,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object CDataType_from_param(VirtualFrame frame, Object type, Object value,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached("create(T__AS_PARAMETER_)") LookupInheritedAttributeNode lookupAttrId,
-                        @Cached IsInstanceNode isInstanceNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached IsInstanceNode isInstanceNode) {
             if (isInstanceNode.executeWith(frame, value, type)) {
                 return value;
             }
@@ -176,19 +172,15 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         return value;
                     }
                 }
-                throw raise(TypeError, EXPECTED_S_INSTANCE_INSTEAD_OF_POINTER_TO_S,
-                                getNameNode.execute(getClassNode.execute(type)));
+                throw raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P, type, ob != null ? ob : PNone.NONE);
             }
 
-            Object as_parameter = lookupAttrId.execute(value);
+            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
 
-            if (as_parameter != null) {
-                return CDataType_from_param(frame, type, as_parameter,
-                                pyTypeStgDictNode, lookupAttrId, isInstanceNode, getClassNode, getNameNode);
+            if (as_parameter != PNone.NO_VALUE) {
+                return CDataType_from_param(frame, type, as_parameter, pyTypeStgDictNode, lookupAttr, isInstanceNode);
             }
-            throw raise(TypeError, EXPECTED_S_INSTANCE_INSTEAD_OF_S,
-                            getNameNode.execute(getClassNode.execute(type)),
-                            getNameNode.execute(getClassNode.execute(value)));
+            throw raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_P, type, value);
         }
     }
 

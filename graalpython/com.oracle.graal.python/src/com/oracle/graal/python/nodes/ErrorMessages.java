@@ -1205,7 +1205,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE = tsLiteral("incompatible types, %p instance instead of %p instance");
     public static final TruffleString CTYPES_OBJECT_STRUCTURE_TOO_DEEP = tsLiteral("ctypes object structure too deep");
     public static final TruffleString NOT_A_CTYPE_INSTANCE = tsLiteral("not a ctype instance");
-    public static final TruffleString EXPECTED_S_INSTANCE_INSTEAD_OF_S = tsLiteral("expected %s instance instead of %s");
+    public static final TruffleString EXPECTED_P_INSTANCE_INSTEAD_OF_P = tsLiteral("expected %p instance instead of %p");
     public static final TruffleString ARRAY_LENGTH_MUST_BE_0_NOT_D = tsLiteral("Array length must be >= 0, not %d");
     public static final TruffleString EXPECTED_A_TYPE_OBJECT = tsLiteral("Expected a type object");
     public static final TruffleString HAS_NO_STGINFO = tsLiteral("has no _stginfo_");
@@ -1283,7 +1283,7 @@ public abstract class ErrorMessages {
     public static final TruffleString FIELDS_MUST_BE_A_SEQUENCE = tsLiteral("_fields_ must be a sequence");
     public static final TruffleString TOO_MANY_INITIALIZERS = tsLiteral("too many initializers");
     public static final TruffleString DUPLICATE_VALUES_FOR_FIELD_S = tsLiteral("duplicate values for field %s");
-    public static final TruffleString EXPECTED_S_INSTANCE_INSTEAD_OF_POINTER_TO_S = tsLiteral("expected %s instance instead of pointer to %s");
+    public static final TruffleString EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P = tsLiteral("expected %p instance instead of pointer to %p");
     public static final TruffleString CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED = tsLiteral("ctypes objects containing pointers cannot be pickled");
     public static final TruffleString S_DICT_MUST_BE_A_DICTIONARY_NOT_S = tsLiteral("%s.__dict__ must be a dictionary, not %s");
     public static final TruffleString STRING_TOO_LONG = tsLiteral("string too long");
