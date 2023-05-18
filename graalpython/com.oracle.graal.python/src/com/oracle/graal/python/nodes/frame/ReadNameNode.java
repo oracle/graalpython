@@ -40,50 +40,71 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ReadNameNode extends PNodeWithContext implements AccessNameNode {
-    @Child private ReadGlobalOrBuiltinNode readGlobalNode;
-    protected final TruffleString attributeId;
-
-    public abstract Object execute(VirtualFrame frame);
-
-    protected ReadNameNode(TruffleString attributeId) {
-        this.attributeId = attributeId;
+    public final Object execute(VirtualFrame frame, TruffleString attributeId) {
+        CompilerAsserts.partialEvaluationConstant(attributeId);
+        return executeImpl(frame, attributeId);
     }
 
-    public static ReadNameNode create(TruffleString attributeId) {
-        return ReadNameNodeGen.create(attributeId);
+    public abstract Object executeImpl(VirtualFrame frame, TruffleString attributeId);
+
+    public static ReadNameNode create() {
+        return ReadNameNodeGen.create();
     }
 
-    private ReadGlobalOrBuiltinNode getReadGlobalNode() {
-        if (readGlobalNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            readGlobalNode = insert(ReadGlobalOrBuiltinNode.create(attributeId));
-        }
-        return readGlobalNode;
+    private Object readGlobalsIfKeyError(VirtualFrame frame, TruffleString attributeId, ReadGlobalOrBuiltinNode readGlobalNode, PException e, IsBuiltinClassProfile keyError) {
+        e.expect(PythonBuiltinClassType.KeyError, keyError);
+        return readGlobalNode.execute(frame, attributeId);
+    }
+
+    protected static HashingStorage getStorage(VirtualFrame frame) {
+        return ((PDict) PArguments.getSpecialArgument(frame)).getDictStorage();
     }
 
     @Specialization(guards = "!hasLocals(frame)")
-    protected Object readFromLocals(VirtualFrame frame) {
-        return getReadGlobalNode().execute(frame);
+    protected Object readFromLocals(VirtualFrame frame, TruffleString attributeId,
+                    @Shared("readGlobal") @Cached ReadGlobalOrBuiltinNode readGlobalNode) {
+        return readGlobalNode.execute(frame, attributeId);
     }
 
     @Specialization(guards = "hasLocals(frame)")
-    protected Object readFromLocalsDict(VirtualFrame frame,
+    protected Object readFromLocalsDict(VirtualFrame frame, TruffleString attributeId,
+                    @Cached ReadGlobalOrBuiltinNode readGlobalOrBuiltinNode,
                     @Cached ReadFromLocalsNode readFromLocals) {
         Object result = readFromLocals.execute(frame, PArguments.getSpecialArgument(frame), attributeId);
         if (result == PNone.NO_VALUE) {
-            return getReadGlobalNode().execute(frame);
+            return readGlobalOrBuiltinNode.execute(frame, attributeId);
         } else {
             return result;
+        }
+    }
+
+    @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
+    protected Object readFromLocals(VirtualFrame frame, TruffleString attributeId,
+                    @Shared("readGlobal") @Cached ReadGlobalOrBuiltinNode readGlobalNode,
+                    @Cached PyObjectGetItem getItem,
+                    @Cached IsBuiltinClassProfile keyError) {
+        Object frameLocals = PArguments.getSpecialArgument(frame);
+        try {
+            return getItem.execute(frame, frameLocals, attributeId);
+        } catch (PException e) {
+            return readGlobalsIfKeyError(frame, attributeId, readGlobalNode, e, keyError);
         }
     }
 }

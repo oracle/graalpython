@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,19 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
+@GenerateUncached
 public abstract class DeleteAttributeNode extends PNodeWithContext {
     @NeverDefault
     public static DeleteAttributeNode create() {
@@ -59,5 +65,13 @@ public abstract class DeleteAttributeNode extends PNodeWithContext {
     protected void doIt(VirtualFrame frame, Object object, Object key,
                     @Cached("create(DelAttr)") LookupAndCallBinaryNode call) {
         call.executeObject(frame, object, key);
+    }
+
+    @Specialization(replaces = "doIt")
+    @TruffleBoundary
+    protected void doItUncached(Object object, Object key) {
+        Object klass = GetClassNode.getUncached().execute(object);
+        Object method = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.DelAttr).execute(klass);
+        CallBinaryMethodNode.getUncached().executeObject(null, method, object, key);
     }
 }

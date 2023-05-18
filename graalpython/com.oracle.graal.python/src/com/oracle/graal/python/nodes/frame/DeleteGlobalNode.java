@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,47 +45,49 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateUncached
 public abstract class DeleteGlobalNode extends PNodeWithContext {
-    private final TruffleString attributeId;
-
-    DeleteGlobalNode(TruffleString attributeId) {
-        this.attributeId = attributeId;
+    public static DeleteGlobalNode create() {
+        return DeleteGlobalNodeGen.create();
     }
 
-    public static DeleteGlobalNode create(TruffleString attributeId) {
-        return DeleteGlobalNodeGen.create(attributeId);
+    public final void executeWithGlobals(VirtualFrame frame, Object globals, TruffleString attributeId) {
+        CompilerAsserts.partialEvaluationConstant(attributeId);
+        executeWithGlobalsImpl(frame, globals, attributeId);
     }
 
-    public abstract void executeWithGlobals(VirtualFrame frame, Object globals);
+    public abstract void executeWithGlobalsImpl(VirtualFrame frame, Object globals, TruffleString attributeId);
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    void deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals,
+    void deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, TruffleString attributeId,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
         deleteNode.execute(frame, cachedGlobals, attributeId);
     }
 
     @Specialization(replaces = "deleteDictCached")
-    void deleteDict(VirtualFrame frame, PDict globals,
+    void deleteDict(VirtualFrame frame, PDict globals, TruffleString attributeId,
                     @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
         deleteNode.execute(frame, globals, attributeId);
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    void deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals,
+    void deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
                     @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Cached DeleteAttributeNode storeNode) {
         storeNode.execute(frame, cachedGlobals, attributeId);
     }
 
     @Specialization(replaces = "deleteModuleCached")
-    void deleteModule(VirtualFrame frame, PythonModule globals,
+    void deleteModule(VirtualFrame frame, PythonModule globals, TruffleString attributeId,
                     @Cached DeleteAttributeNode storeNode) {
         storeNode.execute(frame, globals, attributeId);
     }
