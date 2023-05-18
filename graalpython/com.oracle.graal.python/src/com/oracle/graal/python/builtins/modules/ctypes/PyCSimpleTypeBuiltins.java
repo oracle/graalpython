@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StgDict;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.J_FROM_PARAM;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T__AS_PARAMETER_;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1;
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE;
@@ -83,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -136,7 +136,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached("create(T__TYPE_)") LookupAttributeInMRONode lookupAttrId,
+                        @Cached PyObjectLookupAttr lookupAttrType,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached SetAttributeNode.Dynamic setAttrString,
@@ -153,7 +153,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
 
-            Object proto = lookupAttrId.execute(result);
+            Object proto = lookupAttrType.execute(frame, result, T__TYPE_);
             if (proto == PNone.NO_VALUE) {
                 throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }

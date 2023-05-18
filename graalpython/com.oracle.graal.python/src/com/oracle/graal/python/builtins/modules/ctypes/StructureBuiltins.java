@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.T__fields_;
+import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.T__FIELDS_;
 import static com.oracle.graal.python.nodes.ErrorMessages.DUPLICATE_VALUES_FOR_FIELD_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_INITIALIZERS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
@@ -169,7 +169,7 @@ public class StructureBuiltins extends PythonBuiltins {
             }
 
             StgDictObject dict = pyTypeStgDictNode.execute(type);
-            fields = getItem.execute(dict.getDictStorage(), T__fields_);
+            fields = getItem.execute(dict.getDictStorage(), T__FIELDS_);
             if (fields == null) {
                 return index;
             }

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.J_FROM_PARAM;
+import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T__AS_PARAMETER_;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_pointer;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRONG_TYPE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -69,8 +70,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -151,7 +152,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CWCharPFromParamNode cwCharPFromParamNode,
-                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached PyObjectLookupAttr lookupAttr) {
             if (PGuards.isString(value)) {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_pointer;
@@ -182,11 +183,10 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAsParam.execute(value);
-            if (as_parameter != null) {
+            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            if (as_parameter != PNone.NO_VALUE) {
                 return cwCharPFromParamNode.execute(frame, type, as_parameter);
             }
-            /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
         }
     }
@@ -254,8 +254,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CVoidPFromParamNode cVoidPFromParamNode,
-                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached PyObjectLookupAttr lookupAttr) {
             /* c_void_p instance (or subclass) */
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
@@ -276,8 +276,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
             /* function pointer */
-            if (value instanceof PyCFuncPtrObject && pyTypeCheck.isPyCFuncPtrObject(value)) {
-                PyCFuncPtrObject func = (PyCFuncPtrObject) value;
+            if (value instanceof PyCFuncPtrObject func && pyTypeCheck.isPyCFuncPtrObject(value)) {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'P';
@@ -301,8 +300,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAsParam.execute(value);
-            if (as_parameter != null) {
+            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            if (as_parameter != PNone.NO_VALUE) {
                 return cVoidPFromParamNode.execute(frame, type, as_parameter);
             }
             throw raise(TypeError, WRONG_TYPE);
@@ -340,7 +339,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CCharPFromParamNode cCharPFromParamNode,
-                        @Cached("create(T__AS_PARAMETER_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached PyObjectLookupAttr lookupAttr) {
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
                 return value;
@@ -363,11 +362,10 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object as_parameter = lookupAsParam.execute(value);
-            if (as_parameter != null) {
+            Object as_parameter = lookupAttr.execute(frame, value, T__AS_PARAMETER_);
+            if (as_parameter != PNone.NO_VALUE) {
                 return cCharPFromParamNode.execute(frame, type, as_parameter);
             }
-            /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
         }
     }

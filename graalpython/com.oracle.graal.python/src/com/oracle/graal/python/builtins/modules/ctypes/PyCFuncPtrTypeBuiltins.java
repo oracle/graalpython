@@ -69,12 +69,11 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -101,8 +100,8 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T_FLAGS_ = tsLiteral("_flags_");
     protected static final TruffleString T_ARGTYPES_ = tsLiteral("_argtypes_");
     protected static final TruffleString T_RESTYPE_ = tsLiteral("_restype_");
-    protected static final TruffleString T__check_retval_ = tsLiteral("_check_retval_");
-    protected static final TruffleString T___ctypes_from_outparam__ = tsLiteral("__ctypes_from_outparam__");
+    protected static final TruffleString T__CHECK_RETVAL_ = tsLiteral("_check_retval_");
+    protected static final TruffleString T___CTYPES_FROM_OUTPARAM__ = tsLiteral("__ctypes_from_outparam__");
 
     private static final TruffleString T_X_BRACES = tsLiteral("X{}");
 
@@ -116,7 +115,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CastToJavaIntExactNode asNumber,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
@@ -164,7 +163,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
                 }
                 Object[] obtuple = getArray.execute(((PTuple) ob).getSequenceStorage());
-                Object[] converters = converters_from_argtypes(obtuple, getRaiseNode(), lookupAttr);
+                Object[] converters = converters_from_argtypes(frame, obtuple, getRaiseNode(), lookupAttr);
                 stgdict.argtypes = obtuple;
                 stgdict.converters = converters;
             }
@@ -176,82 +175,24 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                     throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
-                stgdict.checker = lookupAttr.execute(ob, T__check_retval_);
+                Object checker = lookupAttr.execute(frame, ob, T__CHECK_RETVAL_);
+                stgdict.checker = checker != PNone.NO_VALUE ? checker : null;
             }
 
             return result;
         }
 
-        static Object[] converters_from_argtypes(Object[] args,
+        static Object[] converters_from_argtypes(VirtualFrame frame, Object[] args,
                         PRaiseNode raiseNode,
-                        LookupAttributeInMRONode.Dynamic lookupAttr) {
+                        PyObjectLookupAttr lookupAttr) {
             int nArgs = args.length;
             Object[] converters = new Object[nArgs];
-
-            /*
-             * I have to check if this is correct. Using c_char, which has a size of 1, will be
-             * assumed to be pushed as only one byte! Aren't these promoted to integers by the C
-             * compiler and pushed as 4 bytes?
-             */
 
             for (int i = 0; i < nArgs; ++i) {
                 Object cnv;
                 Object tp = args[i];
-                /*-
-                 *      The following checks, relating to bpo-16575 and bpo-16576, have been
-                 *      disabled. The reason is that, although there is a definite problem with
-                 *      how libffi handles unions (https://github.com/libffi/libffi/issues/33),
-                 *      there are numerous libraries which pass structures containing unions
-                 *      by values - especially on Windows but examples also exist on Linux
-                 *      (https://bugs.python.org/msg359834).
-                 *
-                 *      It may not be possible to get proper support for unions and bitfields
-                 *      until support is forthcoming in libffi, but for now, adding the checks
-                 *      has caused problems in otherwise-working software, which suggests it
-                 *      is better to disable the checks.
-                 *
-                 *      Although specific examples reported relate specifically to unions and
-                 *      not bitfields, the bitfields check is also being disabled as a
-                 *      precaution.
-                
-                    StgDictObject *stgdict = PyType_stgdict(tp);
-                
-                    if (stgdict != NULL) {
-                        if (stgdict.flags & TYPEFLAG_HASUNION) {
-                            Py_DECREF(converters);
-                            Py_DECREF(ob);
-                            if (!PyErr_Occurred()) {
-                                PyErr_Format(TypeError,
-                                             "item %zd in _argtypes_ passes a union by "
-                                             "value, which is unsupported.",
-                                             i + 1);
-                            }
-                            return NULL;
-                        }
-                        if (stgdict.flags & TYPEFLAG_HASBITFIELD) {
-                            Py_DECREF(converters);
-                            Py_DECREF(ob);
-                            if (!PyErr_Occurred()) {
-                                PyErr_Format(TypeError,
-                                             "item %zd in _argtypes_ passes a struct/"
-                                             "union with a bitfield by value, which is "
-                                             "unsupported.",
-                                             i + 1);
-                            }
-                            return NULL;
-                        }
-                    }
-                 */
 
-                cnv = lookupAttr.execute(tp, T_FROM_PARAM);
-                if (cnv == PNone.NO_VALUE) {
-                    // (mq) This is a workaround for our lookup since we do not search within the
-                    // type (bug)
-                    cnv = lookupAttr.execute(GetClassNode.getUncached().execute(tp), T_FROM_PARAM);
-                    // if (cnv instanceof PBuiltinFunction) {
-                    // cnv = ((PBuiltinFunction) cnv).boundToObject(tp, factory);
-                    // }
-                }
+                cnv = lookupAttr.execute(frame, tp, T_FROM_PARAM);
                 if (cnv == PNone.NO_VALUE) {
                     throw raiseNode.raise(TypeError, ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD, i + 1);
                 }

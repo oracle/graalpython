@@ -90,7 +90,7 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
                         @Shared @Cached WriteAttributeToObjectNode writeNode,
                         @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             writeNode.execute(object, key, value);
-            if (equalNode.execute(key, StructUnionTypeBuiltins.T__fields_, TS_ENCODING)) {
+            if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
                 updateStgDict.execute(frame, object, value, true, factory());
             }
             return PNone.NONE;

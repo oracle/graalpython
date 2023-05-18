@@ -50,7 +50,8 @@ import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_s
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FIN;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FLCID;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FOUT;
-import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.T___ctypes_from_outparam__;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.T__CHECK_RETVAL_;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.T___CTYPES_FROM_OUTPARAM__;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PyCFuncPtrTypeNewNode.converters_from_argtypes;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS;
@@ -111,12 +112,12 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -128,6 +129,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -372,8 +374,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_restype(PyCFuncPtrObject self, Object value,
-                        @Cached("create(T__check_retval_)") LookupAttributeInMRONode lookupAttr,
+        Object PyCFuncPtr_set_restype(VirtualFrame frame, PyCFuncPtrObject self, Object value,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCallableCheckNode callableCheck) {
             if (value == PNone.NONE) {
@@ -385,7 +387,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
             }
             if (!PGuards.isPFunction(value)) {
-                self.checker = lookupAttr.execute(value);
+                Object checker = lookupAttr.execute(frame, value, T__CHECK_RETVAL_);
+                self.checker = checker != PNone.NO_VALUE ? checker : null;
             }
             self.restype = value;
             return PNone.NONE;
@@ -421,21 +424,21 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, PTuple value,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
-                        @Cached GetInternalObjectArrayNode getArray) {
+        Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PTuple value,
+                        @Shared @Cached PyObjectLookupAttr lookupAttr,
+                        @Shared @Cached GetInternalObjectArrayNode getArray) {
             Object[] ob = getArray.execute(value.getSequenceStorage());
-            self.converters = converters_from_argtypes(ob, getRaiseNode(), lookupAttr);
+            self.converters = converters_from_argtypes(frame, ob, getRaiseNode(), lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, PList value,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
-                        @Cached GetInternalObjectArrayNode getArray) {
+        Object PyCFuncPtr_set_argtypes(VirtualFrame frame, PyCFuncPtrObject self, PList value,
+                        @Shared @Cached PyObjectLookupAttr lookupAttr,
+                        @Shared @Cached GetInternalObjectArrayNode getArray) {
             Object[] ob = getArray.execute(value.getSequenceStorage());
-            self.converters = converters_from_argtypes(ob, getRaiseNode(), lookupAttr);
+            self.converters = converters_from_argtypes(frame, ob, getRaiseNode(), lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
@@ -478,7 +481,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetNameNode getNameNode,
-                        @Cached LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
+                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached CallProcNode callProcNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PointerNodes.ReadPointerNode readPointerNode,
@@ -538,7 +541,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 }
             }
 
-            return _build_result(result, callargs, outmask, inoutmask, numretvals, lookupAndCallUnaryDynamicNode);
+            return _build_result(frame, result, callargs, outmask, inoutmask, numretvals, callMethodObjArgs);
         }
 
         protected Object _get_arg(int[] pindex, TruffleString name, Object defval, Object[] inargs, PKeyword[] kwds, TruffleString.EqualNode equalNode) {
@@ -715,8 +718,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         /*
          * Build return value of a function. Consumes the refcount on result and callargs.
          */
-        Object _build_result(Object result, Object[] callargs, int outmask, int inoutmask, int numretvals,
-                        LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode) {
+        Object _build_result(VirtualFrame frame, Object result, Object[] callargs, int outmask, int inoutmask, int numretvals,
+                        PyObjectCallMethodObjArgs callMethodObjArgs) {
             int i, index;
             int bit;
             Object[] tup = null;
@@ -746,7 +749,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                     index++;
                 } else if ((bit & outmask) != 0) {
                     v = callargs[i];
-                    v = lookupAndCallUnaryDynamicNode.executeObject(v, T___ctypes_from_outparam__);
+                    v = callMethodObjArgs.execute(frame, v, T___CTYPES_FROM_OUTPARAM__);
                     if (v == null || numretvals == 1) {
                         return v;
                     }
