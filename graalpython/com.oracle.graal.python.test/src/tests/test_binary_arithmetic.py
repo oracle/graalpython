@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -325,3 +325,20 @@ def test_pow():
         # for some reason this hangs CPython on the CI even if it's just parsed
         from pow_tests import test_pow
         test_pow()
+
+def test_slot1binfull():
+    class A:
+        def __add__(self, other):
+            return 42
+
+        def __radd__(self, other):
+            return 22
+
+    class B(A):
+        pass
+
+
+    assert A() + A() == 42
+    assert A() + B() == 42
+    assert B() + A() == 42
+    assert B() + B() == 42

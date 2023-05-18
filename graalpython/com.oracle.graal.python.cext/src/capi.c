@@ -527,6 +527,78 @@ char* get_ob_sval(PyObject* op) {
 	return ((PyBytesObject *)(op))->ob_sval;
 }
 
+int64_t get_methods_flags(PyTypeObject *cls) {
+    if (cls == NULL) {
+        return 0;
+    }
+
+    int64_t flags = 0;
+	PyNumberMethods* number = cls->tp_as_number;
+    if (number != NULL) {
+#define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((number->NAME != NULL) * BIT_IDX);
+		COMPUTE_FLAGS(nb_add, NB_ADD)
+		COMPUTE_FLAGS(nb_subtract, NB_SUBTRACT)
+		COMPUTE_FLAGS(nb_multiply, NB_MULTIPLY)
+		COMPUTE_FLAGS(nb_remainder, NB_REMAINDER)
+		COMPUTE_FLAGS(nb_divmod, NB_DIVMOD)
+		COMPUTE_FLAGS(nb_power, NB_POWER)
+		COMPUTE_FLAGS(nb_negative, NB_NEGATIVE)
+		COMPUTE_FLAGS(nb_positive, NB_POSITIVE)
+		COMPUTE_FLAGS(nb_absolute, NB_ABSOLUTE)
+		COMPUTE_FLAGS(nb_bool, NB_BOOL)
+		COMPUTE_FLAGS(nb_invert, NB_INVERT)
+		COMPUTE_FLAGS(nb_lshift, NB_LSHIFT)
+		COMPUTE_FLAGS(nb_rshift, NB_RSHIFT)
+		COMPUTE_FLAGS(nb_and, NB_AND)
+		COMPUTE_FLAGS(nb_xor, NB_XOR)
+		COMPUTE_FLAGS(nb_or, NB_OR)
+		COMPUTE_FLAGS(nb_int, NB_INT)
+		COMPUTE_FLAGS(nb_float, NB_FLOAT)
+		COMPUTE_FLAGS(nb_inplace_add, NB_INPLACE_ADD)
+		COMPUTE_FLAGS(nb_inplace_subtract, NB_INPLACE_SUBTRACT)
+		COMPUTE_FLAGS(nb_inplace_multiply, NB_INPLACE_MULTIPLY)
+		COMPUTE_FLAGS(nb_inplace_remainder, NB_INPLACE_REMAINDER)
+		COMPUTE_FLAGS(nb_inplace_power, NB_INPLACE_POWER)
+		COMPUTE_FLAGS(nb_inplace_lshift, NB_INPLACE_LSHIFT)
+		COMPUTE_FLAGS(nb_inplace_rshift, NB_INPLACE_RSHIFT)
+		COMPUTE_FLAGS(nb_inplace_and, NB_INPLACE_AND)
+		COMPUTE_FLAGS(nb_inplace_xor, NB_INPLACE_XOR)
+		COMPUTE_FLAGS(nb_inplace_or, NB_INPLACE_OR)
+		COMPUTE_FLAGS(nb_floor_divide, NB_FLOOR_DIVIDE)
+		COMPUTE_FLAGS(nb_true_divide, NB_TRUE_DIVIDE)
+		COMPUTE_FLAGS(nb_inplace_floor_divide, NB_INPLACE_FLOOR_DIVIDE)
+		COMPUTE_FLAGS(nb_inplace_true_divide, NB_INPLACE_TRUE_DIVIDE)
+		COMPUTE_FLAGS(nb_index, NB_INDEX)
+		COMPUTE_FLAGS(nb_matrix_multiply, NB_MATRIX_MULTIPLY)
+		COMPUTE_FLAGS(nb_inplace_matrix_multiply, NB_INPLACE_MATRIX_MULTIPLY)
+#undef COMPUTE_FLAGS
+    }
+
+    PySequenceMethods *sequence = cls->tp_as_sequence;
+    if (sequence != NULL) {
+#define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((sequence->NAME != NULL) * BIT_IDX);
+		COMPUTE_FLAGS(sq_length, SQ_LENGTH)
+		COMPUTE_FLAGS(sq_concat, SQ_CONCAT)
+		COMPUTE_FLAGS(sq_repeat, SQ_REPEAT)
+		COMPUTE_FLAGS(sq_item, SQ_ITEM)
+		COMPUTE_FLAGS(sq_ass_item, SQ_ASS_ITEM)
+		COMPUTE_FLAGS(sq_contains, SQ_CONTAINS)
+		COMPUTE_FLAGS(sq_inplace_concat, SQ_INPLACE_CONCAT)
+		COMPUTE_FLAGS(sq_inplace_repeat, SQ_INPLACE_REPEAT)
+#undef COMPUTE_FLAGS
+    }
+
+    PyMappingMethods *mapping = cls->tp_as_mapping;
+    if (mapping != NULL) {
+#define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((mapping->NAME != NULL) * BIT_IDX);
+		COMPUTE_FLAGS(mp_length, MP_LENGTH)
+		COMPUTE_FLAGS(mp_subscript, MP_SUBSCRIPT)
+		COMPUTE_FLAGS(mp_ass_subscript, MP_ASS_SUBSCRIPT)
+#undef COMPUTE_FLAGS
+    }
+    return flags;
+}
+
 // not quite as in CPython, this assumes that x is already a double. The rest of
 // the implementation is in the Float constructor in Java
 PyObject* float_subtype_new(PyTypeObject *type, double x) {

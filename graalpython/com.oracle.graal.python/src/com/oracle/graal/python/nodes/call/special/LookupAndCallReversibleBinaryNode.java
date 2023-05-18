@@ -45,9 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -63,9 +60,6 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
@@ -216,11 +210,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         if (hasLeftCallable.profile(inliningTarget, leftCallable != PNone.NO_VALUE)) {
             if (hasRightCallable.profile(inliningTarget, rightCallable != PNone.NO_VALUE) &&
                             (!isSameTypeNode.execute(inliningTarget, leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass) ||
-                                            isFlagSequenceCompat(inliningTarget, leftClass, rightClass, slot, noLeftBuiltinClassType, noRightBuiltinClassType) ||
-                                            // this condition is a quick fix for the fact that
-                                            // CPython tries both normal and reverse nb_multiply
-                                            // before trying sq_repeat (happens in numpy):
-                                            (slot == SpecialMethodSlot.Mul && leftClass == PythonBuiltinClassType.PList))) {
+                                            isFlagSequenceCompat(inliningTarget, leftClass, rightClass, slot, noLeftBuiltinClassType, noRightBuiltinClassType))) {
                 result = dispatch(frame, inliningTarget, ensureReverseDispatch(), rightCallable, right, left, rightClass, rslot, isSubtype, getEnclosingType);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
@@ -241,80 +231,6 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
             return runErrorHandler(frame, left, right);
         }
         return result;
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateInline
-    @GenerateCached(false)
-    protected abstract static class AreSameCallables extends Node {
-        public abstract boolean execute(Node inliningTarget, Object left, Object right);
-
-        @Specialization(guards = "a == b")
-        static boolean areIdenticalFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
-            return true;
-        }
-
-        @Specialization(guards = "isNone(a) || isNone(b)")
-        static boolean noneFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
-            return a == b;
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrs(BuiltinMethodDescriptor a, BuiltinMethodDescriptor b) {
-            return a == b;
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrFun1(BuiltinMethodDescriptor a, PBuiltinFunction b) {
-            return a.isDescriptorOf(b);
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrFun2(PBuiltinFunction a, BuiltinMethodDescriptor b) {
-            return b.isDescriptorOf(a);
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrMeth1(BuiltinMethodDescriptor a, PBuiltinMethod b) {
-            return doDescrFun1(a, b.getBuiltinFunction());
-        }
-
-        @Specialization(replaces = "areIdenticalFastPath")
-        static boolean doDescrMeth2(PBuiltinMethod a, BuiltinMethodDescriptor b) {
-            return doDescrFun2(a.getBuiltinFunction(), b);
-        }
-
-        @Fallback
-        static boolean doGenericRuntimeObjects(Object a, Object b) {
-            return a == b;
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateInline
-    @GenerateCached(false)
-    protected abstract static class GetEnclosingType extends Node {
-        public abstract Object execute(Node inliningTarget, Object callable);
-
-        @Specialization
-        static Object doDescrs(BuiltinMethodDescriptor descriptor) {
-            return descriptor.getEnclosingType();
-        }
-
-        @Specialization
-        static Object doBuiltinFun(PBuiltinFunction fun) {
-            return fun.getEnclosingType();
-        }
-
-        @Specialization
-        static Object doBuiltinMethod(PBuiltinMethod a) {
-            return doBuiltinFun(a.getBuiltinFunction());
-        }
-
-        @Fallback
-        static Object doOthers(@SuppressWarnings("unused") Object callable) {
-            return null;
-        }
     }
 
     private Object dispatch(VirtualFrame frame, Node inliningTarget, CallBinaryMethodNode dispatch, Object callable, Object leftValue,

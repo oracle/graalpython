@@ -47,6 +47,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
@@ -71,6 +72,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
      * @see SpecialMethodSlot
      */
     Object[] specialMethodSlots;
+    @CompilationFinal protected long methodsFlags = 0L;
 
     /** {@code true} if the MRO contains a native class. */
     private final boolean needsNativeAllocation;
@@ -234,6 +236,16 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         if (slot != null) {
             SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, value);
         }
+    }
+
+    @TruffleBoundary
+    public void setMethodsFlags(long flag) {
+        assert CompilerDirectives.inInterpreter();
+        methodsFlags |= flag;
+    }
+
+    public long getMethodsFlags() {
+        return methodsFlags;
     }
 
     /**
