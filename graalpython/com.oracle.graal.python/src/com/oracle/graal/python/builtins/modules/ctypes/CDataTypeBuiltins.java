@@ -614,12 +614,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     }
 
     static void PyCData_MallocBuffer(CDataObject obj, StgDictObject dict) {
-        if (dict.size == 0) {
-            obj.b_ptr = Pointer.NULL;
-        } else {
-            obj.b_ptr = Pointer.allocate(dict.ffi_type_pointer, dict.size);
-        }
+        obj.b_ptr = dict.size > 0 ? Pointer.allocate(dict.ffi_type_pointer, dict.size) : Pointer.NULL;
         obj.b_size = dict.size;
+        obj.b_needsfree = true;
     }
 
     static CDataObject PyCData_FromBaseObj(Object type, Object base, int index, Pointer adr,
@@ -635,7 +632,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         cmem.b_size = dict.size;
         if (base != null) { /* use base's buffer */
             cmem.b_ptr = adr;
-            cmem.b_needsfree = 0;
+            cmem.b_needsfree = false;
             cmem.b_base = (CDataObject) base;
         } else { /* copy contents of adr */
             PyCData_MallocBuffer(cmem, dict);

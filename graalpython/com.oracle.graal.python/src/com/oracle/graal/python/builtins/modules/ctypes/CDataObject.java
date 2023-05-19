@@ -64,28 +64,13 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public class CDataObject extends PythonBuiltinObject {
 
-    /*
-     * Hm. Are there CDataObject's which do not need the b_objects member? In this case we probably
-     * should introduce b_flags to mark it as present... If b_objects is not present/unused b_length
-     * is unneeded as well.
-     */
-
     Pointer b_ptr; /* pointer to memory block */
-    int b_needsfree; /* need _we_ free the memory? */
+    boolean b_needsfree; /* need _we_ free the memory? */
     CDataObject b_base; /* pointer to base object or NULL */
     int b_size; /* size of memory block in bytes */
     int b_length; /* number of references we need */
     int b_index; /* index of this object into base's b_object list */
     Object b_objects; /* dictionary of references we need to keep, or Py_None */
-
-    /*
-     * A default buffer in CDataObject, which can be used for small C types. If this buffer is too
-     * small, PyMem_Malloc will be called to create a larger one, and this one is not used.
-     *
-     * Making CDataObject a variable size object would be a better solution, but more difficult in
-     * the presence of PyCFuncPtrObject. Maybe later.
-     */
-    // Object b_value;
 
     public CDataObject(Object cls, Shape instanceShape) {
         super(cls, instanceShape);

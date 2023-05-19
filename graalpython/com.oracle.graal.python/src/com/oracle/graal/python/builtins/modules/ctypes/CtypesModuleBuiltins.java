@@ -622,29 +622,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (size < dict.size) {
                 throw raise(ValueError, MINIMUM_SIZE_IS_D, dict.size);
             }
-            if (obj.b_needsfree == 0) {
+            if (obj.b_needsfree) {
                 throw raise(ValueError, MEMORY_CANNOT_BE_RESIZED_BECAUSE_THIS_OBJECT_DOESN_T_OWN_IT);
             }
-            /*- TODO
-            if (size <= sizeof(obj.b_value)) {
-                // internal default buffer is large enough
-                obj.b_size = size;
-                return PNone.NONE;
-            }
-            Object ptr;
-            if (!_CDataObject_HasExternalBuffer(obj)) {
-                /*
-                 * We are currently using the objects default buffer, but it isn't large enough any
-                 * more.
-                 * /
-                ptr = PyMem_Malloc(size);
-                memset(ptr, 0, size);
-                memmove(ptr, obj.b_ptr, obj.b_size);
-            } else {
-                ptr = PyMem_Realloc(obj.b_ptr, size);
-            }
-            obj.b_ptr.ptr = ptr;
-            */
             obj.b_size = size;
             return PNone.NONE;
         }

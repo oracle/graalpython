@@ -115,7 +115,7 @@ public class CDataBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getBNeedsFree(CDataObject self) {
-            return self.b_needsfree != 0;
+            return self.b_needsfree;
         }
     }
 
