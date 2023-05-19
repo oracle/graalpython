@@ -267,7 +267,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         Object CDataType_from_buffer_copy(Object type, Object buffer, int offset,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached AuditNode auditNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             try {
@@ -288,10 +290,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
                 CDataObject result = factory().createCDataObject(type);
                 GenericPyCDataNew(dict, result);
-                // memcpy(result.b_ptr, buffer.buf + offset, dict.size);
                 byte[] slice = new byte[dict.size];
                 bufferLib.readIntoByteArray(buffer, offset, slice, 0, dict.size);
-                result.b_ptr = Pointer.bytes(slice);
+                writeBytesNode.execute(inliningTarget, result.b_ptr, slice);
                 return result;
             } finally {
                 bufferLib.release(buffer);

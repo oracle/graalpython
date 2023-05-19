@@ -188,17 +188,21 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
+                        @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             CDataObject ob = factory().createPyCFuncPtrObject(type);
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             GenericPyCDataNew(dict, ob);
-            ob.b_ptr = pointerFromLongNode.execute(inliningTarget, args[0]).createReference();
+            Pointer value = pointerFromLongNode.execute(inliningTarget, args[0]);
+            writePointerNode.execute(inliningTarget, ob.b_ptr, value);
             return ob;
         }
 
         @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(args, longCheckNode)"})
         Object callback(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached KeepRefNode keepRefNode,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
@@ -207,20 +211,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
             }
 
-            /*
-             * XXX XXX This would allow passing additional options. For COM method
-             * *implementations*, we would probably want different behaviour than in 'normal'
-             * callback functions: return a HRESULT if an exception occurs in the callback, and
-             * print the traceback not only on the console, but also to OutputDebugString() or
-             * something like that.
-             */
-            /*
-             * if (kwds && _PyDict_GetItemIdWithError(kwds, &PyId_options)) { ... } else if
-             * (PyErr_Occurred()) { return NULL; }
-             */
-
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
-            /* XXXX Fails if we do: 'PyCFuncPtr(lambda x: x)' */
             if (dict == null || dict.argtypes == null) {
                 throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
@@ -230,8 +221,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             GenericPyCDataNew(dict, self);
             self.callable = callable;
             self.thunk = thunk;
-            self.b_ptr = Pointer.nativeMemory(thunk.pcl_exec).createReference();
-
+            writePointerNode.execute(inliningTarget, self.b_ptr, Pointer.nativeMemory(thunk.pcl_exec));
             keepRefNode.execute(frame, self, 0, thunk);
             return self;
         }
@@ -774,6 +764,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CtypesDlSymNode dlSymNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
+                        @Cached PointerNodes.WritePointerNode writePointerNode,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached CastToTruffleStringNode toString,
@@ -815,7 +806,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             self.paramflags = paramflags;
 
             Object addressObj = address instanceof PythonNativeVoidPtr ptr ? ptr.getPointerObject() : address;
-            self.b_ptr = Pointer.nativeMemory(addressObj).createReference();
+            writePointerNode.execute(inliningTarget, self.b_ptr, Pointer.nativeMemory(addressObj));
             keepRefNode.execute(frame, self, 0, dll);
 
             self.callable = self;

@@ -163,7 +163,6 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            /* keep this for bw compatibility */
             if (getItemResDict.hasKey(resDict.getDictStorage(), T__ABSTRACT_)) {
                 return result;
             }
@@ -177,7 +176,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              * requirements of the instances
              */
             dict.setDictStorage(addAllToOtherNode.execute(frame, resDict.getDictStorage(), dict.getDictStorage()));
-            setDict.execute((PythonObject) result, dict);
+            setDict.execute(result, dict);
             dict.format = T_UPPER_B;
 
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;

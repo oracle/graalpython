@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -139,6 +140,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         @Cached CallNode callNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Cached WarnNode warnNode,
+                        @Cached PointerNodes.MemcpyNode memcpyNode,
                         @Cached PRaiseNode raiseNode) throws ArityException {
             Object[] converters = thunk.converters;
             int nArgs = converters.length;
@@ -150,7 +152,6 @@ public final class CThunkObject extends PythonBuiltinObject {
             try {
                 Object[] arglist = new Object[nArgs];
                 for (int i = 0; i < nArgs; ++i) {
-                    StgDictObject dict = pyTypeStgDictNode.execute(converters[i]);
                     Object arg = pArgs[i];
                     if (lib.isPointer(arg)) {
                         try {
@@ -159,15 +160,16 @@ public final class CThunkObject extends PythonBuiltinObject {
                             throw CompilerDirectives.shouldNotReachHere(e);
                         }
                     }
+                    FFIType argType = thunk.atypes[i];
+                    Pointer value = Pointer.create(argType, argType.size, arg, 0);
+                    StgDictObject dict = pyTypeStgDictNode.execute(converters[i]);
                     if (dict != null &&
                                     dict.getfunc != FieldGet.nil &&
                                     !pyTypeCheck.ctypesSimpleInstance(inliningTarget, converters[i], getBaseClassNode, isSameTypeNode)) {
-                        FFIType type = dict.ffi_type_pointer;
-                        Pointer ptr = Pointer.create(type, type.size, arg, 0);
-                        arglist[i] = getFuncNode.execute(dict.getfunc, ptr, dict.size);
+                        arglist[i] = getFuncNode.execute(dict.getfunc, value, dict.size);
                     } else if (dict != null) {
                         CDataObject obj = (CDataObject) callNode.execute(converters[i]);
-                        obj.b_ptr = Pointer.nativeMemory(arg).createReference();
+                        memcpyNode.execute(inliningTarget, obj.b_ptr, value, dict.size);
                         arglist[i] = obj;
                     } else {
                         throw raiseNode.raise(TypeError, CANNOT_BUILD_PARAMETER);
