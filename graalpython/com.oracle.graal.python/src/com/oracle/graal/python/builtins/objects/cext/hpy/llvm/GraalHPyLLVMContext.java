@@ -762,6 +762,200 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         return GraalHPyHandle.create(context.getContext().lookupType(value));
     }
 
+    private static Object createContextFunction(HPyContextMember member) {
+        return switch (member) {
+            case CTX_ASPYOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyAsPyObjectNodeGen::create, GraalHPyAsPyObjectNodeGen.getUncached());
+            case CTX_DUP -> new HPyExecuteDefaultWrapper(GraalHPyDupNodeGen::create, GraalHPyDupNodeGen.getUncached());
+            case CTX_CLOSE -> new HPyExecuteDefaultWrapper(GraalHPyCloseNodeGen::create, GraalHPyCloseNodeGen.getUncached());
+            case CTX_MODULE_CREATE -> new HPyExecuteDefaultWrapper(GraalHPyModuleCreateNodeGen::create, GraalHPyModuleCreateNodeGen.getUncached());
+            case CTX_BOOL_FROMLONG -> new HPyExecuteDefaultWrapper(GraalHPyBoolFromLongNodeGen::create, GraalHPyBoolFromLongNodeGen.getUncached());
+            case CTX_LONG_FROMLONG, CTX_LONG_FROMLONGLONG, CTX_LONG_FROMSSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create, GraalHPyLongFromLongNodeGen.getUncached(), true);
+
+            case CTX_LONG_FROMUNSIGNEDLONG, CTX_LONG_FROMUNSIGNEDLONGLONG, CTX_LONG_FROMSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create,
+                    GraalHPyLongFromLongNodeGen.getUncached(), false);
+            case CTX_LONG_ASLONG, CTX_LONG_ASLONGLONG -> new HPyLongAsPrimitiveExecuteWrapper(1, java.lang.Long.BYTES, true, false);
+            case CTX_LONG_ASUNSIGNEDLONG, CTX_LONG_ASUNSIGNEDLONGLONG, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> new HPyLongAsPrimitiveExecuteWrapper(0, java.lang.Long.BYTES, true, true);
+            case CTX_LONG_ASUNSIGNEDLONGMASK, CTX_LONG_ASUNSIGNEDLONGLONGMASK -> new HPyLongAsPrimitiveExecuteWrapper(0, java.lang.Long.BYTES, false, false);
+            case CTX_LONG_ASSSIZE_T -> new HPyLongAsPrimitiveExecuteWrapper(1, java.lang.Long.BYTES, true, true);
+            case CTX_LONG_ASDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyLongAsDoubleNodeGen::create, GraalHPyLongAsDoubleNodeGen.getUncached());
+            case CTX_NEW -> new HPyExecuteDefaultWrapper(GraalHPyNewNodeGen::create, GraalHPyNewNodeGen.getUncached());
+            case CTX_TYPE -> new HPyExecuteDefaultWrapper(GraalHPyTypeNodeGen::create, GraalHPyTypeNodeGen.getUncached());
+            case CTX_TYPECHECK -> new HPyExecuteWrapperWithFlag(GraalHPyTypeCheckNodeGen::create, GraalHPyTypeCheckNodeGen.getUncached(), false);
+            case CTX_TYPECHECK_G -> new HPyExecuteWrapperWithFlag(GraalHPyTypeCheckNodeGen::create, GraalHPyTypeCheckNodeGen.getUncached(), true);
+            case CTX_IS -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), false);
+            case CTX_IS_G -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), true);
+            case CTX_TYPE_GENERICNEW -> new HPyExecuteDefaultWrapper(GraalHPyTypeGenericNewNodeGen::create, GraalHPyTypeGenericNewNodeGen.getUncached());
+            case CTX_ASSTRUCT, CTX_ASSTRUCTLEGACY -> new HPyExecuteDefaultWrapper(GraalHPyCastNodeGen::create, GraalHPyCastNodeGen.getUncached());
+
+            // unary
+            case CTX_NEGATIVE -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Neg);
+            case CTX_POSITIVE -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Pos);
+            case CTX_ABSOLUTE -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_ABS, 1);
+            case CTX_INVERT -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Invert);
+            case CTX_INDEX -> new HPyExecuteDefaultWrapper(GraalHPyAsIndexNodeGen::create, GraalHPyAsIndexNodeGen.getUncached());
+            case CTX_LONG -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_INT, 1);
+            case CTX_FLOAT -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_FLOAT, 1);
+
+            // binary
+            case CTX_ADD -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Add);
+            case CTX_SUBTRACT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Sub);
+            case CTX_MULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Mul);
+            case CTX_MATRIXMULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.MatMul);
+            case CTX_FLOORDIVIDE -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.FloorDiv);
+            case CTX_TRUEDIVIDE -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.TrueDiv);
+            case CTX_REMAINDER -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Mod);
+            case CTX_DIVMOD -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.DivMod);
+            case CTX_LSHIFT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.LShift);
+            case CTX_RSHIFT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.RShift);
+            case CTX_AND -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.And);
+            case CTX_XOR -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Xor);
+            case CTX_OR -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Or);
+            case CTX_INPLACEADD -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IAdd);
+            case CTX_INPLACESUBTRACT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ISub);
+            case CTX_INPLACEMULTIPLY -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMul);
+            case CTX_INPLACEMATRIXMULTIPLY -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMatMul);
+            case CTX_INPLACEFLOORDIVIDE -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IFloorDiv);
+            case CTX_INPLACETRUEDIVIDE -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ITrueDiv);
+            case CTX_INPLACEREMAINDER -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMod);
+            case CTX_INPLACELSHIFT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ILShift);
+            case CTX_INPLACERSHIFT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IRShift);
+            case CTX_INPLACEAND -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IAnd);
+            case CTX_INPLACEXOR -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IXor);
+            case CTX_INPLACEOR -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IOr);
+
+            // ternary
+            case CTX_POWER -> new HPyExecuteWrapperTernaryArithmetic(TernaryArithmetic.Pow);
+            case CTX_INPLACEPOWER -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IPow);
+
+            case CTX_CALLABLE_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsCallableNodeGen::create, GraalHPyIsCallableNodeGen.getUncached());
+            case CTX_CALLTUPLEDICT -> new HPyExecuteDefaultWrapper(GraalHPyCallTupleDictNodeGen::create, GraalHPyCallTupleDictNodeGen.getUncached());
+
+            case CTX_DICT_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PDict);
+            case CTX_DICT_NEW -> new HPyExecuteDefaultWrapper(GraalHPyDictNewNodeGen::create, GraalHPyDictNewNodeGen.getUncached());
+            case CTX_DICT_GETITEM -> new HPyExecuteDefaultWrapper(GraalHPyDictGetItemNodeGen::create, GraalHPyDictGetItemNodeGen.getUncached());
+            case CTX_LIST_NEW -> new HPyExecuteDefaultWrapper(GraalHPyListNewNodeGen::create, GraalHPyListNewNodeGen.getUncached());
+            case CTX_LIST_APPEND -> new HPyExecuteDefaultWrapper(GraalHPyListAppendNodeGen::create, GraalHPyListAppendNodeGen.getUncached());
+            case CTX_FLOAT_FROMDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyFloatFromDoubleNodeGen::create, GraalHPyFloatFromDoubleNodeGen.getUncached());
+            case CTX_FLOAT_ASDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyFloatAsDoubleNodeGen::create, GraalHPyFloatAsDoubleNodeGen.getUncached());
+            case CTX_BYTES_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PBytes);
+            case CTX_BYTES_GET_SIZE -> new HPyExecuteDefaultWrapper(GraalHPyBytesGetSizeNodeGen::create, GraalHPyBytesGetSizeNodeGen.getUncached());
+            case CTX_BYTES_SIZE -> new HPyExecuteDefaultWrapper(GraalHPyBytesGetSizeNodeGen::create, GraalHPyBytesGetSizeNodeGen.getUncached());
+            case CTX_BYTES_AS_STRING -> new HPyExecuteDefaultWrapper(GraalHPyBytesAsStringNodeGen::create, GraalHPyBytesAsStringNodeGen.getUncached());
+            case CTX_BYTES_ASSTRING -> new HPyExecuteDefaultWrapper(GraalHPyBytesAsStringNodeGen::create, GraalHPyBytesAsStringNodeGen.getUncached());
+            case CTX_BYTES_FROMSTRING -> new HPyExecuteWrapperWithFlag(GraalHPyBytesFromStringAndSizeNodeGen::create, GraalHPyBytesFromStringAndSizeNodeGen.getUncached(), false);
+            case CTX_BYTES_FROMSTRINGANDSIZE -> new HPyExecuteWrapperWithFlag(GraalHPyBytesFromStringAndSizeNodeGen::create, GraalHPyBytesFromStringAndSizeNodeGen.getUncached(), true);
+            case CTX_ERR_NOMEMORY -> new HPyErrRaisePredefinedExecuteWrapper(PythonBuiltinClassType.MemoryError);
+            case CTX_ERR_SETSTRING -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetStringNodeGen::create, GraalHPyErrSetStringNodeGen.getUncached(), true);
+            case CTX_ERR_SETOBJECT -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetStringNodeGen::create, GraalHPyErrSetStringNodeGen.getUncached(), false);
+            case CTX_ERR_SETFROMERRNOWITHFILENAME -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen::create,
+                    GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen.getUncached(), false);
+            case CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen::create,
+                    GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen.getUncached(), true);
+            case CTX_ERR_OCCURRED -> new HPyExecuteDefaultWrapper(GraalHPyErrOccurredNodeGen::create, GraalHPyErrOccurredNodeGen.getUncached());
+            case CTX_ERR_EXCEPTIONMATCHES -> new HPyExecuteDefaultWrapper(GraalHPyErrExceptionMatchesNodeGen::create, GraalHPyErrExceptionMatchesNodeGen.getUncached());
+            case CTX_ERR_CLEAR -> new HPyExecuteDefaultWrapper(GraalHPyErrClearNodeGen::create, GraalHPyErrClearNodeGen.getUncached());
+            case CTX_ERR_NEWEXCEPTION -> new HPyExecuteWrapperWithFlag(GraalHPyNewExceptionNodeGen::create, GraalHPyNewExceptionNodeGen.getUncached(), false);
+            case CTX_ERR_NEWEXCEPTIONWITHDOC -> new HPyExecuteWrapperWithFlag(GraalHPyNewExceptionNodeGen::create, GraalHPyNewExceptionNodeGen.getUncached(), true);
+            case CTX_ERR_WARNEX -> new HPyExecuteDefaultWrapper(GraalHPyErrWarnExNodeGen::create, GraalHPyErrWarnExNodeGen.getUncached());
+            case CTX_ERR_WRITEUNRAISABLE -> new HPyExecuteDefaultWrapper(GraalHPyErrWriteUnraisableNodeGen::create, GraalHPyErrWriteUnraisableNodeGen.getUncached());
+            case CTX_FATALERROR -> new HPyExecuteDefaultWrapper(GraalHPyFatalErrorNodeGen::create, GraalHPyFatalErrorNodeGen.getUncached());
+            case CTX_FROMPYOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyFromPyObjectNodeGen::create, GraalHPyFromPyObjectNodeGen.getUncached());
+            case CTX_UNICODE_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PString);
+            case CTX_ISTRUE -> new HPyExecuteDefaultWrapper(GraalHPyIsTrueNodeGen::create, GraalHPyIsTrueNodeGen.getUncached());
+            case CTX_UNICODE_ASUTF8STRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                    StandardCharsets.UTF_8);
+            case CTX_UNICODE_ASASCIISTRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                    StandardCharsets.US_ASCII);
+            case CTX_UNICODE_ASLATIN1STRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                    StandardCharsets.ISO_8859_1);
+            case CTX_UNICODE_ASUTF8ANDSIZE -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeAsUTF8AndSizeNodeGen::create, GraalHPyUnicodeAsUTF8AndSizeNodeGen.getUncached());
+            case CTX_UNICODE_FROMSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromStringNodeGen::create, GraalHPyUnicodeFromStringNodeGen.getUncached());
+            case CTX_UNICODE_FROMWIDECHAR -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromWcharNodeGen::create, GraalHPyUnicodeFromWcharNodeGen.getUncached());
+            case CTX_UNICODE_DECODEASCII -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen::create,
+                    GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen.getUncached(), T_ASCII_UPPERCASE);
+            case CTX_UNICODE_DECODELATIN1 -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen::create,
+                    GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen.getUncached(), T_ISO_8859_1);
+// members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULT.ordinal()] =
+// GraalHPyUnicodeDecodeCharset.decodeFSDefault();
+// members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULTANDSIZE.ordinal()] =
+// GraalHPyUnicodeDecodeCharsetAndSize.decodeFSDefault();
+            case CTX_UNICODE_ENCODEFSDEFAULT -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
+                    getFSDefaultCharset());
+            case CTX_UNICODE_READCHAR -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeReadCharNodeGen::create, GraalHPyUnicodeReadCharNodeGen.getUncached());
+            case CTX_TYPE_FROMSPEC -> new HPyExecuteDefaultWrapper(GraalHPyTypeFromSpecNodeGen::create, GraalHPyTypeFromSpecNodeGen.getUncached());
+            case CTX_GETATTR -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), OBJECT);
+            case CTX_GETATTR_S -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), CHAR_PTR);
+            case CTX_MAYBEGETATTR_S -> new HPyExecuteDefaultWrapper(GraalHPyMaybeGetAttrSNodeGen::create, GraalHPyMaybeGetAttrSNodeGen.getUncached());
+            case CTX_HASATTR -> new HPyExecuteWrapperWithMode(GraalHPyHasAttrNodeGen::create, GraalHPyHasAttrNodeGen.getUncached(), OBJECT);
+            case CTX_HASATTR_S -> new HPyExecuteWrapperWithMode(GraalHPyHasAttrNodeGen::create, GraalHPyHasAttrNodeGen.getUncached(), CHAR_PTR);
+            case CTX_SETATTR -> new HPyExecuteWrapperWithMode(GraalHPySetAttrNodeGen::create, GraalHPySetAttrNodeGen.getUncached(), OBJECT);
+            case CTX_SETATTR_S -> new HPyExecuteWrapperWithMode(GraalHPySetAttrNodeGen::create, GraalHPySetAttrNodeGen.getUncached(), CHAR_PTR);
+            case CTX_GETITEM -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), OBJECT);
+            case CTX_GETITEM_S -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), CHAR_PTR);
+            case CTX_GETITEM_I -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), INT32);
+            case CTX_SETITEM -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), OBJECT);
+            case CTX_SETITEM_S -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), CHAR_PTR);
+            case CTX_SETITEM_I -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), INT32);
+            case CTX_CONTAINS -> new HPyExecuteDefaultWrapper(GraalHPyContainsNodeGen::create, GraalHPyContainsNodeGen.getUncached());
+            case CTX_REPR -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_REPR, 1);
+            case CTX_STR -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_STR, 1);
+            case CTX_ASCII -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_ASCII, 1);
+            case CTX_BYTES -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_BYTES, 1);
+            case CTX_RICHCOMPARE -> new HPyExecuteWrapperWithFlag(GraalHPyRichcompareNodeGen::create, GraalHPyRichcompareNodeGen.getUncached(), false);
+            case CTX_RICHCOMPAREBOOL -> new HPyExecuteWrapperWithFlag(GraalHPyRichcompareNodeGen::create, GraalHPyRichcompareNodeGen.getUncached(), true);
+            case CTX_HASH -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_HASH, 1, ReturnType.INT);
+            case CTX_NUMBER_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsNumberNodeGen::create, GraalHPyIsNumberNodeGen.getUncached());
+            case CTX_LENGTH -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_LEN, 1, ReturnType.INT);
+            case CTX_IMPORT_IMPORTMODULE -> new HPyExecuteDefaultWrapper(GraalHPyImportModuleNodeGen::create, GraalHPyImportModuleNodeGen.getUncached());
+            case CTX_TUPLE_FROMARRAY -> new HPyExecuteDefaultWrapper(GraalHPyTupleFromArrayNodeGen::create, GraalHPyTupleFromArrayNodeGen.getUncached());
+            case CTX_TUPLE_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
+            case CTX_TUPLEBUILDER_NEW, CTX_LISTBUILDER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyBuilderNewNodeGen::create, GraalHPyBuilderNewNodeGen.getUncached());
+            case CTX_TUPLEBUILDER_SET, CTX_LISTBUILDER_SET -> new HPyExecuteDefaultWrapper(GraalHPyBuilderSetNodeGen::create, GraalHPyBuilderSetNodeGen.getUncached());
+            case CTX_TUPLEBUILDER_CANCEL, CTX_LISTBUILDER_CANCEL -> new HPyExecuteDefaultWrapper(GraalHPyBuilderCancelNodeGen::create, GraalHPyBuilderCancelNodeGen.getUncached());
+            case CTX_TUPLEBUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
+            case CTX_LISTBUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PList);
+            case CTX_LIST_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PList);
+
+            case CTX_TRACKER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyTrackerNewNodeGen::create, GraalHPyTrackerNewNodeGen.getUncached());
+            case CTX_TRACKER_ADD -> new HPyExecuteDefaultWrapper(GraalHPyTrackerAddNodeGen::create, GraalHPyTrackerAddNodeGen.getUncached());
+            case CTX_TRACKER_FORGETALL -> new HPyExecuteDefaultWrapper(GraalHPyTrackerForgetAllNodeGen::create, GraalHPyTrackerForgetAllNodeGen.getUncached());
+            case CTX_TRACKER_CLOSE -> new HPyExecuteDefaultWrapper(GraalHPyTrackerCleanupNodeGen::create, GraalHPyTrackerCleanupNodeGen.getUncached());
+
+            case CTX_FIELD_STORE -> new HPyExecuteDefaultWrapper(GraalHPyFieldStoreNodeGen::create, GraalHPyFieldStoreNodeGen.getUncached());
+            case CTX_FIELD_LOAD -> new HPyExecuteDefaultWrapper(GraalHPyFieldLoadNodeGen::create, GraalHPyFieldLoadNodeGen.getUncached());
+            case CTX_LEAVEPYTHONEXECUTION -> new HPyExecuteDefaultWrapper(GraalHPyLeavePythonExecutionNodeGen::create, GraalHPyLeavePythonExecutionNodeGen.getUncached());
+            case CTX_REENTERPYTHONEXECUTION -> new HPyExecuteDefaultWrapper(GraalHPyReenterPythonExecutionNodeGen::create, GraalHPyReenterPythonExecutionNodeGen.getUncached());
+            case CTX_GLOBAL_STORE -> new HPyExecuteDefaultWrapper(GraalHPyGlobalStoreNodeGen::create, GraalHPyGlobalStoreNodeGen.getUncached());
+            case CTX_GLOBAL_LOAD -> new HPyExecuteDefaultWrapper(GraalHPyGlobalLoadNodeGen::create, GraalHPyGlobalLoadNodeGen.getUncached());
+            case CTX_DUMP -> new HPyExecuteDefaultWrapper(GraalHPyDumpNodeGen::create, GraalHPyDumpNodeGen.getUncached());
+
+            case CTX_TYPE_ISSUBTYPE -> new HPyExecuteDefaultWrapper(GraalHPyTypeIsSubtypeNodeGen::create, GraalHPyTypeIsSubtypeNodeGen.getUncached());
+            case CTX_TYPE_GETNAME -> new HPyExecuteDefaultWrapper(GraalHPyTypeGetNameNodeGen::create, GraalHPyTypeGetNameNodeGen.getUncached());
+            case CTX_SETTYPE -> new HPyExecuteDefaultWrapper(GraalHPySetTypeNodeGen::create, GraalHPySetTypeNodeGen.getUncached());
+            case CTX_TYPE_CHECKSLOT -> new HPyExecuteDefaultWrapper(GraalHPyTypeCheckSlotNodeGen::create, GraalHPyTypeCheckSlotNodeGen.getUncached());
+
+            case CTX_DICT_KEYS -> new HPyExecuteDefaultWrapper(GraalHPyDictKeysNodeGen::create, GraalHPyDictKeysNodeGen.getUncached());
+
+            case CTX_UNICODE_FROMENCODEDOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromEncodedObjectNodeGen::create, GraalHPyUnicodeFromEncodedObjectNodeGen.getUncached());
+            case CTX_UNICODE_INTERNFROMSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeInternFromStringNodeGen::create, GraalHPyUnicodeInternFromStringNodeGen.getUncached());
+            case CTX_UNICODE_SUBSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeSubstringNodeGen::create, GraalHPyUnicodeSubstringNodeGen.getUncached());
+
+            case CTX_CONTEXTVAR_NEW -> new HPyExecuteDefaultWrapper(GraalHPyContextVarNewNodeGen::create, GraalHPyContextVarNewNodeGen.getUncached());
+            case CTX_CONTEXTVAR_GET -> new HPyExecuteDefaultWrapper(GraalHPyContextVarGetNodeGen::create, GraalHPyContextVarGetNodeGen.getUncached());
+            case CTX_CONTEXTVAR_SET -> new HPyExecuteDefaultWrapper(GraalHPyContextVarSetNodeGen::create, GraalHPyContextVarSetNodeGen.getUncached());
+            case CTX_CAPSULE_NEW -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleNewNodeGen::create, GraalHPyCapsuleNewNodeGen.getUncached());
+            case CTX_CAPSULE_GET -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleGetNodeGen::create, GraalHPyCapsuleGetNodeGen.getUncached());
+            case CTX_CAPSULE_ISVALID -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleIsValidNodeGen::create, GraalHPyCapsuleIsValidNodeGen.getUncached());
+            case CTX_CAPSULE_SET -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleSetNodeGen::create, GraalHPyCapsuleSetNodeGen.getUncached());
+
+            case CTX_SEQUENCE_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsSequenceNodeGen::create, GraalHPyIsSequenceNodeGen.getUncached());
+            case CTX_SLICE_UNPACK -> new HPyExecuteDefaultWrapper(GraalHPySliceUnpackNodeGen::create, GraalHPySliceUnpackNodeGen.getUncached());
+
+            case CTX_SEQITER_NEW -> new HPyExecuteDefaultWrapper(GraalHPySeqIterNewNodeGen::create, GraalHPySeqIterNewNodeGen.getUncached());
+            default -> throw CompilerDirectives.shouldNotReachHere();
+        };
+    }
+
     private Object[] createMembers(TruffleString name) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
 
@@ -1124,200 +1318,6 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
          */
         args[0] = this;
         return memberInvokeLib.execute(member, args);
-    }
-
-    private static Object createContextFunction(HPyContextMember member) {
-        return switch (member) {
-            case CTX_ASPYOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyAsPyObjectNodeGen::create, GraalHPyAsPyObjectNodeGen.getUncached());
-            case CTX_DUP -> new HPyExecuteDefaultWrapper(GraalHPyDupNodeGen::create, GraalHPyDupNodeGen.getUncached());
-            case CTX_CLOSE -> new HPyExecuteDefaultWrapper(GraalHPyCloseNodeGen::create, GraalHPyCloseNodeGen.getUncached());
-            case CTX_MODULE_CREATE -> new HPyExecuteDefaultWrapper(GraalHPyModuleCreateNodeGen::create, GraalHPyModuleCreateNodeGen.getUncached());
-            case CTX_BOOL_FROMLONG -> new HPyExecuteDefaultWrapper(GraalHPyBoolFromLongNodeGen::create, GraalHPyBoolFromLongNodeGen.getUncached());
-            case CTX_LONG_FROMLONG, CTX_LONG_FROMLONGLONG, CTX_LONG_FROMSSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create, GraalHPyLongFromLongNodeGen.getUncached(), true);
-
-            case CTX_LONG_FROMUNSIGNEDLONG, CTX_LONG_FROMUNSIGNEDLONGLONG, CTX_LONG_FROMSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create,
-                            GraalHPyLongFromLongNodeGen.getUncached(), false);
-            case CTX_LONG_ASLONG, CTX_LONG_ASLONGLONG -> new HPyLongAsPrimitiveExecuteWrapper(1, java.lang.Long.BYTES, true, false);
-            case CTX_LONG_ASUNSIGNEDLONG, CTX_LONG_ASUNSIGNEDLONGLONG, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> new HPyLongAsPrimitiveExecuteWrapper(0, java.lang.Long.BYTES, true, true);
-            case CTX_LONG_ASUNSIGNEDLONGMASK, CTX_LONG_ASUNSIGNEDLONGLONGMASK -> new HPyLongAsPrimitiveExecuteWrapper(0, java.lang.Long.BYTES, false, false);
-            case CTX_LONG_ASSSIZE_T -> new HPyLongAsPrimitiveExecuteWrapper(1, java.lang.Long.BYTES, true, true);
-            case CTX_LONG_ASDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyLongAsDoubleNodeGen::create, GraalHPyLongAsDoubleNodeGen.getUncached());
-            case CTX_NEW -> new HPyExecuteDefaultWrapper(GraalHPyNewNodeGen::create, GraalHPyNewNodeGen.getUncached());
-            case CTX_TYPE -> new HPyExecuteDefaultWrapper(GraalHPyTypeNodeGen::create, GraalHPyTypeNodeGen.getUncached());
-            case CTX_TYPECHECK -> new HPyExecuteWrapperWithFlag(GraalHPyTypeCheckNodeGen::create, GraalHPyTypeCheckNodeGen.getUncached(), false);
-            case CTX_TYPECHECK_G -> new HPyExecuteWrapperWithFlag(GraalHPyTypeCheckNodeGen::create, GraalHPyTypeCheckNodeGen.getUncached(), true);
-            case CTX_IS -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), false);
-            case CTX_IS_G -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), true);
-            case CTX_TYPE_GENERICNEW -> new HPyExecuteDefaultWrapper(GraalHPyTypeGenericNewNodeGen::create, GraalHPyTypeGenericNewNodeGen.getUncached());
-            case CTX_ASSTRUCT, CTX_ASSTRUCTLEGACY -> new HPyExecuteDefaultWrapper(GraalHPyCastNodeGen::create, GraalHPyCastNodeGen.getUncached());
-
-            // unary
-            case CTX_NEGATIVE -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Neg);
-            case CTX_POSITIVE -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Pos);
-            case CTX_ABSOLUTE -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_ABS, 1);
-            case CTX_INVERT -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Invert);
-            case CTX_INDEX -> new HPyExecuteDefaultWrapper(GraalHPyAsIndexNodeGen::create, GraalHPyAsIndexNodeGen.getUncached());
-            case CTX_LONG -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_INT, 1);
-            case CTX_FLOAT -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_FLOAT, 1);
-
-            // binary
-            case CTX_ADD -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Add);
-            case CTX_SUBTRACT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Sub);
-            case CTX_MULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Mul);
-            case CTX_MATRIXMULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.MatMul);
-            case CTX_FLOORDIVIDE -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.FloorDiv);
-            case CTX_TRUEDIVIDE -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.TrueDiv);
-            case CTX_REMAINDER -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Mod);
-            case CTX_DIVMOD -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.DivMod);
-            case CTX_LSHIFT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.LShift);
-            case CTX_RSHIFT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.RShift);
-            case CTX_AND -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.And);
-            case CTX_XOR -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Xor);
-            case CTX_OR -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Or);
-            case CTX_INPLACEADD -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IAdd);
-            case CTX_INPLACESUBTRACT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ISub);
-            case CTX_INPLACEMULTIPLY -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMul);
-            case CTX_INPLACEMATRIXMULTIPLY -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMatMul);
-            case CTX_INPLACEFLOORDIVIDE -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IFloorDiv);
-            case CTX_INPLACETRUEDIVIDE -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ITrueDiv);
-            case CTX_INPLACEREMAINDER -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IMod);
-            case CTX_INPLACELSHIFT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.ILShift);
-            case CTX_INPLACERSHIFT -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IRShift);
-            case CTX_INPLACEAND -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IAnd);
-            case CTX_INPLACEXOR -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IXor);
-            case CTX_INPLACEOR -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IOr);
-
-            // ternary
-            case CTX_POWER -> new HPyExecuteWrapperTernaryArithmetic(TernaryArithmetic.Pow);
-            case CTX_INPLACEPOWER -> new HPyExecuteWrapperInplaceArithmetic(InplaceArithmetic.IPow);
-
-            case CTX_CALLABLE_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsCallableNodeGen::create, GraalHPyIsCallableNodeGen.getUncached());
-            case CTX_CALLTUPLEDICT -> new HPyExecuteDefaultWrapper(GraalHPyCallTupleDictNodeGen::create, GraalHPyCallTupleDictNodeGen.getUncached());
-
-            case CTX_DICT_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PDict);
-            case CTX_DICT_NEW -> new HPyExecuteDefaultWrapper(GraalHPyDictNewNodeGen::create, GraalHPyDictNewNodeGen.getUncached());
-            case CTX_DICT_GETITEM -> new HPyExecuteDefaultWrapper(GraalHPyDictGetItemNodeGen::create, GraalHPyDictGetItemNodeGen.getUncached());
-            case CTX_LIST_NEW -> new HPyExecuteDefaultWrapper(GraalHPyListNewNodeGen::create, GraalHPyListNewNodeGen.getUncached());
-            case CTX_LIST_APPEND -> new HPyExecuteDefaultWrapper(GraalHPyListAppendNodeGen::create, GraalHPyListAppendNodeGen.getUncached());
-            case CTX_FLOAT_FROMDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyFloatFromDoubleNodeGen::create, GraalHPyFloatFromDoubleNodeGen.getUncached());
-            case CTX_FLOAT_ASDOUBLE -> new HPyExecuteDefaultWrapper(GraalHPyFloatAsDoubleNodeGen::create, GraalHPyFloatAsDoubleNodeGen.getUncached());
-            case CTX_BYTES_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PBytes);
-            case CTX_BYTES_GET_SIZE -> new HPyExecuteDefaultWrapper(GraalHPyBytesGetSizeNodeGen::create, GraalHPyBytesGetSizeNodeGen.getUncached());
-            case CTX_BYTES_SIZE -> new HPyExecuteDefaultWrapper(GraalHPyBytesGetSizeNodeGen::create, GraalHPyBytesGetSizeNodeGen.getUncached());
-            case CTX_BYTES_AS_STRING -> new HPyExecuteDefaultWrapper(GraalHPyBytesAsStringNodeGen::create, GraalHPyBytesAsStringNodeGen.getUncached());
-            case CTX_BYTES_ASSTRING -> new HPyExecuteDefaultWrapper(GraalHPyBytesAsStringNodeGen::create, GraalHPyBytesAsStringNodeGen.getUncached());
-            case CTX_BYTES_FROMSTRING -> new HPyExecuteWrapperWithFlag(GraalHPyBytesFromStringAndSizeNodeGen::create, GraalHPyBytesFromStringAndSizeNodeGen.getUncached(), false);
-            case CTX_BYTES_FROMSTRINGANDSIZE -> new HPyExecuteWrapperWithFlag(GraalHPyBytesFromStringAndSizeNodeGen::create, GraalHPyBytesFromStringAndSizeNodeGen.getUncached(), true);
-            case CTX_ERR_NOMEMORY -> new HPyErrRaisePredefinedExecuteWrapper(PythonBuiltinClassType.MemoryError);
-            case CTX_ERR_SETSTRING -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetStringNodeGen::create, GraalHPyErrSetStringNodeGen.getUncached(), true);
-            case CTX_ERR_SETOBJECT -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetStringNodeGen::create, GraalHPyErrSetStringNodeGen.getUncached(), false);
-            case CTX_ERR_SETFROMERRNOWITHFILENAME -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen::create,
-                            GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen.getUncached(), false);
-            case CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS -> new HPyExecuteWrapperWithFlag(GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen::create,
-                            GraalHPyErrSetFromErrnoWithFilenameObjectsNodeGen.getUncached(), true);
-            case CTX_ERR_OCCURRED -> new HPyExecuteDefaultWrapper(GraalHPyErrOccurredNodeGen::create, GraalHPyErrOccurredNodeGen.getUncached());
-            case CTX_ERR_EXCEPTIONMATCHES -> new HPyExecuteDefaultWrapper(GraalHPyErrExceptionMatchesNodeGen::create, GraalHPyErrExceptionMatchesNodeGen.getUncached());
-            case CTX_ERR_CLEAR -> new HPyExecuteDefaultWrapper(GraalHPyErrClearNodeGen::create, GraalHPyErrClearNodeGen.getUncached());
-            case CTX_ERR_NEWEXCEPTION -> new HPyExecuteWrapperWithFlag(GraalHPyNewExceptionNodeGen::create, GraalHPyNewExceptionNodeGen.getUncached(), false);
-            case CTX_ERR_NEWEXCEPTIONWITHDOC -> new HPyExecuteWrapperWithFlag(GraalHPyNewExceptionNodeGen::create, GraalHPyNewExceptionNodeGen.getUncached(), true);
-            case CTX_ERR_WARNEX -> new HPyExecuteDefaultWrapper(GraalHPyErrWarnExNodeGen::create, GraalHPyErrWarnExNodeGen.getUncached());
-            case CTX_ERR_WRITEUNRAISABLE -> new HPyExecuteDefaultWrapper(GraalHPyErrWriteUnraisableNodeGen::create, GraalHPyErrWriteUnraisableNodeGen.getUncached());
-            case CTX_FATALERROR -> new HPyExecuteDefaultWrapper(GraalHPyFatalErrorNodeGen::create, GraalHPyFatalErrorNodeGen.getUncached());
-            case CTX_FROMPYOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyFromPyObjectNodeGen::create, GraalHPyFromPyObjectNodeGen.getUncached());
-            case CTX_UNICODE_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PString);
-            case CTX_ISTRUE -> new HPyExecuteDefaultWrapper(GraalHPyIsTrueNodeGen::create, GraalHPyIsTrueNodeGen.getUncached());
-            case CTX_UNICODE_ASUTF8STRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
-                            StandardCharsets.UTF_8);
-            case CTX_UNICODE_ASASCIISTRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
-                            StandardCharsets.US_ASCII);
-            case CTX_UNICODE_ASLATIN1STRING -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
-                            StandardCharsets.ISO_8859_1);
-            case CTX_UNICODE_ASUTF8ANDSIZE -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeAsUTF8AndSizeNodeGen::create, GraalHPyUnicodeAsUTF8AndSizeNodeGen.getUncached());
-            case CTX_UNICODE_FROMSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromStringNodeGen::create, GraalHPyUnicodeFromStringNodeGen.getUncached());
-            case CTX_UNICODE_FROMWIDECHAR -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromWcharNodeGen::create, GraalHPyUnicodeFromWcharNodeGen.getUncached());
-            case CTX_UNICODE_DECODEASCII -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen::create,
-                            GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen.getUncached(), T_ASCII_UPPERCASE);
-            case CTX_UNICODE_DECODELATIN1 -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen::create,
-                            GraalHPyUnicodeDecodeCharsetAndSizeAndErrorsNodeGen.getUncached(), T_ISO_8859_1);
-// members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULT.ordinal()] =
-// GraalHPyUnicodeDecodeCharset.decodeFSDefault();
-// members[HPyContextMember.CTX_UNICODE_DECODEFSDEFAULTANDSIZE.ordinal()] =
-// GraalHPyUnicodeDecodeCharsetAndSize.decodeFSDefault();
-            case CTX_UNICODE_ENCODEFSDEFAULT -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
-                            getFSDefaultCharset());
-            case CTX_UNICODE_READCHAR -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeReadCharNodeGen::create, GraalHPyUnicodeReadCharNodeGen.getUncached());
-            case CTX_TYPE_FROMSPEC -> new HPyExecuteDefaultWrapper(GraalHPyTypeFromSpecNodeGen::create, GraalHPyTypeFromSpecNodeGen.getUncached());
-            case CTX_GETATTR -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), OBJECT);
-            case CTX_GETATTR_S -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), CHAR_PTR);
-            case CTX_MAYBEGETATTR_S -> new HPyExecuteDefaultWrapper(GraalHPyMaybeGetAttrSNodeGen::create, GraalHPyMaybeGetAttrSNodeGen.getUncached());
-            case CTX_HASATTR -> new HPyExecuteWrapperWithMode(GraalHPyHasAttrNodeGen::create, GraalHPyHasAttrNodeGen.getUncached(), OBJECT);
-            case CTX_HASATTR_S -> new HPyExecuteWrapperWithMode(GraalHPyHasAttrNodeGen::create, GraalHPyHasAttrNodeGen.getUncached(), CHAR_PTR);
-            case CTX_SETATTR -> new HPyExecuteWrapperWithMode(GraalHPySetAttrNodeGen::create, GraalHPySetAttrNodeGen.getUncached(), OBJECT);
-            case CTX_SETATTR_S -> new HPyExecuteWrapperWithMode(GraalHPySetAttrNodeGen::create, GraalHPySetAttrNodeGen.getUncached(), CHAR_PTR);
-            case CTX_GETITEM -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), OBJECT);
-            case CTX_GETITEM_S -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), CHAR_PTR);
-            case CTX_GETITEM_I -> new HPyExecuteWrapperWithMode(GraalHPyGetItemNodeGen::create, GraalHPyGetItemNodeGen.getUncached(), INT32);
-            case CTX_SETITEM -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), OBJECT);
-            case CTX_SETITEM_S -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), CHAR_PTR);
-            case CTX_SETITEM_I -> new HPyExecuteWrapperWithMode(GraalHPySetItemNodeGen::create, GraalHPySetItemNodeGen.getUncached(), INT32);
-            case CTX_CONTAINS -> new HPyExecuteDefaultWrapper(GraalHPyContainsNodeGen::create, GraalHPyContainsNodeGen.getUncached());
-            case CTX_REPR -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_REPR, 1);
-            case CTX_STR -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_STR, 1);
-            case CTX_ASCII -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_ASCII, 1);
-            case CTX_BYTES -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_BYTES, 1);
-            case CTX_RICHCOMPARE -> new HPyExecuteWrapperWithFlag(GraalHPyRichcompareNodeGen::create, GraalHPyRichcompareNodeGen.getUncached(), false);
-            case CTX_RICHCOMPAREBOOL -> new HPyExecuteWrapperWithFlag(GraalHPyRichcompareNodeGen::create, GraalHPyRichcompareNodeGen.getUncached(), true);
-            case CTX_HASH -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_HASH, 1, ReturnType.INT);
-            case CTX_NUMBER_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsNumberNodeGen::create, GraalHPyIsNumberNodeGen.getUncached());
-            case CTX_LENGTH -> new HPyCallBuiltinFunctionExecuteWrapper(BuiltinNames.T_LEN, 1, ReturnType.INT);
-            case CTX_IMPORT_IMPORTMODULE -> new HPyExecuteDefaultWrapper(GraalHPyImportModuleNodeGen::create, GraalHPyImportModuleNodeGen.getUncached());
-            case CTX_TUPLE_FROMARRAY -> new HPyExecuteDefaultWrapper(GraalHPyTupleFromArrayNodeGen::create, GraalHPyTupleFromArrayNodeGen.getUncached());
-            case CTX_TUPLE_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
-            case CTX_TUPLEBUILDER_NEW, CTX_LISTBUILDER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyBuilderNewNodeGen::create, GraalHPyBuilderNewNodeGen.getUncached());
-            case CTX_TUPLEBUILDER_SET, CTX_LISTBUILDER_SET -> new HPyExecuteDefaultWrapper(GraalHPyBuilderSetNodeGen::create, GraalHPyBuilderSetNodeGen.getUncached());
-            case CTX_TUPLEBUILDER_CANCEL, CTX_LISTBUILDER_CANCEL -> new HPyExecuteDefaultWrapper(GraalHPyBuilderCancelNodeGen::create, GraalHPyBuilderCancelNodeGen.getUncached());
-            case CTX_TUPLEBUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
-            case CTX_LISTBUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PList);
-            case CTX_LIST_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PList);
-
-            case CTX_TRACKER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyTrackerNewNodeGen::create, GraalHPyTrackerNewNodeGen.getUncached());
-            case CTX_TRACKER_ADD -> new HPyExecuteDefaultWrapper(GraalHPyTrackerAddNodeGen::create, GraalHPyTrackerAddNodeGen.getUncached());
-            case CTX_TRACKER_FORGETALL -> new HPyExecuteDefaultWrapper(GraalHPyTrackerForgetAllNodeGen::create, GraalHPyTrackerForgetAllNodeGen.getUncached());
-            case CTX_TRACKER_CLOSE -> new HPyExecuteDefaultWrapper(GraalHPyTrackerCleanupNodeGen::create, GraalHPyTrackerCleanupNodeGen.getUncached());
-
-            case CTX_FIELD_STORE -> new HPyExecuteDefaultWrapper(GraalHPyFieldStoreNodeGen::create, GraalHPyFieldStoreNodeGen.getUncached());
-            case CTX_FIELD_LOAD -> new HPyExecuteDefaultWrapper(GraalHPyFieldLoadNodeGen::create, GraalHPyFieldLoadNodeGen.getUncached());
-            case CTX_LEAVEPYTHONEXECUTION -> new HPyExecuteDefaultWrapper(GraalHPyLeavePythonExecutionNodeGen::create, GraalHPyLeavePythonExecutionNodeGen.getUncached());
-            case CTX_REENTERPYTHONEXECUTION -> new HPyExecuteDefaultWrapper(GraalHPyReenterPythonExecutionNodeGen::create, GraalHPyReenterPythonExecutionNodeGen.getUncached());
-            case CTX_GLOBAL_STORE -> new HPyExecuteDefaultWrapper(GraalHPyGlobalStoreNodeGen::create, GraalHPyGlobalStoreNodeGen.getUncached());
-            case CTX_GLOBAL_LOAD -> new HPyExecuteDefaultWrapper(GraalHPyGlobalLoadNodeGen::create, GraalHPyGlobalLoadNodeGen.getUncached());
-            case CTX_DUMP -> new HPyExecuteDefaultWrapper(GraalHPyDumpNodeGen::create, GraalHPyDumpNodeGen.getUncached());
-
-            case CTX_TYPE_ISSUBTYPE -> new HPyExecuteDefaultWrapper(GraalHPyTypeIsSubtypeNodeGen::create, GraalHPyTypeIsSubtypeNodeGen.getUncached());
-            case CTX_TYPE_GETNAME -> new HPyExecuteDefaultWrapper(GraalHPyTypeGetNameNodeGen::create, GraalHPyTypeGetNameNodeGen.getUncached());
-            case CTX_SETTYPE -> new HPyExecuteDefaultWrapper(GraalHPySetTypeNodeGen::create, GraalHPySetTypeNodeGen.getUncached());
-            case CTX_TYPE_CHECKSLOT -> new HPyExecuteDefaultWrapper(GraalHPyTypeCheckSlotNodeGen::create, GraalHPyTypeCheckSlotNodeGen.getUncached());
-
-            case CTX_DICT_KEYS -> new HPyExecuteDefaultWrapper(GraalHPyDictKeysNodeGen::create, GraalHPyDictKeysNodeGen.getUncached());
-
-            case CTX_UNICODE_FROMENCODEDOBJECT -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeFromEncodedObjectNodeGen::create, GraalHPyUnicodeFromEncodedObjectNodeGen.getUncached());
-            case CTX_UNICODE_INTERNFROMSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeInternFromStringNodeGen::create, GraalHPyUnicodeInternFromStringNodeGen.getUncached());
-            case CTX_UNICODE_SUBSTRING -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeSubstringNodeGen::create, GraalHPyUnicodeSubstringNodeGen.getUncached());
-
-            case CTX_CONTEXTVAR_NEW -> new HPyExecuteDefaultWrapper(GraalHPyContextVarNewNodeGen::create, GraalHPyContextVarNewNodeGen.getUncached());
-            case CTX_CONTEXTVAR_GET -> new HPyExecuteDefaultWrapper(GraalHPyContextVarGetNodeGen::create, GraalHPyContextVarGetNodeGen.getUncached());
-            case CTX_CONTEXTVAR_SET -> new HPyExecuteDefaultWrapper(GraalHPyContextVarSetNodeGen::create, GraalHPyContextVarSetNodeGen.getUncached());
-            case CTX_CAPSULE_NEW -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleNewNodeGen::create, GraalHPyCapsuleNewNodeGen.getUncached());
-            case CTX_CAPSULE_GET -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleGetNodeGen::create, GraalHPyCapsuleGetNodeGen.getUncached());
-            case CTX_CAPSULE_ISVALID -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleIsValidNodeGen::create, GraalHPyCapsuleIsValidNodeGen.getUncached());
-            case CTX_CAPSULE_SET -> new HPyExecuteDefaultWrapper(GraalHPyCapsuleSetNodeGen::create, GraalHPyCapsuleSetNodeGen.getUncached());
-
-            case CTX_SEQUENCE_CHECK -> new HPyExecuteDefaultWrapper(GraalHPyIsSequenceNodeGen::create, GraalHPyIsSequenceNodeGen.getUncached());
-            case CTX_SLICE_UNPACK -> new HPyExecuteDefaultWrapper(GraalHPySliceUnpackNodeGen::create, GraalHPySliceUnpackNodeGen.getUncached());
-
-            case CTX_SEQITER_NEW -> new HPyExecuteDefaultWrapper(GraalHPySeqIterNewNodeGen::create, GraalHPySeqIterNewNodeGen.getUncached());
-            default -> throw CompilerDirectives.shouldNotReachHere();
-        };
     }
 
     @ExportLibrary(InteropLibrary.class)
