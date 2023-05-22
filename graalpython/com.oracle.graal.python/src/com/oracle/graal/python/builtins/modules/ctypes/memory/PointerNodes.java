@@ -677,6 +677,42 @@ public abstract class PointerNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    public abstract static class FreeNode extends Node {
+        public final void execute(Node inliningTarget, Pointer pointer) {
+            execute(inliningTarget, pointer.memory.storage, pointer.offset);
+            pointer.memory.storage = Pointer.NULL.memory.storage;
+        }
+
+        abstract void execute(Node inliningTarget, Storage storage, int offset);
+
+        @Specialization
+        void doNativeMemory(LongPointerStorage storage, int offset) {
+            // TODO check permissions
+            UNSAFE.freeMemory(storage.pointer + offset);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        void doNFIPointer(NFIPointerStorage storage, int offset) {
+            /*
+             * TODO This should call free using NFI. If it ever does, we should probably update
+             * PointerReference to use a call target around this
+             */
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        void doNothing(Storage storage, int offset) {
+        }
+
+        public static FreeNode getUncached() {
+            return PointerNodesFactory.FreeNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class PointerFromLongNode extends Node {
         public abstract Pointer execute(Node inliningTarget, Object value);
 

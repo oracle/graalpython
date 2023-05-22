@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -332,14 +333,19 @@ public class CtypesNodes {
         public abstract CDataObject execute(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree);
 
         @Specialization
-        static CDataObject doCreate(Object type, Pointer pointer, int size, boolean needsfree,
+        static CDataObject doCreate(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PythonObjectFactory factory) {
+            CDataObject result;
             if (isSubtypeNode.execute(type, PyCFuncPtr)) {
-                return factory.createPyCFuncPtrObject(type, pointer, size, needsfree);
+                result = factory.createPyCFuncPtrObject(type, pointer, size, needsfree);
             } else {
-                return factory.createCDataObject(type, pointer, size, needsfree);
+                result = factory.createCDataObject(type, pointer, size, needsfree);
             }
+            if (needsfree) {
+                new PointerReference(result, pointer, PythonContext.get(inliningTarget).getSharedFinalizer());
+            }
+            return result;
         }
     }
 
