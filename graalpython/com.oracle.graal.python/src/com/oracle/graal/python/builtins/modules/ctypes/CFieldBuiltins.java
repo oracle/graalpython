@@ -177,7 +177,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             CDataObject src = (CDataObject) inst;
-            return pyCDataGetNode.execute(self.proto, self.getfunc, inst, self.index, self.size, src.b_ptr.withOffset(self.offset));
+            return pyCDataGetNode.execute(self.proto, self.getfunc, src, self.index, self.size, src.b_ptr.withOffset(self.offset));
         }
     }
 

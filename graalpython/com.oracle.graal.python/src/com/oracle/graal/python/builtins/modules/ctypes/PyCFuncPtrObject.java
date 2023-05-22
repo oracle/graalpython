@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PyCFuncPtrObject extends CDataObject {
@@ -55,8 +56,8 @@ public final class PyCFuncPtrObject extends CDataObject {
     Object errcheck;
     Object[] paramflags; // PTuple[]
 
-    public PyCFuncPtrObject(Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
+    public PyCFuncPtrObject(Object cls, Shape instanceShape, Pointer b_ptr, int b_size, boolean b_needsfree) {
+        super(cls, instanceShape, b_ptr, b_size, b_needsfree);
     }
 
 }

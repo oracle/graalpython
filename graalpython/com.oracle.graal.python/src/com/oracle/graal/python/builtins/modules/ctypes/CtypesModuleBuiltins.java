@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ArgError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtr;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointerType;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
@@ -232,8 +231,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected static final int TYPEFLAG_HASPOINTER = 0x200;
     protected static final int TYPEFLAG_HASUNION = 0x400;
     protected static final int TYPEFLAG_HASBITFIELD = 0x800;
-
-    protected static final int DICTFLAG_FINAL = 0x1000;
 
     @Override
     public void initialize(Python3Core core) {
@@ -1350,15 +1347,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
-                        @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @SuppressWarnings("unused") @Shared @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Bind("getStgDict(restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached GetFuncNode getFuncNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached CtypesNodes.PyCDataFromBaseObjNode fromBaseObjNode) {
             Pointer resultPtr;
             try {
                 resultPtr = switch (rtype.type) {
@@ -1397,7 +1393,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, restype, getBaseClassNode, isSameTypeNode)) {
                 retval = getFuncNode.execute(dict.getfunc, resultPtr, dict.size);
             } else {
-                retval = PyCData_FromBaseObj(restype, null, 0, resultPtr, factory, raiseNode, pyTypeStgDictNode);
+                retval = fromBaseObjNode.execute(inliningTarget, restype, null, 0, resultPtr);
             }
             assert retval != null : "Should have raised an error earlier!";
             if (PGuards.isPNone(checker) || checker == null) {

@@ -64,17 +64,19 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public class CDataObject extends PythonBuiltinObject {
 
-    Pointer b_ptr; /* pointer to memory block */
-    boolean b_needsfree; /* need _we_ free the memory? */
+    final Pointer b_ptr; /* pointer to memory block */
+    final boolean b_needsfree; /* need _we_ free the memory? */
     CDataObject b_base; /* pointer to base object or NULL */
     int b_size; /* size of memory block in bytes */
     int b_length; /* number of references we need */
     int b_index; /* index of this object into base's b_object list */
     Object b_objects; /* dictionary of references we need to keep, or Py_None */
 
-    public CDataObject(Object cls, Shape instanceShape) {
+    public CDataObject(Object cls, Shape instanceShape, Pointer b_ptr, int b_size, boolean b_needsfree) {
         super(cls, instanceShape);
-        this.b_ptr = Pointer.NULL;
+        this.b_ptr = b_ptr;
+        this.b_size = b_size;
+        this.b_needsfree = b_needsfree;
     }
 
     protected static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {

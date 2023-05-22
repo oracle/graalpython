@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GetKeepedObjects;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_INSTANCE_HAS_NO_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_N_INSTEAD_OF_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NULL_POINTER_ACCESS;
@@ -159,12 +157,14 @@ public class PyCPointerBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         protected Object Pointer_new(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             if (dict.proto == null) {
                 throw raise(TypeError, CANNOT_CREATE_INSTANCE_HAS_NO_TYPE);
             }
-            return GenericPyCDataNew(dict, factory().createCDataObject(type));
+            return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
     }
 
@@ -191,7 +191,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
         Object get_contents(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CtypesNodes.PyCDataFromBaseObjNode fromBaseObjNode,
                         @Cached PointerNodes.ReadPointerNode readPointerNode) {
             if (self.b_ptr.isNull()) {
                 throw raise(ValueError, NULL_POINTER_ACCESS);
@@ -199,8 +199,8 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for pointer instances";
-            return PyCData_FromBaseObj(stgdict.proto,
-                            self, 0, readPointerNode.execute(inliningTarget, self.b_ptr), factory(), getRaiseNode(), pyTypeStgDictNode);
+            return fromBaseObjNode.execute(inliningTarget, stgdict.proto,
+                            self, 0, readPointerNode.execute(inliningTarget, self.b_ptr));
         }
 
         @Specialization(guards = "!isNoValue(value)")

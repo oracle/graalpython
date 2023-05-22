@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DICTFLAG_FINAL;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASBITFIELD;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASUNION;
@@ -49,6 +48,7 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuilti
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_B;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_T_LEFTBRACE;
+import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICTFLAG_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_IS_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS;

@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleT
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
+import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICTFLAG_FINAL;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -61,9 +62,11 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.InlinedIsSameTypeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.InlinedGetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -291,6 +294,80 @@ public class CtypesNodes {
                         @Cached HandleFromPointerNode handleFromPointerNode) {
             Pointer pointer = pointerFromLongNode.execute(inliningTarget, pointerObj);
             return handleFromPointerNode.execute(inliningTarget, pointer);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class PyCDataFromBaseObjNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr);
+
+        @Specialization
+        static CDataObject PyCData_FromBaseObj(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CreateCDataObjectNode createCDataObjectNode,
+                        @Cached PyCDataMallocBufferNode mallocBufferNode,
+                        @Cached PointerNodes.MemcpyNode memcpyNode) {
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode);
+            dict.flags |= DICTFLAG_FINAL;
+            CDataObject cmem;
+
+            if (base != null) { /* use base's buffer */
+                cmem = createCDataObjectNode.execute(inliningTarget, type, adr, dict.size, false);
+                cmem.b_base = base;
+            } else { /* copy contents of adr */
+                cmem = mallocBufferNode.execute(inliningTarget, type, dict);
+                memcpyNode.execute(inliningTarget, cmem.b_ptr, adr, dict.size);
+            }
+            cmem.b_length = dict.length;
+            cmem.b_index = index;
+            return cmem;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CreateCDataObjectNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree);
+
+        @Specialization
+        static CDataObject doCreate(Object type, Pointer pointer, int size, boolean needsfree,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PythonObjectFactory factory) {
+            if (isSubtypeNode.execute(type, PyCFuncPtr)) {
+                return factory.createPyCFuncPtrObject(type, pointer, size, needsfree);
+            } else {
+                return factory.createCDataObject(type, pointer, size, needsfree);
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class PyCDataMallocBufferNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, StgDictObject dict);
+
+        @Specialization
+        static CDataObject doCreate(Node inliningTarget, Object type, StgDictObject dict,
+                        @Cached CreateCDataObjectNode createCDataObjectNode) {
+            Pointer pointer = dict.size > 0 ? Pointer.allocate(dict.ffi_type_pointer, dict.size) : Pointer.NULL;
+            return createCDataObjectNode.execute(inliningTarget, type, pointer, dict.size, true);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GenericPyCDataNewNode extends Node {
+        public abstract CDataObject execute(Node inliningTarget, Object type, StgDictObject dict);
+
+        @Specialization
+        static CDataObject doCreate(Node inliningTarget, Object type, StgDictObject dict,
+                        @Cached PyCDataMallocBufferNode mallocBufferNode) {
+            CDataObject obj = mallocBufferNode.execute(inliningTarget, type, dict);
+            obj.b_length = dict.length;
+            dict.flags |= DICTFLAG_FINAL;
+            return obj;
         }
     }
 }

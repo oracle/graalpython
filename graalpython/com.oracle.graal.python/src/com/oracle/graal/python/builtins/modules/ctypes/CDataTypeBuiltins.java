@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DICTFLAG_FINAL;
+import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICTFLAG_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.CTYPES_OBJECT_STRUCTURE_TOO_DEEP;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_P_INSTANCE_GOT_P;
@@ -271,6 +271,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
                         @Cached AuditNode auditNode,
+                        @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             try {
                 StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
@@ -288,8 +289,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 // This prints the raw pointer in C, so just print 0
                 auditNode.audit("ctypes.cdata/buffer", 0, bufferLen, offset);
 
-                CDataObject result = factory().createCDataObject(type);
-                GenericPyCDataNew(dict, result);
+                CDataObject result = pyCDataNewNode.execute(inliningTarget, type, dict);
                 byte[] slice = new byte[dict.size];
                 bufferLib.readIntoByteArray(buffer, offset, slice, 0, dict.size);
                 writeBytesNode.execute(inliningTarget, result.b_ptr, slice);
@@ -349,19 +349,18 @@ public class CDataTypeBuiltins extends PythonBuiltins {
          */
         @Specialization
         CDataObject PyCData_AtAddress(Object type, Pointer pointer,
+                        @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached CtypesNodes.CreateCDataObjectNode createCDataObjectNode) {
             // auditNode.audit("ctypes.cdata", buf);
             // assert(PyType_Check(type));
             StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             stgdict.flags |= DICTFLAG_FINAL;
 
-            CDataObject pd = factory.createCDataObject(type);
+            CDataObject pd = createCDataObjectNode.execute(inliningTarget, type, pointer, stgdict.size, false);
             assert pyTypeCheck.isCDataObject(pd);
-            pd.b_ptr = pointer;
             pd.b_length = stgdict.length;
-            pd.b_size = stgdict.size;
             return pd;
         }
     }
@@ -369,29 +368,29 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     // corresponds to PyCData_get
     @ImportStatic(FieldGet.class)
     protected abstract static class PyCDataGetNode extends PNodeWithRaise {
-        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, Pointer adr);
+        protected abstract Object execute(Object type, FieldGet getfunc, CDataObject src, int index, int size, Pointer adr);
 
         @Specialization(guards = "getfunc != nil")
         @SuppressWarnings("unused")
-        Object withFunc(Object type, FieldGet getfunc, Object src, int index, int size, Pointer adr,
+        Object withFunc(Object type, FieldGet getfunc, CDataObject src, int index, int size, Pointer adr,
                         @Cached GetFuncNode getFuncNode) {
             return getFuncNode.execute(getfunc, adr, size);
         }
 
         @Specialization(guards = "getfunc == nil")
-        Object WithoutFunc(Object type, @SuppressWarnings("unused") FieldGet getfunc, Object src, int index, int size, Pointer adr,
-                        @Cached PythonObjectFactory factory,
+        Object withoutFunc(Object type, @SuppressWarnings("unused") FieldGet getfunc, CDataObject src, int index, int size, Pointer adr,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached InlinedIsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached GetFuncNode getFuncNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached CtypesNodes.PyCDataFromBaseObjNode fromBaseObjNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(type);
             if (dict != null && dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(inliningTarget, type, getBaseClassNode, isSameTypeNode)) {
                 return getFuncNode.execute(dict.getfunc, adr, size);
             }
-            return PyCData_FromBaseObj(type, src, index, adr, factory, getRaiseNode(), pyTypeStgDictNode);
+            return fromBaseObjNode.execute(inliningTarget, type, src, index, adr);
         }
     }
 
@@ -611,46 +610,5 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     @TruffleBoundary
     private static String toHex(int value) {
         return Integer.toHexString(value);
-    }
-
-    static void PyCData_MallocBuffer(CDataObject obj, StgDictObject dict) {
-        obj.b_ptr = dict.size > 0 ? Pointer.allocate(dict.ffi_type_pointer, dict.size) : Pointer.NULL;
-        obj.b_size = dict.size;
-        obj.b_needsfree = true;
-    }
-
-    static CDataObject PyCData_FromBaseObj(Object type, Object base, int index, Pointer adr,
-                    PythonObjectFactory factory,
-                    PRaiseNode raiseNode,
-                    PyTypeStgDictNode pyTypeStgDictNode) {
-        // assert(PyType_Check(type));
-        StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode);
-        dict.flags |= DICTFLAG_FINAL;
-        CDataObject cmem = factory.createCDataObject(type);
-
-        cmem.b_length = dict.length;
-        cmem.b_size = dict.size;
-        if (base != null) { /* use base's buffer */
-            cmem.b_ptr = adr;
-            cmem.b_needsfree = false;
-            cmem.b_base = (CDataObject) base;
-        } else { /* copy contents of adr */
-            PyCData_MallocBuffer(cmem, dict);
-            // memcpy(cmem.b_ptr, adr, dict.size); TODO
-            cmem.b_ptr = adr;
-        }
-        cmem.b_index = index;
-        return cmem;
-    }
-
-    // corresponds to GenericPyCData_new
-    protected static CDataObject GenericPyCDataNew(StgDictObject dict, CDataObject obj) {
-        dict.flags |= DICTFLAG_FINAL;
-        obj.b_base = null;
-        obj.b_index = 0;
-        obj.b_objects = null;
-        obj.b_length = dict.length;
-        PyCData_MallocBuffer(obj, dict);
-        return obj;
     }
 }
