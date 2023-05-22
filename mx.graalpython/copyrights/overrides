@@ -299,7 +299,6 @@ graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/basic/
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/basic/HelloWorldTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/builtin/BuiltinFunctionTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/builtin/ImportTests.java,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/builtin/IteratorTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/builtin/SpecialMethodTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/datatype/DictTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/datatype/FrameTest.java,zippy.copyright
