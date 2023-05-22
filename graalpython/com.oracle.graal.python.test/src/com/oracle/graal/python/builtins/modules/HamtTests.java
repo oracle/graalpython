@@ -167,6 +167,16 @@ public class HamtTests {
         assertEquals("null\n", hamt.dump());
     }
 
+    @Test
+    public void testHamtSize() {
+        int limit = 100;
+        Hamt hamt = new Hamt();
+        for (int i = 0; i < limit; ++i) {
+            assertEquals(i, hamt.size());
+            hamt = hamt.withEntry(new Hamt.Entry(i, i % 2 == 0 ? String.valueOf(i).hashCode() : 0, i + 1));
+        }
+    }
+
 // @Test
     public void measureTimeForSmallHamtAcceses() {
         Hamt hamt = new Hamt().withEntry(new Hamt.Entry(1, 0, 1)).withEntry(new Hamt.Entry(2, 31, 2));

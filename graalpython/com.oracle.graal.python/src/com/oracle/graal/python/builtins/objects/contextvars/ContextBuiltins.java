@@ -79,8 +79,7 @@ public class ContextBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         int len(@SuppressWarnings("unused") PContextVarsContext self) {
-            // FIXME
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError);
+            return self.contextVarValues.size();
         }
     }
 
