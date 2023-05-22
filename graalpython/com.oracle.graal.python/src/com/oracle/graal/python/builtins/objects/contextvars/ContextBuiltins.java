@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -70,7 +74,17 @@ public class ContextBuiltins extends PythonBuiltins {
         return ContextBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "__getitem__", minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int len(@SuppressWarnings("unused") PContextVarsContext self) {
+            // FIXME
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError);
+        }
+    }
+
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetContextVar extends PythonBinaryBuiltinNode {
         @Specialization
@@ -125,14 +139,13 @@ public class ContextBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "__contains__", minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class Contains extends PythonBuiltinNode {
         @Specialization
         boolean doIn(PContextVarsContext self, Object key,
                         @Cached PRaiseNode raise) {
-            if (key instanceof PContextVar) {
-                PContextVar var = (PContextVar) key;
+            if (key instanceof PContextVar var) {
                 return self.contextVarValues.lookup(var, var.getHash()) != null;
             }
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
@@ -140,8 +153,7 @@ public class ContextBuiltins extends PythonBuiltins {
     }
 
     private static Object getContextVar(PContextVarsContext self, Object key, Object def, PRaiseNode raise) {
-        if (key instanceof PContextVar) {
-            PContextVar ctxVar = (PContextVar) key;
+        if (key instanceof PContextVar ctxVar) {
             Object value = self.contextVarValues.lookup(key, ctxVar.getHash());
             if (value == null) {
                 if (def == null) {
