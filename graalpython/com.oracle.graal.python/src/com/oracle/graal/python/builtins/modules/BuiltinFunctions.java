@@ -84,11 +84,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_MINUS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -298,10 +301,6 @@ import com.oracle.truffle.api.utilities.TriState;
 
 @CoreFunctions(defineModule = J_BUILTINS, isEager = true)
 public final class BuiltinFunctions extends PythonBuiltins {
-
-    private static final TruffleString T_NONE = PythonUtils.tsLiteral("None");
-    private static final TruffleString T_FALSE = PythonUtils.tsLiteral("False");
-    private static final TruffleString T_TRUE = PythonUtils.tsLiteral("True");
 
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
