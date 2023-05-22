@@ -80,7 +80,6 @@ public abstract class MethodsFlags {
     public static final long NB_XOR = 1L << 14;
     public static final long NB_OR = 1L << 15;
     public static final long NB_INT = 1L << 16;
-    public static final long NB_RESERVED = 1L << 17; /* the slot formerly known as nb_long */
     public static final long NB_FLOAT = 1L << 18;
     public static final long NB_INPLACE_ADD = 1L << 19;
     public static final long NB_INPLACE_SUBTRACT = 1L << 20;
@@ -117,9 +116,7 @@ public abstract class MethodsFlags {
     public static final long SQ_CONCAT = 1L << 41;
     public static final long SQ_REPEAT = 1L << 42;
     public static final long SQ_ITEM = 1L << 43;
-    public static final long WAS_SQ_SLICE = 1L << 44;
     public static final long SQ_ASS_ITEM = 1L << 45;
-    public static final long WAS_SQ_ASS_SLICE = 1L << 46;
     public static final long SQ_CONTAINS = 1L << 47;
     public static final long SQ_INPLACE_CONCAT = 1L << 48;
     public static final long SQ_INPLACE_REPEAT = 1L << 49;
@@ -179,15 +176,12 @@ public abstract class MethodsFlags {
         CAPI_METHODS_FLAGS_DEFINES.add("#define MP_SUBSCRIPT " + MP_SUBSCRIPT);
         CAPI_METHODS_FLAGS_DEFINES.add("#define MP_ASS_SUBSCRIPT " + MP_ASS_SUBSCRIPT);
     }
-    public static final long NUMBERS_FLAGS = (1L << 36) - 1;
-    public static final long SEQUENCE_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT |
-                    SQ_ITEM | WAS_SQ_SLICE | SQ_ASS_ITEM | WAS_SQ_ASS_SLICE | SQ_CONTAINS |
-                    SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT; // (((1 << 50) -1) - ((1 << 40) - 1))
-    public static final long MAPPING_FLAGS = MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
 
     // builtins methods flags
 
     public static final long DEFAULT_M_FLAGS = 0;
+
+    public static final long TYPE_M_FLAGS = NB_OR;
 
     public static final long NONE_M_FLAGS = NB_BOOL;
     public static final long INT_M_FLAGS = NB_ADD | NB_SUBTRACT | NB_MULTIPLY | NB_REMAINDER | NB_DIVMOD |
@@ -203,9 +197,8 @@ public abstract class MethodsFlags {
                     MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
     public static final long BYTES_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM |
                     SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
-    public static final long COMPLEX_M_FLAGS = NB_ADD | NB_SUBTRACT | NB_MULTIPLY | NB_REMAINDER |
-                    NB_DIVMOD | NB_POWER | NB_NEGATIVE | NB_POSITIVE | NB_ABSOLUTE |
-                    NB_BOOL | NB_INT | NB_FLOAT | NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE;
+    public static final long COMPLEX_M_FLAGS = NB_ADD | NB_SUBTRACT | NB_MULTIPLY | NB_POWER | NB_NEGATIVE |
+                    NB_POSITIVE | NB_ABSOLUTE | NB_BOOL | NB_TRUE_DIVIDE;
     public static final long DICT_M_FLAGS = NB_OR | NB_INPLACE_OR | SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT |
                     MP_ASS_SUBSCRIPT;
     public static final long DICTVALUESVIEW_M_FLAGS = SQ_LENGTH;
@@ -229,6 +222,7 @@ public abstract class MethodsFlags {
     public static final long STRING_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM |
                     SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
 
+    public static final long DEFAULTDICT_M_FLAGS = NB_OR | DICT_M_FLAGS;
     public static final long DEQUE_M_FLAGS = NB_BOOL | SQ_LENGTH | SQ_CONCAT | SQ_REPEAT |
                     SQ_ITEM | SQ_ASS_ITEM | SQ_CONTAINS | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT;
 
@@ -237,22 +231,27 @@ public abstract class MethodsFlags {
                     SQ_CONTAINS | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
     public static final long MMAP_M_FLAGS = SQ_LENGTH | SQ_ITEM | SQ_ASS_ITEM |
                     MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
-    public static final long STRUCTTIME_M_FLAGS = TUPLE_M_FLAGS;
+
+    public static final long GENERIC_ALIAS_M_FLAGS = NB_OR | MP_SUBSCRIPT;
+    public static final long UNION_TYPE_M_FLAGS = NB_OR | MP_SUBSCRIPT;
+
+    public static final long CONTEXT_M_FLAGS = SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
+
     // _ctypes
-    public static final long PYCFUNCPTRTYPE_M_FLAGS = SQ_REPEAT;
+    public static final long PYCFUNCPTRTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
     public static final long PYCARRAY_M_FLAGS = SQ_LENGTH | SQ_ITEM | SQ_ASS_ITEM | MP_LENGTH | MP_SUBSCRIPT |
                     MP_ASS_SUBSCRIPT;
-    public static final long PYCARRAYTYPE_M_FLAGS = SQ_REPEAT;
+    public static final long PYCARRAYTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
     public static final long PYCFUNCPTR_M_FLAGS = NB_BOOL;
     public static final long PYCPOINTER_M_FLAGS = NB_BOOL | SQ_ITEM | SQ_ASS_ITEM | MP_SUBSCRIPT;
-    public static final long PYCPOINTERTYPE_M_FLAGS = SQ_REPEAT;
-    public static final long PYCSIMPLETYPE_M_FLAGS = SQ_REPEAT;
-    public static final long PYCSTRUCTTYPE_M_FLAGS = SQ_REPEAT;
+    public static final long PYCPOINTERTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
+    public static final long PYCSIMPLETYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
+    public static final long PYCSTRUCTTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
     public static final long SIMPLECDATA_M_FLAGS = NB_BOOL;
-    public static final long UNIONTYPE_M_FLAGS = SQ_REPEAT;
+    public static final long UNIONTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
 
     public static final long FOREIGNOBJECT_M_FLAGS = NB_BOOL | SQ_LENGTH | MP_LENGTH | NB_ADD | NB_MULTIPLY |
-                    NB_SUBTRACT | NB_DIVMOD | NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE | NB_AND | NB_XOR | NB_OR | MP_SUBSCRIPT |
-                    SQ_ITEM | SQ_CONTAINS;
+                    NB_SUBTRACT | NB_DIVMOD | NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE | NB_AND | NB_XOR | NB_OR | NB_INDEX |
+                    SQ_CONTAINS | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
 
 }
