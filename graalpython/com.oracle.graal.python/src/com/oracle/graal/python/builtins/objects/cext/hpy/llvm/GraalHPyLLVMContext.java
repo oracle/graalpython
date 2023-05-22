@@ -195,8 +195,11 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -1271,10 +1274,12 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic({HPyContextMember.class, PythonUtils.class})
     abstract static class GraalHPyReadMemberNode extends Node {
 
-        public abstract Object execute(GraalHPyLLVMContext backend, String key);
+        public abstract Object execute(Node node, GraalHPyLLVMContext backend, String key);
 
         @Specialization(guards = "cachedKey == key", limit = "1")
         static Object doMemberCached(GraalHPyLLVMContext backend, String key,
@@ -1299,18 +1304,20 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
     @ExportMessage
     boolean isMemberInvocable(String key,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
                     @Shared("memberInvokeLib") @CachedLibrary(limit = "1") InteropLibrary memberInvokeLib) {
-        Object member = readMemberNode.execute(this, key);
+        Object member = readMemberNode.execute(inliningTarget, this, key);
         return member != null && memberInvokeLib.isExecutable(member);
     }
 
     @ExportMessage
     Object invokeMember(String key, Object[] args,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
                     @Shared("memberInvokeLib") @CachedLibrary(limit = "1") InteropLibrary memberInvokeLib)
                     throws UnsupportedMessageException, UnsupportedTypeException, ArityException {
-        Object member = readMemberNode.execute(this, key);
+        Object member = readMemberNode.execute(inliningTarget, this, key);
         assert member != null;
         /*
          * Optimization: the first argument *MUST* always be the context. If not, we can just set
