@@ -776,6 +776,39 @@ class autogen_ctx_llvm_upcall_enum(AutoGenFilePart):
         return ',\n'.join(lines) + ';\n'
 
 
+class autogen_ctx_llvm_init(AutoGenFilePart):
+    """
+    Generates initialization code for the context handles like, e.g., 'h_None'.
+    For this, the generator iterates over all variables as specified in
+    'public_api.h' and emits the constructor call.
+
+    The mapping of context handles to Java objects and how the handle is created
+    is specified by table 'CTX_HANDLES'.
+    """
+    INDENT = '        '
+    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(LLVM_HPY_CONTEXT_PKG + LLVM_HPY_BACKEND_CLASS)
+    BEGIN_MARKER = INDENT + '// {{start llvm ctx init}}\n'
+    END_MARKER = INDENT + '// {{end llvm ctx init}}\n'
+
+    def generate(self, old):
+        lines = []
+        w = lines.append
+        def gen_ctor(var_name):
+            data = CTX_HANDLES[var_name]
+            args = ", ".join([data[0]] + data[2])
+            return f'{data[1]}({args})'
+
+        for var in self.api.variables:
+            ctx_name = var.ctx_name()
+            w(f'{self.INDENT}members[HPyContextMember.{ctx_name.upper()}.ordinal()] = {gen_ctor(ctx_name)};')
+        w('')
+        for func in self.api.functions:
+            mname = func.ctx_name().upper()
+            w(f'{self.INDENT}members[HPyContextMember.{mname}.ordinal()] = createContextFunction(HPyContextMember.{mname});')
+        w('')
+        return '\n'.join(lines)
+
+
 
 generators = (autogen_ctx_init_jni_h,
               autogen_wrappers_jni,
@@ -785,4 +818,5 @@ generators = (autogen_ctx_init_jni_h,
               autogen_svm_jni_upcall_config,
               autogen_jni_upcall_method_stub,
               autogen_ctx_handles_init,
-              autogen_ctx_llvm_upcall_enum)
+              autogen_ctx_llvm_upcall_enum,
+              autogen_ctx_llvm_init)
