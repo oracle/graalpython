@@ -101,6 +101,9 @@ class StructSeqTests(unittest.TestCase):
         self.assertEqual('A tuple of (columns, lines) for holding terminal window size', posix.terminal_size.__doc__)
         self.assertEqual('width of the terminal window in characters', posix.terminal_size.columns.__doc__)
 
+    def test_add(self):
+        self.assertEqual(tuple(sys.version_info) + (1,), sys.version_info + (1,))
+
 
 if __name__ == '__main__':
     unittest.main()
