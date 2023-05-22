@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.map;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
@@ -57,24 +56,16 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
 public final class MapBuiltins extends PythonBuiltins {
@@ -139,44 +130,6 @@ public final class MapBuiltins extends PythonBuiltins {
         @Specialization
         static PMap iter(PMap self) {
             return self;
-        }
-    }
-
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doit(VirtualFrame frame, PMap self, Object x,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedBranchProfile moreThanOne,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode next,
-                        @Cached IsBuiltinObjectProfile profile) {
-            PMap iterMap = factory().createMap(PythonBuiltinClassType.PMap);
-            Object[] iterators = self.getIterators();
-            Object iterator = iterators[0];
-            Object[] args;
-            if (iterators.length > 1) {
-                moreThanOne.enter(inliningTarget);
-                args = new Object[iterators.length - 1];
-                PythonUtils.arraycopy(iterators, 1, args, 0, args.length);
-            } else {
-                args = PythonUtils.EMPTY_OBJECT_ARRAY;
-            }
-            InitNode.doGeneric(frame, iterMap, self.getFunction(), iterator, args, getIter);
-            while (true) {
-                try {
-                    Object n = next.execute(frame, iterMap);
-                    if (eqNode.execute(frame, n, x)) {
-                        return true;
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, profile);
-                    break;
-                }
-            }
-            return false;
         }
     }
 
