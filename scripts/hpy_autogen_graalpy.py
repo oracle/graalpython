@@ -742,6 +742,41 @@ class autogen_ctx_call_jni(GraalPyAutoGenFile):
             w('}')
             w('')
 
+
+###############################################################################
+#                                LLVM BACKEND                                 #
+###############################################################################
+
+LLVM_HPY_CONTEXT_PKG = HPY_CONTEXT_PKG + 'llvm.'
+LLVM_HPY_BACKEND_CLASS = 'GraalHPyLLVMContext'
+
+# The name of the native HPy context (will be used for HPyContext.name)
+LLVM_HPY_CONTEXT_NAME = 'HPy Universal ABI (GraalVM backend, LLVM)'
+
+
+class autogen_ctx_llvm_upcall_enum(AutoGenFilePart):
+    """
+    Generates the enum of context members for the Graal HPy LLVM backend.
+    """
+    INDENT = '        '
+    PATH = 'graalpython/com.oracle.graal.python/src/' + java_qname_to_path(LLVM_HPY_CONTEXT_PKG + LLVM_HPY_BACKEND_CLASS)
+    BEGIN_MARKER = INDENT + '// {{start llvm ctx members}}\n'
+    END_MARKER = INDENT + '// {{end llvm ctx members}}\n'
+
+    def generate(self, old):
+        lines = []
+        w = lines.append
+        for var in self.api.variables:
+            mname = var.name.upper()
+            w(f'{self.INDENT}{mname}("{var.name}")')
+        for func in self.api.functions:
+            ctx_name = func.ctx_name()
+            mname = ctx_name.upper()
+            w(f'{self.INDENT}{mname}("{ctx_name}")')
+        return ',\n'.join(lines) + ';\n'
+
+
+
 generators = (autogen_ctx_init_jni_h,
               autogen_wrappers_jni,
               autogen_ctx_jni,
@@ -749,4 +784,5 @@ generators = (autogen_ctx_init_jni_h,
               autogen_ctx_jni_upcall_enum,
               autogen_svm_jni_upcall_config,
               autogen_jni_upcall_method_stub,
-              autogen_ctx_handles_init)
+              autogen_ctx_handles_init,
+              autogen_ctx_llvm_upcall_enum)

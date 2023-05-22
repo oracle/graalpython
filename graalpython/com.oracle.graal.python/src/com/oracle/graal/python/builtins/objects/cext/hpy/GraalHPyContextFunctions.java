@@ -579,43 +579,6 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @GenerateUncached
-    public abstract static class GraalHPyDictSetItem extends GraalHPyContextFunction {
-
-        @Specialization
-        static Object doGeneric(Object[] arguments,
-                        @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
-                        @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
-                        @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
-                        @Cached HashingStorageSetItem setItem,
-                        @Cached("createClassProfile()") ValueProfile profile,
-                        @Cached("createCountingProfile()") ConditionProfile updateStorageProfile,
-                        @Cached HPyRaiseNode raiseNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
-            checkArity(arguments, 4);
-            GraalHPyContext context = asContextNode.execute(arguments[0]);
-            Object left = profile.profile(dictAsPythonObjectNode.execute(arguments[1]));
-            if (!PGuards.isDict(left)) {
-                return raiseNode.raiseIntWithoutFrame(context, -1, SystemError, ErrorMessages.BAD_INTERNAL_CALL);
-            }
-            PDict dict = (PDict) left;
-            Object key = keyAsPythonObjectNode.execute(arguments[2]);
-            Object value = valueAsPythonObjectNode.execute(arguments[3]);
-            try {
-                HashingStorage dictStorage = dict.getDictStorage();
-                HashingStorage updatedStorage = setItem.execute(null, dictStorage, key, value);
-                if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
-                    dict.setDictStorage(updatedStorage);
-                }
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(context, e);
-                return -1;
-            }
-        }
-    }
-
-    @GenerateUncached
     public abstract static class GraalHPyDictGetItem extends GraalHPyContextFunction {
 
         @Specialization

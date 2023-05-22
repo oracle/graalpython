@@ -109,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictKeysNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictNewNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDictSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDumpNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyDupNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyErrClearNodeGen;
@@ -455,19 +454,16 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMember implements HPyUpcall {
-        // {{start llvm ctx members}}
         NAME("name"),
         PRIVATE("_private"),
         CTX_VERSION("ctx_version"),
 
-        // constants
+        // {{start llvm ctx members}}
         H_NONE("h_None"),
         H_TRUE("h_True"),
         H_FALSE("h_False"),
         H_NOTIMPLEMENTED("h_NotImplemented"),
         H_ELLIPSIS("h_Ellipsis"),
-
-        // exception types
         H_BASEEXCEPTION("h_BaseException"),
         H_EXCEPTION("h_Exception"),
         H_STOPASYNCITERATION("h_StopAsyncIteration"),
@@ -532,81 +528,65 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         H_UNICODEWARNING("h_UnicodeWarning"),
         H_BYTESWARNING("h_BytesWarning"),
         H_RESOURCEWARNING("h_ResourceWarning"),
-
-        // built-in types
         H_BASEOBJECTTYPE("h_BaseObjectType"),
         H_TYPETYPE("h_TypeType"),
         H_BOOLTYPE("h_BoolType"),
         H_LONGTYPE("h_LongType"),
         H_FLOATTYPE("h_FloatType"),
-        H_COMPLEXTYPE("h_ComplexType"),
         H_UNICODETYPE("h_UnicodeType"),
-        H_BYTESTYPE("h_BytesType"),
         H_TUPLETYPE("h_TupleType"),
         H_LISTTYPE("h_ListType"),
+        H_COMPLEXTYPE("h_ComplexType"),
+        H_BYTESTYPE("h_BytesType"),
         H_MEMORYVIEWTYPE("h_MemoryViewType"),
         H_CAPSULETYPE("h_CapsuleType"),
         H_SLICETYPE("h_SliceType"),
-
         CTX_MODULE_CREATE("ctx_Module_Create"),
         CTX_DUP("ctx_Dup"),
-        CTX_AS_STRUCT("ctx_AsStruct"),
-        CTX_AS_STRUCT_LEGACY("ctx_AsStructLegacy"),
         CTX_CLOSE("ctx_Close"),
-        CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
         CTX_LONG_FROMLONG("ctx_Long_FromLong"),
         CTX_LONG_FROMUNSIGNEDLONG("ctx_Long_FromUnsignedLong"),
         CTX_LONG_FROMLONGLONG("ctx_Long_FromLongLong"),
-        CTX_LONG_FROM_UNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
-        CTX_LONG_FROMSSIZE_T("ctx_Long_FromSsize_t"),
+        CTX_LONG_FROMUNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
         CTX_LONG_FROMSIZE_T("ctx_Long_FromSize_t"),
+        CTX_LONG_FROMSSIZE_T("ctx_Long_FromSsize_t"),
         CTX_LONG_ASLONG("ctx_Long_AsLong"),
-        CTX_LONG_ASLONGLONG("ctx_Long_AsLongLong"),
         CTX_LONG_ASUNSIGNEDLONG("ctx_Long_AsUnsignedLong"),
         CTX_LONG_ASUNSIGNEDLONGMASK("ctx_Long_AsUnsignedLongMask"),
+        CTX_LONG_ASLONGLONG("ctx_Long_AsLongLong"),
         CTX_LONG_ASUNSIGNEDLONGLONG("ctx_Long_AsUnsignedLongLong"),
         CTX_LONG_ASUNSIGNEDLONGLONGMASK("ctx_Long_AsUnsignedLongLongMask"),
         CTX_LONG_ASSIZE_T("ctx_Long_AsSize_t"),
         CTX_LONG_ASSSIZE_T("ctx_Long_AsSsize_t"),
         CTX_LONG_ASVOIDPTR("ctx_Long_AsVoidPtr"),
         CTX_LONG_ASDOUBLE("ctx_Long_AsDouble"),
-        CTX_NEW("ctx_New"),
-        CTX_TYPE("ctx_Type"),
-        CTX_TYPECHECK("ctx_TypeCheck"),
-        CTX_TYPECHECK_G("ctx_TypeCheck_g"),
-        CTX_SETTYPE("ctx_SetType"),
-        CTX_TYPE_ISSUBTYPE("ctx_Type_IsSubtype"),
-        CTX_TYPE_GETNAME("ctx_Type_GetName"),
-        CTX_TYPE_CHECKSLOT("ctx_Type_CheckSlot"),
-        CTX_IS("ctx_Is"),
-        CTX_IS_G("ctx_Is_g"),
-        CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew"),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
         CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble"),
-
-        // unary
-        CTX_NEGATIVE("ctx_Negative"),
-        CTX_POSITIVE("ctx_Positive"),
-        CTX_ABSOLUTE("ctx_Absolute"),
-        CTX_INVERT("ctx_Invert"),
-        CTX_INDEX("ctx_Index"),
-        CTX_LONG("ctx_Long"),
-        CTX_FLOAT("ctx_Float"),
-
-        // binary
+        CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
+        CTX_LENGTH("ctx_Length"),
+        CTX_SEQUENCE_CHECK("ctx_Sequence_Check"),
+        CTX_NUMBER_CHECK("ctx_Number_Check"),
         CTX_ADD("ctx_Add"),
-        CTX_SUB("ctx_Subtract"),
+        CTX_SUBTRACT("ctx_Subtract"),
         CTX_MULTIPLY("ctx_Multiply"),
         CTX_MATRIXMULTIPLY("ctx_MatrixMultiply"),
         CTX_FLOORDIVIDE("ctx_FloorDivide"),
         CTX_TRUEDIVIDE("ctx_TrueDivide"),
         CTX_REMAINDER("ctx_Remainder"),
         CTX_DIVMOD("ctx_Divmod"),
+        CTX_POWER("ctx_Power"),
+        CTX_NEGATIVE("ctx_Negative"),
+        CTX_POSITIVE("ctx_Positive"),
+        CTX_ABSOLUTE("ctx_Absolute"),
+        CTX_INVERT("ctx_Invert"),
         CTX_LSHIFT("ctx_Lshift"),
         CTX_RSHIFT("ctx_Rshift"),
         CTX_AND("ctx_And"),
         CTX_XOR("ctx_Xor"),
         CTX_OR("ctx_Or"),
+        CTX_INDEX("ctx_Index"),
+        CTX_LONG("ctx_Long"),
+        CTX_FLOAT("ctx_Float"),
         CTX_INPLACEADD("ctx_InPlaceAdd"),
         CTX_INPLACESUBTRACT("ctx_InPlaceSubtract"),
         CTX_INPLACEMULTIPLY("ctx_InPlaceMultiply"),
@@ -614,35 +594,30 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_INPLACEFLOORDIVIDE("ctx_InPlaceFloorDivide"),
         CTX_INPLACETRUEDIVIDE("ctx_InPlaceTrueDivide"),
         CTX_INPLACEREMAINDER("ctx_InPlaceRemainder"),
-        // TODO(fa): support IDivMod
-        // CTX_INPLACEDIVMOD("ctx_InPlaceDivmod"),
+        CTX_INPLACEPOWER("ctx_InPlacePower"),
         CTX_INPLACELSHIFT("ctx_InPlaceLshift"),
         CTX_INPLACERSHIFT("ctx_InPlaceRshift"),
         CTX_INPLACEAND("ctx_InPlaceAnd"),
         CTX_INPLACEXOR("ctx_InPlaceXor"),
         CTX_INPLACEOR("ctx_InPlaceOr"),
-
-        // ternary
-        CTX_POWER("ctx_Power"),
-        CTX_INPLACEPOWER("ctx_InPlacePower"),
-
         CTX_CALLABLE_CHECK("ctx_Callable_Check"),
         CTX_CALLTUPLEDICT("ctx_CallTupleDict"),
-        CTX_ERR_NOMEMORY("ctx_Err_NoMemory"),
+        CTX_FATALERROR("ctx_FatalError"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_ERR_SETOBJECT("ctx_Err_SetObject"),
         CTX_ERR_SETFROMERRNOWITHFILENAME("ctx_Err_SetFromErrnoWithFilename"),
         CTX_ERR_SETFROMERRNOWITHFILENAMEOBJECTS("ctx_Err_SetFromErrnoWithFilenameObjects"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
         CTX_ERR_EXCEPTIONMATCHES("ctx_Err_ExceptionMatches"),
+        CTX_ERR_NOMEMORY("ctx_Err_NoMemory"),
         CTX_ERR_CLEAR("ctx_Err_Clear"),
         CTX_ERR_NEWEXCEPTION("ctx_Err_NewException"),
         CTX_ERR_NEWEXCEPTIONWITHDOC("ctx_Err_NewExceptionWithDoc"),
         CTX_ERR_WARNEX("ctx_Err_WarnEx"),
         CTX_ERR_WRITEUNRAISABLE("ctx_Err_WriteUnraisable"),
-        CTX_FATALERROR("ctx_FatalError"),
         CTX_ISTRUE("ctx_IsTrue"),
-        CTX_TYPE_FROM_SPEC("ctx_Type_FromSpec"),
+        CTX_TYPE_FROMSPEC("ctx_Type_FromSpec"),
+        CTX_TYPE_GENERICNEW("ctx_Type_GenericNew"),
         CTX_GETATTR("ctx_GetAttr"),
         CTX_GETATTR_S("ctx_GetAttr_s"),
         CTX_MAYBEGETATTR_S("ctx_MaybeGetAttr_s"),
@@ -653,10 +628,29 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_GETITEM("ctx_GetItem"),
         CTX_GETITEM_I("ctx_GetItem_i"),
         CTX_GETITEM_S("ctx_GetItem_s"),
+        CTX_CONTAINS("ctx_Contains"),
         CTX_SETITEM("ctx_SetItem"),
         CTX_SETITEM_I("ctx_SetItem_i"),
         CTX_SETITEM_S("ctx_SetItem_s"),
-        CTX_CONTAINS("ctx_Contains"),
+        CTX_TYPE("ctx_Type"),
+        CTX_TYPECHECK("ctx_TypeCheck"),
+        CTX_TYPECHECK_G("ctx_TypeCheck_g"),
+        CTX_SETTYPE("ctx_SetType"),
+        CTX_TYPE_ISSUBTYPE("ctx_Type_IsSubtype"),
+        CTX_TYPE_GETNAME("ctx_Type_GetName"),
+        CTX_IS("ctx_Is"),
+        CTX_IS_G("ctx_Is_g"),
+        CTX_ASSTRUCT("ctx_AsStruct"),
+        CTX_ASSTRUCTLEGACY("ctx_AsStructLegacy"),
+        CTX_NEW("ctx_New"),
+        CTX_REPR("ctx_Repr"),
+        CTX_STR("ctx_Str"),
+        CTX_ASCII("ctx_ASCII"),
+        CTX_BYTES("ctx_Bytes"),
+        CTX_RICHCOMPARE("ctx_RichCompare"),
+        CTX_RICHCOMPAREBOOL("ctx_RichCompareBool"),
+        CTX_HASH("ctx_Hash"),
+        CTX_SEQITER_NEW("ctx_SeqIter_New"),
         CTX_BYTES_CHECK("ctx_Bytes_Check"),
         CTX_BYTES_SIZE("ctx_Bytes_Size"),
         CTX_BYTES_GET_SIZE("ctx_Bytes_GET_SIZE"),
@@ -666,72 +660,61 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
         CTX_BYTES_FROMSTRINGANDSIZE("ctx_Bytes_FromStringAndSize"),
         CTX_UNICODE_FROMSTRING("ctx_Unicode_FromString"),
         CTX_UNICODE_CHECK("ctx_Unicode_Check"),
-        CTX_UNICODE_ASUTF8STRING("ctx_Unicode_AsUTF8String"),
         CTX_UNICODE_ASASCIISTRING("ctx_Unicode_AsASCIIString"),
         CTX_UNICODE_ASLATIN1STRING("ctx_Unicode_AsLatin1String"),
+        CTX_UNICODE_ASUTF8STRING("ctx_Unicode_AsUTF8String"),
         CTX_UNICODE_ASUTF8ANDSIZE("ctx_Unicode_AsUTF8AndSize"),
         CTX_UNICODE_FROMWIDECHAR("ctx_Unicode_FromWideChar"),
+        CTX_UNICODE_DECODEFSDEFAULT("ctx_Unicode_DecodeFSDefault"),
+        CTX_UNICODE_DECODEFSDEFAULTANDSIZE("ctx_Unicode_DecodeFSDefaultAndSize"),
+        CTX_UNICODE_ENCODEFSDEFAULT("ctx_Unicode_EncodeFSDefault"),
+        CTX_UNICODE_READCHAR("ctx_Unicode_ReadChar"),
         CTX_UNICODE_DECODEASCII("ctx_Unicode_DecodeASCII"),
         CTX_UNICODE_DECODELATIN1("ctx_Unicode_DecodeLatin1"),
         CTX_UNICODE_FROMENCODEDOBJECT("ctx_Unicode_FromEncodedObject"),
         CTX_UNICODE_INTERNFROMSTRING("ctx_Unicode_InternFromString"),
         CTX_UNICODE_SUBSTRING("ctx_Unicode_Substring"),
-        CTX_UNICODE_DECODEFSDEFAULT("ctx_Unicode_DecodeFSDefault"),
-        CTX_UNICODE_DECODEFSDEFAULTANDSIZE("ctx_Unicode_DecodeFSDefaultAndSize"),
-        CTX_UNICODE_ENCODEFSDEFAULT("ctx_Unicode_EncodeFSDefault"),
-        CTX_UNICODE_READCHAR("ctx_Unicode_ReadChar"),
+        CTX_LIST_CHECK("ctx_List_Check"),
         CTX_LIST_NEW("ctx_List_New"),
         CTX_LIST_APPEND("ctx_List_Append"),
         CTX_DICT_CHECK("ctx_Dict_Check"),
         CTX_DICT_NEW("ctx_Dict_New"),
         CTX_DICT_KEYS("ctx_Dict_Keys"),
-        CTX_DICT_SETITEM("ctx_Dict_SetItem"),
         CTX_DICT_GETITEM("ctx_Dict_GetItem"),
-        CTX_FROMPYOBJECT("ctx_FromPyObject"),
-        CTX_ASPYOBJECT("ctx_AsPyObject"),
-        CTX_CALLREALFUNCTIONFROMTRAMPOLINE("ctx_CallRealFunctionFromTrampoline"),
-        CTX_REPR("ctx_Repr"),
-        CTX_STR("ctx_Str"),
-        CTX_ASCII("ctx_ASCII"),
-        CTX_BYTES("ctx_Bytes"),
-        CTX_RICHCOMPARE("ctx_RichCompare"),
-        CTX_RICHCOMPAREBOOL("ctx_RichCompareBool"),
-        CTX_HASH("ctx_Hash"),
-        CTX_NUMBER_CHECK("ctx_Number_Check"),
-        CTX_LENGTH("ctx_Length"),
-        CTX_IMPORT_IMPORTMODULE("ctx_Import_ImportModule"),
         CTX_TUPLE_CHECK("ctx_Tuple_Check"),
         CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray"),
-        CTX_TUPLE_BUILDER_NEW("ctx_TupleBuilder_New"),
-        CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
-        CTX_TUPLE_BUILDER_BUILD("ctx_TupleBuilder_Build"),
-        CTX_TUPLE_BUILDER_CANCEL("ctx_TupleBuilder_Cancel"),
-        CTX_LIST_CHECK("ctx_List_Check"),
-        CTX_LIST_BUILDER_NEW("ctx_ListBuilder_New"),
-        CTX_LIST_BUILDER_SET("ctx_ListBuilder_Set"),
-        CTX_LIST_BUILDER_BUILD("ctx_ListBuilder_Build"),
-        CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel"),
-        CTX_TRACKER_NEW("ctx_Tracker_New"),
-        CTX_TRACKER_ADD("ctx_Tracker_Add"),
-        CTX_TRACKER_FORGET_ALL("ctx_Tracker_ForgetAll"),
-        CTX_TRACKER_CLOSE("ctx_Tracker_Close"),
-        CTX_FIELD_STORE("ctx_Field_Store"),
-        CTX_FIELD_LOAD("ctx_Field_Load"),
-        CTX_LEAVEPYTHONEXECUTION("ctx_LeavePythonExecution"),
-        CTX_REENTERPYTHONEXECUTION("ctx_ReenterPythonExecution"),
-        CTX_GLOBAL_STORE("ctx_Global_Store"),
-        CTX_GLOBAL_LOAD("ctx_Global_Load"),
+        CTX_SLICE_UNPACK("ctx_Slice_Unpack"),
         CTX_CONTEXTVAR_NEW("ctx_ContextVar_New"),
         CTX_CONTEXTVAR_GET("ctx_ContextVar_Get"),
         CTX_CONTEXTVAR_SET("ctx_ContextVar_Set"),
+        CTX_IMPORT_IMPORTMODULE("ctx_Import_ImportModule"),
         CTX_CAPSULE_NEW("ctx_Capsule_New"),
         CTX_CAPSULE_GET("ctx_Capsule_Get"),
         CTX_CAPSULE_ISVALID("ctx_Capsule_IsValid"),
         CTX_CAPSULE_SET("ctx_Capsule_Set"),
+        CTX_FROMPYOBJECT("ctx_FromPyObject"),
+        CTX_ASPYOBJECT("ctx_AsPyObject"),
+        CTX_CALLREALFUNCTIONFROMTRAMPOLINE("ctx_CallRealFunctionFromTrampoline"),
+        CTX_LISTBUILDER_NEW("ctx_ListBuilder_New"),
+        CTX_LISTBUILDER_SET("ctx_ListBuilder_Set"),
+        CTX_LISTBUILDER_BUILD("ctx_ListBuilder_Build"),
+        CTX_LISTBUILDER_CANCEL("ctx_ListBuilder_Cancel"),
+        CTX_TUPLEBUILDER_NEW("ctx_TupleBuilder_New"),
+        CTX_TUPLEBUILDER_SET("ctx_TupleBuilder_Set"),
+        CTX_TUPLEBUILDER_BUILD("ctx_TupleBuilder_Build"),
+        CTX_TUPLEBUILDER_CANCEL("ctx_TupleBuilder_Cancel"),
+        CTX_TRACKER_NEW("ctx_Tracker_New"),
+        CTX_TRACKER_ADD("ctx_Tracker_Add"),
+        CTX_TRACKER_FORGETALL("ctx_Tracker_ForgetAll"),
+        CTX_TRACKER_CLOSE("ctx_Tracker_Close"),
+        CTX_FIELD_STORE("ctx_Field_Store"),
+        CTX_FIELD_LOAD("ctx_Field_Load"),
+        CTX_REENTERPYTHONEXECUTION("ctx_ReenterPythonExecution"),
+        CTX_LEAVEPYTHONEXECUTION("ctx_LeavePythonExecution"),
+        CTX_GLOBAL_STORE("ctx_Global_Store"),
+        CTX_GLOBAL_LOAD("ctx_Global_Load"),
         CTX_DUMP("ctx_Dump"),
-        CTX_SEQUENCE_CHECK("ctx_Sequence_Check"),
-        CTX_SLICE_UNPACK("ctx_Slice_Unpack"),
-        CTX_SEQITER_NEW("ctx_SeqIter_New");
+        CTX_TYPE_CHECKSLOT("ctx_Type_CheckSlot");
         // {{end llvm ctx members}}
 
         final String name;
@@ -990,7 +973,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             case CTX_BOOL_FROMLONG -> new HPyExecuteDefaultWrapper(GraalHPyBoolFromLongNodeGen::create, GraalHPyBoolFromLongNodeGen.getUncached());
             case CTX_LONG_FROMLONG, CTX_LONG_FROMLONGLONG, CTX_LONG_FROMSSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create, GraalHPyLongFromLongNodeGen.getUncached(), true);
 
-            case CTX_LONG_FROMUNSIGNEDLONG, CTX_LONG_FROM_UNSIGNEDLONGLONG, CTX_LONG_FROMSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create,
+            case CTX_LONG_FROMUNSIGNEDLONG, CTX_LONG_FROMUNSIGNEDLONGLONG, CTX_LONG_FROMSIZE_T -> new HPyExecuteWrapperWithFlag(GraalHPyLongFromLongNodeGen::create,
                             GraalHPyLongFromLongNodeGen.getUncached(), false);
             case CTX_LONG_ASLONG, CTX_LONG_ASLONGLONG -> new HPyLongAsPrimitiveExecuteWrapper(1, java.lang.Long.BYTES, true, false);
             case CTX_LONG_ASUNSIGNEDLONG, CTX_LONG_ASUNSIGNEDLONGLONG, CTX_LONG_ASSIZE_T, CTX_LONG_ASVOIDPTR -> new HPyLongAsPrimitiveExecuteWrapper(0, java.lang.Long.BYTES, true, true);
@@ -1003,8 +986,8 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             case CTX_TYPECHECK_G -> new HPyExecuteWrapperWithFlag(GraalHPyTypeCheckNodeGen::create, GraalHPyTypeCheckNodeGen.getUncached(), true);
             case CTX_IS -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), false);
             case CTX_IS_G -> new HPyExecuteWrapperWithFlag(GraalHPyIsNodeGen::create, GraalHPyIsNodeGen.getUncached(), true);
-            case CTX_TYPE_GENERIC_NEW -> new HPyExecuteDefaultWrapper(GraalHPyTypeGenericNewNodeGen::create, GraalHPyTypeGenericNewNodeGen.getUncached());
-            case CTX_AS_STRUCT, CTX_AS_STRUCT_LEGACY -> new HPyExecuteDefaultWrapper(GraalHPyCastNodeGen::create, GraalHPyCastNodeGen.getUncached());
+            case CTX_TYPE_GENERICNEW -> new HPyExecuteDefaultWrapper(GraalHPyTypeGenericNewNodeGen::create, GraalHPyTypeGenericNewNodeGen.getUncached());
+            case CTX_ASSTRUCT, CTX_ASSTRUCTLEGACY -> new HPyExecuteDefaultWrapper(GraalHPyCastNodeGen::create, GraalHPyCastNodeGen.getUncached());
 
             // unary
             case CTX_NEGATIVE -> new HPyExecuteWrapperUnaryArithmetic(UnaryArithmetic.Neg);
@@ -1017,7 +1000,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
             // binary
             case CTX_ADD -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Add);
-            case CTX_SUB -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Sub);
+            case CTX_SUBTRACT -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Sub);
             case CTX_MULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.Mul);
             case CTX_MATRIXMULTIPLY -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.MatMul);
             case CTX_FLOORDIVIDE -> new HPyExecuteWrapperBinaryArithmetic(BinaryArithmetic.FloorDiv);
@@ -1051,7 +1034,6 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
 
             case CTX_DICT_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PDict);
             case CTX_DICT_NEW -> new HPyExecuteDefaultWrapper(GraalHPyDictNewNodeGen::create, GraalHPyDictNewNodeGen.getUncached());
-            case CTX_DICT_SETITEM -> new HPyExecuteDefaultWrapper(GraalHPyDictSetItemNodeGen::create, GraalHPyDictSetItemNodeGen.getUncached());
             case CTX_DICT_GETITEM -> new HPyExecuteDefaultWrapper(GraalHPyDictGetItemNodeGen::create, GraalHPyDictGetItemNodeGen.getUncached());
             case CTX_LIST_NEW -> new HPyExecuteDefaultWrapper(GraalHPyListNewNodeGen::create, GraalHPyListNewNodeGen.getUncached());
             case CTX_LIST_APPEND -> new HPyExecuteDefaultWrapper(GraalHPyListAppendNodeGen::create, GraalHPyListAppendNodeGen.getUncached());
@@ -1102,7 +1084,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             case CTX_UNICODE_ENCODEFSDEFAULT -> new HPyExecuteWrapperWithObject(GraalHPyUnicodeAsCharsetStringNodeGen::create, GraalHPyUnicodeAsCharsetStringNodeGen.getUncached(),
                             getFSDefaultCharset());
             case CTX_UNICODE_READCHAR -> new HPyExecuteDefaultWrapper(GraalHPyUnicodeReadCharNodeGen::create, GraalHPyUnicodeReadCharNodeGen.getUncached());
-            case CTX_TYPE_FROM_SPEC -> new HPyExecuteDefaultWrapper(GraalHPyTypeFromSpecNodeGen::create, GraalHPyTypeFromSpecNodeGen.getUncached());
+            case CTX_TYPE_FROMSPEC -> new HPyExecuteDefaultWrapper(GraalHPyTypeFromSpecNodeGen::create, GraalHPyTypeFromSpecNodeGen.getUncached());
             case CTX_GETATTR -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), OBJECT);
             case CTX_GETATTR_S -> new HPyExecuteWrapperWithMode(GraalHPyGetAttrNodeGen::create, GraalHPyGetAttrNodeGen.getUncached(), CHAR_PTR);
             case CTX_MAYBEGETATTR_S -> new HPyExecuteDefaultWrapper(GraalHPyMaybeGetAttrSNodeGen::create, GraalHPyMaybeGetAttrSNodeGen.getUncached());
@@ -1129,16 +1111,16 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
             case CTX_IMPORT_IMPORTMODULE -> new HPyExecuteDefaultWrapper(GraalHPyImportModuleNodeGen::create, GraalHPyImportModuleNodeGen.getUncached());
             case CTX_TUPLE_FROMARRAY -> new HPyExecuteDefaultWrapper(GraalHPyTupleFromArrayNodeGen::create, GraalHPyTupleFromArrayNodeGen.getUncached());
             case CTX_TUPLE_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
-            case CTX_TUPLE_BUILDER_NEW, CTX_LIST_BUILDER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyBuilderNewNodeGen::create, GraalHPyBuilderNewNodeGen.getUncached());
-            case CTX_TUPLE_BUILDER_SET, CTX_LIST_BUILDER_SET -> new HPyExecuteDefaultWrapper(GraalHPyBuilderSetNodeGen::create, GraalHPyBuilderSetNodeGen.getUncached());
-            case CTX_TUPLE_BUILDER_CANCEL, CTX_LIST_BUILDER_CANCEL -> new HPyExecuteDefaultWrapper(GraalHPyBuilderCancelNodeGen::create, GraalHPyBuilderCancelNodeGen.getUncached());
-            case CTX_TUPLE_BUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
-            case CTX_LIST_BUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PList);
+            case CTX_TUPLEBUILDER_NEW, CTX_LISTBUILDER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyBuilderNewNodeGen::create, GraalHPyBuilderNewNodeGen.getUncached());
+            case CTX_TUPLEBUILDER_SET, CTX_LISTBUILDER_SET -> new HPyExecuteDefaultWrapper(GraalHPyBuilderSetNodeGen::create, GraalHPyBuilderSetNodeGen.getUncached());
+            case CTX_TUPLEBUILDER_CANCEL, CTX_LISTBUILDER_CANCEL -> new HPyExecuteDefaultWrapper(GraalHPyBuilderCancelNodeGen::create, GraalHPyBuilderCancelNodeGen.getUncached());
+            case CTX_TUPLEBUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PTuple);
+            case CTX_LISTBUILDER_BUILD -> new HPyExecuteWrapperWithBuiltinType(GraalHPyBuilderBuildNodeGen::create, GraalHPyBuilderBuildNodeGen.getUncached(), PythonBuiltinClassType.PList);
             case CTX_LIST_CHECK -> new HPyExecuteWrapperWithBuiltinType(GraalHPyCheckBuiltinTypeNodeGen::create, GraalHPyCheckBuiltinTypeNodeGen.getUncached(), PythonBuiltinClassType.PList);
 
             case CTX_TRACKER_NEW -> new HPyExecuteDefaultWrapper(GraalHPyTrackerNewNodeGen::create, GraalHPyTrackerNewNodeGen.getUncached());
             case CTX_TRACKER_ADD -> new HPyExecuteDefaultWrapper(GraalHPyTrackerAddNodeGen::create, GraalHPyTrackerAddNodeGen.getUncached());
-            case CTX_TRACKER_FORGET_ALL -> new HPyExecuteDefaultWrapper(GraalHPyTrackerForgetAllNodeGen::create, GraalHPyTrackerForgetAllNodeGen.getUncached());
+            case CTX_TRACKER_FORGETALL -> new HPyExecuteDefaultWrapper(GraalHPyTrackerForgetAllNodeGen::create, GraalHPyTrackerForgetAllNodeGen.getUncached());
             case CTX_TRACKER_CLOSE -> new HPyExecuteDefaultWrapper(GraalHPyTrackerCleanupNodeGen::create, GraalHPyTrackerCleanupNodeGen.getUncached());
 
             case CTX_FIELD_STORE -> new HPyExecuteDefaultWrapper(GraalHPyFieldStoreNodeGen::create, GraalHPyFieldStoreNodeGen.getUncached());
