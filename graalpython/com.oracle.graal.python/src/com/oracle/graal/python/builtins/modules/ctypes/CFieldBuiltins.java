@@ -54,6 +54,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_SWAPPED;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -70,10 +71,12 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesWithoutFrameNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -90,6 +93,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -395,7 +399,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, FieldSet setfunc, Pointer ptr, Object value, int size);
 
         @Specialization(guards = "setfunc == b_set || setfunc == B_set")
-        Object b_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object b_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode) {
@@ -405,7 +409,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == h_set || setfunc == H_set")
-        Object h_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object h_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
@@ -415,7 +419,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == h_set_sw || setfunc == H_set_sw")
-        Object h_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object h_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
@@ -426,7 +430,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == i_set || setfunc == I_set")
-        Object i_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object i_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
@@ -436,7 +440,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == i_set_sw || setfunc == I_set_sw")
-        Object i_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object i_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteIntNode writeIntNode) {
@@ -477,7 +481,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == l_set || setfunc == L_set")
-        Object l_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object l_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
@@ -487,7 +491,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == l_set_sw || setfunc == L_set_sw")
-        Object l_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object l_set_sw(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongAsLongNode asLongNode,
                         @Shared @Cached PointerNodes.WriteLongNode writeLongNode) {
@@ -550,7 +554,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == c_set")
-        Object c_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object c_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode,
@@ -576,7 +580,7 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         /* u - a single wchar_t character */
         @Specialization(guards = "setfunc == u_set")
-        Object u_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object u_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -596,7 +600,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == U_set")
-        Object U_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, int size,
+        static Object U_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, int size,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -617,7 +621,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == s_set")
-        Object s_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, int length,
+        static Object s_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, int length,
                         @Bind("this") Node inliningTarget,
                         @Cached ToBytesWithoutFrameNode getBytes,
                         @Shared @Cached PointerNodes.WriteBytesNode writeBytesNode,
@@ -642,19 +646,20 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == z_set")
-        Object z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongCheckNode longCheckNode,
                         @Shared @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Shared @Cached PythonObjectFactory factory) {
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
                 writePointerNode.execute(inliningTarget, ptr, pointerFromLongNode.execute(inliningTarget, value));
-                return value;
+                return PNone.NONE;
             }
             if (PGuards.isPBytes(value)) {
                 int len = bufferLib.getBufferLength(value);
@@ -663,13 +668,18 @@ public class CFieldBuiltins extends PythonBuiltins {
                 /* ptr is a char**, we need to add the indirection */
                 Pointer valuePtr = Pointer.bytes(bytes);
                 writePointerNode.execute(inliningTarget, ptr, valuePtr);
+                /*
+                 * We make a copy of the memory, so we need to register a destructor to free the
+                 * memory in case it goes to native.
+                 */
+                new PointerReference(value, valuePtr, PythonContext.get(inliningTarget).getSharedFinalizer());
                 return value;
             }
             throw raiseNode.raise(TypeError, ErrorMessages.BYTES_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
         }
 
         @Specialization(guards = "setfunc == Z_set")
-        Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toString,
                         @Shared @Cached PyLongCheckNode longCheckNode,
@@ -677,13 +687,14 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Shared @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
+                        @Shared @Cached PRaiseNode raiseNode,
+                        @Shared @Cached PythonObjectFactory factory) { // CTYPES_UNICODE
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
                 writePointerNode.execute(inliningTarget, ptr, pointerFromLongNode.execute(inliningTarget, value));
-                return value;
+                return PNone.NONE;
             }
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.UNICODE_STR_OR_INT_ADDR_EXPECTED_INSTEAD_OF_P, value);
@@ -697,11 +708,11 @@ public class CFieldBuiltins extends PythonBuiltins {
             /* ptr is a char**, we need to add the indirection */
             Pointer valuePtr = Pointer.bytes(bytes);
             writePointerNode.execute(inliningTarget, ptr, valuePtr);
-            return str;
+            return createPyMemCapsule(valuePtr, factory);
         }
 
         @Specialization(guards = "setfunc == P_set")
-        Object P_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
+        static Object P_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyLongCheckNode longCheckNode,
                         @Shared @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
@@ -722,11 +733,18 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object error(VirtualFrame frame, FieldSet setfunc, Pointer ptr, Object value, int size) {
+        static Object error(VirtualFrame frame, FieldSet setfunc, Pointer ptr, Object value, int size) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("Field setter %s is not supported yet."), setfunc.name());
         }
 
+        private static TruffleString CTYPES_CFIELD_CAPSULE_NAME_PYMEM = tsLiteral("_ctypes/cfield.c pymem");
+
+        private static PyCapsule createPyMemCapsule(Pointer pointer, PythonObjectFactory factory) {
+            PyCapsule capsule = factory.createCapsule(pointer, CTYPES_CFIELD_CAPSULE_NAME_PYMEM, null);
+            new PointerReference(capsule, pointer, PythonContext.get(factory).getSharedFinalizer());
+            return capsule;
+        }
     }
 
     @ImportStatic(FieldGet.class)
@@ -897,7 +915,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getfunc == O_get")
-        Object O_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
+        static Object O_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached PointerNodes.ReadPythonObject readPythonObject,

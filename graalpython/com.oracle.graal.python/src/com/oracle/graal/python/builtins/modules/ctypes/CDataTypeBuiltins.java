@@ -429,10 +429,6 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                             memcpyNode,
                             writePointerNode);
 
-            /* KeepRef steals a refcount from it's last argument */
-            /*
-             * If KeepRef fails, we are stumped. The dst memory block has already been changed
-             */
             keepRefNode.execute(frame, dst, index, result);
         }
 
@@ -574,7 +570,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             CDataObject ob = PyCData_GetContainer(target, factory);
             if (!PGuards.isDict(ob.b_objects)) {
-                ob.b_objects = keep; /* refcount consumed */
+                ob.b_objects = keep;
                 return;
             }
             PDict dict = (PDict) ob.b_objects;
