@@ -63,6 +63,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.nio.file.LinkOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -180,6 +181,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
+
+import sun.misc.Unsafe;
 
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
@@ -2506,5 +2509,41 @@ public final class PythonContext extends Python3Core {
 
     public void setDlopenFlags(int dlopenFlags) {
         this.dlopenFlags = dlopenFlags;
+    }
+
+    private static final class UnsafeWrapper {
+        private static final Unsafe UNSAFE = initUnsafe();
+
+        private static Unsafe initUnsafe() {
+            try {
+                return Unsafe.getUnsafe();
+            } catch (SecurityException e) {
+            }
+            try {
+                Field theUnsafeInstance = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafeInstance.setAccessible(true);
+                return (Unsafe) theUnsafeInstance.get(Unsafe.class);
+            } catch (Exception e) {
+                throw new RuntimeException("exception while trying to get Unsafe.theUnsafe via reflection:", e);
+            }
+        }
+    }
+
+    public Unsafe getUnsafe() {
+        if (isNativeAccessAllowed()) {
+            return UnsafeWrapper.UNSAFE;
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new RuntimeException("NAtive access not allowed, cannot manipulate native memory");
+    }
+
+    @TruffleBoundary
+    public long allocateNativeMemory(long size) {
+        return getUnsafe().allocateMemory(size);
+    }
+
+    @TruffleBoundary
+    public void freeNativeMemory(long address) {
+        getUnsafe().freeMemory(address);
     }
 }

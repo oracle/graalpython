@@ -4,8 +4,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
-import java.lang.reflect.Field;
-
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.LongPointerStorage;
@@ -25,10 +23,12 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -95,8 +95,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static void doNativeMemory(byte[] dst, int dstOffset, @SuppressWarnings("unused") MemoryBlock srcMemory, LongPointerStorage src, int srcOffset, int size) {
-            UNSAFE.copyMemory(null, src.pointer + srcOffset, dst, byteArrayOffset(dstOffset), size);
+        static void doNativeMemory(Node inliningTarget, byte[] dst, int dstOffset, @SuppressWarnings("unused") MemoryBlock srcMemory, LongPointerStorage src, int srcOffset, int size) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            unsafe.copyMemory(null, src.pointer + srcOffset, dst, byteArrayOffset(dstOffset), size);
         }
     }
 
@@ -128,8 +129,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static byte doNativeMemory(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
-            return UNSAFE.getByte(storage.pointer + offset);
+        static byte doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            return unsafe.getByte(storage.pointer + offset);
         }
 
         @Fallback
@@ -163,8 +165,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static short doNativeMemory(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
-            return UNSAFE.getShort(storage.pointer + offset);
+        static short doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            return unsafe.getShort(storage.pointer + offset);
         }
 
         @Fallback
@@ -198,8 +201,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static int doNativeMemory(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
-            return UNSAFE.getInt(storage.pointer + offset);
+        static int doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            return unsafe.getInt(storage.pointer + offset);
         }
 
         @Fallback
@@ -233,8 +237,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static long doNativeMemory(@SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
-            return UNSAFE.getLong(storage.pointer + offset);
+        static long doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, LongPointerStorage storage, int offset) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            return unsafe.getLong(storage.pointer + offset);
         }
 
         @Fallback
@@ -283,8 +288,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
-            UNSAFE.copyMemory(src, byteArrayOffset(srcOffset), null, dst.pointer + dstOffset, size);
+        static void doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, byte[] src, int srcOffset, int size) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            unsafe.copyMemory(src, byteArrayOffset(srcOffset), null, dst.pointer + dstOffset, size);
         }
 
         @Specialization
@@ -318,8 +324,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, byte value) {
-            UNSAFE.putByte(dst.pointer + dstOffset, value);
+        static void doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, byte value) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            unsafe.putByte(dst.pointer + dstOffset, value);
         }
 
         @Fallback
@@ -352,8 +359,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, short value) {
-            UNSAFE.putShort(dst.pointer + dstOffset, value);
+        static void doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, short value) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            unsafe.putShort(dst.pointer + dstOffset, value);
         }
 
         @Fallback
@@ -388,8 +396,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, int value) {
-            UNSAFE.putInt(dst.pointer + dstOffset, value);
+        static void doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, int value) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            unsafe.putInt(dst.pointer + dstOffset, value);
         }
 
         @Fallback
@@ -431,8 +440,9 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, long value) {
-            UNSAFE.putLong(dst.pointer + dstOffset, value);
+        static void doNativeMemory(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, long value) {
+            Unsafe unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            unsafe.putLong(dst.pointer + dstOffset, value);
         }
 
         @Fallback
@@ -574,22 +584,22 @@ public abstract class PointerNodes {
         }
 
         @Specialization
-        static long doBytes(MemoryBlock memory, ByteArrayStorage storage, int offset) {
+        static long doBytes(Node inliningTarget, MemoryBlock memory, ByteArrayStorage storage, int offset) {
             int len = storage.bytes.length;
-            // TODO check permissions
             // We need to copy the whole memory block to keep the pointer offsets consistent
-            long pointer = UNSAFE.allocateMemory(len);
-            UNSAFE.copyMemory(storage.bytes, byteArrayOffset(0), null, pointer, len);
+            PythonContext context = PythonContext.get(inliningTarget);
+            long pointer = context.allocateNativeMemory(len);
+            context.getUnsafe().copyMemory(storage.bytes, byteArrayOffset(0), null, pointer, len);
             memory.storage = new LongPointerStorage(pointer);
             return pointer + offset;
         }
 
         @Specialization
-        static long doZero(MemoryBlock memory, ZeroStorage storage, int offset) {
+        static long doZero(Node inliningTarget, MemoryBlock memory, ZeroStorage storage, int offset) {
             int len = storage.size;
-            // TODO check permissions
-            long pointer = UNSAFE.allocateMemory(len);
-            UNSAFE.setMemory(pointer, len, (byte) 0);
+            PythonContext context = PythonContext.get(inliningTarget);
+            long pointer = context.allocateNativeMemory(len);
+            context.getUnsafe().setMemory(pointer, len, (byte) 0);
             memory.storage = new LongPointerStorage(pointer);
             return pointer + offset;
         }
@@ -597,12 +607,12 @@ public abstract class PointerNodes {
         @Specialization
         static long doPointerArray(Node inliningTarget, MemoryBlock memory, PointerArrayStorage storage, int offset,
                         @Cached(inline = false) GetPointerValueAsLongNode toNativeNode) {
-            // TODO check permissions
-            long pointer = UNSAFE.allocateMemory(storage.pointers.length * 8L);
+            PythonContext context = PythonContext.get(inliningTarget);
+            long pointer = context.allocateNativeMemory(storage.pointers.length * 8L);
             for (int i = 0; i < storage.pointers.length; i++) {
                 Pointer itemPointer = storage.pointers[i];
                 long subpointer = toNativeNode.execute(inliningTarget, itemPointer.memory, itemPointer.memory.storage, itemPointer.offset);
-                UNSAFE.putLong(pointer + i * 8L, subpointer);
+                context.getUnsafe().putLong(pointer + i * 8L, subpointer);
             }
             memory.storage = new LongPointerStorage(pointer);
             return pointer + offset;
@@ -686,9 +696,10 @@ public abstract class PointerNodes {
         abstract void execute(Node inliningTarget, Storage storage, int offset);
 
         @Specialization
-        void doNativeMemory(LongPointerStorage storage, int offset) {
-            // TODO check permissions
-            UNSAFE.freeMemory(storage.pointer + offset);
+        @TruffleBoundary
+        void doNativeMemory(Node inliningTarget, LongPointerStorage storage, int offset) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            context.freeNativeMemory(storage.pointer + offset);
         }
 
         @Specialization
@@ -883,22 +894,6 @@ public abstract class PointerNodes {
             ByteArrayStorage newStorage = new ByteArrayStorage(bytes);
             memory.storage = newStorage;
             return newStorage;
-        }
-    }
-
-    private static Unsafe UNSAFE = getUnsafe();
-
-    private static Unsafe getUnsafe() {
-        try {
-            return Unsafe.getUnsafe();
-        } catch (SecurityException e) {
-        }
-        try {
-            Field theUnsafeInstance = Unsafe.class.getDeclaredField("theUnsafe");
-            theUnsafeInstance.setAccessible(true);
-            return (Unsafe) theUnsafeInstance.get(Unsafe.class);
-        } catch (Exception e) {
-            throw new RuntimeException("exception while trying to get Unsafe.theUnsafe via reflection:", e);
         }
     }
 
