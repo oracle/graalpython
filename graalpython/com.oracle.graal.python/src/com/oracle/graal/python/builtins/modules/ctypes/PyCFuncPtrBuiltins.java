@@ -72,6 +72,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.THE_ERRCHECK_ATTRIBUTE
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_AT_LEAST_D_ARGUMENT_S_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
@@ -309,7 +310,15 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             p.callable = callable;
             return p;
         }
+    }
 
+    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class BoolNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object bool(PyCFuncPtrObject self) {
+            return !self.b_ptr.isNil();
+        }
     }
 
     @Builtin(name = "errcheck", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "a function to check for errors")

@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -463,16 +462,6 @@ public class TupleBuiltins extends PythonBuiltins {
             return containsNode.execute(frame, getTupleStorage.execute(inliningTarget, self), other);
         }
 
-    }
-
-    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        boolean doPTuple(Object self,
-                        @Cached PyTupleSizeNode sizeNode) {
-            return sizeNode.execute(self) != 0;
-        }
     }
 
     @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)

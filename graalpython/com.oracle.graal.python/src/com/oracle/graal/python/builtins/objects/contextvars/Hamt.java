@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,33 @@ public final class Hamt {
         return i == null ? " ".repeat(indent) + "null\n" : i.dump(indent);
     }
 
-    // TODO: track size on the Hamt.
+    public int size() {
+        return computeSize(this.root);
+    }
+
+    private static int sumSize(TreePart[] arr) {
+        int i = 0;
+        for (TreePart el : arr) {
+            i += computeSize(el);
+        }
+        return i;
+    }
+
+    private static int computeSize(TreePart part) {
+        if (part == null) {
+            return 0;
+        } else if (part instanceof Entry) {
+            return 1;
+        } else if (part instanceof CollisionPart) {
+            return sumSize(((CollisionPart) part).elems);
+        } else if (part instanceof ArrayPart) {
+            return sumSize(((ArrayPart) part).elems);
+        } else if (part instanceof BitmapPart) {
+            return sumSize(((BitmapPart) part).elems);
+        }
+        throw CompilerDirectives.shouldNotReachHere("TreePart type is not handled");
+    }
+
     private final TreePart root;
 
     public Hamt() {

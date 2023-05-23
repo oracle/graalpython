@@ -195,6 +195,7 @@ import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
+import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
@@ -468,6 +469,7 @@ public abstract class Python3Core {
                         new EnumerateBuiltins(),
                         new MapBuiltins(),
                         new NotImplementedBuiltins(),
+                        new NoneBuiltins(),
                         new EllipsisBuiltins(),
                         new SentinelIteratorBuiltins(),
                         new ForeignIteratorBuiltins(),

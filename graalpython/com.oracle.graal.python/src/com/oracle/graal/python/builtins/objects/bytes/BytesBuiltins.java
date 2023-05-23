@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.METHOD_REQUIRES_A_BYTE
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_LENGTH_1;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
@@ -53,7 +52,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
@@ -662,18 +660,6 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static boolean doLen(Object self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetBytesStorage getBytesStorage) {
-            return getBytesStorage.execute(inliningTarget, self).length() != 0;
-        }
-    }
-
-    @Builtin(name = J___IMOD__, minNumOfPositionalArgs = 2)
     @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ModNode extends PythonBinaryBuiltinNode {

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -100,6 +100,9 @@ class StructSeqTests(unittest.TestCase):
     def test_doc(self):
         self.assertEqual('A tuple of (columns, lines) for holding terminal window size', posix.terminal_size.__doc__)
         self.assertEqual('width of the terminal window in characters', posix.terminal_size.columns.__doc__)
+
+    def test_add(self):
+        self.assertEqual(tuple(sys.version_info) + (1,), sys.version_info + (1,))
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -165,6 +165,16 @@ public class HamtTests {
             hamt = hamt.without(i, String.valueOf(i).hashCode());
         }
         assertEquals("null\n", hamt.dump());
+    }
+
+    @Test
+    public void testHamtSize() {
+        int limit = 100;
+        Hamt hamt = new Hamt();
+        for (int i = 0; i < limit; ++i) {
+            assertEquals(i, hamt.size());
+            hamt = hamt.withEntry(new Hamt.Entry(i, i % 2 == 0 ? String.valueOf(i).hashCode() : 0, i + 1));
+        }
     }
 
 // @Test
