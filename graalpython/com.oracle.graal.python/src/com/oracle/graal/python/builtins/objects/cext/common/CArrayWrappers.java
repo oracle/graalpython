@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.byteArraySupport;
 
-import java.lang.reflect.Field;
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -55,7 +54,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -80,19 +79,8 @@ import sun.misc.Unsafe;
  * between Python and Sulong.
  */
 public abstract class CArrayWrappers {
-    public static final Unsafe UNSAFE = getUnsafe();
+    public static final Unsafe UNSAFE = PythonUtils.initUnsafe();
     private static final long SIZEOF_INT64 = 8;
-
-    private static Unsafe getUnsafe() {
-        CompilerAsserts.neverPartOfCompilation();
-        try {
-            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-            theUnsafe.setAccessible(true);
-            return (Unsafe) theUnsafe.get(null);
-        } catch (Exception e) {
-            throw new AssertionError();
-        }
-    }
 
     /**
      * Uses {@code Unsafe} to allocate enough off-heap memory for the provided {@code byte[]} and

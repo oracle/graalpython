@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,9 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
@@ -96,22 +99,6 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     public abstract Object execute(Object object, Object key);
-
-    static final int MAX_DICT_TYPES = 2;
-
-    // read from the DynamicObject store
-    @Specialization(guards = "isHiddenKey(key)")
-    protected static Object readFromDynamicStorageHidden(PythonObject object, Object key,
-                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
-        return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
-    }
-
-    @Specialization(guards = "getDict.execute(object) == null", limit = "1")
-    protected static Object readFromDynamicStorage(PythonObject object, Object key,
-                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
-        return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
-    }
 
     /**
      * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
@@ -145,45 +132,48 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    // read from the Dict
-    @Specialization(guards = {
-                    "!isHiddenKey(key)",
-                    "dict != null"
-    }, replaces = "readFromBuiltinModuleDict", limit = "1")
-    protected static Object readFromDict(@SuppressWarnings("unused") PythonObject object, Object key,
-                    @Shared("getDict") @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
-                    @Bind("getDict.execute(object)") PDict dict,
+    // hidden keys are always on the dynamic object store
+    @Specialization
+    protected static Object readHiddenKey(PythonObject object, HiddenKey key,
+                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
+        return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
+    }
+
+    // any python object attribute read
+    @Specialization(guards = "!isHiddenKey(key)")
+    protected static Object readObjectAttribute(PythonObject object, Object key,
+                    @Bind("this") Node inliningTarget,
+                    @Cached InlinedConditionProfile profileHasDict,
+                    @Cached GetDictIfExistsNode getDict,
+                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        if (dict == null) {
-            return PNone.NO_VALUE;
-        }
-        // Note: we should pass the frame. In theory a subclass of a string may override __hash__ or
-        // __eq__ and run some side effects in there.
-        Object value = getItem.execute(null, dict.getDictStorage(), key);
-        if (value == null) {
-            return PNone.NO_VALUE;
+        var dict = getDict.execute(object);
+        if (profileHasDict.profile(inliningTarget, dict == null)) {
+            return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
         } else {
-            return value;
+            // Note: we should pass the frame. In theory a subclass of a string may override
+            // __hash__ or __eq__ and run some side effects in there.
+            Object value = getItem.execute(null, dict.getDictStorage(), key);
+            if (value == null) {
+                return PNone.NO_VALUE;
+            } else {
+                return value;
+            }
         }
     }
 
-    // foreign Object
-    @Specialization(guards = "isForeignObjectNode.execute(object)", limit = "1")
+    // foreign object or primitive
+    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
     protected static Object readForeign(Object object, Object key,
-                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
+                    @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached ReadAttributeFromForeign read) {
-        return read.execute(object, key);
-    }
-
-    // not a Python or Foreign Object
-    @SuppressWarnings("unused")
-    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!isForeignObjectNode.execute(object)"}, limit = "1")
-    protected static PNone readUnboxed(Object object, Object key,
-                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode
-    // We want to share "hlib" with subclasses, this is to make Truffle shut up
-    // about not being able to share it in the base class
-    ) {
-        return PNone.NO_VALUE;
+        if (isForeignObjectNode.execute(object)) {
+            // there's an implicit condition profile from the isForeignObjectNode active
+            // specializations
+            return read.execute(object, key);
+        } else {
+            return PNone.NO_VALUE;
+        }
     }
 
     // native objects. We distinguish reading at the objects dictoffset or the tp_dict
@@ -194,7 +184,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
-                        @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                        @Cached GetDictIfExistsNode getDict,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem) {
             return readNative(key, getDict.execute(object), getItem);
         }
