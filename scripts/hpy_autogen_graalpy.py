@@ -53,6 +53,9 @@ class AutoGenFilePart:
                 f.write(content[:start + n_begin] + new_content + content[end:])
 
 
+def cap(s):
+    return s[0].upper() + s[1:]
+
 # If contained in this set, we won't generate anything for this HPy API func.
 NO_WRAPPER = {
     '_HPy_CallRealFunctionFromTrampoline',
@@ -451,7 +454,7 @@ class autogen_ctx_jni_upcall_enum(AutoGenFilePart):
         w = lines.append
         for func in self.api.functions:
             fname = func.name.replace('_', '')
-            jname = fname[0].upper() + fname[1:]
+            jname = cap(fname)
             w(f'{self.INDENT}{jname}')
         return ',\n'.join(lines) + ';\n'
 
@@ -754,6 +757,33 @@ LLVM_HPY_BACKEND_CLASS = 'GraalHPyLLVMContext'
 LLVM_HPY_CONTEXT_NAME = 'HPy Universal ABI (GraalVM backend, LLVM)'
 
 
+def get_signature_type(type):
+    """
+    Convert a C type to a HPyContextSignatureType descriptor.
+    """
+    type_name = toC(type)
+
+    # split at spaces
+    parts = type_name.split(' ')
+
+    def normalize(part):
+        if part == '*':
+            return 'Ptr'
+        elif part == '**':
+            return 'PtrPtr'
+        elif part == '[]':
+            return 'Ptr'
+        return cap(part)
+
+    # replace '*' by 'Ptr' and capitalize each part
+    result = ''.join([normalize(x) for x in parts])
+
+    # avoid name clashes with Java types; prefix with 'C'
+    if result in ('Void', 'Long', 'Double', 'Float'):
+        result = 'C' + result
+    return result
+
+
 class autogen_ctx_llvm_upcall_enum(AutoGenFilePart):
     """
     Generates the enum of context members for the Graal HPy LLVM backend.
@@ -770,9 +800,17 @@ class autogen_ctx_llvm_upcall_enum(AutoGenFilePart):
             mname = var.name.upper()
             w(f'{self.INDENT}{mname}("{var.name}")')
         for func in self.api.functions:
-            ctx_name = func.ctx_name()
-            mname = ctx_name.upper()
-            w(f'{self.INDENT}{mname}("{ctx_name}")')
+            if func.name not in NO_WRAPPER:
+                ctx_name = func.ctx_name()
+                mname = ctx_name.upper()
+                node = func.node
+                rettype = get_signature_type(node.type.type)
+                params = []
+                for p in node.type.args.params:
+                    params.append(get_signature_type(p.type))
+                assert params
+                signature = ', '.join(params)
+                w(f'{self.INDENT}{mname}("{ctx_name}", {rettype}, {signature})')
         return ',\n'.join(lines) + ';\n'
 
 
@@ -803,8 +841,9 @@ class autogen_ctx_llvm_init(AutoGenFilePart):
             w(f'{self.INDENT}members[HPyContextMember.{ctx_name.upper()}.ordinal()] = {gen_ctor(ctx_name)};')
         w('')
         for func in self.api.functions:
-            mname = func.ctx_name().upper()
-            w(f'{self.INDENT}members[HPyContextMember.{mname}.ordinal()] = createContextFunction(HPyContextMember.{mname});')
+            if func.name not in NO_WRAPPER:
+                mname = func.ctx_name().upper()
+                w(f'{self.INDENT}members[HPyContextMember.{mname}.ordinal()] = createContextFunction(HPyContextMember.{mname});')
         w('')
         return '\n'.join(lines)
 

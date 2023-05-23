@@ -270,53 +270,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         backend.freeNativeArgumentsArray(nargs);
     }
 
-    /**
-     * Describes the type of an argument or return type in the HPyContext functions.
-     */
-    public enum HPyContextSignatureType {
-        Void("void", "VOID", void.class),
-        Int("int", "SINT32", int.class),
-        Long("long", "SINT64", long.class),
-        Double("double", "DOUBLE", double.class),
-        UnsignedLongLong("unsigned long long", "UINT64", long.class),
-        LongLong("long long", "SINT64", long.class),
-        UnsignedLong("unsigned long", "UINT64", long.class),
-        HPy("HPy", "POINTER", long.class),
-        WideChars("wchar_t*", "STRING", long.class),
-        ConstWideChars("const wchart_t*", "STRING", long.class),
-        Chars("char*", "STRING", long.class),
-        ConsChars("const char*", "STRING", long.class),
-        DataPtr("void*", "POINTER", long.class),
-        DataPtrPtr("void**", "POINTER", long.class),
-        HPyTracker("HPyTracker", "POINTER", long.class),
-        HPy_ssize_t("HPy_ssize_t", "UINT64", long.class),
-        HPyTupleBuilder("HPyTupleBuilder", "POINTER", long.class),
-        HPyListBuilder("HPyListBuilder", "POINTER", long.class),
-        cpy_PyObject("cpy_PyObject*", "POINTER", long.class),
-        _HPyPtr("_HPyPtr", "POINTER", long.class),
-        HPyType_Spec("HPyType_Spec*", "POINTER", long.class),
-        HPyType_SpecParam("HPyType_SpecParam*", "POINTER", long.class),
-        HPyModuleDef("HPyModuleDef*", "POINTER", long.class),
-        HPyThreadState("HPyThreadState", "POINTER", long.class),
-        HPyField("HPyField", "POINTER", long.class),
-        _HPyFieldPtr("_HPyFieldPtr", "POINTER", long.class),
-        HPyGlobal("HPyGlobal", "POINTER", long.class),
-        _HPyGlobalPtr("_HPyGlobalPtr", "POINTER", long.class);
-
-        /** The type definition used in C source code. */
-        final String cType;
-        /** The type definition that is used in NFI signatures. */
-        final String nfiType;
-        /** The type used on the Java side in JNI/CLinker functions. */
-        final Class<?> jniType;
-
-        HPyContextSignatureType(String cType, String nfiType, Class<?> jniType) {
-            this.cType = cType;
-            this.nfiType = nfiType;
-            this.jniType = jniType;
-        }
-    }
-
     public interface HPyUpcall {
         String getName();
     }
