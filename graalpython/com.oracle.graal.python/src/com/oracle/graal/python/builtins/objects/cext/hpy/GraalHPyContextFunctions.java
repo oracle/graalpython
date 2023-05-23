@@ -66,6 +66,9 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.PrintWriter;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -291,6 +294,32 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface HPyContextFunctions {
+        HPyContextFunction[] value();
+    }
+
+    /**
+     * Builtin implementations in the C API (or helpers for implementing builtins with C code) are
+     * marked with this annotation. The information in the annotation allows code generation
+     * ({@link CApiCodeGen}), argument conversions (based on {@link ArgDescriptor}s), and
+     * verification of the C API implementation in general.
+     *
+     * Apart from being placed on classes that implement {@link CApiBuiltinNode}, this annotation is
+     * also used in {@link CApiFunction} to list all functions that are implemented in C code or
+     * that are not currently implemented.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Repeatable(value = HPyContextFunctions.class)
+    public @interface HPyContextFunction {
+
+        /**
+         * Name of this builtin - the name can be omitted, which will use the name of the class that
+         * this annotation is applied to.
+         */
+        String value() default "";
+    }
+
     public abstract static class GraalHPyContextFunction extends Node {
 
         public abstract Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
@@ -353,6 +382,7 @@ public abstract class GraalHPyContextFunctions {
      * } HPyModuleDef;
      * </pre>
      */
+    @HPyContextFunction("ctx_Module_Create")
     @GenerateUncached
     public abstract static class GraalHPyModuleCreate extends GraalHPyContextFunction {
 
@@ -495,6 +525,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Bool_FromLong")
     @GenerateUncached
     public abstract static class GraalHPyBoolFromLong extends GraalHPyContextFunction {
 
@@ -511,6 +542,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Long_FromLong")
     @GenerateUncached
     public abstract static class GraalHPyLongFromLong extends HPyContextFunctionWithFlag {
 
@@ -524,6 +556,14 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Long_AsLong")
+    @HPyContextFunction("ctx_Long_AsLongLong")
+    @HPyContextFunction("ctx_Long_AsUnsignedLong")
+    @HPyContextFunction("ctx_Long_AsUnsignedLongMask")
+    @HPyContextFunction("ctx_Long_AsUnsignedLongLongMask")
+    @HPyContextFunction("ctx_Long_AsSizeT")
+    @HPyContextFunction("ctx_Long_AsSsizeT")
+    @HPyContextFunction("ctx_Long_AsVoidPtr")
     @GenerateUncached
     public abstract static class GraalHPyLongAsPrimitive extends Node {
 
@@ -554,6 +594,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Long_AsDouble")
     @GenerateUncached
     public abstract static class GraalHPyLongAsDouble extends GraalHPyContextFunction {
 
@@ -566,6 +607,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Dict_New")
     @GenerateUncached
     public abstract static class GraalHPyDictNew extends GraalHPyContextFunction {
 
@@ -578,6 +620,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Dict_GetItem")
     @GenerateUncached
     public abstract static class GraalHPyDictGetItem extends GraalHPyContextFunction {
 
@@ -614,6 +657,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_List_New")
     @GenerateUncached
     public abstract static class GraalHPyListNew extends GraalHPyContextFunction {
 
@@ -633,6 +677,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_List_Append")
     @GenerateUncached
     public abstract static class GraalHPyListAppend extends GraalHPyContextFunction {
 
@@ -667,6 +712,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Float_FromDouble")
     @GenerateUncached
     public abstract static class GraalHPyFloatFromDouble extends GraalHPyContextFunction {
 
@@ -681,6 +727,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Float_AsDouble")
     @GenerateUncached
     public abstract static class GraalHPyFloatAsDouble extends GraalHPyContextFunction {
 
@@ -701,6 +748,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Dict_Check")
+    @HPyContextFunction("ctx_Bytes_Check")
+    @HPyContextFunction("ctx_Unicode_Check")
+    @HPyContextFunction("ctx_Tuple_Check")
+    @HPyContextFunction("ctx_List_Check")
     @GenerateUncached
     public abstract static class GraalHPyCheckBuiltinType extends HPyContextFunctionWithBuiltinType {
 
@@ -716,6 +768,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_NoMemory")
     @GenerateUncached
     public abstract static class GraalHPyErrRaisePredefined extends Node {
 
@@ -744,6 +797,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_SetString")
+    @HPyContextFunction("ctx_Err_SetObject")
     @GenerateUncached
     public abstract static class GraalHPyErrSetString extends HPyContextFunctionWithFlag {
 
@@ -797,6 +852,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_SetFromErrnoWithFilename")
+    @HPyContextFunction("ctx_Err_SetFromErrnoWithFilenameObjects")
     @GenerateUncached
     public abstract static class GraalHPyErrSetFromErrnoWithFilenameObjects extends HPyContextFunctionWithFlag {
 
@@ -854,6 +911,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_FatalError")
     @GenerateUncached
     public abstract static class GraalHPyFatalError extends GraalHPyContextFunction {
         @Specialization
@@ -872,6 +930,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_Occurred")
     @GenerateUncached
     public abstract static class GraalHPyErrOccurred extends GraalHPyContextFunction {
 
@@ -885,6 +944,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_ExceptionMatches")
     @GenerateUncached
     public abstract static class GraalHPyErrExceptionMatches extends GraalHPyContextFunction {
 
@@ -908,6 +968,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_Clear")
     @GenerateUncached
     public abstract static class GraalHPyErrClear extends GraalHPyContextFunction {
 
@@ -922,6 +983,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_WarnEx")
     @GenerateUncached
     public abstract static class GraalHPyErrWarnEx extends GraalHPyContextFunction {
 
@@ -949,6 +1011,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_WriteUnraisable")
     @GenerateUncached
     public abstract static class GraalHPyErrWriteUnraisable extends GraalHPyContextFunction {
 
@@ -968,6 +1031,10 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_AsUTF8String")
+    @HPyContextFunction("ctx_Unicode_AsLatin1String")
+    @HPyContextFunction("ctx_Unicode_AsASCIIString")
+    @HPyContextFunction("ctx_Unicode_EncodeFSDefault")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeAsCharsetString extends HPyContextFunctionWithObject {
 
@@ -992,6 +1059,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_AsUTF8AndSize")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeAsUTF8AndSize extends GraalHPyContextFunction {
 
@@ -1026,6 +1094,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_FromString")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeFromString extends GraalHPyContextFunction {
 
@@ -1049,6 +1118,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_FromWideChar")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeFromWchar extends GraalHPyContextFunction {
 
@@ -1078,6 +1148,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_DecodeFSDefault")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeDecodeCharset extends HPyContextFunctionWithObject {
 
@@ -1095,6 +1166,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_DecodeFSDefaultAndSize")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeDecodeCharsetAndSize extends HPyContextFunctionWithObject {
 
@@ -1135,6 +1207,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_DecodeASCII")
+    @HPyContextFunction("ctx_Unicode_DecodeLatin1")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeDecodeCharsetAndSizeAndErrors extends HPyContextFunctionWithObject {
 
@@ -1177,6 +1251,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_ReadChar")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeReadChar extends GraalHPyContextFunction {
 
@@ -1191,6 +1266,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_AsPyObject")
     @GenerateUncached
     public abstract static class GraalHPyAsPyObject extends GraalHPyContextFunction {
 
@@ -1204,6 +1280,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Bytes_AsString")
+    @HPyContextFunction("ctx_Bytes_AS_STRING")
     @GenerateUncached
     public abstract static class GraalHPyBytesAsString extends GraalHPyContextFunction {
 
@@ -1222,6 +1300,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Bytes_Size")
+    @HPyContextFunction("ctx_Bytes_GET_SIZE")
     @GenerateUncached
     public abstract static class GraalHPyBytesGetSize extends GraalHPyContextFunction {
 
@@ -1242,6 +1322,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Bytes_FromStringAndSize")
     @GenerateUncached
     public abstract static class GraalHPyBytesFromStringAndSize extends HPyContextFunctionWithFlag {
 
@@ -1296,6 +1377,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_IsTrue")
     @GenerateUncached
     public abstract static class GraalHPyIsTrue extends GraalHPyContextFunction {
 
@@ -1309,6 +1391,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_GetAttr")
+    @HPyContextFunction("ctx_GetAttr_s")
     @GenerateUncached
     public abstract static class GraalHPyGetAttr extends HPyContextFunctionWithMode {
 
@@ -1344,6 +1428,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_MaybeGetAttr_s")
     @GenerateUncached
     public abstract static class GraalHPyMaybeGetAttrS extends GraalHPyContextFunction {
         @Specialization
@@ -1359,6 +1444,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Type_FromSpec")
     @GenerateUncached
     public abstract static class GraalHPyTypeFromSpec extends GraalHPyContextFunction {
 
@@ -1387,6 +1473,8 @@ public abstract class GraalHPyContextFunctions {
 
     }
 
+    @HPyContextFunction("ctx_HasAttr")
+    @HPyContextFunction("ctx_HasAttr_s")
     @GenerateUncached
     public abstract static class GraalHPyHasAttr extends HPyContextFunctionWithMode {
 
@@ -1418,6 +1506,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_SetAttr")
+    @HPyContextFunction("ctx_SetAttr_s")
     @GenerateUncached
     public abstract static class GraalHPySetAttr extends HPyContextFunctionWithMode {
 
@@ -1470,6 +1560,9 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_GetItem")
+    @HPyContextFunction("ctx_GetItem_i")
+    @HPyContextFunction("ctx_GetItem_s")
     @GenerateUncached
     public abstract static class GraalHPyGetItem extends HPyContextFunctionWithMode {
 
@@ -1509,6 +1602,9 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_SetItem")
+    @HPyContextFunction("ctx_SetItem_i")
+    @HPyContextFunction("ctx_SetItem_s")
     @GenerateUncached
     public abstract static class GraalHPySetItem extends HPyContextFunctionWithMode {
 
@@ -1550,6 +1646,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_FromPyObject")
     @GenerateUncached
     public abstract static class GraalHPyFromPyObject extends GraalHPyContextFunction {
 
@@ -1565,6 +1662,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_New")
     @GenerateUncached
     public abstract static class GraalHPyNew extends GraalHPyContextFunction {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyNew.class);
@@ -1617,6 +1715,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_AsStruct")
+    @HPyContextFunction("ctx_AsStructLegacy")
     @GenerateUncached
     public abstract static class GraalHPyCast extends GraalHPyContextFunction {
 
@@ -1632,6 +1732,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Type_GenericNew")
     @GenerateUncached
     public abstract static class GraalHPyTypeGenericNew extends GraalHPyContextFunction {
 
@@ -1673,6 +1774,15 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Absolute")
+    @HPyContextFunction("ctx_Long")
+    @HPyContextFunction("ctx_Float")
+    @HPyContextFunction("ctx_Str")
+    @HPyContextFunction("ctx_Repr")
+    @HPyContextFunction("ctx_ASCII")
+    @HPyContextFunction("ctx_Bytes")
+    @HPyContextFunction("ctx_Hash")
+    @HPyContextFunction("ctx_Length")
     @GenerateUncached
     public abstract static class GraalHPyCallBuiltinFunction extends Node {
 
@@ -1716,6 +1826,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_RichCompare")
+    @HPyContextFunction("ctx_RichCompareBool")
     @GenerateUncached
     public abstract static class GraalHPyRichcompare extends HPyContextFunctionWithFlag {
 
@@ -1753,6 +1865,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Index")
     @GenerateUncached
     public abstract static class GraalHPyAsIndex extends GraalHPyContextFunction {
 
@@ -1775,6 +1888,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Number_Check")
     @GenerateUncached
     @ImportStatic(SpecialMethodSlot.class)
     public abstract static class GraalHPyIsNumber extends GraalHPyContextFunction {
@@ -1805,6 +1919,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Tuple_FromArray")
     @GenerateUncached
     public abstract static class GraalHPyTupleFromArray extends GraalHPyContextFunction {
 
@@ -1885,6 +2000,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_TupleBuilder_New")
+    @HPyContextFunction("ctx_ListBuilder_New")
     @GenerateUncached
     public abstract static class GraalHPyBuilderNew extends GraalHPyBuilderNewBase {
 
@@ -1905,6 +2022,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_TupleBuilder_Set")
+    @HPyContextFunction("ctx_ListBuilder_Set")
     @GenerateUncached
     public abstract static class GraalHPyBuilderSet extends GraalHPyContextFunction {
 
@@ -1937,6 +2056,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_TupleBuilder_Build")
+    @HPyContextFunction("ctx_ListBuilder_Build")
     @GenerateUncached
     public abstract static class GraalHPyBuilderBuild extends HPyContextFunctionWithBuiltinType {
 
@@ -1978,6 +2099,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_TupleBuilder_Cancel")
+    @HPyContextFunction("ctx_ListBuilder_Cancel")
     @GenerateUncached
     public abstract static class GraalHPyBuilderCancel extends GraalHPyContextFunction {
 
@@ -2008,6 +2131,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Tracker_New")
     @GenerateUncached
     public abstract static class GraalHPyTrackerNew extends GraalHPyBuilderNewBase {
         @Specialization
@@ -2023,6 +2147,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Tracker_Add")
     @GenerateUncached
     public abstract static class GraalHPyTrackerAdd extends GraalHPyContextFunction {
         @Specialization
@@ -2056,6 +2181,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Tracker_Close")
     @GenerateUncached
     public abstract static class GraalHPyTrackerCleanup extends GraalHPyContextFunction {
 
@@ -2083,6 +2209,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Tracker_ForgetAll")
     @GenerateUncached
     public abstract static class GraalHPyTrackerForgetAll extends GraalHPyContextFunction {
 
@@ -2102,6 +2229,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Callable_Check")
     @GenerateUncached
     public abstract static class GraalHPyIsCallable extends GraalHPyContextFunction {
 
@@ -2115,6 +2243,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Sequence_Check")
     @GenerateUncached
     public abstract static class GraalHPyIsSequence extends GraalHPyContextFunction {
 
@@ -2128,6 +2257,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_CallTupleDict")
     @GenerateUncached
     public abstract static class GraalHPyCallTupleDict extends GraalHPyContextFunction {
 
@@ -2222,6 +2352,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Type")
     @GenerateUncached
     public abstract static class GraalHPyType extends GraalHPyContextFunction {
 
@@ -2237,6 +2368,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_TypeCheck")
     @GenerateUncached
     public abstract static class GraalHPyTypeCheck extends HPyContextFunctionWithFlag {
 
@@ -2258,6 +2390,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Err_NewException")
     @GenerateUncached
     public abstract static class GraalHPyNewException extends HPyContextFunctionWithFlag {
 
@@ -2348,6 +2481,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Is")
     @GenerateUncached
     public abstract static class GraalHPyIs extends HPyContextFunctionWithFlag {
 
@@ -2375,6 +2509,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Import_ImportModule")
     @GenerateUncached
     public abstract static class GraalHPyImportModule extends GraalHPyContextFunction {
 
@@ -2398,6 +2533,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Field_Store")
     @GenerateUncached
     public abstract static class GraalHPyFieldStore extends GraalHPyContextFunction {
 
@@ -2477,6 +2613,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Field_Load")
     @GenerateUncached
     public abstract static class GraalHPyFieldLoad extends GraalHPyContextFunction {
 
@@ -2526,6 +2663,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Global_Store")
     @GenerateUncached
     public abstract static class GraalHPyGlobalStore extends GraalHPyContextFunction {
 
@@ -2577,6 +2715,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Global_Load")
     @GenerateUncached
     public abstract static class GraalHPyGlobalLoad extends GraalHPyContextFunction {
 
@@ -2622,6 +2761,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_LeavePythonExecution")
     @GenerateUncached
     public abstract static class GraalHPyLeavePythonExecution extends GraalHPyContextFunction {
 
@@ -2637,6 +2777,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_ReenterPythonExecution")
     @GenerateUncached
     public abstract static class GraalHPyReenterPythonExecution extends GraalHPyContextFunction {
 
@@ -2652,6 +2793,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Contains")
     @ImportStatic(SpecialMethodSlot.class)
     @GenerateUncached
     public abstract static class GraalHPyContains extends GraalHPyContextFunction {
@@ -2675,6 +2817,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Type_IsSubtype")
     @GenerateUncached
     public abstract static class GraalHPyTypeIsSubtype extends GraalHPyContextFunction {
         @Specialization
@@ -2696,6 +2839,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Type_GetName")
     @GenerateUncached
     public abstract static class GraalHPyTypeGetName extends GraalHPyContextFunction {
         @Specialization
@@ -2708,6 +2852,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Dict_Keys")
     @GenerateUncached
     public abstract static class GraalHPyDictKeys extends GraalHPyContextFunction {
         @Specialization
@@ -2721,6 +2866,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_InternFromString")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeInternFromString extends GraalHPyContextFunction {
         @Specialization
@@ -2755,6 +2901,7 @@ public abstract class GraalHPyContextFunctions {
         public static final byte Destructor = 3;
     }
 
+    @HPyContextFunction("ctx_Capsule_New")
     @GenerateUncached
     public abstract static class GraalHPyCapsuleNew extends GraalHPyContextFunction {
         public static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
@@ -2777,6 +2924,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Capsule_Get")
     @GenerateUncached
     public abstract static class GraalHPyCapsuleGet extends GraalHPyContextFunction {
         public static final TruffleString INCORRECT_NAME = tsLiteral("HPyCapsule_GetPointer called with incorrect name");
@@ -2867,6 +3015,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Capsule_Set")
     @GenerateUncached
     public abstract static class GraalHPyCapsuleSet extends GraalHPyContextFunction {
         @Specialization
@@ -2915,6 +3064,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Capsule_IsValid")
     @GenerateUncached
     public abstract static class GraalHPyCapsuleIsValid extends GraalHPyContextFunction {
         @Specialization
@@ -2936,6 +3086,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_SetType")
     @GenerateUncached
     public abstract static class GraalHPySetType extends GraalHPyContextFunction {
         @Specialization
@@ -2957,6 +3108,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_ContextVar_New")
     @GenerateUncached
     public abstract static class GraalHPyContextVarNew extends GraalHPyContextFunction {
         @Specialization
@@ -2972,6 +3124,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_ContextVar_Get")
     @GenerateUncached
     public abstract static class GraalHPyContextVarGet extends GraalHPyContextFunction {
         @Specialization
@@ -3017,6 +3170,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_ContextVar_Set")
     @GenerateUncached
     public abstract static class GraalHPyContextVarSet extends GraalHPyContextFunction {
         @Specialization
@@ -3045,6 +3199,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_FromEncodedObject")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeFromEncodedObject extends GraalHPyContextFunction {
         @Specialization
@@ -3070,6 +3225,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Unicode_Substring")
     @GenerateUncached
     public abstract static class GraalHPyUnicodeSubstring extends GraalHPyContextFunction {
         @Specialization
@@ -3097,6 +3253,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Slice_Unpack")
     @GenerateUncached
     public abstract static class GraalHPySliceUnpack extends GraalHPyContextFunction {
         @Specialization
@@ -3120,6 +3277,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_Type_CheckSlot")
     @GenerateUncached
     public abstract static class GraalHPyTypeCheckSlot extends GraalHPyContextFunction {
         @Specialization
@@ -3170,6 +3328,7 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @HPyContextFunction("ctx_SeqIter_New")
     @GenerateUncached
     public abstract static class GraalHPySeqIterNew extends GraalHPyContextFunction {
         @Specialization
