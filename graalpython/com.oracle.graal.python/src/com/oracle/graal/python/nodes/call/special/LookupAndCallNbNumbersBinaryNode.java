@@ -554,6 +554,7 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                         @Cached InlinedConditionProfile p4,
                         @Cached InlinedConditionProfile p5,
                         @Cached InlinedConditionProfile p6,
+                        @Cached InlinedConditionProfile p7,
                         @Cached TypeNodes.InlinedIsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached AreSameCallables areSameCallables,
@@ -586,9 +587,11 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
                     }
                 }
                 Object leftCallable = lookupAttrId(frame, left, lClass, opId);
-                r = dispatchNode.execute(frame, node, leftCallable, left, right, lClass, slot);
-                if (r != PNotImplemented.NOT_IMPLEMENTED || pyIsType) {
-                    return r;
+                if (p7.profile(node, leftCallable != PNone.NO_VALUE)) {
+                    r = dispatchNode.execute(frame, node, leftCallable, left, right, lClass, slot);
+                    if (r != PNotImplemented.NOT_IMPLEMENTED || pyIsType) {
+                        return r;
+                    }
                 }
             }
             if (p6.profile(node, doRight)) {
