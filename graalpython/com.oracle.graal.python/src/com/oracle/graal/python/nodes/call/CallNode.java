@@ -193,10 +193,10 @@ public abstract class CallNode extends PNodeWithContext {
         gil.release(true);
         try {
             return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, arguments));
-        } catch (ArityException | UnsupportedTypeException e) {
+        } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
             typeError.enter(inliningTarget);
             throw raise.raise(TypeError, e);
-        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+        } catch (UnknownIdentifierException e) {
             // PyObjectGetMethod is supposed to have checked isMemberInvocable
             throw CompilerDirectives.shouldNotReachHere("Cannot invoke member");
         } finally {
