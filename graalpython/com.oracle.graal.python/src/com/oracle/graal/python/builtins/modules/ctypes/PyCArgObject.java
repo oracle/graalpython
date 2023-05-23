@@ -63,5 +63,4 @@ public final class PyCArgObject extends PythonBuiltinObject {
         obj = null;
         valuePointer = Pointer.NULL;
     }
-
 }

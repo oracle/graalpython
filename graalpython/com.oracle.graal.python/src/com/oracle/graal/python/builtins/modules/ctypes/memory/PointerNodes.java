@@ -9,8 +9,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ByteArrayS
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.LongPointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.MemoryBlock;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.MemoryViewStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.NFIPointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.NullStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ObjectPointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PointerArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PythonObjectStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.Storage;
@@ -660,7 +660,7 @@ public abstract class PointerNodes {
         protected abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset);
 
         @Specialization
-        static Object doNFIPointer(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, NFIPointerStorage storage, int offset) {
+        static Object doObjectPointer(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, ObjectPointerStorage storage, int offset) {
             if (offset != 0) {
                 throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_APPLY_OFFSET_TO_AN_OBJECT_POINTER);
             }
@@ -679,7 +679,7 @@ public abstract class PointerNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        static long doNFIPointer(Node inliningTarget, MemoryBlock memory, NFIPointerStorage storage, int offset) {
+        static long doObjectPointer(Node inliningTarget, MemoryBlock memory, ObjectPointerStorage storage, int offset) {
             throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE);
         }
     }
@@ -704,7 +704,7 @@ public abstract class PointerNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        void doNFIPointer(NFIPointerStorage storage, int offset) {
+        void doObjectPointer(ObjectPointerStorage storage, int offset) {
             /*
              * TODO This should call free using NFI. If it ever does, we should probably update
              * PointerReference to use a call target around this

@@ -51,6 +51,11 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
+/**
+ * Pointer abstraction that should be accessed through {@link PointerNodes}. It supports storing
+ * byte-based data or other pointers, both of which can be converted in-place to native memory if
+ * needed (and native access is enabled).
+ */
 @ExportLibrary(InteropLibrary.class)
 public final class Pointer implements TruffleObject {
     public static final Pointer NULL = new Pointer(new NullStorage(), 0);
@@ -95,7 +100,7 @@ public final class Pointer implements TruffleObject {
         if (nativePointer instanceof Long value) {
             return nativeMemory((long) value);
         }
-        return new Pointer(new NFIPointerStorage(nativePointer), 0);
+        return new Pointer(new ObjectPointerStorage(nativePointer), 0);
     }
 
     public static Pointer pythonObject(Object object) {
@@ -258,10 +263,10 @@ public final class Pointer implements TruffleObject {
         }
     }
 
-    static final class NFIPointerStorage extends Storage {
+    static final class ObjectPointerStorage extends Storage {
         final Object pointer;
 
-        public NFIPointerStorage(Object pointer) {
+        public ObjectPointerStorage(Object pointer) {
             this.pointer = pointer;
         }
     }
