@@ -324,9 +324,9 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = code;
             parg.pffi_type = fd.pffi_type;
-            parg.value = Pointer.allocate(parg.pffi_type, dict.size);
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, dict.size);
             try {
-                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
+                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.valuePointer, value, 0);
                 return parg;
             } catch (PException e) {
                 // pass through to check for _as_parameter_

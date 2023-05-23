@@ -189,7 +189,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             parg.tag = 'P';
             parg.pffi_type = ffi_type_pointer;
             parg.obj = cdata;
-            parg.value = cdata.b_ptr;
+            parg.valuePointer = cdata.b_ptr;
             return parg;
         }
 

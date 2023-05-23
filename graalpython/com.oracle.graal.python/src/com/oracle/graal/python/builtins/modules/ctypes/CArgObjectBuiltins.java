@@ -115,25 +115,25 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 case 'L':
                 case 'q': // TODO big int
                 case 'Q': // TODO big int
-                    ret = PythonUtils.formatJString("<cparam '%c' (%d)>", self.tag, self.value);
+                    ret = PythonUtils.formatJString("<cparam '%c' (%d)>", self.tag, self.valuePointer);
                     break;
                 case 'd':
                 case 'f': {
-                    ret = PythonUtils.formatJString("<cparam '%c' (%f)>", self.tag, self.value);
+                    ret = PythonUtils.formatJString("<cparam '%c' (%f)>", self.tag, self.valuePointer);
                     break;
                 }
                 case 'c':
-                    byte val = readByteNode.execute(inliningTarget, self.value);
+                    byte val = readByteNode.execute(inliningTarget, self.valuePointer);
                     if (isLiteralChar((char) val)) {
-                        ret = PythonUtils.formatJString("<cparam '%c' ('%c')>", self.tag, self.value);
+                        ret = PythonUtils.formatJString("<cparam '%c' ('%c')>", self.tag, self.valuePointer);
                     } else {
-                        ret = PythonUtils.formatJString("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.value));
+                        ret = PythonUtils.formatJString("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.valuePointer));
                     }
                     break;
                 case 'z':
                 case 'Z':
                 case 'P':
-                    ret = PythonUtils.formatJString("<cparam '%c' 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self.value));
+                    ret = PythonUtils.formatJString("<cparam '%c' 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self.valuePointer));
                     break;
                 default:
                     if (isLiteralChar(self.tag)) {
@@ -166,7 +166,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 case PyCArrayTypeParamFunc -> {
                     parg.tag = 'P';
                     parg.pffi_type = FFIType.ffi_type_pointer;
-                    parg.value = self.b_ptr.createReference();
+                    parg.valuePointer = self.b_ptr.createReference();
                     parg.obj = self;
                     return parg;
                 }
@@ -175,7 +175,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     parg.tag = 'P';
                     parg.pffi_type = FFIType.ffi_type_pointer;
                     parg.obj = self;
-                    parg.value = self.b_ptr;
+                    parg.valuePointer = self.b_ptr;
                     return parg;
                 }
                 // Corresponds to PyCSimpleType_paramfunc
@@ -188,7 +188,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     parg.tag = code;
                     parg.pffi_type = fd.pffi_type;
                     parg.obj = self;
-                    parg.value = self.b_ptr;
+                    parg.valuePointer = self.b_ptr;
                     return parg;
                 }
                 // Corresponds to StructUnionType_paramfunc
@@ -196,7 +196,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     Pointer ptr = self.b_ptr;
                     parg.pffi_type = stgDict.ffi_type_pointer;
                     parg.tag = 'V';
-                    parg.value = ptr;
+                    parg.valuePointer = ptr;
                     parg.size = self.b_size;
                     parg.obj = self;
                     return parg;

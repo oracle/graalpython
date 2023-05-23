@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectS
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
+import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
@@ -972,7 +973,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             parg.tag = 'P';
             parg.pffi_type = FFIType.ffi_type_pointer;
             parg.obj = obj;
-            parg.value = obj.b_ptr.createReference(offset);
+            parg.valuePointer = obj.b_ptr.createReference(offset);
 
             return parg;
         }
@@ -1067,6 +1068,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         FFIType ffi_type;
         StgDictObject stgDict;
         Object value;
+        // Used to hold reference to object that have native memory finalizers
+        Object keep;
     }
 
     /**
@@ -1438,14 +1441,16 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (obj instanceof CDataObject cdata) {
                 pa.stgDict = pyObjectStgDictNode.execute(cdata);
                 PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
-                setArgValue(inliningTarget, pa, carg.value, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
+                setArgValue(inliningTarget, pa, carg.valuePointer, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
+                pa.keep = cdata;
                 return;
             }
 
             if (PGuards.isPyCArg(obj)) {
                 PyCArgObject carg = (PyCArgObject) obj;
                 pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
-                setArgValue(inliningTarget, pa, carg.value, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
+                setArgValue(inliningTarget, pa, carg.valuePointer, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
+                pa.keep = carg;
                 return;
             }
 
@@ -1475,7 +1480,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 int len = bufferLib.getBufferLength(obj);
                 byte[] bytes = new byte[len + 1];
                 bufferLib.readIntoByteArray(obj, 0, bytes, 0, len);
-                setArgValue(inliningTarget, pa, Pointer.bytes(bytes).createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
+                Pointer valuePtr = Pointer.bytes(bytes);
+                setArgValue(inliningTarget, pa, valuePtr.createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
+                // Unlike CPython, we can attach the lifetime directly to the argument object
+                new PointerReference(pa, valuePtr, PythonContext.get(this).getSharedFinalizer());
                 return;
             }
 
@@ -1484,7 +1492,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 int len = string.byteLength(WCHAR_T_ENCODING);
                 byte[] bytes = new byte[len + WCHAR_T_SIZE];
                 copyToByteArrayNode.execute(string, 0, bytes, 0, len, WCHAR_T_ENCODING);
-                setArgValue(inliningTarget, pa, Pointer.bytes(bytes).createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
+                Pointer valuePtr = Pointer.bytes(bytes);
+                setArgValue(inliningTarget, pa, valuePtr.createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
+                // Unlike CPython, we can attach the lifetime directly to the argument object
+                new PointerReference(pa, valuePtr, PythonContext.get(this).getSharedFinalizer());
                 return;
             }
 

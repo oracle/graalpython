@@ -48,7 +48,11 @@ public final class PyCArgObject extends PythonBuiltinObject {
 
     FFIType pffi_type;
     char tag;
-    Pointer value;
+    /*
+     * In CPython, the struct directly contains the value as an union. We use a pointer to a value,
+     * thus there is one more pointer indirection.
+     */
+    Pointer valuePointer;
     Object obj;
     int size;
 
@@ -57,7 +61,7 @@ public final class PyCArgObject extends PythonBuiltinObject {
         pffi_type = null;
         tag = '\0';
         obj = null;
-        value = Pointer.NULL;
+        valuePointer = Pointer.NULL;
     }
 
 }

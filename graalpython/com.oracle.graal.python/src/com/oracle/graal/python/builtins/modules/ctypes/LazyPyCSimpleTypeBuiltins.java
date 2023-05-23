@@ -157,8 +157,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'Z';
-                parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
-                parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.value, value, 0);
+                parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+                parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.valuePointer, value, 0);
                 return parg;
             }
             boolean res = isInstanceNode.executeWith(frame, value, type);
@@ -215,8 +215,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'P';
-            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
-            setFuncNode.execute(null, FFIType.FieldSet.P_set, parg.value, value, 0);
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.P_set, parg.valuePointer, value, 0);
             parg.obj = PNone.NONE;
             return parg;
         }
@@ -228,8 +228,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'z';
-            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
-            setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.value, value, 0);
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.valuePointer, value, 0);
             parg.obj = value;
             return parg;
         }
@@ -241,8 +241,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'Z';
-            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
-            setFuncNode.execute(null, FFIType.FieldSet.Z_set, parg.value, value, 0);
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.Z_set, parg.valuePointer, value, 0);
             parg.obj = value;
             return parg;
         }
@@ -280,7 +280,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'P';
-                parg.value = func.b_ptr;
+                parg.valuePointer = func.b_ptr;
                 parg.obj = value;
                 return parg;
             }
@@ -295,7 +295,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                     parg.tag = 'Z';
                     parg.obj = value;
                     /* Remember: b_ptr points to where the pointer is stored! */
-                    parg.value = ((CDataObject) value).b_ptr;
+                    parg.valuePointer = ((CDataObject) value).b_ptr;
                     return parg;
                 }
             }
@@ -326,8 +326,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'z';
-            parg.value = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
-            setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.value, value, 0);
+            parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
+            setFuncNode.execute(null, FFIType.FieldSet.z_set, parg.valuePointer, value, 0);
             parg.obj = value;
             return parg;
         }
