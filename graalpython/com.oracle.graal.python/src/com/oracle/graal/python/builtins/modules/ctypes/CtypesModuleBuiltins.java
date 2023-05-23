@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
-import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins.PyCFuncPtrFromDllNode.strchr;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
@@ -143,6 +142,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectHashNodeGen;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -176,6 +176,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1067,7 +1069,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected static final class argument {
         FFIType ffi_type;
         StgDictObject stgDict;
-        Object value;
+        /*
+         * CPython stores the value directly in a union. We use a pointer, so there is one more
+         * pointer indirection
+         */
+        Pointer valuePointer;
         // Used to hold reference to object that have native memory finalizers
         Object keep;
     }
@@ -1096,7 +1102,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object _ctypes_callproc(VirtualFrame frame, NativeFunction pProc, Object[] argarray, @SuppressWarnings("unused") int flags, Object[] argtypes, Object[] converters, Object restype,
                         Object checker,
+                        @Bind("this") Node inliningTarget,
                         @Cached ConvParamNode convParamNode,
+                        @Cached ConvertParameterToBackendValueNode convertParameterToBackendValueNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CallNode callNode,
                         @Cached GetResultNode getResultNode,
@@ -1114,47 +1122,36 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             int argtype_count = argtypes != null ? argtypes.length : 0;
 
             /* Convert the arguments */
-            final boolean isLLVM = pProc.isLLVM();
-            final boolean isIntrinsic = pProc.isManaged() && !isLLVM;
+            BackendMode mode = BackendMode.NFI;
+            if (pProc.isManaged()) {
+                if (pProc.isLLVM()) {
+                    mode = BackendMode.LLVM;
+                } else {
+                    mode = BackendMode.INTRINSIC;
+                }
+            }
             for (int i = 0; i < argcount; ++i) {
                 args[i] = new argument();
-                Object arg = argarray[i]; /* borrowed ref */
+                Object arg = argarray[i];
                 /*
                  * For cdecl functions, we allow more actual arguments than the length of the
                  * argtypes tuple. This is checked in _ctypes::PyCFuncPtr_Call
                  */
+                Object v = arg;
                 if (converters != null && argtype_count > i) {
-                    Object v;
                     try {
                         v = callNode.execute(frame, converters[i], arg);
                     } catch (PException e) {
                         throw raise(ArgError, ARGUMENT_D, i + 1);
                     }
-
-                    convParamNode.execute(frame, v, i + 1, args[i], isIntrinsic);
-                } else {
-                    convParamNode.execute(frame, arg, i + 1, args[i], isIntrinsic);
                 }
+                convParamNode.execute(frame, v, i + 1, args[i]);
                 FFIType ffiType = args[i].ffi_type;
                 atypes[i] = ffiType;
                 if (arg instanceof PyCFuncPtrObject) {
                     atypes[i] = new FFIType(atypes[i], ((PyCFuncPtrObject) arg).thunk);
                 }
-                Object value = args[i].value;
-                if (!isIntrinsic && ffiType == FFIType.ffi_type_pointer) {
-                    if (!isLLVM) {
-                        value = getContext().getEnv().asGuestValue(value);
-                    } else {
-                        if (ffiType.type == FFI_TYPE_STRUCT) {
-                            assert value instanceof byte[] : "It should be byte[]!";
-                            assert args[i].stgDict != null : "We need stgDict for Structs";
-                            value = CDataObject.createWrapper(args[i].stgDict, (byte[]) value);
-                        } else {
-                            value = getContext().getEnv().asGuestValue(value);
-                        }
-                    }
-                }
-                avalues[i] = value;
+                avalues[i] = convertParameterToBackendValueNode.execute(inliningTarget, args[i].valuePointer, args[i].ffi_type, args[i].stgDict, mode);
             }
 
             FFIType rtype = FFIType.ffi_type_sint;
@@ -1165,17 +1162,17 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 }
             }
             Object result;
-            if (isLLVM || isIntrinsic) {
+            if (mode == BackendMode.NFI) {
+                result = callNativeFunction(pProc, avalues, atypes, rtype, ilib, appendStringNode, toStringNode);
+            } else {
                 result = callManagedFunction(pProc, avalues, ilib);
-                if (isIntrinsic) {
+                if (mode == BackendMode.INTRINSIC) {
                     /*
                      * We don't want result conversion for functions implemented in Java, they
                      * should take care to produce the desired result type
                      */
                     return result;
                 }
-            } else {
-                result = callNativeFunction(pProc, avalues, atypes, rtype, ilib, appendStringNode, toStringNode);
             }
 
             return getResultNode.execute(restype, rtype, result, checker);
@@ -1415,14 +1412,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
      */
     protected abstract static class ConvParamNode extends PNodeWithRaise {
 
-        final void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean intrinsic) {
-            execute(frame, obj, index, pa, intrinsic, true);
+        final void execute(VirtualFrame frame, Object obj, int index, argument pa) {
+            execute(frame, obj, index, pa, true);
         }
 
-        protected abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean intrinsic, boolean allowRecursion);
+        protected abstract void execute(VirtualFrame frame, Object obj, int index, argument pa, boolean allowRecursion);
 
         @Specialization
-        void convParam(VirtualFrame frame, Object obj, int index, argument pa, boolean intrinsic, boolean allowRecursion,
+        void convParam(VirtualFrame frame, Object obj, int index, argument pa, boolean allowRecursion,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyLongCheckNode longCheckNode,
@@ -1435,13 +1432,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CArgObjectBuiltins.ParamFuncNode paramFuncNode,
-                        @Cached PointerNodes.ConvertToParameterNode convertToParameterNode,
-                        @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Cached ConvParamNode recursive) {
             if (obj instanceof CDataObject cdata) {
                 pa.stgDict = pyObjectStgDictNode.execute(cdata);
                 PyCArgObject carg = paramFuncNode.execute(cdata, pa.stgDict);
-                setArgValue(inliningTarget, pa, carg.valuePointer, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
+                pa.ffi_type = carg.pffi_type;
+                pa.valuePointer = carg.valuePointer;
                 pa.keep = cdata;
                 return;
             }
@@ -1449,7 +1445,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (PGuards.isPyCArg(obj)) {
                 PyCArgObject carg = (PyCArgObject) obj;
                 pa.stgDict = pyObjectStgDictNode.execute(carg.obj); // helpful for llvm backend
-                setArgValue(inliningTarget, pa, carg.valuePointer, carg.pffi_type, intrinsic, convertToParameterNode, readPointerNode);
+                pa.ffi_type = carg.pffi_type;
+                pa.valuePointer = carg.valuePointer;
                 pa.keep = carg;
                 return;
             }
@@ -1457,18 +1454,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             /* check for None, integer, string or unicode and use directly if successful */
             if (obj == PNone.NONE) {
                 pa.ffi_type = FFIType.ffi_type_pointer;
-                if (!intrinsic) {
-                    pa.value = 0L;
-                } else {
-                    pa.value = Pointer.NULL;
-                }
+                pa.valuePointer = Pointer.NULL.createReference();
                 return;
             }
 
             if (longCheckNode.execute(obj)) {
                 pa.ffi_type = FFIType.ffi_type_sint;
                 try {
-                    pa.value = asInt.executeExact(frame, obj);
+                    pa.valuePointer = Pointer.create(pa.ffi_type, pa.ffi_type.size, asInt.executeExact(frame, obj), 0);
                 } catch (PException e) {
                     e.expectOverflowError(inliningTarget, profile);
                     throw raise(OverflowError, INT_TOO_LONG_TO_CONVERT);
@@ -1481,7 +1474,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = new byte[len + 1];
                 bufferLib.readIntoByteArray(obj, 0, bytes, 0, len);
                 Pointer valuePtr = Pointer.bytes(bytes);
-                setArgValue(inliningTarget, pa, valuePtr.createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
+                pa.ffi_type = FFIType.ffi_type_pointer;
+                pa.valuePointer = valuePtr.createReference();
                 // Unlike CPython, we can attach the lifetime directly to the argument object
                 new PointerReference(pa, valuePtr, PythonContext.get(this).getSharedFinalizer());
                 return;
@@ -1493,7 +1487,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = new byte[len + WCHAR_T_SIZE];
                 copyToByteArrayNode.execute(string, 0, bytes, 0, len, WCHAR_T_ENCODING);
                 Pointer valuePtr = Pointer.bytes(bytes);
-                setArgValue(inliningTarget, pa, valuePtr.createReference(), FFIType.ffi_type_pointer, intrinsic, convertToParameterNode, readPointerNode);
+                pa.ffi_type = FFIType.ffi_type_pointer;
+                pa.valuePointer = valuePtr.createReference();
                 // Unlike CPython, we can attach the lifetime directly to the argument object
                 new PointerReference(pa, valuePtr, PythonContext.get(this).getSharedFinalizer());
                 return;
@@ -1506,24 +1501,112 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
              * classes as parameters (they have to expose the '_as_parameter_' attribute)
              */
             if (arg != null && allowRecursion) {
-                recursive.execute(frame, arg, index, pa, intrinsic, false);
+                recursive.execute(frame, arg, index, pa, false);
                 return;
             }
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
         }
+    }
 
-        private static void setArgValue(Node inliningTarget, argument pa, Pointer value, FFIType ffiType, boolean intrinsic, PointerNodes.ConvertToParameterNode convertToParameterNode,
-                        PointerNodes.ReadPointerNode readPointerNode) {
-            pa.ffi_type = ffiType;
+    enum BackendMode {
+        NFI,
+        LLVM,
+        INTRINSIC
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic({FFIType.FFI_TYPES.class, BackendMode.class})
+    abstract static class ConvertParameterToBackendValueNode extends Node {
+        public abstract Object execute(Node inliningTarget, Pointer ptr, FFIType ffiType, StgDictObject dict, BackendMode mode);
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT8 || ffiType.type == FFI_TYPE_UINT8")
+        static byte doByte(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached PointerNodes.ReadByteNode readByteNode) {
+            return readByteNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT16 || ffiType.type == FFI_TYPE_UINT16")
+        static short doShort(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached PointerNodes.ReadShortNode readShortNode) {
+            return readShortNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT32 || ffiType.type == FFI_TYPE_UINT32")
+        static int doInt(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
+            return readIntNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT64 || ffiType.type == FFI_TYPE_UINT64")
+        static long doLong(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
+            return readLongNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_FLOAT")
+        static float doFloat(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadIntNode readIntNode) {
+            return Float.intBitsToFloat(readIntNode.execute(inliningTarget, pointer));
+        }
+
+        @Specialization(guards = "ffiType.type == FFI_TYPE_DOUBLE")
+        static double doDouble(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
+            return Double.longBitsToDouble(readLongNode.execute(inliningTarget, pointer));
+        }
+
+        @Specialization(guards = {"mode == NFI", "ffiType.type == FFI_TYPE_POINTER"})
+        static Object doNFIPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PointerNodes.GetPointerValueAsObjectNode toNativeNode) {
+            Pointer value = readPointerNode.execute(inliningTarget, pointer);
+            return toNativeNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = {"mode == LLVM", "ffiType.type == FFI_TYPE_POINTER"})
+        static Object doLLVMPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Shared @Cached PointerNodes.GetPointerValueAsObjectNode toNativeNode) {
+            Pointer value = readPointerNode.execute(inliningTarget, pointer);
             /*
-             * Pointers get converted native pointers for NFI. For intrinsic function calls, they
-             * get dereferenced for implementation convenience.
+             * TODO this is currently the same as NFI, but here we have an opportunity to pass
+             * interop objects instead of allocating native memory.
              */
-            if (intrinsic && ffiType == FFIType.ffi_type_pointer) {
-                pa.value = readPointerNode.execute(inliningTarget, value);
-            } else {
-                pa.value = convertToParameterNode.execute(inliningTarget, value, ffiType);
-            }
+            return toNativeNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = {"mode == INTRINSIC", "ffiType.type == FFI_TYPE_POINTER"})
+        static Object doIntrinsicPointer(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Shared @Cached PointerNodes.ReadPointerNode readPointerNode) {
+            return readPointerNode.execute(inliningTarget, pointer);
+        }
+
+        @Specialization(guards = {"mode == NFI", "ffiType.type == FFI_TYPE_STRUCT"})
+        @SuppressWarnings("unused")
+        static Object doNFIStruct(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, @SuppressWarnings("unused") StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached(inline = false) PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED);
+        }
+
+        @Specialization(guards = {"mode == LLVM", "ffiType.type == FFI_TYPE_STRUCT"})
+        static Object doLLVMStruct(Node inliningTarget, Pointer pointer, @SuppressWarnings("unused") FFIType ffiType, StgDictObject dict,
+                        @SuppressWarnings("unused") BackendMode mode,
+                        @Cached PointerNodes.ReadBytesNode readBytesNode) {
+            byte[] bytes = new byte[dict.size];
+            // TODO avoid copying the bytes if possible
+            readBytesNode.execute(inliningTarget, bytes, 0, pointer, dict.size);
+            return CDataObject.createWrapper(dict, bytes);
         }
     }
 
@@ -2019,5 +2102,4 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
         return toStringNode.execute(buf);
     }
-
 }

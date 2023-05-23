@@ -4,7 +4,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 
-import com.oracle.graal.python.builtins.modules.ctypes.FFIType;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.LongPointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.MemoryBlock;
@@ -30,7 +29,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -811,68 +809,6 @@ public abstract class PointerNodes {
                         @Cached GetPointerValueAsLongNode toNativeNode) {
             long nativePointer = toNativeNode.execute(inliningTarget, value.memory, value.memory.storage, value.offset);
             writeLongNode.execute(inliningTarget, memory, storage, offset, nativePointer);
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    @ImportStatic(FFIType.FFI_TYPES.class)
-    public abstract static class ConvertToParameterNode extends Node {
-        public final Object execute(Node inliningTarget, Pointer ptr, FFIType ffiType) {
-            return execute(inliningTarget, ptr.memory, ptr.memory.storage, ptr.offset, ffiType);
-        }
-
-        abstract Object execute(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, FFIType ffiType);
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT8 || ffiType.type == FFI_TYPE_UINT8")
-        static byte doByte(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Cached ReadByteNode readByteNode) {
-            return readByteNode.execute(inliningTarget, memory, storage, offset);
-        }
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT16 || ffiType.type == FFI_TYPE_UINT16")
-        static short doShort(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Cached ReadShortNode readShortNode) {
-            return readShortNode.execute(inliningTarget, memory, storage, offset);
-        }
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT32 || ffiType.type == FFI_TYPE_UINT32")
-        static int doInt(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Shared @Cached ReadIntNode readIntNode) {
-            return readIntNode.execute(inliningTarget, memory, storage, offset);
-        }
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_SINT64 || ffiType.type == FFI_TYPE_UINT64")
-        static long doLong(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Shared @Cached ReadLongNode readLongNode) {
-            return readLongNode.execute(inliningTarget, memory, storage, offset);
-        }
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_FLOAT")
-        static float doFloat(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Shared @Cached ReadIntNode readIntNode) {
-            return Float.intBitsToFloat(doInt(inliningTarget, memory, storage, offset, ffiType, readIntNode));
-        }
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_DOUBLE")
-        static double doDouble(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Shared @Cached ReadLongNode readLongNode) {
-            return Double.longBitsToDouble(doLong(inliningTarget, memory, storage, offset, ffiType, readLongNode));
-        }
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_POINTER")
-        static Object doPointer(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Cached ReadPointerNode readPointerNode,
-                        @Cached GetPointerValueAsObjectNode toNativeNode) {
-            Pointer value = readPointerNode.execute(inliningTarget, memory, storage, offset);
-            return toNativeNode.execute(inliningTarget, value);
-        }
-
-        @Specialization(guards = "ffiType.type == FFI_TYPE_STRUCT")
-        @SuppressWarnings("unused")
-        static Object doStruct(Node inliningTarget, MemoryBlock memory, Storage storage, int offset, @SuppressWarnings("unused") FFIType ffiType,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError, ErrorMessages.PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED);
         }
     }
 

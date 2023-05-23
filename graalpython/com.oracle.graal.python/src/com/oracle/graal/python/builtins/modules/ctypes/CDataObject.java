@@ -79,7 +79,7 @@ public class CDataObject extends PythonBuiltinObject {
         this.b_needsfree = b_needsfree;
     }
 
-    protected static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
+    public static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
         return new CDataObjectWrapper(dictObject, storage);
     }
 
